@@ -9,6 +9,10 @@ docker compose up --build
 
 Open http://localhost:8088
 
+The container includes **terraform**, **tflint**, and **checkov**, so blueprint gates
+run for real instead of skipping. Generated modules are written to the `repave-modules`
+Docker volume (`/modules` inside the container).
+
 ## Native Python (development)
 
 From repo root:
