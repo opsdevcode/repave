@@ -25,9 +25,43 @@ pip install -e '.[dev]'
 pytest
 ```
 
+## Commit messages (Conventional Commits)
+
+This repository uses [Conventional Commits](https://www.conventionalcommits.org/)
+for automated releases via [release-please](https://github.com/googleapis/release-please).
+
+Format:
+
+```text
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Common types:
+
+- `feat:` — new feature (**minor** version bump)
+- `fix:` — bug fix (**patch** version bump)
+- `feat!:` or `fix!:` / `BREAKING CHANGE:` footer — **major** version bump
+- `docs:`, `chore:`, `ci:`, `refactor:`, `test:`, `build:` — no release bump unless they include breaking changes
+
+Examples:
+
+```text
+feat(engine): add ansible-role blueprint scaffold
+fix(gates): skip tflint when binary is unavailable
+feat!: rename blueprint input schema fields
+```
+
+Pull request titles are also validated against Conventional Commits. Use the
+same pattern for PR titles (for example `feat: add local docker quickstart`).
+
 ## Pull requests
 
 - Keep changes small and focused.
+- Use a Conventional Commit-style PR title.
 - Include tests for engine logic changes.
 - Explain intent and any trade-offs in the PR description.
 

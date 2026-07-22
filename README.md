@@ -89,6 +89,18 @@ docs/          # concept docs
 - **v0.3+** — more golden paths (Ansible role, cloud resource modules), portal
   hardening, richer observability/SLOs.
 
+## Releases
+
+Versioning and GitHub releases are automated from
+[Conventional Commits](https://www.conventionalcommits.org/) on `main` using
+[release-please](https://github.com/googleapis/release-please).
+
+- Merge conventional commits to `main`.
+- Release Please opens/updates a release PR with version and changelog updates.
+- Merging that release PR creates the GitHub release and tag.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message format.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
