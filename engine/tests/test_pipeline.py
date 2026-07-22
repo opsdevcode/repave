@@ -5,7 +5,6 @@ from pathlib import Path
 from repave_engine.blueprint import load_blueprint
 from repave_engine.pipeline import generate_from_blueprint
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 

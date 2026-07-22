@@ -22,6 +22,11 @@ dependencies = [
 dev = [
   "pytest>=8.0",
   "httpx>=0.27.0",
+  "ruff>=0.9.0",
+  "mypy>=1.14.0",
+  "bandit[toml]>=1.8.0",
+  "pip-audit>=2.9.0",
+  "types-PyYAML",
 ]
 
 [project.scripts]
@@ -33,3 +38,47 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes
+  "I",   # isort
+  "UP",  # pyupgrade
+  "B",   # flake8-bugbear
+  "SIM", # flake8-simplify
+  "RUF", # ruff-specific
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # allow assert in tests
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+mypy_path = ["src"]
+packages = ["repave_engine"]
+
+[[tool.mypy.overrides]]
+module = ["copier.*", "jsonschema.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["repave_engine.api"]
+disable_error_code = ["arg-type"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B404", "B603"]  # subprocess used intentionally for gate execution

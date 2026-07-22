@@ -25,6 +25,27 @@ pip install -e '.[dev]'
 pytest
 ```
 
+From repo root, quality and security checks:
+
+```bash
+make quality    # ruff lint + format check + mypy
+make security   # bandit + pip-audit
+make test
+```
+
+### Python quality and security tooling
+
+CI runs these OSS tools on every push and pull request:
+
+| Tool | Purpose |
+| --- | --- |
+| [Ruff](https://docs.astral.sh/ruff/) | Linting and formatting |
+| [mypy](https://mypy-lang.org/) | Static type checking |
+| [Bandit](https://bandit.readthedocs.io/) | Python SAST security scan |
+| [pip-audit](https://pypi.org/project/pip-audit/) | Dependency vulnerability scan (OSV) |
+
+Configuration lives in `engine/pyproject.toml`.
+
 ## Commit messages (Conventional Commits)
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/)

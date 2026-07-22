@@ -20,6 +20,14 @@ repave generate \
   --dry-run
 ```
 
+## Quality and security (local)
+
+```bash
+make quality   # ruff lint/format check + mypy
+make security  # bandit + pip-audit
+make test
+```
+
 ## API (local portal backend)
 
 ```bash
