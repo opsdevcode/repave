@@ -82,3 +82,12 @@ disable_error_code = ["arg-type"]
 [tool.bandit]
 exclude_dirs = ["tests"]
 skips = ["B404", "B603"]  # subprocess used intentionally for gate execution
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/repave_engine/__init__.py:__version__"]
+tag_format = "v{version}"
+commit_message = "chore(release): {version}"
+build_command = "pip install build && python -m build -o dist/"
+upload_to_vcs_release = true
+upload_to_pypi = false

@@ -44,7 +44,7 @@
 
 ## Release impact
 
-<!-- release-please uses conventional commits on merge to main. -->
+<!-- python-semantic-release publishes on merge to main for feat/fix/breaking commits. -->
 
 - [ ] user-facing release note expected (`feat` / `fix` / breaking)
 - [ ] no release bump expected (`docs`, `chore`, `ci`, etc.)
