@@ -24,5 +24,6 @@
     { "type": "ci", "section": "Continuous Integration", "hidden": true }
   ],
   "pull-request-title-pattern": "chore${scope}: release ${version}",
-  "separate-pull-requests": false
+  "separate-pull-requests": false,
+  "include-component-in-tag": false
 }

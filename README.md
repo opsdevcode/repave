@@ -99,6 +99,8 @@ Versioning and GitHub releases are automated from
 - Release Please opens/updates a release PR with version and changelog updates.
 - Merging that release PR creates the GitHub release and tag.
 
+Merging the release PR creates the GitHub release and tag (for example `v0.1.0`).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message format.
 
 ## License
