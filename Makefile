@@ -1,6 +1,9 @@
 .PHONY: install test lint format typecheck security quality serve compose-up compose-down list generate
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+MODULES_ROOT ?= $(HOME)/repave-modules
+GITHUB_ORG ?= opsdevcode
+REPAVE_ENV = REPAVE_GITHUB_ORG=$(GITHUB_ORG) REPAVE_MODULES_ROOT=$(MODULES_ROOT)
 
 install:
 	cd engine && python -m pip install -e '.[dev]'
@@ -24,13 +27,15 @@ quality: lint typecheck
 	@cd engine && ruff format --check src tests
 
 serve:
-	cd engine && repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8080
+	mkdir -p $(MODULES_ROOT)
+	$(REPAVE_ENV) cd engine && repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8088
 
 list:
 	cd engine && repave list --repo-root $(REPO_ROOT)
 
 generate:
-	cd engine && repave generate \
+	mkdir -p $(MODULES_ROOT)
+	$(REPAVE_ENV) cd engine && repave generate \
 	  --repo-root $(REPO_ROOT) \
 	  --blueprint blueprints/terraform-module-generic \
 	  --input module_name=example \

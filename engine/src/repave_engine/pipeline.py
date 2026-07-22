@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,12 @@ from repave_engine.blueprint import Blueprint, load_blueprint, validate_inputs
 from repave_engine.gates import GateResult, all_gates_passed, run_gates
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
 from repave_engine.render import RenderResult, render_blueprint
+from repave_engine.settings import OutputConfig
+from repave_engine.target_repo import (
+    ModuleRepository,
+    publish_to_module_repository,
+    resolve_module_repository,
+)
 
 
 @dataclass(frozen=True)
@@ -15,6 +22,7 @@ class GenerationResult:
     blueprint: Blueprint
     render: RenderResult
     gates: list[GateResult]
+    module_repository: ModuleRepository | None
     pr_plan: PullRequestPlan | None
     pr_message: str
 
@@ -23,39 +31,77 @@ def generate_from_blueprint(
     blueprint: Blueprint,
     values: dict[str, Any],
     *,
-    output_root: Path,
+    output_config: OutputConfig,
     dry_run: bool = True,
     github_token: str | None = None,
+    staging_root: Path | None = None,
 ) -> GenerationResult:
     normalized = validate_inputs(blueprint, values)
-    module_name = normalized.get("module_name", blueprint.name)
-    output_dir = output_root / module_name
-
-    render_result = render_blueprint(blueprint, normalized, output_dir)
-    gate_results = run_gates(render_result.output_dir, blueprint.gates)
-
-    pr_plan: PullRequestPlan | None = None
-    pr_message = "Gates failed; pull request not planned."
-    if all_gates_passed(gate_results):
-        pr_plan = plan_pull_request(
-            module_name=str(module_name),
-            blueprint_name=blueprint.name,
-            blueprint_version=blueprint.version,
-            standard_version=blueprint.standard_version,
-            files_root=render_result.output_dir,
-        )
-        if dry_run:
-            pr_message = create_pull_request(pr_plan, github_token=None)
-        else:
-            pr_message = create_pull_request(pr_plan, github_token=github_token)
-
-    return GenerationResult(
-        blueprint=blueprint,
-        render=render_result,
-        gates=gate_results,
-        pr_plan=pr_plan,
-        pr_message=pr_message,
+    module_name = str(normalized.get("module_name", blueprint.name))
+    module_repository = resolve_module_repository(
+        module_name=module_name,
+        config=output_config,
+        name_template=blueprint.output_repo_name_template,
     )
+
+    if staging_root is None:
+        temp_dir = tempfile.TemporaryDirectory(prefix="repave-staging-")
+        staging_dir = Path(temp_dir.name)
+        owns_staging = True
+    else:
+        staging_root.mkdir(parents=True, exist_ok=True)
+        staging_dir = staging_root
+        temp_dir = None
+        owns_staging = False
+
+    try:
+        render_result = render_blueprint(blueprint, normalized, staging_dir)
+        gate_results = run_gates(render_result.output_dir, blueprint.gates)
+
+        pr_plan: PullRequestPlan | None = None
+        pr_message = "Gates failed; module repository not updated."
+        published_repository: ModuleRepository | None = module_repository
+
+        if all_gates_passed(gate_results):
+            publish_message = publish_to_module_repository(
+                render_result.output_dir,
+                module_repository,
+                dry_run=dry_run,
+            )
+            pr_plan = plan_pull_request(
+                module_name=module_name,
+                blueprint_name=blueprint.name,
+                blueprint_version=blueprint.version,
+                standard_version=blueprint.standard_version,
+                files_root=module_repository.local_path,
+                repository=module_repository,
+            )
+            if dry_run:
+                pr_body = create_pull_request(pr_plan, github_token=None)
+                pr_message = f"{publish_message}\n\n{pr_body}"
+            else:
+                pr_body = create_pull_request(pr_plan, github_token=github_token)
+                pr_message = f"{publish_message}\n\n{pr_body}"
+        else:
+            published_repository = None
+
+        # Surface the module repo path in dry-run even when gates fail after render.
+        display_output_dir = (
+            module_repository.local_path if published_repository else render_result.output_dir
+        )
+        display_render = RenderResult(output_dir=display_output_dir, values=render_result.values)
+
+        return GenerationResult(
+            blueprint=blueprint,
+            render=display_render,
+            gates=gate_results,
+            module_repository=published_repository,
+            pr_plan=pr_plan,
+            pr_message=pr_message,
+        )
+    finally:
+        if owns_staging and temp_dir is not None:
+            temp_dir.cleanup()
 
 
 def generate_from_path(
@@ -63,15 +109,17 @@ def generate_from_path(
     values: dict[str, Any],
     *,
     repo_root: Path,
-    output_root: Path,
+    output_config: OutputConfig,
     dry_run: bool = True,
     github_token: str | None = None,
+    staging_root: Path | None = None,
 ) -> GenerationResult:
     blueprint = load_blueprint(blueprint_path, repo_root)
     return generate_from_blueprint(
         blueprint,
         values,
-        output_root=output_root,
+        output_config=output_config,
         dry_run=dry_run,
         github_token=github_token,
+        staging_root=staging_root,
     )

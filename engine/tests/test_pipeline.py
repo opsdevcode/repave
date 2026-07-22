@@ -1,91 +1,161 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
-from repave_engine.gates import GateResult
+import pytest
+
 from repave_engine.pipeline import generate_from_blueprint, generate_from_path
+from repave_engine.target_repo import resolve_module_repository
 
 
-def test_generate_terraform_module_generic(
+def test_generate_terraform_module_generic_publishes_module_repo(
     terraform_blueprint,
     sample_inputs,
-    tmp_path: Path,
+    output_config,
+    staging_root,
 ) -> None:
     result = generate_from_blueprint(
         terraform_blueprint,
         sample_inputs,
-        output_root=tmp_path,
-        dry_run=True,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
     )
 
-    output_dir = result.render.output_dir
-    assert output_dir.exists()
-    assert (output_dir / "main.tf").exists()
-    assert (output_dir / "README.md").exists()
-    assert "example" in (output_dir / "README.md").read_text(encoding="utf-8")
+    module_repo = result.module_repository
+    assert module_repo is not None
+    assert module_repo.name == "tf-example"
+    assert module_repo.local_path.exists()
+    assert (module_repo.local_path / "main.tf").exists()
+    assert (module_repo.local_path / "README.md").exists()
+    assert "example" in (module_repo.local_path / "README.md").read_text(encoding="utf-8")
+    assert (module_repo.local_path / ".git").exists()
     assert result.pr_plan is not None
-    assert result.pr_plan.branch == "repave/terraform-module-generic/example"
-    assert "Dry-run" in result.pr_message
+    assert result.pr_plan.repository.web_url.endswith("/tf-example")
     assert all(g.passed or g.skipped for g in result.gates)
 
 
 def test_generate_from_path(
     repo_root: Path,
     sample_inputs,
-    tmp_path: Path,
+    output_config,
+    staging_root,
 ) -> None:
     result = generate_from_path(
         repo_root / "blueprints" / "terraform-module-generic",
         sample_inputs,
         repo_root=repo_root,
-        output_root=tmp_path,
-        dry_run=True,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
     )
 
     assert result.blueprint.name == "terraform-module-generic"
-    assert result.render.output_dir.exists()
+    assert result.module_repository is not None
+    assert result.module_repository.local_path.exists()
 
 
-@patch("repave_engine.pipeline.run_gates")
-def test_gate_failure_blocks_pull_request(
-    mock_run_gates,
+def test_dry_run_does_not_write_module_repo(
     terraform_blueprint,
     sample_inputs,
-    tmp_path: Path,
+    output_config,
+    staging_root,
 ) -> None:
-    mock_run_gates.return_value = [
-        GateResult("docs-drift", False, False, "README missing Usage section"),
-    ]
+    result = generate_from_blueprint(
+        terraform_blueprint,
+        sample_inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+
+    assert result.module_repository is not None
+    assert not result.module_repository.local_path.exists()
+    assert "Dry-run" in result.pr_message
+
+
+def test_gate_failure_blocks_module_repo_publish(
+    terraform_blueprint,
+    sample_inputs,
+    output_config,
+    staging_root,
+    monkeypatch,
+) -> None:
+    from repave_engine.gates import GateResult
+
+    monkeypatch.setattr(
+        "repave_engine.pipeline.run_gates",
+        lambda *_args, **_kwargs: [GateResult("docs-drift", False, False, "failed")],
+    )
 
     result = generate_from_blueprint(
         terraform_blueprint,
         sample_inputs,
-        output_root=tmp_path,
-        dry_run=True,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
     )
 
+    assert result.module_repository is None
     assert result.pr_plan is None
     assert "Gates failed" in result.pr_message
 
 
-@patch("repave_engine.pipeline.create_pull_request")
 def test_non_dry_run_passes_github_token(
-    mock_create_pr,
     terraform_blueprint,
     sample_inputs,
-    tmp_path: Path,
+    output_config,
+    staging_root,
+    monkeypatch,
 ) -> None:
-    mock_create_pr.return_value = "created"
+    messages: list[str] = []
+
+    def fake_create_pr(plan, *, github_token):
+        messages.append(github_token or "")
+        return "created"
+
+    monkeypatch.setattr("repave_engine.pipeline.create_pull_request", fake_create_pr)
 
     result = generate_from_blueprint(
         terraform_blueprint,
         sample_inputs,
-        output_root=tmp_path,
+        output_config=output_config,
         dry_run=False,
         github_token="ghp_test",
+        staging_root=staging_root,
     )
 
-    assert result.pr_message == "created"
-    mock_create_pr.assert_called_once()
-    assert mock_create_pr.call_args.kwargs["github_token"] == "ghp_test"
+    assert "created" in result.pr_message
+    assert messages == ["ghp_test"]
+
+
+def test_resolve_module_repository_uses_template(output_config) -> None:
+    repository = resolve_module_repository(
+        module_name="networking",
+        config=output_config,
+        name_template="tf-{module_name}",
+    )
+
+    assert repository.name == "tf-networking"
+    assert repository.local_path == output_config.modules_root / "tf-networking"
+    assert repository.web_url == "https://github.com/example-org/tf-networking"
+
+
+def test_publish_refuses_existing_nonempty_repo(
+    terraform_blueprint,
+    sample_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    repo_path = output_config.modules_root / "tf-example"
+    repo_path.mkdir(parents=True)
+    (repo_path / "existing.txt").write_text("keep", encoding="utf-8")
+
+    with pytest.raises(FileExistsError, match="already exists"):
+        generate_from_blueprint(
+            terraform_blueprint,
+            sample_inputs,
+            output_config=output_config,
+            dry_run=False,
+            staging_root=staging_root,
+        )

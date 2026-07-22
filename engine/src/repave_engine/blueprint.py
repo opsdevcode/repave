@@ -31,7 +31,7 @@ class Blueprint:
     template_path: str
     gates: tuple[str, ...]
     output_type: str
-    output_target: str
+    output_repo_name_template: str
 
     @property
     def template_dir(self) -> Path:
@@ -72,6 +72,8 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
     )
 
     output = spec["output"]
+    repository = output.get("repository", {})
+    repo_name_template = repository.get("name_template", "tf-{module_name}")
     return Blueprint(
         path=blueprint_file.parent,
         name=metadata["name"],
@@ -84,7 +86,7 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         template_path=spec["template"]["path"],
         gates=tuple(spec["gates"]),
         output_type=output["type"],
-        output_target=output.get("target", "repo"),
+        output_repo_name_template=str(repo_name_template),
     )
 
 

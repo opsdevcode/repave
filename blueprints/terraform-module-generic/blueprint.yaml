@@ -28,4 +28,5 @@ spec:
     - docs-drift
   output:
     type: pull_request
-    target: repo
+    repository:
+      name_template: "tf-{module_name}"

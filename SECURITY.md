@@ -19,8 +19,9 @@ You can expect an initial acknowledgment within a few business days.
 `repave` is designed so that generated artifacts cannot bypass their configured
 quality/security gates. Security-relevant expectations:
 
-- The engine never writes directly to a target repository; output is a governed
-  pull request that must pass CI gates.
+- The engine writes generated modules only to the configured `modules_root`
+  outside the repave repository; it never commits module output into the repave
+  repo itself.
 - Credentials (e.g. GitHub tokens, cloud credentials) are provided at runtime and
   must never be committed, logged, or embedded in generated output.
 - Prefer short-lived, least-privilege credentials (OIDC/workload identity) for

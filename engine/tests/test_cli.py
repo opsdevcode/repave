@@ -11,6 +11,21 @@ from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
 
 
+def _generate_args(repo_root, sample_inputs, output_config, tmp_path, **overrides):
+    defaults = {
+        "repo_root": str(repo_root),
+        "blueprint": "blueprints/terraform-module-generic",
+        "input": [f"{key}={value}" for key, value in sample_inputs.items()],
+        "staging_root": str(tmp_path / "staging"),
+        "dry_run": True,
+        "github_token": None,
+        "github_org": output_config.github_org,
+        "modules_root": str(output_config.modules_root),
+    }
+    defaults.update(overrides)
+    return argparse.Namespace(**defaults)
+
+
 def test_parse_inputs_valid() -> None:
     values = _parse_inputs(["module_name=example", "description=test module"])
     assert values == {"module_name": "example", "description": "test module"}
@@ -30,26 +45,26 @@ def test_cmd_list_prints_blueprints(repo_root, capsys) -> None:
     assert any(item["name"] == "terraform-module-generic" for item in output)
 
 
-def test_cmd_generate_exit_code_success(repo_root, sample_inputs, tmp_path, capsys) -> None:
-    args = argparse.Namespace(
-        repo_root=str(repo_root),
-        blueprint="blueprints/terraform-module-generic",
-        input=[f"{key}={value}" for key, value in sample_inputs.items()],
-        output=str(tmp_path),
-        dry_run=True,
-        github_token=None,
-    )
-
-    code = cmd_generate(args)
+def test_cmd_generate_exit_code_success(
+    repo_root,
+    sample_inputs,
+    output_config,
+    tmp_path,
+    capsys,
+) -> None:
+    code = cmd_generate(_generate_args(repo_root, sample_inputs, output_config, tmp_path))
     output = capsys.readouterr().out
 
     assert code == 0
     assert "terraform-module-generic" in output
+    assert "tf-example" in output
     assert "Dry-run" in output
 
 
 def test_cmd_generate_exit_code_on_gate_failure(
     repo_root,
+    sample_inputs,
+    output_config,
     tmp_path,
     capsys,
     monkeypatch,
@@ -60,30 +75,20 @@ def test_cmd_generate_exit_code_on_gate_failure(
         repo_root / "blueprints" / "terraform-module-generic",
         repo_root,
     )
-    output_dir = tmp_path / "example"
-    output_dir.mkdir()
 
     def fake_generate(*args, **kwargs):
         return GenerationResult(
             blueprint=blueprint,
-            render=RenderResult(output_dir=output_dir, values={}),
+            render=RenderResult(output_dir=tmp_path / "staging", values={}),
             gates=[GateResult("docs-drift", False, False, "failed")],
+            module_repository=None,
             pr_plan=None,
-            pr_message="Gates failed; pull request not planned.",
+            pr_message="Gates failed; module repository not updated.",
         )
 
     monkeypatch.setattr("repave_engine.cli.generate_from_path", fake_generate)
 
-    args = argparse.Namespace(
-        repo_root=str(repo_root),
-        blueprint="blueprints/terraform-module-generic",
-        input=["module_name=example", "description=test"],
-        output=str(tmp_path),
-        dry_run=True,
-        github_token=None,
-    )
-
-    code = cmd_generate(args)
+    code = cmd_generate(_generate_args(repo_root, sample_inputs, output_config, tmp_path))
 
     assert code == 1
     assert "FAIL" in capsys.readouterr().out
@@ -101,3 +106,11 @@ def test_main_runs_list_command(repo_root, capsys) -> None:
 
     assert code == 0
     assert isinstance(output, list)
+
+
+def test_main_accepts_repo_root_after_subcommand(repo_root, capsys) -> None:
+    code = main(["list", "--repo-root", str(repo_root)])
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert any(item["name"] == "terraform-module-generic" for item in output)
