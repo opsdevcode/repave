@@ -9,10 +9,11 @@ from fastapi.templating import Jinja2Templates
 from repave_engine.blueprint import list_blueprints, load_blueprint
 from repave_engine.pipeline import generate_from_blueprint
 
-TEMPLATES = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
-
 
 def create_app(*, repo_root: Path) -> FastAPI:
+    templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+    templates.env.cache = None
+
     app = FastAPI(title="repave", version="0.1.0")
     output_root = repo_root / ".repave-out"
     output_root.mkdir(parents=True, exist_ok=True)
@@ -20,23 +21,19 @@ def create_app(*, repo_root: Path) -> FastAPI:
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
         blueprints = list_blueprints(repo_root / "blueprints")
-        return TEMPLATES.TemplateResponse(
+        return templates.TemplateResponse(
+            request,
             "index.html",
-            {
-                "request": request,
-                "blueprints": blueprints,
-            },
+            {"blueprints": blueprints},
         )
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        return TEMPLATES.TemplateResponse(
+        return templates.TemplateResponse(
+            request,
             "blueprint_form.html",
-            {
-                "request": request,
-                "blueprint": blueprint,
-            },
+            {"blueprint": blueprint},
         )
 
     @app.post("/generate")
@@ -54,12 +51,10 @@ def create_app(*, repo_root: Path) -> FastAPI:
             dry_run=dry_run,
         )
 
-        return TEMPLATES.TemplateResponse(
+        return templates.TemplateResponse(
+            request,
             "result.html",
-            {
-                "request": request,
-                "result": result,
-            },
+            {"result": result},
         )
 
     @app.get("/health")
