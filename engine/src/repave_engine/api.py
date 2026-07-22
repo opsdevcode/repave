@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from repave_engine import __version__
 from repave_engine.blueprint import list_blueprints, load_blueprint
 from repave_engine.pipeline import generate_from_blueprint
 
@@ -14,7 +15,7 @@ def create_app(*, repo_root: Path) -> FastAPI:
     templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
     templates.env.cache = None
 
-    app = FastAPI(title="repave", version="0.1.0")
+    app = FastAPI(title="repave", version=__version__)
     output_root = repo_root / ".repave-out"
     output_root.mkdir(parents=True, exist_ok=True)
 

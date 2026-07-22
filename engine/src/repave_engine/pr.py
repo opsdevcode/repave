@@ -43,9 +43,9 @@ def create_pull_request(plan: PullRequestPlan, *, github_token: str | None) -> s
             f"Files root: {plan.files_root}"
         )
 
-    # v0.1 intentionally stops at planning; GitHub App/OIDC integration lands in v0.1.x.
+    # v1.0 intentionally stops at planning; GitHub App/OIDC integration lands in v1.1+.
     return (
-        "GitHub PR creation is not yet wired in v0.1. "
+        "GitHub PR creation is not yet wired in v1.0. "
         "Rendered files and gate results are available locally.\n"
         f"Planned branch: {plan.branch}\n"
         f"Planned title: {plan.title}"

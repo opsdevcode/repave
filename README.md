@@ -13,9 +13,9 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v0.1 (pre-release).** The generation loop runs locally with no
-> Kubernetes required. The self-healing reconciliation operator is planned for
-> v0.2 (see [`operator/`](operator/)).
+> Status: **v1.0.0.** The generation loop runs locally with no Kubernetes
+> required. The self-healing reconciliation operator is planned for v1.1 (see
+> [`operator/`](operator/)).
 
 ## Why repave
 
@@ -76,18 +76,19 @@ engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
 examples/      # generic sample standards (bring-your-own-standards model)
 deploy/local/  # docker compose + kind quickstart
-operator/      # v0.2 placeholder: self-healing reconciliation (Operator SDK)
+operator/      # v1.1 placeholder: self-healing reconciliation (Operator SDK)
 docs/          # concept docs
 ```
 
 ## Roadmap
 
-- **v0.1** — engine + `terraform-module-generic` golden path + gates + local run.
-- **v0.2** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
+- **v1.0** (current) — engine + `terraform-module-generic` golden path + gates +
+  local run + CI, release automation, and test coverage.
+- **v1.1** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
   detects drift and standard-version bumps and opens remediation PRs across the
   generated estate (the "self-healing" headline).
-- **v0.3+** — more golden paths (Ansible role, cloud resource modules), portal
-  hardening, richer observability/SLOs.
+- **v1.2+** — more golden paths (Ansible role, cloud resource modules), portal
+  hardening, richer observability/SLOs, and wired GitHub PR creation.
 
 ## Releases
 

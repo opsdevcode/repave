@@ -1,8 +1,8 @@
 # Contributing to repave
 
-Thanks for your interest in `repave`. This project is in early development
-(v0.1), so the most valuable contributions right now are feedback on the core
-contracts and the generation loop.
+Thanks for your interest in `repave`. **v1.0** established the core generation
+loop; the most valuable contributions now are feedback on contracts, golden
+paths, and the operator design for v1.1.
 
 ## Ground rules
 
