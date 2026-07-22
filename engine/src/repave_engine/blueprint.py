@@ -1,10 +1,9 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
-
-import json
+from typing import Any, cast
 
 import jsonschema
 import yaml
@@ -41,7 +40,7 @@ class Blueprint:
 
 def load_schema(repo_root: Path) -> dict[str, Any]:
     schema_path = repo_root / "schemas" / "blueprint.schema.json"
-    return json.loads(schema_path.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
 
 
 def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Blueprint:

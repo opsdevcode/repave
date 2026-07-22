@@ -36,6 +36,8 @@
 <!-- How was this verified? -->
 
 - [ ] `cd engine && pytest`
+- [ ] `make quality` (ruff + mypy)
+- [ ] `make security` (bandit + pip-audit)
 - [ ] `make generate` (or local form flow) verified
 - [ ] gates still enforced (no bypass path added)
 - [ ] not run (explain why)

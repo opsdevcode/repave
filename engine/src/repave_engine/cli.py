@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
-from repave_engine.blueprint import _find_repo_root, list_blueprints, load_blueprint
+from repave_engine.blueprint import _find_repo_root, list_blueprints
 from repave_engine.pipeline import generate_from_path
 
 
@@ -128,7 +129,8 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError:
         pass
 
-    return args.func(args)
+    handler = cast(Callable[[argparse.Namespace], int], args.func)
+    return handler(args)
 
 
 if __name__ == "__main__":

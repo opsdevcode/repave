@@ -6,7 +6,6 @@ import pytest
 
 from repave_engine.blueprint import load_blueprint, validate_inputs
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 

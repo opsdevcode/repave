@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -44,10 +45,7 @@ def create_app(*, repo_root: Path) -> FastAPI:
         blueprint_name = str(form.get("blueprint_name", ""))
         dry_run = str(form.get("dry_run", "true")).lower() != "false"
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        values = {
-            field.name: str(form.get(field.name, ""))
-            for field in blueprint.inputs
-        }
+        values = {field.name: str(form.get(field.name, "")) for field in blueprint.inputs}
 
         result = generate_from_blueprint(
             blueprint,

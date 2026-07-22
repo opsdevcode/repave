@@ -1,4 +1,4 @@
-.PHONY: install test serve compose-up compose-down list generate
+.PHONY: install test lint format typecheck security quality serve compose-up compose-down list generate
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
@@ -7,6 +7,21 @@ install:
 
 test:
 	cd engine && pytest
+
+lint:
+	cd engine && ruff check src tests
+
+format:
+	cd engine && ruff format src tests
+
+typecheck:
+	cd engine && mypy src
+
+security:
+	cd engine && bandit -r src -c pyproject.toml && pip-audit
+
+quality: lint typecheck
+	@cd engine && ruff format --check src tests
 
 serve:
 	cd engine && repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8080
