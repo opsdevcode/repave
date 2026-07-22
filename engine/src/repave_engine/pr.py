@@ -26,8 +26,7 @@ def plan_pull_request(
 ) -> PullRequestPlan:
     branch = "main"
     title = (
-        f"Bootstrap Terraform module {module_name} "
-        f"(repave {blueprint_name}@{blueprint_version})"
+        f"Bootstrap Terraform module {module_name} (repave {blueprint_name}@{blueprint_version})"
     )
     body = (
         "## Summary\n"

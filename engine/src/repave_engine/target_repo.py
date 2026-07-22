@@ -72,21 +72,32 @@ def _copy_tree_contents(source_dir: Path, destination_dir: Path) -> None:
             shutil.copy2(item, target)
 
 
+def _git_executable() -> str:
+    git = shutil.which("git")
+    if git is None:
+        raise RuntimeError("git is required to bootstrap module repositories")
+    return git
+
+
+def _run_git(args: list[str], *, cwd: Path) -> None:
+    subprocess.run(
+        [_git_executable(), *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
 def _ensure_git_repository(repo_dir: Path, *, module_name: str) -> None:
     if (repo_dir / ".git").exists():
         return
 
-    subprocess.run(["git", "init"], cwd=repo_dir, check=True, capture_output=True, text=True)
-    subprocess.run(["git", "add", "."], cwd=repo_dir, check=True, capture_output=True, text=True)
-    subprocess.run(
-        [
-            "git",
-            "commit",
-            "-m",
-            f"chore: bootstrap {module_name} from repave",
-        ],
+    _run_git(["init"], cwd=repo_dir)
+    _run_git(["config", "user.email", "repave@local.dev"], cwd=repo_dir)
+    _run_git(["config", "user.name", "repave"], cwd=repo_dir)
+    _run_git(["add", "."], cwd=repo_dir)
+    _run_git(
+        ["commit", "-m", f"chore: bootstrap {module_name} from repave"],
         cwd=repo_dir,
-        check=True,
-        capture_output=True,
-        text=True,
     )

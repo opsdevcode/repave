@@ -26,22 +26,12 @@ def load_output_config(
     output = file_data.get("output", {}) if isinstance(file_data, dict) else {}
 
     resolved_org = (
-        github_org
-        or os.environ.get("REPAVE_GITHUB_ORG")
-        or output.get("github_org")
-        or ""
+        github_org or os.environ.get("REPAVE_GITHUB_ORG") or output.get("github_org") or ""
     )
     modules_root_value = (
-        modules_root
-        or os.environ.get("REPAVE_MODULES_ROOT")
-        or output.get("modules_root")
-        or ""
+        modules_root or os.environ.get("REPAVE_MODULES_ROOT") or output.get("modules_root") or ""
     )
-    resolved_template = (
-        repo_name_template
-        or output.get("repo_name_template")
-        or "tf-{module_name}"
-    )
+    resolved_template = repo_name_template or output.get("repo_name_template") or "tf-{module_name}"
 
     if not resolved_org:
         raise ValueError(
