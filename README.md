@@ -101,6 +101,14 @@ Versioning and GitHub releases are automated from
 
 Merging the release PR creates the GitHub release and tag (for example `v0.1.0`).
 
+### GitHub Actions permissions (required for automated release PRs)
+
+In the repository settings, enable:
+
+**Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**
+
+Without this, Release Please can update the release branch but cannot open the release PR automatically. You would need to open/merge that PR manually (as was done for `v0.1.0`).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message format.
 
 ## License
