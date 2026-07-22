@@ -1,0 +1,39 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install engine and semantic-release
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./engine[dev]" "python-semantic-release~=10.0"
+
+      - name: Run tests
+        run: pytest
+        working-directory: engine
+
+      - name: Create GitHub release on conventional commits
+        working-directory: engine
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release version

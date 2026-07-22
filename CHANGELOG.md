@@ -1,7 +1,6 @@
 # Changelog
 
-All notable changes to this project are documented in this file.
-
-Release versioning and entries are managed by
-[release-please](https://github.com/googleapis/release-please) from
+Package changelog entries are maintained in
+[`engine/CHANGELOG.md`](engine/CHANGELOG.md) by
+[python-semantic-release](https://python-semantic-release.readthedocs.io/) from
 [Conventional Commits](https://www.conventionalcommits.org/) on `main`.

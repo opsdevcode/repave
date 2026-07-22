@@ -49,7 +49,8 @@ Configuration lives in `engine/pyproject.toml`.
 ## Commit messages (Conventional Commits)
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/)
-for automated releases via [release-please](https://github.com/googleapis/release-please).
+for automated releases via
+[python-semantic-release](https://python-semantic-release.readthedocs.io/).
 
 Format:
 

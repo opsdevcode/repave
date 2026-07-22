@@ -93,21 +93,15 @@ docs/          # concept docs
 
 Versioning and GitHub releases are automated from
 [Conventional Commits](https://www.conventionalcommits.org/) on `main` using
-[release-please](https://github.com/googleapis/release-please).
+[python-semantic-release](https://python-semantic-release.readthedocs.io/).
 
-- Merge conventional commits to `main`.
-- Release Please opens/updates a release PR with version and changelog updates.
-- Merging that release PR creates the GitHub release and tag.
+- Merge a PR to `main` with a conventional commit title (`feat:`, `fix:`, etc.).
+- CI runs tests; the release workflow then bumps the version, updates the
+  changelog, tags, and publishes a GitHub Release with wheel artifacts.
+- `docs`, `chore`, and `ci` commits do not trigger a release unless they
+  include breaking changes.
 
-Merging the release PR creates the GitHub release and tag (for example `v0.1.0`).
-
-### GitHub Actions permissions (required for automated release PRs)
-
-In the repository settings, enable:
-
-**Settings → Actions → General → Workflow permissions → Allow GitHub Actions to create and approve pull requests**
-
-Without this, Release Please can update the release branch but cannot open the release PR automatically. You would need to open/merge that PR manually (as was done for `v0.1.0`).
+No separate release PR is required.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message format.
 
