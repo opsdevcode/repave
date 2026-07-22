@@ -1,0 +1,17 @@
+variable "module_name" {
+  type        = string
+  description = "Name of this module instance."
+  default     = "{{ module_name }}"
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment (for example dev, stage, prod)."
+  default     = "dev"
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Resource tags applied by the module."
+  default     = {}
+}

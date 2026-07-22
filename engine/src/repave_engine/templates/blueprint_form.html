@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ blueprint.name }} — repave</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+      label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
+      input[type=text] { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+      button { margin-top: 1rem; padding: 0.6rem 1rem; }
+      .muted { color: #555; }
+      .meta { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/">← Back</a></p>
+    <h1>{{ blueprint.name }}</h1>
+    <p class="muted">Blueprint v{{ blueprint.version }}</p>
+
+    <div class="meta">
+      <div><strong>Standard:</strong> {{ blueprint.standard_source }} @ {{ blueprint.standard_version }}</div>
+      <div><strong>Gates:</strong> {{ blueprint.gates | join(', ') }}</div>
+    </div>
+
+    <form method="post" action="/generate">
+      <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
+      <input type="hidden" name="dry_run" value="true" />
+
+      {% for field in blueprint.inputs %}
+      <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
+      {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
+      <input
+        id="{{ field.name }}"
+        name="{{ field.name }}"
+        type="text"
+        {% if field.required %}required{% endif %}
+        {% if field.default is not none %}value="{{ field.default }}"{% endif %}
+      />
+      {% endfor %}
+
+      <button type="submit">Generate (dry-run)</button>
+    </form>
+  </body>
+</html>

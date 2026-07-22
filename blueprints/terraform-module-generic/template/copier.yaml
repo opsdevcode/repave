@@ -1,0 +1,13 @@
+# Copier template metadata for terraform-module-generic
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+module_name:
+  type: str
+  help: Name of the Terraform module
+
+description:
+  type: str
+  help: Short module description

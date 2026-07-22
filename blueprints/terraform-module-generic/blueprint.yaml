@@ -1,0 +1,31 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: terraform-module-generic
+  version: 0.1.0
+  description: Generic Terraform module scaffold with tests and CI wiring.
+spec:
+  standard:
+    source: examples/standards
+    version: 0.1.0
+  inputs:
+    - name: module_name
+      type: string
+      required: true
+      description: Name of the Terraform module (e.g. networking-vnet).
+    - name: description
+      type: string
+      required: true
+      description: Short description of what the module does.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - terraform-fmt
+    - terraform-validate
+    - tflint
+    - checkov
+    - docs-drift
+  output:
+    type: pull_request
+    target: repo

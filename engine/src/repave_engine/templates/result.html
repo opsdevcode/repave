@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Result — repave</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+      .pass { color: #0a7a2f; }
+      .fail { color: #b00020; }
+      .skip { color: #666; }
+      pre { background: #f7f7f7; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+      li { margin: 0.35rem 0; }
+    </style>
+  </head>
+  <body>
+    <p><a href="/">← Back</a></p>
+    <h1>Generation result</h1>
+
+    <p><strong>Blueprint:</strong> {{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
+    <p><strong>Output:</strong> <code>{{ result.render.output_dir }}</code></p>
+
+    <h2>Gates</h2>
+    <ul>
+      {% for gate in result.gates %}
+      <li class="{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}">
+        [{% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}] {{ gate.name }} — {{ gate.message }}
+      </li>
+      {% endfor %}
+    </ul>
+
+    <h2>Pull request</h2>
+    <pre>{{ result.pr_message }}</pre>
+  </body>
+</html>

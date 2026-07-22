@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repave.dev/schemas/inputs.schema.json",
+  "title": "Repave Generation Inputs",
+  "description": "Runtime input payload submitted against a blueprint's declared input fields.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "blueprint": {
+      "type": "string",
+      "description": "Blueprint name or path."
+    },
+    "values": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "dry_run": {
+      "type": "boolean",
+      "default": true
+    }
+  }
+}

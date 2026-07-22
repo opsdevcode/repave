@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repave.dev/schemas/blueprint.schema.json",
+  "title": "Repave Blueprint",
+  "description": "Declares a versioned golden path: inputs, standard reference, template, gates, and output contract.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "repave.dev/v1alpha1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "Blueprint"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["standard", "inputs", "template", "gates", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "standard": {
+          "type": "object",
+          "required": ["source", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "type": "string",
+              "description": "Path or URI to the authoritative standards source."
+            },
+            "version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$"
+            }
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/inputField"
+          }
+        },
+        "template": {
+          "type": "object",
+          "required": ["engine", "path"],
+          "additionalProperties": false,
+          "properties": {
+            "engine": {
+              "type": "string",
+              "enum": ["copier"]
+            },
+            "path": {
+              "type": "string"
+            }
+          }
+        },
+        "gates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": [
+              "terraform-fmt",
+              "terraform-validate",
+              "tflint",
+              "checkov",
+              "docs-drift"
+            ]
+          }
+        },
+        "output": {
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["pull_request", "directory"]
+            },
+            "target": {
+              "type": "string",
+              "enum": ["repo", "stdout"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "inputField": {
+      "type": "object",
+      "required": ["name", "type", "required"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["string", "boolean", "integer"]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {}
+      }
+    }
+  }
+}

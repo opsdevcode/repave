@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>repave</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { margin-bottom: 0.25rem; }
+      .muted { color: #555; }
+      ul { padding-left: 1.2rem; }
+      a { color: #0b5fff; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 1rem 0; }
+    </style>
+  </head>
+  <body>
+    <h1>repave</h1>
+    <p class="muted">Governed, repeatable platform engineering — for many, not just the few.</p>
+
+    <div class="card">
+      <h2>Golden paths</h2>
+      {% if blueprints %}
+      <ul>
+        {% for bp in blueprints %}
+        <li>
+          <a href="/blueprints/{{ bp.name }}">{{ bp.name }}</a>
+          <span class="muted">v{{ bp.version }}</span>
+          {% if bp.description %} — {{ bp.description }}{% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p>No blueprints found under <code>blueprints/</code>.</p>
+      {% endif %}
+    </div>
+  </body>
+</html>

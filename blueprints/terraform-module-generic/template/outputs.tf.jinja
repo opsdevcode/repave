@@ -1,0 +1,14 @@
+output "module_name" {
+  description = "Module name."
+  value       = var.module_name
+}
+
+output "environment" {
+  description = "Configured environment."
+  value       = var.environment
+}
+
+output "resource_ids" {
+  description = "IDs of resources managed by this module."
+  value       = [null_resource.example.id]
+}

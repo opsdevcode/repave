@@ -1,0 +1,18 @@
+terraform {
+  required_version = ">= 1.8.0, < 2.0.0"
+
+  required_providers {
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
+  }
+}
+
+resource "null_resource" "example" {
+  triggers = {
+    module_name = var.module_name
+    environment = var.environment
+    tags        = jsonencode(var.tags)
+  }
+}
