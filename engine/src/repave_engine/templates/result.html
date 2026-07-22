@@ -18,7 +18,12 @@
     <h1>Generation result</h1>
 
     <p><strong>Blueprint:</strong> {{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
-    <p><strong>Output:</strong> <code>{{ result.render.output_dir }}</code></p>
+    {% if result.module_repository %}
+    <p><strong>Module repository:</strong> <code>{{ result.module_repository.web_url }}</code></p>
+    <p><strong>Local path:</strong> <code>{{ result.module_repository.local_path }}</code></p>
+    {% else %}
+    <p><strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code></p>
+    {% endif %}
 
     <h2>Gates</h2>
     <ul>
@@ -29,7 +34,7 @@
       {% endfor %}
     </ul>
 
-    <h2>Pull request</h2>
+    <h2>Module repository</h2>
     <pre>{{ result.pr_message }}</pre>
   </body>
 </html>

@@ -1,0 +1,9 @@
+# Copy to repave.config.yaml and adjust for your environment.
+#
+# Generated Terraform modules are written to their own git repositories under
+# modules_root — never inside the repave platform repository.
+
+output:
+  github_org: your-github-org
+  modules_root: ../repave-modules
+  repo_name_template: "tf-{module_name}"

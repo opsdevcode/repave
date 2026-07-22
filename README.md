@@ -34,29 +34,56 @@ repeatable, and automated.
 ## How it works
 
 ```text
-Web form (inputs)  ->  Engine: render (Copier)  ->  Gates  ->  Governed PR
+Web form (inputs)  ->  Engine: render (Copier)  ->  Gates  ->  Module repository
                         \_ blueprint.yaml (input schema, standard ref, gate list) _/
 ```
+
+Each generated module is written to **its own git repository** outside the
+repave platform repo — never into `.repave-out/` inside repave.
 
 1. A **blueprint** (`blueprints/<name>/blueprint.yaml`) declares its input
    schema, the standard version it encodes, its Copier template, and the gate
    list it must pass.
 2. The **engine** validates inputs, renders the template deterministically, runs
-   the gates, and (optionally) opens a governed pull request.
+   the gates, and materializes the module in its own repository.
 3. The **portal/API** turns the blueprint's input schema into a form so
    non-experts can drive it without a command line.
+
+## Module repositories
+
+Generated modules never live inside the repave repo. Configure a separate output
+root and GitHub organization:
+
+```bash
+cp repave.config.yaml.example repave.config.yaml
+# edit output.github_org and output.modules_root
+```
+
+Or use environment variables:
+
+```bash
+export REPAVE_GITHUB_ORG=your-org
+export REPAVE_MODULES_ROOT=$HOME/repave-modules
+```
+
+Each module becomes `$(modules_root)/tf-<module_name>/` — an independent git
+repository planned for `https://github.com/<org>/tf-<module_name>`.
 
 ## Quickstart (local, no Kubernetes)
 
 ```bash
 cd deploy/local
 docker compose up --build
-# open http://localhost:8080
+# open http://localhost:8088
 ```
 
+Docker Compose mounts a `repave-modules` volume at `/modules` and sets
+`REPAVE_MODULES_ROOT` so generated modules land outside the repave repo.
+
 Fill the form for the bundled `terraform-module-generic` blueprint and submit.
-In dry-run mode (default) you'll see the rendered files and gate results. Provide
-a GitHub token to enable the governed-PR output.
+In dry-run mode (default) you'll see gate results and the planned module
+repository. Turn off dry-run to bootstrap a local git repo under your modules
+root.
 
 CLI equivalent (for development/CI, not the primary UX):
 

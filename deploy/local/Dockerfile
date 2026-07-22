@@ -11,6 +11,6 @@ COPY blueprints /app/blueprints
 COPY examples /app/examples
 COPY README.md /app/README.md
 
-EXPOSE 8080
+EXPOSE 8088
 
-CMD ["repave", "serve", "--repo-root", "/app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["repave", "serve", "--repo-root", "/app", "--host", "0.0.0.0", "--port", "8088"]

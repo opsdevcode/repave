@@ -58,5 +58,5 @@ def make_blueprint(
         template_path=template_rel,
         gates=gates,
         output_type="pull_request",
-        output_target="repo",
+        output_repo_name_template="tf-{module_name}",
     )

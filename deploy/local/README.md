@@ -7,7 +7,7 @@ cd deploy/local
 docker compose up --build
 ```
 
-Open http://localhost:8080
+Open http://localhost:8088
 
 ## Native Python (development)
 

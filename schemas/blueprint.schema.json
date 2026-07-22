@@ -90,16 +90,23 @@
         },
         "output": {
           "type": "object",
-          "required": ["type"],
+          "required": ["type", "repository"],
           "additionalProperties": false,
           "properties": {
             "type": {
               "type": "string",
               "enum": ["pull_request", "directory"]
             },
-            "target": {
-              "type": "string",
-              "enum": ["repo", "stdout"]
+            "repository": {
+              "type": "object",
+              "required": ["name_template"],
+              "additionalProperties": false,
+              "properties": {
+                "name_template": {
+                  "type": "string",
+                  "description": "GitHub repository name template. Supports {module_name}."
+                }
+              }
             }
           }
         }

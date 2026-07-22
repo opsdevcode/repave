@@ -9,15 +9,15 @@ from fastapi.templating import Jinja2Templates
 from repave_engine import __version__
 from repave_engine.blueprint import list_blueprints, load_blueprint
 from repave_engine.pipeline import generate_from_blueprint
+from repave_engine.settings import OutputConfig, load_output_config
 
 
-def create_app(*, repo_root: Path) -> FastAPI:
+def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
     templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
     templates.env.cache = None
+    resolved_output = output_config or load_output_config(repo_root)
 
     app = FastAPI(title="repave", version=__version__)
-    output_root = repo_root / ".repave-out"
-    output_root.mkdir(parents=True, exist_ok=True)
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
@@ -48,7 +48,7 @@ def create_app(*, repo_root: Path) -> FastAPI:
         result = generate_from_blueprint(
             blueprint,
             values,
-            output_root=output_root,
+            output_config=resolved_output,
             dry_run=dry_run,
         )
 

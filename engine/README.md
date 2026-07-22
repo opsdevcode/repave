@@ -28,10 +28,17 @@ make security  # bandit + pip-audit
 make test
 ```
 
+Set module output location before serving or generating:
+
+```bash
+export REPAVE_GITHUB_ORG=your-org
+export REPAVE_MODULES_ROOT=$HOME/repave-modules
+```
+
 ## API (local portal backend)
 
 ```bash
-repave serve --repo-root .. --host 0.0.0.0 --port 8080
+repave serve --repo-root .. --host 0.0.0.0 --port 8088
 ```
 
-Open http://localhost:8080 for the bundled web form.
+Open http://localhost:8088 for the bundled web form.

@@ -14,6 +14,7 @@ venv/
 
 # Rendered output / scratch
 .repave-out/
+repave.config.yaml
 dist/
 *.tmp
 

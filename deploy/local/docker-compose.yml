@@ -4,8 +4,25 @@ services:
       context: ../..
       dockerfile: deploy/local/Dockerfile
     ports:
-      - "8080:8080"
+      - "8088:8088"
+    environment:
+      REPAVE_GITHUB_ORG: opsdevcode
+      REPAVE_MODULES_ROOT: /modules
     volumes:
       - ../..:/app
+      - repave-modules:/modules
     working_dir: /app
-    command: ["repave", "serve", "--repo-root", "/app", "--host", "0.0.0.0", "--port", "8080"]
+    command:
+      [
+        "repave",
+        "serve",
+        "--repo-root",
+        "/app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8088",
+      ]
+
+volumes:
+  repave-modules:
