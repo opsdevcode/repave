@@ -22,7 +22,7 @@ Standards are authoritative in one git home and rendered read-only in multiple
 surfaces (portal docs, enterprise doc pipelines, etc.). Blueprints pin the
 standard version they encode.
 
-## Self-healing (v0.2)
+## Self-healing (v1.1)
 
 An Operator SDK reconciler will detect drift and standard-version bumps across
 the generated estate and open remediation PRs automatically.

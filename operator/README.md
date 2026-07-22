@@ -1,6 +1,6 @@
-# repave operator (v0.2)
+# repave operator (v1.1)
 
-The reconciliation operator is planned for **v0.2**.
+The reconciliation operator is planned for **v1.1**.
 
 It will watch generated repositories and reconcile them against pinned blueprint
 and standard versions, opening governed remediation/upgrade pull requests when:
@@ -18,9 +18,9 @@ and standard versions, opening governed remediation/upgrade pull requests when:
 Operator SDK (Go core reconciler), with the door open for Ansible/Helm-based
 operator flavors so more contributors can participate.
 
-## v0.1 focus
+## v1.0 baseline
 
-v0.1 proves the generation loop locally:
+v1.0 proves the generation loop locally:
 
 form → deterministic render → gates → governed PR plan
 
