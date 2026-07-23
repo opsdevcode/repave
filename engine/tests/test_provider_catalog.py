@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
-from repave_engine.provider_catalog import normalize_provider_service_scope
+from repave_engine.provider_catalog import load_provider_catalog, normalize_provider_service_scope
 
 SAMPLE_CATALOG = {
     "aws": {
@@ -76,4 +77,47 @@ def test_normalize_rejects_invalid_mode() -> None:
             provider="aws",
             services=["s3"],
             scope_raw={"s3": {"mode": "full"}},
+        )
+
+
+def test_load_provider_catalog_returns_empty_when_missing(tmp_path: Path) -> None:
+    assert load_provider_catalog(tmp_path) == {}
+
+
+def test_normalize_rejects_invalid_json_scope() -> None:
+    with pytest.raises(ValueError, match="valid JSON"):
+        normalize_provider_service_scope(
+            SAMPLE_CATALOG,
+            provider="aws",
+            services=["s3"],
+            scope_raw="not json",
+        )
+
+
+def test_normalize_rejects_basic_without_basic_resources() -> None:
+    catalog = {
+        "aws": {
+            "s3": {
+                "resources": ["bucket"],
+                "basic": [],
+            }
+        }
+    }
+
+    with pytest.raises(ValueError, match="No basic resources defined"):
+        normalize_provider_service_scope(
+            catalog,
+            provider="aws",
+            services=["s3"],
+            scope_raw="",
+        )
+
+
+def test_normalize_rejects_invalid_additional_resources_in_basic_mode() -> None:
+    with pytest.raises(ValueError, match="Invalid additional resources"):
+        normalize_provider_service_scope(
+            SAMPLE_CATALOG,
+            provider="aws",
+            services=["s3"],
+            scope_raw={"s3": {"mode": "basic", "additional_resources": ["not_real"]}},
         )

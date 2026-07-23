@@ -150,3 +150,24 @@ def test_collect_rendered_files_excludes_gate_artifacts(tmp_path: Path) -> None:
     paths = {item.path for item in collect_rendered_files(output_dir)}
 
     assert paths == {"main.tf"}
+
+
+def test_build_scoped_resources_rejects_non_object_scope() -> None:
+    with pytest.raises(ValueError, match="decode to a JSON object"):
+        build_scoped_resources("[]")
+
+
+def test_copy_checkov_policies_raises_when_pack_missing(
+    terraform_blueprint,
+    sample_inputs,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from repave_engine.blueprint import validate_inputs
+
+    values = validate_inputs(terraform_blueprint, sample_inputs)
+    output_dir = tmp_path / "module"
+    monkeypatch.setattr("repave_engine.render._find_repo_root", lambda _: tmp_path)
+
+    with pytest.raises(FileNotFoundError, match="Checkov policy pack not found"):
+        render_blueprint(terraform_blueprint, values, output_dir)

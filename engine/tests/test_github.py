@@ -112,3 +112,35 @@ def test_github_request_raises_github_error_on_http_failure() -> None:
         ),
     ):
         _github_request("POST", "/orgs/example/repos", "ghp_test", {"name": "demo"})
+
+
+def test_ensure_github_repository_treats_422_as_exists(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+
+    with (
+        patch("repave_engine.github._repository_exists", return_value=False),
+        patch(
+            "repave_engine.github._create_org_repository",
+            side_effect=GitHubError(422, "name already exists on this account"),
+        ),
+    ):
+        action = ensure_github_repository(repository, "ghp_test")
+
+    assert action == "exists"
+
+
+def test_push_module_repository_updates_existing_origin(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    repository.local_path.mkdir(parents=True)
+
+    with (
+        patch("repave_engine.github._git_executable", return_value="git"),
+        patch(
+            "repave_engine.github.subprocess.run",
+        ) as run,
+        patch("repave_engine.github._run_git") as run_git,
+    ):
+        run.return_value = MagicMock(stdout="origin\n")
+        push_module_repository(repository, "ghp_test")
+
+    assert run_git.call_args_list[0].args[0][:2] == ["remote", "set-url"]

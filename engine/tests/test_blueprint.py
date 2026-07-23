@@ -175,3 +175,61 @@ def test_list_blueprints_empty_dir(tmp_path: Path) -> None:
 def test_load_blueprint_missing_file(tmp_path: Path, repo_root: Path) -> None:
     with pytest.raises(FileNotFoundError, match="Blueprint not found"):
         load_blueprint(tmp_path / "missing" / "blueprint.yaml", repo_root)
+
+
+def test_validate_rejects_invalid_enum_value(tmp_path: Path) -> None:
+    blueprint = make_blueprint(
+        tmp_path,
+        inputs=(
+            InputField("module_name", "string", True, "Module name"),
+            InputField(
+                "environment",
+                "string",
+                True,
+                "Environment",
+                enum=("dev", "prod"),
+            ),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Invalid value for environment"):
+        validate_inputs(blueprint, {"module_name": "example", "environment": "staging"})
+
+
+def test_validate_rejects_empty_provider_services(terraform_blueprint) -> None:
+    with pytest.raises(ValueError, match="at least one service"):
+        validate_inputs(
+            terraform_blueprint,
+            {
+                "module_name": "example",
+                "description": "Example module",
+                "cloud_provider": "aws",
+                "provider_services": "  , ",
+            },
+        )
+
+
+def test_load_blueprint_rejects_invalid_schema(tmp_path: Path, repo_root: Path) -> None:
+    import jsonschema
+
+    blueprint_dir = tmp_path / "invalid-blueprint"
+    blueprint_dir.mkdir()
+    (blueprint_dir / "blueprint.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1alpha1",
+                "kind: Blueprint",
+                "metadata:",
+                "  name: invalid",
+                "  version: 0.0.1",
+                "spec:",
+                "  standard:",
+                "    source: examples/standards",
+                "    version: 0.4.0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(jsonschema.ValidationError):
+        load_blueprint(blueprint_dir, repo_root)

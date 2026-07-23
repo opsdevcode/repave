@@ -12,7 +12,7 @@ lock:
 	cd engine && uv lock
 
 test:
-	cd engine && uv run pytest
+	cd engine && uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
 
 lint:
 	cd engine && uv run ruff check src tests

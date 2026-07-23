@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from repave_engine.blueprint import CheckovGateConfig
 from repave_engine.gates import (
     GateResult,
+    _gate_terraform_fmt,
     all_gates_passed,
     build_checkov_command,
     clean_gate_artifacts,
     is_gate_artifact_path,
     run_gates,
 )
+from repave_engine.settings import GateOverrides
 
 
 def test_docs_drift_passes_with_rendered_readme(tmp_path: Path) -> None:
@@ -119,3 +122,45 @@ def test_build_checkov_command_uses_config_and_external_checks(tmp_path: Path) -
     assert cmd.count("--skip-check") == 2
     assert "CKV_AWS_1" in cmd
     assert "CKV_AWS_2" in cmd
+
+
+def test_build_checkov_command_adds_soft_fail(tmp_path: Path) -> None:
+    cmd = build_checkov_command(
+        tmp_path,
+        CheckovGateConfig(soft_fail=True),
+    )
+
+    assert "--soft-fail" in cmd
+
+
+def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gates._tool_available", lambda name: name == "checkov")
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(cmd, cwd):
+        captured["cmd"] = cmd
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("repave_engine.gates._run", fake_run)
+
+    run_gates(
+        tmp_path,
+        ("checkov",),
+        gate_overrides=GateOverrides(checkov_skip_checks=("CKV_X",)),
+    )
+
+    assert "CKV_X" in captured["cmd"]
+
+
+def test_terraform_fmt_failure(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gates._terraform_usable", lambda _dir: True)
+
+    def fake_run(cmd, cwd):
+        return MagicMock(returncode=1, stdout="", stderr="fmt failed")
+
+    monkeypatch.setattr("repave_engine.gates._run", fake_run)
+
+    result = _gate_terraform_fmt(tmp_path)
+
+    assert result.passed is False
+    assert "fmt failed" in result.message
