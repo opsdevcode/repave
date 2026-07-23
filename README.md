@@ -13,10 +13,11 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.2.0.** The generation loop runs locally with no Kubernetes
+> Status: **v1.8.0.** The generation loop runs locally with no Kubernetes
 > required. Generated modules publish to separate git repositories and can be
-> pushed to GitHub with `GITHUB_TOKEN`. The self-healing reconciliation operator
-> is planned for v1.3 (see [`operator/`](operator/)).
+> pushed to GitHub with `GITHUB_TOKEN`. Each scoped provider resource is
+> rendered to its own `.tf` file. The self-healing reconciliation operator is
+> planned next (see [`operator/`](operator/)).
 
 ## Why repave
 
@@ -111,7 +112,7 @@ engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
 examples/      # generic sample standards (bring-your-own-standards model)
 deploy/local/  # docker compose + kind quickstart
-operator/      # v1.3 placeholder: self-healing reconciliation (Operator SDK)
+operator/      # planned: self-healing reconciliation (Operator SDK)
 docs/          # concept docs
 ```
 
@@ -119,15 +120,22 @@ docs/          # concept docs
 
 - **v1.0** — engine + `terraform-module-generic` golden path + gates + local run +
   CI, release automation, and test coverage.
-- **v1.1** — separate module repositories, release automation, operator design.
-- **v1.2** (current) — cloud provider/service scope for Terraform modules, GitHub
-  remote publish (create repo + push initial commit), expanded tests.
-- **v1.3** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
+- **v1.1** — separate module repositories and release automation.
+- **v1.2** — cloud provider and service scope inputs for Terraform modules.
+- **v1.3** — GitHub remote publish (create repository + push initial commit).
+- **v1.4** — dry-run preview of generated files before publish.
+- **v1.5** — gate artifact cleanup in preview/publish; license input on the form
+  (later removed in v1.6).
+- **v1.6** — full Terraform provider catalogs (AWS/Azure/GCP), `uv` toolchain,
+  simplified blueprint form.
+- **v1.7** — per-service resource scope (basic capabilities, basic + additional,
+  or custom-only).
+- **v1.8** (current) — one `.tf` file per scoped provider resource; module
+  standard v0.2.0 (`locals.tf` + `{service}_{resource}.tf` layout).
+- **Next** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
   detects drift and standard-version bumps and opens remediation PRs across the
-  generated estate (the "self-healing" headline).
-- **v1.4+** — more golden paths (Ansible role, cloud resource modules), portal
-  hardening, richer observability/SLOs, and PR-based updates to existing module
-  repos.
+  generated estate; more golden paths (Ansible role, cloud resource modules);
+  portal hardening; PR-based updates to existing module repositories.
 
 ## Releases
 

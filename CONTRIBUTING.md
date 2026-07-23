@@ -1,8 +1,9 @@
 # Contributing to repave
 
-Thanks for your interest in `repave`. **v1.2** established provider-scoped Terraform
-module generation and GitHub remote publish; the most valuable contributions now
-are feedback on contracts, golden paths, and the operator design for v1.3.
+Thanks for your interest in `repave`. **v1.8** established per-resource Terraform
+module layout and expanded provider scope controls; the most valuable contributions
+now are feedback on contracts, golden paths, and the operator design for the next
+release.
 
 ## Ground rules
 
