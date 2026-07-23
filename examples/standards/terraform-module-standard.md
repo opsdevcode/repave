@@ -1,10 +1,10 @@
 # Generic Terraform Module Standard (sample)
 
-Version: 0.3.1
+Version: 0.4.0
 
-This is a **sample** standards document for the repave bring-your-own-standards
-model. In production, point blueprints at your authoritative standards source in
-git and pin the version they encode.
+This is the **built-in** Terraform module standard for repave. Blueprints pin
+this document by path (`examples/standards`) and version. In forked deployments,
+copy or extend this file in your repave repo and point blueprints at your path.
 
 It combines:
 
