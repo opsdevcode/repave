@@ -147,10 +147,9 @@ def _validate_provider_services(blueprint: Blueprint, normalized: dict[str, Any]
     allowed_services = set(catalog[provider])
     invalid = sorted({service for service in services if service not in allowed_services})
     if invalid:
-        allowed = ", ".join(sorted(allowed_services))
         raise ValueError(
             f"Invalid provider_services for {provider}: {', '.join(invalid)}. "
-            f"Allowed values: {allowed}"
+            f"Choose from the {len(allowed_services)} services in provider-catalog.json."
         )
 
     normalized["provider_services"] = ",".join(sorted(services))
@@ -170,23 +169,6 @@ def load_provider_catalog(blueprint: Blueprint) -> dict[str, list[str]]:
         if not isinstance(services, list) or not all(isinstance(item, str) for item in services):
             raise ValueError(f"Expected string list for provider {provider!r} in {catalog_path}")
         catalog[str(provider)] = services
-    return catalog
-
-
-def load_license_catalog(blueprint: Blueprint) -> dict[str, str]:
-    catalog_path = blueprint.path / "license-catalog.json"
-    if not catalog_path.exists():
-        return {}
-
-    data = json.loads(catalog_path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"Expected object in {catalog_path}")
-
-    catalog: dict[str, str] = {}
-    for value, label in data.items():
-        if not isinstance(label, str):
-            raise ValueError(f"Expected string label for license {value!r} in {catalog_path}")
-        catalog[str(value)] = label
     return catalog
 
 

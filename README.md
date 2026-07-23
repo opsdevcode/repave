@@ -99,7 +99,7 @@ repave generate \
   --input module_name=example \
   --input description="Example module" \
   --input cloud_provider=aws \
-  --input provider_services=s3,vpc \
+  --input provider_services=ec2,s3 \
   --no-dry-run
 ```
 

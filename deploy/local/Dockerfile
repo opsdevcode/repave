@@ -3,6 +3,8 @@ FROM python:3.12-slim
 ARG TERRAFORM_VERSION=1.9.8
 ARG TFLINT_VERSION=0.55.1
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
 # Gate toolchain: terraform, tflint, checkov (+ git for module repo bootstrap)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl unzip git \
@@ -18,15 +20,15 @@ RUN apt-get update \
       -o /tmp/tflint.zip \
     && unzip -q /tmp/tflint.zip -d /usr/local/bin \
     && rm /tmp/tflint.zip \
-    && pip install --no-cache-dir "checkov>=3.2.0" \
+    && uv pip install --system --no-cache "checkov>=3.2.0" \
     && git config --global user.email "repave@local.dev" \
     && git config --global user.name "repave"
 
 WORKDIR /app
 
-COPY engine/pyproject.toml /app/engine/pyproject.toml
+COPY engine/pyproject.toml engine/uv.lock /app/engine/
 COPY engine/src /app/engine/src
-RUN pip install --no-cache-dir /app/engine
+RUN uv pip install --system --no-cache /app/engine
 
 COPY schemas /app/schemas
 COPY blueprints /app/blueprints

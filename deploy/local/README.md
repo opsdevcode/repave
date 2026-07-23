@@ -23,7 +23,7 @@ The token needs permission to create repositories in `REPAVE_GITHUB_ORG`.
 
 ## Native Python (development)
 
-From repo root:
+Install [uv](https://docs.astral.sh/uv/), then from repo root:
 
 ```bash
 make install

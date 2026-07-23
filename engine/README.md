@@ -4,11 +4,13 @@ Core generation engine for [repave](../README.md).
 
 ## Install (development)
 
+Install [uv](https://docs.astral.sh/uv/), then:
+
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-pip install -e '.[dev]'
+uv sync --extra dev
 ```
+
+Or from repo root: `make install`
 
 ## CLI
 
@@ -20,7 +22,7 @@ repave generate \
   --input module_name=example \
   --input description="Example module" \
   --input cloud_provider=aws \
-  --input provider_services=s3,vpc \
+  --input provider_services=ec2,s3 \
   --dry-run
 ```
 
@@ -33,7 +35,7 @@ repave generate \
   --input module_name=example \
   --input description="Example module" \
   --input cloud_provider=aws \
-  --input provider_services=s3,vpc \
+  --input provider_services=ec2,s3 \
   --no-dry-run
 ```
 

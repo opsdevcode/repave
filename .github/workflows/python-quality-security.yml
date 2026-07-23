@@ -18,21 +18,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install engine and quality tools
-        run: pip install -e '.[dev]'
+        run: uv sync --extra dev --frozen
 
       - name: Ruff lint
-        run: ruff check src tests
+        run: uv run ruff check src tests
 
       - name: Ruff format
-        run: ruff format --check src tests
+        run: uv run ruff format --check src tests
 
       - name: mypy
-        run: mypy src
+        run: uv run mypy src
 
   security:
     name: Security (Bandit + pip-audit)
@@ -43,15 +47,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install engine and security tools
-        run: pip install -e '.[dev]'
+        run: uv sync --extra dev --frozen
 
       - name: Bandit (Python SAST)
-        run: bandit -r src -c pyproject.toml
+        run: uv run bandit -r src -c pyproject.toml
 
       - name: pip-audit (dependency vulnerabilities)
-        run: pip-audit
+        run: uv run pip-audit
