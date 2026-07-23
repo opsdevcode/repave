@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from repave_engine.blueprint import Blueprint, InputField
+from repave_engine.blueprint import Blueprint, CheckovPolicyPack, InputField
 
 
 def make_blueprint(
@@ -13,6 +13,9 @@ def make_blueprint(
     gates: tuple[str, ...] = ("docs-drift",),
     inputs: tuple[InputField, ...] | None = None,
     create_template: bool = True,
+    artifact_type: str = "terraform-module",
+    provenance_file: str | None = None,
+    checkov_policies: CheckovPolicyPack | None = None,
 ) -> Blueprint:
     bp_path = tmp_path / name
     template_rel = "template"
@@ -51,7 +54,7 @@ def make_blueprint(
         name=name,
         version="0.0.1",
         description="Test blueprint",
-        artifact_type="terraform-module",
+        artifact_type=artifact_type,
         standard_source="examples/standards",
         standard_version="0.1.0",
         inputs=inputs,
@@ -61,4 +64,6 @@ def make_blueprint(
         output_type="pull_request",
         output_repo_name_template="tf-{module_name}",
         output_title_template="Bootstrap {module_name}",
+        provenance_file=provenance_file,
+        checkov_policies=checkov_policies,
     )

@@ -44,6 +44,7 @@ spec:
     - checkov
     - secrets
     - docs-drift
+    - provenance-drift
   checkov:
     policies_source: examples/checkov/policies
     policy_version: 1.2.0
@@ -53,6 +54,8 @@ spec:
       config_file: .checkov.yml
   output:
     type: pull_request
+    provenance:
+      file: repave.yaml
     repository:
       name_template: "tf-{cloud_provider}-{module_name}"
       title_template: "Bootstrap {cloud_provider} module {module_name} ({provider_services})"
