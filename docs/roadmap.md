@@ -37,13 +37,14 @@ v1.10  today       generate + gates + publish + Checkov policy pack
   ├─ v1.25–v1.26    service + SSO     authenticated single-tenant service via OIDC
   ├─ v1.28–v1.33    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
   ├─ v1.34–v1.37    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
+  ├─ v1.38          policy-as-code    optional OPA/conftest gate on plan + manifests
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades
 ```
 
 | Theme | Releases | Outcome |
 | --- | --- | --- |
-| **Governance depth** | v1.11, v1.20 | Standards and Checkov enforce the module contract, not just document it |
+| **Governance depth** | v1.11, v1.20, v1.38 | Standards, Checkov, and opt-in OPA policy-as-code enforce the module contract, not just document it |
 | **Multi-artifact golden paths** | v1.12–v1.15, v1.32–v1.33 | Engine decoupled from Terraform; Ansible role, Helm chart, and app-service paths ship with standards + gates |
 | **Self-healing** | v1.16, v1.18, v1.23 | Drift detection and blueprint/standard upgrades via PR |
 | **Usability** | v1.17, v1.21 | Portal and CLI usable by non-experts; visible pinned versions |
@@ -718,6 +719,33 @@ top failure modes with concrete commands.
 
 ---
 
+### v1.38 — Policy-as-code gate (OPA/conftest)
+
+**Problem:** Governance today is Checkov static scanning of Terraform source files.
+Teams want custom policy-as-code (Rego) evaluated against Terraform **plan JSON**
+and rendered Helm/Kubernetes manifests — richer than static config scanning for
+cross-resource and plan-time rules — as an opt-in gate.
+
+**Approach:**
+
+- Add an `opa` (conftest) gate via the v1.12 gate registry, using the same
+  skip-if-not-installed pattern as the other tool gates
+- Terraform: evaluate against `terraform plan -json` (or a converted plan file);
+  Helm/k8s: evaluate against `helm template` output
+- Ship a starter Rego policy pack under `examples/opa/policies/` (parallel to
+  `examples/checkov/policies`), copied into generated repos at `policy/opa/`;
+  blueprint `gate_config.opa` (policies dir, namespaces, fail severity)
+- Unit-test policies with fixture plan JSON and manifests
+- Opt-in per blueprint (not a default gate); document how to add org Rego rules
+
+**Dependencies:** v1.12 gate registry; v1.13 artifact-type provenance (Helm plan/
+template); Checkov pack pattern (v1.10–v1.11).
+
+**Done when:** A blueprint declaring the `opa` gate fails generation when a Rego
+policy denies the plan/manifest, and skips cleanly when conftest/opa is absent.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
@@ -729,6 +757,7 @@ generator.
 | --- | --- |
 | Generate compliant module repos | v1.0–v1.10 (done) |
 | Enforce module standard via Checkov | v1.11, v1.20 |
+| Custom policy-as-code gate (OPA/conftest) | v1.38 |
 | Multiple artifact types (Terraform, Ansible, Helm, app service) | v1.12–v1.15, v1.19, v1.32–v1.33 |
 | Blueprint conformance in CI | v1.28 |
 | Self-heal drift and version bumps | v1.16, v1.18, v1.23 |
@@ -751,7 +780,8 @@ generator.
 
 - **Multi-tenant SaaS repave** — org isolation, per-tenant config/RBAC; the
   multi-tenant follow-on to the single-tenant SSO shipped in v1.25–v1.26
-- OPA/Sentinel plan-time policy as default gate
+- OPA/Sentinel as a *default/required* gate (v1.38 ships OPA opt-in; making it
+  mandatory estate-wide, and Sentinel support, stay post-v2)
 - Private blueprint registry over OCI
 
 **Done when:**
@@ -780,7 +810,6 @@ there is an owner and a target release.
   an alternative to in-app OIDC
 - **Standards diff in portal** — side-by-side standard/policy changes between
   blueprint versions before generate
-- **OPA/Sentinel gate** — optional policy gate on plan JSON after `terraform plan`
 - **Private blueprint registry** — pull blueprint packs from git tag or OCI artifact
   (beyond local fork paths in v1.27)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
