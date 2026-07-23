@@ -36,6 +36,7 @@ v1.10  today       generate + gates + publish + Checkov policy pack
   ├─ v1.20–v1.24    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.25–v1.26    service + SSO     authenticated single-tenant service via OIDC
   ├─ v1.28–v1.33    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
+  ├─ v1.34–v1.37    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades
 ```
@@ -50,6 +51,7 @@ v1.10  today       generate + gates + publish + Checkov policy pack
 | **Access and multi-user** | v1.25–v1.26 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.28 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.29–v1.31 | Metrics, audit log, notifications, and developer-portal catalog registration |
+| **In-cluster operations (Day-2)** | v1.34–v1.37 | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 
 ---
@@ -623,6 +625,99 @@ gates green.
 
 ---
 
+### v1.34 — Service health, resource management, and autoscaling
+
+**Problem:** The v1.24 deploy installs the API and portal but defines no health
+probes, resource guarantees, disruption budget, or autoscaling, so an ops team
+cannot run it reliably or plan capacity.
+
+**Approach:**
+
+- Liveness/readiness/startup probes: `/healthz` liveness; `/readyz` readiness that
+  checks config/token presence and downstream reachability
+- Resource requests/limits with documented sizing guidance
+- HorizontalPodAutoscaler on CPU/concurrency with a documented generation-concurrency
+  knob
+- PodDisruptionBudget and graceful shutdown (drain in-flight generations on SIGTERM,
+  bounded `terminationGracePeriodSeconds`)
+- Expose all of the above as configurable values in the v1.24 chart / Kustomize
+
+**Dependencies:** v1.24 Kubernetes deploy path; may add health endpoints to the API.
+
+**Done when:** Draining a node or scaling replicas drops no in-flight requests; the
+HPA scales under load; probes gate traffic correctly.
+
+---
+
+### v1.35 — Alerting rules, SLOs, and dashboards
+
+**Problem:** v1.29 emits metrics and traces, but ops teams have no alerts, SLOs, or
+dashboards to detect and triage problems.
+
+**Approach:**
+
+- Define SLOs (availability, generation success rate, p95 generation latency) with
+  error budgets
+- Ship `PrometheusRule` alert rules under `deploy/k8s/` (error-rate spike, gate-failure
+  spike, latency, HPA saturation, publish/GitHub failures, token near-expiry)
+- Ship a Grafana dashboard JSON (generation throughput, success/fail, per-stage timing
+  from v1.29, saturation)
+- Map alert severities to first-response runbook links (v1.37)
+
+**Dependencies:** v1.29 metrics + traces; v1.34 saturation signals.
+
+**Done when:** Alerts fire in a test cluster on induced failures, and the dashboard
+shows throughput, success rate, and per-stage latency.
+
+---
+
+### v1.36 — Zero-downtime upgrade and rollback
+
+**Problem:** There is no documented, safe upgrade/rollback path for the in-cluster
+service; upgrades risk dropping requests or breaking on config/schema changes.
+
+**Approach:**
+
+- Versioned Helm releases with a rolling-update strategy (`maxUnavailable`/`maxSurge`)
+  leveraging the v1.34 probes and PodDisruptionBudget
+- Backward-compatibility policy for API/schema/config within a minor, with migration
+  notes for breaking config changes
+- Forward-compatible handling and documented migration steps for the v1.29 audit
+  sink/inventory when it is backed by a database
+- `helm rollback` runbook with image digest pinning and a pre-upgrade smoke check
+  (reuse the v1.24 kind smoke test)
+- Optional canary via two releases / weighted routing (documented, not required)
+
+**Dependencies:** v1.24 Helm packaging; v1.34 probes/PDB; v1.29 audit sink schema.
+
+**Done when:** An upgrade and a rollback complete with no dropped requests in a test
+cluster, following the documented steps.
+
+---
+
+### v1.37 — Operations runbooks and troubleshooting
+
+**Problem:** Ops teams lack runbooks for common failures and routine day-to-day tasks.
+
+**Approach:**
+
+- On-call runbook under `docs/operations/` (service overview, dashboards/alerts,
+  escalation)
+- Failure playbooks: expired/invalid `GITHUB_TOKEN`, GitHub API rate limiting,
+  OIDC/IdP outage (v1.26), missing gate tool in the image, stuck/failed generation,
+  audit sink full, PVC/disk pressure
+- Routine ops: reading logs/traces/audit records, scaling, rotating secrets,
+  draining/cordoning, safe restart
+- Link each v1.35 alert to a runbook section
+
+**Dependencies:** v1.29 logs/traces/audit; v1.30 notifications; v1.35 alerts;
+v1.26 auth.
+
+**Done when:** Each shipped alert links to a runbook step, and the runbook covers the
+top failure modes with concrete commands.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
@@ -642,6 +737,7 @@ generator.
 | On-cluster deploy | v1.24 |
 | Authenticated single-tenant service (OIDC SSO) | v1.25–v1.26 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.29–v1.31 |
+| Day-2 operability (health, SLOs, upgrades, runbooks) | v1.34–v1.37 |
 
 **Breaking-change candidates (major bump):**
 
