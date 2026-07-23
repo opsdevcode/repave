@@ -203,3 +203,55 @@ def test_publish_refuses_existing_nonempty_repo(
             dry_run=False,
             staging_root=staging_root,
         )
+
+
+def test_generate_applies_gate_overrides_from_config(
+    tmp_path: Path,
+    terraform_blueprint,
+    sample_inputs,
+    output_config,
+    staging_root,
+    monkeypatch,
+) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "output:",
+                "  github_org: acme",
+                "  modules_root: ../modules",
+                "gates:",
+                "  checkov:",
+                "    skip_checks:",
+                "      - CKV_TEST",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    captured: dict[str, object] = {}
+
+    def fake_run_gates(
+        output_dir,
+        gate_names,
+        *,
+        blueprint=None,
+        gate_overrides=None,
+    ):
+        captured["gate_overrides"] = gate_overrides
+        from repave_engine.gates import GateResult
+
+        return [GateResult("docs-drift", True, False, "ok")]
+
+    monkeypatch.setattr("repave_engine.pipeline.run_gates", fake_run_gates)
+
+    generate_from_blueprint(
+        terraform_blueprint,
+        sample_inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=tmp_path,
+    )
+
+    overrides = captured["gate_overrides"]
+    assert overrides is not None
+    assert overrides.checkov_skip_checks == ("CKV_TEST",)

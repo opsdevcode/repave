@@ -133,3 +133,51 @@ def test_create_pull_request_reports_github_errors(tmp_path: Path) -> None:
 
     assert "GitHub publish failed" in message
     assert "403" in message
+
+
+def test_create_pull_request_existing_remote_repo_message(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    plan = plan_pull_request(
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.2.0",
+        standard_version="0.1.0",
+        title_template="Bootstrap {module_name}",
+        input_fields=("module_name", "description"),
+        files_root=repository.local_path,
+        repository=repository,
+        module_values=_module_values(),
+    )
+
+    with (
+        patch("repave_engine.pr.ensure_github_repository", return_value="exists"),
+        patch("repave_engine.pr.push_module_repository"),
+    ):
+        message = create_pull_request(plan, github_token="ghp_test")
+
+    assert "Pushed initial commit to existing GitHub repository" in message
+
+
+def test_create_pull_request_reports_push_runtime_error(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    plan = plan_pull_request(
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.2.0",
+        standard_version="0.1.0",
+        title_template="Bootstrap {module_name}",
+        input_fields=("module_name", "description"),
+        files_root=repository.local_path,
+        repository=repository,
+        module_values=_module_values(),
+    )
+
+    with (
+        patch("repave_engine.pr.ensure_github_repository", return_value="created"),
+        patch(
+            "repave_engine.pr.push_module_repository",
+            side_effect=RuntimeError("git failed"),
+        ),
+    ):
+        message = create_pull_request(plan, github_token="ghp_test")
+
+    assert "GitHub publish failed while pushing" in message
+    assert "git failed" in message

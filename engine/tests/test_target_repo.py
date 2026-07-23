@@ -3,7 +3,13 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from repave_engine.target_repo import ModuleRepository, publish_to_module_repository
+import pytest
+
+from repave_engine.target_repo import (
+    ModuleRepository,
+    _git_executable,
+    publish_to_module_repository,
+)
 
 
 def _repository(modules_root: Path) -> ModuleRepository:
@@ -66,3 +72,10 @@ def test_publish_skips_gate_artifacts(tmp_path: Path) -> None:
     assert (repository.local_path / "main.tf").exists()
     assert not (repository.local_path / ".terraform").exists()
     assert not (repository.local_path / ".terraform.lock.hcl").exists()
+
+
+def test_git_executable_raises_when_git_missing(monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.target_repo.shutil.which", lambda _name: None)
+
+    with pytest.raises(RuntimeError, match="git is required"):
+        _git_executable()

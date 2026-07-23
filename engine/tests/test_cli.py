@@ -5,7 +5,7 @@ import json
 
 import pytest
 
-from repave_engine.cli import _parse_inputs, build_parser, cmd_generate, cmd_list, main
+from repave_engine.cli import _parse_inputs, build_parser, cmd_generate, cmd_list, cmd_serve, main
 from repave_engine.gates import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
@@ -235,3 +235,39 @@ def test_main_accepts_repo_root_after_subcommand(repo_root, capsys) -> None:
 
     assert code == 0
     assert any(item["name"] == "terraform-module-generic" for item in output)
+
+
+def test_cmd_serve_builds_app_and_starts_uvicorn(
+    repo_root,
+    output_config,
+    monkeypatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_create_app(*, repo_root, output_config):
+        captured["repo_root"] = repo_root
+        captured["output_config"] = output_config
+        return "app"
+
+    def fake_uvicorn_run(app, *, host, port):
+        captured["app"] = app
+        captured["host"] = host
+        captured["port"] = port
+
+    monkeypatch.setattr("repave_engine.api.create_app", fake_create_app)
+    monkeypatch.setattr("uvicorn.run", fake_uvicorn_run)
+
+    args = argparse.Namespace(
+        repo_root=str(repo_root),
+        github_org=output_config.github_org,
+        modules_root=str(output_config.modules_root),
+        host="0.0.0.0",
+        port=9000,
+    )
+
+    code = cmd_serve(args)
+
+    assert code == 0
+    assert captured["app"] == "app"
+    assert captured["host"] == "0.0.0.0"
+    assert captured["port"] == 9000
