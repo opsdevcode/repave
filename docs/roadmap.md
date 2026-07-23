@@ -38,14 +38,15 @@ v1.10  today       generate + gates + publish + Checkov policy pack
   ├─ v1.28–v1.33    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
   ├─ v1.34–v1.37    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
   ├─ v1.38          policy-as-code    optional OPA/conftest gate on plan + manifests
+  ├─ v1.39          observability     dashboards/alerts/monitors as code (Datadog/Grafana/Prom/OTel)
   │
-  v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades
+  v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
 ```
 
 | Theme | Releases | Outcome |
 | --- | --- | --- |
 | **Governance depth** | v1.11, v1.20, v1.38 | Standards, Checkov, and opt-in OPA policy-as-code enforce the module contract, not just document it |
-| **Multi-artifact golden paths** | v1.12–v1.15, v1.32–v1.33 | Engine decoupled from Terraform; Ansible role, Helm chart, and app-service paths ship with standards + gates |
+| **Multi-artifact golden paths** | v1.12–v1.15, v1.32–v1.33, v1.39 | Engine decoupled from Terraform; Ansible role, Helm chart, app-service, and observability-as-code paths ship with standards + gates |
 | **Self-healing** | v1.16, v1.18, v1.23 | Drift detection and blueprint/standard upgrades via PR |
 | **Usability** | v1.17, v1.21 | Portal and CLI usable by non-experts; visible pinned versions |
 | **Estate scale** | v1.19, v1.22, v1.24 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
@@ -746,6 +747,45 @@ policy denies the plan/manifest, and skips cleanly when conftest/opa is absent.
 
 ---
 
+### v1.39 — Observability-as-code golden path
+
+**Problem:** Teams hand-craft dashboards, alerts, monitors, and SLOs
+inconsistently and ungoverned. They want compliant observability artifacts for
+their own services across Datadog, Grafana, Prometheus, and OpenTelemetry, with
+naming, required tags/annotations, severity, and runbook links enforced. (Distinct
+from v1.35, which instruments repave itself.)
+
+**Approach:**
+
+- New `blueprints/observability-as-code-generic/` with `artifactType: observability`
+  (v1.13)
+- Inputs: `service_name`, `backend` (datadog | grafana | prometheus | otel),
+  `output_mode` (native | terraform), owner/team, notification target, SLO targets
+- **Native mode** emits Grafana dashboard JSON + alert rules, `PrometheusRule` +
+  Alertmanager route YAML, OTel Collector config, and Datadog monitor/dashboard/SLO
+  JSON
+- **Terraform mode** emits Terraform using the Datadog and Grafana providers,
+  reusing the existing Terraform engine and terraform-fmt/validate/tflint/checkov
+  gates
+- Gates via the v1.12 registry: native → `promtool check rules`,
+  `amtool check-config`, jsonnet/JSON-schema lint, `datadog validate` (or schema),
+  `yamllint`; terraform → existing terraform gates; plus `docs-drift`,
+  `provenance-drift`, and opt-in `opa` (v1.38) enforcing policy (every alert has
+  severity + runbook annotation; dashboards tagged with owner/service);
+  skip-if-not-installed as usual
+- Ship an observability standard under `examples/standards/` (naming, required
+  tags/annotations, SLO structure, runbook links) pinned by the blueprint
+
+**Dependencies:** v1.12 gate registry; v1.13 artifact-type provenance; v1.38 OPA
+(opt-in policy); existing Terraform engine (terraform mode); v1.28 conformance
+harness for CI coverage.
+
+**Done when:** The blueprint generates governed dashboards/alerts/monitors for at
+least one backend in both native and terraform modes, passing validation gates
+where tools are present and skipping cleanly otherwise.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
@@ -758,7 +798,7 @@ generator.
 | Generate compliant module repos | v1.0–v1.10 (done) |
 | Enforce module standard via Checkov | v1.11, v1.20 |
 | Custom policy-as-code gate (OPA/conftest) | v1.38 |
-| Multiple artifact types (Terraform, Ansible, Helm, app service) | v1.12–v1.15, v1.19, v1.32–v1.33 |
+| Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.12–v1.15, v1.19, v1.32–v1.33, v1.39 |
 | Blueprint conformance in CI | v1.28 |
 | Self-heal drift and version bumps | v1.16, v1.18, v1.23 |
 | Fleet visibility | v1.23 inventory → v2 operator GA |
@@ -767,6 +807,7 @@ generator.
 | Authenticated single-tenant service (OIDC SSO) | v1.25–v1.26 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.29–v1.31 |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.34–v1.37 |
+| Conversational / governed AI generation | v2 (see below) |
 
 **Breaking-change candidates (major bump):**
 
@@ -791,6 +832,35 @@ generator.
 3. At least two production golden paths ship with standards + lint/policy packs.
 4. Documentation describes fork → customize standards/blueprints → fleet reconcile
    without referring to unreleased features.
+
+### Conversational and governed AI generation
+
+**Problem:** Users want to describe intent in natural language ("generate a script,
+module, or dashboard to do X") and receive a compliant artifact — without an
+ungoverned AI that bypasses repave's guarantees.
+
+**Approach:**
+
+- Natural-language front-end (chat) over the engine: intent → LLM draft → the draft
+  is treated as **candidate** output and must pass the same non-negotiable gates
+  (lint, security scan, Checkov, OPA policy from v1.38) before it is ever returned
+  or published — governance-by-construction still holds, with no bypass
+- Ground drafts in existing blueprint inputs and standards so generation starts from
+  governed scaffolds rather than free-form text
+- Record provenance (v1.13) and an audit entry (v1.29) for every AI-assisted
+  generation — model, prompt hash, and gate results — and explain which gate/policy
+  blocked an output when it fails
+- Guardrails for prompt injection, secret leakage, cost/rate limits, and
+  reproducibility
+
+**Dependencies:** v1.12 gate registry; v1.13 provenance; v1.29 audit log; v1.38 OPA
+policy gate; a broad golden-path/standard library (v1.14, v1.32, v1.33, v1.39).
+
+**Why v2:** its safety depends on the mature v1 governance plumbing, so it layers on
+top rather than shipping as a v1 golden path.
+
+**Done when:** A user can describe intent conversationally and only receive artifacts
+that passed every configured gate and policy, with full provenance and audit trail.
 
 ---
 
