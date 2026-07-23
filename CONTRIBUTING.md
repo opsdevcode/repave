@@ -94,6 +94,25 @@ feat!: rename blueprint input schema fields
 Pull request titles are also validated against Conventional Commits. Use the
 same pattern for PR titles (for example `feat: add local docker quickstart`).
 
+## Maintainer setup
+
+`main` is protected so only maintainers can push directly. The release workflow
+uses a repository secret **`REPAVE_RELEASE_TOKEN`**: a fine-grained or classic
+PAT owned by a maintainer with `contents: write` on this repository.
+
+Set or rotate it:
+
+```bash
+gh secret set REPAVE_RELEASE_TOKEN --repo opsdevcode/repave
+```
+
+Org admins may instead store the same secret at org scope for reuse across
+repositories:
+
+```bash
+gh secret set REPAVE_RELEASE_TOKEN --org opsdevcode --visibility private
+```
+
 ## Pull requests
 
 - Keep changes small and focused.

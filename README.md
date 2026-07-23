@@ -146,6 +146,8 @@ Versioning and GitHub releases are automated from
 - Merge a PR to `main` with a conventional commit title (`feat:`, `fix:`, etc.).
 - CI runs tests; the release workflow then bumps the version, updates the
   changelog, tags, and publishes a GitHub Release with wheel artifacts.
+- Releases authenticate with the `REPAVE_RELEASE_TOKEN` repository secret so
+  version commits can push to protected `main`.
 - `docs`, `chore`, and `ci` commits do not trigger a release unless they
   include breaking changes.
 
