@@ -173,6 +173,23 @@ def load_provider_catalog(blueprint: Blueprint) -> dict[str, list[str]]:
     return catalog
 
 
+def load_license_catalog(blueprint: Blueprint) -> dict[str, str]:
+    catalog_path = blueprint.path / "license-catalog.json"
+    if not catalog_path.exists():
+        return {}
+
+    data = json.loads(catalog_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected object in {catalog_path}")
+
+    catalog: dict[str, str] = {}
+    for value, label in data.items():
+        if not isinstance(label, str):
+            raise ValueError(f"Expected string label for license {value!r} in {catalog_path}")
+        catalog[str(value)] = label
+    return catalog
+
+
 def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
     results: list[Blueprint] = []
     if not blueprints_dir.exists():

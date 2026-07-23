@@ -39,4 +39,5 @@ def sample_inputs() -> dict[str, str]:
         "description": "Example module generated in tests",
         "cloud_provider": "aws",
         "provider_services": "s3,vpc",
+        "license": "Apache-2.0",
     }

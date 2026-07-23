@@ -19,3 +19,10 @@ cloud_provider:
 provider_services:
   type: str
   help: Comma-separated provider services in scope
+
+license:
+  type: str
+  help: License identifier for the generated module repository
+
+_tasks:
+  - "test '{{ license }}' = 'none' && rm -f '{{ _copier_conf.dst_path }}/LICENSE' || true"
