@@ -99,6 +99,12 @@ def test_render_writes_scoped_resource_files(
     ec2_diff = (output_dir / "ec2_diff.tf").read_text(encoding="utf-8")
     assert 'null_resource" "ec2_diff"' in ec2_diff
     assert "ec2 — diff" in ec2_diff
+    assert "local.common_tags" in ec2_diff
+    assert "local.name_prefix" in ec2_diff
+    locals_tf = (output_dir / "locals.tf").read_text(encoding="utf-8")
+    assert "common_tags = merge(" in locals_tf
+    assert "sort(distinct(var.provider_services))" in locals_tf
+    assert "name_prefix" in locals_tf
     outputs = (output_dir / "outputs.tf").read_text(encoding="utf-8")
     assert "null_resource.ec2_diff.id" in outputs
     assert "null_resource.s3_bucket.id" in outputs

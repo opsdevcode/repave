@@ -1,5 +1,24 @@
+# Shared derived values for this module.
+#
+# Community convention (HashiCorp module structure + platform practice):
+# - Keep inputs in variables.tf; transform and compose them here.
+# - Resource files reference local.* for shared context — not raw var.* —
+#   so normalization and tagging stay in one place.
+# - Do not duplicate expressions across {service}_{resource}.tf files.
 locals {
-  cloud_provider         = var.cloud_provider
-  provider_services      = var.provider_services
+  cloud_provider    = var.cloud_provider
+  provider_services = sort(distinct(var.provider_services))
+
   provider_service_scope = jsondecode({{ provider_service_scope | tojson }})
+
+  common_tags = merge(
+    var.tags,
+    {
+      module      = var.module_name
+      environment = var.environment
+      managed_by  = "terraform"
+    },
+  )
+
+  name_prefix = "${var.module_name}-${var.environment}"
 }

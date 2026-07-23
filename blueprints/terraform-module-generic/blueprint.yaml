@@ -2,12 +2,12 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-module-generic
-  version: 0.6.0
+  version: 0.7.0
   description: Generic Terraform module scaffold with provider scope, tests, and CI wiring.
 spec:
   standard:
     source: examples/standards
-    version: 0.2.0
+    version: 0.3.1
   inputs:
     - name: module_name
       type: string

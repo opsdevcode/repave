@@ -16,7 +16,7 @@ from repave_engine.provider_catalog import load_provider_catalog
 
 def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
-    assert terraform_blueprint.version == "0.6.0"
+    assert terraform_blueprint.version == "0.7.0"
     assert "terraform-fmt" in terraform_blueprint.gates
     cloud_provider = next(
         field for field in terraform_blueprint.inputs if field.name == "cloud_provider"
