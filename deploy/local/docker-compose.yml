@@ -8,6 +8,7 @@ services:
     environment:
       REPAVE_GITHUB_ORG: opsdevcode
       REPAVE_MODULES_ROOT: /modules
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
       - ../..:/app
       - repave-modules:/modules

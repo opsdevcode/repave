@@ -22,7 +22,13 @@ Standards are authoritative in one git home and rendered read-only in multiple
 surfaces (portal docs, enterprise doc pipelines, etc.). Blueprints pin the
 standard version they encode.
 
-## Self-healing (v1.1)
+## Remote publish (v1.2)
+
+When dry-run is disabled and `GITHUB_TOKEN` is set, repave creates the target
+GitHub repository (org or user account) if needed and pushes the bootstrapped
+module to `main`.
+
+## Self-healing (v1.3)
 
 An Operator SDK reconciler will detect drift and standard-version bumps across
 the generated estate and open remediation PRs automatically.

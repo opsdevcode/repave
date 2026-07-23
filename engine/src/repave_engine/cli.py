@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
@@ -40,13 +41,17 @@ def cmd_generate(args: argparse.Namespace) -> int:
     output_config = _load_output_config_from_args(args)
     staging_root = Path(args.staging_root).resolve() if args.staging_root else None
 
+    github_token = args.github_token or os.environ.get("GITHUB_TOKEN")
+    if args.dry_run:
+        github_token = None
+
     result = generate_from_path(
         blueprint_path,
         values,
         repo_root=repo_root,
         output_config=output_config,
         dry_run=args.dry_run,
-        github_token=args.github_token,
+        github_token=github_token,
         staging_root=staging_root,
     )
 
@@ -147,7 +152,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=True,
         help="Plan module repository output without writing local git repos (default: true)",
     )
-    generate.add_argument("--github-token", default=None, help="GitHub token for remote output")
+    generate.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token for remote publish (defaults to GITHUB_TOKEN when not dry-run)",
+    )
     generate.set_defaults(func=cmd_generate)
 
     listing = sub.add_parser("list", help="List available blueprints", parents=[common])

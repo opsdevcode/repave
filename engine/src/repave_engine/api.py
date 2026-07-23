@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -63,11 +64,16 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
             values[field.name] = str(form.get(field.name, ""))
 
+        github_token = None
+        if not dry_run:
+            github_token = os.environ.get("GITHUB_TOKEN")
+
         result = generate_from_blueprint(
             blueprint,
             values,
             output_config=resolved_output,
             dry_run=dry_run,
+            github_token=github_token,
         )
 
         return templates.TemplateResponse(

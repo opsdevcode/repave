@@ -6,23 +6,24 @@
 production-ready automation (Terraform modules today, more later) by answering a
 short form. The output is generated **deterministically** from versioned golden
 paths, is forced through **mandatory quality/security gates**, and lands as a
-**governed pull request** — so the standards set by your platform team are
-enforced *by construction*, not by after-the-fact review.
+**governed module repository on GitHub** — so the standards set by your platform
+team are enforced *by construction*, not by after-the-fact review.
 
 The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.0.0.** The generation loop runs locally with no Kubernetes
-> required. The self-healing reconciliation operator is planned for v1.1 (see
-> [`operator/`](operator/)).
+> Status: **v1.2.0.** The generation loop runs locally with no Kubernetes
+> required. Generated modules publish to separate git repositories and can be
+> pushed to GitHub with `GITHUB_TOKEN`. The self-healing reconciliation operator
+> is planned for v1.3 (see [`operator/`](operator/)).
 
 ## Why repave
 
 - **Enables many.** A web form maps to a golden path; no one needs to know
   Terraform/HCL to get a compliant module.
 - **Governed by construction.** Generated artifacts must pass every configured
-  gate (`fmt`, `validate`, `tflint`, `checkov`, docs) before a PR is mergeable.
+  gate (`fmt`, `validate`, `tflint`, `checkov`, docs) before publish.
   There is no bypass path.
 - **Deterministic + repeatable.** The same inputs always render the same
   artifact (Copier templates), so output is reviewable and safe.
@@ -34,7 +35,7 @@ repeatable, and automated.
 ## How it works
 
 ```text
-Web form (inputs)  ->  Engine: render (Copier)  ->  Gates  ->  Module repository
+Web form (inputs)  ->  Engine: render (Copier)  ->  Gates  ->  Module repository  ->  GitHub
                         \_ blueprint.yaml (input schema, standard ref, gate list) _/
 ```
 
@@ -45,8 +46,10 @@ repave platform repo — never into `.repave-out/` inside repave.
    schema, the standard version it encodes, its Copier template, and the gate
    list it must pass.
 2. The **engine** validates inputs, renders the template deterministically, runs
-   the gates, and materializes the module in its own repository.
-3. The **portal/API** turns the blueprint's input schema into a form so
+   the gates, and materializes the module in its own local git repository.
+3. When `GITHUB_TOKEN` is set and dry-run is disabled, repave **creates the
+   GitHub repository** (if needed) and **pushes the initial commit** to `main`.
+4. The **portal/API** turns the blueprint's input schema into a form so
    non-experts can drive it without a command line.
 
 ## Module repositories
@@ -64,10 +67,12 @@ Or use environment variables:
 ```bash
 export REPAVE_GITHUB_ORG=your-org
 export REPAVE_MODULES_ROOT=$HOME/repave-modules
+export GITHUB_TOKEN=ghp_...   # repo scope; required for remote publish
 ```
 
-Each module becomes `$(modules_root)/tf-<module_name>/` — an independent git
-repository planned for `https://github.com/<org>/tf-<module_name>`.
+Each module becomes `$(modules_root)/tf-<cloud_provider>-<module_name>/` — an
+independent git repository at
+`https://github.com/<org>/tf-<cloud_provider>-<module_name>`.
 
 ## Quickstart (local, no Kubernetes)
 
@@ -82,8 +87,9 @@ Docker Compose mounts a `repave-modules` volume at `/modules` and sets
 
 Fill the form for the bundled `terraform-module-generic` blueprint and submit.
 In dry-run mode (default) you'll see gate results and the planned module
-repository. Turn off dry-run to bootstrap a local git repo under your modules
-root.
+repository. Enable **Publish module repository locally** to bootstrap a local git
+repo; set `GITHUB_TOKEN` in the server environment to create the GitHub repo and
+push the initial commit.
 
 CLI equivalent (for development/CI, not the primary UX):
 
@@ -92,7 +98,9 @@ repave generate \
   --blueprint blueprints/terraform-module-generic \
   --input module_name=example \
   --input description="Example module" \
-  --dry-run
+  --input cloud_provider=aws \
+  --input provider_services=s3,vpc \
+  --no-dry-run
 ```
 
 ## Repository layout
@@ -103,19 +111,23 @@ engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
 examples/      # generic sample standards (bring-your-own-standards model)
 deploy/local/  # docker compose + kind quickstart
-operator/      # v1.1 placeholder: self-healing reconciliation (Operator SDK)
+operator/      # v1.3 placeholder: self-healing reconciliation (Operator SDK)
 docs/          # concept docs
 ```
 
 ## Roadmap
 
-- **v1.0** (current) — engine + `terraform-module-generic` golden path + gates +
-  local run + CI, release automation, and test coverage.
-- **v1.1** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
+- **v1.0** — engine + `terraform-module-generic` golden path + gates + local run +
+  CI, release automation, and test coverage.
+- **v1.1** — separate module repositories, release automation, operator design.
+- **v1.2** (current) — cloud provider/service scope for Terraform modules, GitHub
+  remote publish (create repo + push initial commit), expanded tests.
+- **v1.3** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
   detects drift and standard-version bumps and opens remediation PRs across the
   generated estate (the "self-healing" headline).
-- **v1.2+** — more golden paths (Ansible role, cloud resource modules), portal
-  hardening, richer observability/SLOs, and wired GitHub PR creation.
+- **v1.4+** — more golden paths (Ansible role, cloud resource modules), portal
+  hardening, richer observability/SLOs, and PR-based updates to existing module
+  repos.
 
 ## Releases
 

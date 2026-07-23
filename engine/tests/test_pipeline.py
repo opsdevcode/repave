@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -127,6 +128,31 @@ def test_non_dry_run_passes_github_token(
 
     assert "created" in result.pr_message
     assert messages == ["ghp_test"]
+
+
+def test_generate_publishes_to_github_through_create_pull_request(
+    terraform_blueprint,
+    sample_inputs,
+    output_config,
+    staging_root,
+    monkeypatch,
+) -> None:
+    with (
+        patch("repave_engine.pr.ensure_github_repository", return_value="created"),
+        patch("repave_engine.pr.push_module_repository"),
+    ):
+        result = generate_from_blueprint(
+            terraform_blueprint,
+            sample_inputs,
+            output_config=output_config,
+            dry_run=False,
+            github_token="ghp_test",
+            staging_root=staging_root,
+        )
+
+    assert "Created GitHub repository and pushed initial commit" in result.pr_message
+    assert result.module_repository is not None
+    assert result.module_repository.local_path.exists()
 
 
 def test_resolve_module_repository_uses_template(output_config) -> None:
