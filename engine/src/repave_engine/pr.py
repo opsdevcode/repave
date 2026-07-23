@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from repave_engine.github import GitHubError, ensure_github_repository, push_module_repository
 from repave_engine.target_repo import ModuleRepository
 
 
@@ -50,19 +51,44 @@ def plan_pull_request(
 def create_pull_request(plan: PullRequestPlan, *, github_token: str | None) -> str:
     if not github_token:
         return (
-            "Dry-run: remote GitHub PR not created. Provide GITHUB_TOKEN to enable "
-            "governed remote output.\n"
+            "Dry-run: remote GitHub repository not created. Provide GITHUB_TOKEN to enable "
+            "remote publish.\n"
             f"Target repository: {plan.repository.web_url}\n"
             f"Local repository: {plan.repository.local_path}\n"
             f"Planned branch: {plan.branch}\n"
             f"Planned title: {plan.title}"
         )
 
-    # v1.0 intentionally stops at local repo bootstrap; GitHub remote/PR lands in v1.1+.
+    try:
+        action = ensure_github_repository(
+            plan.repository,
+            github_token,
+            description=plan.title,
+        )
+        push_module_repository(plan.repository, github_token, branch=plan.branch)
+    except GitHubError as exc:
+        return (
+            "GitHub publish failed.\n"
+            f"Target repository: {plan.repository.web_url}\n"
+            f"Local repository: {plan.repository.local_path}\n"
+            f"Error ({exc.status}): {exc.message}"
+        )
+    except RuntimeError as exc:
+        return (
+            "GitHub publish failed while pushing the local repository.\n"
+            f"Target repository: {plan.repository.web_url}\n"
+            f"Local repository: {plan.repository.local_path}\n"
+            f"Error: {exc}"
+        )
+
+    if action == "created":
+        remote_action = "Created GitHub repository and pushed initial commit"
+    else:
+        remote_action = "Pushed initial commit to existing GitHub repository"
+
     return (
-        "GitHub repository creation and PR output are not yet wired in v1.0. "
-        "The module was materialized in its own local git repository.\n"
-        f"Target repository: {plan.repository.web_url}\n"
-        f"Local repository: {plan.repository.local_path}\n"
-        f"Planned title: {plan.title}"
+        f"{remote_action}.\n"
+        f"Repository: {plan.repository.web_url}\n"
+        f"Branch: {plan.branch}\n"
+        f"Local repository: {plan.repository.local_path}"
     )

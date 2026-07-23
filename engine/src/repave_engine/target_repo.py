@@ -63,8 +63,7 @@ def publish_to_module_repository(
 
     return (
         f"Module published to local repository at {repository.local_path}\n"
-        f"Planned remote: {repository.web_url}\n"
-        "Create the GitHub repository and push when ready."
+        f"Planned remote: {repository.web_url}"
     )
 
 
@@ -106,3 +105,4 @@ def _ensure_git_repository(repo_dir: Path, *, module_name: str) -> None:
         ["commit", "-m", f"chore: bootstrap {module_name} from repave"],
         cwd=repo_dir,
     )
+    _run_git(["branch", "-M", "main"], cwd=repo_dir)

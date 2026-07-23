@@ -40,6 +40,8 @@ generate:
 	  --blueprint blueprints/terraform-module-generic \
 	  --input module_name=example \
 	  --input description="Example module" \
+	  --input cloud_provider=aws \
+	  --input provider_services=s3,vpc \
 	  --dry-run
 
 compose-up:

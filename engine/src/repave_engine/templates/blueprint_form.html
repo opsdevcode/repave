@@ -15,6 +15,9 @@
       .service-option { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; margin: 0; }
       .service-option input { width: auto; }
       .field-block { margin-bottom: 0.75rem; }
+      .publish-options { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
+      .publish-options label { font-weight: 400; display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0; }
+      .publish-options input { width: auto; }
     </style>
   </head>
   <body>
@@ -29,7 +32,6 @@
 
     <form method="post" action="/generate" id="generate-form">
       <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
-      <input type="hidden" name="dry_run" value="true" />
 
       {% for field in blueprint.inputs %}
       {% if provider_catalog and field.name == "cloud_provider" %}
@@ -72,7 +74,19 @@
       {% endif %}
       {% endfor %}
 
-      <button type="submit">Generate (dry-run)</button>
+      <div class="publish-options">
+        <div><strong>Publish options</strong></div>
+        <label>
+          <input type="checkbox" name="dry_run" value="false" />
+          Publish module repository locally (disable dry-run)
+        </label>
+        <div class="muted">
+          When publish is enabled, set <code>GITHUB_TOKEN</code> in the server environment to
+          create the GitHub repository and push the initial commit.
+        </div>
+      </div>
+
+      <button type="submit">Generate</button>
     </form>
 
     {% if provider_catalog %}

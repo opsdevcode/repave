@@ -13,6 +13,14 @@ The container includes **terraform**, **tflint**, and **checkov**, so blueprint 
 run for real instead of skipping. Generated modules are written to the `repave-modules`
 Docker volume (`/modules` inside the container).
 
+To publish to GitHub from the portal, pass a token when starting compose:
+
+```bash
+GITHUB_TOKEN=ghp_... docker compose up --build
+```
+
+The token needs permission to create repositories in `REPAVE_GITHUB_ORG`.
+
 ## Native Python (development)
 
 From repo root:
@@ -31,4 +39,4 @@ kind create cluster --name repave-local
 kubectl cluster-info --context kind-repave-local
 ```
 
-v1.0 does not require Kubernetes. The operator and Helm chart arrive in v1.1.
+v1.2 does not require Kubernetes. The operator and Helm chart arrive in v1.3.

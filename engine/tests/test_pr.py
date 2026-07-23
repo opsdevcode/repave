@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import patch
 
+from repave_engine.github import GitHubError
 from repave_engine.pr import create_pull_request, plan_pull_request
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import resolve_module_repository
@@ -21,7 +23,7 @@ def test_plan_pull_request_fields(tmp_path: Path) -> None:
     plan = plan_pull_request(
         module_name="networking-vnet",
         blueprint_name="terraform-module-generic",
-        blueprint_version="0.1.0",
+        blueprint_version="0.2.0",
         standard_version="0.1.0",
         files_root=repository.local_path,
         repository=repository,
@@ -39,7 +41,7 @@ def test_create_pull_request_dry_run(tmp_path: Path) -> None:
     plan = plan_pull_request(
         module_name="example",
         blueprint_name="terraform-module-generic",
-        blueprint_version="0.1.0",
+        blueprint_version="0.2.0",
         standard_version="0.1.0",
         files_root=repository.local_path,
         repository=repository,
@@ -52,18 +54,47 @@ def test_create_pull_request_dry_run(tmp_path: Path) -> None:
     assert plan.title in message
 
 
-def test_create_pull_request_with_token_returns_stub(tmp_path: Path) -> None:
+def test_create_pull_request_publishes_to_github(tmp_path: Path) -> None:
     repository = _repository(tmp_path)
     plan = plan_pull_request(
         module_name="example",
         blueprint_name="terraform-module-generic",
-        blueprint_version="0.1.0",
+        blueprint_version="0.2.0",
         standard_version="0.1.0",
         files_root=repository.local_path,
         repository=repository,
     )
 
-    message = create_pull_request(plan, github_token="ghp_test")
+    with (
+        patch("repave_engine.pr.ensure_github_repository", return_value="created") as ensure,
+        patch(
+            "repave_engine.pr.push_module_repository",
+        ) as push,
+    ):
+        message = create_pull_request(plan, github_token="ghp_test")
 
-    assert "not yet wired" in message
+    ensure.assert_called_once()
+    push.assert_called_once()
+    assert "Created GitHub repository and pushed initial commit" in message
     assert repository.web_url in message
+
+
+def test_create_pull_request_reports_github_errors(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    plan = plan_pull_request(
+        module_name="example",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.2.0",
+        standard_version="0.1.0",
+        files_root=repository.local_path,
+        repository=repository,
+    )
+
+    with patch(
+        "repave_engine.pr.ensure_github_repository",
+        side_effect=GitHubError(403, "forbidden"),
+    ):
+        message = create_pull_request(plan, github_token="ghp_test")
+
+    assert "GitHub publish failed" in message
+    assert "403" in message
