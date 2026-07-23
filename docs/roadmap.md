@@ -31,7 +31,7 @@ remediation — not just one-shot module creation.
 v1.14  today       artifact-type provenance in repave.yaml; provenance-drift gate
   │
   ├─ v1.15–v1.17    multi-artifact    Ansible role path + standard; operator alpha
-  ├─ v1.17–v1.20    operate + extend  operator alpha; portal UX; module updates; more golden paths
+  ├─ v1.18–v1.20    operate + extend  portal UX; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
   ├─ v1.29–v1.34    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
@@ -44,7 +44,7 @@ v1.14  today       artifact-type provenance in repave.yaml; provenance-drift gat
 
 | Theme | Releases | Outcome |
 | --- | --- | --- |
-| **Governance depth** | v1.11, v1.12, v1.21, v1.39 | Standards, Checkov, secrets scan, and opt-in OPA policy-as-code enforce the module contract, not just document it |
+| **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and opt-in OPA policy-as-code enforce the module contract, not just document it |
 | **Multi-artifact golden paths** | v1.13–v1.16, v1.33–v1.34, v1.40 | Engine decoupled from Terraform; Ansible role, Helm chart, app-service, and observability-as-code paths ship with standards + gates |
 | **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR |
 | **Usability** | v1.18, v1.22 | Portal and CLI usable by non-experts; visible pinned versions |
@@ -756,8 +756,9 @@ generator.
 
 | Capability | Built in releases |
 | --- | --- |
-| Generate compliant module repos | v1.0–v1.12 (done) |
+| Generate compliant module repos | v1.0–v1.14 (done) |
 | Enforce module standard via Checkov | v1.11, v1.12, v1.21 |
+| Provenance in generated repos | v1.14 |
 | Custom policy-as-code gate (OPA/conftest) | v1.39 |
 | Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.13–v1.16, v1.20, v1.33–v1.34, v1.40 |
 | Blueprint conformance in CI | v1.29 |

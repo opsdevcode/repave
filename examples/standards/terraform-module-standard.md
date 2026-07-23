@@ -325,6 +325,7 @@ These gates are wired in repave blueprints and expected in module repository CI:
 - `tflint`
 - `checkov` (custom policy pack)
 - `secrets` scan (Checkov secrets framework)
+- Provenance drift check (`repave.yaml` present and schema-valid)
 - Docs drift check (README present and fully rendered)
 
 Failed gates block publish — there is no bypass path.

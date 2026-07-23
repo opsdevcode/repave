@@ -28,6 +28,14 @@ When dry-run is disabled and `GITHUB_TOKEN` is set, repave creates the target
 GitHub repository (org or user account) if needed and pushes the bootstrapped
 module to `main`.
 
+## Provenance (`repave.yaml`)
+
+Blueprints may declare `spec.output.provenance.file` (typically `repave.yaml`).
+The engine writes a `GoldenPathArtifact` document after render with pinned
+blueprint and standard versions, generation metadata, and artifact-type-specific
+fields (`terraformModule` or `ansibleRole`). The `provenance-drift` gate validates
+the file against `schemas/golden-path-artifact.schema.json`.
+
 ## Self-healing (planned)
 
 An Operator SDK reconciler will detect drift and standard-version bumps across
