@@ -19,3 +19,11 @@ cloud_provider:
 provider_services:
   type: str
   help: Comma-separated provider services in scope
+
+provider_service_scope:
+  type: str
+  help: JSON map of service resource scope (basic or custom)
+
+provider_service_scope_summary:
+  type: str
+  help: Human-readable provider service scope summary

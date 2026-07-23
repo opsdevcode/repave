@@ -9,14 +9,14 @@ from repave_engine.blueprint import (
     InputField,
     list_blueprints,
     load_blueprint,
-    load_provider_catalog,
     validate_inputs,
 )
+from repave_engine.provider_catalog import load_provider_catalog
 
 
 def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
-    assert terraform_blueprint.version == "0.4.0"
+    assert terraform_blueprint.version == "0.5.1"
     assert "terraform-fmt" in terraform_blueprint.gates
     cloud_provider = next(
         field for field in terraform_blueprint.inputs if field.name == "cloud_provider"
@@ -43,6 +43,8 @@ def test_validate_required_inputs(terraform_blueprint) -> None:
     )
     assert values["module_name"] == "example"
     assert values["provider_services"] == "ec2,s3"
+    assert "provider_service_scope" in values
+    assert "provider_service_scope_summary" in values
 
 
 def test_validate_rejects_unknown_inputs(terraform_blueprint) -> None:
@@ -98,6 +100,40 @@ def test_validate_rejects_invalid_provider_services(terraform_blueprint) -> None
         )
 
 
+def test_validate_basic_with_additional_provider_service_scope(terraform_blueprint) -> None:
+    values = validate_inputs(
+        terraform_blueprint,
+        {
+            "module_name": "example",
+            "description": "Example module",
+            "cloud_provider": "aws",
+            "provider_services": "s3",
+            "provider_service_scope": (
+                '{"s3":{"mode":"basic","additional_resources":["bucket_acl"]}}'
+            ),
+        },
+    )
+    assert "bucket_acl" in values["provider_service_scope"]
+    assert "basic capabilities + additional" in values["provider_service_scope_summary"]
+
+
+def test_validate_custom_provider_service_scope(terraform_blueprint) -> None:
+    values = validate_inputs(
+        terraform_blueprint,
+        {
+            "module_name": "example",
+            "description": "Example module",
+            "cloud_provider": "aws",
+            "provider_services": "s3",
+            "provider_service_scope": (
+                '{"s3":{"mode":"custom","resources":["bucket_acl","bucket"]}}'
+            ),
+        },
+    )
+    assert "bucket_acl" in values["provider_service_scope"]
+    assert "custom resources" in values["provider_service_scope_summary"]
+
+
 def test_validate_normalizes_provider_services(terraform_blueprint) -> None:
     values = validate_inputs(
         terraform_blueprint,
@@ -112,14 +148,13 @@ def test_validate_normalizes_provider_services(terraform_blueprint) -> None:
 
 
 def test_load_provider_catalog(terraform_blueprint) -> None:
-    catalog = load_provider_catalog(terraform_blueprint)
+    catalog = load_provider_catalog(terraform_blueprint.path)
     assert len(catalog["aws"]) >= 200
     assert len(catalog["azure"]) >= 100
     assert len(catalog["gcp"]) >= 150
-    assert "s3" in catalog["aws"]
-    assert "ec2" in catalog["aws"]
-    assert "storage" in catalog["azure"]
-    assert "compute" in catalog["gcp"]
+    assert "resources" in catalog["aws"]["s3"]
+    assert "basic" in catalog["aws"]["s3"]
+    assert "bucket" in catalog["aws"]["s3"]["resources"]
 
 
 def test_list_blueprints(repo_root: Path) -> None:

@@ -126,3 +126,14 @@ def test_generate_dry_run_ignores_github_token(
     assert response.status_code == 200
     assert captured["dry_run"] is True
     assert captured["github_token"] is None
+
+
+def test_provider_service_detail(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic/provider-services/aws/s3")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert "resources" in payload
+    assert "basic" in payload
+    assert "bucket" in payload["resources"]

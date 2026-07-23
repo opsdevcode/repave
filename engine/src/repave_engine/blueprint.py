@@ -8,6 +8,11 @@ from typing import Any, cast
 import jsonschema
 import yaml
 
+from repave_engine.provider_catalog import (
+    load_provider_catalog,
+    normalize_provider_service_scope,
+)
+
 
 @dataclass(frozen=True)
 class InputField:
@@ -119,13 +124,13 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
                 f"Invalid value for {field.name}: {value!r}. Allowed values: {allowed}"
             )
 
-    _validate_provider_services(blueprint, normalized)
+    _validate_provider_scope(blueprint, normalized)
 
     return normalized
 
 
-def _validate_provider_services(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
-    catalog = load_provider_catalog(blueprint)
+def _validate_provider_scope(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    catalog = load_provider_catalog(blueprint.path)
     if not catalog:
         return
 
@@ -133,43 +138,39 @@ def _validate_provider_services(blueprint: Blueprint, normalized: dict[str, Any]
         return
 
     provider = str(normalized["cloud_provider"])
-    if provider not in catalog:
-        allowed = ", ".join(sorted(catalog))
-        raise ValueError(
-            f"Invalid value for cloud_provider: {provider!r}. Allowed values: {allowed}"
-        )
-
     raw_services = str(normalized["provider_services"]).split(",")
-    services = [item.strip() for item in raw_services if item.strip()]
+    services = sorted({item.strip() for item in raw_services if item.strip()})
     if not services:
         raise ValueError("provider_services must include at least one service")
 
-    allowed_services = set(catalog[provider])
-    invalid = sorted({service for service in services if service not in allowed_services})
-    if invalid:
-        raise ValueError(
-            f"Invalid provider_services for {provider}: {', '.join(invalid)}. "
-            f"Choose from the {len(allowed_services)} services in provider-catalog.json."
-        )
+    scope_raw = normalized.get("provider_service_scope", "")
+    normalized["provider_services"] = ",".join(services)
+    normalized["provider_service_scope"] = normalize_provider_service_scope(
+        catalog,
+        provider=provider,
+        services=services,
+        scope_raw=scope_raw,
+    )
+    normalized["provider_service_scope_summary"] = _format_scope_summary(
+        normalized["provider_service_scope"]
+    )
 
-    normalized["provider_services"] = ",".join(sorted(services))
 
-
-def load_provider_catalog(blueprint: Blueprint) -> dict[str, list[str]]:
-    catalog_path = blueprint.path / "provider-catalog.json"
-    if not catalog_path.exists():
-        return {}
-
-    data = json.loads(catalog_path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"Expected object in {catalog_path}")
-
-    catalog: dict[str, list[str]] = {}
-    for provider, services in data.items():
-        if not isinstance(services, list) or not all(isinstance(item, str) for item in services):
-            raise ValueError(f"Expected string list for provider {provider!r} in {catalog_path}")
-        catalog[str(provider)] = services
-    return catalog
+def _format_scope_summary(scope_json: str) -> str:
+    scope = json.loads(scope_json)
+    lines: list[str] = []
+    for service, entry in sorted(scope.items()):
+        resources = ", ".join(entry["resources"])
+        if entry["mode"] == "basic":
+            additional = entry.get("additional_resources", [])
+            if additional:
+                mode_label = "basic capabilities + additional resources"
+            else:
+                mode_label = "basic capabilities"
+        else:
+            mode_label = "custom resources"
+        lines.append(f"- **{service}** ({mode_label}): {resources}")
+    return "\n".join(lines)
 
 
 def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:

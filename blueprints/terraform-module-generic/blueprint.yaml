@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-module-generic
-  version: 0.4.0
+  version: 0.5.1
   description: Generic Terraform module scaffold with provider scope, tests, and CI wiring.
 spec:
   standard:
@@ -30,6 +30,10 @@ spec:
       type: string
       required: true
       description: Comma-separated Terraform provider services in scope (from provider-catalog.json).
+    - name: provider_service_scope
+      type: string
+      required: false
+      description: JSON map of service scope — basic capabilities with optional additional resources, or custom-only.
   template:
     engine: copier
     path: template
