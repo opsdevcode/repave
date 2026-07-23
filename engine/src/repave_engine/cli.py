@@ -65,6 +65,11 @@ def cmd_generate(args: argparse.Namespace) -> int:
     for gate in result.gates:
         status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
         print(f"  - [{status}] {gate.name}: {gate.message}")
+    if result.rendered_files:
+        print("Generated files:")
+        for rendered in result.rendered_files:
+            suffix = " (truncated)" if rendered.truncated else ""
+            print(f"  - {rendered.path}{suffix}")
     print(result.pr_message)
 
     failed = [g for g in result.gates if not g.passed and not g.skipped]

@@ -59,6 +59,8 @@ def test_cmd_generate_exit_code_success(
     assert "terraform-module-generic" in output
     assert "tf-aws-example" in output
     assert "Dry-run" in output
+    assert "Generated files:" in output
+    assert "main.tf" in output
 
 
 def test_cmd_generate_uses_github_token_from_env_when_not_dry_run(

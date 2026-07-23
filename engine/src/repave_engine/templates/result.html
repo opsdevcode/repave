@@ -9,8 +9,11 @@
       .pass { color: #0a7a2f; }
       .fail { color: #b00020; }
       .skip { color: #666; }
-      pre { background: #f7f7f7; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+      pre { background: #f7f7f7; padding: 1rem; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
       li { margin: 0.35rem 0; }
+      details { margin: 0.75rem 0; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.35rem 0.75rem; }
+      summary { cursor: pointer; font-family: ui-monospace, monospace; }
+      .muted { color: #555; }
     </style>
   </head>
   <body>
@@ -18,9 +21,15 @@
     <h1>Generation result</h1>
 
     <p><strong>Blueprint:</strong> {{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
+    {% if result.dry_run %}
+    <p class="muted">Dry-run preview — files below were rendered in memory and were not published.</p>
+    {% endif %}
     {% if result.module_repository %}
-    <p><strong>Module repository:</strong> <code>{{ result.module_repository.web_url }}</code></p>
+    <p><strong>Repository name:</strong> <code>{{ result.module_repository.name }}</code></p>
+    <p><strong>Target repository:</strong> <code>{{ result.module_repository.web_url }}</code></p>
+    {% if not result.dry_run %}
     <p><strong>Local path:</strong> <code>{{ result.module_repository.local_path }}</code></p>
+    {% endif %}
     {% else %}
     <p><strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code></p>
     {% endif %}
@@ -34,7 +43,17 @@
       {% endfor %}
     </ul>
 
-    <h2>Module repository</h2>
+    {% if result.rendered_files %}
+    <h2>Generated files</h2>
+    {% for file in result.rendered_files %}
+    <details{% if loop.first %} open{% endif %}>
+      <summary>{{ file.path }}{% if file.truncated %} <span class="muted">(truncated)</span>{% endif %}</summary>
+      <pre>{{ file.content }}</pre>
+    </details>
+    {% endfor %}
+    {% endif %}
+
+    <h2>Publish plan</h2>
     <pre>{{ result.pr_message }}</pre>
   </body>
 </html>

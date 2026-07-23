@@ -8,7 +8,12 @@ from typing import Any
 from repave_engine.blueprint import Blueprint, load_blueprint, validate_inputs
 from repave_engine.gates import GateResult, all_gates_passed, run_gates
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
-from repave_engine.render import RenderResult, render_blueprint
+from repave_engine.render import (
+    RenderedFile,
+    RenderResult,
+    collect_rendered_files,
+    render_blueprint,
+)
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import (
     ModuleRepository,
@@ -25,6 +30,8 @@ class GenerationResult:
     module_repository: ModuleRepository | None
     pr_plan: PullRequestPlan | None
     pr_message: str
+    rendered_files: tuple[RenderedFile, ...] = ()
+    dry_run: bool = True
 
 
 def generate_from_blueprint(
@@ -88,10 +95,13 @@ def generate_from_blueprint(
         else:
             published_repository = None
 
-        # Surface the module repo path in dry-run even when gates fail after render.
-        display_output_dir = (
-            module_repository.local_path if published_repository else render_result.output_dir
-        )
+        rendered_files = collect_rendered_files(render_result.output_dir) if dry_run else ()
+        if dry_run:
+            display_output_dir = render_result.output_dir
+        elif published_repository is not None:
+            display_output_dir = module_repository.local_path
+        else:
+            display_output_dir = render_result.output_dir
         display_render = RenderResult(output_dir=display_output_dir, values=render_result.values)
 
         return GenerationResult(
@@ -101,6 +111,8 @@ def generate_from_blueprint(
             module_repository=published_repository,
             pr_plan=pr_plan,
             pr_message=pr_message,
+            rendered_files=rendered_files,
+            dry_run=dry_run,
         )
     finally:
         if owns_staging and temp_dir is not None:

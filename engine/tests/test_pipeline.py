@@ -73,6 +73,13 @@ def test_dry_run_does_not_write_module_repo(
     assert result.module_repository is not None
     assert not result.module_repository.local_path.exists()
     assert "Dry-run" in result.pr_message
+    assert result.dry_run is True
+    paths = {item.path for item in result.rendered_files}
+    assert "main.tf" in paths
+    assert "README.md" in paths
+    assert any(
+        item.path == "main.tf" and "null_resource" in item.content for item in result.rendered_files
+    )
 
 
 def test_gate_failure_blocks_module_repo_publish(
