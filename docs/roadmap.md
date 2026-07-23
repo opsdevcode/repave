@@ -28,21 +28,25 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.10  today     generate + gates + publish + Checkov policy pack
+v1.10  today       generate + gates + publish + Checkov policy pack
   │
-  ├─ v1.11–v1.12  enforce + heal     module-standard Checkov rules; operator alpha
-  ├─ v1.13–v1.15  operate + extend   portal UX; module updates; new golden paths
-  ├─ v1.16–v1.19  estate-ready       provenance, module CI, standards pack, deploy
+  ├─ v1.11          enforce           module-standard Checkov rules
+  ├─ v1.12–v1.15    multi-artifact    gate registry; provenance decoupling; Ansible role path + standard
+  ├─ v1.16–v1.19    operate + extend  operator alpha; portal UX; module updates; more golden paths
+  ├─ v1.20–v1.24    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
+  ├─ v1.25–v1.26    service + SSO     authenticated single-tenant service via OIDC
   │
-  v2.0.0           platform GA        operator GA, stable contracts, fleet upgrades
+  v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades
 ```
 
 | Theme | Releases | Outcome |
 | --- | --- | --- |
-| **Governance depth** | v1.11, v1.16 | Standards and Checkov enforce the module contract, not just document it |
-| **Self-healing** | v1.12, v1.14, v1.19 | Drift detection and blueprint/standard upgrades via PR |
-| **Usability** | v1.13, v1.17 | Portal and CLI usable by non-experts; visible pinned versions |
-| **Estate scale** | v1.15, v1.18, v1.20 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
+| **Governance depth** | v1.11, v1.20 | Standards and Checkov enforce the module contract, not just document it |
+| **Multi-artifact golden paths** | v1.12–v1.15 | Engine decoupled from Terraform; Ansible role path ships with standard + lint pack |
+| **Self-healing** | v1.16, v1.18, v1.23 | Drift detection and blueprint/standard upgrades via PR |
+| **Usability** | v1.17, v1.21 | Portal and CLI usable by non-experts; visible pinned versions |
+| **Estate scale** | v1.19, v1.22, v1.24 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
+| **Access and multi-user** | v1.25–v1.26 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 
 ---
@@ -137,7 +141,104 @@ CI documents how to add org-specific rules to the pack.
 
 ---
 
-### v1.12 — Reconciliation operator
+### v1.12 — Gate registry and blueprint gate extensibility (Ansible prereq)
+
+**Problem:** Gate behavior is hard-coded in `engine/src/repave_engine/gates.py`
+(`_GATE_RUNNERS` plus special-cased checkov/provenance branches). Adding a new
+tool means editing the engine, and artifact hygiene only knows Terraform paths
+(`.terraform`, `.tflint.d`). New artifact types (Ansible) cannot register gates.
+
+**Approach:**
+
+- Replace the hard-coded runner map with a **gate registry** keyed by gate name;
+  gates declare how they run and what they skip on when tools are absent
+- Blueprint-declared `gate_config` for non-checkov gates (e.g. tflint config path,
+  `terraform-validate` var files, future yamllint/ansible-lint config paths)
+- Make artifact hygiene **artifact-type aware** (add molecule ephemeral dirs,
+  `*.retry`, `.ansible` alongside the Terraform entries)
+- Extend the schema gate enum so new gates are declarable without engine edits
+- Consider `terraform test` as a first-class gate (not just scaffolded tests)
+
+**Dependencies:** Stable gate names in `schemas/blueprint.schema.json` (since v1.0).
+
+**Done when:** A blueprint adds a gate via the registry + schema enum + template
+artifacts without core engine changes. (Supersedes and generalizes the former
+standalone gate-extensibility item.)
+
+---
+
+### v1.13 — Provenance and standards decoupling (Ansible prereq)
+
+**Problem:** The provenance document and `schemas/golden-path-artifact.schema.json`
+assume Terraform: they hard-code `cloud_provider`, `provider_services`, and
+`checkov`. A non-Terraform artifact (Ansible role) cannot emit valid provenance.
+
+**Approach:**
+
+- Introduce `spec.artifactType` on the blueprint (`terraform-module` default,
+  `ansible-role`), keeping `repave.dev/v1alpha1` back-compat
+- Make the provenance artifact block **artifact-type aware**: Terraform keeps
+  `cloud_provider`/`provider_services`; Ansible records galaxy namespace, role
+  name, and minimum Ansible version
+- Generalize standards-pin handling so a non-Terraform standard can be referenced
+  and rendered the same way
+
+**Dependencies:** v1.12 gate registry; existing provenance work
+(`engine/src/repave_engine/provenance.py`).
+
+**Done when:** An Ansible blueprint emits a schema-valid provenance file with
+Ansible-shaped metadata, and the Terraform path is unchanged.
+
+---
+
+### v1.14 — Ansible role golden path
+
+**Problem:** Only Terraform artifacts exist; platform teams also govern
+configuration management and want a compliant, Galaxy-compatible Ansible role
+scaffold from the same golden-path engine.
+
+**Approach:**
+
+- New `blueprints/ansible-role-generic/` producing a Galaxy-compatible role
+- Inputs: `role_name`, `namespace`, `description`, `min_ansible_version`,
+  target platforms
+- Template: `meta/main.yml`, `tasks/main.yml`, `defaults/main.yml`,
+  `handlers/main.yml`, `vars/`, `molecule/default/`, `README.md.jinja`, `.yamllint`
+- Gates: `yamllint`, `ansible-lint`, `ansible-syntax-check`, `molecule`
+  (skip-if-not-installed pattern like tflint/checkov), `docs-drift`,
+  `provenance-drift`
+- Output naming: `ansible-role-{role_name}` (or `{namespace}.{role_name}`)
+- Provider scope is skipped automatically (no `provider-catalog.json` in the pack)
+
+**Dependencies:** v1.12 gate registry; v1.13 provenance decoupling.
+
+**Done when:** A role repo generates, passes gates where the tools are present,
+and skips cleanly where they are absent.
+
+---
+
+### v1.15 — Ansible role standard + ansible-lint policy pack
+
+**Problem:** The Ansible role path needs an enforceable standard, mirroring the
+Terraform module standard + Checkov pack, so generated roles are governed rather
+than just scaffolded.
+
+**Approach:**
+
+- Vendor an Ansible role standard under `examples/standards/` (parallel to the
+  Terraform module standard), pinned by the blueprint
+- Ship an ansible-lint config/ruleset pack copied into generated roles (parallel
+  to the Checkov pack at `examples/checkov/policies`)
+- Unit-test the ruleset against fixture roles
+
+**Dependencies:** v1.14 Ansible role golden path; v1.12 gate registry.
+
+**Done when:** A generated role fails ansible-lint when the standard is violated;
+the blueprint pins the pack version.
+
+---
+
+### v1.16 — Reconciliation operator
 
 **Problem:** Generated repos drift from pinned blueprint/standard versions; manual
 upgrades across the estate do not scale.
@@ -158,7 +259,7 @@ See also [`operator/README.md`](../operator/README.md).
 
 ---
 
-### v1.13 — Portal and UX hardening
+### v1.17 — Portal and UX hardening
 
 **Problem:** Form UX is functional but minimal for large provider catalogs and
 multi-step scope selection.
@@ -168,13 +269,14 @@ multi-step scope selection.
 - Improved scope UX (search, presets, validation feedback)
 - Generation history / last-run summary in the portal
 - Clearer gate failure surfacing (which gate, stderr excerpt)
+- Group the blueprint catalog by artifact type (Terraform, Ansible)
 
 **Done when:** Non-expert users can complete a multi-service module without CLI
 fallback for common paths.
 
 ---
 
-### v1.14 — Update existing module repositories
+### v1.18 — Update existing module repositories
 
 **Problem:** Today repave bootstraps **new** repos; upgrading an existing module
 requires manual merge or re-generation.
@@ -183,31 +285,33 @@ requires manual merge or re-generation.
 
 - `repave update` (or blueprint flag) targeting an existing module repo path
 - Three-way aware merge or PR-only flow that preserves user edits outside scaffold
-- Operator integration for fleet-wide upgrades (ties to v1.12)
+- Operator integration for fleet-wide upgrades (ties to v1.16)
 
 **Done when:** A module repo created by repave can receive a blueprint version
 bump via PR without full manual copy.
 
 ---
 
-### v1.15 — Additional golden paths
+### v1.19 — Additional golden paths
 
-**Problem:** Only `terraform-module-generic` exists; platform teams need more
-artifact types.
+**Problem:** Beyond the Terraform module and Ansible role paths, platform teams
+need more artifact types.
 
 **Candidates (prioritize with product input):**
 
 | Golden path | Output | Notes |
 | --- | --- | --- |
-| Ansible role | Galaxy-compatible role repo | Shared gates pattern |
 | Cloud resource module (single resource) | Thin `tfm-*` wrapper | Subset of generic blueprint |
 | Environment stack bootstrap | `env-*` composition repo | Consumes pinned module versions |
+| Ansible collection / playbook project | Collection or project repo | Builds on the v1.14 role path (see parking lot) |
+
+**Dependencies:** v1.12 gate registry; v1.13 artifact-type provenance.
 
 **Done when:** At least one new blueprint ships with gates, standards pin, and docs.
 
 ---
 
-### v1.16 — Estate standards pack (multi-file)
+### v1.20 — Estate standards pack (multi-file)
 
 **Problem:** Module standard lives in a single sample file (`examples/standards/
 terraform-module-standard.md`). Estate teams want the full Terraform standards
@@ -230,7 +334,7 @@ docs reference one authoritative in-repo standards directory.
 
 ---
 
-### v1.17 — Generation provenance and version visibility
+### v1.21 — Generation provenance and version visibility
 
 **Problem:** Generated modules do not record which blueprint, standard, and policy
 pack versions produced them; the portal does not surface pins before generate.
@@ -244,14 +348,15 @@ pack versions produced them; the portal does not surface pins before generate.
   blueprint
 - Optional: label/tag GitHub repos on publish with blueprint version
 
-**Dependencies:** Blueprint already carries standard and checkov pins (v1.9–v1.10).
+**Dependencies:** Blueprint already carries standard and checkov pins (v1.9–v1.10);
+artifact-type-aware provenance (v1.13).
 
 **Done when:** A module repo clearly states its golden-path lineage without reading
 repave source.
 
 ---
 
-### v1.18 — Generated module CI template
+### v1.22 — Generated module CI template
 
 **Problem:** Module repos rely on authors to wire CI; gates run in repave at
 generate time but not necessarily on every subsequent PR in the module repo.
@@ -263,16 +368,17 @@ generate time but not necessarily on every subsequent PR in the module repo.
 - Document required secrets/runners (none for fmt/validate/tflint/checkov/test)
 - Align workflow toolchain versions with `deploy/local/Dockerfile`
 
-**Dependencies:** v1.10 Checkov config in module root; stable gate names in schema.
+**Dependencies:** v1.10 Checkov config in module root; v1.12 gate registry for the
+shared gate-list contract.
 
 **Done when:** A freshly published module runs fmt, validate, tflint, checkov, and
 `terraform test` on push without manual workflow authoring.
 
 ---
 
-### v1.19 — Operator beta and fleet inventory
+### v1.23 — Operator beta and fleet inventory
 
-**Problem:** v1.12 operator scope is large; teams need a minimal inventory model
+**Problem:** v1.16 operator scope is large; teams need a minimal inventory model
 before full reconciliation.
 
 **Approach:**
@@ -281,16 +387,16 @@ before full reconciliation.
 - Operator **inventory mode**: list/watch registered repos, report drift vs pins
   (read-only, no PRs yet)
 - CLI/API `repave register` to add a generated repo to the inventory
-- Design doc for upgrade PR flow (feeds v1.12 GA and v1.14 update command)
+- Design doc for upgrade PR flow (feeds v1.16 GA and v1.18 update command)
 
-**Dependencies:** v1.12 CRD design; v1.17 provenance fields.
+**Dependencies:** v1.16 CRD design; v1.21 provenance fields.
 
 **Done when:** Operator reports “out of date” repos when blueprint standard/policy
 version bumps on `main`.
 
 ---
 
-### v1.20 — Kubernetes deploy path
+### v1.24 — Kubernetes deploy path
 
 **Problem:** Local Docker Compose is the only first-class deploy story; platform
 teams want repave API/portal on-cluster alongside the future operator.
@@ -309,27 +415,51 @@ form on-cluster with dry-run generation working.
 
 ---
 
-### v1.21 — Gate and blueprint extensibility
+### v1.25 — Service mode and authentication (login)
 
-**Problem:** Gate behavior is hard-coded in `gates.py`; blueprints cannot declare
-custom gate configs beyond Checkov without engine changes.
+**Problem:** The API and portal are unauthenticated and assume trusted local use.
+Running repave as a shared hosted service needs identity and protected endpoints.
 
 **Approach:**
 
-- Extend `gate_config` schema for `tflint` (config path), `terraform-validate`
-  (optional var files), and hook points for future OPA/plan-policy gates
-- Document adding a new gate: engine runner + schema enum + blueprint template
-  artifacts
-- Consider `terraform test` as a first-class gate (not just scaffolded tests)
+- **Service mode** config flag: local dev stays open (no auth); hosted mode
+  requires authenticated sessions
+- Session/JWT-backed login; protect all mutating API routes (generate, publish,
+  register) and the portal
+- Identify the acting user and record it in generation provenance/audit
+- Config via `repave.config.yaml` + secrets (ties to v1.24 ConfigMap/secret wiring)
 
-**Dependencies:** v1.18 module CI template (shared gate list contract).
+**Scope:** single-tenant (one org per instance); no per-tenant isolation.
 
-**Done when:** Blueprint YAML configures tflint/Checkov paths without engine code
-changes; `terraform test` runs in the generate pipeline when declared in gates.
+**Dependencies:** v1.24 Kubernetes deploy path (hosted service); stable API surface.
+
+**Done when:** A hosted repave instance rejects unauthenticated API/portal access,
+and a logged-in user can complete a generation.
 
 ---
 
-### v1.22 — Remote and forked blueprint packs
+### v1.26 — SSO via OIDC and role-based access
+
+**Problem:** Enterprises require IdP-managed login (Okta, PingID, Entra, Auth0),
+not local accounts.
+
+**Approach:**
+
+- Generic OIDC/OAuth2 authorization-code login (provider-agnostic: issuer URL,
+  client id/secret, scopes) so Okta/PingID/Entra/Auth0 all work
+- Map IdP group/role claims to repave roles: `viewer` (read/dry-run), `generator`
+  (generate/publish), `admin` (register/inventory/config)
+- Enforce roles on API endpoints; record the authenticated identity in the
+  generation provenance/audit trail
+
+**Dependencies:** v1.25 authentication foundation.
+
+**Done when:** Login is delegated to an OIDC IdP and endpoint access is gated by
+mapped role claims; docs show an Okta and a PingID configuration example.
+
+---
+
+### v1.27 — Remote and forked blueprint packs
 
 **Problem:** Blueprints live only under `blueprints/` in the repave repo; enterprises
 want to fork repave and add paths, or pull read-only blueprint packs from git.
@@ -358,12 +488,13 @@ generator.
 | Capability | Built in releases |
 | --- | --- |
 | Generate compliant module repos | v1.0–v1.10 (done) |
-| Enforce module standard via Checkov | v1.11, v1.16 |
-| Self-heal drift and version bumps | v1.12, v1.14, v1.19 |
-| Fleet visibility | v1.19 inventory → v2 operator GA |
-| Multiple golden paths | v1.15 |
-| Module repos self-govern in CI | v1.18 |
-| On-cluster deploy | v1.20 |
+| Enforce module standard via Checkov | v1.11, v1.20 |
+| Multiple artifact types (Terraform + Ansible) | v1.12–v1.15, v1.19 |
+| Self-heal drift and version bumps | v1.16, v1.18, v1.23 |
+| Fleet visibility | v1.23 inventory → v2 operator GA |
+| Module repos self-govern in CI | v1.22 |
+| On-cluster deploy | v1.24 |
+| Authenticated single-tenant service (OIDC SSO) | v1.25–v1.26 |
 
 **Breaking-change candidates (major bump):**
 
@@ -375,7 +506,8 @@ generator.
 
 **Non-goals for v2 (remain parking lot or post-v2):**
 
-- Multi-tenant SaaS repave
+- **Multi-tenant SaaS repave** — org isolation, per-tenant config/RBAC; the
+  multi-tenant follow-on to the single-tenant SSO shipped in v1.25–v1.26
 - OPA/Sentinel plan-time policy as default gate
 - Private blueprint registry over OCI
 
@@ -383,7 +515,7 @@ generator.
 
 1. Operator opens remediation PRs for drift and standard bumps across registered repos.
 2. `repave update` upgrades an existing module repo via PR.
-3. At least two production golden paths ship with standards + Checkov packs.
+3. At least two production golden paths ship with standards + lint/policy packs.
 4. Documentation describes fork → customize standards/blueprints → fleet reconcile
    without referring to unreleased features.
 
@@ -394,11 +526,20 @@ generator.
 Ideas not yet scheduled for pre-v2 work — promote into [Planned](#planned) when
 there is an owner and a target release.
 
+- **Ansible collection golden path** — multi-role collection repo (`galaxy.yml`,
+  `roles/`, `plugins/`) building on the v1.14 role path
+- **Ansible playbook/project golden path** — `site.yml`, `inventories/`,
+  `group_vars/`, `roles/` project scaffold
+- **Molecule as a required gate** — make molecule non-skippable once test runners
+  are standardized in CI
+- **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
+- **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
+  an alternative to in-app OIDC
 - **Standards diff in portal** — side-by-side standard/policy changes between
   blueprint versions before generate
 - **OPA/Sentinel gate** — optional policy gate on plan JSON after `terraform plan`
 - **Private blueprint registry** — pull blueprint packs from git tag or OCI artifact
-  (beyond local fork paths in v1.22)
+  (beyond local fork paths in v1.27)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
 - **Catalog automation** — regenerate `provider-catalog.json` on provider release
   webhook or scheduled workflow
