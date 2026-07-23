@@ -93,6 +93,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             output_config=resolved_output,
             dry_run=dry_run,
             github_token=github_token,
+            repo_root=repo_root,
         )
 
         return templates.TemplateResponse(

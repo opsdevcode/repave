@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from repave_engine.settings import load_output_config
+from repave_engine.settings import load_gate_overrides, load_output_config
 
 
 def test_load_output_config_from_environment(tmp_path: Path, monkeypatch) -> None:
@@ -55,3 +55,24 @@ def test_load_output_config_with_explicit_overrides(tmp_path: Path) -> None:
 
     assert config.github_org == "override-org"
     assert config.modules_root == modules_root
+
+
+def test_load_gate_overrides_from_file(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "output:",
+                "  github_org: acme",
+                "  modules_root: ../modules",
+                "gates:",
+                "  checkov:",
+                "    skip_checks:",
+                "      - CKV_AWS_1",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    overrides = load_gate_overrides(tmp_path)
+
+    assert overrides.checkov_skip_checks == ("CKV_AWS_1",)

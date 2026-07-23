@@ -108,6 +108,8 @@ def test_render_writes_scoped_resource_files(
     outputs = (output_dir / "outputs.tf").read_text(encoding="utf-8")
     assert "null_resource.ec2_diff.id" in outputs
     assert "null_resource.s3_bucket.id" in outputs
+    assert (output_dir / ".checkov.yml").exists()
+    assert (output_dir / "policy/checkov/custom_001_terraform_version_exists.yaml").exists()
 
 
 def test_collect_rendered_files_returns_text_files(tmp_path: Path) -> None:

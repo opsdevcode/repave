@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from pathlib import Path
 from typing import Any, cast
 
@@ -25,6 +26,20 @@ class InputField:
 
 
 @dataclass(frozen=True)
+class CheckovPolicyPack:
+    policies_source: str
+    policy_version: str
+
+
+@dataclass(frozen=True)
+class CheckovGateConfig:
+    external_checks_dir: str = "policy/checkov"
+    config_file: str = ".checkov.yml"
+    skip_checks: tuple[str, ...] = ()
+    soft_fail: bool = False
+
+
+@dataclass(frozen=True)
 class Blueprint:
     path: Path
     name: str
@@ -39,6 +54,8 @@ class Blueprint:
     output_type: str
     output_repo_name_template: str
     output_title_template: str
+    checkov_policies: CheckovPolicyPack | None = None
+    checkov_gate: CheckovGateConfig = dataclass_field(default_factory=CheckovGateConfig)
 
     @property
     def template_dir(self) -> Path:
@@ -83,6 +100,24 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
     repository = output.get("repository", {})
     repo_name_template = repository.get("name_template", "tf-{module_name}")
     title_template = repository.get("title_template", "Bootstrap {module_name}")
+
+    checkov_spec = spec.get("checkov")
+    checkov_policies: CheckovPolicyPack | None = None
+    if checkov_spec is not None:
+        checkov_policies = CheckovPolicyPack(
+            policies_source=str(checkov_spec["policies_source"]),
+            policy_version=str(checkov_spec.get("policy_version", "1.0.0")),
+        )
+
+    gate_config = spec.get("gate_config", {})
+    checkov_gate_raw = gate_config.get("checkov", {}) if isinstance(gate_config, dict) else {}
+    checkov_gate = CheckovGateConfig(
+        external_checks_dir=str(checkov_gate_raw.get("external_checks_dir", "policy/checkov")),
+        config_file=str(checkov_gate_raw.get("config_file", ".checkov.yml")),
+        skip_checks=tuple(checkov_gate_raw.get("skip_checks", [])),
+        soft_fail=bool(checkov_gate_raw.get("soft_fail", False)),
+    )
+
     return Blueprint(
         path=blueprint_file.parent,
         name=metadata["name"],
@@ -97,6 +132,8 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         output_type=output["type"],
         output_repo_name_template=str(repo_name_template),
         output_title_template=str(title_template),
+        checkov_policies=checkov_policies,
+        checkov_gate=checkov_gate,
     )
 
 

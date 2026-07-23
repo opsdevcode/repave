@@ -6,12 +6,10 @@
 output:
   github_org: your-github-org
   modules_root: ../repave-modules
-# Copy to repave.config.yaml and adjust for your environment.
-#
-# Generated Terraform modules are written to their own git repositories under
-# modules_root — never inside the repave platform repository.
-
-output:
-  github_org: your-github-org
-  modules_root: ../repave-modules
   repo_name_template: "tf-{cloud_provider}-{module_name}"
+
+# Optional gate overrides applied during generation.
+gates:
+  checkov:
+    skip_checks: []
+    # Example: skip_checks: ["CKV_AWS_20"]

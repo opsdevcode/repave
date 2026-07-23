@@ -51,3 +51,9 @@ Run native Terraform tests:
 ```bash
 terraform test
 ```
+
+Run Checkov (custom policies ship in `policy/checkov/`):
+
+```bash
+checkov -d . --config-file .checkov.yml
+```

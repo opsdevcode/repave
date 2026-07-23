@@ -61,7 +61,7 @@ def test_generate_publish_passes_github_token_from_env(
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
     captured: dict[str, object] = {}
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token):
+    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
         captured["dry_run"] = dry_run
         captured["github_token"] = github_token
         return GenerationResult(
@@ -101,7 +101,7 @@ def test_generate_dry_run_ignores_github_token(
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
     captured: dict[str, object] = {}
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token):
+    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
         captured["dry_run"] = dry_run
         captured["github_token"] = github_token
         return GenerationResult(

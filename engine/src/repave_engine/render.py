@@ -9,7 +9,7 @@ from typing import Any
 from copier import run_copy
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from repave_engine.blueprint import Blueprint
+from repave_engine.blueprint import Blueprint, _find_repo_root
 from repave_engine.gates import is_gate_artifact_path
 
 
@@ -139,6 +139,7 @@ def render_blueprint(
         unsafe=True,
     )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
+    _copy_checkov_policies(output_dir, blueprint)
 
     return RenderResult(output_dir=output_dir, values=payload)
 
@@ -170,3 +171,18 @@ def _write_scoped_resource_files(
             cloud_provider=cloud_provider,
         )
         (output_dir / f"{item.file_stem}.tf").write_text(content, encoding="utf-8")
+
+
+def _copy_checkov_policies(output_dir: Path, blueprint: Blueprint) -> None:
+    if blueprint.checkov_policies is None:
+        return
+
+    repo_root = _find_repo_root(blueprint.path)
+    source_dir = repo_root / blueprint.checkov_policies.policies_source
+    if not source_dir.is_dir():
+        raise FileNotFoundError(f"Checkov policy pack not found: {source_dir}")
+
+    destination = output_dir / blueprint.checkov_gate.external_checks_dir
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(source_dir, destination)

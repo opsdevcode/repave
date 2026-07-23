@@ -14,7 +14,7 @@ from repave_engine.render import (
     collect_rendered_files,
     render_blueprint,
 )
-from repave_engine.settings import OutputConfig
+from repave_engine.settings import OutputConfig, load_gate_overrides
 from repave_engine.target_repo import (
     ModuleRepository,
     publish_to_module_repository,
@@ -42,6 +42,7 @@ def generate_from_blueprint(
     dry_run: bool = True,
     github_token: str | None = None,
     staging_root: Path | None = None,
+    repo_root: Path | None = None,
 ) -> GenerationResult:
     normalized = validate_inputs(blueprint, values)
     module_name = str(normalized.get("module_name", blueprint.name))
@@ -64,7 +65,13 @@ def generate_from_blueprint(
 
     try:
         render_result = render_blueprint(blueprint, normalized, staging_dir)
-        gate_results = run_gates(render_result.output_dir, blueprint.gates)
+        gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
+        gate_results = run_gates(
+            render_result.output_dir,
+            blueprint.gates,
+            blueprint=blueprint,
+            gate_overrides=gate_overrides,
+        )
         clean_gate_artifacts(render_result.output_dir)
 
         pr_plan: PullRequestPlan | None = None
@@ -138,4 +145,5 @@ def generate_from_path(
         dry_run=dry_run,
         github_token=github_token,
         staging_root=staging_root,
+        repo_root=repo_root,
     )
