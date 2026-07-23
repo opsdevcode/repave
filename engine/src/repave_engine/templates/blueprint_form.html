@@ -51,6 +51,18 @@
         <div id="provider-services" class="service-grid" aria-live="polite"></div>
         <input type="hidden" id="provider_services" name="provider_services" value="" />
       </div>
+      {% elif license_catalog and field.name == "license" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
+        <select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>
+            {{ license_catalog.get(option, option) }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
       {% else %}
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>

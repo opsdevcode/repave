@@ -8,7 +8,12 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from repave_engine import __version__
-from repave_engine.blueprint import list_blueprints, load_blueprint, load_provider_catalog
+from repave_engine.blueprint import (
+    list_blueprints,
+    load_blueprint,
+    load_license_catalog,
+    load_provider_catalog,
+)
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig, load_output_config
 
@@ -38,6 +43,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             {
                 "blueprint": blueprint,
                 "provider_catalog": load_provider_catalog(blueprint),
+                "license_catalog": load_license_catalog(blueprint),
             },
         )
 

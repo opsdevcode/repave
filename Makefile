@@ -42,6 +42,7 @@ generate:
 	  --input description="Example module" \
 	  --input cloud_provider=aws \
 	  --input provider_services=s3,vpc \
+	  --input license=Apache-2.0 \
 	  --dry-run
 
 compose-up:

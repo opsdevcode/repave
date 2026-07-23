@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-module-generic
-  version: 0.2.0
+  version: 0.3.0
   description: Generic Terraform module scaffold with provider scope, tests, and CI wiring.
 spec:
   standard:
@@ -30,6 +30,16 @@ spec:
       type: string
       required: true
       description: Comma-separated list of provider services in scope (e.g. s3, vpc, iam).
+    - name: license
+      type: string
+      required: true
+      description: License applied to the generated module repository.
+      enum:
+        - none
+        - proprietary
+        - Apache-2.0
+        - MIT
+      default: Apache-2.0
   template:
     engine: copier
     path: template
