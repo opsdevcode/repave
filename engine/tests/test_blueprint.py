@@ -17,6 +17,7 @@ from repave_engine.provider_catalog import load_provider_catalog
 def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
     assert terraform_blueprint.version == "0.8.0"
+    assert terraform_blueprint.artifact_type == "terraform-module"
     assert terraform_blueprint.checkov_policies is not None
     assert terraform_blueprint.checkov_policies.policies_source == "examples/checkov/policies"
     assert terraform_blueprint.checkov_policies.policy_version == "1.2.0"

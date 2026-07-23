@@ -72,7 +72,7 @@ def generate_from_blueprint(
             blueprint=blueprint,
             gate_overrides=gate_overrides,
         )
-        clean_gate_artifacts(render_result.output_dir)
+        clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)
 
         pr_plan: PullRequestPlan | None = None
         pr_message = "Gates failed; module repository not updated."
@@ -83,6 +83,7 @@ def generate_from_blueprint(
                 render_result.output_dir,
                 module_repository,
                 dry_run=dry_run,
+                artifact_type=blueprint.artifact_type,
             )
             pr_plan = plan_pull_request(
                 blueprint_name=blueprint.name,
@@ -103,7 +104,14 @@ def generate_from_blueprint(
         else:
             published_repository = None
 
-        rendered_files = collect_rendered_files(render_result.output_dir) if dry_run else ()
+        rendered_files = (
+            collect_rendered_files(
+                render_result.output_dir,
+                artifact_type=blueprint.artifact_type,
+            )
+            if dry_run
+            else ()
+        )
         if dry_run:
             display_output_dir = render_result.output_dir
         elif published_repository is not None:

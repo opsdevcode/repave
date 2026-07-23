@@ -123,17 +123,19 @@ def test_security_fixture_violations_fail_expected_checks(
 
 
 def test_secrets_gate_passes_compliant_fixture(fixtures_root: Path) -> None:
+    from repave_engine.gate_registry import GateContext
     from repave_engine.gates import _gate_secrets
 
-    result = _gate_secrets(fixtures_root / "pass")
+    result = _gate_secrets(GateContext(output_dir=fixtures_root / "pass"))
     assert result.passed
     assert not result.skipped
 
 
 def test_secrets_gate_fails_on_hardcoded_token(fixtures_root: Path) -> None:
+    from repave_engine.gate_registry import GateContext
     from repave_engine.gates import _gate_secrets
 
-    result = _gate_secrets(fixtures_root / "fail-secret-default")
+    result = _gate_secrets(GateContext(output_dir=fixtures_root / "fail-secret-default"))
     assert not result.passed
     assert not result.skipped
 

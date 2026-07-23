@@ -1,21 +1,52 @@
 from __future__ import annotations
 
-import re
 import shutil
-import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
-from repave_engine.blueprint import Blueprint, CheckovGateConfig
+from repave_engine.blueprint import Blueprint
+from repave_engine.gate_registry import (
+    GateContext,
+    GateResult,
+    ensure_gates_loaded,
+    get_gate,
+)
+from repave_engine.gate_registry import (
+    is_gate_artifact_path as _is_gate_artifact_path,
+)
+from repave_engine.gate_runners import (
+    build_checkov_command,
+    build_secrets_scan_command,
+    run_checkov,
+    run_docs_drift,
+    run_secrets,
+    run_terraform_fmt,
+    run_terraform_test,
+    run_terraform_validate,
+    run_tflint,
+)
 from repave_engine.settings import GateOverrides
 
+__all__ = [
+    "GateResult",
+    "all_gates_passed",
+    "build_checkov_command",
+    "build_secrets_scan_command",
+    "clean_gate_artifacts",
+    "is_gate_artifact_path",
+    "run_checkov",
+    "run_docs_drift",
+    "run_gates",
+    "run_secrets",
+    "run_terraform_fmt",
+    "run_terraform_test",
+    "run_terraform_validate",
+    "run_tflint",
+]
 
-@dataclass(frozen=True)
-class GateResult:
-    name: str
-    passed: bool
-    skipped: bool
-    message: str
+# Backward-compatible aliases for tests importing private runners.
+_gate_terraform_fmt = run_terraform_fmt
+_gate_checkov = run_checkov
+_gate_secrets = run_secrets
 
 
 def run_gates(
@@ -25,19 +56,19 @@ def run_gates(
     blueprint: Blueprint | None = None,
     gate_overrides: GateOverrides | None = None,
 ) -> list[GateResult]:
+    ensure_gates_loaded()
+    context = GateContext(
+        output_dir=output_dir,
+        blueprint=blueprint,
+        gate_overrides=gate_overrides,
+    )
     results: list[GateResult] = []
-    for gate in gate_names:
-        if gate == "checkov":
-            results.append(_gate_checkov(output_dir, blueprint, gate_overrides))
+    for gate_name in gate_names:
+        spec = get_gate(gate_name)
+        if spec is None:
+            results.append(GateResult(gate_name, False, False, f"Unknown gate: {gate_name}"))
             continue
-        if gate == "secrets":
-            results.append(_gate_secrets(output_dir))
-            continue
-        runner = _GATE_RUNNERS.get(gate)
-        if runner is None:
-            results.append(GateResult(gate, False, False, f"Unknown gate: {gate}"))
-            continue
-        results.append(runner(output_dir))
+        results.append(spec.runner(context))
     return results
 
 
@@ -45,15 +76,16 @@ def all_gates_passed(results: list[GateResult]) -> bool:
     return all(r.passed or r.skipped for r in results)
 
 
-_GATE_ARTIFACT_NAMES = (
-    ".terraform",
-    ".terraform.lock.hcl",
-    ".tflint.d",
-)
+def clean_gate_artifacts(output_dir: Path, *, artifact_type: str = "terraform-module") -> None:
+    from repave_engine.gate_registry import artifact_paths_for_type
 
-
-def clean_gate_artifacts(output_dir: Path) -> None:
-    for name in _GATE_ARTIFACT_NAMES:
+    ensure_gates_loaded()
+    for name in artifact_paths_for_type(artifact_type):
+        if name.startswith("*."):
+            for path in output_dir.glob(name):
+                if path.is_file():
+                    path.unlink()
+            continue
         path = output_dir / name
         if path.is_dir():
             shutil.rmtree(path)
@@ -61,192 +93,6 @@ def clean_gate_artifacts(output_dir: Path) -> None:
             path.unlink()
 
 
-def is_gate_artifact_path(relative_path: str) -> bool:
-    parts = relative_path.split("/")
-    if not parts:
-        return False
-    if parts[0] in {".terraform", ".tflint.d"}:
-        return True
-    return relative_path in {".terraform.lock.hcl"}
-
-
-def _tool_available(name: str) -> bool:
-    return shutil.which(name) is not None
-
-
-def _run(
-    cmd: list[str],
-    cwd: Path,
-    *,
-    extra_env: dict[str, str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    env = None
-    if extra_env is not None:
-        import os
-
-        env = os.environ.copy()
-        env.update(extra_env)
-    return subprocess.run(
-        cmd,
-        cwd=cwd,
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
-
-
-def _terraform_usable(output_dir: Path) -> bool:
-    if not _tool_available("terraform"):
-        return False
-    result = _run(["terraform", "version"], output_dir)
-    return result.returncode == 0
-
-
-def _gate_terraform_fmt(output_dir: Path) -> GateResult:
-    if not _terraform_usable(output_dir):
-        return GateResult("terraform-fmt", True, True, "terraform not available; skipped")
-
-    result = _run(["terraform", "fmt", "-check", "-recursive"], output_dir)
-    if result.returncode == 0:
-        return GateResult("terraform-fmt", True, False, "terraform fmt check passed")
-    return GateResult(
-        "terraform-fmt",
-        False,
-        False,
-        result.stderr.strip() or result.stdout.strip() or "terraform fmt check failed",
-    )
-
-
-def _gate_terraform_validate(output_dir: Path) -> GateResult:
-    if not _terraform_usable(output_dir):
-        return GateResult("terraform-validate", True, True, "terraform not available; skipped")
-
-    init = _run(["terraform", "init", "-backend=false"], output_dir)
-    if init.returncode != 0:
-        return GateResult(
-            "terraform-validate",
-            False,
-            False,
-            init.stderr.strip() or init.stdout.strip() or "terraform init failed",
-        )
-
-    validate = _run(["terraform", "validate"], output_dir)
-    if validate.returncode == 0:
-        return GateResult("terraform-validate", True, False, "terraform validate passed")
-    return GateResult(
-        "terraform-validate",
-        False,
-        False,
-        validate.stderr.strip() or validate.stdout.strip() or "terraform validate failed",
-    )
-
-
-def _gate_tflint(output_dir: Path) -> GateResult:
-    if not _tool_available("tflint"):
-        return GateResult("tflint", True, True, "tflint not installed; skipped")
-
-    result = _run(["tflint", "--init"], output_dir)
-    if result.returncode != 0:
-        return GateResult("tflint", False, False, result.stderr.strip() or "tflint init failed")
-
-    result = _run(["tflint"], output_dir)
-    if result.returncode == 0:
-        return GateResult("tflint", True, False, "tflint passed")
-    return GateResult("tflint", False, False, result.stderr.strip() or "tflint failed")
-
-
-def build_checkov_command(
-    output_dir: Path,
-    config: CheckovGateConfig,
-    *,
-    extra_skip_checks: tuple[str, ...] = (),
-) -> list[str]:
-    cmd = ["checkov", "-d", str(output_dir)]
-    config_path = output_dir / config.config_file
-    if config_path.is_file():
-        cmd.extend(["--config-file", str(config_path)])
-
-    checks_dir = output_dir / config.external_checks_dir
-    if checks_dir.is_dir():
-        cmd.extend(["--external-checks-dir", str(checks_dir)])
-
-    skip_checks = {*config.skip_checks, *extra_skip_checks}
-    for check_id in sorted(skip_checks):
-        cmd.extend(["--skip-check", check_id])
-
-    if config.soft_fail:
-        cmd.append("--soft-fail")
-    return cmd
-
-
-def build_secrets_scan_command(output_dir: Path) -> list[str]:
-    return [
-        "checkov",
-        "-d",
-        str(output_dir),
-        "--framework",
-        "secrets",
-        "--enable-secret-scan-all-files",
-    ]
-
-
-def _gate_secrets(output_dir: Path) -> GateResult:
-    if not _tool_available("checkov"):
-        return GateResult("secrets", True, True, "checkov not installed; skipped")
-
-    cmd = build_secrets_scan_command(output_dir)
-    result = _run(cmd, output_dir)
-    if result.returncode == 0:
-        return GateResult("secrets", True, False, "secrets scan passed")
-    return GateResult("secrets", False, False, result.stderr.strip() or "secrets scan failed")
-
-
-def _gate_checkov(
-    output_dir: Path,
-    blueprint: Blueprint | None = None,
-    gate_overrides: GateOverrides | None = None,
-) -> GateResult:
-    if not _tool_available("checkov"):
-        return GateResult("checkov", True, True, "checkov not installed; skipped")
-
-    config = blueprint.checkov_gate if blueprint is not None else CheckovGateConfig()
-    extra_skip = gate_overrides.checkov_skip_checks if gate_overrides is not None else ()
-    cmd = build_checkov_command(output_dir, config, extra_skip_checks=extra_skip)
-    result = _run(
-        cmd,
-        output_dir,
-        extra_env={"REPAVE_CHECKOV_SCAN_ROOT": str(output_dir.resolve())},
-    )
-    if result.returncode == 0:
-        return GateResult("checkov", True, False, "checkov passed")
-    return GateResult("checkov", False, False, result.stderr.strip() or "checkov failed")
-
-
-def _gate_docs_drift(output_dir: Path) -> GateResult:
-    readme = output_dir / "README.md"
-    if not readme.exists():
-        return GateResult("docs-drift", False, False, "README.md missing")
-
-    content = readme.read_text(encoding="utf-8")
-    placeholders = [match for match in re.findall(r"\{\{[^}]+\}\}", content)]
-    if placeholders:
-        return GateResult(
-            "docs-drift",
-            False,
-            False,
-            f"README contains unresolved template placeholders: {', '.join(placeholders)}",
-        )
-
-    if "## Usage" not in content:
-        return GateResult("docs-drift", False, False, "README missing Usage section")
-
-    return GateResult("docs-drift", True, False, "README present and rendered")
-
-
-_GATE_RUNNERS = {
-    "terraform-fmt": _gate_terraform_fmt,
-    "terraform-validate": _gate_terraform_validate,
-    "tflint": _gate_tflint,
-    "docs-drift": _gate_docs_drift,
-}
+def is_gate_artifact_path(relative_path: str, *, artifact_type: str = "terraform-module") -> bool:
+    ensure_gates_loaded()
+    return _is_gate_artifact_path(relative_path, artifact_type=artifact_type)

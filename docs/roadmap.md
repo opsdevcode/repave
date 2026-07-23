@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.12.0  
-**Planning horizon:** v1.13 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.12.0 (v1.13.0 pending)  
+**Planning horizon:** v1.14 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---
 
@@ -28,9 +28,9 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.12  today       layout + security Checkov policies; dedicated secrets gate
+v1.13  today       gate registry; artifact-type hygiene; terraform-test gate
   │
-  ├─ v1.13–v1.16    multi-artifact    gate registry; provenance decoupling; Ansible role path + standard
+  ├─ v1.14–v1.17    multi-artifact    provenance decoupling; Ansible role path + standard
   ├─ v1.17–v1.20    operate + extend  operator alpha; portal UX; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
@@ -127,7 +127,7 @@ v1.12  today       layout + security Checkov policies; dedicated secrets gate
 - Policy pack v1.1.0; fixture tests under `examples/checkov/tests/`; pack README
 - Checkov gate sets `REPAVE_CHECKOV_SCAN_ROOT` for reliable module-root resolution
 
-### v1.12 — Security Checkov pack and secrets gate (current)
+### v1.12 — Security Checkov pack and secrets gate
 
 - Security policies `CKV2_REPAVE_8`–`CKV2_REPAVE_12` ban credential literals, hardcoded
   secrets, provisioners, and undeclared sensitive outputs
@@ -135,35 +135,19 @@ v1.12  today       layout + security Checkov policies; dedicated secrets gate
 - Policy pack v1.2.0; extended fixture coverage and gate tests in `engine/tests/`
 - Blueprint and schema gate enum include `secrets` alongside `checkov`
 
+### v1.13 — Gate registry and blueprint gate extensibility (current)
+
+- Replace hard-coded gate dispatch with a **gate registry** (`gate_registry.py`,
+  `gate_builtin.py`, `gate_runners.py`); `run_gates()` resolves runners from the registry
+- Blueprint `gate_config` extended for `tflint`, `terraform-validate`, and
+  `terraform-test`; optional `artifactType` on blueprints drives artifact hygiene
+- Artifact paths are **artifact-type aware** (Terraform + Ansible-role placeholders)
+- `terraform-test` gate registered (skips when no `.tftest.hcl` files); plugin hook via
+  `repave.gates` entry points for org-specific gates without editing core dispatch
+
 ---
 
 ## Planned
-
-### v1.13 — Gate registry and blueprint gate extensibility (Ansible prereq)
-
-**Problem:** Gate behavior is hard-coded in `engine/src/repave_engine/gates.py`
-(`_GATE_RUNNERS` plus special-cased checkov/provenance branches). Adding a new
-tool means editing the engine, and artifact hygiene only knows Terraform paths
-(`.terraform`, `.tflint.d`). New artifact types (Ansible) cannot register gates.
-
-**Approach:**
-
-- Replace the hard-coded runner map with a **gate registry** keyed by gate name;
-  gates declare how they run and what they skip on when tools are absent
-- Blueprint-declared `gate_config` for non-checkov gates (e.g. tflint config path,
-  `terraform-validate` var files, future yamllint/ansible-lint config paths)
-- Make artifact hygiene **artifact-type aware** (add molecule ephemeral dirs,
-  `*.retry`, `.ansible` alongside the Terraform entries)
-- Extend the schema gate enum so new gates are declarable without engine edits
-- Consider `terraform test` as a first-class gate (not just scaffolded tests)
-
-**Dependencies:** Stable gate names in `schemas/blueprint.schema.json` (since v1.0).
-
-**Done when:** A blueprint adds a gate via the registry + schema enum + template
-artifacts without core engine changes. (Supersedes and generalizes the former
-standalone gate-extensibility item.)
-
----
 
 ### v1.14 — Provenance and standards decoupling (Ansible prereq)
 

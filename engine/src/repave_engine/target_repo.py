@@ -45,6 +45,7 @@ def publish_to_module_repository(
     repository: ModuleRepository,
     *,
     dry_run: bool,
+    artifact_type: str = "terraform-module",
 ) -> str:
     if dry_run:
         return (
@@ -60,7 +61,7 @@ def publish_to_module_repository(
         )
 
     repository.local_path.mkdir(parents=True, exist_ok=True)
-    _copy_tree_contents(staging_dir, repository.local_path)
+    _copy_tree_contents(staging_dir, repository.local_path, artifact_type=artifact_type)
     _ensure_git_repository(repository.local_path, module_name=repository.name)
 
     return (
@@ -69,9 +70,14 @@ def publish_to_module_repository(
     )
 
 
-def _copy_tree_contents(source_dir: Path, destination_dir: Path) -> None:
+def _copy_tree_contents(
+    source_dir: Path,
+    destination_dir: Path,
+    *,
+    artifact_type: str = "terraform-module",
+) -> None:
     for item in source_dir.iterdir():
-        if is_gate_artifact_path(item.name):
+        if is_gate_artifact_path(item.name, artifact_type=artifact_type):
             continue
         target = destination_dir / item.name
         if item.is_dir():
