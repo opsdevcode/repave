@@ -39,4 +39,5 @@ kind create cluster --name repave-local
 kubectl cluster-info --context kind-repave-local
 ```
 
-v1.2 does not require Kubernetes. The operator and Helm chart arrive in v1.3.
+Kubernetes is optional for local development. The operator and Helm chart are
+planned for a future release.
