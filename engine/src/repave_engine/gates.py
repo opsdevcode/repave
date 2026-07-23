@@ -71,13 +71,25 @@ def _tool_available(name: str) -> bool:
     return shutil.which(name) is not None
 
 
-def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
+def _run(
+    cmd: list[str],
+    cwd: Path,
+    *,
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    env = None
+    if extra_env is not None:
+        import os
+
+        env = os.environ.copy()
+        env.update(extra_env)
     return subprocess.run(
         cmd,
         cwd=cwd,
         capture_output=True,
         text=True,
         check=False,
+        env=env,
     )
 
 
@@ -176,7 +188,11 @@ def _gate_checkov(
     config = blueprint.checkov_gate if blueprint is not None else CheckovGateConfig()
     extra_skip = gate_overrides.checkov_skip_checks if gate_overrides is not None else ()
     cmd = build_checkov_command(output_dir, config, extra_skip_checks=extra_skip)
-    result = _run(cmd, output_dir)
+    result = _run(
+        cmd,
+        output_dir,
+        extra_env={"REPAVE_CHECKOV_SCAN_ROOT": str(output_dir.resolve())},
+    )
     if result.returncode == 0:
         return GateResult("checkov", True, False, "checkov passed")
     return GateResult("checkov", False, False, result.stderr.strip() or "checkov failed")

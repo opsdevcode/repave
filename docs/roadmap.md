@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.10.0  
-**Planning horizon:** v1.11 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.11.0  
+**Planning horizon:** v1.12 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---
 
@@ -28,9 +28,8 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.10  today       generate + gates + publish + Checkov policy pack
+v1.11  today       module-standard Checkov rules enforce layout contract
   │
-  ├─ v1.11          enforce           module-standard Checkov rules
   ├─ v1.12–v1.15    multi-artifact    gate registry; provenance decoupling; Ansible role path + standard
   ├─ v1.16–v1.19    operate + extend  operator alpha; portal UX; module updates; more golden paths
   ├─ v1.20–v1.24    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
@@ -112,7 +111,7 @@ v1.10  today       generate + gates + publish + Checkov policy pack
 - Generated `locals.tf` with `common_tags`, `name_prefix`, normalized services
 - Resource scaffolds consume `local.*` for shared context
 
-### v1.10 — Checkov policy pack (current)
+### v1.10 — Checkov policy pack
 
 - In-repo custom policies at `examples/checkov/policies`
 - Policies copied into generated modules at `policy/checkov/`
@@ -120,33 +119,17 @@ v1.10  today       generate + gates + publish + Checkov policy pack
 - Optional `gates.checkov.skip_checks` in `repave.config.yaml`
 - PR branch cleanup workflow + `delete_branch_on_merge` on the repo
 
+### v1.11 — Module-standard Checkov rules (current)
+
+- Python policies `CKV2_REPAVE_3`–`CKV2_REPAVE_7` enforce layout, required inputs,
+  and shared-local usage in resource scaffolds
+- Starter YAML policies `CKV2_REPAVE_1`–`CKV2_REPAVE_2` for Terraform version bounds
+- Policy pack v1.1.0; fixture tests under `examples/checkov/tests/`; pack README
+- Checkov gate sets `REPAVE_CHECKOV_SCAN_ROOT` for reliable module-root resolution
+
 ---
 
 ## Planned
-
-### v1.11 — Repave-specific Checkov rules (Phase 3)
-
-**Problem:** Starter policies only check Terraform version constraints. The module
-standard (layout, locals, tags, naming) is documented but not enforced by policy
-scanning.
-
-**Approach:**
-
-- Add YAML/Python rules under `examples/checkov/policies/` aligned with the module
-  standard, for example:
-  - `locals.tf` present; no resource blocks in `variables.tf`
-  - Resources reference `local.common_tags` / `local.name_prefix` where applicable
-  - No monolithic `main.tf` with standalone resources
-  - Required variables (`environment`, `tags`, `name_prefix`) declared
-- Unit-test custom policies with fixture Terraform under `examples/checkov/tests/`
-- Bump policy pack version; blueprint pins new version
-
-**Dependencies:** v1.10 policy pack and render copy path (done).
-
-**Done when:** Generated scaffold fails Checkov when a standard rule is violated;
-CI documents how to add org-specific rules to the pack.
-
----
 
 ### v1.12 — Gate registry and blueprint gate extensibility (Ansible prereq)
 

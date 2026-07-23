@@ -137,8 +137,9 @@ def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr("repave_engine.gates._tool_available", lambda name: name == "checkov")
     captured: dict[str, list[str]] = {}
 
-    def fake_run(cmd, cwd):
+    def fake_run(cmd, cwd, *, extra_env=None):
         captured["cmd"] = cmd
+        captured["extra_env"] = extra_env
         return MagicMock(returncode=0, stdout="", stderr="")
 
     monkeypatch.setattr("repave_engine.gates._run", fake_run)
@@ -150,6 +151,7 @@ def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -
     )
 
     assert "CKV_X" in captured["cmd"]
+    assert captured["extra_env"]["REPAVE_CHECKOV_SCAN_ROOT"] == str(tmp_path.resolve())
 
 
 def test_terraform_fmt_failure(tmp_path: Path, monkeypatch) -> None:
