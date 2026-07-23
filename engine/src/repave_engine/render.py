@@ -16,6 +16,44 @@ class RenderResult:
     values: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class RenderedFile:
+    path: str
+    content: str
+    truncated: bool = False
+
+
+def collect_rendered_files(
+    output_dir: Path,
+    *,
+    max_files: int = 100,
+    max_bytes: int = 32_768,
+) -> tuple[RenderedFile, ...]:
+    if not output_dir.exists():
+        return ()
+
+    files: list[RenderedFile] = []
+    for path in sorted(output_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        if len(files) >= max_files:
+            break
+
+        relative_path = path.relative_to(output_dir).as_posix()
+        try:
+            raw = path.read_bytes()
+        except OSError:
+            continue
+        if b"\0" in raw[:8192]:
+            continue
+
+        truncated = len(raw) > max_bytes
+        content = raw[:max_bytes].decode("utf-8", errors="replace")
+        files.append(RenderedFile(path=relative_path, content=content, truncated=truncated))
+
+    return tuple(files)
+
+
 def render_blueprint(
     blueprint: Blueprint,
     values: dict[str, Any],

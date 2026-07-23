@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from helpers import make_blueprint
-from repave_engine.render import render_blueprint
+from repave_engine.render import collect_rendered_files, render_blueprint
 
 
 def test_render_blueprint_writes_output(tmp_path: Path) -> None:
@@ -58,3 +58,30 @@ def test_render_refuses_existing_output_without_overwrite(tmp_path: Path) -> Non
             output_dir,
             overwrite=False,
         )
+
+
+def test_collect_rendered_files_returns_text_files(tmp_path: Path) -> None:
+    output_dir = tmp_path / "module"
+    output_dir.mkdir()
+    (output_dir / "main.tf").write_text('resource "null_resource" "x" {}\n', encoding="utf-8")
+    (output_dir / "README.md").write_text("# Example\n", encoding="utf-8")
+    (output_dir / "image.bin").write_bytes(b"\0binary")
+
+    files = collect_rendered_files(output_dir)
+
+    paths = {item.path for item in files}
+    assert "main.tf" in paths
+    assert "README.md" in paths
+    assert "image.bin" not in paths
+
+
+def test_collect_rendered_files_marks_truncated_content(tmp_path: Path) -> None:
+    output_dir = tmp_path / "module"
+    output_dir.mkdir()
+    (output_dir / "large.txt").write_text("a" * 40_000, encoding="utf-8")
+
+    files = collect_rendered_files(output_dir, max_bytes=1024)
+
+    assert len(files) == 1
+    assert files[0].truncated is True
+    assert len(files[0].content) == 1024
