@@ -61,6 +61,124 @@ def test_cmd_generate_exit_code_success(
     assert "Dry-run" in output
 
 
+def test_cmd_generate_uses_github_token_from_env_when_not_dry_run(
+    repo_root,
+    sample_inputs,
+    output_config,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from repave_engine.blueprint import load_blueprint
+
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
+    captured: dict[str, object] = {}
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-module-generic",
+        repo_root,
+    )
+
+    def fake_generate_from_path(*_args, **kwargs):
+        captured["github_token"] = kwargs.get("github_token")
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=tmp_path / "staging", values={}),
+            gates=[],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="published",
+        )
+
+    monkeypatch.setattr("repave_engine.cli.generate_from_path", fake_generate_from_path)
+
+    code = cmd_generate(
+        _generate_args(repo_root, sample_inputs, output_config, tmp_path, dry_run=False)
+    )
+
+    assert code == 0
+    assert captured["github_token"] == "ghp_from_env"
+
+
+def test_cmd_generate_clears_github_token_on_dry_run(
+    repo_root,
+    sample_inputs,
+    output_config,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from repave_engine.blueprint import load_blueprint
+
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
+    captured: dict[str, object] = {}
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-module-generic",
+        repo_root,
+    )
+
+    def fake_generate_from_path(*_args, **kwargs):
+        captured["github_token"] = kwargs.get("github_token")
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=tmp_path / "staging", values={}),
+            gates=[],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="dry-run",
+        )
+
+    monkeypatch.setattr("repave_engine.cli.generate_from_path", fake_generate_from_path)
+
+    code = cmd_generate(
+        _generate_args(repo_root, sample_inputs, output_config, tmp_path, dry_run=True)
+    )
+
+    assert code == 0
+    assert captured["github_token"] is None
+
+
+def test_cmd_generate_prefers_cli_token_over_env(
+    repo_root,
+    sample_inputs,
+    output_config,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from repave_engine.blueprint import load_blueprint
+
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
+    captured: dict[str, object] = {}
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-module-generic",
+        repo_root,
+    )
+
+    def fake_generate_from_path(*_args, **kwargs):
+        captured["github_token"] = kwargs.get("github_token")
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=tmp_path / "staging", values={}),
+            gates=[],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="published",
+        )
+
+    monkeypatch.setattr("repave_engine.cli.generate_from_path", fake_generate_from_path)
+
+    code = cmd_generate(
+        _generate_args(
+            repo_root,
+            sample_inputs,
+            output_config,
+            tmp_path,
+            dry_run=False,
+            github_token="ghp_cli",
+        )
+    )
+
+    assert code == 0
+    assert captured["github_token"] == "ghp_cli"
+
+
 def test_cmd_generate_exit_code_on_gate_failure(
     repo_root,
     sample_inputs,
