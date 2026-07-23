@@ -82,7 +82,7 @@ def test_create_pull_request_dry_run(tmp_path: Path) -> None:
 
     assert "Dry-run" in message
     assert repository.web_url in message
-    assert plan.title in message
+    assert f"Repository name: {repository.name}" in message
 
 
 def test_create_pull_request_publishes_to_github(tmp_path: Path) -> None:

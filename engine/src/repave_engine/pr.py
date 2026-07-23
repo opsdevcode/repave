@@ -68,10 +68,10 @@ def create_pull_request(plan: PullRequestPlan, *, github_token: str | None) -> s
         return (
             "Dry-run: remote GitHub repository not created. Provide GITHUB_TOKEN to enable "
             "remote publish.\n"
+            f"Repository name: {plan.repository.name}\n"
             f"Target repository: {plan.repository.web_url}\n"
             f"Local repository: {plan.repository.local_path}\n"
-            f"Planned branch: {plan.branch}\n"
-            f"Planned title: {plan.title}"
+            f"Planned branch: {plan.branch}"
         )
 
     try:
