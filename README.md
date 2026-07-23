@@ -13,10 +13,11 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.8.0.** The generation loop runs locally with no Kubernetes
+> Status: **v1.9.1.** The generation loop runs locally with no Kubernetes
 > required. Generated modules publish to separate git repositories and can be
 > pushed to GitHub with `GITHUB_TOKEN`. Each scoped provider resource is
-> rendered to its own `.tf` file. The self-healing reconciliation operator is
+> rendered to its own `.tf` file; shared context lives in `locals.tf` against
+> the in-repo module standard. The self-healing reconciliation operator is
 > planned next (see [`operator/`](operator/)).
 
 ## Why repave
@@ -130,8 +131,10 @@ docs/          # concept docs
   simplified blueprint form.
 - **v1.7** — per-service resource scope (basic capabilities, basic + additional,
   or custom-only).
-- **v1.8** (current) — one `.tf` file per scoped provider resource; module
-  standard v0.4.0 in `examples/standards` (`locals.tf` + per-resource `.tf` layout).
+- **v1.8** — one `.tf` file per scoped provider resource.
+- **v1.9** (current) — `locals.tf` conventions (`common_tags`, `name_prefix`),
+  expanded in-repo module standard (`examples/standards` v0.4.0), and blueprint
+  scaffold aligned with community module structure.
 - **Next** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
   detects drift and standard-version bumps and opens remediation PRs across the
   generated estate; more golden paths (Ansible role, cloud resource modules);
