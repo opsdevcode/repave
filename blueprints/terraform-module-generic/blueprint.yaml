@@ -43,3 +43,4 @@ spec:
     type: pull_request
     repository:
       name_template: "tf-{cloud_provider}-{module_name}"
+      title_template: "Bootstrap {cloud_provider} module {module_name} ({provider_services})"

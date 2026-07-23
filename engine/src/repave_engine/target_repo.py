@@ -48,7 +48,8 @@ def publish_to_module_repository(
     if dry_run:
         return (
             "Dry-run: module would be written to its own repository.\n"
-            f"Remote: {repository.web_url}\n"
+            f"Repository name: {repository.name}\n"
+            f"Target repository: {repository.web_url}\n"
             f"Local clone path: {repository.local_path}"
         )
 
