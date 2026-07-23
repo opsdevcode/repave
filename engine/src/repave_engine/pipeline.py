@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.blueprint import Blueprint, load_blueprint, validate_inputs
-from repave_engine.gates import GateResult, all_gates_passed, run_gates
+from repave_engine.gates import GateResult, all_gates_passed, clean_gate_artifacts, run_gates
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
 from repave_engine.render import (
     RenderedFile,
@@ -65,6 +65,7 @@ def generate_from_blueprint(
     try:
         render_result = render_blueprint(blueprint, normalized, staging_dir)
         gate_results = run_gates(render_result.output_dir, blueprint.gates)
+        clean_gate_artifacts(render_result.output_dir)
 
         pr_plan: PullRequestPlan | None = None
         pr_message = "Gates failed; module repository not updated."

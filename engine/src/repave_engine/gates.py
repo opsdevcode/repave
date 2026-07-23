@@ -30,6 +30,31 @@ def all_gates_passed(results: list[GateResult]) -> bool:
     return all(r.passed or r.skipped for r in results)
 
 
+_GATE_ARTIFACT_NAMES = (
+    ".terraform",
+    ".terraform.lock.hcl",
+    ".tflint.d",
+)
+
+
+def clean_gate_artifacts(output_dir: Path) -> None:
+    for name in _GATE_ARTIFACT_NAMES:
+        path = output_dir / name
+        if path.is_dir():
+            shutil.rmtree(path)
+        elif path.is_file():
+            path.unlink()
+
+
+def is_gate_artifact_path(relative_path: str) -> bool:
+    parts = relative_path.split("/")
+    if not parts:
+        return False
+    if parts[0] in {".terraform", ".tflint.d"}:
+        return True
+    return relative_path in {".terraform.lock.hcl"}
+
+
 def _tool_available(name: str) -> bool:
     return shutil.which(name) is not None
 
