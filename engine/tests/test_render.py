@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 
 from helpers import make_blueprint
-from repave_engine.render import collect_rendered_files, render_blueprint
+from repave_engine.render import (
+    build_scoped_resources,
+    collect_rendered_files,
+    render_blueprint,
+)
 
 
 def test_render_blueprint_writes_output(tmp_path: Path) -> None:
@@ -58,6 +62,46 @@ def test_render_refuses_existing_output_without_overwrite(tmp_path: Path) -> Non
             output_dir,
             overwrite=False,
         )
+
+
+def test_build_scoped_resources_flattens_scope() -> None:
+    scope = '{"ec2":{"resources":["diff","id"]},"s3":{"resources":["bucket","object"]}}'
+    items = build_scoped_resources(scope)
+
+    assert [item.file_stem for item in items] == [
+        "ec2_diff",
+        "ec2_id",
+        "s3_bucket",
+        "s3_object",
+    ]
+
+
+def test_render_writes_scoped_resource_files(
+    terraform_blueprint,
+    sample_inputs,
+    tmp_path: Path,
+) -> None:
+    from repave_engine.blueprint import validate_inputs
+
+    values = validate_inputs(terraform_blueprint, sample_inputs)
+    output_dir = tmp_path / "module"
+
+    render_blueprint(terraform_blueprint, values, output_dir)
+
+    assert (output_dir / "locals.tf").exists()
+    assert (output_dir / "ec2_diff.tf").exists()
+    assert (output_dir / "s3_bucket.tf").exists()
+    assert not (output_dir / "main.tf").exists()
+    assert not (output_dir / "ec2.tf").exists()
+    assert not (output_dir / "s3.tf").exists()
+    variables = (output_dir / "variables.tf").read_text(encoding="utf-8")
+    assert 'variable "provider_service_scope"' not in variables
+    ec2_diff = (output_dir / "ec2_diff.tf").read_text(encoding="utf-8")
+    assert 'null_resource" "ec2_diff"' in ec2_diff
+    assert "ec2 — diff" in ec2_diff
+    outputs = (output_dir / "outputs.tf").read_text(encoding="utf-8")
+    assert "null_resource.ec2_diff.id" in outputs
+    assert "null_resource.s3_bucket.id" in outputs
 
 
 def test_collect_rendered_files_returns_text_files(tmp_path: Path) -> None:

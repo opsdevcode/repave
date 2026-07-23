@@ -5,17 +5,17 @@ output "module_name" {
 
 output "cloud_provider" {
   description = "Cloud provider targeted by this module."
-  value       = var.cloud_provider
+  value       = local.cloud_provider
 }
 
 output "provider_services" {
   description = "Provider services in scope for this module."
-  value       = var.provider_services
+  value       = local.provider_services
 }
 
 output "provider_service_scope" {
   description = "Selected resource capabilities per provider service."
-  value       = jsondecode(var.provider_service_scope)
+  value       = local.provider_service_scope
 }
 
 output "environment" {
@@ -25,5 +25,9 @@ output "environment" {
 
 output "resource_ids" {
   description = "IDs of resources managed by this module."
-  value       = [null_resource.scope.id]
+  value = [
+{% for item in scoped_resources %}
+    null_resource.{{ item.file_stem }}.id{% if not loop.last %},{% endif %}
+{% endfor %}
+  ]
 }

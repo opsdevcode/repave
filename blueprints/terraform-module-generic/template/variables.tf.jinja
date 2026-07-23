@@ -16,12 +16,6 @@ variable "provider_services" {
   default     = [{% for svc in provider_services.split(',') %}"{{ svc.strip() }}"{% if not loop.last %}, {% endif %}{% endfor %}]
 }
 
-variable "provider_service_scope" {
-  type        = string
-  description = "JSON map of resource capabilities selected for each provider service."
-  default     = {{ provider_service_scope | tojson }}
-}
-
 variable "environment" {
   type        = string
   description = "Deployment environment (for example dev, stage, prod)."

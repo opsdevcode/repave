@@ -46,7 +46,8 @@ def test_generate_form_submission(
     assert "tf-aws-example" in response.text
     assert "Dry-run" in response.text
     assert "Generated files" in response.text
-    assert "main.tf" in response.text
+    assert "ec2_diff.tf" in response.text
+    assert "s3_bucket.tf" in response.text
 
 
 def test_generate_publish_passes_github_token_from_env(
