@@ -123,7 +123,7 @@ docs/          # concept docs and [roadmap](docs/roadmap.md)
 **Current:** v1.10 — in-repo Checkov policy pack, gate config, and module scaffold
 with `locals.tf` + per-resource `.tf` files.
 
-High-level release history and detailed future planning live in
+High-level release history and detailed future planning (through **v2.0.0**) live in
 [`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when
 scoping work; keep this section as a short pointer only.
 
