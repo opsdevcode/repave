@@ -30,6 +30,9 @@ def run_gates(
         if gate == "checkov":
             results.append(_gate_checkov(output_dir, blueprint, gate_overrides))
             continue
+        if gate == "secrets":
+            results.append(_gate_secrets(output_dir))
+            continue
         runner = _GATE_RUNNERS.get(gate)
         if runner is None:
             results.append(GateResult(gate, False, False, f"Unknown gate: {gate}"))
@@ -175,6 +178,28 @@ def build_checkov_command(
     if config.soft_fail:
         cmd.append("--soft-fail")
     return cmd
+
+
+def build_secrets_scan_command(output_dir: Path) -> list[str]:
+    return [
+        "checkov",
+        "-d",
+        str(output_dir),
+        "--framework",
+        "secrets",
+        "--enable-secret-scan-all-files",
+    ]
+
+
+def _gate_secrets(output_dir: Path) -> GateResult:
+    if not _tool_available("checkov"):
+        return GateResult("secrets", True, True, "checkov not installed; skipped")
+
+    cmd = build_secrets_scan_command(output_dir)
+    result = _run(cmd, output_dir)
+    if result.returncode == 0:
+        return GateResult("secrets", True, False, "secrets scan passed")
+    return GateResult("secrets", False, False, result.stderr.strip() or "secrets scan failed")
 
 
 def _gate_checkov(

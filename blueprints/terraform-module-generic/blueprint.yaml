@@ -42,10 +42,11 @@ spec:
     - terraform-validate
     - tflint
     - checkov
+    - secrets
     - docs-drift
   checkov:
     policies_source: examples/checkov/policies
-    policy_version: 1.1.0
+    policy_version: 1.2.0
   gate_config:
     checkov:
       external_checks_dir: policy/checkov

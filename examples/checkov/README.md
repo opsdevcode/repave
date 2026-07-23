@@ -11,6 +11,7 @@ examples/checkov/
 │   ├── custom_001_*.yaml     # Terraform version constraints (graph checks)
 │   ├── custom_002_*.yaml
 │   ├── repave_module_layout.py
+│   ├── repave_security.py
 │   └── repave_null_resource_locals.py
 └── tests/
     ├── fixtures/             # Pass/fail Terraform fixtures
@@ -19,6 +20,15 @@ examples/checkov/
 
 Policy pack version is pinned in `blueprints/terraform-module-generic/blueprint.yaml` under
 `spec.checkov.policy_version`.
+
+| Check ID | Category | Rule |
+| --- | --- | --- |
+| `CKV2_REPAVE_1`–`2` | Version | Terraform `required_version` declared and capped `< 2.0.0` |
+| `CKV2_REPAVE_3`–`7` | Layout | `locals.tf`, file structure, required vars, shared locals |
+| `CKV2_REPAVE_8`–`12` | Security | No credential literals, hardcoded secrets, provisioners; sensitive outputs |
+| `secrets` gate | Secrets scan | Checkov secrets framework across all module files |
+
+The `secrets` gate runs separately from the Checkov custom-policy gate.
 
 ## Running locally
 
@@ -35,7 +45,10 @@ export REPAVE_CHECKOV_SCAN_ROOT=/path/to/module
 checkov -d /path/to/module \
   --config-file .checkov.yml \
   --external-checks-dir policy/checkov \
-  --check CKV2_REPAVE_1,CKV2_REPAVE_2,CKV2_REPAVE_3,CKV2_REPAVE_4,CKV2_REPAVE_5,CKV2_REPAVE_6,CKV2_REPAVE_7
+  --check CKV2_REPAVE_1,CKV2_REPAVE_2,CKV2_REPAVE_3,CKV2_REPAVE_4,CKV2_REPAVE_5,CKV2_REPAVE_6,CKV2_REPAVE_7,CKV2_REPAVE_8,CKV2_REPAVE_9,CKV2_REPAVE_10,CKV2_REPAVE_11,CKV2_REPAVE_12
+
+# Secrets scan (same gate repave runs as `secrets`)
+checkov -d /path/to/module --framework secrets --enable-secret-scan-all-files
 ```
 
 Repave sets `REPAVE_CHECKOV_SCAN_ROOT` when running the checkov gate so layout policies can

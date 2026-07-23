@@ -84,6 +84,7 @@
               "terraform-validate",
               "tflint",
               "checkov",
+              "secrets",
               "docs-drift"
             ]
           }

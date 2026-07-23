@@ -119,12 +119,15 @@ v1.11  today       module-standard Checkov rules enforce layout contract
 - Optional `gates.checkov.skip_checks` in `repave.config.yaml`
 - PR branch cleanup workflow + `delete_branch_on_merge` on the repo
 
-### v1.11 — Module-standard Checkov rules (current)
+### v1.11 — Module-standard and security Checkov rules (current)
 
 - Python policies `CKV2_REPAVE_3`–`CKV2_REPAVE_7` enforce layout, required inputs,
   and shared-local usage in resource scaffolds
+- Security policies `CKV2_REPAVE_8`–`CKV2_REPAVE_12` ban credential literals, hardcoded
+  secrets, provisioners, and undeclared sensitive outputs
+- Dedicated `secrets` gate scans rendered modules with Checkov's secrets framework
 - Starter YAML policies `CKV2_REPAVE_1`–`CKV2_REPAVE_2` for Terraform version bounds
-- Policy pack v1.1.0; fixture tests under `examples/checkov/tests/`; pack README
+- Policy pack v1.2.0; fixture tests under `examples/checkov/tests/`; pack README
 - Checkov gate sets `REPAVE_CHECKOV_SCAN_ROOT` for reliable module-root resolution
 
 ---
