@@ -1,0 +1,5 @@
+locals {
+  cloud_provider         = var.cloud_provider
+  provider_services      = var.provider_services
+  provider_service_scope = jsondecode({{ provider_service_scope | tojson }})
+}

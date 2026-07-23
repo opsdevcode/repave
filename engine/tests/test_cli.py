@@ -60,7 +60,8 @@ def test_cmd_generate_exit_code_success(
     assert "tf-aws-example" in output
     assert "Dry-run" in output
     assert "Generated files:" in output
-    assert "main.tf" in output
+    assert "ec2_diff.tf" in output
+    assert "s3_bucket.tf" in output
 
 
 def test_cmd_generate_uses_github_token_from_env_when_not_dry_run(

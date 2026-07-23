@@ -27,3 +27,8 @@ provider_service_scope:
 provider_service_scope_summary:
   type: str
   help: Human-readable provider service scope summary
+
+scoped_resources:
+  type: yaml
+  default: []
+  help: Flat list of in-scope provider resources for template rendering

@@ -27,7 +27,10 @@ def test_generate_terraform_module_generic_publishes_module_repo(
     assert module_repo is not None
     assert module_repo.name == "tf-aws-example"
     assert module_repo.local_path.exists()
-    assert (module_repo.local_path / "main.tf").exists()
+    assert (module_repo.local_path / "ec2_diff.tf").exists()
+    assert (module_repo.local_path / "s3_bucket.tf").exists()
+    assert (module_repo.local_path / "locals.tf").exists()
+    assert not (module_repo.local_path / "main.tf").exists()
     assert (module_repo.local_path / "README.md").exists()
     assert "example" in (module_repo.local_path / "README.md").read_text(encoding="utf-8")
     assert not (module_repo.local_path / ".terraform").exists()
@@ -76,10 +79,14 @@ def test_dry_run_does_not_write_module_repo(
     assert "Dry-run" in result.pr_message
     assert result.dry_run is True
     paths = {item.path for item in result.rendered_files}
-    assert "main.tf" in paths
+    assert "ec2_diff.tf" in paths
+    assert "s3_bucket.tf" in paths
+    assert "locals.tf" in paths
     assert "README.md" in paths
+    assert "main.tf" not in paths
     assert any(
-        item.path == "main.tf" and "null_resource" in item.content for item in result.rendered_files
+        item.path == "ec2_diff.tf" and "null_resource" in item.content
+        for item in result.rendered_files
     )
     assert not any(item.path.startswith(".terraform/") for item in result.rendered_files)
     assert ".terraform.lock.hcl" not in paths
