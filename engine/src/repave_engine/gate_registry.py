@@ -125,12 +125,7 @@ def load_gate_plugins() -> None:
         _PLUGINS_LOADED = True
         return
 
-    try:
-        eps = entry_points(group="repave.gates")
-    except TypeError:
-        eps = entry_points().get("repave.gates", [])
-
-    for entry_point in eps:
+    for entry_point in entry_points(group="repave.gates"):
         entry_point.load()
 
     _PLUGINS_LOADED = True
