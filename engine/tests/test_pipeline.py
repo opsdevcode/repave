@@ -24,14 +24,14 @@ def test_generate_terraform_module_generic_publishes_module_repo(
 
     module_repo = result.module_repository
     assert module_repo is not None
-    assert module_repo.name == "tf-example"
+    assert module_repo.name == "tf-aws-example"
     assert module_repo.local_path.exists()
     assert (module_repo.local_path / "main.tf").exists()
     assert (module_repo.local_path / "README.md").exists()
     assert "example" in (module_repo.local_path / "README.md").read_text(encoding="utf-8")
     assert (module_repo.local_path / ".git").exists()
     assert result.pr_plan is not None
-    assert result.pr_plan.repository.web_url.endswith("/tf-example")
+    assert result.pr_plan.repository.web_url.endswith("/tf-aws-example")
     assert all(g.passed or g.skipped for g in result.gates)
 
 
@@ -133,12 +133,13 @@ def test_resolve_module_repository_uses_template(output_config) -> None:
     repository = resolve_module_repository(
         module_name="networking",
         config=output_config,
-        name_template="tf-{module_name}",
+        name_template="tf-{cloud_provider}-{module_name}",
+        template_values={"cloud_provider": "aws"},
     )
 
-    assert repository.name == "tf-networking"
-    assert repository.local_path == output_config.modules_root / "tf-networking"
-    assert repository.web_url == "https://github.com/example-org/tf-networking"
+    assert repository.name == "tf-aws-networking"
+    assert repository.local_path == output_config.modules_root / "tf-aws-networking"
+    assert repository.web_url == "https://github.com/example-org/tf-aws-networking"
 
 
 def test_publish_refuses_existing_nonempty_repo(
@@ -147,7 +148,7 @@ def test_publish_refuses_existing_nonempty_repo(
     output_config,
     staging_root,
 ) -> None:
-    repo_path = output_config.modules_root / "tf-example"
+    repo_path = output_config.modules_root / "tf-aws-example"
     repo_path.mkdir(parents=True)
     (repo_path / "existing.txt").write_text("keep", encoding="utf-8")
 

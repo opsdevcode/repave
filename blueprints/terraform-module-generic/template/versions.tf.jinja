@@ -2,6 +2,22 @@ terraform {
   required_version = ">= 1.8.0, < 2.0.0"
 
   required_providers {
+{% if cloud_provider == "aws" %}
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+{% elif cloud_provider == "azure" %}
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"
+    }
+{% elif cloud_provider == "gcp" %}
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 6.0"
+    }
+{% endif %}
     null = {
       source  = "hashicorp/null"
       version = "~> 3.2"

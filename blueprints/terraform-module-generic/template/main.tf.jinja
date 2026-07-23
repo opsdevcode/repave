@@ -1,7 +1,16 @@
-resource "null_resource" "example" {
+locals {
+  cloud_provider    = "{{ cloud_provider }}"
+  provider_services = [{% for svc in provider_services.split(',') %}"{{ svc.strip() }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+}
+
+# Module scope: {{ cloud_provider | upper }} — {{ provider_services }}
+# Replace this scaffold with provider-specific resources when implementing the module.
+resource "null_resource" "scope" {
   triggers = {
-    module_name = var.module_name
-    environment = var.environment
-    tags        = jsonencode(var.tags)
+    cloud_provider    = local.cloud_provider
+    provider_services = join(",", local.provider_services)
+    module_name       = var.module_name
+    environment       = var.environment
+    tags              = jsonencode(var.tags)
   }
 }

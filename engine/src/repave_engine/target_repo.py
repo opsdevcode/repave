@@ -4,6 +4,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from repave_engine.settings import OutputConfig
 
@@ -22,8 +23,12 @@ def resolve_module_repository(
     module_name: str,
     config: OutputConfig,
     name_template: str,
+    template_values: dict[str, Any] | None = None,
 ) -> ModuleRepository:
-    repo_name = name_template.format(module_name=module_name)
+    format_values = {"module_name": module_name}
+    if template_values:
+        format_values.update({key: str(value) for key, value in template_values.items()})
+    repo_name = name_template.format(**format_values)
     local_path = config.modules_root / repo_name
     return ModuleRepository(
         name=repo_name,

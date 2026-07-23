@@ -2,8 +2,8 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-module-generic
-  version: 0.1.0
-  description: Generic Terraform module scaffold with tests and CI wiring.
+  version: 0.2.0
+  description: Generic Terraform module scaffold with provider scope, tests, and CI wiring.
 spec:
   standard:
     source: examples/standards
@@ -17,6 +17,19 @@ spec:
       type: string
       required: true
       description: Short description of what the module does.
+    - name: cloud_provider
+      type: string
+      required: true
+      description: Cloud provider this module targets.
+      enum:
+        - aws
+        - azure
+        - gcp
+      default: aws
+    - name: provider_services
+      type: string
+      required: true
+      description: Comma-separated list of provider services in scope (e.g. s3, vpc, iam).
   template:
     engine: copier
     path: template
@@ -29,4 +42,4 @@ spec:
   output:
     type: pull_request
     repository:
-      name_template: "tf-{module_name}"
+      name_template: "tf-{cloud_provider}-{module_name}"

@@ -37,4 +37,6 @@ def sample_inputs() -> dict[str, str]:
     return {
         "module_name": "example",
         "description": "Example module generated in tests",
+        "cloud_provider": "aws",
+        "provider_services": "s3,vpc",
     }
