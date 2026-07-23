@@ -105,6 +105,10 @@
                 "name_template": {
                   "type": "string",
                   "description": "GitHub repository name template. Supports {module_name} and blueprint input placeholders such as {cloud_provider}."
+                },
+                "title_template": {
+                  "type": "string",
+                  "description": "Publish title template. Placeholders must match blueprint input names."
                 }
               }
             }

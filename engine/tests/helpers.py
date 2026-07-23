@@ -59,4 +59,5 @@ def make_blueprint(
         gates=gates,
         output_type="pull_request",
         output_repo_name_template="tf-{module_name}",
+        output_title_template="Bootstrap {module_name}",
     )

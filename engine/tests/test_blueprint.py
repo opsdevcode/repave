@@ -22,6 +22,10 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
         field for field in terraform_blueprint.inputs if field.name == "cloud_provider"
     )
     assert cloud_provider.enum == ("aws", "azure", "gcp")
+    assert (
+        terraform_blueprint.output_title_template
+        == "Bootstrap {cloud_provider} module {module_name} ({provider_services})"
+    )
 
 
 def test_validate_required_inputs(terraform_blueprint) -> None:

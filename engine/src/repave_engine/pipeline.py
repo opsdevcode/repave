@@ -70,10 +70,11 @@ def generate_from_blueprint(
                 dry_run=dry_run,
             )
             pr_plan = plan_pull_request(
-                module_name=module_name,
                 blueprint_name=blueprint.name,
                 blueprint_version=blueprint.version,
                 standard_version=blueprint.standard_version,
+                title_template=blueprint.output_title_template,
+                input_fields=tuple(field.name for field in blueprint.inputs),
                 files_root=module_repository.local_path,
                 repository=module_repository,
                 module_values=normalized,
