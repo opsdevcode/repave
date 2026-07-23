@@ -1,9 +1,9 @@
 # Contributing to repave
 
-Thanks for your interest in `repave`. **v1.9** established `locals.tf` conventions,
-the in-repo module standard, and per-resource Terraform module layout; the most
-valuable contributions now are feedback on contracts, golden paths, and the
-operator design for the next release.
+Thanks for your interest in `repave`. **v1.10** added the Checkov policy pack and
+gate configuration; see [`docs/roadmap.md`](docs/roadmap.md) for shipped history
+and planned work. The most valuable contributions now are feedback on contracts,
+golden paths, and operator design.
 
 ## Ground rules
 

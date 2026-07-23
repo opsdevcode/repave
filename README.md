@@ -115,36 +115,17 @@ blueprints/    # versioned golden paths (reference packs)
 examples/      # sample standards and Checkov policy packs
 deploy/local/  # docker compose + kind quickstart
 operator/      # planned: self-healing reconciliation (Operator SDK)
-docs/          # concept docs
+docs/          # concept docs and [roadmap](docs/roadmap.md)
 ```
 
 ## Roadmap
 
-- **v1.0** — engine + `terraform-module-generic` golden path + gates + local run +
-  CI, release automation, and test coverage.
-- **v1.1** — separate module repositories and release automation.
-- **v1.2** — cloud provider and service scope inputs for Terraform modules.
-- **v1.3** — GitHub remote publish (create repository + push initial commit).
-- **v1.4** — dry-run preview of generated files before publish.
-- **v1.5** — gate artifact cleanup in preview/publish; license input on the form
-  (later removed in v1.6).
-- **v1.6** — full Terraform provider catalogs (AWS/Azure/GCP), `uv` toolchain,
-  simplified blueprint form.
-- **v1.7** — per-service resource scope (basic capabilities, basic + additional,
-  or custom-only).
-- **v1.8** — one `.tf` file per scoped provider resource.
-- **v1.9** — `locals.tf` conventions (`common_tags`, `name_prefix`),
-  expanded in-repo module standard (`examples/standards` v0.4.0), and blueprint
-  scaffold aligned with community module structure.
-- **v1.10** (current) — in-repo Checkov custom policy pack
-  (`examples/checkov/policies`) copied into generated modules; gate reads
-  `.checkov.yml` and `policy/checkov` via blueprint `gate_config`.
-- **Next** — repave-specific Checkov rules aligned with the module standard
-  (layout, locals, tags, version pins); reconciliation operator
-  (`GoldenPathRepo` / `Blueprint` CRDs) that detects drift and standard-version
-  bumps and opens remediation PRs across the generated estate; more golden paths
-  (Ansible role, cloud resource modules); portal hardening; PR-based updates to
-  existing module repositories.
+**Current:** v1.10 — in-repo Checkov policy pack, gate config, and module scaffold
+with `locals.tf` + per-resource `.tf` files.
+
+High-level release history and detailed future planning live in
+[`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when
+scoping work; keep this section as a short pointer only.
 
 ## Releases
 

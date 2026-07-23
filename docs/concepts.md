@@ -31,4 +31,7 @@ module to `main`.
 ## Self-healing (planned)
 
 An Operator SDK reconciler will detect drift and standard-version bumps across
-the generated estate and open remediation PRs automatically.
+the generated estate and open remediation PRs automatically. See
+[`docs/roadmap.md`](roadmap.md) (reconciliation operator) and
+[`operator/README.md`](../operator/README.md).
+
