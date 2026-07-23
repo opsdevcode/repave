@@ -9,6 +9,7 @@ from repave_engine.gates import (
     _gate_terraform_fmt,
     all_gates_passed,
     build_checkov_command,
+    build_secrets_scan_command,
     clean_gate_artifacts,
     is_gate_artifact_path,
     run_gates,
@@ -152,6 +153,30 @@ def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -
 
     assert "CKV_X" in captured["cmd"]
     assert captured["extra_env"]["REPAVE_CHECKOV_SCAN_ROOT"] == str(tmp_path.resolve())
+
+
+def test_build_secrets_scan_command(tmp_path: Path) -> None:
+    cmd = build_secrets_scan_command(tmp_path)
+    assert cmd[:3] == ["checkov", "-d", str(tmp_path)]
+    assert "--framework" in cmd
+    assert "secrets" in cmd
+    assert "--enable-secret-scan-all-files" in cmd
+
+
+def test_run_gates_secrets_invokes_checkov(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gates._tool_available", lambda name: name == "checkov")
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(cmd, cwd, *, extra_env=None):
+        captured["cmd"] = cmd
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("repave_engine.gates._run", fake_run)
+
+    run_gates(tmp_path, ("secrets",))
+
+    assert "--framework" in captured["cmd"]
+    assert "secrets" in captured["cmd"]
 
 
 def test_terraform_fmt_failure(tmp_path: Path, monkeypatch) -> None:

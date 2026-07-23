@@ -23,7 +23,15 @@ REPAVE_VERSION_CHECKS = (
     "CKV2_REPAVE_2",
 )
 
-ALL_REPAVE_CHECKS = REPAVE_VERSION_CHECKS + REPAVE_LAYOUT_CHECKS
+REPAVE_SECURITY_CHECKS = (
+    "CKV2_REPAVE_8",
+    "CKV2_REPAVE_9",
+    "CKV2_REPAVE_10",
+    "CKV2_REPAVE_11",
+    "CKV2_REPAVE_12",
+)
+
+ALL_REPAVE_CHECKS = REPAVE_VERSION_CHECKS + REPAVE_LAYOUT_CHECKS + REPAVE_SECURITY_CHECKS
 
 
 @pytest.fixture
@@ -66,6 +74,13 @@ def test_compliant_fixture_passes_layout_checks(fixtures_root: Path, policy_pack
     assert set(REPAVE_LAYOUT_CHECKS).issubset(set(passed))
 
 
+def test_compliant_fixture_passes_security_checks(fixtures_root: Path, policy_pack: Path) -> None:
+    module_dir = fixtures_root / "pass"
+    failed, passed = run_repave_checks(module_dir, policy_pack, checks=REPAVE_SECURITY_CHECKS)
+    assert not failed
+    assert set(REPAVE_SECURITY_CHECKS).issubset(set(passed))
+
+
 @pytest.mark.parametrize(
     ("fixture_name", "expected_failures"),
     [
@@ -87,6 +102,42 @@ def test_fixture_violations_fail_expected_checks(
     assert expected_failures.issubset(set(failed))
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "expected_failures"),
+    [
+        ("fail-provider-creds", {"CKV2_REPAVE_8", "CKV2_REPAVE_9"}),
+        ("fail-secret-default", {"CKV2_REPAVE_9", "CKV2_REPAVE_12"}),
+        ("fail-provisioner", {"CKV2_REPAVE_10"}),
+        ("fail-sensitive-output", {"CKV2_REPAVE_11"}),
+    ],
+)
+def test_security_fixture_violations_fail_expected_checks(
+    fixtures_root: Path,
+    policy_pack: Path,
+    fixture_name: str,
+    expected_failures: set[str],
+) -> None:
+    module_dir = fixtures_root / fixture_name
+    failed, _ = run_repave_checks(module_dir, policy_pack, checks=REPAVE_SECURITY_CHECKS)
+    assert expected_failures.issubset(set(failed))
+
+
+def test_secrets_gate_passes_compliant_fixture(fixtures_root: Path) -> None:
+    from repave_engine.gates import _gate_secrets
+
+    result = _gate_secrets(fixtures_root / "pass")
+    assert result.passed
+    assert not result.skipped
+
+
+def test_secrets_gate_fails_on_hardcoded_token(fixtures_root: Path) -> None:
+    from repave_engine.gates import _gate_secrets
+
+    result = _gate_secrets(fixtures_root / "fail-secret-default")
+    assert not result.passed
+    assert not result.skipped
+
+
 def test_rendered_scaffold_passes_repave_checks(
     repo_root: Path,
     terraform_blueprint,
@@ -103,4 +154,4 @@ def test_rendered_scaffold_passes_repave_checks(
 
     failed, passed = run_repave_checks(output_dir, policy_pack, checks=ALL_REPAVE_CHECKS)
     assert not failed
-    assert set(REPAVE_LAYOUT_CHECKS).issubset(set(passed))
+    assert set(REPAVE_LAYOUT_CHECKS + REPAVE_SECURITY_CHECKS).issubset(set(passed))
