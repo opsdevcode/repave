@@ -11,9 +11,9 @@ from repave_engine import __version__
 from repave_engine.blueprint import (
     list_blueprints,
     load_blueprint,
-    load_provider_catalog,
 )
 from repave_engine.pipeline import generate_from_blueprint
+from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.settings import OutputConfig, load_output_config
 
 
@@ -41,9 +41,20 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "blueprint_form.html",
             {
                 "blueprint": blueprint,
-                "provider_catalog": load_provider_catalog(blueprint),
+                "provider_catalog": load_provider_catalog(blueprint.path),
             },
         )
+
+    @app.get("/blueprints/{blueprint_name}/provider-services/{cloud_provider}/{service}")
+    async def provider_service_detail(
+        blueprint_name: str, cloud_provider: str, service: str
+    ) -> dict[str, list[str]]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        catalog = load_provider_catalog(blueprint.path)
+        definition = get_service_definition(catalog, cloud_provider, service)
+        if definition is None:
+            return {"resources": [], "basic": []}
+        return definition
 
     @app.post("/generate")
     async def generate(request: Request) -> HTMLResponse:
@@ -64,6 +75,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                         if str(item).strip()
                     ]
                 values[field.name] = ",".join(selected)
+                continue
+
+            if field.name == "provider_service_scope":
+                values[field.name] = str(form.get(field.name, ""))
                 continue
 
             values[field.name] = str(form.get(field.name, ""))

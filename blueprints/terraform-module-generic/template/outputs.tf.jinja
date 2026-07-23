@@ -13,6 +13,11 @@ output "provider_services" {
   value       = var.provider_services
 }
 
+output "provider_service_scope" {
+  description = "Selected resource capabilities per provider service."
+  value       = jsondecode(var.provider_service_scope)
+}
+
 output "environment" {
   description = "Configured environment."
   value       = var.environment
