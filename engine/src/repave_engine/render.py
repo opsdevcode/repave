@@ -61,6 +61,7 @@ def build_scoped_resources(scope_raw: Any) -> list[ScopedResource]:
 def collect_rendered_files(
     output_dir: Path,
     *,
+    artifact_type: str = "terraform-module",
     max_files: int = 100,
     max_bytes: int = 32_768,
 ) -> tuple[RenderedFile, ...]:
@@ -75,7 +76,7 @@ def collect_rendered_files(
             break
 
         relative_path = path.relative_to(output_dir).as_posix()
-        if is_gate_artifact_path(relative_path):
+        if is_gate_artifact_path(relative_path, artifact_type=artifact_type):
             continue
         try:
             raw = path.read_bytes()

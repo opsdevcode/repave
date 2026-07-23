@@ -51,6 +51,7 @@ def make_blueprint(
         name=name,
         version="0.0.1",
         description="Test blueprint",
+        artifact_type="terraform-module",
         standard_source="examples/standards",
         standard_version="0.1.0",
         inputs=inputs,

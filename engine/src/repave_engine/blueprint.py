@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from pathlib import Path
@@ -40,11 +41,27 @@ class CheckovGateConfig:
 
 
 @dataclass(frozen=True)
+class TflintGateConfig:
+    config_file: str = ".tflint.hcl"
+
+
+@dataclass(frozen=True)
+class TerraformValidateGateConfig:
+    var_files: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class TerraformTestGateConfig:
+    test_directory: str = "tests"
+
+
+@dataclass(frozen=True)
 class Blueprint:
     path: Path
     name: str
     version: str
     description: str
+    artifact_type: str
     standard_source: str
     standard_version: str
     inputs: tuple[InputField, ...]
@@ -56,10 +73,33 @@ class Blueprint:
     output_title_template: str
     checkov_policies: CheckovPolicyPack | None = None
     checkov_gate: CheckovGateConfig = dataclass_field(default_factory=CheckovGateConfig)
+    tflint_gate: TflintGateConfig = dataclass_field(default_factory=TflintGateConfig)
+    terraform_validate_gate: TerraformValidateGateConfig = dataclass_field(
+        default_factory=TerraformValidateGateConfig
+    )
+    terraform_test_gate: TerraformTestGateConfig = dataclass_field(
+        default_factory=TerraformTestGateConfig
+    )
 
     @property
     def template_dir(self) -> Path:
         return self.path / self.template_path
+
+    def gate_config_for(self, gate_name: str) -> Mapping[str, Any]:
+        if gate_name == "checkov":
+            return {
+                "external_checks_dir": self.checkov_gate.external_checks_dir,
+                "config_file": self.checkov_gate.config_file,
+                "skip_checks": self.checkov_gate.skip_checks,
+                "soft_fail": self.checkov_gate.soft_fail,
+            }
+        if gate_name == "tflint":
+            return {"config_file": self.tflint_gate.config_file}
+        if gate_name == "terraform-validate":
+            return {"var_files": self.terraform_validate_gate.var_files}
+        if gate_name == "terraform-test":
+            return {"test_directory": self.terraform_test_gate.test_directory}
+        return {}
 
 
 def load_schema(repo_root: Path) -> dict[str, Any]:
@@ -117,12 +157,27 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         skip_checks=tuple(checkov_gate_raw.get("skip_checks", [])),
         soft_fail=bool(checkov_gate_raw.get("soft_fail", False)),
     )
+    tflint_gate_raw = gate_config.get("tflint", {}) if isinstance(gate_config, dict) else {}
+    tflint_gate = TflintGateConfig(
+        config_file=str(tflint_gate_raw.get("config_file", ".tflint.hcl")),
+    )
+    validate_gate_raw = (
+        gate_config.get("terraform-validate", {}) if isinstance(gate_config, dict) else {}
+    )
+    terraform_validate_gate = TerraformValidateGateConfig(
+        var_files=tuple(validate_gate_raw.get("var_files", [])),
+    )
+    test_gate_raw = gate_config.get("terraform-test", {}) if isinstance(gate_config, dict) else {}
+    terraform_test_gate = TerraformTestGateConfig(
+        test_directory=str(test_gate_raw.get("test_directory", "tests")),
+    )
 
     return Blueprint(
         path=blueprint_file.parent,
         name=metadata["name"],
         version=metadata["version"],
         description=metadata.get("description", ""),
+        artifact_type=str(spec.get("artifactType", "terraform-module")),
         standard_source=spec["standard"]["source"],
         standard_version=spec["standard"]["version"],
         inputs=inputs,
@@ -134,6 +189,9 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         output_title_template=str(title_template),
         checkov_policies=checkov_policies,
         checkov_gate=checkov_gate,
+        tflint_gate=tflint_gate,
+        terraform_validate_gate=terraform_validate_gate,
+        terraform_test_gate=terraform_test_gate,
     )
 
 

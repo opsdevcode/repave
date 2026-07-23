@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from repave_engine.blueprint import CheckovGateConfig
+from helpers import make_blueprint
+from repave_engine.blueprint import Blueprint, CheckovGateConfig, TflintGateConfig
+from repave_engine.gate_registry import GateContext
 from repave_engine.gates import (
     GateResult,
     _gate_terraform_fmt,
@@ -13,6 +15,7 @@ from repave_engine.gates import (
     clean_gate_artifacts,
     is_gate_artifact_path,
     run_gates,
+    run_tflint,
 )
 from repave_engine.settings import GateOverrides
 
@@ -135,7 +138,7 @@ def test_build_checkov_command_adds_soft_fail(tmp_path: Path) -> None:
 
 
 def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("repave_engine.gates._tool_available", lambda name: name == "checkov")
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "checkov")
     captured: dict[str, list[str]] = {}
 
     def fake_run(cmd, cwd, *, extra_env=None):
@@ -143,7 +146,7 @@ def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -
         captured["extra_env"] = extra_env
         return MagicMock(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr("repave_engine.gates._run", fake_run)
+    monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run)
 
     run_gates(
         tmp_path,
@@ -164,14 +167,14 @@ def test_build_secrets_scan_command(tmp_path: Path) -> None:
 
 
 def test_run_gates_secrets_invokes_checkov(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("repave_engine.gates._tool_available", lambda name: name == "checkov")
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "checkov")
     captured: dict[str, list[str]] = {}
 
     def fake_run(cmd, cwd, *, extra_env=None):
         captured["cmd"] = cmd
         return MagicMock(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr("repave_engine.gates._run", fake_run)
+    monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run)
 
     run_gates(tmp_path, ("secrets",))
 
@@ -180,14 +183,61 @@ def test_run_gates_secrets_invokes_checkov(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_terraform_fmt_failure(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("repave_engine.gates._terraform_usable", lambda _dir: True)
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: True)
 
-    def fake_run(cmd, cwd):
+    def fake_run(cmd, cwd, *, extra_env=None):
         return MagicMock(returncode=1, stdout="", stderr="fmt failed")
 
-    monkeypatch.setattr("repave_engine.gates._run", fake_run)
+    monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run)
 
-    result = _gate_terraform_fmt(tmp_path)
+    result = _gate_terraform_fmt(GateContext(output_dir=tmp_path))
 
     assert result.passed is False
     assert "fmt failed" in result.message
+
+
+def test_tflint_uses_blueprint_config_file(tmp_path: Path, monkeypatch) -> None:
+    (tmp_path / "custom-tflint.hcl").write_text("config {}\n", encoding="utf-8")
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "tflint")
+    captured: list[list[str]] = []
+
+    def fake_run(cmd, cwd, *, extra_env=None):
+        captured.append(cmd)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run)
+
+    blueprint = make_blueprint(tmp_path, create_template=False)
+    blueprint = Blueprint(
+        path=blueprint.path,
+        name=blueprint.name,
+        version=blueprint.version,
+        description=blueprint.description,
+        artifact_type=blueprint.artifact_type,
+        standard_source=blueprint.standard_source,
+        standard_version=blueprint.standard_version,
+        inputs=blueprint.inputs,
+        template_engine=blueprint.template_engine,
+        template_path=blueprint.template_path,
+        gates=blueprint.gates,
+        output_type=blueprint.output_type,
+        output_repo_name_template=blueprint.output_repo_name_template,
+        output_title_template=blueprint.output_title_template,
+        tflint_gate=TflintGateConfig(config_file="custom-tflint.hcl"),
+    )
+
+    result = run_tflint(GateContext(output_dir=tmp_path, blueprint=blueprint))
+
+    assert result.passed is True
+    assert captured[0][-2:] == ["--config", "custom-tflint.hcl"]
+    assert captured[1][-2:] == ["--config", "custom-tflint.hcl"]
+
+
+def test_terraform_test_skips_without_tests(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: True)
+
+    results = run_gates(tmp_path, ("terraform-test",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True
+    assert "no terraform tests" in results[0].message

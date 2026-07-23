@@ -82,12 +82,19 @@
             "enum": [
               "terraform-fmt",
               "terraform-validate",
+              "terraform-test",
               "tflint",
               "checkov",
               "secrets",
               "docs-drift"
             ]
           }
+        },
+        "artifactType": {
+          "type": "string",
+          "enum": ["terraform-module", "ansible-role"],
+          "default": "terraform-module",
+          "description": "Generated artifact type; drives gate artifact hygiene paths."
         },
         "checkov": {
           "type": "object",
@@ -131,6 +138,39 @@
                 "soft_fail": {
                   "type": "boolean",
                   "description": "Return exit code 0 when checks fail (report only)."
+                }
+              }
+            },
+            "tflint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_file": {
+                  "type": "string",
+                  "description": "TFLint config file relative to the generated module root."
+                }
+              }
+            },
+            "terraform-validate": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "var_files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Optional var files reserved for future validate/plan integration."
+                }
+              }
+            },
+            "terraform-test": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "test_directory": {
+                  "type": "string",
+                  "description": "Directory containing .tftest.hcl files relative to module root."
                 }
               }
             }
