@@ -131,7 +131,7 @@ docs/          # concept docs
 - **v1.7** — per-service resource scope (basic capabilities, basic + additional,
   or custom-only).
 - **v1.8** (current) — one `.tf` file per scoped provider resource; module
-  standard v0.3.1 (HashiCorp + platform engineering baseline; community `locals.tf`).
+  standard v1.1.0 in [`opsdevcode/sn`](https://github.com/opsdevcode/sn/tree/main/docs/standards/terraform-standards) (`locals.tf` + per-resource `.tf` layout).
 - **Next** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
   detects drift and standard-version bumps and opens remediation PRs across the
   generated estate; more golden paths (Ansible role, cloud resource modules);
