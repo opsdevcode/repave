@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from repave_engine.blueprint import CheckovGateConfig
 from repave_engine.gates import (
     GateResult,
     all_gates_passed,
+    build_checkov_command,
     clean_gate_artifacts,
     is_gate_artifact_path,
     run_gates,
@@ -95,3 +97,25 @@ def test_clean_gate_artifacts_removes_terraform_and_lock(tmp_path: Path) -> None
     assert not (tmp_path / ".terraform.lock.hcl").exists()
     assert not (tmp_path / ".tflint.d").exists()
     assert (tmp_path / "main.tf").read_text(encoding="utf-8") == "# keep\n"
+
+
+def test_build_checkov_command_uses_config_and_external_checks(tmp_path: Path) -> None:
+    (tmp_path / ".checkov.yml").write_text("framework:\n  - terraform\n", encoding="utf-8")
+    policies = tmp_path / "policy/checkov"
+    policies.mkdir(parents=True)
+    (policies / "custom.yaml").write_text("metadata:\n  id: CKV2_TEST\n", encoding="utf-8")
+
+    cmd = build_checkov_command(
+        tmp_path,
+        CheckovGateConfig(skip_checks=("CKV_AWS_1",)),
+        extra_skip_checks=("CKV_AWS_2",),
+    )
+
+    assert cmd[:3] == ["checkov", "-d", str(tmp_path)]
+    assert "--config-file" in cmd
+    assert str(tmp_path / ".checkov.yml") in cmd
+    assert "--external-checks-dir" in cmd
+    assert str(policies) in cmd
+    assert cmd.count("--skip-check") == 2
+    assert "CKV_AWS_1" in cmd
+    assert "CKV_AWS_2" in cmd

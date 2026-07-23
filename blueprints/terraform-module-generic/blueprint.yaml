@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-module-generic
-  version: 0.7.0
+  version: 0.8.0
   description: Generic Terraform module scaffold with provider scope, tests, and CI wiring.
 spec:
   standard:
@@ -43,6 +43,13 @@ spec:
     - tflint
     - checkov
     - docs-drift
+  checkov:
+    policies_source: examples/checkov/policies
+    policy_version: 1.0.0
+  gate_config:
+    checkov:
+      external_checks_dir: policy/checkov
+      config_file: .checkov.yml
   output:
     type: pull_request
     repository:

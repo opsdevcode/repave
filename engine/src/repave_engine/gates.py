@@ -6,6 +6,9 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from repave_engine.blueprint import Blueprint, CheckovGateConfig
+from repave_engine.settings import GateOverrides
+
 
 @dataclass(frozen=True)
 class GateResult:
@@ -15,14 +18,23 @@ class GateResult:
     message: str
 
 
-def run_gates(output_dir: Path, gate_names: tuple[str, ...]) -> list[GateResult]:
+def run_gates(
+    output_dir: Path,
+    gate_names: tuple[str, ...],
+    *,
+    blueprint: Blueprint | None = None,
+    gate_overrides: GateOverrides | None = None,
+) -> list[GateResult]:
     results: list[GateResult] = []
     for gate in gate_names:
         runner = _GATE_RUNNERS.get(gate)
         if runner is None:
             results.append(GateResult(gate, False, False, f"Unknown gate: {gate}"))
             continue
-        results.append(runner(output_dir))
+        if gate == "checkov":
+            results.append(runner(output_dir, blueprint, gate_overrides))
+        else:
+            results.append(runner(output_dir))
     return results
 
 
@@ -129,11 +141,42 @@ def _gate_tflint(output_dir: Path) -> GateResult:
     return GateResult("tflint", False, False, result.stderr.strip() or "tflint failed")
 
 
-def _gate_checkov(output_dir: Path) -> GateResult:
+def build_checkov_command(
+    output_dir: Path,
+    config: CheckovGateConfig,
+    *,
+    extra_skip_checks: tuple[str, ...] = (),
+) -> list[str]:
+    cmd = ["checkov", "-d", str(output_dir)]
+    config_path = output_dir / config.config_file
+    if config_path.is_file():
+        cmd.extend(["--config-file", str(config_path)])
+
+    checks_dir = output_dir / config.external_checks_dir
+    if checks_dir.is_dir():
+        cmd.extend(["--external-checks-dir", str(checks_dir)])
+
+    skip_checks = {*config.skip_checks, *extra_skip_checks}
+    for check_id in sorted(skip_checks):
+        cmd.extend(["--skip-check", check_id])
+
+    if config.soft_fail:
+        cmd.append("--soft-fail")
+    return cmd
+
+
+def _gate_checkov(
+    output_dir: Path,
+    blueprint: Blueprint | None = None,
+    gate_overrides: GateOverrides | None = None,
+) -> GateResult:
     if not _tool_available("checkov"):
         return GateResult("checkov", True, True, "checkov not installed; skipped")
 
-    result = _run(["checkov", "-d", str(output_dir)], output_dir)
+    config = blueprint.checkov_gate if blueprint is not None else CheckovGateConfig()
+    extra_skip = gate_overrides.checkov_skip_checks if gate_overrides is not None else ()
+    cmd = build_checkov_command(output_dir, config, extra_skip_checks=extra_skip)
+    result = _run(cmd, output_dir)
     if result.returncode == 0:
         return GateResult("checkov", True, False, "checkov passed")
     return GateResult("checkov", False, False, result.stderr.strip() or "checkov failed")

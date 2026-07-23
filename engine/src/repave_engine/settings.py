@@ -9,6 +9,11 @@ import yaml
 
 
 @dataclass(frozen=True)
+class GateOverrides:
+    checkov_skip_checks: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class OutputConfig:
     github_org: str
     modules_root: Path
@@ -53,6 +58,23 @@ def load_output_config(
         modules_root=root_path,
         repo_name_template=str(resolved_template),
     )
+
+
+def load_gate_overrides(repo_root: Path) -> GateOverrides:
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    gates = file_data.get("gates", {})
+    if not isinstance(gates, dict):
+        return GateOverrides()
+
+    checkov = gates.get("checkov", {})
+    if not isinstance(checkov, dict):
+        return GateOverrides()
+
+    skip_checks = checkov.get("skip_checks", [])
+    if not isinstance(skip_checks, list):
+        raise ValueError("gates.checkov.skip_checks must be a list of check IDs")
+
+    return GateOverrides(checkov_skip_checks=tuple(str(item) for item in skip_checks))
 
 
 def _load_config_file(path: Path) -> dict[str, Any]:

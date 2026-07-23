@@ -13,12 +13,13 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.9.1.** The generation loop runs locally with no Kubernetes
+> Status: **v1.10.** The generation loop runs locally with no Kubernetes
 > required. Generated modules publish to separate git repositories and can be
 > pushed to GitHub with `GITHUB_TOKEN`. Each scoped provider resource is
 > rendered to its own `.tf` file; shared context lives in `locals.tf` against
-> the in-repo module standard. The self-healing reconciliation operator is
-> planned next (see [`operator/`](operator/)).
+> the in-repo module standard. Generated modules include a Checkov policy pack
+> and `.checkov.yml`. The self-healing reconciliation operator is planned next
+> (see [`operator/`](operator/)).
 
 ## Why repave
 
@@ -111,7 +112,7 @@ repave generate \
 schemas/       # frozen contracts: blueprint.schema.json, inputs.schema.json
 engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
-examples/      # generic sample standards (bring-your-own-standards model)
+examples/      # sample standards and Checkov policy packs
 deploy/local/  # docker compose + kind quickstart
 operator/      # planned: self-healing reconciliation (Operator SDK)
 docs/          # concept docs
@@ -132,13 +133,18 @@ docs/          # concept docs
 - **v1.7** — per-service resource scope (basic capabilities, basic + additional,
   or custom-only).
 - **v1.8** — one `.tf` file per scoped provider resource.
-- **v1.9** (current) — `locals.tf` conventions (`common_tags`, `name_prefix`),
+- **v1.9** — `locals.tf` conventions (`common_tags`, `name_prefix`),
   expanded in-repo module standard (`examples/standards` v0.4.0), and blueprint
   scaffold aligned with community module structure.
-- **Next** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
-  detects drift and standard-version bumps and opens remediation PRs across the
-  generated estate; more golden paths (Ansible role, cloud resource modules);
-  portal hardening; PR-based updates to existing module repositories.
+- **v1.10** (current) — in-repo Checkov custom policy pack
+  (`examples/checkov/policies`) copied into generated modules; gate reads
+  `.checkov.yml` and `policy/checkov` via blueprint `gate_config`.
+- **Next** — repave-specific Checkov rules aligned with the module standard
+  (layout, locals, tags, version pins); reconciliation operator
+  (`GoldenPathRepo` / `Blueprint` CRDs) that detects drift and standard-version
+  bumps and opens remediation PRs across the generated estate; more golden paths
+  (Ansible role, cloud resource modules); portal hardening; PR-based updates to
+  existing module repositories.
 
 ## Releases
 
