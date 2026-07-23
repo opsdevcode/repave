@@ -35,6 +35,7 @@ v1.10  today       generate + gates + publish + Checkov policy pack
   ├─ v1.16–v1.19    operate + extend  operator alpha; portal UX; module updates; more golden paths
   ├─ v1.20–v1.24    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.25–v1.26    service + SSO     authenticated single-tenant service via OIDC
+  ├─ v1.28–v1.33    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades
 ```
@@ -42,11 +43,13 @@ v1.10  today       generate + gates + publish + Checkov policy pack
 | Theme | Releases | Outcome |
 | --- | --- | --- |
 | **Governance depth** | v1.11, v1.20 | Standards and Checkov enforce the module contract, not just document it |
-| **Multi-artifact golden paths** | v1.12–v1.15 | Engine decoupled from Terraform; Ansible role path ships with standard + lint pack |
+| **Multi-artifact golden paths** | v1.12–v1.15, v1.32–v1.33 | Engine decoupled from Terraform; Ansible role, Helm chart, and app-service paths ship with standards + gates |
 | **Self-healing** | v1.16, v1.18, v1.23 | Drift detection and blueprint/standard upgrades via PR |
 | **Usability** | v1.17, v1.21 | Portal and CLI usable by non-experts; visible pinned versions |
 | **Estate scale** | v1.19, v1.22, v1.24 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
 | **Access and multi-user** | v1.25–v1.26 | Authenticated single-tenant service with OIDC SSO and role-based access |
+| **Blueprint quality** | v1.28 | Every blueprint is rendered, gated, and snapshot-tested in CI |
+| **Operability and audit** | v1.29–v1.31 | Metrics, audit log, notifications, and developer-portal catalog registration |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 
 ---
@@ -478,6 +481,148 @@ tree without patching engine code.
 
 ---
 
+### v1.28 — Blueprint conformance CI harness
+
+**Problem:** Each new golden path (Ansible, Helm, app service) increases the risk
+of silent breakage. Today only engine unit tests exist; blueprints are not
+systematically rendered and gated in CI, so a template regression can ship
+unnoticed.
+
+**Approach:**
+
+- CI job that, for every `blueprints/*/blueprint.yaml`, validates it against
+  `schemas/blueprint.schema.json`, renders it with representative fixture inputs,
+  runs the blueprint's declared gates, and asserts no unresolved `{{ }}`
+  placeholders and that required files are present
+- Snapshot (golden-file) tests of rendered output to catch unintended template
+  drift, with a `make` target to update snapshots on purpose
+- Matrix across artifact types; tool-dependent gates reuse the skip-if-not-installed
+  pattern so the harness is green without every CLI installed
+- Fixture inputs live alongside each pack (e.g. `blueprints/<name>/tests/`)
+
+**Dependencies:** v1.12 gate registry (uniform gate invocation); existing pytest
+infrastructure. Recommended to land alongside v1.12–v1.15 since it guards every
+new golden path.
+
+**Done when:** CI fails if any blueprint fails to render or violates its gates,
+and snapshot diffs surface template changes during review.
+
+---
+
+### v1.29 — Generation observability and audit log
+
+**Problem:** There is no durable record of who generated what, when, and with
+which pins, and no metrics for operating repave as a shared service.
+
+**Approach:**
+
+- Structured audit record per generation: blueprint + version, standard and policy
+  pins, inputs summary, output repo, acting user identity (from v1.25 auth), gate
+  results, and timestamp, written to a configurable sink (JSONL first, DB later)
+- Prometheus-style `/metrics` on the API (generation counts, gate pass/fail,
+  durations)
+- OpenTelemetry spans across the pipeline stages (validate → render → gates →
+  publish) in `engine/src/repave_engine/pipeline.py`, with a configurable exporter
+- Correlate audit records with the generated `repave.yaml` provenance
+
+**Dependencies:** v1.25 authentication (acting-user identity); provenance fields
+(v1.21).
+
+**Done when:** Every generation emits an audit record and metrics, and a trace
+shows per-stage timing.
+
+---
+
+### v1.30 — Outbound notifications
+
+**Problem:** Teams get no push signal when a module is generated or published, or
+when drift is detected.
+
+**Approach:**
+
+- Pluggable notifier config in `repave.config.yaml` (Slack webhook, Microsoft
+  Teams webhook, generic webhook)
+- Events: generation succeeded/failed, PR opened, publish complete; later operator
+  drift/remediation events
+- Payload includes target repo, blueprint + version, gate summary, and PR link
+- Best-effort delivery with retries and secret redaction; never blocks a generation
+
+**Dependencies:** Publish flow (`engine/src/repave_engine/pr.py`,
+`engine/src/repave_engine/github.py`); operator events (v1.16/v1.23) for drift.
+
+**Done when:** A successful publish posts a Slack or Teams message with the PR link
+and gate summary.
+
+---
+
+### v1.31 — Backstage software catalog integration
+
+**Problem:** Generated repositories are not registered in the organization's
+developer portal; many platform teams standardize on Backstage.
+
+**Approach:**
+
+- Optionally render `catalog-info.yaml` into generated repos (component kind,
+  owner/system/lifecycle inputs, links, and repave provenance annotations)
+- Add owner/system/lifecycle blueprint inputs
+- Document a Backstage Scaffolder custom action that calls the repave API
+  (dry-run + generate) so repave golden paths appear as Backstage templates
+- Annotate with blueprint/standard pins for TechInsights-style checks
+
+**Dependencies:** v1.21 provenance fields; stable API surface.
+
+**Done when:** A generated repo contains a valid `catalog-info.yaml` importable
+into Backstage, and docs show the scaffolder action.
+
+---
+
+### v1.32 — Helm chart golden path
+
+**Problem:** Teams deploying to Kubernetes want a governed Helm chart scaffold, not
+only IaC modules.
+
+**Approach:**
+
+- New `blueprints/helm-chart-generic/` producing a lint-clean chart (`Chart.yaml`,
+  `values.yaml`, `templates/`, `_helpers.tpl`, `NOTES.txt`, `tests/`)
+- Inputs: `chart_name`, `app_name`, `description`, image repo/tag, service type,
+  ingress toggle
+- Gates: `helm-lint`, `helm-template` (render), `yamllint`, optional `kubeconform`,
+  `docs-drift`, `provenance-drift` — all declared via the gate registry
+- Output naming: `helm-{chart_name}`
+
+**Dependencies:** v1.12 gate registry; v1.13 artifact-type provenance; v1.28
+conformance harness.
+
+**Done when:** A chart generates and passes helm lint/template where helm is
+present, and skips cleanly where it is absent.
+
+---
+
+### v1.33 — Application service scaffold golden path
+
+**Problem:** New services are bootstrapped inconsistently; teams want a governed
+application repository from the same golden-path engine.
+
+**Approach:**
+
+- New `blueprints/app-service-generic/` producing a service repo: `Dockerfile`, CI
+  workflow, lint/test config, `README.md`, an optional Helm chart reference (v1.32),
+  and `catalog-info.yaml` (v1.31)
+- Inputs: `service_name`, `runtime` (enum), `owner`, `port`
+- Gates: `docs-drift`, `provenance-drift`, `dockerfile-lint` (hadolint), language
+  lint/test (skip-if-not-installed); the generated CI runs the same gates on push
+  (reusing the v1.22 module-CI-template pattern)
+- Ship one runtime first (e.g. Python or Go); add others as follow-ons
+
+**Dependencies:** v1.12 gate registry; v1.13 provenance; v1.22 CI template pattern;
+v1.28 conformance harness.
+
+**Done when:** A service repo generates for at least one runtime with CI wired and
+gates green.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
@@ -489,12 +634,14 @@ generator.
 | --- | --- |
 | Generate compliant module repos | v1.0–v1.10 (done) |
 | Enforce module standard via Checkov | v1.11, v1.20 |
-| Multiple artifact types (Terraform + Ansible) | v1.12–v1.15, v1.19 |
+| Multiple artifact types (Terraform, Ansible, Helm, app service) | v1.12–v1.15, v1.19, v1.32–v1.33 |
+| Blueprint conformance in CI | v1.28 |
 | Self-heal drift and version bumps | v1.16, v1.18, v1.23 |
 | Fleet visibility | v1.23 inventory → v2 operator GA |
 | Module repos self-govern in CI | v1.22 |
 | On-cluster deploy | v1.24 |
 | Authenticated single-tenant service (OIDC SSO) | v1.25–v1.26 |
+| Operability and audit (metrics, audit log, notifications, catalog) | v1.29–v1.31 |
 
 **Breaking-change candidates (major bump):**
 
