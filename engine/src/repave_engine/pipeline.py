@@ -76,6 +76,7 @@ def generate_from_blueprint(
                 standard_version=blueprint.standard_version,
                 files_root=module_repository.local_path,
                 repository=module_repository,
+                module_values=normalized,
             )
             if dry_run:
                 pr_body = create_pull_request(pr_plan, github_token=None)

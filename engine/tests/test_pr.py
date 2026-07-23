@@ -30,10 +30,41 @@ def test_plan_pull_request_fields(tmp_path: Path) -> None:
     )
 
     assert plan.branch == "main"
-    assert "networking-vnet" in plan.title
+    assert repository.name in plan.title
+    assert "Bootstrap Terraform module tf-networking-vnet" in plan.title
     assert "terraform-module-generic" in plan.body
     assert repository.web_url in plan.body
     assert plan.files_root == repository.local_path
+
+
+def test_plan_pull_request_includes_provider_scope_in_title_and_body(tmp_path: Path) -> None:
+    config = OutputConfig(github_org="example-org", modules_root=tmp_path / "modules")
+    repository = resolve_module_repository(
+        module_name="eks",
+        config=config,
+        name_template="tf-{cloud_provider}-{module_name}",
+        template_values={"cloud_provider": "aws"},
+    )
+    plan = plan_pull_request(
+        module_name="eks",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.2.0",
+        standard_version="0.1.0",
+        files_root=repository.local_path,
+        repository=repository,
+        module_values={
+            "description": "EKS cluster scaffold",
+            "cloud_provider": "aws",
+            "provider_services": "eks,vpc,iam",
+        },
+    )
+
+    assert plan.title == (
+        "Bootstrap Terraform module tf-aws-eks (repave terraform-module-generic@0.2.0)"
+    )
+    assert "Cloud provider: `aws`" in plan.body
+    assert "Services in scope: `eks,vpc,iam`" in plan.body
+    assert "EKS cluster scaffold" in plan.body
 
 
 def test_create_pull_request_dry_run(tmp_path: Path) -> None:
