@@ -47,3 +47,22 @@ def test_publish_dry_run_does_not_create_local_repo(tmp_path: Path) -> None:
 
     assert not repository.local_path.exists()
     assert "Dry-run" in message
+
+
+def test_publish_skips_gate_artifacts(tmp_path: Path) -> None:
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    (staging / "main.tf").write_text("# stub\n", encoding="utf-8")
+    terraform_dir = staging / ".terraform" / "providers"
+    terraform_dir.mkdir(parents=True)
+    (terraform_dir / "LICENSE.txt").write_text("license\n", encoding="utf-8")
+    (staging / ".terraform.lock.hcl").write_text("lock\n", encoding="utf-8")
+
+    modules_root = tmp_path / "modules"
+    repository = _repository(modules_root)
+
+    publish_to_module_repository(staging, repository, dry_run=False)
+
+    assert (repository.local_path / "main.tf").exists()
+    assert not (repository.local_path / ".terraform").exists()
+    assert not (repository.local_path / ".terraform.lock.hcl").exists()

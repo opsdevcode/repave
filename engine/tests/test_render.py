@@ -85,3 +85,16 @@ def test_collect_rendered_files_marks_truncated_content(tmp_path: Path) -> None:
     assert len(files) == 1
     assert files[0].truncated is True
     assert len(files[0].content) == 1024
+
+
+def test_collect_rendered_files_excludes_gate_artifacts(tmp_path: Path) -> None:
+    output_dir = tmp_path / "module"
+    output_dir.mkdir()
+    (output_dir / "main.tf").write_text("# module\n", encoding="utf-8")
+    terraform_dir = output_dir / ".terraform" / "providers" / "hashicorp" / "aws"
+    terraform_dir.mkdir(parents=True)
+    (terraform_dir / "LICENSE.txt").write_text("provider license\n", encoding="utf-8")
+
+    paths = {item.path for item in collect_rendered_files(output_dir)}
+
+    assert paths == {"main.tf"}

@@ -30,6 +30,7 @@ def test_generate_terraform_module_generic_publishes_module_repo(
     assert (module_repo.local_path / "main.tf").exists()
     assert (module_repo.local_path / "README.md").exists()
     assert "example" in (module_repo.local_path / "README.md").read_text(encoding="utf-8")
+    assert not (module_repo.local_path / ".terraform").exists()
     assert (module_repo.local_path / ".git").exists()
     assert result.pr_plan is not None
     assert result.pr_plan.repository.web_url.endswith("/tf-aws-example")
@@ -80,6 +81,8 @@ def test_dry_run_does_not_write_module_repo(
     assert any(
         item.path == "main.tf" and "null_resource" in item.content for item in result.rendered_files
     )
+    assert not any(item.path.startswith(".terraform/") for item in result.rendered_files)
+    assert ".terraform.lock.hcl" not in paths
 
 
 def test_gate_failure_blocks_module_repo_publish(

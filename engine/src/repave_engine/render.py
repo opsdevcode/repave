@@ -8,6 +8,7 @@ from typing import Any
 from copier import run_copy
 
 from repave_engine.blueprint import Blueprint
+from repave_engine.gates import is_gate_artifact_path
 
 
 @dataclass(frozen=True)
@@ -40,6 +41,8 @@ def collect_rendered_files(
             break
 
         relative_path = path.relative_to(output_dir).as_posix()
+        if is_gate_artifact_path(relative_path):
+            continue
         try:
             raw = path.read_bytes()
         except OSError:

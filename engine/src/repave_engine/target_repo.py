@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from repave_engine.gates import is_gate_artifact_path
 from repave_engine.settings import OutputConfig
 
 
@@ -70,6 +71,8 @@ def publish_to_module_repository(
 
 def _copy_tree_contents(source_dir: Path, destination_dir: Path) -> None:
     for item in source_dir.iterdir():
+        if is_gate_artifact_path(item.name):
+            continue
         target = destination_dir / item.name
         if item.is_dir():
             shutil.copytree(item, target)
