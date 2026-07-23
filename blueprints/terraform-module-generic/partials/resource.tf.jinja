@@ -2,11 +2,10 @@
 # Replace this scaffold with {{ cloud_provider }}_{{ service }}_{{ resource }}.
 resource "null_resource" "{{ file_stem }}" {
   triggers = {
-    service        = "{{ service }}"
-    resource       = "{{ resource }}"
-    cloud_provider = local.cloud_provider
-    module_name    = var.module_name
-    environment    = var.environment
-    tags           = jsonencode(var.tags)
+    service     = "{{ service }}"
+    resource    = "{{ resource }}"
+    mode        = local.provider_service_scope["{{ service }}"].mode
+    name_prefix = local.name_prefix
+    tags        = jsonencode(local.common_tags)
   }
 }

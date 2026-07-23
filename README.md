@@ -131,7 +131,7 @@ docs/          # concept docs
 - **v1.7** — per-service resource scope (basic capabilities, basic + additional,
   or custom-only).
 - **v1.8** (current) — one `.tf` file per scoped provider resource; module
-  standard v0.2.0 (`locals.tf` + `{service}_{resource}.tf` layout).
+  standard v0.3.1 (HashiCorp + platform engineering baseline; community `locals.tf`).
 - **Next** — reconciliation operator (`GoldenPathRepo` / `Blueprint` CRDs) that
   detects drift and standard-version bumps and opens remediation PRs across the
   generated estate; more golden paths (Ansible role, cloud resource modules);
