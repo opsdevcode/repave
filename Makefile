@@ -1,4 +1,4 @@
-.PHONY: install test lint format typecheck security quality serve compose-up compose-down list generate
+.PHONY: install lock test lint format typecheck security quality serve compose-up compose-down list generate
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -6,43 +6,45 @@ GITHUB_ORG ?= opsdevcode
 REPAVE_ENV = REPAVE_GITHUB_ORG=$(GITHUB_ORG) REPAVE_MODULES_ROOT=$(MODULES_ROOT)
 
 install:
-	cd engine && python -m pip install -e '.[dev]'
+	cd engine && uv sync --extra dev
+
+lock:
+	cd engine && uv lock
 
 test:
-	cd engine && pytest
+	cd engine && uv run pytest
 
 lint:
-	cd engine && ruff check src tests
+	cd engine && uv run ruff check src tests
 
 format:
-	cd engine && ruff format src tests
+	cd engine && uv run ruff format src tests
 
 typecheck:
-	cd engine && mypy src
+	cd engine && uv run mypy src
 
 security:
-	cd engine && bandit -r src -c pyproject.toml && pip-audit
+	cd engine && uv run bandit -r src -c pyproject.toml && uv run pip-audit
 
 quality: lint typecheck
-	@cd engine && ruff format --check src tests
+	@cd engine && uv run ruff format --check src tests
 
 serve:
 	mkdir -p $(MODULES_ROOT)
-	$(REPAVE_ENV) cd engine && repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8088
+	$(REPAVE_ENV) cd engine && uv run repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8088
 
 list:
-	cd engine && repave list --repo-root $(REPO_ROOT)
+	cd engine && uv run repave list --repo-root $(REPO_ROOT)
 
 generate:
 	mkdir -p $(MODULES_ROOT)
-	$(REPAVE_ENV) cd engine && repave generate \
+	$(REPAVE_ENV) cd engine && uv run repave generate \
 	  --repo-root $(REPO_ROOT) \
 	  --blueprint blueprints/terraform-module-generic \
 	  --input module_name=example \
 	  --input description="Example module" \
 	  --input cloud_provider=aws \
-	  --input provider_services=s3,vpc \
-	  --input license=Apache-2.0 \
+	  --input provider_services=ec2,s3 \
 	  --dry-run
 
 compose-up:

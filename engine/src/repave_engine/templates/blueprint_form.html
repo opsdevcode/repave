@@ -11,9 +11,13 @@
       button { margin-top: 1rem; padding: 0.6rem 1rem; }
       .muted { color: #555; }
       .meta { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
-      .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.35rem 1rem; margin-top: 0.5rem; }
+      .service-tools { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
+      .service-tools input[type=text] { flex: 1; min-width: 220px; }
+      .service-count { color: #555; font-size: 0.9rem; white-space: nowrap; }
+      .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.35rem 1rem; margin-top: 0.5rem; max-height: 320px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem; }
       .service-option { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; margin: 0; }
       .service-option input { width: auto; }
+      .service-option[hidden] { display: none; }
       .field-block { margin-bottom: 0.75rem; }
       .publish-options { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
       .publish-options label { font-weight: 400; display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0; }
@@ -48,20 +52,12 @@
       <div class="field-block">
         <label>{{ field.name }}{% if field.required %} *{% endif %}</label>
         {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
+        <div class="service-tools">
+          <input type="text" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
+          <span id="provider-services-count" class="service-count"></span>
+        </div>
         <div id="provider-services" class="service-grid" aria-live="polite"></div>
         <input type="hidden" id="provider_services" name="provider_services" value="" />
-      </div>
-      {% elif license_catalog and field.name == "license" %}
-      <div class="field-block">
-        <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
-        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
-        <select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-          {% for option in field.enum %}
-          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>
-            {{ license_catalog.get(option, option) }}
-          </option>
-          {% endfor %}
-        </select>
       </div>
       {% else %}
       <div class="field-block">
@@ -107,18 +103,37 @@
       const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
       const providerSelect = document.getElementById("cloud_provider");
       const servicesContainer = document.getElementById("provider-services");
+      const servicesFilter = document.getElementById("provider-services-filter");
+      const servicesCount = document.getElementById("provider-services-count");
       const servicesInput = document.getElementById("provider_services");
       const form = document.getElementById("generate-form");
 
+      function applyServiceFilter() {
+        const query = servicesFilter.value.trim().toLowerCase();
+        const services = catalog[providerSelect.value] || [];
+        let visible = 0;
+        for (const label of servicesContainer.querySelectorAll(".service-option")) {
+          const match = !query || label.dataset.service.toLowerCase().includes(query);
+          label.hidden = !match;
+          if (match) visible += 1;
+        }
+        servicesCount.textContent = query
+          ? `${visible} of ${services.length} services`
+          : `${services.length} services`;
+      }
+
       function renderServices(provider) {
         servicesContainer.innerHTML = "";
+        servicesFilter.value = "";
         const services = catalog[provider] || [];
         for (const service of services) {
           const label = document.createElement("label");
           label.className = "service-option";
+          label.dataset.service = service;
           label.innerHTML = `<input type="checkbox" name="provider_service_option" value="${service}" /> ${service}`;
           servicesContainer.appendChild(label);
         }
+        applyServiceFilter();
         syncServicesInput();
       }
 
@@ -130,6 +145,7 @@
       }
 
       providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
+      servicesFilter.addEventListener("input", applyServiceFilter);
       servicesContainer.addEventListener("change", syncServicesInput);
       form.addEventListener("submit", (event) => {
         syncServicesInput();

@@ -18,11 +18,24 @@ are feedback on contracts, golden paths, and the operator design for v1.3.
 
 ## Development
 
+Install [uv](https://docs.astral.sh/uv/), then from repo root:
+
 ```bash
-cd engine
-python -m venv .venv && . .venv/bin/activate
-pip install -e '.[dev]'
-pytest
+make install
+make test
+```
+
+Or from `engine/`:
+
+```bash
+uv sync --extra dev
+uv run pytest
+```
+
+When changing dependencies in `engine/pyproject.toml`, refresh the lockfile:
+
+```bash
+make lock
 ```
 
 From repo root, quality and security checks:

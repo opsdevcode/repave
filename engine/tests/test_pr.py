@@ -26,7 +26,7 @@ def _module_values(**overrides: str) -> dict[str, str]:
         "module_name": "networking-vnet",
         "description": "VPC networking scaffold",
         "cloud_provider": "aws",
-        "provider_services": "vpc,s3",
+        "provider_services": "ec2,s3",
     }
     values.update(overrides)
     return values
@@ -37,7 +37,7 @@ def test_format_output_template_renders_input_placeholders() -> None:
         "Bootstrap {cloud_provider} module {module_name} ({provider_services})",
         _module_values(),
     )
-    assert title == "Bootstrap aws module networking-vnet (vpc,s3)"
+    assert title == "Bootstrap aws module networking-vnet (ec2,s3)"
 
 
 def test_format_output_template_rejects_unknown_placeholder() -> None:
@@ -59,9 +59,9 @@ def test_plan_pull_request_title_uses_input_template(tmp_path: Path) -> None:
         module_values=values,
     )
 
-    assert plan.title == "Bootstrap aws module networking-vnet (vpc,s3)"
+    assert plan.title == "Bootstrap aws module networking-vnet (ec2,s3)"
     assert "module_name: `networking-vnet`" in plan.body
-    assert "provider_services: `vpc,s3`" in plan.body
+    assert "provider_services: `ec2,s3`" in plan.body
     assert repository.web_url in plan.body
 
 
