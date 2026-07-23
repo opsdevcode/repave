@@ -1,0 +1,88 @@
+# GoldenPathRepo CRD (v2 fleet inventory contract).
+# Apply when running the repave operator: kubectl apply -f operator/crd/
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: goldenpathrepos.repave.dev
+spec:
+  group: repave.dev
+  scope: Namespaced
+  names:
+    plural: goldenpathrepos
+    singular: goldenpathrepo
+    kind: GoldenPathRepo
+    shortNames:
+      - gpr
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required:
+                - repositoryUrl
+                - blueprint
+                - standard
+              properties:
+                repositoryUrl:
+                  type: string
+                  description: Git remote URL of the generated module repository.
+                provenanceFile:
+                  type: string
+                  description: Path to repave provenance metadata in the repo.
+                  default: repave.yaml
+                blueprint:
+                  type: object
+                  required:
+                    - name
+                    - version
+                  properties:
+                    name:
+                      type: string
+                    version:
+                      type: string
+                standard:
+                  type: object
+                  required:
+                    - source
+                    - version
+                  properties:
+                    source:
+                      type: string
+                    version:
+                      type: string
+                checkov:
+                  type: object
+                  properties:
+                    policiesSource:
+                      type: string
+                    policyVersion:
+                      type: string
+            status:
+              type: object
+              properties:
+                observedGeneration:
+                  type: integer
+                driftDetected:
+                  type: boolean
+                lastSyncTime:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Repository
+          type: string
+          jsonPath: .spec.repositoryUrl
+        - name: Blueprint
+          type: string
+          jsonPath: .spec.blueprint.name
+        - name: Drift
+          type: boolean
+          jsonPath: .status.driftDetected

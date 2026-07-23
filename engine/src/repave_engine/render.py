@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from repave_engine.blueprint import Blueprint, _find_repo_root
 from repave_engine.gates import is_gate_artifact_path
+from repave_engine.provenance import write_provenance_file
 
 
 @dataclass(frozen=True)
@@ -140,6 +141,13 @@ def render_blueprint(
     )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     _copy_checkov_policies(output_dir, blueprint)
+    if blueprint.provenance_file:
+        write_provenance_file(
+            output_dir,
+            blueprint,
+            payload,
+            filename=blueprint.provenance_file,
+        )
 
     return RenderResult(output_dir=output_dir, values=payload)
 

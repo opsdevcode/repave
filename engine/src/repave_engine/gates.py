@@ -6,7 +6,10 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
-from repave_engine.blueprint import Blueprint, CheckovGateConfig
+import jsonschema
+
+from repave_engine.blueprint import Blueprint, CheckovGateConfig, _find_repo_root
+from repave_engine.provenance import validate_provenance_file
 from repave_engine.settings import GateOverrides
 
 
@@ -29,6 +32,9 @@ def run_gates(
     for gate in gate_names:
         if gate == "checkov":
             results.append(_gate_checkov(output_dir, blueprint, gate_overrides))
+            continue
+        if gate == "provenance-drift":
+            results.append(_gate_provenance_drift(output_dir, blueprint))
             continue
         runner = _GATE_RUNNERS.get(gate)
         if runner is None:
@@ -201,6 +207,26 @@ def _gate_docs_drift(output_dir: Path) -> GateResult:
         return GateResult("docs-drift", False, False, "README missing Usage section")
 
     return GateResult("docs-drift", True, False, "README present and rendered")
+
+
+def _gate_provenance_drift(output_dir: Path, blueprint: Blueprint | None) -> GateResult:
+    if blueprint is None or not blueprint.provenance_file:
+        return GateResult("provenance-drift", True, True, "provenance not configured; skipped")
+
+    provenance_path = output_dir / blueprint.provenance_file
+    try:
+        repo_root = _find_repo_root(blueprint.path)
+        validate_provenance_file(provenance_path, repo_root)
+    except FileNotFoundError as exc:
+        return GateResult("provenance-drift", False, False, str(exc))
+    except jsonschema.ValidationError as exc:
+        return GateResult(
+            "provenance-drift", False, False, f"Invalid provenance file: {exc.message}"
+        )
+    except Exception as exc:
+        return GateResult("provenance-drift", False, False, str(exc))
+
+    return GateResult("provenance-drift", True, False, "Provenance file present and valid")
 
 
 _GATE_RUNNERS = {

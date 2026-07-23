@@ -42,6 +42,7 @@ class CheckovGateConfig:
 @dataclass(frozen=True)
 class Blueprint:
     path: Path
+    api_version: str
     name: str
     version: str
     description: str
@@ -54,6 +55,7 @@ class Blueprint:
     output_type: str
     output_repo_name_template: str
     output_title_template: str
+    provenance_file: str | None = None
     checkov_policies: CheckovPolicyPack | None = None
     checkov_gate: CheckovGateConfig = dataclass_field(default_factory=CheckovGateConfig)
 
@@ -118,8 +120,17 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         soft_fail=bool(checkov_gate_raw.get("soft_fail", False)),
     )
 
+    api_version = str(data["apiVersion"])
+    provenance_raw = output.get("provenance")
+    provenance_file: str | None = None
+    if isinstance(provenance_raw, dict):
+        provenance_file = str(provenance_raw["file"])
+
+    _validate_v1beta1_contract(api_version, tuple(spec["gates"]), provenance_file)
+
     return Blueprint(
         path=blueprint_file.parent,
+        api_version=api_version,
         name=metadata["name"],
         version=metadata["version"],
         description=metadata.get("description", ""),
@@ -132,9 +143,23 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         output_type=output["type"],
         output_repo_name_template=str(repo_name_template),
         output_title_template=str(title_template),
+        provenance_file=provenance_file,
         checkov_policies=checkov_policies,
         checkov_gate=checkov_gate,
     )
+
+
+def _validate_v1beta1_contract(
+    api_version: str,
+    gates: tuple[str, ...],
+    provenance_file: str | None,
+) -> None:
+    if api_version != "repave.dev/v1beta1":
+        return
+    if not provenance_file:
+        raise ValueError("v1beta1 blueprints require spec.output.provenance.file")
+    if "provenance-drift" not in gates:
+        raise ValueError("v1beta1 blueprints must include the provenance-drift gate")
 
 
 def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:

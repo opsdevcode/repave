@@ -13,6 +13,7 @@ def make_blueprint(
     gates: tuple[str, ...] = ("docs-drift",),
     inputs: tuple[InputField, ...] | None = None,
     create_template: bool = True,
+    provenance_file: str | None = None,
 ) -> Blueprint:
     bp_path = tmp_path / name
     template_rel = "template"
@@ -48,6 +49,7 @@ def make_blueprint(
 
     return Blueprint(
         path=bp_path,
+        api_version="repave.dev/v1alpha1",
         name=name,
         version="0.0.1",
         description="Test blueprint",
@@ -60,4 +62,5 @@ def make_blueprint(
         output_type="pull_request",
         output_repo_name_template="tf-{module_name}",
         output_title_template="Bootstrap {module_name}",
+        provenance_file=provenance_file,
     )

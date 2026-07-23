@@ -9,7 +9,7 @@
   "properties": {
     "apiVersion": {
       "type": "string",
-      "const": "repave.dev/v1alpha1"
+      "enum": ["repave.dev/v1alpha1", "repave.dev/v1beta1"]
     },
     "kind": {
       "type": "string",
@@ -84,7 +84,8 @@
               "terraform-validate",
               "tflint",
               "checkov",
-              "docs-drift"
+              "docs-drift",
+              "provenance-drift"
             ]
           }
         },
@@ -143,6 +144,18 @@
             "type": {
               "type": "string",
               "enum": ["pull_request", "directory"]
+            },
+            "provenance": {
+              "type": "object",
+              "required": ["file"],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9._/-]+$",
+                  "description": "Relative path for GoldenPathArtifact provenance metadata (v1beta1)."
+                }
+              }
             },
             "repository": {
               "type": "object",

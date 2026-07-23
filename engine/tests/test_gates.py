@@ -119,3 +119,59 @@ def test_build_checkov_command_uses_config_and_external_checks(tmp_path: Path) -
     assert cmd.count("--skip-check") == 2
     assert "CKV_AWS_1" in cmd
     assert "CKV_AWS_2" in cmd
+
+
+def test_provenance_drift_skipped_without_blueprint(tmp_path: Path) -> None:
+    results = run_gates(tmp_path, ("provenance-drift",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True
+
+
+def test_provenance_drift_passes_with_valid_repave_yaml(
+    tmp_path: Path,
+    repo_root: Path,
+    terraform_blueprint,
+) -> None:
+    provenance_path = tmp_path / "repave.yaml"
+    provenance_path.write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1beta1",
+                "kind: GoldenPathArtifact",
+                "metadata:",
+                "  name: example",
+                "spec:",
+                "  blueprint:",
+                "    name: terraform-module-generic",
+                "    version: 1.0.0",
+                "  standard:",
+                "    source: examples/standards",
+                "    version: 0.4.0",
+                "  generation:",
+                "    engine_version: 1.10.0",
+                "    generated_at: '2026-07-23T00:00:00+00:00'",
+                "  module:",
+                "    module_name: example",
+                "    cloud_provider: aws",
+                "    provider_services:",
+                "      - s3",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    results = run_gates(tmp_path, ("provenance-drift",), blueprint=terraform_blueprint)
+
+    assert results[0].passed is True
+    assert results[0].skipped is False
+
+
+def test_provenance_drift_fails_when_file_missing(
+    tmp_path: Path,
+    terraform_blueprint,
+) -> None:
+    results = run_gates(tmp_path, ("provenance-drift",), blueprint=terraform_blueprint)
+
+    assert results[0].passed is False
+    assert "Provenance file missing" in results[0].message

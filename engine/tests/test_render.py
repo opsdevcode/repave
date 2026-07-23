@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import yaml
 
 from helpers import make_blueprint
 from repave_engine.render import (
@@ -110,6 +111,10 @@ def test_render_writes_scoped_resource_files(
     assert "null_resource.s3_bucket.id" in outputs
     assert (output_dir / ".checkov.yml").exists()
     assert (output_dir / "policy/checkov/custom_001_terraform_version_exists.yaml").exists()
+    assert (output_dir / "repave.yaml").exists()
+    provenance = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))
+    assert provenance["kind"] == "GoldenPathArtifact"
+    assert provenance["spec"]["module"]["module_name"] == "example"
 
 
 def test_collect_rendered_files_returns_text_files(tmp_path: Path) -> None:

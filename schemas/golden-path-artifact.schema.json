@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repave.dev/schemas/golden-path-artifact.schema.json",
+  "title": "Repave Golden Path Artifact",
+  "description": "Provenance metadata written to repave.yaml in generated repositories (v2 output contract).",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": {
+      "type": "string",
+      "const": "repave.dev/v1beta1"
+    },
+    "kind": {
+      "type": "string",
+      "const": "GoldenPathArtifact"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["blueprint", "standard", "generation", "module"],
+      "additionalProperties": false,
+      "properties": {
+        "blueprint": {
+          "type": "object",
+          "required": ["name", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string" },
+            "version": { "type": "string" }
+          }
+        },
+        "standard": {
+          "type": "object",
+          "required": ["source", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "source": { "type": "string" },
+            "version": { "type": "string" }
+          }
+        },
+        "checkov": {
+          "type": "object",
+          "required": ["policies_source", "policy_version"],
+          "additionalProperties": false,
+          "properties": {
+            "policies_source": { "type": "string" },
+            "policy_version": { "type": "string" }
+          }
+        },
+        "generation": {
+          "type": "object",
+          "required": ["engine_version", "generated_at"],
+          "additionalProperties": false,
+          "properties": {
+            "engine_version": { "type": "string" },
+            "generated_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "module": {
+          "type": "object",
+          "required": ["module_name", "cloud_provider"],
+          "additionalProperties": false,
+          "properties": {
+            "module_name": { "type": "string" },
+            "cloud_provider": { "type": "string" },
+            "provider_services": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
