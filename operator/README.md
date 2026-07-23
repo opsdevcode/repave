@@ -1,6 +1,6 @@
 # repave operator (planned)
 
-The reconciliation operator is the next major milestone after **v1.10**. See
+The reconciliation operator is the next major milestone after **v1.12**. See
 [`docs/roadmap.md`](../docs/roadmap.md) for scope and dependencies.
 
 It will watch generated repositories and reconcile them against pinned blueprint
@@ -19,12 +19,12 @@ and standard versions, opening governed remediation/upgrade pull requests when:
 Operator SDK (Go core reconciler), with the door open for Ansible/Helm-based
 operator flavors so more contributors can participate.
 
-## Current baseline (v1.10)
+## Current baseline (v1.12)
 
-v1.10 proves the generation loop locally and publishes module repositories to
+v1.12 proves the generation loop locally and publishes module repositories to
 GitHub when configured:
 
-form → deterministic render → gates → local module repo → GitHub push
+form → deterministic render → gates (including Checkov + secrets scan) → local module repo → GitHub push
 
 Generated Terraform modules use one `.tf` file per scoped provider resource with
 shared derived values in `locals.tf`. The operator builds on the stable contracts

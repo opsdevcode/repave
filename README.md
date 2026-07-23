@@ -13,12 +13,13 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.10.** The generation loop runs locally with no Kubernetes
+> Status: **v1.12.** The generation loop runs locally with no Kubernetes
 > required. Generated modules publish to separate git repositories and can be
 > pushed to GitHub with `GITHUB_TOKEN`. Each scoped provider resource is
 > rendered to its own `.tf` file; shared context lives in `locals.tf` against
-> the in-repo module standard. Generated modules include a Checkov policy pack
-> and `.checkov.yml`. The self-healing reconciliation operator is planned next
+> the in-repo module standard. Generated modules include layout and security
+> Checkov policies (pack v1.2.0), a dedicated secrets gate, and `.checkov.yml`.
+> The self-healing reconciliation operator is planned next
 > (see [`operator/`](operator/)).
 
 ## Why repave
@@ -26,7 +27,7 @@ repeatable, and automated.
 - **Enables many.** A web form maps to a golden path; no one needs to know
   Terraform/HCL to get a compliant module.
 - **Governed by construction.** Generated artifacts must pass every configured
-  gate (`fmt`, `validate`, `tflint`, `checkov`, docs) before publish.
+  gate (`fmt`, `validate`, `tflint`, `checkov`, `secrets`, docs) before publish.
   There is no bypass path.
 - **Deterministic + repeatable.** The same inputs always render the same
   artifact (Copier templates), so output is reviewable and safe.
@@ -120,8 +121,8 @@ docs/          # concept docs and [roadmap](docs/roadmap.md)
 
 ## Roadmap
 
-**Current:** v1.10 — in-repo Checkov policy pack, gate config, and module scaffold
-with `locals.tf` + per-resource `.tf` files.
+**Current:** v1.12 — layout + security Checkov policies, secrets gate, and module
+scaffold with `locals.tf` + per-resource `.tf` files.
 
 High-level release history and detailed future planning (through **v2.0.0**) live in
 [`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when

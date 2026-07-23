@@ -9,8 +9,8 @@ docker compose up --build
 
 Open http://localhost:8088
 
-The container includes **terraform**, **tflint**, and **checkov**, so blueprint gates
-run for real instead of skipping. Generated modules are written to the `repave-modules`
+The container includes **terraform**, **tflint**, and **checkov** (policy + secrets
+scan), so blueprint gates run for real instead of skipping. Generated modules are written to the `repave-modules`
 Docker volume (`/modules` inside the container).
 
 To publish to GitHub from the portal, pass a token when starting compose:

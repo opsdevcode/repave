@@ -57,3 +57,9 @@ Run Checkov (custom policies ship in `policy/checkov/`):
 ```bash
 checkov -d . --config-file .checkov.yml
 ```
+
+Run the secrets scan (same gate repave runs as `secrets`):
+
+```bash
+checkov -d . --framework secrets --enable-secret-scan-all-files
+```

@@ -323,7 +323,8 @@ These gates are wired in repave blueprints and expected in module repository CI:
 - `terraform validate`
 - `terraform test`
 - `tflint`
-- `checkov` (or equivalent policy scanner)
+- `checkov` (custom policy pack)
+- `secrets` scan (Checkov secrets framework)
 - Docs drift check (README present and fully rendered)
 
 Failed gates block publish — there is no bypass path.
