@@ -14,7 +14,7 @@ from repave_engine.render import (
     collect_rendered_files,
     render_blueprint,
 )
-from repave_engine.settings import GateOverrides, OutputConfig, load_gate_overrides
+from repave_engine.settings import OutputConfig, load_gate_overrides
 from repave_engine.target_repo import (
     ModuleRepository,
     publish_to_module_repository,

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from pathlib import Path
 from typing import Any, cast
 
@@ -54,7 +55,7 @@ class Blueprint:
     output_repo_name_template: str
     output_title_template: str
     checkov_policies: CheckovPolicyPack | None = None
-    checkov_gate: CheckovGateConfig = field(default_factory=CheckovGateConfig)
+    checkov_gate: CheckovGateConfig = dataclass_field(default_factory=CheckovGateConfig)
 
     @property
     def template_dir(self) -> Path:

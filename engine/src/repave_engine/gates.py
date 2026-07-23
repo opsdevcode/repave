@@ -27,14 +27,14 @@ def run_gates(
 ) -> list[GateResult]:
     results: list[GateResult] = []
     for gate in gate_names:
+        if gate == "checkov":
+            results.append(_gate_checkov(output_dir, blueprint, gate_overrides))
+            continue
         runner = _GATE_RUNNERS.get(gate)
         if runner is None:
             results.append(GateResult(gate, False, False, f"Unknown gate: {gate}"))
             continue
-        if gate == "checkov":
-            results.append(runner(output_dir, blueprint, gate_overrides))
-        else:
-            results.append(runner(output_dir))
+        results.append(runner(output_dir))
     return results
 
 
@@ -207,6 +207,5 @@ _GATE_RUNNERS = {
     "terraform-fmt": _gate_terraform_fmt,
     "terraform-validate": _gate_terraform_validate,
     "tflint": _gate_tflint,
-    "checkov": _gate_checkov,
     "docs-drift": _gate_docs_drift,
 }

@@ -1,0 +1,24 @@
+name: PR branch cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  delete-head-branch:
+    if: >-
+      github.event.pull_request.head.ref != 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete head branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -X DELETE \
+            "repos/${{ github.repository }}/git/refs/heads/${{ github.event.pull_request.head.ref }}" \
+            || echo "Branch already deleted or unavailable."
