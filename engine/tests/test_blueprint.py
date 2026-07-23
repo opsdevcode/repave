@@ -18,6 +18,7 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
     assert terraform_blueprint.version == "0.8.0"
     assert terraform_blueprint.artifact_type == "terraform-module"
+    assert terraform_blueprint.provenance_file == "repave.yaml"
     assert terraform_blueprint.checkov_policies is not None
     assert terraform_blueprint.checkov_policies.policies_source == "examples/checkov/policies"
     assert terraform_blueprint.checkov_policies.policy_version == "1.2.0"
@@ -25,6 +26,7 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.checkov_gate.config_file == ".checkov.yml"
     assert "terraform-fmt" in terraform_blueprint.gates
     assert "secrets" in terraform_blueprint.gates
+    assert "provenance-drift" in terraform_blueprint.gates
     cloud_provider = next(
         field for field in terraform_blueprint.inputs if field.name == "cloud_provider"
     )

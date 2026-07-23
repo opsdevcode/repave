@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.12.0 (v1.13.0 pending)  
-**Planning horizon:** v1.14 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.13.0 (v1.14.0 pending)  
+**Planning horizon:** v1.15 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---
 
@@ -28,10 +28,10 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.13  today       gate registry; artifact-type hygiene; terraform-test gate
+v1.14  today       artifact-type provenance in repave.yaml; provenance-drift gate
   │
-  ├─ v1.14–v1.17    multi-artifact    provenance decoupling; Ansible role path + standard
-  ├─ v1.17–v1.20    operate + extend  operator alpha; portal UX; module updates; more golden paths
+  ├─ v1.15–v1.17    multi-artifact    Ansible role path + standard; operator alpha
+  ├─ v1.18–v1.20    operate + extend  portal UX; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
   ├─ v1.29–v1.34    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
@@ -44,7 +44,7 @@ v1.13  today       gate registry; artifact-type hygiene; terraform-test gate
 
 | Theme | Releases | Outcome |
 | --- | --- | --- |
-| **Governance depth** | v1.11, v1.12, v1.21, v1.39 | Standards, Checkov, secrets scan, and opt-in OPA policy-as-code enforce the module contract, not just document it |
+| **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and opt-in OPA policy-as-code enforce the module contract, not just document it |
 | **Multi-artifact golden paths** | v1.13–v1.16, v1.33–v1.34, v1.40 | Engine decoupled from Terraform; Ansible role, Helm chart, app-service, and observability-as-code paths ship with standards + gates |
 | **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR |
 | **Usability** | v1.18, v1.22 | Portal and CLI usable by non-experts; visible pinned versions |
@@ -135,7 +135,7 @@ v1.13  today       gate registry; artifact-type hygiene; terraform-test gate
 - Policy pack v1.2.0; extended fixture coverage and gate tests in `engine/tests/`
 - Blueprint and schema gate enum include `secrets` alongside `checkov`
 
-### v1.13 — Gate registry and blueprint gate extensibility (current)
+### v1.13 — Gate registry and blueprint gate extensibility
 
 - Replace hard-coded gate dispatch with a **gate registry** (`gate_registry.py`,
   `gate_builtin.py`, `gate_runners.py`); `run_gates()` resolves runners from the registry
@@ -145,33 +145,19 @@ v1.13  today       gate registry; artifact-type hygiene; terraform-test gate
 - `terraform-test` gate registered (skips when no `.tftest.hcl` files); plugin hook via
   `repave.gates` entry points for org-specific gates without editing core dispatch
 
+### v1.14 — Provenance and standards decoupling (current)
+
+- `repave.yaml` provenance via `engine/src/repave_engine/provenance.py` and
+  `schemas/golden-path-artifact.schema.json` (`repave.dev/v1beta1`)
+- Artifact-type aware provenance: `terraformModule` block for modules, `ansibleRole`
+  for Galaxy roles; Checkov pin only on Terraform artifacts
+- `provenance-drift` gate validates presence + JSON Schema; optional via
+  `spec.output.provenance.file` on blueprints (enabled on terraform-module-generic)
+- Provider catalog validation skipped for non-Terraform `artifactType` values
+
 ---
 
 ## Planned
-
-### v1.14 — Provenance and standards decoupling (Ansible prereq)
-
-**Problem:** The provenance document and `schemas/golden-path-artifact.schema.json`
-assume Terraform: they hard-code `cloud_provider`, `provider_services`, and
-`checkov`. A non-Terraform artifact (Ansible role) cannot emit valid provenance.
-
-**Approach:**
-
-- Introduce `spec.artifactType` on the blueprint (`terraform-module` default,
-  `ansible-role`), keeping `repave.dev/v1alpha1` back-compat
-- Make the provenance artifact block **artifact-type aware**: Terraform keeps
-  `cloud_provider`/`provider_services`; Ansible records galaxy namespace, role
-  name, and minimum Ansible version
-- Generalize standards-pin handling so a non-Terraform standard can be referenced
-  and rendered the same way
-
-**Dependencies:** v1.13 gate registry; existing provenance work
-(`engine/src/repave_engine/provenance.py`).
-
-**Done when:** An Ansible blueprint emits a schema-valid provenance file with
-Ansible-shaped metadata, and the Terraform path is unchanged.
-
----
 
 ### v1.15 — Ansible role golden path
 
@@ -770,8 +756,9 @@ generator.
 
 | Capability | Built in releases |
 | --- | --- |
-| Generate compliant module repos | v1.0–v1.12 (done) |
+| Generate compliant module repos | v1.0–v1.14 (done) |
 | Enforce module standard via Checkov | v1.11, v1.12, v1.21 |
+| Provenance in generated repos | v1.14 |
 | Custom policy-as-code gate (OPA/conftest) | v1.39 |
 | Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.13–v1.16, v1.20, v1.33–v1.34, v1.40 |
 | Blueprint conformance in CI | v1.29 |

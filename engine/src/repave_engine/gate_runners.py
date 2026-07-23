@@ -5,8 +5,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from repave_engine.blueprint import CheckovGateConfig, TflintGateConfig
+import jsonschema
+
+from repave_engine.blueprint import CheckovGateConfig, TflintGateConfig, _find_repo_root
 from repave_engine.gate_registry import GateContext, GateResult
+from repave_engine.provenance import validate_provenance_file
 
 
 def tool_available(name: str) -> bool:
@@ -224,3 +227,27 @@ def run_docs_drift(ctx: GateContext) -> GateResult:
         return GateResult("docs-drift", False, False, "README missing Usage section")
 
     return GateResult("docs-drift", True, False, "README present and rendered")
+
+
+def run_provenance_drift(ctx: GateContext) -> GateResult:
+    blueprint = ctx.blueprint
+    if blueprint is None or not blueprint.provenance_file:
+        return GateResult("provenance-drift", True, True, "provenance not configured; skipped")
+
+    provenance_path = ctx.output_dir / blueprint.provenance_file
+    try:
+        repo_root = _find_repo_root(blueprint.path)
+        validate_provenance_file(provenance_path, repo_root)
+    except FileNotFoundError as exc:
+        return GateResult("provenance-drift", False, False, str(exc))
+    except jsonschema.ValidationError as exc:
+        return GateResult(
+            "provenance-drift",
+            False,
+            False,
+            f"Invalid provenance file: {exc.message}",
+        )
+    except Exception as exc:
+        return GateResult("provenance-drift", False, False, str(exc))
+
+    return GateResult("provenance-drift", True, False, "Provenance file present and valid")

@@ -4,7 +4,12 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from helpers import make_blueprint
-from repave_engine.blueprint import Blueprint, CheckovGateConfig, TflintGateConfig
+from repave_engine.blueprint import (
+    Blueprint,
+    CheckovGateConfig,
+    CheckovPolicyPack,
+    TflintGateConfig,
+)
 from repave_engine.gate_registry import GateContext
 from repave_engine.gates import (
     GateResult,
@@ -18,6 +23,18 @@ from repave_engine.gates import (
     run_tflint,
 )
 from repave_engine.settings import GateOverrides
+
+
+def _seed_mini_repo(tmp_path: Path, repo_root: Path) -> Path:
+    root = tmp_path / "mini-repo"
+    schemas = root / "schemas"
+    schemas.mkdir(parents=True)
+    for filename in ("blueprint.schema.json", "golden-path-artifact.schema.json"):
+        (schemas / filename).write_text(
+            (repo_root / "schemas" / filename).read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+    return root
 
 
 def test_docs_drift_passes_with_rendered_readme(tmp_path: Path) -> None:
@@ -241,3 +258,54 @@ def test_terraform_test_skips_without_tests(tmp_path: Path, monkeypatch) -> None
     assert results[0].passed is True
     assert results[0].skipped is True
     assert "no terraform tests" in results[0].message
+
+
+def test_provenance_drift_skips_without_configured_file(tmp_path: Path) -> None:
+    results = run_gates(tmp_path, ("provenance-drift",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True
+    assert "not configured" in results[0].message
+
+
+def test_provenance_drift_passes_with_valid_repave_yaml(
+    tmp_path: Path,
+    repo_root: Path,
+) -> None:
+    root = _seed_mini_repo(tmp_path, repo_root)
+    blueprint = make_blueprint(
+        root,
+        create_template=False,
+        provenance_file="repave.yaml",
+        checkov_policies=CheckovPolicyPack(
+            policies_source="examples/checkov/policies",
+            policy_version="1.2.0",
+        ),
+    )
+    from repave_engine.provenance import write_provenance_file
+
+    write_provenance_file(
+        tmp_path,
+        blueprint,
+        {"module_name": "example", "cloud_provider": "aws", "provider_services": "s3"},
+        filename="repave.yaml",
+    )
+
+    results = run_gates(tmp_path, ("provenance-drift",), blueprint=blueprint)
+
+    assert results[0].passed is True
+    assert results[0].skipped is False
+
+
+def test_provenance_drift_fails_when_file_missing(tmp_path: Path, repo_root: Path) -> None:
+    root = _seed_mini_repo(tmp_path, repo_root)
+    blueprint = make_blueprint(
+        root,
+        create_template=False,
+        provenance_file="repave.yaml",
+    )
+
+    results = run_gates(tmp_path, ("provenance-drift",), blueprint=blueprint)
+
+    assert results[0].passed is False
+    assert "Provenance file missing" in results[0].message

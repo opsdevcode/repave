@@ -4,6 +4,7 @@ from repave_engine.gate_registry import GateSpec, register_gate
 from repave_engine.gate_runners import (
     run_checkov,
     run_docs_drift,
+    run_provenance_drift,
     run_secrets,
     run_terraform_fmt,
     run_terraform_test,
@@ -60,6 +61,13 @@ register_gate(
     GateSpec(
         name="docs-drift",
         runner=run_docs_drift,
+        artifact_types=frozenset({"terraform-module", "ansible-role"}),
+    )
+)
+register_gate(
+    GateSpec(
+        name="provenance-drift",
+        runner=run_provenance_drift,
         artifact_types=frozenset({"terraform-module", "ansible-role"}),
     )
 )

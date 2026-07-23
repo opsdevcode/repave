@@ -13,12 +13,13 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.12.** The generation loop runs locally with no Kubernetes
+> Status: **v1.14.** The generation loop runs locally with no Kubernetes
 > required. Generated modules publish to separate git repositories and can be
 > pushed to GitHub with `GITHUB_TOKEN`. Each scoped provider resource is
 > rendered to its own `.tf` file; shared context lives in `locals.tf` against
 > the in-repo module standard. Generated modules include layout and security
-> Checkov policies (pack v1.2.0), a dedicated secrets gate, and `.checkov.yml`.
+> Checkov policies (pack v1.2.0), a dedicated secrets gate, `.checkov.yml`,
+> and a `repave.yaml` provenance file validated by the `provenance-drift` gate.
 > The self-healing reconciliation operator is planned next
 > (see [`operator/`](operator/)).
 
@@ -27,7 +28,7 @@ repeatable, and automated.
 - **Enables many.** A web form maps to a golden path; no one needs to know
   Terraform/HCL to get a compliant module.
 - **Governed by construction.** Generated artifacts must pass every configured
-  gate (`fmt`, `validate`, `tflint`, `checkov`, `secrets`, docs) before publish.
+  gate (`fmt`, `validate`, `tflint`, `checkov`, `secrets`, `provenance-drift`, docs) before publish.
   There is no bypass path.
 - **Deterministic + repeatable.** The same inputs always render the same
   artifact (Copier templates), so output is reviewable and safe.
@@ -110,7 +111,7 @@ repave generate \
 ## Repository layout
 
 ```text
-schemas/       # frozen contracts: blueprint.schema.json, inputs.schema.json
+schemas/       # frozen contracts: blueprint, golden-path artifact, inputs schemas
 engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
 examples/      # sample standards and Checkov policy packs
@@ -121,8 +122,8 @@ docs/          # concept docs and [roadmap](docs/roadmap.md)
 
 ## Roadmap
 
-**Current:** v1.12 — layout + security Checkov policies, secrets gate, and module
-scaffold with `locals.tf` + per-resource `.tf` files.
+**Current:** v1.14 — gate registry, artifact-type-aware `repave.yaml` provenance,
+and `provenance-drift` gate on the terraform-module golden path.
 
 High-level release history and detailed future planning (through **v2.0.0**) live in
 [`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when

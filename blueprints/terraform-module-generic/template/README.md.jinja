@@ -63,3 +63,8 @@ Run the secrets scan (same gate repave runs as `secrets`):
 ```bash
 checkov -d . --framework secrets --enable-secret-scan-all-files
 ```
+
+## Provenance
+
+Generation metadata is recorded in `repave.yaml` (blueprint, standard, and module
+pins). The `provenance-drift` gate validates this file on every generate/publish.

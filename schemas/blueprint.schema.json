@@ -86,7 +86,8 @@
               "tflint",
               "checkov",
               "secrets",
-              "docs-drift"
+              "docs-drift",
+              "provenance-drift"
             ]
           }
         },
@@ -197,6 +198,17 @@
                 "title_template": {
                   "type": "string",
                   "description": "Publish title template. Placeholders must match blueprint input names."
+                }
+              }
+            },
+            "provenance": {
+              "type": "object",
+              "required": ["file"],
+              "additionalProperties": false,
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "Provenance file path relative to the generated artifact root (for example repave.yaml)."
                 }
               }
             }
