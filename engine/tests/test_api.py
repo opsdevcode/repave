@@ -41,5 +41,5 @@ def test_generate_form_submission(
     )
 
     assert response.status_code == 200
-    assert "tf-example" in response.text
+    assert "tf-aws-example" in response.text
     assert "Dry-run" in response.text

@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from repave_engine import __version__
-from repave_engine.blueprint import list_blueprints, load_blueprint
+from repave_engine.blueprint import list_blueprints, load_blueprint, load_provider_catalog
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig, load_output_config
 
@@ -34,7 +34,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
-            {"blueprint": blueprint},
+            {
+                "blueprint": blueprint,
+                "provider_catalog": load_provider_catalog(blueprint),
+            },
         )
 
     @app.post("/generate")
@@ -43,7 +46,22 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint_name = str(form.get("blueprint_name", ""))
         dry_run = str(form.get("dry_run", "true")).lower() != "false"
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        values = {field.name: str(form.get(field.name, "")) for field in blueprint.inputs}
+        values: dict[str, str] = {}
+        for field in blueprint.inputs:
+            if field.name == "provider_services":
+                selected = [
+                    str(item) for item in form.getlist("provider_services") if str(item).strip()
+                ]
+                if not selected:
+                    selected = [
+                        str(item)
+                        for item in form.getlist("provider_service_option")
+                        if str(item).strip()
+                    ]
+                values[field.name] = ",".join(selected)
+                continue
+
+            values[field.name] = str(form.get(field.name, ""))
 
         result = generate_from_blueprint(
             blueprint,

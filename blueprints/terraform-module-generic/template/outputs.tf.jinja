@@ -3,6 +3,16 @@ output "module_name" {
   value       = var.module_name
 }
 
+output "cloud_provider" {
+  description = "Cloud provider targeted by this module."
+  value       = var.cloud_provider
+}
+
+output "provider_services" {
+  description = "Provider services in scope for this module."
+  value       = var.provider_services
+}
+
 output "environment" {
   description = "Configured environment."
   value       = var.environment
@@ -10,5 +20,5 @@ output "environment" {
 
 output "resource_ids" {
   description = "IDs of resources managed by this module."
-  value       = [null_resource.example.id]
+  value       = [null_resource.scope.id]
 }

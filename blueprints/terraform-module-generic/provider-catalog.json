@@ -1,0 +1,37 @@
+{
+  "aws": [
+    "cloudwatch",
+    "dynamodb",
+    "ec2",
+    "ecs",
+    "eks",
+    "iam",
+    "lambda",
+    "rds",
+    "s3",
+    "sqs",
+    "vpc"
+  ],
+  "azure": [
+    "aks",
+    "application_gateway",
+    "key_vault",
+    "monitor",
+    "network",
+    "resource_group",
+    "sql",
+    "storage",
+    "virtual_machine"
+  ],
+  "gcp": [
+    "cloud_run",
+    "cloud_storage",
+    "compute",
+    "gke",
+    "iam",
+    "monitoring",
+    "pubsub",
+    "sql",
+    "vpc"
+  ]
+}

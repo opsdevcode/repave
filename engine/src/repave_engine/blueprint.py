@@ -16,6 +16,7 @@ class InputField:
     required: bool
     description: str = ""
     default: Any = None
+    enum: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,7 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
             required=bool(item["required"]),
             description=item.get("description", ""),
             default=item.get("default"),
+            enum=tuple(item.get("enum", [])),
         )
         for item in spec["inputs"]
     )
@@ -104,7 +106,68 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
     if unknown:
         raise ValueError(f"Unknown input fields: {', '.join(sorted(unknown))}")
 
+    for field in blueprint.inputs:
+        if field.name not in normalized or field.enum == ():
+            continue
+        value = str(normalized[field.name])
+        if value not in field.enum:
+            allowed = ", ".join(field.enum)
+            raise ValueError(
+                f"Invalid value for {field.name}: {value!r}. Allowed values: {allowed}"
+            )
+
+    _validate_provider_services(blueprint, normalized)
+
     return normalized
+
+
+def _validate_provider_services(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    catalog = load_provider_catalog(blueprint)
+    if not catalog:
+        return
+
+    if "cloud_provider" not in normalized or "provider_services" not in normalized:
+        return
+
+    provider = str(normalized["cloud_provider"])
+    if provider not in catalog:
+        allowed = ", ".join(sorted(catalog))
+        raise ValueError(
+            f"Invalid value for cloud_provider: {provider!r}. Allowed values: {allowed}"
+        )
+
+    raw_services = str(normalized["provider_services"]).split(",")
+    services = [item.strip() for item in raw_services if item.strip()]
+    if not services:
+        raise ValueError("provider_services must include at least one service")
+
+    allowed_services = set(catalog[provider])
+    invalid = sorted({service for service in services if service not in allowed_services})
+    if invalid:
+        allowed = ", ".join(sorted(allowed_services))
+        raise ValueError(
+            f"Invalid provider_services for {provider}: {', '.join(invalid)}. "
+            f"Allowed values: {allowed}"
+        )
+
+    normalized["provider_services"] = ",".join(sorted(services))
+
+
+def load_provider_catalog(blueprint: Blueprint) -> dict[str, list[str]]:
+    catalog_path = blueprint.path / "provider-catalog.json"
+    if not catalog_path.exists():
+        return {}
+
+    data = json.loads(catalog_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected object in {catalog_path}")
+
+    catalog: dict[str, list[str]] = {}
+    for provider, services in data.items():
+        if not isinstance(services, list) or not all(isinstance(item, str) for item in services):
+            raise ValueError(f"Expected string list for provider {provider!r} in {catalog_path}")
+        catalog[str(provider)] = services
+    return catalog
 
 
 def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:

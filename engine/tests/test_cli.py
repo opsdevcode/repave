@@ -57,7 +57,7 @@ def test_cmd_generate_exit_code_success(
 
     assert code == 0
     assert "terraform-module-generic" in output
-    assert "tf-example" in output
+    assert "tf-aws-example" in output
     assert "Dry-run" in output
 
 

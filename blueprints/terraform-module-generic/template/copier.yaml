@@ -11,3 +11,11 @@ module_name:
 description:
   type: str
   help: Short module description
+
+cloud_provider:
+  type: str
+  help: Cloud provider this module targets (aws, azure, gcp)
+
+provider_services:
+  type: str
+  help: Comma-separated provider services in scope

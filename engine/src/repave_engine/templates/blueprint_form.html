@@ -7,10 +7,14 @@
     <style>
       body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
       label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
-      input[type=text] { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+      input[type=text], select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
       button { margin-top: 1rem; padding: 0.6rem 1rem; }
       .muted { color: #555; }
       .meta { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
+      .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.35rem 1rem; margin-top: 0.5rem; }
+      .service-option { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; margin: 0; }
+      .service-option input { width: auto; }
+      .field-block { margin-bottom: 0.75rem; }
     </style>
   </head>
   <body>
@@ -23,23 +27,94 @@
       <div><strong>Gates:</strong> {{ blueprint.gates | join(', ') }}</div>
     </div>
 
-    <form method="post" action="/generate">
+    <form method="post" action="/generate" id="generate-form">
       <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
       <input type="hidden" name="dry_run" value="true" />
 
       {% for field in blueprint.inputs %}
-      <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
-      {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
-      <input
-        id="{{ field.name }}"
-        name="{{ field.name }}"
-        type="text"
-        {% if field.required %}required{% endif %}
-        {% if field.default is not none %}value="{{ field.default }}"{% endif %}
-      />
+      {% if provider_catalog and field.name == "cloud_provider" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
+        <select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif provider_catalog and field.name == "provider_services" %}
+      <div class="field-block">
+        <label>{{ field.name }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
+        <div id="provider-services" class="service-grid" aria-live="polite"></div>
+        <input type="hidden" id="provider_services" name="provider_services" value="" />
+      </div>
+      {% else %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
+        {% if field.enum %}
+        <select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          type="text"
+          {% if field.required %}required{% endif %}
+          {% if field.default is not none %}value="{{ field.default }}"{% endif %}
+        />
+        {% endif %}
+      </div>
+      {% endif %}
       {% endfor %}
 
       <button type="submit">Generate (dry-run)</button>
     </form>
+
+    {% if provider_catalog %}
+    <script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>
+    <script>
+      const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
+      const providerSelect = document.getElementById("cloud_provider");
+      const servicesContainer = document.getElementById("provider-services");
+      const servicesInput = document.getElementById("provider_services");
+      const form = document.getElementById("generate-form");
+
+      function renderServices(provider) {
+        servicesContainer.innerHTML = "";
+        const services = catalog[provider] || [];
+        for (const service of services) {
+          const label = document.createElement("label");
+          label.className = "service-option";
+          label.innerHTML = `<input type="checkbox" name="provider_service_option" value="${service}" /> ${service}`;
+          servicesContainer.appendChild(label);
+        }
+        syncServicesInput();
+      }
+
+      function syncServicesInput() {
+        const selected = Array.from(
+          servicesContainer.querySelectorAll('input[type="checkbox"]:checked')
+        ).map((input) => input.value);
+        servicesInput.value = selected.join(",");
+      }
+
+      providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
+      servicesContainer.addEventListener("change", syncServicesInput);
+      form.addEventListener("submit", (event) => {
+        syncServicesInput();
+        if (!servicesInput.value.trim()) {
+          event.preventDefault();
+          alert("Select at least one provider service.");
+        }
+      });
+
+      renderServices(providerSelect.value);
+    </script>
+    {% endif %}
   </body>
 </html>

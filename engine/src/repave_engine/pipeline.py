@@ -42,6 +42,7 @@ def generate_from_blueprint(
         module_name=module_name,
         config=output_config,
         name_template=blueprint.output_repo_name_template,
+        template_values=normalized,
     )
 
     if staging_root is None:
