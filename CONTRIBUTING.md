@@ -1,9 +1,9 @@
 # Contributing to repave
 
-Thanks for your interest in `repave`. **v1.8** established per-resource Terraform
-module layout and expanded provider scope controls; the most valuable contributions
-now are feedback on contracts, golden paths, and the operator design for the next
-release.
+Thanks for your interest in `repave`. **v1.9** established `locals.tf` conventions,
+the in-repo module standard, and per-resource Terraform module layout; the most
+valuable contributions now are feedback on contracts, golden paths, and the
+operator design for the next release.
 
 ## Ground rules
 
