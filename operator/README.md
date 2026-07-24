@@ -5,8 +5,12 @@ and pinned-version bumps, then open **governed remediation pull requests** (neve
 direct pushes to module repos).
 
 **Slice 0 (scaffold):** `GoldenPathRepo` CRD (`repave.dev/v1alpha1`), baseline
-reconciler, `make operator-test` with envtest. **Slice 1** adds inventory from
-`repave.yaml`.
+reconciler, `make operator-test` with envtest.
+
+**Slice 1 (inventory):** read `repave.yaml` from `spec.localPath`, populate
+`status.observedPins`, set `OutOfDate` + `DriftDetected` when pins differ from
+`spec.desiredPins`. `spec.repoURL` returns `RemoteRepoUnsupported` until git
+inventory lands.
 
 **Local development and testing are first-class.** See
 [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
@@ -132,4 +136,4 @@ operator/
 ```
 
 Contributors: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
-Next slice: inventory from `repave.yaml` (`internal/drift` + status `observedPins`).
+Next slice: upgrade diff via `repave` CLI (slice 2) and remediation PRs (slice 3).
