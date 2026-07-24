@@ -91,14 +91,14 @@ skips = ["B404", "B603"]  # subprocess used intentionally for gate execution
 [tool.semantic_release]
 # Git root is one level up; keeps changelog and tags aligned with the monorepo.
 repo_dir = ".."
-version_toml = ["engine/pyproject.toml:project.version"]
-version_variables = ["engine/src/repave_engine/__init__.py:__version__"]
+version_toml = ["pyproject.toml:project.version"]
+version_variables = ["src/repave_engine/__init__.py:__version__"]
 tag_format = "v{version}"
 commit_message = "chore(release): {version}"
-build_command = "bash -c 'cd engine && uv build'"
+build_command = "uv build"
 upload_to_vcs_release = true
 upload_to_pypi = false
-assets = ["engine/CHANGELOG.md"]
+assets = ["CHANGELOG.md"]
 
 [tool.semantic_release.changelog]
 mode = "update"
