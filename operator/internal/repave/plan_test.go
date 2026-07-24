@@ -1,12 +1,15 @@
 package repave
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestStaticPlanUpgraderReturnsResult(t *testing.T) {
 	upgrader := &StaticPlanUpgrader{
 		Result: PlanResult{ChangedFileCount: 1, Summary: "ok"},
 	}
-	got, err := upgrader.PlanUpgrade(t.Context(), Config{}, "/tmp/module", "terraform-module-generic")
+	got, err := upgrader.PlanUpgrade(context.Background(), Config{}, "/tmp/module", "terraform-module-generic")
 	if err != nil {
 		t.Fatalf("PlanUpgrade: %v", err)
 	}
