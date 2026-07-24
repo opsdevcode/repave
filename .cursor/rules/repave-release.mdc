@@ -1,0 +1,49 @@
+---
+description: repave (opsdevcode/repave) Release workflow and python-semantic-release on protected main
+globs:
+  - "**/repave/**"
+  - "**/opsdevcode/repave/**"
+alwaysApply: false
+---
+
+# repave Release CI
+
+Apply when editing `.github/workflows/release.yml`, `engine/pyproject.toml`
+`[tool.semantic_release]`, or debugging Release workflow failures on `main`.
+
+## Design (protected `main`)
+
+1. **No direct push to `main`** from semantic-release — branch rules require PRs.
+2. Flow: `semantic-release version --no-push --no-tag` → push `chore/release/*` →
+   `gh pr merge --admin` → tag release commit → `gh release create` with wheels.
+3. **`REPAVE_RELEASE_TOKEN`**: maintainer **Administrator** PAT; checkout uses it;
+   `persist-credentials: false`; `git remote set-url` with token for push.
+4. **`permissions`**: `contents: write`, `pull-requests: write`.
+
+## python-semantic-release (runs from `engine/`)
+
+| Setting | Value | Why |
+|--------|--------|-----|
+| `repo_dir` | `".."` | Git root is monorepo; tags/commits on `main` |
+| `version_toml` | `pyproject.toml:project.version` | **Not** `engine/...` (avoids `engine/engine/pyproject.toml`) |
+| `version_variables` | `src/repave_engine/__init__.py:__version__` | Same |
+| `build_command` | `uv build` | Cwd is `engine/` |
+| `assets` | `["CHANGELOG.md"]` | Under `engine/` |
+| `upload_to_vcs_release` | `false` | Workflow uses `gh release create`, not PSR publish |
+| Step env | `GITHUB_ACTIONS=false` | Avoid required GHA output `commit_sha` when not pushing via PSR |
+
+## Common failure modes (fixed in repo history)
+
+- **GH013** direct push to `main` → admin-merge release PR pattern (#52+).
+- **`engine/engine/pyproject.toml`** → fix version paths (#56).
+- **`commit_sha` not set** → `upload_to_vcs_release = false` + `GITHUB_ACTIONS=false` (#57+).
+- **Tag without GitHub Release** → `publish_github_release` after merge (#54).
+- **Operator tests in Release** → `working-directory: operator` for `make test` (#50).
+- **Changelog stale** → `sync_changelog_if_needed` + `make changelog` on `main`.
+
+## Do not
+
+- Re-enable `semantic-release publish --tag` as the only publish path without a GitHub Release.
+- Hand-bump `engine/pyproject.toml` version in feature PRs (use `feat:` / `fix:` on `main`).
+
+See `CONTRIBUTING.md` maintainer setup and `.github/workflows/release.yml`.

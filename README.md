@@ -13,23 +13,58 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.17.** The generation loop runs locally with no Kubernetes
-> required for engine workflows. The reconciliation operator (alpha) watches
-> `GoldenPathRepo` / `Blueprint` CRDs locally via envtest or kind. Generated modules
-> repositories and can be pushed to GitHub with `GITHUB_TOKEN`. Terraform modules
-> use Checkov policies (pack v1.2.0) and secrets scanning. Ansible roles use the
-> production-profile ansible-lint pack (v1.0.0), standards corpus at
-> `examples/standards/ansible/`, and `repave.yaml` provenance. See
-> [`operator/`](operator/) and [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
+> **Status (engine v1.17 on GitHub; v1.18 release pending on `main`).** Generation
+> runs locally or via Docker Compose — no Kubernetes required for the engine.
+> The **reconciliation operator** (alpha) reconciles `GoldenPathRepo` and
+> `Blueprint` CRDs: inventory/drift, upgrade plans, optional remediation PRs, and
+> catalog pin watch. See [`operator/`](operator/) and
+> [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
+
+## What you can do today
+
+### Generation engine (`engine/`)
+
+- **Golden paths:** Terraform module and Ansible role blueprints (`blueprints/`),
+  Copier render, frozen JSON schemas (`schemas/`).
+- **Portal + API:** Server-rendered form from blueprint input schema; gate results
+  and publish flow at `http://localhost:8088` (Compose) or `repave serve`.
+- **CLI:** `repave generate`, `repave list`, gate execution, provenance in
+  `repave.yaml`.
+- **Gates (blueprint-configured):** Terraform — `fmt`, `validate`, `tflint`,
+  Checkov (policy packs under `examples/`), secrets scanning; Ansible —
+  production-profile **ansible-lint** pack and standards corpus under
+  `examples/standards/ansible/`.
+- **Publish:** Local git bootstrap or GitHub create/push with `GITHUB_TOKEN`;
+  modules live under `REPAVE_MODULES_ROOT`, not inside the repave repo.
+
+### Reconciliation operator (`operator/`, v1.17)
+
+Kubernetes controller for **estate drift and upgrades** (local envtest/kind; no
+live GitHub required for default tests):
+
+| Capability | CRD / API | Notes |
+| --- | --- | --- |
+| Inventory | `GoldenPathRepo` | Read `repave.yaml` from `spec.localPath`; `status.observedPins` |
+| Drift detection | `GoldenPathRepo` status | `OutOfDate` when observed ≠ desired pins |
+| Upgrade diff | `status.upgradePlan` | `repave plan-upgrade` contract (slice 2) |
+| Remediation PR | `spec.remediation` | `repave apply-upgrade` + GitHub client; dry-run without token (slice 3) |
+| Catalog pin watch | `Blueprint` + `spec.blueprintRef` | Reconcile GPRs when Blueprint pins change (slice 4) |
+
+`spec.repoURL` (git clone inventory) is not implemented yet; use `localPath` for dev and envtest.
+
+### CI on `main`
+
+- Engine: pytest, Ruff, mypy, Bandit, pip-audit.
+- Operator: Go tests + controller-runtime **envtest** on every PR.
+- **Release:** Conventional commits → semver bump, `engine/CHANGELOG.md`, GitHub
+  Release with wheel (see [Releases](#releases)).
 
 ## Why repave
 
 - **Enables many.** A web form maps to a golden path; no one needs to know
   Terraform/HCL to get a compliant module.
 - **Governed by construction.** Generated artifacts must pass every configured
-  gate (`fmt`, `validate`, `tflint`, `checkov`, `secrets`, Ansible lint gates,
-  `provenance-drift`, docs) before publish.
-  There is no bypass path.
+  gate before publish. There is no bypass path.
 - **Deterministic + repeatable.** The same inputs always render the same
   artifact (Copier templates), so output is reviewable and safe.
 - **Bring your own standards.** Point a blueprint at your standards source and
@@ -56,6 +91,13 @@ repave platform repo — never into `.repave-out/` inside repave.
    GitHub repository** (if needed) and **pushes the initial commit** to `main`.
 4. The **portal/API** turns the blueprint's input schema into a form so
    non-experts can drive it without a command line.
+
+Optional **operator** loop (separate from generation):
+
+```text
+GoldenPathRepo CR  ->  observe repave.yaml  ->  compare pins  ->  upgrade plan  ->  remediation PR
+Blueprint CR       ->  watch  ----------------^ (blueprintRef)
+```
 
 ## Module repositories
 
@@ -109,26 +151,32 @@ repave generate \
   --no-dry-run
 ```
 
+Operator (optional):
+
+```bash
+cd operator && make test          # envtest
+make operator-run                 # against kind/kubeconfig (see operator README)
+```
+
 ## Repository layout
 
 ```text
 schemas/       # frozen contracts: blueprint, golden-path artifact, inputs schemas
 engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
-examples/      # sample standards and Checkov policy packs
+examples/      # sample standards and Checkov / ansible-lint policy packs
 deploy/local/  # docker compose + kind quickstart
-operator/      # v1.17 reconciliation operator (see docs/operator-local-dev.md)
-docs/          # concepts, roadmap, [portal design](docs/portal-design.md), [operator local dev](docs/operator-local-dev.md), [operator standards](docs/operator-standards.md)
+operator/      # reconciliation operator (GoldenPathRepo, Blueprint CRDs)
+docs/          # concepts, roadmap, portal design, operator local dev
+.cursor/       # Cursor rules/skills for Release CI (contributors using Cursor)
 ```
 
 ## Roadmap
 
-**Current:** v1.17 — reconciliation operator (Blueprint pin watch, upgrade plan, remediation PR).
-pack on `ansible-role-generic`; Terraform module path with Checkov + secrets gates.
+**Current focus:** v1.17 operator GA polish and v1.18 portal UX ([`docs/roadmap.md`](docs/roadmap.md)).
 
-High-level release history and detailed future planning (through **v2.0.0**) live in
-[`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when
-scoping work; keep this section as a short pointer only.
+High-level release history and planning through **v2.0.0** live in
+[`docs/roadmap.md`](docs/roadmap.md).
 
 ## Releases
 
@@ -136,17 +184,20 @@ Versioning and GitHub releases are automated from
 [Conventional Commits](https://www.conventionalcommits.org/) on `main` using
 [python-semantic-release](https://python-semantic-release.readthedocs.io/).
 
-- Merge a PR to `main` with a conventional commit title (`feat:`, `fix:`, etc.).
-- CI runs tests; the release workflow then bumps the version, updates the
-  changelog, tags, and publishes a GitHub Release with wheel artifacts.
-- Releases authenticate with the `REPAVE_RELEASE_TOKEN` repository secret so
-  version commits can push to protected `main`.
-- `docs`, `chore`, and `ci` commits do not trigger a release unless they
-  include breaking changes.
+- Merge a PR to `main` with a conventional title (`feat:`, `fix:`, etc.).
+- The **Release** workflow runs engine + operator tests, then bumps semver,
+  updates `engine/CHANGELOG.md`, and opens an admin-merged
+  `chore/release/<version>` PR (protected `main` cannot take direct bot pushes).
+- After merge, the workflow tags the release commit and publishes a **GitHub
+  Release** with `repave-engine` wheel/sdist artifacts via `gh release create`.
+- Authenticates with **`REPAVE_RELEASE_TOKEN`** (maintainer Administrator PAT).
+- Docs-only merges skip the release job; `docs` / `chore` / `ci` commits do not
+  bump version unless they include breaking changes.
 
-No separate release PR is required.
+Feature PRs must **not** hand-edit `engine/pyproject.toml` version. Preview
+changelog on `main`: `make changelog`.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for commit message format.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for commit format and maintainer setup.
 
 ## License
 
