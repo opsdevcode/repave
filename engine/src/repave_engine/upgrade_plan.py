@@ -15,6 +15,7 @@ from repave_engine.provenance_inputs import (
     load_provenance_document,
 )
 from repave_engine.render import render_blueprint
+from repave_engine.target_repo import _git_executable, _run_git
 
 _SKIP_DIR_NAMES = frozenset({".git", "__pycache__", ".terraform", ".pytest_cache", ".ruff_cache"})
 
@@ -128,22 +129,10 @@ def _git_branch_commit(repo: Path, branch: str, message: str) -> str:
     if not git_dir.exists():
         raise RuntimeError(f"{repo} is not a git repository (missing .git)")
 
-    subprocess.run(
-        ["git", "checkout", "-B", branch],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    subprocess.run(
-        ["git", "add", "-A"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    _run_git(["checkout", "-B", branch], cwd=repo)
+    _run_git(["add", "-A"], cwd=repo)
     commit = subprocess.run(
-        ["git", "commit", "-m", message],
+        [_git_executable(), "commit", "-m", message],
         cwd=repo,
         capture_output=True,
         text=True,
@@ -152,7 +141,7 @@ def _git_branch_commit(repo: Path, branch: str, message: str) -> str:
         raise RuntimeError(commit.stderr.strip() or commit.stdout.strip() or "git commit failed")
 
     head = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
+        [_git_executable(), "rev-parse", "HEAD"],
         cwd=repo,
         check=True,
         capture_output=True,

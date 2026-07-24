@@ -81,7 +81,9 @@ def test_apply_upgrade_git_commit(repo_root: Path, tmp_path: Path) -> None:
 
     target = tmp_path / "module"
     target.mkdir()
-    fixture_yaml = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    fixture_yaml = (
+        repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    )
     (target / "repave.yaml").write_text(fixture_yaml.read_text(encoding="utf-8"), encoding="utf-8")
     subprocess.run(["git", "init"], cwd=target, check=True, capture_output=True)
     subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
