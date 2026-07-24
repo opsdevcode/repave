@@ -1,0 +1,31 @@
+name: Sync main branch ruleset
+
+# Keeps GitHub rules in sync with .github/rulesets/main-branch.json (bypass for release, etc.).
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/rulesets/**"
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update main branch ruleset
+        env:
+          GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          RULESET_ID="$(gh ruleset list --repo "${GITHUB_REPOSITORY}" --json id,name \
+            -q '.[] | select(.name=="main branch") | .id')"
+          if [ -z "${RULESET_ID}" ]; then
+            echo "No ruleset named 'main branch'; create it manually first." >&2
+            exit 1
+          fi
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/rulesets/${RULESET_ID}" \
+            --input .github/rulesets/main-branch.json
