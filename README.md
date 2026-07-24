@@ -19,7 +19,7 @@ repeatable, and automated.
 > use Checkov policies (pack v1.2.0) and secrets scanning. Ansible roles use the
 > production-profile ansible-lint pack (v1.0.0), standards corpus at
 > `examples/standards/ansible/`, and `repave.yaml` provenance. The reconciliation
-> operator is planned next (see [`operator/`](operator/)).
+> operator is planned next ([`operator/`](operator/), [`docs/operator-local-dev.md`](docs/operator-local-dev.md)).
 
 ## Why repave
 
@@ -116,8 +116,8 @@ engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
 examples/      # sample standards and Checkov policy packs
 deploy/local/  # docker compose + kind quickstart
-operator/      # planned: self-healing reconciliation (Operator SDK)
-docs/          # [concepts](docs/concepts.md), [roadmap](docs/roadmap.md), [portal design](docs/portal-design.md)
+operator/      # v1.17 reconciliation operator (see docs/operator-local-dev.md)
+docs/          # concepts, roadmap, [portal design](docs/portal-design.md), [operator local dev](docs/operator-local-dev.md)
 ```
 
 ## Roadmap
