@@ -69,7 +69,7 @@ The `release` workflow keeps workflow-level `paths-ignore` for docs-only merges 
 Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)
 requires on `main`:
 
-- One approving pull request review
+- Changes merged via pull request (no approving review required — solo maintainer)
 - Status checks: `test`, `Code quality (Ruff + mypy)`, `Security (Bandit + pip-audit)`,
   `commitlint`, `semantic-pull-request`
 - No force-push (`non_fast_forward`)
