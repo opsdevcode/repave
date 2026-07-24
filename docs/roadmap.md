@@ -18,6 +18,8 @@ work, writing ADRs, and opening issues.
   next step.
 - Use [Path to v2.0.0](#path-to-v200) for the big-picture sequence and what v2
   means; individual releases below expand each step.
+- Portal **visual and layout** planning: [`portal-design.md`](portal-design.md)
+  (implements primarily under v1.18).
 
 ---
 
@@ -31,7 +33,7 @@ remediation — not just one-shot module creation.
 v1.16  today       Ansible standards corpus + production-profile ansible-lint pack
   │
   ├─ v1.17–v1.20    multi-artifact    operator alpha; collection + playbook golden paths
-  ├─ v1.18–v1.20    operate + extend  portal UX; module updates; more golden paths
+  ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
   ├─ v1.29–v1.34    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
@@ -47,7 +49,7 @@ v1.16  today       Ansible standards corpus + production-profile ansible-lint pa
 | **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and opt-in OPA policy-as-code enforce the module contract, not just document it |
 | **Multi-artifact golden paths** | v1.13–v1.16, v1.33–v1.34, v1.40 | Engine decoupled from Terraform; Ansible role, Helm chart, app-service, and observability-as-code paths ship with standards + gates |
 | **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR |
-| **Usability** | v1.18, v1.22 | Portal and CLI usable by non-experts; visible pinned versions |
+| **Usability** | v1.18, v1.22 | Portal visual system and CLI usable by non-experts; visible pinned versions |
 | **Estate scale** | v1.20, v1.23, v1.25 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
 | **Access and multi-user** | v1.26–v1.27 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
@@ -205,17 +207,36 @@ See also [`operator/README.md`](../operator/README.md).
 ### v1.18 — Portal and UX hardening
 
 **Problem:** Form UX is functional but minimal for large provider catalogs and
-multi-step scope selection.
+multi-step scope selection. The portal is server-rendered wireframe UI (inline CSS,
+no shared shell) and does not present golden paths or run results as a cohesive
+product surface.
 
-**Approach:**
+**Approach — interaction (functional):**
 
 - Improved scope UX (search, presets, validation feedback)
 - Generation history / last-run summary in the portal
 - Clearer gate failure surfacing (which gate, stderr excerpt)
 - Group the blueprint catalog by artifact type (Terraform, Ansible)
 
+**Approach — visual design:**
+
+Detailed phases (foundation, catalog cards, form layout, results dashboard,
+optional polish) live in [`docs/portal-design.md`](portal-design.md). Summary:
+
+| Slice | Outcome |
+| --- | --- |
+| **Foundation** | `base.html`, shared `static/repave.css`, design tokens, app shell, buttons/cards/badges |
+| **Catalog** | Home grouped by artifact type; blueprint cards with version, gates, standard pins |
+| **Form** | Governance card (feeds v1.22 pin visibility); Terraform stepper or two-column layout; scope segmented controls |
+| **Results** | Status hero, gate table with expandable stderr, repo card, file tree + preview |
+| **Polish (optional)** | Dark mode, motion, white-label accents, history UI when audit exists |
+
+Deliver as sequential PRs (`v1.18-foundation` → catalog → form → results) or one
+release if scope stays CSS/template-only.
+
 **Done when:** Non-expert users can complete a multi-service module without CLI
-fallback for common paths.
+fallback for common paths, and the three portal routes share one visual system
+per acceptance signals in [`portal-design.md`](portal-design.md).
 
 ---
 
@@ -288,7 +309,7 @@ pack versions produced them; the portal does not surface pins before generate.
   `blueprint`, `blueprint_version`, `standard_source`, `standard_version`,
   `checkov_policy_version`, generation timestamp
 - Portal form shows pinned standard and Checkov policy versions for the selected
-  blueprint
+  blueprint (governance card layout in [`portal-design.md`](portal-design.md))
 - Optional: label/tag GitHub repos on publish with blueprint version
 
 **Dependencies:** Blueprint already carries standard and checkov pins (v1.9–v1.10);
@@ -816,7 +837,8 @@ there is an owner and a target release.
 - **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
   an alternative to in-app OIDC
 - **Standards diff in portal** — side-by-side standard/policy changes between
-  blueprint versions before generate
+  blueprint versions before generate (see [`portal-design.md`](portal-design.md)
+  Phase 5)
 - **Private blueprint registry** — pull blueprint packs from git tag or OCI artifact
   (beyond local fork paths in v1.28)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC

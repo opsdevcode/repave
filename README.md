@@ -117,7 +117,7 @@ blueprints/    # versioned golden paths (reference packs)
 examples/      # sample standards and Checkov policy packs
 deploy/local/  # docker compose + kind quickstart
 operator/      # planned: self-healing reconciliation (Operator SDK)
-docs/          # concept docs and [roadmap](docs/roadmap.md)
+docs/          # [concepts](docs/concepts.md), [roadmap](docs/roadmap.md), [portal design](docs/portal-design.md)
 ```
 
 ## Roadmap

@@ -1,7 +1,13 @@
 name: Conventional Commits
 
+# Docs-only PRs skip commit/PR title checks (see CONTRIBUTING.md).
 on:
   pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "LICENSE"
+      - ".github/pull_request_template.md"
     types:
       - opened
       - edited

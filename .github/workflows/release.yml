@@ -1,8 +1,14 @@
 name: Release
 
+# Docs-only merges do not run the release job (see CONTRIBUTING.md).
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "LICENSE"
+      - ".github/pull_request_template.md"
 
 permissions:
   contents: write
