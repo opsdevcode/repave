@@ -10,6 +10,7 @@ const (
 	ConditionReady          = "Ready"
 	ConditionInvalidSpec    = "InvalidSpec"
 	ConditionDriftDetected  = "DriftDetected"
+	ConditionUpgradePlanned = "UpgradePlanned"
 )
 
 // Standard condition reasons.
@@ -20,6 +21,10 @@ const (
 	ReasonPinsDrift             = "PinsDrift"
 	ReasonProvenanceReadFailed  = "ProvenanceReadFailed"
 	ReasonRemoteRepoUnsupported = "RemoteRepoUnsupported"
+	ReasonUpgradeDiffComputed   = "UpgradeDiffComputed"
+	ReasonUpgradePlanFailed     = "UpgradePlanFailed"
+	ReasonUpgradePlanSkipped      = "UpgradePlanSkipped"
+	ReasonUpgradePlanCleared      = "UpgradePlanCleared"
 )
 
 // SetGoldenPathRepoCondition updates or inserts a condition on status.

@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -18,13 +19,16 @@ import (
 type GoldenPathRepoReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	PlanUpgrader repave.PlanUpgrader
+	RepaveConfig repave.Config
 }
 
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos/finalizers,verbs=update
 
-// Reconcile observes repave.yaml pins and updates inventory status (v1.17 slice 1).
+// Reconcile observes repave.yaml pins and updates inventory status (v1.17 slice 1+).
 func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -59,6 +63,18 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if err := applyInventoryStatus(ctx, r.Client, &repo); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.Get(ctx, req.NamespacedName, &repo); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	upgrader := r.PlanUpgrader
+	if upgrader == nil {
+		upgrader = repave.CLIPlanUpgrader{}
+	}
+	if err := applyUpgradePlanStatus(ctx, r.Client, &repo, upgrader, r.RepaveConfig); err != nil {
 		return ctrl.Result{}, err
 	}
 

@@ -10,6 +10,7 @@ from typing import cast
 from repave_engine.blueprint import _find_repo_root, list_blueprints
 from repave_engine.pipeline import generate_from_path
 from repave_engine.settings import OutputConfig, load_output_config
+from repave_engine.upgrade_plan import plan_upgrade
 
 
 def _parse_inputs(raw_inputs: list[str]) -> dict[str, str]:
@@ -92,6 +93,38 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_plan_upgrade(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    target_repo = Path(args.target_repo).resolve()
+    staging_root = Path(args.staging_root).resolve() if args.staging_root else None
+
+    result = plan_upgrade(
+        target_repo,
+        repo_root,
+        blueprint_name=args.blueprint,
+        staging_root=staging_root,
+    )
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(result.summary)
+        if result.added:
+            print("Added:")
+            for path in result.added:
+                print(f"  + {path}")
+        if result.modified:
+            print("Modified:")
+            for path in result.modified:
+                print(f"  ~ {path}")
+        if result.removed:
+            print("Removed:")
+            for path in result.removed:
+                print(f"  - {path}")
+
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -166,6 +199,34 @@ def build_parser() -> argparse.ArgumentParser:
 
     listing = sub.add_parser("list", help="List available blueprints", parents=[common])
     listing.set_defaults(func=cmd_list)
+
+    plan = sub.add_parser(
+        "plan-upgrade",
+        help="Dry-run re-render from repave.yaml inputs and diff against an existing repo",
+        parents=[common],
+    )
+    plan.add_argument(
+        "--target-repo",
+        required=True,
+        help="Path to an existing generated module or role repository",
+    )
+    plan.add_argument(
+        "--blueprint",
+        default=None,
+        help="Override blueprint name (default: read from repave.yaml)",
+    )
+    plan.add_argument(
+        "--staging-root",
+        default=None,
+        help="Optional directory to retain rendered output for debugging",
+    )
+    plan.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (json is stable for operator integration)",
+    )
+    plan.set_defaults(func=cmd_plan_upgrade)
 
     serve = sub.add_parser("serve", help="Run local web UI/API", parents=[common])
     _add_output_options(serve)

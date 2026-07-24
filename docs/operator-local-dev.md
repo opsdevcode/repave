@@ -77,7 +77,7 @@ Each slice merges with its own tests and doc updates.
 | --- | --- | --- |
 | **0 — Scaffold** | Operator SDK project, CRDs, no-op reconciler | `make operator-test` in CI; envtest installs CRDs |
 | **1 — Inventory** | `GoldenPathRepo` status from `repave.yaml` vs spec pins | Unit fixtures; envtest status updates |
-| **2 — Re-render diff** | Invoke repave to compute upgrade diff | Git repos under `operator/testdata/`; no network |
+| **2 — Re-render diff** | `repave plan-upgrade` + `status.upgradePlan` when drift | `operator/testdata/` + JSON CLI; set `REPAVE_REPO_ROOT` for live controller |
 | **3 — Remediation PR** | Open PR on drift | `GitHubClient` mock; optional real token for manual smoke |
 | **4 — Pin watch** | React to Blueprint / config pin bumps | envtest + sample Blueprint CR |
 
@@ -143,6 +143,21 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
    ```
 
 5. Change pins in repave or edit fixture `repave.yaml` → watch status and logs.
+
+   When pins are **OutOfDate**, the controller runs `repave plan-upgrade` (slice 2)
+   if `REPAVE_REPO_ROOT` points at this checkout. Optional `REPAVE_CLI` overrides
+   the binary (for example `uv run --directory engine repave`).
+
+   ```bash
+   cd engine && uv run repave plan-upgrade \
+     --repo-root .. \
+     --target-repo ../operator/testdata/modules/terraform-minimal \
+     --format json
+   ```
+
+   ```bash
+   REPAVE_REPO_ROOT=$(pwd) make operator-run
+   ```
 
 ### Git and GitHub
 
@@ -210,4 +225,4 @@ Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows
 
 - **v1.24** — inventory-only mode is slice 1; same local fixtures.
 - **v1.25** — Helm/k8s deploy co-install; kind smoke reuses operator e2e harness.
-- **v1.19** — `repave update` becomes the preferred local diff driver for slice 2+.
+- **v1.19** — `repave update` may supersede `plan-upgrade` for local diff; operator keeps the JSON contract stable.

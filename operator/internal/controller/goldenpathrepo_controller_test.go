@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -34,6 +35,17 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		reconciler = &GoldenPathRepoReconciler{
 			Client: k8sClient,
 			Scheme: scheme.Scheme,
+			PlanUpgrader: &repave.StaticPlanUpgrader{
+				Result: repave.PlanResult{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "0.8.0",
+					ChangedFileCount:   5,
+					Added:              []string{"README.md", "main.tf"},
+					Modified:           []string{"repave.yaml"},
+					Summary:            "5 file(s) differ (2 added, 1 modified, 0 removed)",
+				},
+			},
+			RepaveConfig: repave.Config{RepoRoot: "/tmp/repave", Command: "repave"},
 		}
 	})
 
@@ -69,6 +81,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.1.0"))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionReady)).To(BeTrue())
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeFalse())
+		Expect(repo.Status.UpgradePlan).To(BeNil())
 	})
 
 	It("sets OutOfDate when desired pins differ from repave.yaml", func() {
@@ -92,6 +105,10 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
 		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
+		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
+		Expect(repo.Status.UpgradePlan).NotTo(BeNil())
+		Expect(repo.Status.UpgradePlan.ChangedFileCount).To(Equal(5))
+		Expect(repo.Status.UpgradePlan.Added).To(ContainElements("README.md", "main.tf"))
 	})
 
 	It("rejects spec with neither repoURL nor localPath at admission", func() {
