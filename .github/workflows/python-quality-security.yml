@@ -1,20 +1,9 @@
 name: Python Quality and Security
 
-# Docs-only changes skip this workflow (see CONTRIBUTING.md).
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE"
-      - ".github/pull_request_template.md"
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE"
-      - ".github/pull_request_template.md"
 
 permissions:
   contents: read
@@ -29,24 +18,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/ci-paths
+        id: paths
+
+      - name: Docs-only change (skip quality)
+        if: steps.paths.outputs.ci_needed != 'true'
+        run: echo "No code changes outside docs-only paths; skipping quality checks."
+
       - uses: astral-sh/setup-uv@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           enable-cache: true
 
       - uses: actions/setup-python@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           python-version: "3.12"
 
       - name: Install engine and quality tools
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv sync --extra dev --frozen
 
       - name: Ruff lint
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv run ruff check src tests
 
       - name: Ruff format
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv run ruff format --check src tests
 
       - name: mypy
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv run mypy src
 
   security:
@@ -58,19 +60,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/ci-paths
+        id: paths
+
+      - name: Docs-only change (skip security)
+        if: steps.paths.outputs.ci_needed != 'true'
+        run: echo "No code changes outside docs-only paths; skipping security scans."
+
       - uses: astral-sh/setup-uv@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           enable-cache: true
 
       - uses: actions/setup-python@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           python-version: "3.12"
 
       - name: Install engine and security tools
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv sync --extra dev --frozen
 
       - name: Bandit (Python SAST)
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv run bandit -r src -c pyproject.toml
 
       - name: pip-audit (dependency vulnerabilities)
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv run pip-audit

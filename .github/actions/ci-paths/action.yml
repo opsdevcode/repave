@@ -1,0 +1,21 @@
+name: Detect CI-needed paths
+description: >-
+  True when the change set includes files outside docs-only paths (see
+  CONTRIBUTING.md). Workflows always run so required checks report success.
+outputs:
+  ci_needed:
+    description: Run full CI when true; docs-only changes are false
+    value: ${{ steps.filter.outputs.ci_needed }}
+runs:
+  using: composite
+  steps:
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          ci_needed:
+            - '**'
+            - '!docs/**'
+            - '!**/*.md'
+            - '!LICENSE'
+            - '!.github/pull_request_template.md'
