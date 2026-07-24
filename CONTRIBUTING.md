@@ -1,9 +1,11 @@
 # Contributing to repave
 
 Thanks for your interest in `repave`. **v1.14** added artifact-type-aware
-`repave.yaml` provenance and the `provenance-drift` gate; see [`docs/roadmap.md`](docs/roadmap.md) for shipped history
-and planned work. The most valuable contributions now are feedback on contracts,
-golden paths, and operator design.
+`repave.yaml` provenance and the `provenance-drift` gate; **v1.17** will add the
+reconciliation operator with mandatory local test docs — see
+[`docs/roadmap.md`](docs/roadmap.md) and [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
+The most valuable contributions now are feedback on contracts, golden paths, and
+operator design.
 
 ## Ground rules
 

@@ -1,34 +1,128 @@
-# repave operator (planned)
+# repave operator (planned — v1.17)
 
-The reconciliation operator is the next major milestone after **v1.14**. See
-[`docs/roadmap.md`](../docs/roadmap.md) for scope and dependencies.
+Kubernetes reconciliation for generated golden-path repositories: detect drift
+and pinned-version bumps, then open **governed remediation pull requests** (never
+direct pushes to module repos).
 
-It will watch generated repositories and reconcile them against pinned blueprint
-and standard versions, opening governed remediation/upgrade pull requests when:
+**Local development and testing are first-class.** See
+[`docs/operator-local-dev.md`](../docs/operator-local-dev.md) for the full guide.
+Every v1.17 slice ships with `make operator-test` coverage and documented commands
+before it counts as done.
 
-- generated code or docs drift from the blueprint contract, or
-- a pinned standard version bumps and the estate needs upgrading.
+Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator).
+
+---
+
+## What it does
+
+Watch registered generated repos and reconcile them against pinned blueprint,
+standard, and policy pack versions when:
+
+- rendered content or docs drift from the blueprint contract, or
+- pins in repave move forward and the estate should upgrade.
+
+```text
+GoldenPathRepo CR  →  read repave.yaml + repo tree
+                    →  compare to spec + repave catalog
+                    →  optional: repave CLI re-render diff
+                    →  GitHub PR (or local/mock in dev)
+```
+
+---
 
 ## Planned CRDs
 
-- `GoldenPathRepo` — a generated artifact + pinned blueprint/standard version + desired state
-- `Blueprint` — registry of golden paths and versions
+| Resource | Role |
+| --- | --- |
+| `GoldenPathRepo` | One generated artifact: repo location, desired pins, observed status |
+| `Blueprint` | Golden path registry (name, version, artifact type) — optional cluster mirror of `blueprints/` |
+
+Contracts align with `repave.yaml` (`GoldenPathArtifact`,
+`schemas/golden-path-artifact.schema.json`) and blueprint pins in-repo.
+
+---
 
 ## Framework
 
-Operator SDK (Go core reconciler), with the door open for Ansible/Helm-based
-operator flavors so more contributors can participate.
+[Operator SDK](https://sdk.operatorframework.io/) (Go reconciler). Ansible/Helm
+operator flavors remain optional for contributors who prefer those runtimes.
 
-## Current baseline (v1.14)
+---
 
-v1.14 proves the generation loop locally and publishes module repositories to
-GitHub when configured:
+## v1.17 slices (implementation order)
 
-form → deterministic render → gates (Checkov, secrets, provenance-drift) → local module repo → GitHub push
+| Slice | Deliverable | Local proof |
+| --- | --- | --- |
+| 0 | Scaffold, CRDs, no-op reconcile | `make operator-test` + CI |
+| 1 | Inventory / drift status (overlaps v1.24) | envtest + testdata |
+| 2 | Re-render diff via `repave` CLI | Local git fixtures |
+| 3 | Remediation PR | Mock GitHub in CI |
+| 4 | Watch Blueprint / pin config | envtest |
 
-Generated Terraform modules include `repave.yaml` provenance (blueprint, standard,
-and module metadata) validated by the `provenance-drift` gate.
+Details: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md#v117-delivery-slices).
 
-Generated Terraform modules use one `.tf` file per scoped provider resource with
-shared derived values in `locals.tf`. The operator builds on the stable contracts
-frozen in `schemas/` and `blueprints/`.
+---
+
+## Local commands (once scaffold lands)
+
+From repository root:
+
+```bash
+make operator-test      # unit + envtest (no kind)
+make operator-run       # controller against current kubeconfig
+make operator-e2e       # kind + fixtures (optional in CI until GA)
+```
+
+Generate fixture module repos with the same engine path as production:
+
+```bash
+make generate
+```
+
+Optional kind cluster (same name as deploy docs):
+
+```bash
+kind create cluster --name repave-local
+```
+
+See [deploy/local/README.md](../deploy/local/README.md#kind-optional).
+
+---
+
+## Testing summary
+
+| Layer | Command | Needs |
+| --- | --- | --- |
+| Unit + envtest | `make operator-test` | Go only |
+| Dev loop | `make operator-run` + kubectl | kind or cluster |
+| E2E | `make operator-e2e` | kind, Docker |
+
+GitHub.com is **not** required for default CI or the 15-minute contributor path.
+
+---
+
+## Baseline from generation (v1.14+)
+
+The operator builds on contracts already enforced at generate time:
+
+```text
+form → render → gates → module repo → (optional) GitHub push
+```
+
+Generated repos include `repave.yaml` provenance (Terraform `terraformModule`,
+Ansible `ansibleRole` + lint pack pins). Drift detection must match what the
+`provenance-drift` gate already validates.
+
+---
+
+## Directory map (target)
+
+```text
+operator/
+  api/ controllers/ internal/drift/ internal/git/
+  config/crd/ config/dev/ testdata/ test/e2e/ hack/
+  Makefile
+```
+
+Contributors: start with [`docs/operator-local-dev.md`](../docs/operator-local-dev.md),
+then open a slice-0 PR that only adds scaffold + green `make operator-test`.

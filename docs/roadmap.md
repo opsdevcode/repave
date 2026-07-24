@@ -20,6 +20,8 @@ work, writing ADRs, and opening issues.
   means; individual releases below expand each step.
 - Portal **visual and layout** planning: [`portal-design.md`](portal-design.md)
   (implements primarily under v1.18).
+- Operator **local development and testing**: [`operator-local-dev.md`](operator-local-dev.md)
+  (required for every v1.17 slice).
 
 ---
 
@@ -48,7 +50,7 @@ v1.16  today       Ansible standards corpus + production-profile ansible-lint pa
 | --- | --- | --- |
 | **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and opt-in OPA policy-as-code enforce the module contract, not just document it |
 | **Multi-artifact golden paths** | v1.13–v1.16, v1.33–v1.34, v1.40 | Engine decoupled from Terraform; Ansible role, Helm chart, app-service, and observability-as-code paths ship with standards + gates |
-| **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR |
+| **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR; local envtest/kind required |
 | **Usability** | v1.18, v1.22 | Portal visual system and CLI usable by non-experts; visible pinned versions |
 | **Estate scale** | v1.20, v1.23, v1.25 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
 | **Access and multi-user** | v1.26–v1.27 | Authenticated single-tenant service with OIDC SSO and role-based access |
@@ -193,12 +195,35 @@ upgrades across the estate do not scale.
 - Operator SDK reconciler watching `GoldenPathRepo` / `Blueprint` CRDs
 - Detect template drift, standard-version bumps, and gate policy pack changes
 - Open governed remediation PRs (never direct push to module repos)
+- **Local testing first-class:** unit + envtest on every PR; documented kind dev
+  loop; mock GitHub for CI; optional e2e before GA (see below)
+
+**Delivery slices** (each merges with tests + docs):
+
+| Slice | Outcome | Local verification |
+| --- | --- | --- |
+| 0 | Scaffold, CRDs, no-op reconciler | `make operator-test` in CI |
+| 1 | Inventory / drift in `GoldenPathRepo` status | envtest + `operator/testdata/` |
+| 2 | Upgrade diff via `repave` CLI contract | Local git fixtures, no GitHub |
+| 3 | Remediation PR | `GitHubClient` mock; manual token optional |
+| 4 | React to Blueprint / pin config changes | envtest |
+
+**Local verification (required):**
+
+- [`docs/operator-local-dev.md`](operator-local-dev.md) — principles, layout,
+  fixture workflow, CI jobs
+- `make operator-test` — Go unit tests + controller-runtime **envtest** (no kind)
+- `make operator-run` — developer controller against kind or kubeconfig
+- `make operator-e2e` — kind + fixtures (optional in CI until v1.17 GA)
+- No mandatory `GITHUB_TOKEN` for default contributor or CI paths
 
 **Dependencies:** Stable blueprint + schema contracts; module repos already
-external (v1.1+).
+external (v1.1+); generation produces valid `repave.yaml` (v1.14+).
 
 **Done when:** A CRD instance for a generated repo triggers an upgrade PR when
-blueprint or standard version is bumped in repave.
+blueprint or standard version is bumped in repave, and acceptance criteria in
+[`operator-local-dev.md`](operator-local-dev.md#acceptance-criteria-local-testing-first-class)
+are met.
 
 See also [`operator/README.md`](../operator/README.md).
 
@@ -352,8 +377,10 @@ before full reconciliation.
   (read-only, no PRs yet)
 - CLI/API `repave register` to add a generated repo to the inventory
 - Design doc for upgrade PR flow (feeds v1.17 GA and v1.19 update command)
+- Reuse **v1.17 slice 1** fixtures and `make operator-test` / envtest harness
+  ([`operator-local-dev.md`](operator-local-dev.md))
 
-**Dependencies:** v1.17 CRD design; v1.22 provenance fields.
+**Dependencies:** v1.17 CRD design and local test scaffold; v1.22 provenance fields.
 
 **Done when:** Operator reports “out of date” repos when blueprint standard/policy
 version bumps on `main`.
@@ -370,7 +397,8 @@ teams want repave API/portal on-cluster alongside the future operator.
 - Helm chart or Kustomize under `deploy/k8s/` for engine API + portal
 - Config via `repave.config.yaml` mounted ConfigMap + secrets for `GITHUB_TOKEN`
 - Document co-install with operator (same namespace, shared config)
-- kind-based smoke test in CI (optional, non-blocking initially)
+- kind-based smoke test in CI (optional, non-blocking initially); reuse operator
+  e2e harness from [`operator-local-dev.md`](operator-local-dev.md)
 
 **Dependencies:** Stable API surface; output config via env/ConfigMap (exists).
 
