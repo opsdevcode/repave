@@ -26,6 +26,7 @@ import (
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/controller"
+	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 )
 
@@ -75,11 +76,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	var ghClient github.Client
+	if githubToken != "" {
+		ghClient = &github.HTTPClient{Token: githubToken}
+	}
+
 	if err := (&controller.GoldenPathRepoReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		PlanUpgrader: repave.CLIPlanUpgrader{},
-		RepaveConfig: repave.ConfigFromEnv(os.Getenv("REPAVE_REPO_ROOT"), os.Getenv("REPAVE_CLI")),
+		PlanUpgrader:  repave.CLIPlanUpgrader{},
+		ApplyUpgrader: repave.CLIApplyUpgrader{},
+		GitHub:        ghClient,
+		RepaveConfig:  repave.ConfigFromEnv(os.Getenv("REPAVE_REPO_ROOT"), os.Getenv("REPAVE_CLI")),
+		GitHubToken:   githubToken,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GoldenPathRepo")
 		os.Exit(1)

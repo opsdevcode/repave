@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -20,8 +21,11 @@ type GoldenPathRepoReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 
-	PlanUpgrader repave.PlanUpgrader
-	RepaveConfig repave.Config
+	PlanUpgrader  repave.PlanUpgrader
+	ApplyUpgrader repave.ApplyUpgrader
+	GitHub        github.Client
+	RepaveConfig  repave.Config
+	GitHubToken   string
 }
 
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos,verbs=get;list;watch;update;patch
@@ -38,6 +42,18 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	if requeue, err := handleGoldenPathRepoDeletion(ctx, r.Client, &repo); err != nil {
+		return ctrl.Result{}, err
+	} else if requeue {
+		return ctrl.Result{}, nil
+	}
+
+	if requeue, err := ensureRemediationFinalizer(ctx, r.Client, &repo); err != nil {
+		return ctrl.Result{}, err
+	} else if requeue {
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if repo.Spec.RepoURL == "" && repo.Spec.LocalPath == "" {
@@ -78,7 +94,27 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("reconciled GoldenPathRepo inventory", "name", req.Name)
+	if err := r.Get(ctx, req.NamespacedName, &repo); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	applier := r.ApplyUpgrader
+	if applier == nil {
+		applier = repave.CLIApplyUpgrader{}
+	}
+	if err := applyRemediationPRStatus(
+		ctx,
+		r.Client,
+		&repo,
+		applier,
+		r.GitHub,
+		r.RepaveConfig,
+		r.GitHubToken,
+	); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("reconciled GoldenPathRepo", "name", req.Name)
 	return ctrl.Result{}, nil
 }
 

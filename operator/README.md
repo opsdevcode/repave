@@ -136,5 +136,5 @@ operator/
 ```
 
 Contributors: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
-**Slice 2:** `repave plan-upgrade` + `status.upgradePlan` when pins drift.
-Next slice: remediation PRs (slice 3).
+**Slice 3:** `spec.remediation` + `repave apply-upgrade` + `status.remediationPR`.
+Next slice: Blueprint pin watch (slice 4).

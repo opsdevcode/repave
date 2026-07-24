@@ -78,7 +78,7 @@ Each slice merges with its own tests and doc updates.
 | **0 — Scaffold** | Operator SDK project, CRDs, no-op reconciler | `make operator-test` in CI; envtest installs CRDs |
 | **1 — Inventory** | `GoldenPathRepo` status from `repave.yaml` vs spec pins | Unit fixtures; envtest status updates |
 | **2 — Re-render diff** | `repave plan-upgrade` + `status.upgradePlan` when drift | `operator/testdata/` + JSON CLI; set `REPAVE_REPO_ROOT` for live controller |
-| **3 — Remediation PR** | Open PR on drift | `GitHubClient` mock; optional real token for manual smoke |
+| **3 — Remediation PR** | `apply-upgrade` + GitHub PR (mock in CI) | `spec.remediation.dryRun`; `RecordingClient` in envtest |
 | **4 — Pin watch** | React to Blueprint / config pin bumps | envtest + sample Blueprint CR |
 
 **v1.17 done when:** a `GoldenPathRepo` triggers an upgrade PR when blueprint or
@@ -158,6 +158,10 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
    ```bash
    REPAVE_REPO_ROOT=$(pwd) make operator-run
    ```
+
+   Remediation (slice 3): set `spec.remediation.enabled: true`. Use
+   `spec.remediation.dryRun: true` locally to apply on a git branch without
+   GitHub; production PRs need `spec.repoURL` and `GITHUB_TOKEN` on the operator.
 
 ### Git and GitHub
 

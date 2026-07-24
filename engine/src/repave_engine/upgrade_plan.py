@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import hashlib
+import shutil
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -50,6 +52,23 @@ class UpgradePlanResult:
         }
 
 
+@dataclass(frozen=True)
+class ApplyUpgradeResult:
+    plan: UpgradePlanResult
+    git_branch: str = ""
+    commit_sha: str = ""
+
+    def to_json_dict(self) -> dict[str, Any]:
+        payload = self.plan.to_json_dict()
+        payload["git_branch"] = self.git_branch
+        payload["commit_sha"] = self.commit_sha
+        return payload
+
+    @property
+    def summary(self) -> str:
+        return self.plan.summary
+
+
 def _iter_relative_files(root: Path) -> dict[str, Path]:
     files: dict[str, Path] = {}
     if not root.is_dir():
@@ -87,13 +106,68 @@ def diff_directories(
     return added, modified, removed
 
 
-def plan_upgrade(
+def _apply_render_to_target(
+    target_repo: Path,
+    staging_dir: Path,
+    removed: tuple[str, ...],
+) -> None:
+    for rel in removed:
+        dest = target_repo / rel
+        if dest.is_file():
+            dest.unlink()
+        elif dest.is_dir():
+            shutil.rmtree(dest)
+    for rel, src in _iter_relative_files(staging_dir).items():
+        dest = target_repo / rel
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dest)
+
+
+def _git_branch_commit(repo: Path, branch: str, message: str) -> str:
+    git_dir = repo / ".git"
+    if not git_dir.exists():
+        raise RuntimeError(f"{repo} is not a git repository (missing .git)")
+
+    subprocess.run(
+        ["git", "checkout", "-B", branch],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    subprocess.run(
+        ["git", "add", "-A"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    commit = subprocess.run(
+        ["git", "commit", "-m", message],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    if commit.returncode != 0 and "nothing to commit" not in (commit.stdout + commit.stderr):
+        raise RuntimeError(commit.stderr.strip() or commit.stdout.strip() or "git commit failed")
+
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return head.stdout.strip()
+
+
+def _render_upgrade_staging(
     target_repo: Path,
     repo_root: Path,
     *,
-    blueprint_name: str | None = None,
-    staging_root: Path | None = None,
-) -> UpgradePlanResult:
+    blueprint_name: str | None,
+    staging_root: Path | None,
+) -> tuple[UpgradePlanResult, Path, tempfile.TemporaryDirectory[str] | None, bool]:
     target_repo = target_repo.resolve()
     repo_root = repo_root.resolve()
     provenance_path = target_repo / "repave.yaml"
@@ -115,15 +189,60 @@ def plan_upgrade(
         staging_root.mkdir(parents=True, exist_ok=True)
         staging_dir = staging_root
 
+    render_blueprint(blueprint, values, staging_dir)
+    added, modified, removed = diff_directories(target_repo, staging_dir)
+    result = UpgradePlanResult(
+        added=tuple(added),
+        modified=tuple(modified),
+        removed=tuple(removed),
+        blueprint_name=blueprint.name,
+        blueprint_version=blueprint.version,
+    )
+    return result, staging_dir, temp_dir, owns_staging
+
+
+def plan_upgrade(
+    target_repo: Path,
+    repo_root: Path,
+    *,
+    blueprint_name: str | None = None,
+    staging_root: Path | None = None,
+) -> UpgradePlanResult:
+    result, _, temp_dir, owns_staging = _render_upgrade_staging(
+        target_repo,
+        repo_root,
+        blueprint_name=blueprint_name,
+        staging_root=staging_root,
+    )
     try:
-        render_blueprint(blueprint, values, staging_dir)
-        added, modified, removed = diff_directories(target_repo, staging_dir)
-        return UpgradePlanResult(
-            added=tuple(added),
-            modified=tuple(modified),
-            removed=tuple(removed),
-            blueprint_name=blueprint.name,
-            blueprint_version=blueprint.version,
+        return result
+    finally:
+        if owns_staging and temp_dir is not None:
+            temp_dir.cleanup()
+
+
+def apply_upgrade(
+    target_repo: Path,
+    repo_root: Path,
+    *,
+    blueprint_name: str | None = None,
+    staging_root: Path | None = None,
+    git_branch: str,
+    commit_message: str,
+) -> ApplyUpgradeResult:
+    result, staging_dir, temp_dir, owns_staging = _render_upgrade_staging(
+        target_repo,
+        repo_root,
+        blueprint_name=blueprint_name,
+        staging_root=staging_root,
+    )
+    try:
+        _apply_render_to_target(target_repo, staging_dir, result.removed)
+        commit_sha = _git_branch_commit(target_repo, git_branch, commit_message)
+        return ApplyUpgradeResult(
+            plan=result,
+            git_branch=git_branch,
+            commit_sha=commit_sha,
         )
     finally:
         if owns_staging and temp_dir is not None:
