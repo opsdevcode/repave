@@ -1,13 +1,15 @@
-# repave operator (planned — v1.17)
+# repave operator (v1.17)
 
 Kubernetes reconciliation for generated golden-path repositories: detect drift
 and pinned-version bumps, then open **governed remediation pull requests** (never
 direct pushes to module repos).
 
+**Slice 0 (scaffold):** `GoldenPathRepo` CRD (`repave.dev/v1alpha1`), baseline
+reconciler, `make operator-test` with envtest. **Slice 1** adds inventory from
+`repave.yaml`.
+
 **Local development and testing are first-class.** See
-[`docs/operator-local-dev.md`](../docs/operator-local-dev.md) for the full guide.
-Every v1.17 slice ships with `make operator-test` coverage and documented commands
-before it counts as done.
+[`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
 
 Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator).
 
@@ -79,10 +81,11 @@ Generate fixture module repos with the same engine path as production:
 make generate
 ```
 
-Optional kind cluster (same name as deploy docs):
-
 ```bash
 kind create cluster --name repave-local
+kubectl apply -f config/crd/bases/
+kubectl apply -f config/dev/goldenpathrepo-sample.yaml
+make operator-run
 ```
 
 See [deploy/local/README.md](../deploy/local/README.md#kind-optional).
@@ -124,5 +127,5 @@ operator/
   Makefile
 ```
 
-Contributors: start with [`docs/operator-local-dev.md`](../docs/operator-local-dev.md),
-then open a slice-0 PR that only adds scaffold + green `make operator-test`.
+Contributors: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
+Next slice: inventory from `repave.yaml` (`internal/drift` + status `observedPins`).

@@ -1,0 +1,21 @@
+apiVersion: repave.dev/v1beta1
+kind: GoldenPathArtifact
+metadata:
+  name: example
+spec:
+  artifactType: terraform-module
+  blueprint:
+    name: terraform-module-generic
+    version: "0.1.0"
+  standard:
+    source: examples/standards
+    version: "0.4.0"
+  generation:
+    engine_version: "1.16.0"
+    generated_at: "2026-07-24T00:00:00Z"
+  terraformModule:
+    module_name: example
+    cloud_provider: aws
+    provider_services:
+      - ec2
+      - s3

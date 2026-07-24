@@ -1,0 +1,12 @@
+apiVersion: repave.dev/v1alpha1
+kind: GoldenPathRepo
+metadata:
+  name: example-module
+  namespace: default
+spec:
+  localPath: /modules/example
+  desiredPins:
+    blueprintName: terraform-module-generic
+    blueprintVersion: "0.1.0"
+    standardSource: examples/standards
+    standardVersion: "0.4.0"
