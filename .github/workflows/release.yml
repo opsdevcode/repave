@@ -100,6 +100,29 @@ jobs:
           git fetch origin main
           git checkout -B main origin/main
 
+          sync_changelog_if_needed() {
+            cd engine
+            uv run semantic-release changelog
+            cd "${GITHUB_WORKSPACE}"
+            if git diff --quiet -- engine/CHANGELOG.md; then
+              return 0
+            fi
+            echo "CHANGELOG out of date; opening sync PR."
+            BRANCH="chore/changelog-sync-$(date -u +%Y%m%d%H%M%S)"
+            git checkout -B "${BRANCH}"
+            git add engine/CHANGELOG.md
+            git commit -m "chore(release): sync CHANGELOG from git history"
+            git push origin "${BRANCH}"
+            gh pr create --base main --head "${BRANCH}" \
+              --title "chore(release): sync CHANGELOG" \
+              --body "Automated python-semantic-release changelog backfill."
+            gh pr merge "${BRANCH}" --merge --delete-branch --admin
+            git fetch origin main
+            git checkout -B main origin/main
+          }
+
+          sync_changelog_if_needed
+
           LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1 || true)"
           if [ -n "${LATEST_TAG}" ] && ! gh release view "${LATEST_TAG}" >/dev/null 2>&1; then
             echo "Repairing missing GitHub release for ${LATEST_TAG}."

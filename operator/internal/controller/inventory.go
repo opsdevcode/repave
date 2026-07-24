@@ -18,9 +18,8 @@ func applyInventoryStatus(
 	ctx context.Context,
 	c client.Client,
 	repo *repavev1alpha1.GoldenPathRepo,
+	desired drift.PinSet,
 ) error {
-	desired := drift.PinsFromDesired(repo.Spec)
-
 	observed, err := inventory.ObservePins(repo.Spec)
 	if err != nil {
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {

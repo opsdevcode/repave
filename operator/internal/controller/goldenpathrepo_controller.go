@@ -12,6 +12,7 @@ import (
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/github"
+	"github.com/opsdevcode/repave/operator/internal/pins"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -31,6 +32,7 @@ type GoldenPathRepoReconciler struct {
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos/finalizers,verbs=update
+// +kubebuilder:rbac:groups=repave.dev,resources=blueprints,verbs=get;list;watch
 
 // Reconcile observes repave.yaml pins and updates inventory status (v1.17 slice 1+).
 func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -78,7 +80,31 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 
-	if err := applyInventoryStatus(ctx, r.Client, &repo); err != nil {
+	desired, err := pins.EffectiveDesired(ctx, r.Client, &repo)
+	if err != nil {
+		msg := err.Error()
+		if patchErr := patchGoldenPathRepoStatus(ctx, r.Client, &repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+			latest.Status.Phase = repavev1alpha1.GoldenPathRepoPhaseError
+			latest.Status.Message = msg
+			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+				Type:    status.ConditionInvalidSpec,
+				Status:  metav1.ConditionFalse,
+				Reason:  status.ReasonSpecInvalid,
+				Message: msg,
+			})
+			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+				Type:    status.ConditionReady,
+				Status:  metav1.ConditionFalse,
+				Reason:  status.ReasonSpecInvalid,
+				Message: msg,
+			})
+		}); patchErr != nil {
+			return ctrl.Result{}, patchErr
+		}
+		return ctrl.Result{}, nil
+	}
+
+	if err := applyInventoryStatus(ctx, r.Client, &repo, desired); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -90,7 +116,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if upgrader == nil {
 		upgrader = repave.CLIPlanUpgrader{}
 	}
-	if err := applyUpgradePlanStatus(ctx, r.Client, &repo, upgrader, r.RepaveConfig); err != nil {
+	if err := applyUpgradePlanStatus(ctx, r.Client, &repo, upgrader, r.RepaveConfig, desired); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -110,6 +136,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		r.GitHub,
 		r.RepaveConfig,
 		r.GitHubToken,
+		desired,
 	); err != nil {
 		return ctrl.Result{}, err
 	}
@@ -129,5 +156,9 @@ func displayLocation(spec repavev1alpha1.GoldenPathRepoSpec) string {
 func (r *GoldenPathRepoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&repavev1alpha1.GoldenPathRepo{}).
+		Watches(
+			&repavev1alpha1.Blueprint{},
+			blueprintWatchHandler(r),
+		).
 		Complete(r)
 }

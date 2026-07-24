@@ -108,7 +108,11 @@ Tools on full CI runs:
 | [Bandit](https://bandit.readthedocs.io/) | Python SAST security scan |
 | [pip-audit](https://pypi.org/project/pip-audit/) | Dependency vulnerability scan (OSV) |
 
-Configuration lives in `engine/pyproject.toml`.
+Configuration lives in `engine/pyproject.toml` (`repo_dir = ".."`, changelog at
+`engine/CHANGELOG.md`). Release commits include changelog updates from
+`semantic-release version`; the Release workflow also opens a one-off sync PR if
+history and `CHANGELOG.md` diverge (run `make changelog` on `main` locally to
+preview).
 
 ## Commit messages (Conventional Commits)
 

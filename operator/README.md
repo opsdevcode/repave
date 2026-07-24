@@ -137,4 +137,4 @@ operator/
 
 Contributors: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
 **Slice 3:** `spec.remediation` + `repave apply-upgrade` + `status.remediationPR`.
-Next slice: Blueprint pin watch (slice 4).
+**Slice 4:** `Blueprint` CR + `spec.blueprintRef` + watch → reconcile GPR when catalog pins change.
