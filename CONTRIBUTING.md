@@ -156,7 +156,10 @@ After merging operator or engine features, semver advances automatically when
 **Release** succeeds on `main` (`feat:` → minor, `fix:` → patch). Feature PRs
 should not hand-edit `engine/pyproject.toml` version. Release opens and
 admin-merges a `chore/release/*` PR because rulesets block direct pushes to
-`main` even for some administrator tokens.
+`main` even for some administrator tokens. The workflow tags the release commit
+after merge and creates the GitHub Release (with wheel artifacts) via
+`gh release create`; it also repairs a tagged version that has no GitHub
+Release yet.
 
 Set or rotate it:
 
