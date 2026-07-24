@@ -19,6 +19,11 @@ def terraform_blueprint(repo_root: Path) -> Blueprint:
 
 
 @pytest.fixture
+def ansible_blueprint(repo_root: Path) -> Blueprint:
+    return load_blueprint(repo_root / "blueprints" / "ansible-role-generic", repo_root)
+
+
+@pytest.fixture
 def output_config(tmp_path: Path) -> OutputConfig:
     modules_root = tmp_path / "modules"
     modules_root.mkdir()
@@ -39,4 +44,15 @@ def sample_inputs() -> dict[str, str]:
         "description": "Example module generated in tests",
         "cloud_provider": "aws",
         "provider_services": "ec2,s3",
+    }
+
+
+@pytest.fixture
+def ansible_sample_inputs() -> dict[str, str]:
+    return {
+        "role_name": "webserver",
+        "namespace": "acme",
+        "description": "Example webserver role generated in tests",
+        "min_ansible_version": "2.15",
+        "target_platforms": "Ubuntu:22.04",
     }

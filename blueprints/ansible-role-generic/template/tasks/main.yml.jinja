@@ -1,0 +1,10 @@
+---
+- name: Validate {{ role_name }} role inputs
+  ansible.builtin.assert:
+    that:
+      - role_name is defined
+    quiet: true
+
+- name: Placeholder task for {{ role_name }}
+  ansible.builtin.debug:
+    msg: "Implement {{ role_name }} role tasks here."

@@ -86,6 +86,10 @@
               "tflint",
               "checkov",
               "secrets",
+              "yamllint",
+              "ansible-lint",
+              "ansible-syntax-check",
+              "molecule",
               "docs-drift",
               "provenance-drift"
             ]

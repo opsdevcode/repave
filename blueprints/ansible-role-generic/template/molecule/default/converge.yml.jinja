@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: all
+  tasks:
+    - name: Include {{ role_name }} role
+      ansible.builtin.include_role:
+        name: "{{ role_name }}"

@@ -178,3 +178,35 @@ def test_copy_checkov_policies_raises_when_pack_missing(
 
     with pytest.raises(FileNotFoundError, match="Checkov policy pack not found"):
         render_blueprint(terraform_blueprint, values, output_dir)
+
+
+def test_render_ansible_role_writes_role_layout(
+    ansible_blueprint,
+    ansible_sample_inputs,
+    tmp_path: Path,
+) -> None:
+    from repave_engine.blueprint import validate_inputs
+
+    values = validate_inputs(ansible_blueprint, ansible_sample_inputs)
+    output_dir = tmp_path / "role"
+
+    render_blueprint(ansible_blueprint, values, output_dir)
+
+    assert (output_dir / "meta" / "main.yml").exists()
+    assert (output_dir / "tasks" / "main.yml").exists()
+    assert (output_dir / "defaults" / "main.yml").exists()
+    assert (output_dir / "handlers" / "main.yml").exists()
+    assert (output_dir / "molecule" / "default" / "molecule.yml").exists()
+    assert (output_dir / "molecule" / "default" / "converge.yml").exists()
+    assert (output_dir / "README.md").exists()
+    assert (output_dir / "repave.yaml").exists()
+    assert (output_dir / ".yamllint").exists()
+
+    meta = (output_dir / "meta" / "main.yml").read_text(encoding="utf-8")
+    assert "role_name: webserver" in meta
+    assert "namespace: acme" in meta
+    assert "Ubuntu" in meta
+
+    readme = (output_dir / "README.md").read_text(encoding="utf-8")
+    assert "## Usage" in readme
+    assert "acme.webserver" in readme

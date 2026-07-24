@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.13.0 (v1.14.0 pending)  
-**Planning horizon:** v1.15 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.15.0  
+**Planning horizon:** v1.16 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---
 
@@ -28,9 +28,9 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.14  today       artifact-type provenance in repave.yaml; provenance-drift gate
+v1.15  today       Ansible role golden path; yamllint/ansible-lint/syntax/molecule gates
   │
-  ├─ v1.15–v1.17    multi-artifact    Ansible role path + standard; operator alpha
+  ├─ v1.16–v1.17    multi-artifact    Ansible role standard + policy pack; operator alpha
   ├─ v1.18–v1.20    operate + extend  portal UX; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
@@ -145,7 +145,7 @@ v1.14  today       artifact-type provenance in repave.yaml; provenance-drift gat
 - `terraform-test` gate registered (skips when no `.tftest.hcl` files); plugin hook via
   `repave.gates` entry points for org-specific gates without editing core dispatch
 
-### v1.14 — Provenance and standards decoupling (current)
+### v1.14 — Provenance and standards decoupling
 
 - `repave.yaml` provenance via `engine/src/repave_engine/provenance.py` and
   `schemas/golden-path-artifact.schema.json` (`repave.dev/v1beta1`)
@@ -155,35 +155,21 @@ v1.14  today       artifact-type provenance in repave.yaml; provenance-drift gat
   `spec.output.provenance.file` on blueprints (enabled on terraform-module-generic)
 - Provider catalog validation skipped for non-Terraform `artifactType` values
 
+### v1.15 — Ansible role golden path (current)
+
+- New `blueprints/ansible-role-generic/` producing a Galaxy-compatible role layout
+- Inputs: `role_name`, `namespace`, `description`, `min_ansible_version`,
+  `target_platforms`
+- Template: `meta/main.yml`, `tasks/`, `defaults/`, `handlers/`, `vars/`,
+  `molecule/default/`, `README.md`, `.yamllint`, `.ansible-lint`
+- Gates: `yamllint`, `ansible-lint`, `ansible-syntax-check`, `molecule`
+  (skip-if-not-installed), `docs-drift`, `provenance-drift`
+- Output naming: `ansible-role-{role_name}`; provider scope skipped (no catalog)
+- Baseline Ansible role standard stub at `examples/standards/ansible-role-standard.md`
+
 ---
 
 ## Planned
-
-### v1.15 — Ansible role golden path
-
-**Problem:** Only Terraform artifacts exist; platform teams also govern
-configuration management and want a compliant, Galaxy-compatible Ansible role
-scaffold from the same golden-path engine.
-
-**Approach:**
-
-- New `blueprints/ansible-role-generic/` producing a Galaxy-compatible role
-- Inputs: `role_name`, `namespace`, `description`, `min_ansible_version`,
-  target platforms
-- Template: `meta/main.yml`, `tasks/main.yml`, `defaults/main.yml`,
-  `handlers/main.yml`, `vars/`, `molecule/default/`, `README.md.jinja`, `.yamllint`
-- Gates: `yamllint`, `ansible-lint`, `ansible-syntax-check`, `molecule`
-  (skip-if-not-installed pattern like tflint/checkov), `docs-drift`,
-  `provenance-drift`
-- Output naming: `ansible-role-{role_name}` (or `{namespace}.{role_name}`)
-- Provider scope is skipped automatically (no `provider-catalog.json` in the pack)
-
-**Dependencies:** v1.13 gate registry; v1.14 provenance decoupling.
-
-**Done when:** A role repo generates, passes gates where the tools are present,
-and skips cleanly where they are absent.
-
----
 
 ### v1.16 — Ansible role standard + ansible-lint policy pack
 
