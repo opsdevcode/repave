@@ -29,6 +29,9 @@ jobs:
       - name: Run tests (unit + envtest)
         run: make test
 
+      - name: Lint
+        run: make lint
+
       - name: Verify generated manifests committed
         run: |
           git diff --exit-code config/crd/bases config/rbac api/v1alpha1/zz_generated.deepcopy.go

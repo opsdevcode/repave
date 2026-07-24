@@ -31,6 +31,10 @@ manifests: controller-gen
 test: manifests generate envtest
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
+.PHONY: lint
+lint: golangci-lint
+	$(GOLANGCI_LINT) run ./...
+
 .PHONY: run
 run: manifests generate
 	go run ./cmd/main.go
@@ -44,6 +48,8 @@ build: generate
 .PHONY: docker-build
 docker-build:
 	docker build -t ${IMG} .
+
+GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 
 ##@ Dependencies
 
@@ -62,6 +68,12 @@ envtest: $(ENVTEST)
 
 $(ENVTEST): $(LOCALBIN)
 	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,latest)
+
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT)
+
+$(GOLANGCI_LINT): $(LOCALBIN)
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,v1.62.2)
 
 .PHONY: e2e
 e2e:

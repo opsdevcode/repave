@@ -23,6 +23,8 @@ work, writing ADRs, and opening issues.
   (implements primarily under v1.18).
 - Operator **local development and testing**: [`operator-local-dev.md`](operator-local-dev.md)
   (required for every v1.17 slice).
+- Operator **CRD and controller standards**: [`operator-standards.md`](operator-standards.md)
+  (required for every change under `operator/`).
 
 ---
 
@@ -220,6 +222,8 @@ upgrades across the estate do not scale.
 
 **Dependencies:** Stable blueprint + schema contracts; module repos already
 external (v1.1+); generation produces valid `repave.yaml` (v1.14+).
+Implementation follows [`operator-standards.md`](operator-standards.md)
+(Kubernetes API conventions, conditions, kubebuilder layout).
 
 **Done when:** A CRD instance for a generated repo triggers an upgrade PR when
 blueprint or standard version is bumped in repave, and acceptance criteria in

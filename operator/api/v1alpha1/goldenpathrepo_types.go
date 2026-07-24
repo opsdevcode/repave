@@ -4,22 +4,34 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GoldenPathRepoPhase is the high-level lifecycle phase of reconciliation.
+// GoldenPathRepoPhase is a summary lifecycle phase for kubectl columns.
+// Prefer status.conditions for automation and monitoring.
 type GoldenPathRepoPhase string
 
 const (
-	GoldenPathRepoPhasePending GoldenPathRepoPhase = "Pending"
-	GoldenPathRepoPhaseReady   GoldenPathRepoPhase = "Ready"
+	GoldenPathRepoPhasePending   GoldenPathRepoPhase = "Pending"
+	GoldenPathRepoPhaseReady     GoldenPathRepoPhase = "Ready"
 	GoldenPathRepoPhaseOutOfDate GoldenPathRepoPhase = "OutOfDate"
-	GoldenPathRepoPhaseError   GoldenPathRepoPhase = "Error"
+	GoldenPathRepoPhaseError     GoldenPathRepoPhase = "Error"
 )
 
 // DesiredPins are blueprint and standard versions the repo should match.
 type DesiredPins struct {
-	BlueprintName    string `json:"blueprintName"`
+	// BlueprintName is the golden path name (for example terraform-module-generic).
+	// +kubebuilder:validation:MinLength=1
+	BlueprintName string `json:"blueprintName"`
+
+	// BlueprintVersion is the semver of the blueprint at generation or desired upgrade.
+	// +kubebuilder:validation:MinLength=1
 	BlueprintVersion string `json:"blueprintVersion"`
-	StandardSource   string `json:"standardSource"`
-	StandardVersion  string `json:"standardVersion"`
+
+	// StandardSource is the in-repo or URI path to the pinned standard corpus.
+	// +kubebuilder:validation:MinLength=1
+	StandardSource string `json:"standardSource"`
+
+	// StandardVersion is the semver of the standard corpus.
+	// +kubebuilder:validation:MinLength=1
+	StandardVersion string `json:"standardVersion"`
 }
 
 // ObservedPins are pins read from repave.yaml on the last successful observation.
@@ -31,22 +43,32 @@ type ObservedPins struct {
 }
 
 // GoldenPathRepoSpec defines a generated golden-path repository to reconcile.
+// +kubebuilder:validation:XValidation:rule="(has(self.repoURL) && self.repoURL != '') || (has(self.localPath) && self.localPath != '')",message="either repoURL or localPath must be set"
 type GoldenPathRepoSpec struct {
-	// RepoURL is the git remote (https or ssh). For local development use LocalPath instead.
+	// RepoURL is the git remote (https or ssh). For local development use localPath instead.
 	// +optional
+	// +kubebuilder:validation:MaxLength=2048
 	RepoURL string `json:"repoURL,omitempty"`
 
 	// LocalPath is an absolute filesystem path to a module repo (local dev and envtest).
 	// +optional
+	// +kubebuilder:validation:MaxLength=4096
 	LocalPath string `json:"localPath,omitempty"`
 
 	// DesiredPins are the target blueprint and standard versions for this repo.
+	// +required
 	DesiredPins DesiredPins `json:"desiredPins"`
 }
 
 // GoldenPathRepoStatus defines the observed state of GoldenPathRepo.
 type GoldenPathRepoStatus struct {
-	// Phase summarizes reconciliation state.
+	// Conditions represent the latest available observations of reconciliation state.
+	// +listType=map
+	// +listMapKey=type
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// Phase summarizes reconciliation state for kubectl columns.
 	// +optional
 	Phase GoldenPathRepoPhase `json:"phase,omitempty"`
 
@@ -66,6 +88,7 @@ type GoldenPathRepoStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=goldenpathrepos,shortName=gpr
+// +kubebuilder:printcolumn:name="Ready",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
 // +kubebuilder:printcolumn:name="Repo",type=string,JSONPath=`.spec.repoURL`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`

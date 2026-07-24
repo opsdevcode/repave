@@ -117,7 +117,7 @@ blueprints/    # versioned golden paths (reference packs)
 examples/      # sample standards and Checkov policy packs
 deploy/local/  # docker compose + kind quickstart
 operator/      # v1.17 reconciliation operator (see docs/operator-local-dev.md)
-docs/          # concepts, roadmap, [portal design](docs/portal-design.md), [operator local dev](docs/operator-local-dev.md)
+docs/          # concepts, roadmap, [portal design](docs/portal-design.md), [operator local dev](docs/operator-local-dev.md), [operator standards](docs/operator-standards.md)
 ```
 
 ## Roadmap

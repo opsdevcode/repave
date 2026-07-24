@@ -11,6 +11,10 @@ reconciler, `make operator-test` with envtest. **Slice 1** adds inventory from
 **Local development and testing are first-class.** See
 [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
 
+**Standards (required for all operator PRs):**
+[`docs/operator-standards.md`](../docs/operator-standards.md) and
+[`operator/CONTRIBUTING.md`](CONTRIBUTING.md).
+
 Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator).
 
 ---

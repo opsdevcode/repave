@@ -1,4 +1,4 @@
-.PHONY: install lock test lint format typecheck security quality serve compose-up compose-down list generate operator-test operator-run operator-e2e
+.PHONY: install lock test lint format typecheck security quality serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -55,6 +55,9 @@ compose-down:
 
 operator-test:
 	cd operator && $(MAKE) test
+
+operator-lint:
+	cd operator && $(MAKE) lint
 
 operator-run:
 	cd operator && $(MAKE) run

@@ -9,8 +9,6 @@ rules:
   resources:
   - goldenpathrepos
   verbs:
-  - create
-  - delete
   - get
   - list
   - patch
