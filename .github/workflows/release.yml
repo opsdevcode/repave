@@ -75,11 +75,31 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
-          BYPASS="$(gh api "repos/${GITHUB_REPOSITORY}/rulesets/19653825" --jq '.current_user_can_bypass')"
-          if [ "${BYPASS}" != "always" ]; then
-            echo "::error::REPAVE_RELEASE_TOKEN cannot bypass the main branch ruleset. Use an Administrator classic PAT."
-            exit 1
+          BEFORE="$(git rev-parse HEAD)"
+          cd engine
+          uv run semantic-release version --no-push
+          cd "${GITHUB_WORKSPACE}"
+          AFTER="$(git rev-parse HEAD)"
+          if [ "${BEFORE}" = "${AFTER}" ]; then
+            echo "No release needed."
+            exit 0
           fi
 
+          VERSION="$(grep '^version =' engine/pyproject.toml | sed 's/version = "\(.*\)"/\1/')"
+          TAG="v${VERSION}"
+          BRANCH="chore/release-${VERSION}"
+
+          git push origin "HEAD:refs/heads/${BRANCH}"
+          git push origin "refs/tags/${TAG}"
+
+          EXISTING="$(gh pr list --head "${BRANCH}" --base main --json number --jq '.[0].number // empty')"
+          if [ -z "${EXISTING}" ]; then
+            gh pr create --base main --head "${BRANCH}" \
+              --title "chore(release): ${VERSION}" \
+              --body "Automated semantic-release publish."
+          fi
+
+          gh pr merge "${BRANCH}" --merge --delete-branch --admin
+
           cd engine
-          uv run semantic-release version
+          uv run semantic-release publish --tag "${TAG}"

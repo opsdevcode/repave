@@ -154,8 +154,9 @@ bypass is configured in `.github/rulesets/main-branch.json`).
 
 After merging operator or engine features, semver advances automatically when
 **Release** succeeds on `main` (`feat:` → minor, `fix:` → patch). Feature PRs
-should not hand-edit `engine/pyproject.toml` version. If releases fail, check
-Actions → **Release** and re-run the workflow after fixing ruleset/token issues.
+should not hand-edit `engine/pyproject.toml` version. Release opens and
+admin-merges a `chore/release/*` PR because rulesets block direct pushes to
+`main` even for some administrator tokens.
 
 Set or rotate it:
 
