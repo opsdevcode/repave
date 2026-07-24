@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,7 +24,7 @@ type GoldenPathRepoReconciler struct {
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos/finalizers,verbs=update
 
-// Reconcile sets baseline status for slice 0; inventory and PR logic follow in v1.17 slices 1–3.
+// Reconcile observes repave.yaml pins and updates inventory status (v1.17 slice 1).
 func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -59,24 +58,11 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 
-	msg := fmt.Sprintf(
-		"operator scaffold: registered %q (inventory in slice 1)",
-		displayLocation(repo.Spec),
-	)
-	if err := patchGoldenPathRepoStatus(ctx, r.Client, &repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-		latest.Status.Phase = repavev1alpha1.GoldenPathRepoPhaseReady
-		latest.Status.Message = msg
-		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-			Type:    status.ConditionReady,
-			Status:  metav1.ConditionTrue,
-			Reason:  status.ReasonReconcileSuccess,
-			Message: msg,
-		})
-	}); err != nil {
+	if err := applyInventoryStatus(ctx, r.Client, &repo); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("reconciled GoldenPathRepo", "phase", repavev1alpha1.GoldenPathRepoPhaseReady, "name", req.Name)
+	logger.Info("reconciled GoldenPathRepo inventory", "name", req.Name)
 	return ctrl.Result{}, nil
 }
 
