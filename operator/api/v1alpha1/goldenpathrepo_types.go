@@ -42,6 +42,40 @@ type ObservedPins struct {
 	StandardVersion  string `json:"standardVersion,omitempty"`
 }
 
+// UpgradePlan summarizes a dry-run re-render diff (v1.17 slice 2).
+type UpgradePlan struct {
+	// ChangedFileCount is added + modified + removed paths.
+	// +optional
+	ChangedFileCount int `json:"changedFileCount,omitempty"`
+
+	// BlueprintName is the blueprint used for the plan render.
+	// +optional
+	BlueprintName string `json:"blueprintName,omitempty"`
+
+	// BlueprintVersion is the blueprint version from the repave checkout used for render.
+	// +optional
+	BlueprintVersion string `json:"blueprintVersion,omitempty"`
+
+	// Added lists new paths relative to the target repo (capped when stored on status).
+	// +optional
+	// +listType=set
+	Added []string `json:"added,omitempty"`
+
+	// Modified lists changed paths relative to the target repo (capped when stored on status).
+	// +optional
+	// +listType=set
+	Modified []string `json:"modified,omitempty"`
+
+	// Removed lists paths present locally but absent from the render (capped when stored on status).
+	// +optional
+	// +listType=set
+	Removed []string `json:"removed,omitempty"`
+
+	// Summary is a single-line human summary for kubectl and events.
+	// +optional
+	Summary string `json:"summary,omitempty"`
+}
+
 // GoldenPathRepoSpec defines a generated golden-path repository to reconcile.
 // +kubebuilder:validation:XValidation:rule="(has(self.repoURL) && self.repoURL != '') || (has(self.localPath) && self.localPath != '')",message="either repoURL or localPath must be set"
 type GoldenPathRepoSpec struct {
@@ -83,6 +117,10 @@ type GoldenPathRepoStatus struct {
 	// ObservedPins holds pins read from repave.yaml when inventory runs (slice 1+).
 	// +optional
 	ObservedPins ObservedPins `json:"observedPins,omitempty"`
+
+	// UpgradePlan holds the latest dry-run diff when pins are out of date (slice 2+).
+	// +optional
+	UpgradePlan *UpgradePlan `json:"upgradePlan,omitempty"`
 }
 
 // +kubebuilder:object:root=true

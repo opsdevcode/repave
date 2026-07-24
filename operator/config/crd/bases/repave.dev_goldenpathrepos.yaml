@@ -191,6 +191,47 @@ spec:
               phase:
                 description: Phase summarizes reconciliation state for kubectl columns.
                 type: string
+              upgradePlan:
+                description: UpgradePlan holds the latest dry-run diff when pins are
+                  out of date (slice 2+).
+                properties:
+                  added:
+                    description: Added lists new paths relative to the target repo
+                      (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  blueprintName:
+                    description: BlueprintName is the blueprint used for the plan
+                      render.
+                    type: string
+                  blueprintVersion:
+                    description: BlueprintVersion is the blueprint version from the
+                      repave checkout used for render.
+                    type: string
+                  changedFileCount:
+                    description: ChangedFileCount is added + modified + removed paths.
+                    type: integer
+                  modified:
+                    description: Modified lists changed paths relative to the target
+                      repo (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  removed:
+                    description: Removed lists paths present locally but absent from
+                      the render (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  summary:
+                    description: Summary is a single-line human summary for kubectl
+                      and events.
+                    type: string
+                type: object
             type: object
         type: object
     served: true

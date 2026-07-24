@@ -26,6 +26,7 @@ import (
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/controller"
+	"github.com/opsdevcode/repave/operator/internal/repave"
 )
 
 var (
@@ -77,6 +78,8 @@ func main() {
 	if err := (&controller.GoldenPathRepoReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
+		PlanUpgrader: repave.CLIPlanUpgrader{},
+		RepaveConfig: repave.ConfigFromEnv(os.Getenv("REPAVE_REPO_ROOT"), os.Getenv("REPAVE_CLI")),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GoldenPathRepo")
 		os.Exit(1)
