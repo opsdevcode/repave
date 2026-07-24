@@ -25,6 +25,10 @@ def test_builtin_gates_are_registered() -> None:
     assert "checkov" in names
     assert "secrets" in names
     assert "terraform-test" in names
+    assert "yamllint" in names
+    assert "ansible-lint" in names
+    assert "ansible-syntax-check" in names
+    assert "molecule" in names
 
 
 def test_get_gate_returns_spec_for_known_gate() -> None:

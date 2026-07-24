@@ -170,6 +170,27 @@ def test_list_blueprints(repo_root: Path) -> None:
     blueprints = list_blueprints(repo_root / "blueprints")
     names = [bp.name for bp in blueprints]
     assert "terraform-module-generic" in names
+    assert "ansible-role-generic" in names
+
+
+def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
+    assert ansible_blueprint.name == "ansible-role-generic"
+    assert ansible_blueprint.version == "0.1.0"
+    assert ansible_blueprint.artifact_type == "ansible-role"
+    assert ansible_blueprint.provenance_file == "repave.yaml"
+    assert ansible_blueprint.checkov_policies is None
+    assert "yamllint" in ansible_blueprint.gates
+    assert "ansible-lint" in ansible_blueprint.gates
+    assert "molecule" in ansible_blueprint.gates
+    assert "provenance-drift" in ansible_blueprint.gates
+    assert ansible_blueprint.output_repo_name_template == "ansible-role-{role_name}"
+
+
+def test_validate_ansible_role_inputs(ansible_blueprint, ansible_sample_inputs) -> None:
+    values = validate_inputs(ansible_blueprint, ansible_sample_inputs)
+    assert values["role_name"] == "webserver"
+    assert values["namespace"] == "acme"
+    assert "provider_service_scope" not in values
 
 
 def test_list_blueprints_empty_dir(tmp_path: Path) -> None:

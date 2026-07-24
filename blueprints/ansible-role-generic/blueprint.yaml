@@ -1,0 +1,51 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: ansible-role-generic
+  version: 0.1.0
+  description: Galaxy-compatible Ansible role scaffold with Molecule testing and CI wiring.
+spec:
+  artifactType: ansible-role
+  standard:
+    source: examples/standards
+    version: 0.1.0
+  inputs:
+    - name: role_name
+      type: string
+      required: true
+      description: Name of the Ansible role (e.g. webserver).
+    - name: namespace
+      type: string
+      required: true
+      description: Galaxy namespace for the role (e.g. acme).
+    - name: description
+      type: string
+      required: true
+      description: Short description of what the role does.
+    - name: min_ansible_version
+      type: string
+      required: true
+      description: Minimum supported Ansible version for this role.
+      default: "2.15"
+    - name: target_platforms
+      type: string
+      required: true
+      description: Comma-separated target platforms as Name:version (e.g. EL:9,Ubuntu:22.04).
+      default: "Ubuntu:22.04"
+  template:
+    engine: copier
+    path: template
+  gates:
+    - yamllint
+    - ansible-lint
+    - ansible-syntax-check
+    - molecule
+    - docs-drift
+    - provenance-drift
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "ansible-role-{role_name}"
+      title_template: "Bootstrap Ansible role {namespace}.{role_name}"

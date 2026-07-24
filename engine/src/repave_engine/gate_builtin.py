@@ -2,14 +2,18 @@ from __future__ import annotations
 
 from repave_engine.gate_registry import GateSpec, register_gate
 from repave_engine.gate_runners import (
+    run_ansible_lint,
+    run_ansible_syntax_check,
     run_checkov,
     run_docs_drift,
+    run_molecule,
     run_provenance_drift,
     run_secrets,
     run_terraform_fmt,
     run_terraform_test,
     run_terraform_validate,
     run_tflint,
+    run_yamllint,
 )
 
 register_gate(
@@ -69,5 +73,34 @@ register_gate(
         name="provenance-drift",
         runner=run_provenance_drift,
         artifact_types=frozenset({"terraform-module", "ansible-role"}),
+    )
+)
+register_gate(
+    GateSpec(
+        name="yamllint",
+        runner=run_yamllint,
+        artifact_types=frozenset({"ansible-role"}),
+    )
+)
+register_gate(
+    GateSpec(
+        name="ansible-lint",
+        runner=run_ansible_lint,
+        artifact_types=frozenset({"ansible-role"}),
+    )
+)
+register_gate(
+    GateSpec(
+        name="ansible-syntax-check",
+        runner=run_ansible_syntax_check,
+        artifact_types=frozenset({"ansible-role"}),
+    )
+)
+register_gate(
+    GateSpec(
+        name="molecule",
+        runner=run_molecule,
+        artifact_types=frozenset({"ansible-role"}),
+        artifact_paths=(".molecule",),
     )
 )

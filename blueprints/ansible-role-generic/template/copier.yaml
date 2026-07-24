@@ -1,0 +1,27 @@
+# Copier template metadata for ansible-role-generic
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+role_name:
+  type: str
+  help: Name of the Ansible role
+
+namespace:
+  type: str
+  help: Galaxy namespace for the role
+
+description:
+  type: str
+  help: Short role description
+
+min_ansible_version:
+  type: str
+  help: Minimum supported Ansible version
+  default: "2.15"
+
+target_platforms:
+  type: str
+  help: Comma-separated target platforms as Name:version
+  default: "Ubuntu:22.04"

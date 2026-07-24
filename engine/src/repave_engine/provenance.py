@@ -101,10 +101,8 @@ def write_provenance_file(
 ) -> Path:
     path = output_dir / filename
     document = build_provenance_document(blueprint, values)
-    path.write_text(
-        yaml.safe_dump(document, sort_keys=False, default_flow_style=False),
-        encoding="utf-8",
-    )
+    body = yaml.safe_dump(document, sort_keys=False, default_flow_style=False)
+    path.write_text(f"---\n{body}", encoding="utf-8")
     return path
 
 

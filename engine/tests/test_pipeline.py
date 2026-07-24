@@ -255,3 +255,30 @@ def test_generate_applies_gate_overrides_from_config(
     overrides = captured["gate_overrides"]
     assert overrides is not None
     assert overrides.checkov_skip_checks == ("CKV_TEST",)
+
+
+def test_generate_ansible_role_generic_publishes_role_repo(
+    ansible_blueprint,
+    ansible_sample_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    result = generate_from_blueprint(
+        ansible_blueprint,
+        ansible_sample_inputs,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
+    )
+
+    role_repo = result.module_repository
+    assert role_repo is not None
+    assert role_repo.name == "ansible-role-webserver"
+    assert role_repo.local_path.exists()
+    assert (role_repo.local_path / "meta" / "main.yml").exists()
+    assert (role_repo.local_path / "molecule" / "default" / "converge.yml").exists()
+    assert (role_repo.local_path / "repave.yaml").exists()
+    assert not (role_repo.local_path / ".molecule").exists()
+    assert (role_repo.local_path / ".git").exists()
+    assert result.pr_plan is not None
+    assert all(g.passed or g.skipped for g in result.gates)

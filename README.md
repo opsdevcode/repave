@@ -3,8 +3,8 @@
 **Governed, repeatable platform engineering — for many, not just the few.**
 
 `repave` lets people who are not platform-engineering experts produce
-production-ready automation (Terraform modules today, more later) by answering a
-short form. The output is generated **deterministically** from versioned golden
+production-ready automation (Terraform modules and Ansible roles today, more
+later) by answering a short form. The output is generated **deterministically** from versioned golden
 paths, is forced through **mandatory quality/security gates**, and lands as a
 **governed module repository on GitHub** — so the standards set by your platform
 team are enforced *by construction*, not by after-the-fact review.
@@ -13,22 +13,22 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.14.** The generation loop runs locally with no Kubernetes
-> required. Generated modules publish to separate git repositories and can be
-> pushed to GitHub with `GITHUB_TOKEN`. Each scoped provider resource is
-> rendered to its own `.tf` file; shared context lives in `locals.tf` against
-> the in-repo module standard. Generated modules include layout and security
-> Checkov policies (pack v1.2.0), a dedicated secrets gate, `.checkov.yml`,
-> and a `repave.yaml` provenance file validated by the `provenance-drift` gate.
-> The self-healing reconciliation operator is planned next
-> (see [`operator/`](operator/)).
+> Status: **v1.15.** The generation loop runs locally with no Kubernetes
+> required. Generated modules and Ansible roles publish to separate git
+> repositories and can be pushed to GitHub with `GITHUB_TOKEN`. Terraform modules
+> render per-resource `.tf` files with shared `locals.tf`, Checkov policies
+> (pack v1.2.0), secrets scanning, and `repave.yaml` provenance. The
+> `ansible-role-generic` blueprint ships Galaxy-compatible roles with Molecule
+> scaffolding and Ansible lint gates. The self-healing reconciliation operator is
+> planned next (see [`operator/`](operator/)).
 
 ## Why repave
 
 - **Enables many.** A web form maps to a golden path; no one needs to know
   Terraform/HCL to get a compliant module.
 - **Governed by construction.** Generated artifacts must pass every configured
-  gate (`fmt`, `validate`, `tflint`, `checkov`, `secrets`, `provenance-drift`, docs) before publish.
+  gate (`fmt`, `validate`, `tflint`, `checkov`, `secrets`, Ansible lint gates,
+  `provenance-drift`, docs) before publish.
   There is no bypass path.
 - **Deterministic + repeatable.** The same inputs always render the same
   artifact (Copier templates), so output is reviewable and safe.
@@ -90,7 +90,8 @@ docker compose up --build
 Docker Compose mounts a `repave-modules` volume at `/modules` and sets
 `REPAVE_MODULES_ROOT` so generated modules land outside the repave repo.
 
-Fill the form for the bundled `terraform-module-generic` blueprint and submit.
+Fill the form for a bundled blueprint (`terraform-module-generic` or
+`ansible-role-generic`) and submit.
 In dry-run mode (default) you'll see gate results and the planned module
 repository. Enable **Publish module repository locally** to bootstrap a local git
 repo; set `GITHUB_TOKEN` in the server environment to create the GitHub repo and
@@ -122,8 +123,9 @@ docs/          # concept docs and [roadmap](docs/roadmap.md)
 
 ## Roadmap
 
-**Current:** v1.14 — gate registry, artifact-type-aware `repave.yaml` provenance,
-and `provenance-drift` gate on the terraform-module golden path.
+**Current:** v1.15 — Ansible role golden path (`ansible-role-generic`) alongside
+the Terraform module path; artifact-type-aware `repave.yaml` provenance and gate
+registry extensibility.
 
 High-level release history and detailed future planning (through **v2.0.0**) live in
 [`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when
