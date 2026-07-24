@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: release-${{ github.ref }}
@@ -75,9 +76,41 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
 
+          publish_github_release() {
+            local tag="$1"
+            local version="${tag#v}"
+            git fetch origin "refs/tags/${tag}:refs/tags/${tag}" 2>/dev/null || true
+            git checkout "${tag}"
+            cd engine
+            uv build
+            if gh release view "${tag}" >/dev/null 2>&1; then
+              echo "GitHub release ${tag} already exists."
+              cd "${GITHUB_WORKSPACE}"
+              git fetch origin main
+              git checkout -B main origin/main
+              return 0
+            fi
+            gh release create "${tag}" dist/* \
+              --title "repave-engine ${version}" \
+              --generate-notes
+            cd "${GITHUB_WORKSPACE}"
+            git checkout -B main origin/main
+          }
+
+          git fetch origin main
+          git checkout -B main origin/main
+
+          LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1 || true)"
+          if [ -n "${LATEST_TAG}" ] && ! gh release view "${LATEST_TAG}" >/dev/null 2>&1; then
+            echo "Repairing missing GitHub release for ${LATEST_TAG}."
+            publish_github_release "${LATEST_TAG}"
+            git fetch origin main
+            git checkout -B main origin/main
+          fi
+
           BEFORE="$(git rev-parse HEAD)"
           cd engine
-          uv run semantic-release version --no-push
+          uv run semantic-release version --no-push --no-tag
           cd "${GITHUB_WORKSPACE}"
           AFTER="$(git rev-parse HEAD)"
           if [ "${BEFORE}" = "${AFTER}" ]; then
@@ -88,9 +121,9 @@ jobs:
           VERSION="$(grep '^version =' engine/pyproject.toml | sed 's/version = "\(.*\)"/\1/')"
           TAG="v${VERSION}"
           BRANCH="chore/release-${VERSION}"
+          RELEASE_SHA="$(git rev-parse HEAD)"
 
-          git push origin "HEAD:refs/heads/${BRANCH}"
-          git push origin "refs/tags/${TAG}"
+          git push origin "${RELEASE_SHA}:refs/heads/${BRANCH}"
 
           EXISTING="$(gh pr list --head "${BRANCH}" --base main --json number --jq '.[0].number // empty')"
           if [ -z "${EXISTING}" ]; then
@@ -101,5 +134,10 @@ jobs:
 
           gh pr merge "${BRANCH}" --merge --delete-branch --admin
 
-          cd engine
-          uv run semantic-release publish --tag "${TAG}"
+          git fetch origin main
+          git checkout -B main origin/main
+
+          git tag -f "${TAG}" "${RELEASE_SHA}"
+          git push origin "refs/tags/${TAG}" --force
+
+          publish_github_release "${TAG}"
