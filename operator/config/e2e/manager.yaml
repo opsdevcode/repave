@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: repave-operator
+  namespace: repave-system
+  labels:
+    app: repave-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: repave-operator
+  template:
+    metadata:
+      labels:
+        app: repave-operator
+    spec:
+      serviceAccountName: repave-operator
+      containers:
+        - name: manager
+          image: repave-operator:dev
+          imagePullPolicy: IfNotPresent
+          args:
+            - --leader-elect=false
+            - --health-probe-bind-address=:8081
+            - --metrics-bind-address=0
+          ports:
+            - name: health
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: modules
+              mountPath: /modules
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: modules
+          hostPath:
+            path: /modules
+            type: Directory

@@ -4,7 +4,10 @@ metadata:
   name: example-module
   namespace: default
 spec:
-  localPath: /modules/example
+  # For kind e2e / hostPath mounts use /modules/terraform-minimal (see config/e2e/).
+  # For make operator-run on a laptop, set an absolute path to a module checkout:
+  #   localPath: /absolute/path/to/operator/testdata/modules/terraform-minimal
+  localPath: /modules/terraform-minimal
   desiredPins:
     blueprintName: terraform-module-generic
     blueprintVersion: "0.1.0"

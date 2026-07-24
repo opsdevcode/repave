@@ -19,7 +19,8 @@ inventory lands.
 [`docs/operator-standards.md`](../docs/operator-standards.md) and
 [`operator/CONTRIBUTING.md`](CONTRIBUTING.md).
 
-Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator).
+Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator-alpha)
+(shipped alpha); [v1.17 GA / e2e](../docs/roadmap.md#next--v117-ga-operator-e2e).
 
 ---
 
@@ -73,14 +74,14 @@ Details: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md#v117-deliv
 
 ---
 
-## Local commands (once scaffold lands)
+## Local commands
 
 From repository root:
 
 ```bash
 make operator-test      # unit + envtest (no kind)
 make operator-run       # controller against current kubeconfig
-make operator-e2e       # kind + fixtures (optional in CI until GA)
+make operator-e2e       # kind + image + OutOfDate fixture (needs Docker, kind)
 ```
 
 Generate fixture module repos with the same engine path as production:

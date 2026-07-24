@@ -1,0 +1,17 @@
+apiVersion: repave.dev/v1alpha1
+kind: GoldenPathRepo
+metadata:
+  name: e2e-drift
+  namespace: default
+spec:
+  # Mounted into the kind node and operator pod from operator/testdata/modules.
+  localPath: /modules/terraform-minimal
+  desiredPins:
+    blueprintName: terraform-module-generic
+    # Fixture repave.yaml pins 0.1.0 — force OutOfDate.
+    blueprintVersion: "9.9.9"
+    standardSource: examples/standards
+    standardVersion: "0.4.0"
+  remediation:
+    enabled: true
+    dryRun: true
