@@ -1,0 +1,11 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: repave-local
+nodes:
+  - role: control-plane
+    extraMounts:
+      # Fixture module trees visible to the operator Deployment via hostPath.
+      # Absolute path is injected by hack/e2e.sh before kind create.
+      - hostPath: ./testdata/modules
+        containerPath: /modules
+        readOnly: true

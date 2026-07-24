@@ -174,7 +174,7 @@ docs/          # concepts, roadmap, portal design, operator local dev
 
 ## Roadmap
 
-**Current focus:** v1.17 operator GA (`make operator-e2e`) → v1.18 portal UX
+**Current focus:** v1.17 GA close-out → v1.18 portal UX
 ([`docs/roadmap.md`](docs/roadmap.md)).
 
 High-level release history and planning through **v2.0.0** live in

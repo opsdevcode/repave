@@ -176,8 +176,14 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 
 ### kind e2e (`make operator-e2e`)
 
-- Build tag `e2e`; not required on every PR initially, required before v1.17 GA.
-- Flow: kind up → load operator image → apply fixtures → assert status within timeout.
+- Required before calling v1.17 operator GA; optional on every PR (envtest stays the PR gate).
+- Prerequisites: Docker, kubectl, [kind](https://kind.sigs.k8.io/)
+  (`go install sigs.k8s.io/kind@v0.27.0`).
+- Flow (`operator/hack/e2e.sh`): kind up (`repave-local` + fixture hostPath) →
+  `docker build` / `kind load` → apply CRDs + `config/e2e/` → assert
+  `GoldenPathRepo` `status.phase=OutOfDate` for a stale blueprint pin.
+- No `GITHUB_TOKEN` required (inventory drift only; remediation stays dry-run).
+- Keep the cluster for debugging: `E2E_KEEP_CLUSTER=1 make operator-e2e`.
 - Shares cluster naming with [deploy/local kind](../deploy/local/README.md#kind-optional).
 
 ---

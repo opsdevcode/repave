@@ -77,7 +77,7 @@ $(GOLANGCI_LINT): $(LOCALBIN)
 
 .PHONY: e2e
 e2e:
-	@echo "kind e2e harness not implemented yet (v1.17 pre-GA); see docs/operator-local-dev.md"
+	bash hack/e2e.sh
 
 # go-install-tool installs a Go tool if not present in $(GOBIN) or $(LOCALBIN).
 define go-install-tool

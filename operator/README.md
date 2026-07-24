@@ -74,14 +74,14 @@ Details: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md#v117-deliv
 
 ---
 
-## Local commands (once scaffold lands)
+## Local commands
 
 From repository root:
 
 ```bash
 make operator-test      # unit + envtest (no kind)
 make operator-run       # controller against current kubeconfig
-make operator-e2e       # kind + fixtures (optional in CI until GA)
+make operator-e2e       # kind + image + OutOfDate fixture (needs Docker, kind)
 ```
 
 Generate fixture module repos with the same engine path as production:
