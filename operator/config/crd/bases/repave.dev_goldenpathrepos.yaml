@@ -90,6 +90,29 @@ spec:
                   repo (local dev and envtest).
                 maxLength: 4096
                 type: string
+              remediation:
+                description: Remediation configures governed pull requests for pin
+                  drift.
+                properties:
+                  baseBranch:
+                    description: BaseBranch is the merge target for remediation PRs
+                      (default main).
+                    maxLength: 256
+                    type: string
+                  branchPrefix:
+                    description: BranchPrefix is prepended to generated upgrade branch
+                      names.
+                    maxLength: 128
+                    type: string
+                  dryRun:
+                    description: DryRun applies the upgrade locally on a branch without
+                      opening a GitHub pull request.
+                    type: boolean
+                  enabled:
+                    description: Enabled requests a remediation PR when drift is detected
+                      and an upgrade plan exists.
+                    type: boolean
+                type: object
               repoURL:
                 description: RepoURL is the git remote (https or ssh). For local development
                   use localPath instead.
@@ -191,6 +214,32 @@ spec:
               phase:
                 description: Phase summarizes reconciliation state for kubectl columns.
                 type: string
+              remediationPR:
+                description: RemediationPR holds the latest remediation pull request
+                  (slice 3+).
+                properties:
+                  branch:
+                    description: Branch is the head branch for the remediation change.
+                    type: string
+                  desiredBlueprintVersion:
+                    description: DesiredBlueprintVersion is the spec pin this PR was
+                      created for (idempotency).
+                    type: string
+                  number:
+                    description: Number is the GitHub pull request number when State
+                      is Open.
+                    type: integer
+                  state:
+                    description: State is Open or Planned (dry-run without GitHub).
+                    type: string
+                  title:
+                    description: Title is the pull request title.
+                    type: string
+                  url:
+                    description: URL is the GitHub pull request URL when State is
+                      Open.
+                    type: string
+                type: object
               upgradePlan:
                 description: UpgradePlan holds the latest dry-run diff when pins are
                   out of date (slice 2+).

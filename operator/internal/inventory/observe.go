@@ -9,7 +9,7 @@ import (
 	"github.com/opsdevcode/repave/operator/internal/provenance"
 )
 
-// ErrRemoteRepoNotSupported is returned until git clone inventory lands (slice 3+).
+// ErrRemoteRepoNotSupported is returned until git clone inventory lands (slice 4+).
 var ErrRemoteRepoNotSupported = errors.New("repoURL inventory requires git clone (not implemented)")
 
 // ObservePins reads observed blueprint/standard pins from the registered repository.

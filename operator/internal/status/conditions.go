@@ -11,6 +11,7 @@ const (
 	ConditionInvalidSpec    = "InvalidSpec"
 	ConditionDriftDetected  = "DriftDetected"
 	ConditionUpgradePlanned = "UpgradePlanned"
+	ConditionRemediationPR  = "RemediationPR"
 )
 
 // Standard condition reasons.
@@ -25,6 +26,13 @@ const (
 	ReasonUpgradePlanFailed     = "UpgradePlanFailed"
 	ReasonUpgradePlanSkipped      = "UpgradePlanSkipped"
 	ReasonUpgradePlanCleared      = "UpgradePlanCleared"
+	ReasonRemediationDisabled     = "RemediationDisabled"
+	ReasonRemediationPending      = "RemediationPending"
+	ReasonRemediationSkipped      = "RemediationSkipped"
+	ReasonRemediationPlanned      = "RemediationPlanned"
+	ReasonRemediationPROpen       = "RemediationPROpen"
+	ReasonRemediationFailed       = "RemediationFailed"
+	ReasonRemediationCleared        = "RemediationCleared"
 )
 
 // SetGoldenPathRepoCondition updates or inserts a condition on status.

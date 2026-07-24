@@ -76,6 +76,54 @@ type UpgradePlan struct {
 	Summary string `json:"summary,omitempty"`
 }
 
+// RemediationSpec controls governed upgrade pull requests (v1.17 slice 3+).
+type RemediationSpec struct {
+	// Enabled requests a remediation PR when drift is detected and an upgrade plan exists.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// DryRun applies the upgrade locally on a branch without opening a GitHub pull request.
+	// +optional
+	DryRun bool `json:"dryRun,omitempty"`
+
+	// BaseBranch is the merge target for remediation PRs (default main).
+	// +optional
+	// +kubebuilder:validation:MaxLength=256
+	BaseBranch string `json:"baseBranch,omitempty"`
+
+	// BranchPrefix is prepended to generated upgrade branch names.
+	// +optional
+	// +kubebuilder:validation:MaxLength=128
+	BranchPrefix string `json:"branchPrefix,omitempty"`
+}
+
+// RemediationPRStatus records the last opened or planned remediation pull request.
+type RemediationPRStatus struct {
+	// URL is the GitHub pull request URL when State is Open.
+	// +optional
+	URL string `json:"url,omitempty"`
+
+	// Number is the GitHub pull request number when State is Open.
+	// +optional
+	Number int `json:"number,omitempty"`
+
+	// Branch is the head branch for the remediation change.
+	// +optional
+	Branch string `json:"branch,omitempty"`
+
+	// Title is the pull request title.
+	// +optional
+	Title string `json:"title,omitempty"`
+
+	// State is Open or Planned (dry-run without GitHub).
+	// +optional
+	State string `json:"state,omitempty"`
+
+	// DesiredBlueprintVersion is the spec pin this PR was created for (idempotency).
+	// +optional
+	DesiredBlueprintVersion string `json:"desiredBlueprintVersion,omitempty"`
+}
+
 // GoldenPathRepoSpec defines a generated golden-path repository to reconcile.
 // +kubebuilder:validation:XValidation:rule="(has(self.repoURL) && self.repoURL != '') || (has(self.localPath) && self.localPath != '')",message="either repoURL or localPath must be set"
 type GoldenPathRepoSpec struct {
@@ -92,6 +140,10 @@ type GoldenPathRepoSpec struct {
 	// DesiredPins are the target blueprint and standard versions for this repo.
 	// +required
 	DesiredPins DesiredPins `json:"desiredPins"`
+
+	// Remediation configures governed pull requests for pin drift.
+	// +optional
+	Remediation RemediationSpec `json:"remediation,omitempty"`
 }
 
 // GoldenPathRepoStatus defines the observed state of GoldenPathRepo.
@@ -121,6 +173,10 @@ type GoldenPathRepoStatus struct {
 	// UpgradePlan holds the latest dry-run diff when pins are out of date (slice 2+).
 	// +optional
 	UpgradePlan *UpgradePlan `json:"upgradePlan,omitempty"`
+
+	// RemediationPR holds the latest remediation pull request (slice 3+).
+	// +optional
+	RemediationPR *RemediationPRStatus `json:"remediationPR,omitempty"`
 }
 
 // +kubebuilder:object:root=true

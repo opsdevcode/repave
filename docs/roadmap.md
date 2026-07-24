@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.16.0  
-**In progress:** v1.17 slice 3 (remediation PR)  
+**In progress:** v1.17 slice 4 (Blueprint pin watch)  
 **Planning horizon:** v1.17 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---

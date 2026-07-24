@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from repave_engine.provenance_inputs import inputs_from_provenance, load_provenance_document
-from repave_engine.upgrade_plan import diff_directories, plan_upgrade
+from repave_engine.upgrade_plan import apply_upgrade, diff_directories, plan_upgrade
 
 
 def test_inputs_from_provenance_terraform_minimal() -> None:
@@ -74,6 +74,33 @@ def test_cli_plan_upgrade_json(repo_root, tmp_path, capsys) -> None:
     assert code == 0
     assert output["changed_file_count"] >= 1
     assert "summary" in output
+
+
+def test_apply_upgrade_git_commit(repo_root: Path, tmp_path: Path) -> None:
+    import subprocess
+
+    target = tmp_path / "module"
+    target.mkdir()
+    fixture_yaml = (
+        repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    )
+    (target / "repave.yaml").write_text(fixture_yaml.read_text(encoding="utf-8"), encoding="utf-8")
+    subprocess.run(["git", "init"], cwd=target, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=target, check=True)
+    subprocess.run(["git", "add", "repave.yaml"], cwd=target, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=target, check=True, capture_output=True)
+
+    result = apply_upgrade(
+        target,
+        repo_root,
+        staging_root=tmp_path / "staging",
+        git_branch="repave/upgrade-test",
+        commit_message="apply upgrade",
+    )
+    assert result.git_branch == "repave/upgrade-test"
+    assert len(result.commit_sha) == 40
+    assert result.plan.changed_file_count > 0
 
 
 def test_load_provenance_document(tmp_path: Path) -> None:

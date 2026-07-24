@@ -14,6 +14,7 @@ import (
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/repave"
+	"github.com/opsdevcode/repave/operator/internal/remediation"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -46,6 +47,16 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				},
 			},
 			RepaveConfig: repave.Config{RepoRoot: "/tmp/repave", Command: "repave"},
+			ApplyUpgrader: &repave.StaticApplyUpgrader{
+				Result: repave.ApplyResult{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "0.8.0",
+					ChangedFileCount: 5,
+					GitBranch:        "repave/upgrade/terraform-module-generic-9.9.9",
+					CommitSHA:        "abc123",
+					Summary:          "planned upgrade",
+				},
+			},
 		}
 	})
 
@@ -54,6 +65,10 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		err := k8sClient.Get(ctx, typeNamespacedName, repo)
 		if err != nil {
 			return
+		}
+		if len(repo.Finalizers) > 0 {
+			repo.Finalizers = nil
+			Expect(k8sClient.Update(ctx, repo)).To(Succeed())
 		}
 		Expect(k8sClient.Delete(ctx, repo)).To(Succeed())
 	})
@@ -109,6 +124,36 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(repo.Status.UpgradePlan).NotTo(BeNil())
 		Expect(repo.Status.UpgradePlan.ChangedFileCount).To(Equal(5))
 		Expect(repo.Status.UpgradePlan.Added).To(ContainElements("README.md", "main.tf"))
+	})
+
+	It("opens dry-run remediation when enabled and pins drift", func() {
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				LocalPath: fixtureModulePath(),
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "9.9.9",
+					StandardSource:   "examples/standards",
+					StandardVersion:  "0.4.0",
+				},
+				Remediation: repavev1alpha1.RemediationSpec{
+					Enabled: true,
+					DryRun:  true,
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.RemediationPR).NotTo(BeNil())
+		Expect(repo.Status.RemediationPR.State).To(Equal(remediation.PRStatePlanned))
+		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionRemediationPR)).To(BeTrue())
 	})
 
 	It("rejects spec with neither repoURL nor localPath at admission", func() {

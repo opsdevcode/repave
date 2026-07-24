@@ -10,7 +10,7 @@ from typing import cast
 from repave_engine.blueprint import _find_repo_root, list_blueprints
 from repave_engine.pipeline import generate_from_path
 from repave_engine.settings import OutputConfig, load_output_config
-from repave_engine.upgrade_plan import plan_upgrade
+from repave_engine.upgrade_plan import apply_upgrade, plan_upgrade
 
 
 def _parse_inputs(raw_inputs: list[str]) -> dict[str, str]:
@@ -125,6 +125,33 @@ def cmd_plan_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_apply_upgrade(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    target_repo = Path(args.target_repo).resolve()
+    staging_root = Path(args.staging_root).resolve() if args.staging_root else None
+
+    if not args.git_branch:
+        raise SystemExit("--git-branch is required for apply-upgrade")
+
+    result = apply_upgrade(
+        target_repo,
+        repo_root,
+        blueprint_name=args.blueprint,
+        staging_root=staging_root,
+        git_branch=args.git_branch,
+        commit_message=args.commit_message,
+    )
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(result.summary)
+        print(f"Branch: {result.git_branch}")
+        print(f"Commit: {result.commit_sha}")
+
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -227,6 +254,40 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format (json is stable for operator integration)",
     )
     plan.set_defaults(func=cmd_plan_upgrade)
+
+    apply_up = sub.add_parser(
+        "apply-upgrade",
+        help="Re-render, apply files to a git checkout, and commit on a branch",
+        parents=[common],
+    )
+    apply_up.add_argument("--target-repo", required=True, help="Path to target git repository")
+    apply_up.add_argument(
+        "--blueprint",
+        default=None,
+        help="Override blueprint name (default: read from repave.yaml)",
+    )
+    apply_up.add_argument(
+        "--staging-root",
+        default=None,
+        help="Optional directory to retain rendered output for debugging",
+    )
+    apply_up.add_argument(
+        "--git-branch",
+        required=True,
+        help="Branch to create or reset for the upgrade commit",
+    )
+    apply_up.add_argument(
+        "--commit-message",
+        default="chore(repave): apply blueprint upgrade",
+        help="Git commit message for the applied upgrade",
+    )
+    apply_up.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (json is stable for operator integration)",
+    )
+    apply_up.set_defaults(func=cmd_apply_upgrade)
 
     serve = sub.add_parser("serve", help="Run local web UI/API", parents=[common])
     _add_output_options(serve)
