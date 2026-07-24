@@ -15,8 +15,7 @@ gh api --method POST repos/opsdevcode/repave/rulesets \
 If a ruleset named `main branch` already exists, update it instead:
 
 ```bash
-RULESET_ID="$(gh ruleset list --repo opsdevcode/repave --json id,name \
-  -q '.[] | select(.name=="main branch") | .id')"
+RULESET_ID="$(gh api repos/opsdevcode/repave/rulesets --jq '.[] | select(.name=="main branch") | .id')"
 gh api --method PUT "repos/opsdevcode/repave/rulesets/${RULESET_ID}" \
   --input .github/rulesets/main-branch.json
 ```

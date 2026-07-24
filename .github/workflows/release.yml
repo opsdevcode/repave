@@ -28,12 +28,13 @@ jobs:
           token: ${{ secrets.REPAVE_RELEASE_TOKEN }}
 
       - name: Sync main branch ruleset (release bypass for administrators)
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          RULESET_ID="$(gh ruleset list --repo "${GITHUB_REPOSITORY}" --json id,name \
-            -q '.[] | select(.name=="main branch") | .id')"
+          RULESET_ID="$(gh api "repos/${GITHUB_REPOSITORY}/rulesets" \
+            --jq '.[] | select(.name=="main branch") | .id')"
           gh api --method PUT "repos/${GITHUB_REPOSITORY}/rulesets/${RULESET_ID}" \
             --input .github/rulesets/main-branch.json
 
