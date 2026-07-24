@@ -49,21 +49,43 @@ make test
 
 ### Python quality and security tooling
 
-CI runs these OSS tools on pushes and pull requests that touch code, schemas,
-blueprints, or workflow config — not on **docs-only** changes.
-
-Workflows use `paths-ignore` for:
+CI runs these OSS tools on every push and pull request. **Docs-only** changes still
+trigger workflows (so required status checks complete) but jobs skip heavy work when
+the diff touches only:
 
 - `docs/**`
-- `**/*.md` (any Markdown-only edit, including README and standards docs)
+- `**/*.md`
 - `LICENSE`
 - `.github/pull_request_template.md`
 
-A pull request that changes only those paths does not run tests, Python
-quality/security, conventional-commit checks, or the release workflow on merge.
-Mixed PRs (for example `docs/` plus `engine/`) still run the full gate. Keep
-`paths-ignore` lists in sync across `.github/workflows/ci.yml`,
-`python-quality-security.yml`, `conventional-commits.yml`, and `release.yml`.
+Detection lives in `.github/actions/ci-paths/` (same path list). Mixed PRs (for
+example `docs/` plus `engine/`) run the full gate.
+
+The `release` workflow keeps workflow-level `paths-ignore` for docs-only merges to
+`main` (no release job for markdown-only commits).
+
+### Branch ruleset (`main`)
+
+Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)
+requires on `main`:
+
+- One approving pull request review
+- Status checks: `test`, `Code quality (Ruff + mypy)`, `Security (Bandit + pip-audit)`,
+  `commitlint`, `semantic-pull-request`
+- No force-push (`non_fast_forward`)
+
+Re-apply or update the ruleset after editing the JSON:
+
+```bash
+gh api --method POST repos/opsdevcode/repave/rulesets \
+  --input .github/rulesets/main-branch.json
+```
+
+To update an existing ruleset, `PUT repos/opsdevcode/repave/rulesets/{id}` with the
+same payload plus changes. List IDs with `gh ruleset list --repo opsdevcode/repave`.
+
+Classic branch protection may still restrict who can push directly to `main`; the
+ruleset adds required checks and PR rules on top.
 
 Tools on full CI runs:
 

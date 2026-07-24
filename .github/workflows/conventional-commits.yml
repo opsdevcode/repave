@@ -1,13 +1,7 @@
 name: Conventional Commits
 
-# Docs-only PRs skip commit/PR title checks (see CONTRIBUTING.md).
 on:
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE"
-      - ".github/pull_request_template.md"
     types:
       - opened
       - edited
@@ -22,7 +16,17 @@ jobs:
   semantic-pull-request:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/ci-paths
+        id: paths
+
+      - name: Docs-only change (skip PR title lint)
+        if: steps.paths.outputs.ci_needed != 'true'
+        run: echo "No code changes outside docs-only paths; skipping semantic PR check."
+
       - uses: amannn/action-semantic-pull-request@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -50,6 +54,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: ./.github/actions/ci-paths
+        id: paths
+
+      - name: Docs-only change (skip commitlint)
+        if: steps.paths.outputs.ci_needed != 'true'
+        run: echo "No code changes outside docs-only paths; skipping commitlint."
+
       - uses: wagoid/commitlint-github-action@v6
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           configFile: .github/commitlint.config.mjs

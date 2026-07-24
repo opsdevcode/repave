@@ -1,20 +1,9 @@
 name: CI
 
-# Docs-only changes skip this workflow (see CONTRIBUTING.md).
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE"
-      - ".github/pull_request_template.md"
   pull_request:
-    paths-ignore:
-      - "docs/**"
-      - "**/*.md"
-      - "LICENSE"
-      - ".github/pull_request_template.md"
 
 jobs:
   test:
@@ -25,19 +14,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/ci-paths
+        id: paths
+
+      - name: Docs-only change (skip tests)
+        if: steps.paths.outputs.ci_needed != 'true'
+        run: echo "No code changes outside docs-only paths; skipping test suite."
+
       - uses: astral-sh/setup-uv@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           enable-cache: true
 
       - uses: actions/setup-python@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           python-version: "3.12"
 
       - name: Install engine
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv sync --extra dev --frozen
 
       - name: Install Ansible lint tooling
+        if: steps.paths.outputs.ci_needed == 'true'
         run: pip install ansible-lint yamllint
 
       - name: Run tests
+        if: steps.paths.outputs.ci_needed == 'true'
         run: uv run pytest
