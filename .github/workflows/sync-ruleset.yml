@@ -21,8 +21,8 @@ jobs:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
         run: |
           set -euo pipefail
-          RULESET_ID="$(gh ruleset list --repo "${GITHUB_REPOSITORY}" --json id,name \
-            -q '.[] | select(.name=="main branch") | .id')"
+          RULESET_ID="$(gh api "repos/${GITHUB_REPOSITORY}/rulesets" \
+            --jq '.[] | select(.name=="main branch") | .id')"
           if [ -z "${RULESET_ID}" ]; then
             echo "No ruleset named 'main branch'; create it manually first." >&2
             exit 1
