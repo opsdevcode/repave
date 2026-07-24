@@ -70,13 +70,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
           RELEASE_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
-          # Custom release script (admin-merge PR + gh release create); disable PSR GHA outputs (commit_sha).
-          GITHUB_ACTIONS: "false"
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          # CRITICAL: PSR 10.3+ requires commit_sha when GITHUB_OUTPUT is set.
+          # Our --no-push/--no-tag + gh release create flow never sets it.
+          # GITHUB_ACTIONS=false is NOT enough — always unset GITHUB_OUTPUT here.
+          # Do not call `uv run semantic-release` outside this helper.
+          psr() {
+            env -u GITHUB_OUTPUT uv run semantic-release "$@"
+          }
 
           publish_github_release() {
             local tag="$1"
@@ -104,7 +110,7 @@ jobs:
 
           sync_changelog_if_needed() {
             cd engine
-            uv run semantic-release changelog
+            psr changelog
             cd "${GITHUB_WORKSPACE}"
             if git diff --quiet -- engine/CHANGELOG.md; then
               return 0
@@ -135,7 +141,7 @@ jobs:
 
           BEFORE="$(git rev-parse HEAD)"
           cd engine
-          uv run semantic-release version --no-push --no-tag
+          psr version --no-push --no-tag
           cd "${GITHUB_WORKSPACE}"
           AFTER="$(git rev-parse HEAD)"
           if [ "${BEFORE}" = "${AFTER}" ]; then

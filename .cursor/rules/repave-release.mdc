@@ -1,12 +1,21 @@
 ---
-description: repave (opsdevcode/repave) Release workflow and python-semantic-release on protected main
+description: >-
+  CRITICAL: repave Release workflow + python-semantic-release on protected main.
+  Apply when editing release.yml, semantic_release config, or debugging Release CI.
 globs:
-  - "**/repave/**"
-  - "**/opsdevcode/repave/**"
+  - ".github/workflows/release.yml"
+  - "engine/pyproject.toml"
+  - "engine/CHANGELOG.md"
+  - "CONTRIBUTING.md"
+  - ".cursor/skills/repave-release/**"
+  - ".cursor/rules/repave-release.mdc"
 alwaysApply: false
 ---
 
-# repave Release CI
+# repave Release CI (automated versioning — do not break)
+
+Automated semver on `main` is a hard requirement. A failed Release job after a
+`feat:`/`fix:` merge means versioning is broken — fix immediately.
 
 Apply when editing `.github/workflows/release.yml`, `engine/pyproject.toml`
 `[tool.semantic_release]`, or debugging Release workflow failures on `main`.
@@ -20,6 +29,23 @@ Apply when editing `.github/workflows/release.yml`, `engine/pyproject.toml`
    `persist-credentials: false`; `git remote set-url` with token for push.
 4. **`permissions`**: `contents: write`, `pull-requests: write`.
 
+## CRITICAL: PSR + GitHub Actions outputs
+
+python-semantic-release (10.3+) writes step outputs whenever **`GITHUB_OUTPUT`**
+is set. With `--no-push --no-tag` it never populates `commit_sha` and exits with:
+
+`some required outputs were not set: commit_sha`
+
+**Required:** every `semantic-release` CLI invocation in Release CI must run via
+the workflow `psr()` helper (`env -u GITHUB_OUTPUT uv run semantic-release …`).
+
+| Myth (insufficient) | Reality |
+|---------------------|---------|
+| `GITHUB_ACTIONS=false` | Does **not** disable GHA output writing in PSR 10.x |
+| `upload_to_vcs_release = false` alone | Skips VCS upload only; does **not** skip GHA outputs |
+
+Never remove `psr()` / `env -u GITHUB_OUTPUT` when “simplifying” the workflow.
+
 ## python-semantic-release (runs from `engine/`)
 
 | Setting | Value | Why |
@@ -30,20 +56,25 @@ Apply when editing `.github/workflows/release.yml`, `engine/pyproject.toml`
 | `build_command` | `uv build` | Cwd is `engine/` |
 | `assets` | `["CHANGELOG.md"]` | Under `engine/` |
 | `upload_to_vcs_release` | `false` | Workflow uses `gh release create`, not PSR publish |
-| Step env | `GITHUB_ACTIONS=false` | Avoid required GHA output `commit_sha` when not pushing via PSR |
+| PSR invocations | `psr()` → `env -u GITHUB_OUTPUT` | Avoid required GHA output `commit_sha` |
 
 ## Common failure modes (fixed in repo history)
 
 - **GH013** direct push to `main` → admin-merge release PR pattern (#52+).
 - **`engine/engine/pyproject.toml`** → fix version paths (#56).
-- **`commit_sha` not set** → `upload_to_vcs_release = false` + `GITHUB_ACTIONS=false` (#57+).
+- **`commit_sha` not set** → unset `GITHUB_OUTPUT` for PSR (#59+); #58’s
+  `GITHUB_ACTIONS=false` was **not** enough.
 - **Tag without GitHub Release** → `publish_github_release` after merge (#54).
 - **Operator tests in Release** → `working-directory: operator` for `make test` (#50).
 - **Changelog stale** → `sync_changelog_if_needed` + `make changelog` on `main`.
 
 ## Do not
 
-- Re-enable `semantic-release publish --tag` as the only publish path without a GitHub Release.
-- Hand-bump `engine/pyproject.toml` version in feature PRs (use `feat:` / `fix:` on `main`).
+- Call `uv run semantic-release` in Release CI **without** unsetting `GITHUB_OUTPUT`.
+- Rely on `GITHUB_ACTIONS=false` to silence PSR output requirements.
+- Re-enable `semantic-release publish --tag` as the only publish path without a
+  GitHub Release.
+- Hand-bump `engine/pyproject.toml` version in feature PRs (use `feat:` / `fix:`
+  on `main`).
 
 See `CONTRIBUTING.md` maintainer setup and `.github/workflows/release.yml`.
