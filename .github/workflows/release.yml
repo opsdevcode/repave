@@ -70,6 +70,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
           RELEASE_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+          # Custom release script (admin-merge PR + gh release create); disable PSR GHA outputs (commit_sha).
+          GITHUB_ACTIONS: "false"
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"

@@ -165,7 +165,11 @@ after merge and creates the GitHub Release (with wheel artifacts) via
 `gh release create`; it also repairs a tagged version that has no GitHub
 Release yet.
 
-Set or rotate it:
+The release job sets `GITHUB_ACTIONS=false` when invoking semantic-release so
+the custom admin-merge + `gh release create` flow is not required to populate
+PSR’s GitHub Actions outputs (for example `commit_sha`).
+
+Set or rotate **`REPAVE_RELEASE_TOKEN`**:
 
 ```bash
 gh secret set REPAVE_RELEASE_TOKEN --repo opsdevcode/repave
