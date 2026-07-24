@@ -4,9 +4,13 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.17.0  
-**In progress:** v1.17 GA / operator e2e (optional)  
-**Planning horizon:** v1.17 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.18.0  
+**In progress:** v1.17 GA (`make operator-e2e` / kind) → v1.18 portal UX  
+**Planning horizon:** v1.18 → v2.0.0 (platform maturity — governed estate at scale)
+
+Package tags follow conventional commits on `main` and may advance ahead of a
+roadmap *theme* (for example v1.18.0 shipped with operator + release-CI work
+before portal UX under [§ v1.18](#v118--portal-and-ux-hardening) lands).
 
 ---
 
@@ -22,7 +26,7 @@ work, writing ADRs, and opening issues.
 - Portal **visual and layout** planning: [`portal-design.md`](portal-design.md)
   (implements primarily under v1.18).
 - Operator **local development and testing**: [`operator-local-dev.md`](operator-local-dev.md)
-  (required for every v1.17 slice).
+  (required for v1.17 GA / e2e and any operator change).
 - Operator **CRD and controller standards**: [`operator-standards.md`](operator-standards.md)
   (required for every change under `operator/`).
 
@@ -35,9 +39,9 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.16  today       Ansible standards corpus + production-profile ansible-lint pack
+v1.18.0  today     engine tag on GitHub; operator alpha (slices 0–4) live; portal UX next
   │
-  ├─ v1.17–v1.20    multi-artifact    operator alpha; collection + playbook golden paths
+  ├─ v1.17 GA       kind e2e harness (`make operator-e2e`) — polish before calling operator GA
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
@@ -173,7 +177,7 @@ v1.16  today       Ansible standards corpus + production-profile ansible-lint pa
   `docs-drift`, `provenance-drift` (skip-if-not-installed where tools absent)
 - Output naming: `ansible-role-{role_name}`; provider scope skipped (no catalog)
 
-### v1.16 — Ansible standards + ansible-lint policy pack (current)
+### v1.16 — Ansible standards + ansible-lint policy pack
 
 - Multi-file standards under `examples/standards/ansible/` (role, collection,
   playbook-project, security appendix) pinned at v1.0.0
@@ -184,53 +188,56 @@ v1.16  today       Ansible standards corpus + production-profile ansible-lint pa
 - `secrets` gate extended to `ansible-role` artifact type
 - Fixture-tested pack (`examples/ansible-lint/tests/fixtures/`)
 
----
+### v1.17 — Reconciliation operator (alpha)
 
-## Planned
-
-### v1.17 — Reconciliation operator
-
-**Problem:** Generated repos drift from pinned blueprint/standard versions; manual
-upgrades across the estate do not scale.
-
-**Approach:**
-
-- Operator SDK reconciler watching `GoldenPathRepo` / `Blueprint` CRDs
-- Detect template drift, standard-version bumps, and gate policy pack changes
-- Open governed remediation PRs (never direct push to module repos)
-- **Local testing first-class:** unit + envtest on every PR; documented kind dev
-  loop; mock GitHub for CI; optional e2e before GA (see below)
-
-**Delivery slices** (each merges with tests + docs):
+Operator SDK reconciler for estate drift and governed upgrades. Slices 0–4 are
+on `main` (engine **v1.17.0** / tag path through **v1.18.0**):
 
 | Slice | Outcome | Local verification |
 | --- | --- | --- |
 | 0 | Scaffold, CRDs, no-op reconciler | `make operator-test` in CI |
 | 1 | Inventory / drift in `GoldenPathRepo` status | envtest + `operator/testdata/` |
 | 2 | Upgrade diff via `repave` CLI contract | Local git fixtures, no GitHub |
-| 3 | Remediation PR | `GitHubClient` mock; manual token optional |
-| 4 | React to Blueprint / pin config changes | envtest |
+| 3 | Remediation PR | `GitHubClient` mock; dry-run without token |
+| 4 | React to Blueprint / pin config changes | envtest (`spec.blueprintRef`) |
 
-**Local verification (required):**
+Also shipped with this line: Release CI hardening (`upload_to_vcs_release = false`,
+`psr()` / unset `GITHUB_OUTPUT`) so automated versioning stays reliable on
+protected `main`.
 
-- [`docs/operator-local-dev.md`](operator-local-dev.md) — principles, layout,
-  fixture workflow, CI jobs
-- `make operator-test` — Go unit tests + controller-runtime **envtest** (no kind)
-- `make operator-run` — developer controller against kind or kubeconfig
-- `make operator-e2e` — kind + fixtures (optional in CI until v1.17 GA)
-- No mandatory `GITHUB_TOKEN` for default contributor or CI paths
+**Not yet GA:** `make operator-e2e` (kind harness) is still a stub; `spec.repoURL`
+git inventory is not implemented (`localPath` only). See
+[§ Next — v1.17 GA](#next--v117-ga-operator-e2e).
 
-**Dependencies:** Stable blueprint + schema contracts; module repos already
-external (v1.1+); generation produces valid `repave.yaml` (v1.14+).
-Implementation follows [`operator-standards.md`](operator-standards.md)
-(Kubernetes API conventions, conditions, kubebuilder layout).
+Docs: [`operator-local-dev.md`](operator-local-dev.md),
+[`operator-standards.md`](operator-standards.md),
+[`operator/README.md`](../operator/README.md).
 
-**Done when:** A CRD instance for a generated repo triggers an upgrade PR when
-blueprint or standard version is bumped in repave, and acceptance criteria in
+### v1.18.0 — Engine package release
+
+- Conventional-commit release of the monorepo engine package after v1.17 operator
+  work and Release workflow fixes
+- GitHub Release + wheel artifacts; changelog via python-semantic-release
+
+---
+
+## Planned
+
+### Next — v1.17 GA (operator e2e)
+
+**Problem:** Operator alpha is usable via envtest and `make operator-run`, but
+kind-based e2e acceptance from
 [`operator-local-dev.md`](operator-local-dev.md#acceptance-criteria-local-testing-first-class)
-are met.
+is not implemented (`make operator-e2e` still stubs).
 
-See also [`operator/README.md`](../operator/README.md).
+**Approach:**
+
+- Implement kind + fixtures + mock GitHub harness under `operator/`
+- Wire `make operator-e2e` (and optional nightly/pre-release CI)
+- Prove: stale pin → `OutOfDate` → upgrade plan → dry-run remediation path
+
+**Done when:** Acceptance criteria in `operator-local-dev.md` pass on a laptop
+with kind; e2e is runnable without a production `GITHUB_TOKEN`.
 
 ---
 

@@ -184,6 +184,7 @@ Add verbs only when controller needs them.
 ## Related docs
 
 - [Operator local development](operator-local-dev.md)
-- [Roadmap v1.17](roadmap.md#v117--reconciliation-operator)
+- [Roadmap v1.17 (shipped alpha)](roadmap.md#v117--reconciliation-operator-alpha)
+- [Roadmap v1.17 GA / e2e](roadmap.md#next--v117-ga-operator-e2e)
 - [`operator/README.md`](../operator/README.md)
 - [`operator/CONTRIBUTING.md`](../operator/CONTRIBUTING.md)

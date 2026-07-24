@@ -58,6 +58,6 @@ An Operator SDK reconciler will detect drift and standard-version bumps across
 the generated estate and open remediation PRs automatically. Development follows
 [`docs/operator-standards.md`](operator-standards.md) and
 [`docs/operator-local-dev.md`](operator-local-dev.md). See also
-[`docs/roadmap.md`](roadmap.md#v117--reconciliation-operator) and
+[`docs/roadmap.md`](roadmap.md#v117--reconciliation-operator-alpha) and
 [`operator/README.md`](../operator/README.md).
 

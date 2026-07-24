@@ -19,7 +19,8 @@ inventory lands.
 [`docs/operator-standards.md`](../docs/operator-standards.md) and
 [`operator/CONTRIBUTING.md`](CONTRIBUTING.md).
 
-Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator).
+Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator-alpha)
+(shipped alpha); [v1.17 GA / e2e](../docs/roadmap.md#next--v117-ga-operator-e2e).
 
 ---
 

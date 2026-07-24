@@ -13,11 +13,12 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> **Status (engine v1.17 on GitHub; v1.18 release pending on `main`).** Generation
-> runs locally or via Docker Compose — no Kubernetes required for the engine.
-> The **reconciliation operator** (alpha) reconciles `GoldenPathRepo` and
-> `Blueprint` CRDs: inventory/drift, upgrade plans, optional remediation PRs, and
-> catalog pin watch. See [`operator/`](operator/) and
+> **Status (engine [v1.18.0](https://github.com/opsdevcode/repave/releases/tag/v1.18.0)
+> on GitHub).** Generation runs locally or via Docker Compose — no Kubernetes
+> required for the engine. The **reconciliation operator** (alpha; v1.17 slices
+> 0–4) reconciles `GoldenPathRepo` and `Blueprint` CRDs: inventory/drift, upgrade
+> plans, optional remediation PRs, and catalog pin watch. Next: kind e2e GA polish,
+> then portal UX. See [`operator/`](operator/) and
 > [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
 
 ## What you can do today
@@ -173,7 +174,8 @@ docs/          # concepts, roadmap, portal design, operator local dev
 
 ## Roadmap
 
-**Current focus:** v1.17 operator GA polish and v1.18 portal UX ([`docs/roadmap.md`](docs/roadmap.md)).
+**Current focus:** v1.17 operator GA (`make operator-e2e`) → v1.18 portal UX
+([`docs/roadmap.md`](docs/roadmap.md)).
 
 High-level release history and planning through **v2.0.0** live in
 [`docs/roadmap.md`](docs/roadmap.md).
