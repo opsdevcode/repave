@@ -24,4 +24,4 @@ min_ansible_version:
 target_platforms:
   type: str
   help: Comma-separated target platforms as Name:version
-  default: "Ubuntu:22.04"
+  default: "Ubuntu:jammy"

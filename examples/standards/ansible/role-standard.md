@@ -47,7 +47,8 @@ Required `galaxy_info` fields:
 - `standalone: true`
 - `role_name`, `namespace`, `author`, `description`, `license`
 - `min_ansible_version` (match blueprint input)
-- `platforms` (from blueprint `target_platforms`)
+- `platforms` (from blueprint `target_platforms`; use Galaxy version codenames
+  such as `jammy` or `9` for EL — not Ubuntu release numbers like `22.04`)
 - `galaxy_tags` (lowercase alphanumeric, max 20 tags)
 
 Do not use placeholder values (`your name`, `your description`). Pin
