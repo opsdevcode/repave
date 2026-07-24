@@ -1,4 +1,4 @@
-.PHONY: install lock test lint format typecheck security quality serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e
+.PHONY: install lock test lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -10,6 +10,9 @@ install:
 
 lock:
 	cd engine && uv lock
+
+changelog:
+	cd engine && uv run semantic-release changelog
 
 test:
 	cd engine && uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75

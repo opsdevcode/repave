@@ -15,6 +15,13 @@ const (
 	GoldenPathRepoPhaseError     GoldenPathRepoPhase = "Error"
 )
 
+// BlueprintRef selects a Blueprint CR whose spec pins override version fields.
+type BlueprintRef struct {
+	// Name is the Blueprint metadata.name in the same namespace as the GoldenPathRepo.
+	// +kubebuilder:validation:MinLength=1
+	Name string `json:"name"`
+}
+
 // DesiredPins are blueprint and standard versions the repo should match.
 type DesiredPins struct {
 	// BlueprintName is the golden path name (for example terraform-module-generic).
@@ -138,8 +145,13 @@ type GoldenPathRepoSpec struct {
 	LocalPath string `json:"localPath,omitempty"`
 
 	// DesiredPins are the target blueprint and standard versions for this repo.
+	// When blueprintRef is set, blueprintVersion and standard* are taken from the Blueprint CR.
 	// +required
 	DesiredPins DesiredPins `json:"desiredPins"`
+
+	// BlueprintRef watches catalog pin changes via a Blueprint CR (v1.17 slice 4).
+	// +optional
+	BlueprintRef *BlueprintRef `json:"blueprintRef,omitempty"`
 
 	// Remediation configures governed pull requests for pin drift.
 	// +optional

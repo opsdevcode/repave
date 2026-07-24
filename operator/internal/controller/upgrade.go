@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -20,6 +21,7 @@ func applyUpgradePlanStatus(
 	repo *repavev1alpha1.GoldenPathRepo,
 	upgrader repave.PlanUpgrader,
 	repaveCfg repave.Config,
+	desired drift.PinSet,
 ) error {
 	if repo.Status.Phase != repavev1alpha1.GoldenPathRepoPhaseOutOfDate {
 		return clearUpgradePlanStatus(ctx, c, repo)
@@ -44,7 +46,7 @@ func applyUpgradePlanStatus(
 		ctx,
 		repaveCfg,
 		repo.Spec.LocalPath,
-		repo.Spec.DesiredPins.BlueprintName,
+		desired.BlueprintName,
 	)
 	if err != nil {
 		msg := err.Error()

@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
 	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
@@ -46,6 +47,7 @@ func applyRemediationPRStatus(
 	gh github.Client,
 	repaveCfg repave.Config,
 	githubToken string,
+	desired drift.PinSet,
 ) error {
 	if !repo.Spec.Remediation.Enabled {
 		return clearRemediationPRStatus(ctx, c, repo, status.ReasonRemediationDisabled, "remediation disabled")
@@ -78,7 +80,7 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	desiredVersion := repo.Spec.DesiredPins.BlueprintVersion
+	desiredVersion := desired.BlueprintVersion
 	if repo.Status.RemediationPR != nil &&
 		repo.Status.RemediationPR.DesiredBlueprintVersion == desiredVersion &&
 		(repo.Status.RemediationPR.State == remediation.PRStateOpen ||
@@ -92,19 +94,19 @@ func applyRemediationPRStatus(
 
 	branch := remediation.UpgradeBranchName(
 		repo.Spec.Remediation.BranchPrefix,
-		repo.Spec.DesiredPins.BlueprintName,
+		desired.BlueprintName,
 		desiredVersion,
 	)
-	title := remediation.PullRequestTitle(repo.Spec.DesiredPins.BlueprintName, desiredVersion)
+	title := remediation.PullRequestTitle(desired.BlueprintName, desiredVersion)
 	summary := ""
 	if repo.Status.UpgradePlan != nil {
 		summary = repo.Status.UpgradePlan.Summary
 	}
 	body := remediation.PullRequestBody(
 		summary,
-		repo.Spec.DesiredPins.BlueprintName,
+		desired.BlueprintName,
 		desiredVersion,
-		repo.Spec.DesiredPins.StandardVersion,
+		desired.StandardVersion,
 	)
 	commitMessage := title
 
@@ -112,7 +114,7 @@ func applyRemediationPRStatus(
 		ctx,
 		repaveCfg,
 		repo.Spec.LocalPath,
-		repo.Spec.DesiredPins.BlueprintName,
+		desired.BlueprintName,
 		branch,
 		commitMessage,
 	)

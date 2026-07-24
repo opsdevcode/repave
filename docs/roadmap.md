@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.16.0  
-**In progress:** v1.17 slice 4 (Blueprint pin watch)  
+**Current release:** v1.17.0  
+**In progress:** v1.17 GA / operator e2e (optional)  
 **Planning horizon:** v1.17 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---

@@ -7,6 +7,14 @@ rules:
 - apiGroups:
   - repave.dev
   resources:
+  - blueprints
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - repave.dev
+  resources:
   - goldenpathrepos
   verbs:
   - get

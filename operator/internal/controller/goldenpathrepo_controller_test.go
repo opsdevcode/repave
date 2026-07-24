@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
@@ -154,6 +155,57 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(repo.Status.RemediationPR).NotTo(BeNil())
 		Expect(repo.Status.RemediationPR.State).To(Equal(remediation.PRStatePlanned))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionRemediationPR)).To(BeTrue())
+	})
+
+	It("sets OutOfDate when Blueprint catalog pins bump via blueprintRef", func() {
+		bpName := "terraform-module-generic"
+		bp := &repavev1alpha1.Blueprint{
+			ObjectMeta: metav1.ObjectMeta{Name: bpName, Namespace: "default"},
+			Spec: repavev1alpha1.BlueprintSpec{
+				Version: "0.1.0",
+				Standard: repavev1alpha1.BlueprintStandardPins{
+					Source:  "examples/standards",
+					Version: "0.4.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, bp)).To(Succeed())
+		defer func() {
+			_ = k8sClient.Delete(ctx, bp)
+		}()
+
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				LocalPath: fixtureModulePath(),
+				BlueprintRef: &repavev1alpha1.BlueprintRef{Name: bpName},
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    bpName,
+					BlueprintVersion: "unused",
+					StandardSource:   "unused",
+					StandardVersion:  "unused",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseReady))
+
+		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(bp), bp)).To(Succeed())
+		bp.Spec.Version = "9.9.9"
+		Expect(k8sClient.Update(ctx, bp)).To(Succeed())
+
+		requests := reconciler.enqueueGoldenPathReposForBlueprint(ctx, bp)
+		Expect(requests).To(ContainElement(reconcile.Request{NamespacedName: typeNamespacedName}))
+
+		_, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
 	})
 
 	It("rejects spec with neither repoURL nor localPath at admission", func() {

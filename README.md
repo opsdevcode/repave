@@ -13,13 +13,14 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.16.** The generation loop runs locally with no Kubernetes
-> required. Generated modules and Ansible roles publish to separate git
+> Status: **v1.17.** The generation loop runs locally with no Kubernetes
+> required for engine workflows. The reconciliation operator (alpha) watches
+> `GoldenPathRepo` / `Blueprint` CRDs locally via envtest or kind. Generated modules
 > repositories and can be pushed to GitHub with `GITHUB_TOKEN`. Terraform modules
 > use Checkov policies (pack v1.2.0) and secrets scanning. Ansible roles use the
 > production-profile ansible-lint pack (v1.0.0), standards corpus at
-> `examples/standards/ansible/`, and `repave.yaml` provenance. The reconciliation
-> operator is planned next ([`operator/`](operator/), [`docs/operator-local-dev.md`](docs/operator-local-dev.md)).
+> `examples/standards/ansible/`, and `repave.yaml` provenance. See
+> [`operator/`](operator/) and [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
 
 ## Why repave
 
@@ -122,7 +123,7 @@ docs/          # concepts, roadmap, [portal design](docs/portal-design.md), [ope
 
 ## Roadmap
 
-**Current:** v1.16 — Ansible standards corpus and production-profile ansible-lint
+**Current:** v1.17 — reconciliation operator (Blueprint pin watch, upgrade plan, remediation PR).
 pack on `ansible-role-generic`; Terraform module path with Checkov + secrets gates.
 
 High-level release history and detailed future planning (through **v2.0.0**) live in

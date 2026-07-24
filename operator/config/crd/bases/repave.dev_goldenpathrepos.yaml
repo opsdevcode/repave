@@ -56,9 +56,22 @@ spec:
             description: GoldenPathRepoSpec defines a generated golden-path repository
               to reconcile.
             properties:
+              blueprintRef:
+                description: BlueprintRef watches catalog pin changes via a Blueprint
+                  CR (v1.17 slice 4).
+                properties:
+                  name:
+                    description: Name is the Blueprint metadata.name in the same namespace
+                      as the GoldenPathRepo.
+                    minLength: 1
+                    type: string
+                required:
+                - name
+                type: object
               desiredPins:
-                description: DesiredPins are the target blueprint and standard versions
-                  for this repo.
+                description: |-
+                  DesiredPins are the target blueprint and standard versions for this repo.
+                  When blueprintRef is set, blueprintVersion and standard* are taken from the Blueprint CR.
                 properties:
                   blueprintName:
                     description: BlueprintName is the golden path name (for example
