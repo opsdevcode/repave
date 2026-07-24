@@ -44,6 +44,14 @@ Ansible golden paths pin a multi-file standard under `examples/standards/ansible
 ansible-lint pack at `examples/ansible-lint/pack/` is copied into generated roles
 at render time (parallel to Checkov policies for Terraform modules).
 
+## Portal
+
+The bundled web UI maps blueprint inputs to generation and shows gate results.
+Visual layout, components, and v1.18 acceptance criteria are documented in
+[`docs/portal-design.md`](portal-design.md). Functional UX items (catalog grouping,
+scope search, gate excerpts) ship in the same release as the shared CSS shell and
+cards described there.
+
 ## Self-healing (planned)
 
 An Operator SDK reconciler will detect drift and standard-version bumps across
