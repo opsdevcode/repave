@@ -1,0 +1,8 @@
+---
+argument_specs:
+  main:
+    short_description: Compliant fixture role
+    options:
+      role_enabled:
+        type: bool
+        default: true

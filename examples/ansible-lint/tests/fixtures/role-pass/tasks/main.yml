@@ -1,0 +1,3 @@
+---
+- name: Import example role implementation tasks
+  ansible.builtin.import_tasks: run.yml

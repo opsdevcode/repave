@@ -1,0 +1,10 @@
+---
+- name: Validate {{ role_name }} role is enabled
+  ansible.builtin.assert:
+    that:
+      - role_enabled | default(true)
+    quiet: true
+
+- name: Placeholder task for {{ role_name }}
+  ansible.builtin.debug:
+    msg: "Implement {{ role_name }} role tasks in tasks/run.yml."

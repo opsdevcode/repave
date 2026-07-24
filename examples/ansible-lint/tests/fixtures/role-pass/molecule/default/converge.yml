@@ -4,5 +4,5 @@
   connection: local
   gather_facts: false
   tasks:
-    - name: Run {{ role_name }} role tasks
+    - name: Run example role tasks
       ansible.builtin.import_tasks: ../../tasks/main.yml

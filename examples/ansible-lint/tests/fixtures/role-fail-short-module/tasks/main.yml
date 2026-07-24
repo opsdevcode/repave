@@ -1,0 +1,4 @@
+---
+- name: Non-FQCN debug task
+  debug:
+    msg: "should fail fqcn rule"

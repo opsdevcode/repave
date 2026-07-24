@@ -58,7 +58,7 @@ register_gate(
     GateSpec(
         name="secrets",
         runner=run_secrets,
-        artifact_types=frozenset({"terraform-module"}),
+        artifact_types=frozenset({"terraform-module", "ansible-role"}),
     )
 )
 register_gate(

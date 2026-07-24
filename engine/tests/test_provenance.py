@@ -45,6 +45,7 @@ def test_build_provenance_document_includes_ansible_role(
     assert document["spec"]["ansibleRole"]["role_name"] == "webserver"
     assert document["spec"]["ansibleRole"]["namespace"] == "acme"
     assert document["spec"]["ansibleRole"]["min_ansible_version"] == "2.15"
+    assert document["spec"]["ansibleLint"]["pack_version"] == "1.0.0"
     assert "terraformModule" not in document["spec"]
     assert "checkov" not in document["spec"]
 

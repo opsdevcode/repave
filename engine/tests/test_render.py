@@ -193,7 +193,9 @@ def test_render_ansible_role_writes_role_layout(
     render_blueprint(ansible_blueprint, values, output_dir)
 
     assert (output_dir / "meta" / "main.yml").exists()
+    assert (output_dir / "meta" / "argument_specs.yml").exists()
     assert (output_dir / "tasks" / "main.yml").exists()
+    assert (output_dir / "tasks" / "run.yml").exists()
     assert (output_dir / "defaults" / "main.yml").exists()
     assert (output_dir / "handlers" / "main.yml").exists()
     assert (output_dir / "molecule" / "default" / "molecule.yml").exists()
@@ -201,8 +203,10 @@ def test_render_ansible_role_writes_role_layout(
     assert (output_dir / "README.md").exists()
     assert (output_dir / "repave.yaml").exists()
     assert (output_dir / ".yamllint").exists()
+    assert (output_dir / ".ansible-lint").exists()
 
     meta = (output_dir / "meta" / "main.yml").read_text(encoding="utf-8")
+    assert "standalone: true" in meta
     assert "role_name: webserver" in meta
     assert "namespace: acme" in meta
     assert "Ubuntu" in meta

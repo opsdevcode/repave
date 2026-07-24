@@ -1,0 +1,10 @@
+---
+- name: Validate example role is enabled
+  ansible.builtin.assert:
+    that:
+      - role_enabled | default(true)
+    quiet: true
+
+- name: Placeholder task
+  ansible.builtin.debug:
+    msg: "fixture role"

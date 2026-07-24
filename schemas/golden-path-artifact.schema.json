@@ -96,6 +96,15 @@
             "policies_source": { "type": "string" },
             "policy_version": { "type": "string" }
           }
+        },
+        "ansibleLint": {
+          "type": "object",
+          "required": ["pack_source", "pack_version"],
+          "additionalProperties": false,
+          "properties": {
+            "pack_source": { "type": "string" },
+            "pack_version": { "type": "string" }
+          }
         }
       },
       "allOf": [

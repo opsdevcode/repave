@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.15.0  
-**Planning horizon:** v1.16 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.16.0  
+**Planning horizon:** v1.17 → v2.0.0 (platform maturity — governed estate at scale)
 
 ---
 
@@ -28,9 +28,9 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.15  today       Ansible role golden path; yamllint/ansible-lint/syntax/molecule gates
+v1.16  today       Ansible standards corpus + production-profile ansible-lint pack
   │
-  ├─ v1.16–v1.17    multi-artifact    Ansible role standard + policy pack; operator alpha
+  ├─ v1.17–v1.20    multi-artifact    operator alpha; collection + playbook golden paths
   ├─ v1.18–v1.20    operate + extend  portal UX; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
@@ -155,42 +155,31 @@ v1.15  today       Ansible role golden path; yamllint/ansible-lint/syntax/molecu
   `spec.output.provenance.file` on blueprints (enabled on terraform-module-generic)
 - Provider catalog validation skipped for non-Terraform `artifactType` values
 
-### v1.15 — Ansible role golden path (current)
+### v1.15 — Ansible role golden path
 
 - New `blueprints/ansible-role-generic/` producing a Galaxy-compatible role layout
 - Inputs: `role_name`, `namespace`, `description`, `min_ansible_version`,
   `target_platforms`
-- Template: `meta/main.yml`, `tasks/`, `defaults/`, `handlers/`, `vars/`,
-  `molecule/default/`, `README.md`, `.yamllint`, `.ansible-lint`
-- Gates: `yamllint`, `ansible-lint`, `ansible-syntax-check`, `molecule`
-  (skip-if-not-installed), `docs-drift`, `provenance-drift`
+- Template: `meta/`, `tasks/`, `defaults/`, `handlers/`, `vars/`,
+  `molecule/default/`, `README.md`
+- Gates: `yamllint`, `ansible-lint`, `ansible-syntax-check`, `molecule`,
+  `docs-drift`, `provenance-drift` (skip-if-not-installed where tools absent)
 - Output naming: `ansible-role-{role_name}`; provider scope skipped (no catalog)
-- Baseline Ansible role standard stub at `examples/standards/ansible-role-standard.md`
+
+### v1.16 — Ansible standards + ansible-lint policy pack (current)
+
+- Multi-file standards under `examples/standards/ansible/` (role, collection,
+  playbook-project, security appendix) pinned at v1.0.0
+- Production-profile ansible-lint pack at `examples/ansible-lint/pack/` copied
+  into generated roles at render time; pinned via `spec.ansible_lint`
+- Role scaffold upgraded: FQCN, `meta/argument_specs.yml`, single-entry-point
+  tasks, Galaxy metadata, production `.ansible-lint` / `.yamllint`
+- `secrets` gate extended to `ansible-role` artifact type
+- Fixture-tested pack (`examples/ansible-lint/tests/fixtures/`)
 
 ---
 
 ## Planned
-
-### v1.16 — Ansible role standard + ansible-lint policy pack
-
-**Problem:** The Ansible role path needs an enforceable standard, mirroring the
-Terraform module standard + Checkov pack, so generated roles are governed rather
-than just scaffolded.
-
-**Approach:**
-
-- Vendor an Ansible role standard under `examples/standards/` (parallel to the
-  Terraform module standard), pinned by the blueprint
-- Ship an ansible-lint config/ruleset pack copied into generated roles (parallel
-  to the Checkov pack at `examples/checkov/policies`)
-- Unit-test the ruleset against fixture roles
-
-**Dependencies:** v1.15 Ansible role golden path; v1.13 gate registry.
-
-**Done when:** A generated role fails ansible-lint when the standard is violated;
-the blueprint pins the pack version.
-
----
 
 ### v1.17 — Reconciliation operator
 

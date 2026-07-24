@@ -33,6 +33,17 @@ class CheckovPolicyPack:
 
 
 @dataclass(frozen=True)
+class AnsibleLintPolicyPack:
+    pack_source: str
+    pack_version: str
+
+
+@dataclass(frozen=True)
+class AnsibleLintGateConfig:
+    config_file: str = ".ansible-lint"
+
+
+@dataclass(frozen=True)
 class CheckovGateConfig:
     external_checks_dir: str = "policy/checkov"
     config_file: str = ".checkov.yml"
@@ -73,7 +84,11 @@ class Blueprint:
     output_title_template: str
     provenance_file: str | None = None
     checkov_policies: CheckovPolicyPack | None = None
+    ansible_lint_pack: AnsibleLintPolicyPack | None = None
     checkov_gate: CheckovGateConfig = dataclass_field(default_factory=CheckovGateConfig)
+    ansible_lint_gate: AnsibleLintGateConfig = dataclass_field(
+        default_factory=AnsibleLintGateConfig
+    )
     tflint_gate: TflintGateConfig = dataclass_field(default_factory=TflintGateConfig)
     terraform_validate_gate: TerraformValidateGateConfig = dataclass_field(
         default_factory=TerraformValidateGateConfig
@@ -100,6 +115,8 @@ class Blueprint:
             return {"var_files": self.terraform_validate_gate.var_files}
         if gate_name == "terraform-test":
             return {"test_directory": self.terraform_test_gate.test_directory}
+        if gate_name == "ansible-lint":
+            return {"config_file": self.ansible_lint_gate.config_file}
         return {}
 
 
@@ -154,6 +171,14 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
             policy_version=str(checkov_spec.get("policy_version", "1.0.0")),
         )
 
+    ansible_lint_spec = spec.get("ansible_lint")
+    ansible_lint_pack: AnsibleLintPolicyPack | None = None
+    if ansible_lint_spec is not None:
+        ansible_lint_pack = AnsibleLintPolicyPack(
+            pack_source=str(ansible_lint_spec["pack_source"]),
+            pack_version=str(ansible_lint_spec.get("pack_version", "1.0.0")),
+        )
+
     gate_config = spec.get("gate_config", {})
     checkov_gate_raw = gate_config.get("checkov", {}) if isinstance(gate_config, dict) else {}
     checkov_gate = CheckovGateConfig(
@@ -176,6 +201,12 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
     terraform_test_gate = TerraformTestGateConfig(
         test_directory=str(test_gate_raw.get("test_directory", "tests")),
     )
+    ansible_lint_gate_raw = (
+        gate_config.get("ansible-lint", {}) if isinstance(gate_config, dict) else {}
+    )
+    ansible_lint_gate = AnsibleLintGateConfig(
+        config_file=str(ansible_lint_gate_raw.get("config_file", ".ansible-lint")),
+    )
 
     return Blueprint(
         path=blueprint_file.parent,
@@ -194,7 +225,9 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         output_title_template=str(title_template),
         provenance_file=provenance_file,
         checkov_policies=checkov_policies,
+        ansible_lint_pack=ansible_lint_pack,
         checkov_gate=checkov_gate,
+        ansible_lint_gate=ansible_lint_gate,
         tflint_gate=tflint_gate,
         terraform_validate_gate=terraform_validate_gate,
         terraform_test_gate=terraform_test_gate,

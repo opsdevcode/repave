@@ -1,0 +1,10 @@
+---
+profile: production
+exclude_paths:
+  - .molecule/
+  - .ansible/
+enable_list:
+  - no-log-password
+  - no-same-owner
+  - yaml
+strict: true
