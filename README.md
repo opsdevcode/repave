@@ -193,6 +193,9 @@ Versioning and GitHub releases are automated from
 - Authenticates with **`REPAVE_RELEASE_TOKEN`** (maintainer Administrator PAT).
 - Docs-only merges skip the release job; `docs` / `chore` / `ci` commits do not
   bump version unless they include breaking changes.
+- Release CI unsets `GITHUB_OUTPUT` for python-semantic-release CLI calls (see
+  `psr()` in `.github/workflows/release.yml`); do not remove that when editing
+  the workflow.
 
 Feature PRs must **not** hand-edit `engine/pyproject.toml` version. Preview
 changelog on `main`: `make changelog`.

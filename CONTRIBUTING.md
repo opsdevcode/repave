@@ -165,9 +165,15 @@ after merge and creates the GitHub Release (with wheel artifacts) via
 `gh release create`; it also repairs a tagged version that has no GitHub
 Release yet.
 
-The release job sets `GITHUB_ACTIONS=false` when invoking semantic-release so
-the custom admin-merge + `gh release create` flow is not required to populate
-PSR’s GitHub Actions outputs (for example `commit_sha`).
+**Do not break automated versioning.** The Release job must keep producing
+semver tags and GitHub Releases after `feat:` / `fix:` merges to `main`.
+
+python-semantic-release 10.3+ writes GitHub Actions step outputs whenever
+`GITHUB_OUTPUT` is set. Our flow uses `--no-push --no-tag` and never populates
+`commit_sha`, so every `semantic-release` invocation in
+`.github/workflows/release.yml` must go through the `psr()` helper
+(`env -u GITHUB_OUTPUT …`). Setting `GITHUB_ACTIONS=false` alone does **not**
+prevent the `commit_sha` failure.
 
 Set or rotate **`REPAVE_RELEASE_TOKEN`**:
 
