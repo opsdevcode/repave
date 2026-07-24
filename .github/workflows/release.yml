@@ -9,6 +9,7 @@ on:
       - "**/*.md"
       - "LICENSE"
       - ".github/pull_request_template.md"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,14 +21,21 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: engine
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+
+      - name: Sync main branch ruleset (release bypass for administrators)
+        env:
+          GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          RULESET_ID="$(gh ruleset list --repo "${GITHUB_REPOSITORY}" --json id,name \
+            -q '.[] | select(.name=="main branch") | .id')"
+          gh api --method PUT "repos/${GITHUB_REPOSITORY}/rulesets/${RULESET_ID}" \
+            --input .github/rulesets/main-branch.json
 
       - uses: astral-sh/setup-uv@v5
         with:
@@ -37,15 +45,23 @@ jobs:
         with:
           python-version: "3.12"
 
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: operator/go.mod
+
       - name: Install engine and semantic-release
+        working-directory: engine
         run: |
           uv sync --extra dev --frozen
           uv pip install "python-semantic-release~=10.0"
 
-      - name: Run tests
-        run: uv run pytest
+      - name: Run tests (engine + operator)
+        run: |
+          cd engine && uv run pytest
+          cd operator && make test
 
       - name: Create GitHub release on conventional commits
+        working-directory: engine
         env:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
         run: uv run semantic-release version

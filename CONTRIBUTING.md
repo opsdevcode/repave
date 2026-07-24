@@ -70,12 +70,21 @@ The `release` workflow keeps workflow-level `paths-ignore` for docs-only merges 
 ### Branch ruleset (`main`)
 
 Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)
-requires on `main`:
+requires on `main` for normal contributors:
 
 - Changes merged via pull request (no approving review required — solo maintainer)
 - Status checks: `test`, `Code quality (Ruff + mypy)`, `Security (Bandit + pip-audit)`,
-  `commitlint`, `semantic-pull-request`
+  `commitlint`, `semantic-pull-request`, `operator-test`
 - No force-push (`non_fast_forward`)
+
+**Release automation bypass:** the ruleset grants **repository administrators**
+(`bypass_actors`: Administrator role) so the account behind `REPAVE_RELEASE_TOKEN`
+can push `chore(release): …` commits and tags to `main` after semantic-release.
+Use a maintainer PAT with admin on this repo only for that secret; do not use it
+for everyday feature work (use PRs like everyone else).
+
+The **Release** and **Sync main branch ruleset** workflows apply the JSON from
+this repo before publishing so bypass stays in sync with git.
 
 Re-apply or update the ruleset after editing the JSON:
 
@@ -139,7 +148,14 @@ same pattern for PR titles (for example `feat: add local docker quickstart`).
 
 `main` is protected so only maintainers can push directly. The release workflow
 uses a repository secret **`REPAVE_RELEASE_TOKEN`**: a fine-grained or classic
-PAT owned by a maintainer with `contents: write` on this repository.
+PAT owned by a **maintainer with the Administrator role** on this repository
+(`contents: write` is not enough if branch rules block direct pushes — admin
+bypass is configured in `.github/rulesets/main-branch.json`).
+
+After merging operator or engine features, semver advances automatically when
+**Release** succeeds on `main` (`feat:` → minor, `fix:` → patch). Feature PRs
+should not hand-edit `engine/pyproject.toml` version. If releases fail, check
+Actions → **Release** and re-run the workflow after fixing ruleset/token issues.
 
 Set or rotate it:
 

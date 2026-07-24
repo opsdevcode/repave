@@ -6,10 +6,9 @@ on:
     paths:
       - "operator/**"
       - ".github/workflows/operator.yml"
+      - ".github/workflows/release.yml"
+      - ".github/rulesets/**"
   pull_request:
-    paths:
-      - "operator/**"
-      - ".github/workflows/operator.yml"
 
 jobs:
   test:
@@ -21,17 +20,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/ci-paths
+        id: paths
+
+      - name: Docs-only change (skip operator tests)
+        if: steps.paths.outputs.ci_needed != 'true'
+        run: echo "No code changes outside docs-only paths; skipping operator suite."
+
       - uses: actions/setup-go@v5
+        if: steps.paths.outputs.ci_needed == 'true'
         with:
           go-version-file: operator/go.mod
           cache-dependency-path: operator/go.sum
 
       - name: Run tests (unit + envtest)
+        if: steps.paths.outputs.ci_needed == 'true'
         run: make test
 
       - name: Lint
+        if: steps.paths.outputs.ci_needed == 'true'
         run: make lint
 
       - name: Verify generated manifests committed
+        if: steps.paths.outputs.ci_needed == 'true'
         run: |
           git diff --exit-code config/crd/bases config/rbac api/v1alpha1/zz_generated.deepcopy.go
