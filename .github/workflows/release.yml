@@ -56,10 +56,13 @@ jobs:
           uv sync --extra dev --frozen
           uv pip install "python-semantic-release~=10.0"
 
-      - name: Run tests (engine + operator)
-        run: |
-          cd engine && uv run pytest
-          cd operator && make test
+      - name: Run engine tests
+        working-directory: engine
+        run: uv run pytest
+
+      - name: Run operator tests
+        working-directory: operator
+        run: make test
 
       - name: Create GitHub release on conventional commits
         working-directory: engine
