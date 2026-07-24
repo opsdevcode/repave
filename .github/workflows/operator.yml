@@ -1,0 +1,37 @@
+name: Operator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "operator/**"
+      - ".github/workflows/operator.yml"
+  pull_request:
+    paths:
+      - "operator/**"
+      - ".github/workflows/operator.yml"
+
+jobs:
+  test:
+    name: operator-test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: operator
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: operator/go.mod
+          cache-dependency-path: operator/go.sum
+
+      - name: Run tests (unit + envtest)
+        run: make test
+
+      - name: Lint
+        run: make lint
+
+      - name: Verify generated manifests committed
+        run: |
+          git diff --exit-code config/crd/bases config/rbac api/v1alpha1/zz_generated.deepcopy.go

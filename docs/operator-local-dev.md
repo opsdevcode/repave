@@ -4,8 +4,11 @@ Planning and day-one requirements for the **v1.17 reconciliation operator**.
 Local verification is a **first-class deliverable**: every operator slice ships
 with tests and documented commands before it is considered done.
 
+**Standards:** API and controller code must follow
+[`operator-standards.md`](operator-standards.md) (Kubernetes / Kubebuilder norms).
+
 Related: [roadmap — v1.17](roadmap.md#v117--reconciliation-operator),
-[`operator/README.md`](../operator/README.md).
+[`operator/README.md`](../operator/README.md), [`operator/CONTRIBUTING.md`](../operator/CONTRIBUTING.md).
 
 ---
 
@@ -183,7 +186,7 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 | Job | Trigger | Notes |
 | --- | --- | --- |
 | `operator-test` | PR touching `operator/**` | envtest + unit; no kind |
-| `operator-lint` | Same | golangci-lint |
+| `operator-lint` | Same | golangci-lint (`make operator-lint`) |
 | `operator-e2e` | Nightly or pre-release | kind; may start as optional |
 
 Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows.

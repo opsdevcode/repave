@@ -28,7 +28,8 @@
           {"context": "Code quality (Ruff + mypy)"},
           {"context": "Security (Bandit + pip-audit)"},
           {"context": "commitlint"},
-          {"context": "semantic-pull-request"}
+          {"context": "semantic-pull-request"},
+          {"context": "operator-test"}
         ]
       }
     },
