@@ -26,6 +26,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+          persist-credentials: false
 
       - name: Sync main branch ruleset (release bypass for administrators)
         continue-on-error: true
@@ -65,7 +66,20 @@ jobs:
         run: make test
 
       - name: Create GitHub release on conventional commits
-        working-directory: engine
         env:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
-        run: uv run semantic-release version
+          RELEASE_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+
+          BYPASS="$(gh api "repos/${GITHUB_REPOSITORY}/rulesets/19653825" --jq '.current_user_can_bypass')"
+          if [ "${BYPASS}" != "always" ]; then
+            echo "::error::REPAVE_RELEASE_TOKEN cannot bypass the main branch ruleset. Use an Administrator classic PAT."
+            exit 1
+          fi
+
+          cd engine
+          uv run semantic-release version
