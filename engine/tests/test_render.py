@@ -76,6 +76,13 @@ def test_build_scoped_resources_flattens_scope() -> None:
     ]
 
 
+def test_build_scoped_resources_deduplicates_repeated_resources() -> None:
+    scope = '{"s3":{"resources":["bucket","bucket","bucket_acl"]}}'
+    items = build_scoped_resources(scope)
+
+    assert [item.file_stem for item in items] == ["s3_bucket", "s3_bucket_acl"]
+
+
 def test_render_writes_scoped_resource_files(
     terraform_blueprint,
     sample_inputs,

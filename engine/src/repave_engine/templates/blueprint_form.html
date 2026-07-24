@@ -25,7 +25,9 @@
       .scope-mode label { display: flex; align-items: center; gap: 0.35rem; margin: 0; font-weight: 400; }
       .scope-mode input { width: auto; }
       .resource-section-title { font-size: 0.92rem; font-weight: 600; margin: 0.75rem 0 0.35rem; }
+      .resource-section-title[hidden] { display: none; }
       .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.35rem 0.75rem; margin-top: 0.5rem; max-height: 180px; overflow-y: auto; }
+      .resource-grid[hidden] { display: none; }
       .resource-option { display: flex; align-items: center; gap: 0.35rem; font-weight: 400; margin: 0; font-size: 0.92rem; }
       .resource-option input { width: auto; }
       .resource-option[hidden] { display: none; }
@@ -172,7 +174,11 @@
 
       function ensureScopeState(service) {
         if (!scopeState.has(service)) {
-          scopeState.set(service, { includeBasic: true, resources: new Set() });
+          scopeState.set(service, {
+            includeBasic: true,
+            resources: new Set(),
+            basic: new Set(),
+          });
         }
         return scopeState.get(service);
       }
@@ -209,13 +215,15 @@
 
         const definition = await loadServiceResources(providerSelect.value, service);
         const basicSet = new Set(definition.basic || []);
+        state.basic = basicSet;
         const additionalResources = (definition.resources || []).filter(
           (resource) => !basicSet.has(resource)
         );
 
         function renderGrid(grid, resources) {
           grid.innerHTML = "";
-          for (const resource of resources) {
+          const uniqueResources = [...new Set(resources)];
+          for (const resource of uniqueResources) {
             const label = document.createElement("label");
             label.className = "resource-option";
             label.dataset.resource = resource;
@@ -231,7 +239,9 @@
         function refreshStatus() {
           if (state.includeBasic) {
             const basicList = (definition.basic || []).join(", ") || "none defined";
-            const extras = Array.from(state.resources).sort();
+            const extras = Array.from(state.resources)
+              .filter((resource) => !basicSet.has(resource))
+              .sort();
             additionalTitle.hidden = false;
             additionalGrid.hidden = false;
             customTitle.hidden = true;
@@ -276,9 +286,9 @@
         });
         additionalGrid.addEventListener("change", () => {
           state.resources = new Set(
-            Array.from(additionalGrid.querySelectorAll('input[type="checkbox"]:checked')).map(
-              (input) => input.value
-            )
+            Array.from(additionalGrid.querySelectorAll('input[type="checkbox"]:checked'))
+              .map((input) => input.value)
+              .filter((resource) => !basicSet.has(resource))
           );
           refreshStatus();
           syncScopeInput();
@@ -337,10 +347,13 @@
         const payload = {};
         for (const service of selectedServices()) {
           const state = ensureScopeState(service);
+          const basic = state.basic || new Set();
           if (state.includeBasic) {
             payload[service] = {
               mode: "basic",
-              additional_resources: Array.from(state.resources).sort(),
+              additional_resources: Array.from(state.resources)
+                .filter((resource) => !basic.has(resource))
+                .sort(),
             };
           } else {
             payload[service] = {

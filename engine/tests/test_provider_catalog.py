@@ -48,6 +48,18 @@ def test_normalize_basic_with_additional_resources() -> None:
     assert parsed["s3"]["resources"] == ["bucket", "bucket_acl", "bucket_policy", "object"]
 
 
+def test_normalize_basic_strips_additional_resources_already_in_basic() -> None:
+    result = normalize_provider_service_scope(
+        SAMPLE_CATALOG,
+        provider="aws",
+        services=["s3"],
+        scope_raw={"s3": {"mode": "basic", "additional_resources": ["bucket", "bucket_acl"]}},
+    )
+    parsed = json.loads(result)
+    assert parsed["s3"]["additional_resources"] == ["bucket_acl"]
+    assert parsed["s3"]["resources"].count("bucket") == 1
+
+
 def test_normalize_custom_resources() -> None:
     result = normalize_provider_service_scope(
         SAMPLE_CATALOG,

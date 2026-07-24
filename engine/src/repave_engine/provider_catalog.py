@@ -101,7 +101,10 @@ def normalize_provider_service_scope(
             raw_additional = entry.get("additional_resources", [])
             if not isinstance(raw_additional, list):
                 raise ValueError(f"additional_resources for {service!r} must be a list")
-            additional = sorted({str(item).strip() for item in raw_additional if str(item).strip()})
+            additional = sorted(
+                {str(item).strip() for item in raw_additional if str(item).strip()}
+                - set(basic_resources)
+            )
             invalid = sorted(set(additional) - allowed_resources)
             if invalid:
                 raise ValueError(

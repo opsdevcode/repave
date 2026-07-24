@@ -41,6 +41,7 @@ def build_scoped_resources(scope_raw: Any) -> list[ScopedResource]:
         raise ValueError("provider_service_scope must decode to a JSON object")
 
     items: list[ScopedResource] = []
+    seen_stems: set[str] = set()
     for service, entry in sorted(scope.items()):
         if not isinstance(entry, dict):
             raise ValueError(f"provider_service_scope entry for {service!r} must be an object")
@@ -48,11 +49,15 @@ def build_scoped_resources(scope_raw: Any) -> list[ScopedResource]:
             resource_name = str(resource).strip()
             if not resource_name:
                 continue
+            file_stem = f"{service}_{resource_name}"
+            if file_stem in seen_stems:
+                continue
+            seen_stems.add(file_stem)
             items.append(
                 ScopedResource(
                     service=service,
                     resource=resource_name,
-                    file_stem=f"{service}_{resource_name}",
+                    file_stem=file_stem,
                 )
             )
     return items
