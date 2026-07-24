@@ -13,14 +13,13 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> Status: **v1.15.** The generation loop runs locally with no Kubernetes
+> Status: **v1.16.** The generation loop runs locally with no Kubernetes
 > required. Generated modules and Ansible roles publish to separate git
 > repositories and can be pushed to GitHub with `GITHUB_TOKEN`. Terraform modules
-> render per-resource `.tf` files with shared `locals.tf`, Checkov policies
-> (pack v1.2.0), secrets scanning, and `repave.yaml` provenance. The
-> `ansible-role-generic` blueprint ships Galaxy-compatible roles with Molecule
-> scaffolding and Ansible lint gates. The self-healing reconciliation operator is
-> planned next (see [`operator/`](operator/)).
+> use Checkov policies (pack v1.2.0) and secrets scanning. Ansible roles use the
+> production-profile ansible-lint pack (v1.0.0), standards corpus at
+> `examples/standards/ansible/`, and `repave.yaml` provenance. The reconciliation
+> operator is planned next (see [`operator/`](operator/)).
 
 ## Why repave
 
@@ -123,9 +122,8 @@ docs/          # concept docs and [roadmap](docs/roadmap.md)
 
 ## Roadmap
 
-**Current:** v1.15 — Ansible role golden path (`ansible-role-generic`) alongside
-the Terraform module path; artifact-type-aware `repave.yaml` provenance and gate
-registry extensibility.
+**Current:** v1.16 — Ansible standards corpus and production-profile ansible-lint
+pack on `ansible-role-generic`; Terraform module path with Checkov + secrets gates.
 
 High-level release history and detailed future planning (through **v2.0.0**) live in
 [`docs/roadmap.md`](docs/roadmap.md). Add new future-state items there when

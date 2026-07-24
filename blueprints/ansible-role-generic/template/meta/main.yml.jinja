@@ -1,5 +1,6 @@
 ---
 galaxy_info:
+  standalone: true
   role_name: {{ role_name }}
   namespace: {{ namespace }}
   author: platform-engineering
@@ -16,5 +17,8 @@ galaxy_info:
         - "{{ parts[1].strip() if parts|length > 1 else 'all' }}"
 {%- endif %}
 {%- endfor %}
+  galaxy_tags:
+    - {{ role_name }}
+    - repave
 
 dependencies: []

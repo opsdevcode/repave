@@ -60,6 +60,11 @@ def _build_ansible_spec(blueprint: Blueprint, values: dict[str, Any]) -> tuple[d
     min_version = values.get("min_ansible_version")
     if min_version not in (None, ""):
         spec["ansibleRole"]["min_ansible_version"] = str(min_version)
+    if blueprint.ansible_lint_pack is not None:
+        spec["ansibleLint"] = {
+            "pack_source": blueprint.ansible_lint_pack.pack_source,
+            "pack_version": blueprint.ansible_lint_pack.pack_version,
+        }
     metadata_name = f"{namespace}.{role_name}" if namespace else role_name
     return spec, metadata_name
 

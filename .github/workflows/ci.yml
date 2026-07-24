@@ -25,5 +25,8 @@ jobs:
       - name: Install engine
         run: uv sync --extra dev --frozen
 
+      - name: Install Ansible lint tooling
+        run: pip install ansible-lint yamllint
+
       - name: Run tests
         run: uv run pytest

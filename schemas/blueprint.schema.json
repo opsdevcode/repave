@@ -117,6 +117,22 @@
             }
           }
         },
+        "ansible_lint": {
+          "type": "object",
+          "required": ["pack_source"],
+          "additionalProperties": false,
+          "properties": {
+            "pack_source": {
+              "type": "string",
+              "description": "Repo-relative path to ansible-lint config pack copied into generated roles."
+            },
+            "pack_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Semantic version of the ansible-lint pack encoded by this blueprint."
+            }
+          }
+        },
         "gate_config": {
           "type": "object",
           "additionalProperties": false,
@@ -176,6 +192,16 @@
                 "test_directory": {
                   "type": "string",
                   "description": "Directory containing .tftest.hcl files relative to module root."
+                }
+              }
+            },
+            "ansible-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_file": {
+                  "type": "string",
+                  "description": "ansible-lint config file relative to the generated role root."
                 }
               }
             }

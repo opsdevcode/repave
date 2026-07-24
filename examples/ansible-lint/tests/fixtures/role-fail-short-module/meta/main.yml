@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  standalone: true
+  role_name: example
+  namespace: acme
+  author: platform-engineering
+  description: Fixture role that violates FQCN rules
+  license: Apache-2.0
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "jammy"
+  galaxy_tags:
+    - example
+
+dependencies: []

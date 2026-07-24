@@ -2,13 +2,13 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: ansible-role-generic
-  version: 0.1.0
-  description: Galaxy-compatible Ansible role scaffold with Molecule testing and CI wiring.
+  version: 0.2.0
+  description: Galaxy-compatible Ansible role scaffold with production-profile lint pack.
 spec:
   artifactType: ansible-role
   standard:
-    source: examples/standards
-    version: 0.1.0
+    source: examples/standards/ansible
+    version: 1.0.0
   inputs:
     - name: role_name
       type: string
@@ -30,8 +30,10 @@ spec:
     - name: target_platforms
       type: string
       required: true
-      description: Comma-separated target platforms as Name:version (e.g. EL:9,Ubuntu:22.04).
-      default: "Ubuntu:22.04"
+      description: >-
+        Comma-separated Galaxy platforms as Name:version (e.g. EL:9,Ubuntu:jammy).
+        Use Ansible Galaxy version codenames, not OS release numbers.
+      default: "Ubuntu:jammy"
   template:
     engine: copier
     path: template
@@ -39,9 +41,16 @@ spec:
     - yamllint
     - ansible-lint
     - ansible-syntax-check
+    - secrets
     - molecule
     - docs-drift
     - provenance-drift
+  ansible_lint:
+    pack_source: examples/ansible-lint/pack
+    pack_version: 1.0.0
+  gate_config:
+    ansible-lint:
+      config_file: .ansible-lint
   output:
     type: pull_request
     provenance:

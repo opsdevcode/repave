@@ -1,5 +1,0 @@
----
-profile: min
-exclude_paths:
-  - .molecule/
-  - .ansible/

@@ -146,6 +146,7 @@ def render_blueprint(
     )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     _copy_checkov_policies(output_dir, blueprint)
+    _copy_ansible_lint_pack(output_dir, blueprint)
     if blueprint.provenance_file:
         from repave_engine.provenance import write_provenance_file
 
@@ -201,3 +202,18 @@ def _copy_checkov_policies(output_dir: Path, blueprint: Blueprint) -> None:
     if destination.exists():
         shutil.rmtree(destination)
     shutil.copytree(source_dir, destination)
+
+
+def _copy_ansible_lint_pack(output_dir: Path, blueprint: Blueprint) -> None:
+    if blueprint.ansible_lint_pack is None:
+        return
+
+    repo_root = _find_repo_root(blueprint.path)
+    source_dir = repo_root / blueprint.ansible_lint_pack.pack_source
+    if not source_dir.is_dir():
+        raise FileNotFoundError(f"Ansible lint pack not found: {source_dir}")
+
+    for item in source_dir.iterdir():
+        if not item.is_file():
+            continue
+        shutil.copy2(item, output_dir / item.name)

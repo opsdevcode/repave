@@ -175,12 +175,18 @@ def test_list_blueprints(repo_root: Path) -> None:
 
 def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert ansible_blueprint.name == "ansible-role-generic"
-    assert ansible_blueprint.version == "0.1.0"
+    assert ansible_blueprint.version == "0.2.0"
     assert ansible_blueprint.artifact_type == "ansible-role"
+    assert ansible_blueprint.standard_source == "examples/standards/ansible"
+    assert ansible_blueprint.standard_version == "1.0.0"
     assert ansible_blueprint.provenance_file == "repave.yaml"
     assert ansible_blueprint.checkov_policies is None
+    assert ansible_blueprint.ansible_lint_pack is not None
+    assert ansible_blueprint.ansible_lint_pack.pack_source == "examples/ansible-lint/pack"
+    assert ansible_blueprint.ansible_lint_pack.pack_version == "1.0.0"
     assert "yamllint" in ansible_blueprint.gates
     assert "ansible-lint" in ansible_blueprint.gates
+    assert "secrets" in ansible_blueprint.gates
     assert "molecule" in ansible_blueprint.gates
     assert "provenance-drift" in ansible_blueprint.gates
     assert ansible_blueprint.output_repo_name_template == "ansible-role-{role_name}"
