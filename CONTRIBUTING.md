@@ -49,7 +49,23 @@ make test
 
 ### Python quality and security tooling
 
-CI runs these OSS tools on every push and pull request:
+CI runs these OSS tools on pushes and pull requests that touch code, schemas,
+blueprints, or workflow config — not on **docs-only** changes.
+
+Workflows use `paths-ignore` for:
+
+- `docs/**`
+- `**/*.md` (any Markdown-only edit, including README and standards docs)
+- `LICENSE`
+- `.github/pull_request_template.md`
+
+A pull request that changes only those paths does not run tests, Python
+quality/security, conventional-commit checks, or the release workflow on merge.
+Mixed PRs (for example `docs/` plus `engine/`) still run the full gate. Keep
+`paths-ignore` lists in sync across `.github/workflows/ci.yml`,
+`python-quality-security.yml`, `conventional-commits.yml`, and `release.yml`.
+
+Tools on full CI runs:
 
 | Tool | Purpose |
 | --- | --- |
