@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from repave_engine import __version__
@@ -18,11 +19,24 @@ from repave_engine.settings import OutputConfig, load_output_config
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
-    templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+    package_dir = Path(__file__).parent
+    templates = Jinja2Templates(directory=str(package_dir / "templates"))
     templates.env.cache = None
     resolved_output = output_config or load_output_config(repo_root)
 
     app = FastAPI(title="repave", version=__version__)
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(package_dir / "static")),
+        name="static",
+    )
+
+    def page_context(**extra: object) -> dict[str, object]:
+        return {
+            "app_version": __version__,
+            "env_badge": os.environ.get("REPAVE_ENV"),
+            **extra,
+        }
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
@@ -30,7 +44,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return templates.TemplateResponse(
             request,
             "index.html",
-            {"blueprints": blueprints},
+            page_context(blueprints=blueprints, nav_active="catalog"),
         )
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
@@ -39,10 +53,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
-            {
-                "blueprint": blueprint,
-                "provider_catalog": load_provider_catalog(blueprint.path),
-            },
+            page_context(
+                blueprint=blueprint,
+                provider_catalog=load_provider_catalog(blueprint.path),
+                nav_active="catalog",
+            ),
         )
 
     @app.get("/blueprints/{blueprint_name}/provider-services/{cloud_provider}/{service}")
@@ -99,7 +114,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return templates.TemplateResponse(
             request,
             "result.html",
-            {"result": result},
+            page_context(result=result, nav_active="catalog"),
         )
 
     @app.get("/health")

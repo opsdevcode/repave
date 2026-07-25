@@ -1,59 +1,65 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Result — repave</title>
-    <style>
-      body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
-      .pass { color: #0a7a2f; }
-      .fail { color: #b00020; }
-      .skip { color: #666; }
-      pre { background: #f7f7f7; padding: 1rem; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; }
-      li { margin: 0.35rem 0; }
-      details { margin: 0.75rem 0; border: 1px solid #e5e5e5; border-radius: 8px; padding: 0.35rem 0.75rem; }
-      summary { cursor: pointer; font-family: ui-monospace, monospace; }
-      .muted { color: #555; }
-    </style>
-  </head>
-  <body>
-    <p><a href="/">← Back</a></p>
-    <h1>Generation result</h1>
+{% extends "base.html" %}
 
-    <p><strong>Blueprint:</strong> {{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
-    {% if result.dry_run %}
-    <p class="muted">Dry-run preview — files below were rendered in memory and were not published.</p>
-    {% endif %}
-    {% if result.module_repository %}
-    <p><strong>Repository name:</strong> <code>{{ result.module_repository.name }}</code></p>
-    <p><strong>Target repository:</strong> <code>{{ result.module_repository.web_url }}</code></p>
-    {% if not result.dry_run %}
-    <p><strong>Local path:</strong> <code>{{ result.module_repository.local_path }}</code></p>
-    {% endif %}
-    {% else %}
-    <p><strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code></p>
-    {% endif %}
+{% block title %}Result — repave{% endblock %}
 
-    <h2>Gates</h2>
-    <ul>
+{% block content %}
+<p class="breadcrumb"><a href="/">← Golden paths</a></p>
+<h1 class="page-title">Generation result</h1>
+
+<p><strong>Blueprint:</strong> {{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
+{% if result.dry_run %}
+<p class="muted">Dry-run preview — files below were rendered in memory and were not published.</p>
+{% endif %}
+{% if result.module_repository %}
+<p><strong>Repository name:</strong> <code>{{ result.module_repository.name }}</code></p>
+<p><strong>Target repository:</strong> <code>{{ result.module_repository.web_url }}</code></p>
+{% if not result.dry_run %}
+<p><strong>Local path:</strong> <code>{{ result.module_repository.local_path }}</code></p>
+{% endif %}
+{% else %}
+<p><strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code></p>
+{% endif %}
+
+<section class="card" aria-labelledby="gates-heading">
+  <div class="card__header">
+    <h2 id="gates-heading">Gates</h2>
+  </div>
+  <div class="card__body">
+    <ul class="gate-list">
       {% for gate in result.gates %}
       <li class="{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}">
-        [{% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}] {{ gate.name }} — {{ gate.message }}
+        <span class="badge {% if gate.skipped %}badge--skip{% elif gate.passed %}badge--pass{% else %}badge--fail{% endif %}">
+          {% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}
+        </span>
+        {{ gate.name }} — {{ gate.message }}
       </li>
       {% endfor %}
     </ul>
+  </div>
+</section>
 
-    {% if result.rendered_files %}
-    <h2>Generated files</h2>
+{% if result.rendered_files %}
+<section class="card stack-gap" aria-labelledby="files-heading">
+  <div class="card__header">
+    <h2 id="files-heading">Generated files</h2>
+  </div>
+  <div class="card__body">
     {% for file in result.rendered_files %}
-    <details{% if loop.first %} open{% endif %}>
+    <details class="file-panel"{% if loop.first %} open{% endif %}>
       <summary>{{ file.path }}{% if file.truncated %} <span class="muted">(truncated)</span>{% endif %}</summary>
       <pre>{{ file.content }}</pre>
     </details>
     {% endfor %}
-    {% endif %}
+  </div>
+</section>
+{% endif %}
 
-    <h2>Publish plan</h2>
+<section class="card stack-gap" aria-labelledby="publish-heading">
+  <div class="card__header">
+    <h2 id="publish-heading">Publish plan</h2>
+  </div>
+  <div class="card__body">
     <pre>{{ result.pr_message }}</pre>
-  </body>
-</html>
+  </div>
+</section>
+{% endblock %}

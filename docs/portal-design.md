@@ -5,9 +5,9 @@ Planning document for the repave web portal (Jinja templates under
 labels; this file holds **visual layout**, **component patterns**, and
 **acceptance signals** for portal work, primarily **v1.18**.
 
-**Current UI:** three server-rendered pages with inline CSS — functional wireframe
-aesthetic (`system-ui`, gray panels, minimal hierarchy). No shared design system or
-artifact-type visual language.
+**Current UI:** three server-rendered pages extending `base.html` with shared
+`/static/repave.css` tokens and app shell (foundation). Catalog cards, form
+governance layout, and results dashboard still to land in later v1.18 slices.
 
 **Target:** a coherent product surface without mandating a SPA rewrite — shared
 static assets, CSS tokens, and a base layout template.

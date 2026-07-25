@@ -1,396 +1,362 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{{ blueprint.name }} — repave</title>
-    <style>
-      body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
-      label { display: block; margin: 0.75rem 0 0.25rem; font-weight: 600; }
-      input[type=text], select { width: 100%; padding: 0.5rem; box-sizing: border-box; }
-      button { margin-top: 1rem; padding: 0.6rem 1rem; }
-      .muted { color: #555; }
-      .meta { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
-      .service-tools { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-top: 0.5rem; }
-      .service-tools input[type=text] { flex: 1; min-width: 220px; }
-      .service-count { color: #555; font-size: 0.9rem; white-space: nowrap; }
-      .service-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.35rem 1rem; margin-top: 0.5rem; max-height: 320px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem; }
-      .service-option { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; margin: 0; }
-      .service-option input { width: auto; }
-      .service-option[hidden] { display: none; }
-      .scope-panel { margin-top: 1rem; display: grid; gap: 0.75rem; }
-      .scope-card { border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem 1rem; background: #fafafa; }
-      .scope-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
-      .scope-mode { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.5rem 0; font-weight: 400; }
-      .scope-mode label { display: flex; align-items: center; gap: 0.35rem; margin: 0; font-weight: 400; }
-      .scope-mode input { width: auto; }
-      .resource-section-title { font-size: 0.92rem; font-weight: 600; margin: 0.75rem 0 0.35rem; }
-      .resource-section-title[hidden] { display: none; }
-      .resource-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.35rem 0.75rem; margin-top: 0.5rem; max-height: 180px; overflow-y: auto; }
-      .resource-grid[hidden] { display: none; }
-      .resource-option { display: flex; align-items: center; gap: 0.35rem; font-weight: 400; margin: 0; font-size: 0.92rem; }
-      .resource-option input { width: auto; }
-      .resource-option[hidden] { display: none; }
-      .scope-status { font-size: 0.9rem; color: #555; margin-top: 0.35rem; }
-      .field-block { margin-bottom: 0.75rem; }
-      .publish-options { background: #f7f7f7; border-radius: 8px; padding: 0.75rem 1rem; margin: 1rem 0; }
-      .publish-options label { font-weight: 400; display: flex; align-items: center; gap: 0.4rem; margin: 0.35rem 0; }
-      .publish-options input { width: auto; }
-    </style>
-  </head>
-  <body>
-    <p><a href="/">← Back</a></p>
-    <h1>{{ blueprint.name }}</h1>
-    <p class="muted">Blueprint v{{ blueprint.version }}</p>
+{% extends "base.html" %}
 
-    <div class="meta">
-      <div><strong>Standard:</strong> {{ blueprint.standard_source }} @ {{ blueprint.standard_version }}</div>
-      <div><strong>Gates:</strong> {{ blueprint.gates | join(', ') }}</div>
-    </div>
+{% block title %}{{ blueprint.name }} — repave{% endblock %}
 
-    <form method="post" action="/generate" id="generate-form">
-      <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
-      <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
+{% block content %}
+<p class="breadcrumb"><a href="/">← Golden paths</a></p>
+<h1 class="page-title">{{ blueprint.name }}</h1>
+<p class="page-lead">Blueprint v{{ blueprint.version }}</p>
 
-      {% for field in blueprint.inputs %}
-      {% if field.name == "provider_service_scope" %}
-      {% elif provider_catalog and field.name == "cloud_provider" %}
-      <div class="field-block">
-        <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
-        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
-        <select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-          {% for option in field.enum %}
-          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      {% elif provider_catalog and field.name == "provider_services" %}
-      <div class="field-block">
-        <label>{{ field.name }}{% if field.required %} *{% endif %}</label>
-        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
-        <div class="service-tools">
-          <input type="text" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
-          <span id="provider-services-count" class="service-count"></span>
-        </div>
-        <div id="provider-services" class="service-grid" aria-live="polite"></div>
-        <div id="service-scope-panel" class="scope-panel" aria-live="polite"></div>
-        <input type="hidden" id="provider_services" name="provider_services" value="" />
-      </div>
-      {% else %}
-      <div class="field-block">
-        <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
-        {% if field.description %}<div class="muted">{{ field.description }}</div>{% endif %}
-        {% if field.enum %}
-        <select id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-          {% for option in field.enum %}
-          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
-          {% endfor %}
-        </select>
-        {% else %}
-        <input
-          id="{{ field.name }}"
-          name="{{ field.name }}"
-          type="text"
-          {% if field.required %}required{% endif %}
-          {% if field.default is not none %}value="{{ field.default }}"{% endif %}
-        />
-        {% endif %}
-      </div>
-      {% endif %}
+<div class="meta">
+  <div><strong>Standard:</strong> {{ blueprint.standard_source }} @ {{ blueprint.standard_version }}</div>
+  <div><strong>Gates:</strong> {{ blueprint.gates | join(', ') }}</div>
+</div>
+
+<form method="post" action="/generate" id="generate-form">
+  <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
+  <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
+
+  {% for field in blueprint.inputs %}
+  {% if field.name == "provider_service_scope" %}
+  {% elif provider_catalog and field.name == "cloud_provider" %}
+  <div class="field-block">
+    <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
+    {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+    <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+      {% for option in field.enum %}
+      <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
       {% endfor %}
-
-      <div class="publish-options">
-        <div><strong>Publish options</strong></div>
-        <label>
-          <input type="checkbox" name="dry_run" value="false" />
-          Publish module repository locally (disable dry-run)
-        </label>
-        <div class="muted">
-          When publish is enabled, set <code>GITHUB_TOKEN</code> in the server environment to
-          create the GitHub repository and push the initial commit.
-        </div>
-      </div>
-
-      <button type="submit">Generate</button>
-    </form>
-
-    {% if provider_catalog %}
-    <script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>
-    <script>
-      const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
-      const blueprintName = {{ blueprint.name | tojson }};
-      const providerSelect = document.getElementById("cloud_provider");
-      const servicesContainer = document.getElementById("provider-services");
-      const servicesFilter = document.getElementById("provider-services-filter");
-      const servicesCount = document.getElementById("provider-services-count");
-      const servicesInput = document.getElementById("provider_services");
-      const scopePanel = document.getElementById("service-scope-panel");
-      const scopeInput = document.getElementById("provider_service_scope");
-      const form = document.getElementById("generate-form");
-      const scopeState = new Map();
-      const resourceCache = new Map();
-
-      function providerServices(provider) {
-        return Object.keys(catalog[provider] || {}).sort();
-      }
-
-      function applyServiceFilter() {
-        const query = servicesFilter.value.trim().toLowerCase();
-        const services = providerServices(providerSelect.value);
-        let visible = 0;
-        for (const label of servicesContainer.querySelectorAll(".service-option")) {
-          const match = !query || label.dataset.service.toLowerCase().includes(query);
-          label.hidden = !match;
-          if (match) visible += 1;
-        }
-        servicesCount.textContent = query
-          ? `${visible} of ${services.length} services`
-          : `${services.length} services`;
-      }
-
-      function selectedServices() {
-        return Array.from(
-          servicesContainer.querySelectorAll('input[type="checkbox"]:checked')
-        ).map((input) => input.value);
-      }
-
-      async function loadServiceResources(provider, service) {
-        const cacheKey = `${provider}:${service}`;
-        if (resourceCache.has(cacheKey)) {
-          return resourceCache.get(cacheKey);
-        }
-        const embedded = catalog[provider]?.[service];
-        if (embedded?.resources?.length) {
-          resourceCache.set(cacheKey, embedded);
-          return embedded;
-        }
-        const response = await fetch(
-          `/blueprints/${blueprintName}/provider-services/${provider}/${service}`
-        );
-        const data = await response.json();
-        resourceCache.set(cacheKey, data);
-        return data;
-      }
-
-      function ensureScopeState(service) {
-        if (!scopeState.has(service)) {
-          scopeState.set(service, {
-            includeBasic: true,
-            resources: new Set(),
-            basic: new Set(),
-          });
-        }
-        return scopeState.get(service);
-      }
-
-      async function renderScopeCard(service) {
-        const state = ensureScopeState(service);
-        const card = document.createElement("div");
-        card.className = "scope-card";
-        card.dataset.service = service;
-        card.innerHTML = `
-          <h3>${service}</h3>
-          <div class="scope-mode">
-            <label><input type="checkbox" class="include-basic" checked /> Include basic capabilities</label>
-            <label><input type="checkbox" class="custom-only" /> Custom selection only</label>
-          </div>
-          <div class="scope-status">Loading resources...</div>
-          <div class="resource-section-title additional-title">Additional resources</div>
-          <div class="resource-grid additional-grid"></div>
-          <div class="resource-section-title custom-title" hidden>Select resources</div>
-          <div class="resource-grid custom-grid" hidden></div>
-        `;
-        scopePanel.appendChild(card);
-
-        const includeBasicCheckbox = card.querySelector(".include-basic");
-        const customOnlyCheckbox = card.querySelector(".custom-only");
-        const status = card.querySelector(".scope-status");
-        const additionalTitle = card.querySelector(".additional-title");
-        const additionalGrid = card.querySelector(".additional-grid");
-        const customTitle = card.querySelector(".custom-title");
-        const customGrid = card.querySelector(".custom-grid");
-
-        includeBasicCheckbox.checked = state.includeBasic;
-        customOnlyCheckbox.checked = !state.includeBasic;
-
-        const definition = await loadServiceResources(providerSelect.value, service);
-        const basicSet = new Set(definition.basic || []);
-        state.basic = basicSet;
-        const additionalResources = (definition.resources || []).filter(
-          (resource) => !basicSet.has(resource)
-        );
-
-        function renderGrid(grid, resources) {
-          grid.innerHTML = "";
-          const uniqueResources = [...new Set(resources)];
-          for (const resource of uniqueResources) {
-            const label = document.createElement("label");
-            label.className = "resource-option";
-            label.dataset.resource = resource;
-            const checked = state.resources.has(resource) ? "checked" : "";
-            label.innerHTML = `<input type="checkbox" value="${resource}" ${checked} /> ${resource}`;
-            grid.appendChild(label);
-          }
-        }
-
-        renderGrid(additionalGrid, additionalResources);
-        renderGrid(customGrid, definition.resources || []);
-
-        function refreshStatus() {
-          if (state.includeBasic) {
-            const basicList = (definition.basic || []).join(", ") || "none defined";
-            const extras = Array.from(state.resources)
-              .filter((resource) => !basicSet.has(resource))
-              .sort();
-            additionalTitle.hidden = false;
-            additionalGrid.hidden = false;
-            customTitle.hidden = true;
-            customGrid.hidden = true;
-            status.textContent = extras.length
-              ? `Basic capabilities: ${basicList}. Additional: ${extras.join(", ")}`
-              : `Basic capabilities: ${basicList}`;
-          } else {
-            const selected = Array.from(state.resources).sort();
-            additionalTitle.hidden = true;
-            additionalGrid.hidden = true;
-            customTitle.hidden = false;
-            customGrid.hidden = false;
-            status.textContent = selected.length
-              ? `Selected resources: ${selected.join(", ")}`
-              : "Select at least one resource.";
-          }
-        }
-
-        function setIncludeBasic(includeBasic) {
-          state.includeBasic = includeBasic;
-          includeBasicCheckbox.checked = includeBasic;
-          customOnlyCheckbox.checked = !includeBasic;
-          if (includeBasic) {
-            state.resources = new Set(
-              Array.from(state.resources).filter((resource) => !basicSet.has(resource))
-            );
-          }
-          refreshStatus();
-          syncScopeInput();
-        }
-
-        includeBasicCheckbox.addEventListener("change", () => {
-          if (includeBasicCheckbox.checked) {
-            setIncludeBasic(true);
-          } else if (!customOnlyCheckbox.checked) {
-            includeBasicCheckbox.checked = true;
-          }
-        });
-        customOnlyCheckbox.addEventListener("change", () => {
-          setIncludeBasic(!customOnlyCheckbox.checked);
-        });
-        additionalGrid.addEventListener("change", () => {
-          state.resources = new Set(
-            Array.from(additionalGrid.querySelectorAll('input[type="checkbox"]:checked'))
-              .map((input) => input.value)
-              .filter((resource) => !basicSet.has(resource))
-          );
-          refreshStatus();
-          syncScopeInput();
-        });
-        customGrid.addEventListener("change", () => {
-          state.resources = new Set(
-            Array.from(customGrid.querySelectorAll('input[type="checkbox"]:checked')).map(
-              (input) => input.value
-            )
-          );
-          refreshStatus();
-          syncScopeInput();
-        });
-
-        refreshStatus();
-      }
-
-      async function renderScopePanels() {
-        const selected = new Set(selectedServices());
-        for (const service of Array.from(scopeState.keys())) {
-          if (!selected.has(service)) {
-            scopeState.delete(service);
-          }
-        }
-        scopePanel.innerHTML = "";
-        for (const service of selectedServices()) {
-          ensureScopeState(service);
-          await renderScopeCard(service);
-        }
-        syncScopeInput();
-      }
-
-      function renderServices(provider) {
-        servicesContainer.innerHTML = "";
-        scopePanel.innerHTML = "";
-        scopeState.clear();
-        resourceCache.clear();
-        servicesFilter.value = "";
-        for (const service of providerServices(provider)) {
-          const label = document.createElement("label");
-          label.className = "service-option";
-          label.dataset.service = service;
-          label.innerHTML = `<input type="checkbox" name="provider_service_option" value="${service}" /> ${service}`;
-          servicesContainer.appendChild(label);
-        }
-        applyServiceFilter();
-        syncServicesInput();
-        syncScopeInput();
-      }
-
-      function syncServicesInput() {
-        servicesInput.value = selectedServices().join(",");
-      }
-
-      function syncScopeInput() {
-        const payload = {};
-        for (const service of selectedServices()) {
-          const state = ensureScopeState(service);
-          const basic = state.basic || new Set();
-          if (state.includeBasic) {
-            payload[service] = {
-              mode: "basic",
-              additional_resources: Array.from(state.resources)
-                .filter((resource) => !basic.has(resource))
-                .sort(),
-            };
-          } else {
-            payload[service] = {
-              mode: "custom",
-              resources: Array.from(state.resources).sort(),
-            };
-          }
-        }
-        scopeInput.value = JSON.stringify(payload);
-      }
-
-      providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
-      servicesFilter.addEventListener("input", applyServiceFilter);
-      servicesContainer.addEventListener("change", async () => {
-        syncServicesInput();
-        await renderScopePanels();
-      });
-      form.addEventListener("submit", (event) => {
-        syncServicesInput();
-        syncScopeInput();
-        if (!servicesInput.value.trim()) {
-          event.preventDefault();
-          alert("Select at least one provider service.");
-          return;
-        }
-        for (const service of selectedServices()) {
-          const state = ensureScopeState(service);
-          if (!state.includeBasic && state.resources.size === 0) {
-            event.preventDefault();
-            alert(`Select at least one resource for ${service}, or include basic capabilities.`);
-            return;
-          }
-        }
-      });
-
-      renderServices(providerSelect.value);
-    </script>
+    </select>
+  </div>
+  {% elif provider_catalog and field.name == "provider_services" %}
+  <div class="field-block">
+    <label>{{ field.name }}{% if field.required %} *{% endif %}</label>
+    {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+    <div class="service-tools">
+      <input type="text" class="input" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
+      <span id="provider-services-count" class="service-count"></span>
+    </div>
+    <div id="provider-services" class="service-grid" aria-live="polite"></div>
+    <div id="service-scope-panel" class="scope-panel" aria-live="polite"></div>
+    <input type="hidden" id="provider_services" name="provider_services" value="" />
+  </div>
+  {% else %}
+  <div class="field-block">
+    <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
+    {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+    {% if field.enum %}
+    <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+      {% for option in field.enum %}
+      <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+    {% else %}
+    <input
+      class="input"
+      id="{{ field.name }}"
+      name="{{ field.name }}"
+      type="text"
+      {% if field.required %}required{% endif %}
+      {% if field.default is not none %}value="{{ field.default }}"{% endif %}
+    />
     {% endif %}
-  </body>
-</html>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  <div class="publish-options">
+    <div><strong>Publish options</strong></div>
+    <label>
+      <input type="checkbox" name="dry_run" value="false" />
+      Publish module repository locally (disable dry-run)
+    </label>
+    <div class="hint">
+      When publish is enabled, set <code>GITHUB_TOKEN</code> in the server environment to
+      create the GitHub repository and push the initial commit.
+    </div>
+  </div>
+
+  <button class="btn btn--primary" type="submit">Generate</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{% if provider_catalog %}
+<script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>
+<script>
+  const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
+  const blueprintName = {{ blueprint.name | tojson }};
+  const providerSelect = document.getElementById("cloud_provider");
+  const servicesContainer = document.getElementById("provider-services");
+  const servicesFilter = document.getElementById("provider-services-filter");
+  const servicesCount = document.getElementById("provider-services-count");
+  const servicesInput = document.getElementById("provider_services");
+  const scopePanel = document.getElementById("service-scope-panel");
+  const scopeInput = document.getElementById("provider_service_scope");
+  const form = document.getElementById("generate-form");
+  const scopeState = new Map();
+  const resourceCache = new Map();
+
+  function providerServices(provider) {
+    return Object.keys(catalog[provider] || {}).sort();
+  }
+
+  function applyServiceFilter() {
+    const query = servicesFilter.value.trim().toLowerCase();
+    const services = providerServices(providerSelect.value);
+    let visible = 0;
+    for (const label of servicesContainer.querySelectorAll(".service-option")) {
+      const match = !query || label.dataset.service.toLowerCase().includes(query);
+      label.hidden = !match;
+      if (match) visible += 1;
+    }
+    servicesCount.textContent = query
+      ? `${visible} of ${services.length} services`
+      : `${services.length} services`;
+  }
+
+  function selectedServices() {
+    return Array.from(
+      servicesContainer.querySelectorAll('input[type="checkbox"]:checked')
+    ).map((input) => input.value);
+  }
+
+  async function loadServiceResources(provider, service) {
+    const cacheKey = `${provider}:${service}`;
+    if (resourceCache.has(cacheKey)) {
+      return resourceCache.get(cacheKey);
+    }
+    const embedded = catalog[provider]?.[service];
+    if (embedded?.resources?.length) {
+      resourceCache.set(cacheKey, embedded);
+      return embedded;
+    }
+    const response = await fetch(
+      `/blueprints/${blueprintName}/provider-services/${provider}/${service}`
+    );
+    const data = await response.json();
+    resourceCache.set(cacheKey, data);
+    return data;
+  }
+
+  function ensureScopeState(service) {
+    if (!scopeState.has(service)) {
+      scopeState.set(service, {
+        includeBasic: true,
+        resources: new Set(),
+        basic: new Set(),
+      });
+    }
+    return scopeState.get(service);
+  }
+
+  async function renderScopeCard(service) {
+    const state = ensureScopeState(service);
+    const card = document.createElement("div");
+    card.className = "scope-card";
+    card.dataset.service = service;
+    card.innerHTML = `
+      <h3>${service}</h3>
+      <div class="scope-mode">
+        <label><input type="checkbox" class="include-basic" checked /> Include basic capabilities</label>
+        <label><input type="checkbox" class="custom-only" /> Custom selection only</label>
+      </div>
+      <div class="scope-status">Loading resources...</div>
+      <div class="resource-section-title additional-title">Additional resources</div>
+      <div class="resource-grid additional-grid"></div>
+      <div class="resource-section-title custom-title" hidden>Select resources</div>
+      <div class="resource-grid custom-grid" hidden></div>
+    `;
+    scopePanel.appendChild(card);
+
+    const includeBasicCheckbox = card.querySelector(".include-basic");
+    const customOnlyCheckbox = card.querySelector(".custom-only");
+    const status = card.querySelector(".scope-status");
+    const additionalTitle = card.querySelector(".additional-title");
+    const additionalGrid = card.querySelector(".additional-grid");
+    const customTitle = card.querySelector(".custom-title");
+    const customGrid = card.querySelector(".custom-grid");
+
+    includeBasicCheckbox.checked = state.includeBasic;
+    customOnlyCheckbox.checked = !state.includeBasic;
+
+    const definition = await loadServiceResources(providerSelect.value, service);
+    const basicSet = new Set(definition.basic || []);
+    state.basic = basicSet;
+    const additionalResources = (definition.resources || []).filter(
+      (resource) => !basicSet.has(resource)
+    );
+
+    function renderGrid(grid, resources) {
+      grid.innerHTML = "";
+      const uniqueResources = [...new Set(resources)];
+      for (const resource of uniqueResources) {
+        const label = document.createElement("label");
+        label.className = "resource-option";
+        label.dataset.resource = resource;
+        const checked = state.resources.has(resource) ? "checked" : "";
+        label.innerHTML = `<input type="checkbox" value="${resource}" ${checked} /> ${resource}`;
+        grid.appendChild(label);
+      }
+    }
+
+    renderGrid(additionalGrid, additionalResources);
+    renderGrid(customGrid, definition.resources || []);
+
+    function refreshStatus() {
+      if (state.includeBasic) {
+        const basicList = (definition.basic || []).join(", ") || "none defined";
+        const extras = Array.from(state.resources)
+          .filter((resource) => !basicSet.has(resource))
+          .sort();
+        additionalTitle.hidden = false;
+        additionalGrid.hidden = false;
+        customTitle.hidden = true;
+        customGrid.hidden = true;
+        status.textContent = extras.length
+          ? `Basic capabilities: ${basicList}. Additional: ${extras.join(", ")}`
+          : `Basic capabilities: ${basicList}`;
+      } else {
+        const selected = Array.from(state.resources).sort();
+        additionalTitle.hidden = true;
+        additionalGrid.hidden = true;
+        customTitle.hidden = false;
+        customGrid.hidden = false;
+        status.textContent = selected.length
+          ? `Selected resources: ${selected.join(", ")}`
+          : "Select at least one resource.";
+      }
+    }
+
+    function setIncludeBasic(includeBasic) {
+      state.includeBasic = includeBasic;
+      includeBasicCheckbox.checked = includeBasic;
+      customOnlyCheckbox.checked = !includeBasic;
+      if (includeBasic) {
+        state.resources = new Set(
+          Array.from(state.resources).filter((resource) => !basicSet.has(resource))
+        );
+      }
+      refreshStatus();
+      syncScopeInput();
+    }
+
+    includeBasicCheckbox.addEventListener("change", () => {
+      if (includeBasicCheckbox.checked) {
+        setIncludeBasic(true);
+      } else if (!customOnlyCheckbox.checked) {
+        includeBasicCheckbox.checked = true;
+      }
+    });
+    customOnlyCheckbox.addEventListener("change", () => {
+      setIncludeBasic(!customOnlyCheckbox.checked);
+    });
+    additionalGrid.addEventListener("change", () => {
+      state.resources = new Set(
+        Array.from(additionalGrid.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((input) => input.value)
+          .filter((resource) => !basicSet.has(resource))
+      );
+      refreshStatus();
+      syncScopeInput();
+    });
+    customGrid.addEventListener("change", () => {
+      state.resources = new Set(
+        Array.from(customGrid.querySelectorAll('input[type="checkbox"]:checked')).map(
+          (input) => input.value
+        )
+      );
+      refreshStatus();
+      syncScopeInput();
+    });
+
+    refreshStatus();
+  }
+
+  async function renderScopePanels() {
+    const selected = new Set(selectedServices());
+    for (const service of Array.from(scopeState.keys())) {
+      if (!selected.has(service)) {
+        scopeState.delete(service);
+      }
+    }
+    scopePanel.innerHTML = "";
+    for (const service of selectedServices()) {
+      ensureScopeState(service);
+      await renderScopeCard(service);
+    }
+    syncScopeInput();
+  }
+
+  function renderServices(provider) {
+    servicesContainer.innerHTML = "";
+    scopePanel.innerHTML = "";
+    scopeState.clear();
+    resourceCache.clear();
+    servicesFilter.value = "";
+    for (const service of providerServices(provider)) {
+      const label = document.createElement("label");
+      label.className = "service-option";
+      label.dataset.service = service;
+      label.innerHTML = `<input type="checkbox" name="provider_service_option" value="${service}" /> ${service}`;
+      servicesContainer.appendChild(label);
+    }
+    applyServiceFilter();
+    syncServicesInput();
+    syncScopeInput();
+  }
+
+  function syncServicesInput() {
+    servicesInput.value = selectedServices().join(",");
+  }
+
+  function syncScopeInput() {
+    const payload = {};
+    for (const service of selectedServices()) {
+      const state = ensureScopeState(service);
+      const basic = state.basic || new Set();
+      if (state.includeBasic) {
+        payload[service] = {
+          mode: "basic",
+          additional_resources: Array.from(state.resources)
+            .filter((resource) => !basic.has(resource))
+            .sort(),
+        };
+      } else {
+        payload[service] = {
+          mode: "custom",
+          resources: Array.from(state.resources).sort(),
+        };
+      }
+    }
+    scopeInput.value = JSON.stringify(payload);
+  }
+
+  providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
+  servicesFilter.addEventListener("input", applyServiceFilter);
+  servicesContainer.addEventListener("change", async () => {
+    syncServicesInput();
+    await renderScopePanels();
+  });
+  form.addEventListener("submit", (event) => {
+    syncServicesInput();
+    syncScopeInput();
+    if (!servicesInput.value.trim()) {
+      event.preventDefault();
+      alert("Select at least one provider service.");
+      return;
+    }
+    for (const service of selectedServices()) {
+      const state = ensureScopeState(service);
+      if (!state.includeBasic && state.resources.size === 0) {
+        event.preventDefault();
+        alert(`Select at least one resource for ${service}, or include basic capabilities.`);
+        return;
+      }
+    }
+  });
+
+  renderServices(providerSelect.value);
+</script>
+{% endif %}
+{% endblock %}
