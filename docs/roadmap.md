@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.21.0  
-**In progress:** v1.18 portal UX (results next; foundation + catalog + form)  
+**In progress:** v1.18 portal UX (visual v2 next; foundation + catalog + form + results)  
 **Planning horizon:** v1.18 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main` and may advance ahead of a
