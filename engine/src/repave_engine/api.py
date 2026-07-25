@@ -14,6 +14,7 @@ from repave_engine.blueprint import (
     list_blueprints,
     load_blueprint,
 )
+from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.settings import OutputConfig, load_output_config
@@ -37,6 +38,23 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
             **extra,
+        }
+
+    def gate_summary(gates: list[GateResult]) -> dict[str, int | str]:
+        passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
+        failed = sum(1 for gate in gates if not gate.passed and not gate.skipped)
+        skipped = sum(1 for gate in gates if gate.skipped)
+        if failed:
+            outcome = "failed"
+        elif gates and all(gate.passed or gate.skipped for gate in gates):
+            outcome = "passed"
+        else:
+            outcome = "empty"
+        return {
+            "passed": passed,
+            "failed": failed,
+            "skipped": skipped,
+            "outcome": outcome,
         }
 
     @app.get("/", response_class=HTMLResponse)
@@ -120,7 +138,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return templates.TemplateResponse(
             request,
             "result.html",
-            page_context(result=result, nav_active="catalog"),
+            page_context(
+                result=result,
+                nav_active="catalog",
+                gate_summary=gate_summary(result.gates),
+                gates_ok=all_gates_passed(result.gates),
+            ),
         )
 
     @app.get("/health")

@@ -3,8 +3,10 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
+from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
+from repave_engine.target_repo import ModuleRepository
 
 
 def test_health(repo_root, output_config) -> None:
@@ -73,9 +75,12 @@ def test_generate_form_submission(
     assert response.status_code == 200
     assert "tf-aws-example" in response.text
     assert "Dry-run" in response.text
+    assert "result-hero" in response.text
+    assert "gate-table" in response.text
     assert "Generated files" in response.text
     assert "ec2_diff.tf" in response.text
     assert "s3_bucket.tf" in response.text
+    assert "publish-plan" in response.text
 
 
 def test_generate_publish_passes_github_token_from_env(
@@ -241,3 +246,94 @@ def test_generate_uses_provider_service_option_fallback(
     values = captured["values"]
     assert isinstance(values, dict)
     assert values["provider_services"] == "ec2"
+
+
+def test_result_dashboard_failed_gate_excerpt(
+    repo_root,
+    output_config,
+    sample_inputs,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
+    monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
+
+    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=output_config.modules_root, values=values),
+            gates=[
+                GateResult("docs-drift", True, False, "README present"),
+                GateResult("terraform-fmt", False, False, "Error: fmt failed\nline two"),
+            ],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="Gates failed",
+            dry_run=True,
+        )
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", fake_generate)
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            **sample_inputs,
+        },
+    )
+
+    assert response.status_code == 200
+    assert "result-hero--failed" in response.text
+    assert "Generation failed" in response.text
+    assert "gate-detail" in response.text
+    assert "gate-excerpt-2" in response.text
+    assert "fmt failed" in response.text
+
+
+def test_result_dashboard_published_repo_card(
+    repo_root,
+    output_config,
+    sample_inputs,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
+    monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
+    local_path = output_config.modules_root / "tf-aws-example"
+
+    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+        repo = ModuleRepository(
+            name="tf-aws-example",
+            owner=output_config.github_org,
+            local_path=local_path,
+            clone_url=f"https://github.com/{output_config.github_org}/tf-aws-example.git",
+            web_url=f"https://github.com/{output_config.github_org}/tf-aws-example",
+        )
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=local_path, values=values),
+            gates=[GateResult("docs-drift", True, False, "ok")],
+            module_repository=repo,
+            pr_plan=None,
+            pr_message="published",
+            dry_run=False,
+        )
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", fake_generate)
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "false",
+            **sample_inputs,
+        },
+    )
+
+    assert response.status_code == 200
+    assert "result-hero--passed" in response.text
+    assert "Published locally" in response.text
+    assert "repo-card" in response.text
+    assert "Open on GitHub" in response.text
+    assert "repo-local-path" in response.text

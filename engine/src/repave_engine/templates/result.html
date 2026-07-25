@@ -4,39 +4,143 @@
 
 {% block content %}
 <p class="breadcrumb"><a href="/">← Golden paths</a></p>
-<h1 class="page-title">Generation result</h1>
 
-<p><strong>Blueprint:</strong> {{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
-{% if result.dry_run %}
-<p class="muted">Dry-run preview — files below were rendered in memory and were not published.</p>
-{% endif %}
-{% if result.module_repository %}
-<p><strong>Repository name:</strong> <code>{{ result.module_repository.name }}</code></p>
-<p><strong>Target repository:</strong> <code>{{ result.module_repository.web_url }}</code></p>
-{% if not result.dry_run %}
-<p><strong>Local path:</strong> <code>{{ result.module_repository.local_path }}</code></p>
-{% endif %}
-{% else %}
-<p><strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code></p>
+<section
+  class="result-hero result-hero--{{ gate_summary.outcome }}"
+  aria-labelledby="result-heading"
+>
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">{{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
+    <h1 id="result-heading" class="result-hero__title">
+      {% if gate_summary.outcome == "failed" %}
+      Generation failed
+      {% elif gate_summary.outcome == "passed" %}
+      {% if result.dry_run %}Preview ready{% else %}Published locally{% endif %}
+      {% else %}
+      Generation result
+      {% endif %}
+    </h1>
+    <p class="result-hero__banner">
+      {% if result.dry_run %}
+      <span class="badge badge--skip">Dry-run</span>
+      Files rendered in memory; nothing was written to the module repository.
+      {% elif gates_ok and result.module_repository %}
+      <span class="badge badge--pass">Published</span>
+      Output written to the local module repository.
+      {% else %}
+      <span class="badge badge--fail">Not published</span>
+      Gates did not pass; the repository was not updated.
+      {% endif %}
+    </p>
+  </div>
+  {% if result.gates %}
+  <dl class="result-hero__counts" aria-label="Gate summary">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Passed</dt>
+      <dd>{{ gate_summary.passed }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Failed</dt>
+      <dd>{{ gate_summary.failed }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--skip">
+      <dt>Skipped</dt>
+      <dd>{{ gate_summary.skipped }}</dd>
+    </div>
+  </dl>
+  {% endif %}
+</section>
+
+{% if result.module_repository and gates_ok and not result.dry_run %}
+<section class="card repo-card" aria-labelledby="repo-heading">
+  <div class="card__header">
+    <h2 id="repo-heading">Module repository</h2>
+  </div>
+  <div class="card__body repo-card__body">
+    <p class="repo-card__name"><code>{{ result.module_repository.name }}</code></p>
+    <div class="repo-card__actions">
+      <a
+        class="btn btn--primary"
+        href="{{ result.module_repository.web_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Open on GitHub
+      </a>
+    </div>
+    <div class="copy-row">
+      <span class="copy-row__label muted">Local path</span>
+      <code class="copy-row__value" id="repo-local-path">{{ result.module_repository.local_path }}</code>
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-target="#repo-local-path">
+        Copy
+      </button>
+    </div>
+  </div>
+</section>
+{% elif result.dry_run %}
+<p class="muted result-staging">
+  <strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code>
+</p>
+{% elif not result.module_repository %}
+<p class="muted result-staging">
+  <strong>Output directory:</strong> <code>{{ result.render.output_dir }}</code>
+</p>
 {% endif %}
 
+{% if result.gates %}
 <section class="card" aria-labelledby="gates-heading">
   <div class="card__header">
     <h2 id="gates-heading">Gates</h2>
   </div>
   <div class="card__body">
-    <ul class="gate-list">
-      {% for gate in result.gates %}
-      <li class="{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}">
-        <span class="badge {% if gate.skipped %}badge--skip{% elif gate.passed %}badge--pass{% else %}badge--fail{% endif %}">
-          {% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}
-        </span>
-        {{ gate.name }} — {{ gate.message }}
-      </li>
-      {% endfor %}
-    </ul>
+    <div class="gate-table-wrap">
+      <table class="gate-table">
+        <thead>
+          <tr>
+            <th scope="col">Gate</th>
+            <th scope="col">Status</th>
+            <th scope="col">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for gate in result.gates %}
+          <tr class="gate-table__row gate-table__row--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}">
+            <th scope="row">{{ gate.name }}</th>
+            <td>
+              <span class="badge {% if gate.skipped %}badge--skip{% elif gate.passed %}badge--pass{% else %}badge--fail{% endif %}">
+                {% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}
+              </span>
+            </td>
+            <td>
+              {% if not gate.passed and not gate.skipped %}
+              <details class="gate-detail">
+                <summary>{{ gate.message | truncate(120, True, "…") }}</summary>
+                <div class="gate-detail__panel">
+                  <div class="gate-detail__toolbar">
+                    <span class="muted">Output excerpt</span>
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      data-copy-target="#gate-excerpt-{{ loop.index }}"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <pre class="panel-code" id="gate-excerpt-{{ loop.index }}">{{ gate.message }}</pre>
+                </div>
+              </details>
+              {% else %}
+              {{ gate.message }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </section>
+{% endif %}
 
 {% if result.rendered_files %}
 <section class="card stack-gap" aria-labelledby="files-heading">
@@ -44,22 +148,105 @@
     <h2 id="files-heading">Generated files</h2>
   </div>
   <div class="card__body">
-    {% for file in result.rendered_files %}
-    <details class="file-panel"{% if loop.first %} open{% endif %}>
-      <summary>{{ file.path }}{% if file.truncated %} <span class="muted">(truncated)</span>{% endif %}</summary>
-      <pre>{{ file.content }}</pre>
-    </details>
-    {% endfor %}
+    <div class="file-explorer" data-file-explorer>
+      <ul class="file-explorer__tree" role="tablist" aria-label="Generated file paths">
+        {% for file in result.rendered_files %}
+        <li role="presentation">
+          <button
+            type="button"
+            class="file-explorer__tab{% if loop.first %} is-active{% endif %}"
+            role="tab"
+            aria-selected="{{ 'true' if loop.first else 'false' }}"
+            data-file-index="{{ loop.index0 }}"
+          >
+            {{ file.path }}
+            {% if file.truncated %}
+            <span class="badge badge--skip">truncated</span>
+            {% endif %}
+          </button>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="file-explorer__preview">
+        {% for file in result.rendered_files %}
+        <div
+          class="file-explorer__pane{% if loop.first %} is-active{% endif %}"
+          role="tabpanel"
+          data-file-pane="{{ loop.index0 }}"
+          {% if not loop.first %}hidden{% endif %}
+        >
+          <pre class="panel-code">{{ file.content }}</pre>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="file-explorer-fallback">
+      {% for file in result.rendered_files %}
+      <details class="file-panel"{% if loop.first %} open{% endif %}>
+        <summary>
+          {{ file.path }}
+          {% if file.truncated %}
+          <span class="badge badge--skip">truncated</span>
+          {% endif %}
+        </summary>
+        <pre class="panel-code">{{ file.content }}</pre>
+      </details>
+      {% endfor %}
+    </div>
   </div>
 </section>
 {% endif %}
 
 <section class="card stack-gap" aria-labelledby="publish-heading">
-  <div class="card__header">
-    <h2 id="publish-heading">Publish plan</h2>
-  </div>
-  <div class="card__body">
-    <pre>{{ result.pr_message }}</pre>
-  </div>
+  <details class="publish-plan">
+    <summary class="publish-plan__summary">
+      <h2 id="publish-heading" class="publish-plan__title">Publish plan</h2>
+      <span class="muted">PR description preview</span>
+    </summary>
+    <div class="publish-plan__body">
+      <pre class="panel-code">{{ result.pr_message }}</pre>
+    </div>
+  </details>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    document.querySelectorAll("[data-copy-target]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        var selector = button.getAttribute("data-copy-target");
+        var node = selector ? document.querySelector(selector) : null;
+        if (!node) {
+          return;
+        }
+        var text = node.textContent || "";
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(function () {});
+        }
+      });
+    });
+
+    var explorer = document.querySelector("[data-file-explorer]");
+    if (!explorer) {
+      return;
+    }
+    var tabs = explorer.querySelectorAll(".file-explorer__tab");
+    var panes = explorer.querySelectorAll(".file-explorer__pane");
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        var index = tab.getAttribute("data-file-index");
+        tabs.forEach(function (other) {
+          other.classList.toggle("is-active", other === tab);
+          other.setAttribute("aria-selected", other === tab ? "true" : "false");
+        });
+        panes.forEach(function (pane) {
+          var active = pane.getAttribute("data-file-pane") === index;
+          pane.classList.toggle("is-active", active);
+          pane.hidden = !active;
+        });
+      });
+    });
+  })();
+</script>
 {% endblock %}
