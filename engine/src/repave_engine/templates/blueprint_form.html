@@ -4,80 +4,139 @@
 
 {% block content %}
 <p class="breadcrumb"><a href="/">← Golden paths</a></p>
-<h1 class="page-title">{{ blueprint.name }}</h1>
-<p class="page-lead">Blueprint v{{ blueprint.version }}</p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">{{ blueprint.name }}</h1>
+    <p class="page-lead">
+      Blueprint v{{ blueprint.version }}
+      <span class="badge badge--{{ blueprint.artifact_type }}">{{ blueprint.artifact_type }}</span>
+    </p>
+  </div>
+</header>
 
-<div class="meta">
-  <div><strong>Standard:</strong> {{ blueprint.standard_source }} @ {{ blueprint.standard_version }}</div>
-  <div><strong>Gates:</strong> {{ blueprint.gates | join(', ') }}</div>
+<div class="form-layout{% if provider_catalog %} form-layout--split{% endif %}">
+  <aside class="governance-card" aria-labelledby="governance-heading">
+    <h2 class="governance-card__title" id="governance-heading">Governance</h2>
+    <dl class="governance-card__list">
+      <div>
+        <dt>Standard</dt>
+        <dd>
+          <code>{{ blueprint.standard_source }}</code>
+          <span class="badge">@ {{ blueprint.standard_version }}</span>
+        </dd>
+      </div>
+      {% if blueprint.checkov_policies %}
+      <div>
+        <dt>Checkov pack</dt>
+        <dd>
+          <code>{{ blueprint.checkov_policies.policies_source }}</code>
+          <span class="badge">@ {{ blueprint.checkov_policies.policy_version }}</span>
+        </dd>
+      </div>
+      {% endif %}
+      {% if blueprint.ansible_lint_pack %}
+      <div>
+        <dt>ansible-lint pack</dt>
+        <dd>
+          <code>{{ blueprint.ansible_lint_pack.pack_source }}</code>
+          <span class="badge">@ {{ blueprint.ansible_lint_pack.pack_version }}</span>
+        </dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt>Gates</dt>
+        <dd class="governance-card__gates">
+          {% for gate in blueprint.gates %}
+          <span class="chip">{{ gate }}</span>
+          {% endfor %}
+        </dd>
+      </div>
+    </dl>
+    <p class="governance-card__footnote muted">
+      Last run history lands with portal audit (roadmap). Pins shown are what this
+      generate will encode.
+    </p>
+  </aside>
+
+  <form method="post" action="/generate" id="generate-form" class="form-panel">
+    <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
+    <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
+
+    <section class="form-section" aria-labelledby="inputs-heading">
+      <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
+
+      {% for field in blueprint.inputs %}
+      {% if field.name == "provider_service_scope" %}
+      {% elif provider_catalog and field.name == "cloud_provider" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif provider_catalog and field.name == "provider_services" %}
+      <div class="field-block">
+        <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <div class="service-tools">
+          <input type="text" class="input" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
+          <span id="provider-services-count" class="service-count"></span>
+        </div>
+        <div id="provider-services" class="service-grid" aria-live="polite"></div>
+        <div id="service-scope-panel" class="scope-panel" aria-live="polite"></div>
+        <input type="hidden" id="provider_services" name="provider_services" value="" />
+      </div>
+      {% else %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        {% if field.enum %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input
+          class="input"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          type="text"
+          {% if field.required %}required{% endif %}
+          {% if field.default is not none %}value="{{ field.default }}"{% endif %}
+        />
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+    </section>
+
+    <section class="form-section" aria-labelledby="publish-heading">
+      <h2 class="form-section__title" id="publish-heading">Publish</h2>
+      <div class="segmented publish-toggle" role="radiogroup" aria-label="Publish mode">
+        <label class="segmented__option">
+          <input type="radio" name="dry_run" value="true" checked />
+          Dry-run preview
+        </label>
+        <label class="segmented__option">
+          <input type="radio" name="dry_run" value="false" />
+          Publish locally
+        </label>
+      </div>
+      <p class="hint">
+        Publish creates the module repository under <code>REPAVE_MODULES_ROOT</code>.
+        Set <code>GITHUB_TOKEN</code> on the server to also create and push the GitHub repo.
+      </p>
+    </section>
+
+    <div class="form-actions">
+      <button class="btn btn--primary" type="submit">Generate</button>
+    </div>
+  </form>
 </div>
-
-<form method="post" action="/generate" id="generate-form">
-  <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
-  <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
-
-  {% for field in blueprint.inputs %}
-  {% if field.name == "provider_service_scope" %}
-  {% elif provider_catalog and field.name == "cloud_provider" %}
-  <div class="field-block">
-    <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
-    {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
-    <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-      {% for option in field.enum %}
-      <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  {% elif provider_catalog and field.name == "provider_services" %}
-  <div class="field-block">
-    <label>{{ field.name }}{% if field.required %} *{% endif %}</label>
-    {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
-    <div class="service-tools">
-      <input type="text" class="input" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
-      <span id="provider-services-count" class="service-count"></span>
-    </div>
-    <div id="provider-services" class="service-grid" aria-live="polite"></div>
-    <div id="service-scope-panel" class="scope-panel" aria-live="polite"></div>
-    <input type="hidden" id="provider_services" name="provider_services" value="" />
-  </div>
-  {% else %}
-  <div class="field-block">
-    <label for="{{ field.name }}">{{ field.name }}{% if field.required %} *{% endif %}</label>
-    {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
-    {% if field.enum %}
-    <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
-      {% for option in field.enum %}
-      <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
-      {% endfor %}
-    </select>
-    {% else %}
-    <input
-      class="input"
-      id="{{ field.name }}"
-      name="{{ field.name }}"
-      type="text"
-      {% if field.required %}required{% endif %}
-      {% if field.default is not none %}value="{{ field.default }}"{% endif %}
-    />
-    {% endif %}
-  </div>
-  {% endif %}
-  {% endfor %}
-
-  <div class="publish-options">
-    <div><strong>Publish options</strong></div>
-    <label>
-      <input type="checkbox" name="dry_run" value="false" />
-      Publish module repository locally (disable dry-run)
-    </label>
-    <div class="hint">
-      When publish is enabled, set <code>GITHUB_TOKEN</code> in the server environment to
-      create the GitHub repository and push the initial commit.
-    </div>
-  </div>
-
-  <button class="btn btn--primary" type="submit">Generate</button>
-</form>
 {% endblock %}
 
 {% block scripts %}
@@ -105,14 +164,21 @@
     const query = servicesFilter.value.trim().toLowerCase();
     const services = providerServices(providerSelect.value);
     let visible = 0;
+    let selectedVisible = 0;
     for (const label of servicesContainer.querySelectorAll(".service-option")) {
       const match = !query || label.dataset.service.toLowerCase().includes(query);
       label.hidden = !match;
-      if (match) visible += 1;
+      if (match) {
+        visible += 1;
+        if (label.querySelector('input[type="checkbox"]').checked) {
+          selectedVisible += 1;
+        }
+      }
     }
+    const selected = selectedServices().length;
     servicesCount.textContent = query
-      ? `${visible} of ${services.length} services`
-      : `${services.length} services`;
+      ? `${selected} selected · ${visible} of ${services.length} shown`
+      : `${selected} selected · ${services.length} services`;
   }
 
   function selectedServices() {
@@ -152,14 +218,21 @@
 
   async function renderScopeCard(service) {
     const state = ensureScopeState(service);
+    const modeName = `scope-mode-${service}`;
     const card = document.createElement("div");
     card.className = "scope-card";
     card.dataset.service = service;
     card.innerHTML = `
       <h3>${service}</h3>
-      <div class="scope-mode">
-        <label><input type="checkbox" class="include-basic" checked /> Include basic capabilities</label>
-        <label><input type="checkbox" class="custom-only" /> Custom selection only</label>
+      <div class="segmented scope-mode" role="radiogroup" aria-label="Scope mode for ${service}">
+        <label class="segmented__option">
+          <input type="radio" name="${modeName}" class="include-basic" value="basic" checked />
+          Basic + optional
+        </label>
+        <label class="segmented__option">
+          <input type="radio" name="${modeName}" class="custom-only" value="custom" />
+          Custom only
+        </label>
       </div>
       <div class="scope-status">Loading resources...</div>
       <div class="resource-section-title additional-title">Additional resources</div>
@@ -169,16 +242,16 @@
     `;
     scopePanel.appendChild(card);
 
-    const includeBasicCheckbox = card.querySelector(".include-basic");
-    const customOnlyCheckbox = card.querySelector(".custom-only");
+    const includeBasicRadio = card.querySelector(".include-basic");
+    const customOnlyRadio = card.querySelector(".custom-only");
     const status = card.querySelector(".scope-status");
     const additionalTitle = card.querySelector(".additional-title");
     const additionalGrid = card.querySelector(".additional-grid");
     const customTitle = card.querySelector(".custom-title");
     const customGrid = card.querySelector(".custom-grid");
 
-    includeBasicCheckbox.checked = state.includeBasic;
-    customOnlyCheckbox.checked = !state.includeBasic;
+    includeBasicRadio.checked = state.includeBasic;
+    customOnlyRadio.checked = !state.includeBasic;
 
     const definition = await loadServiceResources(providerSelect.value, service);
     const basicSet = new Set(definition.basic || []);
@@ -230,8 +303,8 @@
 
     function setIncludeBasic(includeBasic) {
       state.includeBasic = includeBasic;
-      includeBasicCheckbox.checked = includeBasic;
-      customOnlyCheckbox.checked = !includeBasic;
+      includeBasicRadio.checked = includeBasic;
+      customOnlyRadio.checked = !includeBasic;
       if (includeBasic) {
         state.resources = new Set(
           Array.from(state.resources).filter((resource) => !basicSet.has(resource))
@@ -241,15 +314,15 @@
       syncScopeInput();
     }
 
-    includeBasicCheckbox.addEventListener("change", () => {
-      if (includeBasicCheckbox.checked) {
+    includeBasicRadio.addEventListener("change", () => {
+      if (includeBasicRadio.checked) {
         setIncludeBasic(true);
-      } else if (!customOnlyCheckbox.checked) {
-        includeBasicCheckbox.checked = true;
       }
     });
-    customOnlyCheckbox.addEventListener("change", () => {
-      setIncludeBasic(!customOnlyCheckbox.checked);
+    customOnlyRadio.addEventListener("change", () => {
+      if (customOnlyRadio.checked) {
+        setIncludeBasic(false);
+      }
     });
     additionalGrid.addEventListener("change", () => {
       state.resources = new Set(
@@ -286,6 +359,7 @@
       await renderScopeCard(service);
     }
     syncScopeInput();
+    applyServiceFilter();
   }
 
   function renderServices(provider) {

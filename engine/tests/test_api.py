@@ -175,6 +175,21 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "cloud_provider" in response.text
     assert "provider_services" in response.text
+    assert "governance-card" in response.text
+    assert "form-layout--split" in response.text
+    assert "Dry-run preview" in response.text
+    assert "Publish locally" in response.text
+    assert "chip" in response.text
+
+
+def test_ansible_form_is_single_column(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-role-generic")
+
+    assert response.status_code == 200
+    assert "governance-card" in response.text
+    assert "form-layout--split" not in response.text
+    assert "ansible-lint" in response.text or "ansible_lint" in response.text
 
 
 def test_provider_service_detail_unknown_returns_empty(repo_root, output_config) -> None:

@@ -7,8 +7,8 @@ labels; this file holds **visual layout**, **component patterns**, and
 
 **Current UI:** night-ops console — deep charcoal canvas, teal accent, fine grid
 atmosphere, shared `base.html` + `/static/repave.css`, home catalog grouped by
-artifact type with blueprint cards. Form governance layout and results dashboard
-still to land in later v1.18 slices.
+artifact type, blueprint form with sticky governance card (split on Terraform).
+Results dashboard still to land (Phase 4).
 
 **Visual v2 (deferred):** a dedicated polish pass for hero-first home composition
 and stronger craft — do not block form/results slices. See come-back plan notes
@@ -136,6 +136,9 @@ repo docs.
 ---
 
 ## Phase 3 — Blueprint form
+
+**Status:** Landed (governance card, split layout for Terraform, publish toggle,
+segmented scope mode). Stepper and presets remain future polish.
 
 **Goal:** Long Terraform flows feel guided; Ansible flows stay simple but polished.
 

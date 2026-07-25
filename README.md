@@ -13,12 +13,12 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> **Status (engine [v1.19.0](https://github.com/opsdevcode/repave/releases/tag/v1.19.0)
+> **Status (engine [v1.21.0](https://github.com/opsdevcode/repave/releases/tag/v1.21.0)
 > on GitHub).** Generation runs locally or via Docker Compose — no Kubernetes
 > required for the engine. The **reconciliation operator** (alpha; v1.17 slices
-> 0–4 + kind e2e) reconciles `GoldenPathRepo` and `Blueprint` CRDs. Next: portal
-> UX (v1.18 theme). See [`operator/`](operator/) and
-> [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
+> 0–4 + kind e2e) reconciles `GoldenPathRepo` and `Blueprint` CRDs. Portal UX
+> (v1.18 theme): foundation + catalog + form landed; results next. See
+> [`operator/`](operator/) and [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
 
 ## What you can do today
 
@@ -173,8 +173,8 @@ docs/          # concepts, roadmap, portal design, operator local dev
 
 ## Roadmap
 
-**Current focus:** v1.18 portal UX (form → results; foundation + catalog landed;
-Visual v2 polish deferred)
+**Current focus:** v1.18 portal UX results slice (foundation + catalog + form
+landed; Visual v2 polish deferred)
 ([`docs/roadmap.md`](docs/roadmap.md), [`docs/portal-design.md`](docs/portal-design.md)).
 
 High-level release history and planning through **v2.0.0** live in

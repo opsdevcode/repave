@@ -840,6 +840,172 @@ details.file-panel summary {
   border-color: color-mix(in srgb, #7dd3c0 40%, transparent);
 }
 
+/* —— Blueprint form (Phase 3) —— */
+
+.form-hero .page-lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form-layout {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.form-layout--split {
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .form-layout--split {
+    grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+  }
+
+  .form-layout--split .governance-card {
+    position: sticky;
+    top: calc(var(--shell-height) + var(--space-4));
+  }
+}
+
+.governance-card {
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  border-top: 3px solid var(--accent);
+  padding: var(--space-4);
+}
+
+.governance-card__title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.governance-card__list {
+  margin: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+
+.governance-card__list dt {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.governance-card__list dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  word-break: break-word;
+}
+
+.governance-card__gates {
+  gap: var(--space-2);
+}
+
+.governance-card__footnote {
+  margin: var(--space-4) 0 0;
+  font-size: 0.85rem;
+}
+
+.form-panel {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  padding: var(--space-5);
+}
+
+.form-section {
+  margin-bottom: var(--space-5);
+}
+
+.form-section__title {
+  margin: 0 0 var(--space-4);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--space-2);
+}
+
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.segmented__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.55rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.segmented__option:last-child {
+  border-right: none;
+}
+
+.segmented__option:has(input:checked) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.segmented__option input {
+  width: auto;
+  accent-color: var(--accent);
+}
+
+.publish-toggle {
+  display: flex;
+  width: 100%;
+  margin-bottom: var(--space-3);
+}
+
+.publish-toggle .segmented__option {
+  flex: 1;
+  justify-content: center;
+}
+
+.scope-mode.segmented {
+  display: flex;
+  width: 100%;
+  margin: 0.5rem 0;
+}
+
+.scope-mode.segmented .segmented__option {
+  flex: 1;
+  justify-content: center;
+  font-weight: 500;
+}
+
+.service-option:has(input:checked) {
+  color: var(--accent);
+  font-weight: 650;
+}
+
 @media (max-width: 640px) {
   .shell__bar {
     flex-wrap: wrap;
