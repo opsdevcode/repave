@@ -28,7 +28,9 @@ WORKDIR /app
 
 COPY engine/pyproject.toml engine/uv.lock /app/engine/
 COPY engine/src /app/engine/src
-RUN uv pip install --system --no-cache /app/engine
+# Editable install so compose bind-mount of /app picks up template/CSS changes
+# without rebuilding the image for every portal tweak.
+RUN uv pip install --system --no-cache -e /app/engine
 
 COPY schemas /app/schemas
 COPY blueprints /app/blueprints
