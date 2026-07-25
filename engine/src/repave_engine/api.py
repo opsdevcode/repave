@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from repave_engine import __version__
 from repave_engine.blueprint import (
+    group_blueprints_by_artifact,
     list_blueprints,
     load_blueprint,
 )
@@ -41,10 +42,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
         blueprints = list_blueprints(repo_root / "blueprints")
+        catalog_groups = group_blueprints_by_artifact(blueprints)
         return templates.TemplateResponse(
             request,
             "index.html",
-            page_context(blueprints=blueprints, nav_active="catalog"),
+            page_context(
+                blueprints=blueprints,
+                catalog_groups=catalog_groups,
+                nav_active="catalog",
+            ),
         )
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)

@@ -253,8 +253,9 @@ optional CI runs e2e on a schedule or before release.
 multi-step scope selection. The portal must present golden paths and run results
 as a cohesive product surface (shared shell and visual system).
 
-**Progress:** Foundation slice adds `base.html`, `/static/repave.css` tokens,
-app shell, and shared component classes across home / form / result.
+**Progress:** Foundation (night-ops shell + tokens) and catalog (artifact-type
+groups + blueprint cards) landed. Next: form governance UX, then results
+dashboard. Visual v2 craft polish is deferred (see `portal-design.md` Phase 5).
 
 **Approach — interaction (functional):**
 

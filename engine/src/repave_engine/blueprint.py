@@ -320,6 +320,60 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
     return results
 
 
+# Portal catalog grouping (v1.18). Order is display order; unknown types follow.
+_ARTIFACT_GROUP_META: dict[str, tuple[str, str]] = {
+    "terraform-module": ("Terraform", "Modules and infrastructure scaffolds"),
+    "ansible-role": ("Ansible", "Galaxy-compatible roles"),
+}
+_ARTIFACT_GROUP_ORDER: tuple[str, ...] = ("terraform-module", "ansible-role")
+
+
+@dataclass(frozen=True)
+class BlueprintCatalogGroup:
+    artifact_type: str
+    title: str
+    subtitle: str
+    blueprints: tuple[Blueprint, ...]
+
+
+def group_blueprints_by_artifact(blueprints: list[Blueprint]) -> list[BlueprintCatalogGroup]:
+    """Group blueprints for the portal home catalog by artifact type."""
+    buckets: dict[str, list[Blueprint]] = {}
+    for blueprint in blueprints:
+        buckets.setdefault(blueprint.artifact_type, []).append(blueprint)
+
+    groups: list[BlueprintCatalogGroup] = []
+    seen: set[str] = set()
+    for artifact_type in _ARTIFACT_GROUP_ORDER:
+        items = buckets.get(artifact_type)
+        if not items:
+            continue
+        title, subtitle = _ARTIFACT_GROUP_META[artifact_type]
+        groups.append(
+            BlueprintCatalogGroup(
+                artifact_type=artifact_type,
+                title=title,
+                subtitle=subtitle,
+                blueprints=tuple(items),
+            )
+        )
+        seen.add(artifact_type)
+
+    for artifact_type in sorted(buckets):
+        if artifact_type in seen:
+            continue
+        label = artifact_type.replace("-", " ").title()
+        groups.append(
+            BlueprintCatalogGroup(
+                artifact_type=artifact_type,
+                title=label,
+                subtitle="Additional golden paths",
+                blueprints=tuple(buckets[artifact_type]),
+            )
+        )
+    return groups
+
+
 def _find_repo_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if (candidate / "schemas" / "blueprint.schema.json").exists():

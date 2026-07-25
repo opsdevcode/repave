@@ -8,28 +8,50 @@
   Governed, repeatable platform engineering — for many, not just the few.
 </p>
 
-<section class="card" aria-labelledby="golden-paths-heading">
-  <div class="card__header">
-    <h2 id="golden-paths-heading">Golden paths</h2>
-  </div>
-  <div class="card__body">
-    {% if blueprints %}
-    <ul class="blueprint-list">
-      {% for bp in blueprints %}
-      <li>
-        <a href="/blueprints/{{ bp.name }}">{{ bp.name }}</a>
-        <span class="badge">v{{ bp.version }}</span>
-        {% if bp.description %}
-        <div class="muted">{{ bp.description }}</div>
-        {% endif %}
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <div class="alert alert--info">
-      No blueprints found under <code>blueprints/</code>.
+{% if catalog_groups %}
+{% for group in catalog_groups %}
+<section
+  class="catalog-group catalog-group--{{ group.artifact_type }}"
+  aria-labelledby="catalog-{{ group.artifact_type }}"
+>
+  <header class="catalog-group__header">
+    <div>
+      <h2 class="catalog-group__title" id="catalog-{{ group.artifact_type }}">
+        {{ group.title }}
+      </h2>
+      <p class="catalog-group__subtitle">{{ group.subtitle }}</p>
     </div>
-    {% endif %}
+    <span class="badge badge--{{ group.artifact_type }}">{{ group.artifact_type }}</span>
+  </header>
+  <div class="catalog-grid">
+    {% for bp in group.blueprints %}
+    <a class="catalog-card catalog-card--{{ bp.artifact_type }}" href="/blueprints/{{ bp.name }}">
+      <div class="catalog-card__top">
+        <h3 class="catalog-card__name">{{ bp.name }}</h3>
+        <span class="badge">v{{ bp.version }}</span>
+      </div>
+      {% if bp.description %}
+      <p class="catalog-card__desc">{{ bp.description }}</p>
+      {% endif %}
+      <div class="catalog-card__chips" aria-label="Gates">
+        {% for gate in bp.gates[:4] %}
+        <span class="chip">{{ gate }}</span>
+        {% endfor %}
+        {% if bp.gates|length > 4 %}
+        <span class="chip chip--muted">+{{ bp.gates|length - 4 }}</span>
+        {% endif %}
+      </div>
+      <footer class="catalog-card__footer">
+        <span class="muted">{{ bp.standard_source }} @ {{ bp.standard_version }}</span>
+      </footer>
+    </a>
+    {% endfor %}
   </div>
 </section>
+{% endfor %}
+{% else %}
+<div class="alert alert--info">
+  No blueprints found under <code>blueprints/</code>.
+</div>
+{% endif %}
 {% endblock %}

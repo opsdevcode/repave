@@ -24,6 +24,10 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "/static/repave.css" in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
+    assert "catalog-grid" in response.text
+    assert "catalog-group__title" in response.text
+    assert "Terraform" in response.text
+    assert "Ansible" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:

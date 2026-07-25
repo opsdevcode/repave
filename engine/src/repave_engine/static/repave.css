@@ -697,24 +697,147 @@ details.file-panel summary {
   color: var(--accent);
 }
 
-.blueprint-list {
-  list-style: none;
-  padding: 0;
+/* —— Catalog (home) —— */
+
+.catalog-group {
+  margin-bottom: var(--space-6);
+}
+
+.catalog-group__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  padding-left: var(--space-3);
+  border-left: 3px solid var(--accent);
+}
+
+.catalog-group--ansible-role .catalog-group__header {
+  border-left-color: #7dd3c0;
+}
+
+.catalog-group--terraform-module .catalog-group__header {
+  border-left-color: #5b9fd4;
+}
+
+.catalog-group__title {
   margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
 }
 
-.blueprint-list li {
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--border);
+.catalog-group__subtitle {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: 0.95rem;
 }
 
-.blueprint-list li:last-child {
-  border-bottom: none;
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-4);
 }
 
-.blueprint-list a {
-  font-weight: 650;
+.catalog-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 2px);
+  border-top: 3px solid var(--accent);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.catalog-card--terraform-module {
+  border-top-color: #5b9fd4;
+}
+
+.catalog-card--ansible-role {
+  border-top-color: #7dd3c0;
+}
+
+.catalog-card:hover {
+  color: var(--text);
+  text-decoration: none;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--surface-raised);
+  transform: translateY(-1px);
+}
+
+.catalog-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.catalog-card__name {
+  margin: 0;
   font-size: 1.05rem;
+  font-weight: 650;
+  word-break: break-word;
+}
+
+.catalog-card__desc {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.catalog-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+.chip--muted {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+.catalog-card__footer {
+  margin-top: auto;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.badge--terraform-module {
+  background: color-mix(in srgb, #5b9fd4 18%, transparent);
+  color: #9ec9ef;
+  border-color: color-mix(in srgb, #5b9fd4 40%, transparent);
+}
+
+.badge--ansible-role {
+  background: color-mix(in srgb, #7dd3c0 18%, transparent);
+  color: #a8e6d9;
+  border-color: color-mix(in srgb, #7dd3c0 40%, transparent);
 }
 
 @media (max-width: 640px) {
