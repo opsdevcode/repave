@@ -4,13 +4,13 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.18.0  
-**In progress:** v1.17 GA close-out → v1.18 portal UX  
+**Current release:** v1.19.0  
+**In progress:** v1.18 portal UX (foundation → catalog → form → results)  
 **Planning horizon:** v1.18 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main` and may advance ahead of a
-roadmap *theme* (for example v1.18.0 shipped with operator + release-CI work
-before portal UX under [§ v1.18](#v118--portal-and-ux-hardening) lands).
+roadmap *theme* (for example v1.19.0 shipped with operator e2e before portal UX
+under [§ v1.18](#v118--portal-and-ux-hardening) lands).
 
 ---
 
@@ -39,7 +39,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.18.0  today     engine tag on GitHub; operator alpha + kind e2e harness; portal UX next
+v1.19.0  today     engine tag on GitHub; operator alpha + kind e2e; portal UX in progress
   │
   ├─ v1.17 GA       optional nightly CI for e2e; repoURL inventory still future
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
@@ -219,6 +219,12 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   work and Release workflow fixes
 - GitHub Release + wheel artifacts; changelog via python-semantic-release
 
+### v1.19.0 — Operator kind e2e
+
+- `make operator-e2e` kind harness asserting `GoldenPathRepo` `OutOfDate` for a
+  stale pin (no `GITHUB_TOKEN`)
+- Roadmap/status docs aligned after the v1.18.0 cut
+
 ---
 
 ## Planned
@@ -244,9 +250,11 @@ optional CI runs e2e on a schedule or before release.
 ### v1.18 — Portal and UX hardening
 
 **Problem:** Form UX is functional but minimal for large provider catalogs and
-multi-step scope selection. The portal is server-rendered wireframe UI (inline CSS,
-no shared shell) and does not present golden paths or run results as a cohesive
-product surface.
+multi-step scope selection. The portal must present golden paths and run results
+as a cohesive product surface (shared shell and visual system).
+
+**Progress:** Foundation slice adds `base.html`, `/static/repave.css` tokens,
+app shell, and shared component classes across home / form / result.
 
 **Approach — interaction (functional):**
 

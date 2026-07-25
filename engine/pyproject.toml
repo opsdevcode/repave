@@ -38,7 +38,7 @@ repave = "repave_engine.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-repave_engine = ["templates/*.html"]
+repave_engine = ["templates/*.html", "static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -5,9 +5,9 @@ Planning document for the repave web portal (Jinja templates under
 labels; this file holds **visual layout**, **component patterns**, and
 **acceptance signals** for portal work, primarily **v1.18**.
 
-**Current UI:** three server-rendered pages with inline CSS — functional wireframe
-aesthetic (`system-ui`, gray panels, minimal hierarchy). No shared design system or
-artifact-type visual language.
+**Current UI:** night-ops console — deep charcoal canvas, teal accent, fine grid
+atmosphere, shared `base.html` + `/static/repave.css`. Catalog cards, form
+governance layout, and results dashboard still to land in later v1.18 slices.
 
 **Target:** a coherent product surface without mandating a SPA rewrite — shared
 static assets, CSS tokens, and a base layout template.
@@ -65,12 +65,15 @@ Implementation notes:
 
 ### Design tokens (CSS custom properties)
 
-Define at `:root` (and `[data-theme="dark"]` if dark mode ships in Phase 5):
+Default theme is **night-ops** (`color-scheme: dark` on `:root`):
 
-- **Color:** `--bg`, `--surface`, `--border`, `--text`, `--text-muted`, `--accent`,
-  `--success`, `--warning`, `--error`, `--skip`
+- **Color:** charcoal `--bg` / `--surface`, light `--text`, electric teal
+  `--accent`, crisp `--success` / `--warning` / `--error` / `--skip`
+- **Atmosphere:** vignette + fine grid overlay (`.shell__atmosphere`); scan
+  hairline on the sticky bar
+- **Type:** Fraunces (display), Source Sans 3, IBM Plex Mono
 - **Layout:** `--radius`, `--space-1` … `--space-6`, `--content-max-width`
-- **Type:** `--font-sans`, `--font-mono` (system stack acceptable initially)
+- Optional light theme / toggle remains Phase 5 polish if needed
 
 ### App shell
 

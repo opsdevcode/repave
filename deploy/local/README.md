@@ -9,6 +9,11 @@ docker compose up --build
 
 Open http://localhost:8088
 
+The engine is installed **editable** from `/app/engine`, and compose bind-mounts
+the repo at `/app`, so portal CSS/templates update when you refresh (hard-refresh
+if the browser cached `/static/repave.css`). Rebuild when `pyproject.toml` or the
+Dockerfile changes; a plain restart is enough for template/CSS edits.
+
 The container includes **terraform**, **tflint**, and **checkov** (policy + secrets
 scan), so blueprint gates run for real instead of skipping. Generated modules are written to the `repave-modules`
 Docker volume (`/modules` inside the container).
