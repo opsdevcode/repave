@@ -6,8 +6,13 @@ labels; this file holds **visual layout**, **component patterns**, and
 **acceptance signals** for portal work, primarily **v1.18**.
 
 **Current UI:** night-ops console — deep charcoal canvas, teal accent, fine grid
-atmosphere, shared `base.html` + `/static/repave.css`. Catalog cards, form
-governance layout, and results dashboard still to land in later v1.18 slices.
+atmosphere, shared `base.html` + `/static/repave.css`, home catalog grouped by
+artifact type with blueprint cards. Form governance layout and results dashboard
+still to land in later v1.18 slices.
+
+**Visual v2 (deferred):** a dedicated polish pass for hero-first home composition
+and stronger craft — do not block form/results slices. See come-back plan notes
+under [Phase 5](#phase-5--polish-and-extensions).
 
 **Target:** a coherent product surface without mandating a SPA rewrite — shared
 static assets, CSS tokens, and a base layout template.
@@ -97,6 +102,9 @@ change in a single file.
 ---
 
 ## Phase 2 — Catalog (home)
+
+**Status:** Landed (structure on night-ops tokens). Visual v2 may refine hero
+composition later without changing the grouping contract.
 
 **Goal:** Golden paths read as a **catalog**, not a README list.
 
@@ -216,9 +224,20 @@ at most two interactions.
 
 Pick based on audience and hosting model (v1.25+).
 
+### Visual v2 (deferred — come back)
+
+Night-ops foundation + catalog structure ship first. When returning for craft:
+
+- Home hero: oversized **repave** wordmark, one line, one CTA; catalog below fold
+- Stronger atmosphere (still no neon glow stacks); console-native card hover
+- Form/results visuals once Phase 3–4 markup exists (governance rail, status hero)
+
+Acceptance: a home screenshot reads as “repave night console” without body copy.
+
 | Enhancement | Notes |
 | --- | --- |
-| **Dark mode** | `prefers-color-scheme` default + shell toggle; tokens make this cheap |
+| **Visual v2** | Deferred craft pass above; keep night-ops brand |
+| **Dark mode** | Night-ops is default; light theme / toggle only if needed later |
 | **Motion** | Expand/collapse on scope and gate rows; honor `prefers-reduced-motion` |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |

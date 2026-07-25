@@ -173,7 +173,8 @@ docs/          # concepts, roadmap, portal design, operator local dev
 
 ## Roadmap
 
-**Current focus:** v1.18 portal UX (foundation → catalog → form → results)
+**Current focus:** v1.18 portal UX (form → results; foundation + catalog landed;
+Visual v2 polish deferred)
 ([`docs/roadmap.md`](docs/roadmap.md), [`docs/portal-design.md`](docs/portal-design.md)).
 
 High-level release history and planning through **v2.0.0** live in
