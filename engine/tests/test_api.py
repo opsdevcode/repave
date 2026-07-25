@@ -23,6 +23,7 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "terraform-module-generic" in response.text
     assert "/static/repave.css" in response.text
     assert 'class="shell"' in response.text
+    assert "shell__atmosphere" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -32,6 +33,8 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "--accent" in response.text
     assert ".shell__wordmark" in response.text
+    assert "color-scheme: dark" in response.text
+    assert ".shell__atmosphere" in response.text
 
 
 def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> None:
