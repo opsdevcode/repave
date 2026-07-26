@@ -26,7 +26,8 @@ Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  → 
 - **Your standards** — Point blueprints at your `standards/` tree and pin versions in `blueprint.yaml`.
 - **Local-first** — Full loop on a laptop: form → dry-run → gates → local git (optional GitHub push).
 
-Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md)
+Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) ·
+**[5-minute demo](docs/quickstart.md#five-minute-demo-portal)**
 
 ---
 
