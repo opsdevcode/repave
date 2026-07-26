@@ -62,6 +62,12 @@ Terraform, gate dashboard on results, upgrade preview for existing repos.
   <sub>Generate result — lineage, policy pack, gates (dry-run)</sub>
 </p>
 
+<p align="center">
+  <img src="docs/images/portal/generate-result-backstage.png" alt="Generate result with Backstage catalog entity and catalog-info.yaml" width="920" />
+  <br />
+  <sub>Backstage — <code>catalog-info.yaml</code> + <code>repave.dev/*</code> lineage (optional on form)</sub>
+</p>
+
 Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md)
 
 ---
