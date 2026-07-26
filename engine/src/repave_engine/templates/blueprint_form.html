@@ -96,26 +96,16 @@
         </select>
         <p id="single-resource-validation" class="form-validation" role="alert" hidden></p>
       </div>
-      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name == "module_name" %}
+      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name == "pinned_modules" %}
       <div class="field-block">
-        <label for="stack-module-select">Module{% if field.required %} *{% endif %}</label>
-        <div class="hint">Published modules under <code>REPAVE_MODULES_ROOT</code> (tf-* / tfm-*) plus local example stub.</div>
-        <select class="select" id="stack-module-select" aria-label="Terraform module repository" required>
-          <option value="" disabled selected>Loading modules…</option>
-        </select>
+        <label>Terraform modules</label>
+        <div class="hint">Pin one or more modules from <code>REPAVE_MODULES_ROOT</code> (<code>tf-*</code> / <code>tfm-*</code>) plus the local example stub.</div>
+        <div id="pinned-modules-rows" class="pinned-roles"></div>
+        <button type="button" class="btn btn--ghost btn--sm" id="add-pinned-module">Add module</button>
+        <p id="pinned-modules-validation" class="form-validation" role="alert" hidden></p>
+        <input type="hidden" id="pinned_modules" name="pinned_modules" value="[]" />
       </div>
-      <div class="field-block">
-        <label for="stack-module-version-select">Version{% if field.required %} *{% endif %}</label>
-        <div class="hint">Git tag from the module repo, or blueprint pin when no tags exist.</div>
-        <select class="select" id="stack-module-version-select" aria-label="Module version or tag" required disabled>
-          <option value="" disabled selected>Select a module first…</option>
-        </select>
-        <p id="stack-module-validation" class="form-validation" role="alert" hidden></p>
-        <input type="hidden" id="module_name" name="module_name" value="{{ field.default }}" />
-        <input type="hidden" id="module_source" name="module_source" value="./modules/_example" />
-        <input type="hidden" id="module_version" name="module_version" value="" />
-      </div>
-      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name in ("module_source", "module_version") %}
+      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name in ("module_name", "module_source", "module_version") %}
       {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "pinned_roles" %}
       <div class="field-block">
         <label>Galaxy roles</label>
@@ -344,29 +334,74 @@
 <script>
   const stackBlueprintName = {{ blueprint.name | tojson }};
   const providerSelect = document.getElementById("cloud_provider");
-  const moduleSelect = document.getElementById("stack-module-select");
-  const versionSelect = document.getElementById("stack-module-version-select");
-  const moduleNameInput = document.getElementById("module_name");
-  const moduleSourceInput = document.getElementById("module_source");
-  const moduleVersionInput = document.getElementById("module_version");
+  const modulesPanel = document.getElementById("pinned-modules-rows");
+  const addModuleButton = document.getElementById("add-pinned-module");
+  const pinnedModulesInput = document.getElementById("pinned_modules");
   const form = document.getElementById("generate-form");
-  const validationBanner = document.getElementById("stack-module-validation");
+  const modulesValidation = document.getElementById("pinned-modules-validation");
   let inventoryModules = [];
 
   function clearStackValidation() {
-    if (!validationBanner) return;
-    validationBanner.hidden = true;
-    validationBanner.textContent = "";
+    if (!modulesValidation) return;
+    modulesValidation.hidden = true;
+    modulesValidation.textContent = "";
   }
 
   function showStackValidation(message) {
-    if (!validationBanner) return;
-    validationBanner.textContent = message;
-    validationBanner.hidden = false;
-    validationBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!modulesValidation) return;
+    modulesValidation.textContent = message;
+    modulesValidation.hidden = false;
+    modulesValidation.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  function fillSelect(select, options, placeholder, valueKey, labelFn) {
+  function moduleSourceFromSelection(module, version) {
+    if (!module) return null;
+    const blockName = module.module_name || "foundation";
+    if (module.source_kind === "local") {
+      return {
+        name: blockName,
+        source: module.local_source || "./modules/_example",
+        version: "",
+        repo_name: module.repo_name || "_example",
+      };
+    }
+    const ref = version || "main";
+    const gitUrl = (module.git_url || "").replace(/\.git$/, "") + ".git";
+    return {
+      name: blockName,
+      source: `git::${gitUrl}?ref=${ref}`,
+      version: "",
+      repo_name: module.repo_name,
+    };
+  }
+
+  function syncPinnedModulesInput() {
+    const payload = [];
+    const usedNames = new Set();
+    for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
+      const moduleSelect = row.querySelector(".pinned-module-select");
+      const versionSelect = row.querySelector(".pinned-module-version");
+      const option = moduleSelect.selectedOptions[0];
+      if (!option || !option.dataset.payload) {
+        continue;
+      }
+      const module = JSON.parse(option.dataset.payload);
+      if (module.repo_name !== "_example" && !versionSelect.value) {
+        continue;
+      }
+      const version = module.repo_name === "_example" ? "local" : versionSelect.value;
+      const entry = moduleSourceFromSelection(module, version);
+      if (!entry) continue;
+      if (usedNames.has(entry.name)) {
+        entry.name = `${entry.name}_${entry.repo_name.replace(/^tf-|^tfm-/, "").replace(/-/g, "_")}`;
+      }
+      usedNames.add(entry.name);
+      payload.push(entry);
+    }
+    pinnedModulesInput.value = JSON.stringify(payload);
+  }
+
+  function fillModuleSelect(select, placeholder) {
     select.innerHTML = "";
     const placeholderOption = document.createElement("option");
     placeholderOption.value = "";
@@ -374,39 +409,88 @@
     placeholderOption.disabled = true;
     placeholderOption.selected = true;
     select.appendChild(placeholderOption);
-    for (const option of options) {
+    for (const module of inventoryModules) {
       const el = document.createElement("option");
-      el.value = option[valueKey];
-      el.textContent = labelFn(option);
-      el.dataset.payload = JSON.stringify(option);
+      el.value = module.repo_name;
+      el.textContent =
+        module.repo_name === "_example"
+          ? "Local example stub"
+          : `${module.repo_name} (${module.module_name})`;
+      el.dataset.payload = JSON.stringify(module);
       select.appendChild(el);
     }
   }
 
-  function selectedModule() {
-    const option = moduleSelect.selectedOptions[0];
-    if (!option || !option.dataset.payload) return null;
-    return JSON.parse(option.dataset.payload);
+  async function loadVersions(select, repoName) {
+    const versionSelect = select.closest(".pinned-module-row")?.querySelector(".pinned-module-version");
+    if (!versionSelect) return;
+    if (!repoName) {
+      versionSelect.innerHTML = "<option value=\"\" disabled selected>Select a module first…</option>";
+      versionSelect.disabled = true;
+      return;
+    }
+    if (repoName === "_example") {
+      versionSelect.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "local";
+      opt.textContent = "local";
+      opt.selected = true;
+      versionSelect.appendChild(opt);
+      versionSelect.disabled = false;
+      syncPinnedModulesInput();
+      return;
+    }
+    versionSelect.disabled = true;
+    versionSelect.innerHTML = "<option value=\"\">Loading…</option>";
+    const response = await fetch(
+      `/blueprints/${stackBlueprintName}/module-inventory/${encodeURIComponent(repoName)}/versions`,
+    );
+    const data = await response.json();
+    versionSelect.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "Select version…";
+    ph.disabled = true;
+    ph.selected = true;
+    versionSelect.appendChild(ph);
+    for (const tag of data.versions || []) {
+      const opt = document.createElement("option");
+      opt.value = tag;
+      opt.textContent = tag;
+      versionSelect.appendChild(opt);
+    }
+    versionSelect.disabled = (data.versions || []).length === 0;
+    syncPinnedModulesInput();
   }
 
-  function syncHiddenFromSelection(module, version) {
-    if (!module) {
-      moduleNameInput.value = "";
-      moduleSourceInput.value = "";
-      moduleVersionInput.value = "";
-      return;
-    }
-    moduleNameInput.value = module.module_name || "foundation";
-    if (module.source_kind === "local") {
-      moduleSourceInput.value = module.local_source || "./modules/_example";
-      moduleVersionInput.value = "";
-      return;
-    }
-    const ref = version || "main";
-    const gitUrl = (module.git_url || "").replace(/\.git$/, "") + ".git";
-    moduleSourceInput.value = `git::${gitUrl}?ref=${ref}`;
-    moduleVersionInput.value = "";
+  function addModuleRow() {
+    const row = document.createElement("div");
+    row.className = "pinned-module-row field-block";
+    row.innerHTML = `
+      <div class="pinned-role-row__controls">
+        <select class="select pinned-module-select" aria-label="Terraform module"><option disabled selected>Loading…</option></select>
+        <select class="select pinned-module-version" aria-label="Module version" disabled><option disabled selected>Select a module first…</option></select>
+        <button type="button" class="btn btn--ghost btn--sm pinned-module-remove">Remove</button>
+      </div>
+    `;
+    modulesPanel.appendChild(row);
+    const moduleSelect = row.querySelector(".pinned-module-select");
+    fillModuleSelect(moduleSelect, "Select module…");
+    moduleSelect.addEventListener("change", () => {
+      void loadVersions(moduleSelect, moduleSelect.value);
+      syncPinnedModulesInput();
+    });
+    row.querySelector(".pinned-module-version").addEventListener("change", syncPinnedModulesInput);
+    row.querySelector(".pinned-module-remove").addEventListener("click", () => {
+      row.remove();
+      syncPinnedModulesInput();
+    });
   }
+
+  addModuleButton.addEventListener("click", () => {
+    addModuleRow();
+    clearStackValidation();
+  });
 
   async function loadModules() {
     const provider = providerSelect ? providerSelect.value : "";
@@ -414,90 +498,59 @@
     const response = await fetch(url);
     const data = await response.json();
     inventoryModules = data.modules || [];
-    fillSelect(
-      moduleSelect,
-      inventoryModules,
-      "Select a module…",
-      "repo_name",
-      (m) =>
-        m.repo_name === "_example"
-          ? "Local example stub"
-          : `${m.repo_name} (${m.module_name})`,
-    );
-    versionSelect.disabled = true;
-    fillSelect(versionSelect, [], "Select a module first…", "repo_name", (v) => v);
-    clearStackValidation();
-  }
-
-  async function loadVersions(repoName) {
-    if (!repoName) {
-      versionSelect.disabled = true;
-      fillSelect(versionSelect, [], "Select a module first…", "repo_name", (v) => v);
-      return;
-    }
-    if (repoName === "_example") {
-      fillSelect(
-        versionSelect,
-        [{ repo_name: "_example", version: "local" }],
-        "Select version…",
-        "version",
-        (v) => v.version,
-      );
-      versionSelect.disabled = false;
-      versionSelect.selectedIndex = 1;
-      syncHiddenFromSelection(selectedModule(), "local");
-      return;
-    }
-    versionSelect.disabled = true;
-    fillSelect(versionSelect, [], "Loading versions…", "version", (v) => v.version);
-    const response = await fetch(
-      `/blueprints/${stackBlueprintName}/module-inventory/${encodeURIComponent(repoName)}/versions`,
-    );
-    const data = await response.json();
-    const versions = (data.versions || []).map((tag) => ({ version: tag }));
-    fillSelect(versionSelect, versions, "Select a version…", "version", (v) => v.version);
-    versionSelect.disabled = versions.length === 0;
-    if (versions.length === 1) {
-      versionSelect.selectedIndex = 1;
-      syncHiddenFromSelection(selectedModule(), versions[0].version);
+    for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
+      const moduleSelect = row.querySelector(".pinned-module-select");
+      const selected = moduleSelect.value;
+      fillModuleSelect(moduleSelect, "Select module…");
+      if (selected) {
+        moduleSelect.value = selected;
+      }
     }
     clearStackValidation();
   }
-
-  moduleSelect.addEventListener("change", () => {
-    const module = selectedModule();
-    void loadVersions(module ? module.repo_name : "");
-    syncHiddenFromSelection(module, "");
-  });
-
-  versionSelect.addEventListener("change", () => {
-    const module = selectedModule();
-    const version = versionSelect.value;
-    syncHiddenFromSelection(module, version);
-    clearStackValidation();
-  });
 
   if (providerSelect) {
     providerSelect.addEventListener("change", () => void loadModules());
   }
 
   form.addEventListener("submit", (event) => {
+    syncPinnedModulesInput();
     clearStackValidation();
-    const module = selectedModule();
-    if (!module) {
+    let parsed = [];
+    try {
+      parsed = JSON.parse(pinnedModulesInput.value || "[]");
+    } catch {
+      parsed = [];
+    }
+    if (!parsed.length) {
       event.preventDefault();
-      showStackValidation("Select a module from inventory before generating.");
+      showStackValidation("Add at least one module with a version before generating.");
       return;
     }
-    if (module.repo_name !== "_example" && !versionSelect.value) {
-      event.preventDefault();
-      showStackValidation("Select a module version (git tag) before generating.");
-      return;
+    for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
+      const moduleSelect = row.querySelector(".pinned-module-select");
+      const versionSelect = row.querySelector(".pinned-module-version");
+      const option = moduleSelect.selectedOptions[0];
+      if (!option || !option.dataset.payload) {
+        continue;
+      }
+      const module = JSON.parse(option.dataset.payload);
+      if (module.repo_name !== "_example" && !versionSelect.value) {
+        event.preventDefault();
+        showStackValidation("Select a module version (git tag) for each pinned module.");
+        return;
+      }
     }
-    syncHiddenFromSelection(module, versionSelect.value);
   });
 
-  void loadModules();
+  async function initModuleInventory() {
+    await loadModules();
+    if (!modulesPanel.querySelector(".pinned-module-row")) {
+      addModuleRow();
+    }
+  }
+
+  void initModuleInventory();
 </script>
 {% elif provider_catalog %}
 <script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>

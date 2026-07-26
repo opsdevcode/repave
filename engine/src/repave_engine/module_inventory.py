@@ -224,3 +224,41 @@ def inventory_versions_json(
         github_token=github_token,
     )
     return {"repo_name": repo_name, "versions": versions}
+
+
+def normalize_pinned_modules_raw(raw: Any) -> list[dict[str, str]]:
+    if raw in (None, "", "[]"):
+        return []
+    if isinstance(raw, list):
+        items = raw
+    elif isinstance(raw, str):
+        import json
+
+        parsed = json.loads(raw)
+        if not isinstance(parsed, list):
+            raise ValueError("pinned_modules must be a JSON array")
+        items = parsed
+    else:
+        raise ValueError("pinned_modules must be a JSON array")
+
+    normalized: list[dict[str, str]] = []
+    seen_names: set[str] = set()
+    for entry in items:
+        if not isinstance(entry, dict):
+            raise ValueError("each pinned_modules entry must be an object")
+        name = str(entry.get("name", "")).strip()
+        source = str(entry.get("source", "")).strip()
+        version = str(entry.get("version", "")).strip()
+        if not name or not source:
+            raise ValueError("pinned_modules entries require name and source")
+        if name in seen_names:
+            raise ValueError(f"duplicate module block name in pinned_modules: {name!r}")
+        seen_names.add(name)
+        item: dict[str, str] = {"name": name, "source": source}
+        if version:
+            item["version"] = version
+        repo_name = str(entry.get("repo_name", "")).strip()
+        if repo_name:
+            item["repo_name"] = repo_name
+        normalized.append(item)
+    return normalized

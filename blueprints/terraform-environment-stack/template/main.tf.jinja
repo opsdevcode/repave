@@ -1,8 +1,9 @@
-# Primary pinned module — replace source/version with your estate modules.
-module "{{ module_name }}" {
-  source = "{{ module_source }}"
-{% if module_version %}
-  version = "{{ module_version }}"
+{% for mod in pinned_modules %}
+# Pinned module — update source/version via requirements or portal inventory.
+module "{{ mod.name }}" {
+  source = "{{ mod.source }}"
+{% if mod.version %}
+  version = "{{ mod.version }}"
 {% endif %}
 
   stack_name   = var.stack_name
@@ -10,3 +11,4 @@ module "{{ module_name }}" {
   name_prefix  = local.name_prefix
   tags         = local.common_tags
 }
+{% endfor %}

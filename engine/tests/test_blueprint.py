@@ -311,15 +311,36 @@ def test_build_provenance_document_environment_stack(repo_root: Path) -> None:
             "description": "Core platform stack",
             "cloud_provider": "aws",
             "environment": "dev",
-            "module_name": "foundation",
-            "module_source": "./modules/_example",
-            "module_version": "",
+            "pinned_modules": [
+                {"name": "foundation", "source": "./modules/_example", "repo_name": "_example"},
+            ],
         },
     )
     assert document["spec"]["artifactType"] == "terraform-environment-stack"
     stack = document["spec"]["terraformEnvironmentStack"]
     assert stack["stack_name"] == "platform"
     assert stack["pinned_modules"][0]["source"] == "./modules/_example"
+
+
+def test_validate_environment_stack_pinned_modules(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-environment-stack",
+        repo_root,
+    )
+    normalized = validate_inputs(
+        blueprint,
+        {
+            "stack_name": "platform",
+            "description": "Core platform stack",
+            "cloud_provider": "aws",
+            "environment": "dev",
+            "pinned_modules": (
+                '[{"name":"foundation","source":"./modules/_example","repo_name":"_example"}]'
+            ),
+        },
+    )
+    assert len(normalized["pinned_modules"]) == 1
+    assert normalized["pinned_modules"][0]["name"] == "foundation"
 
 
 def test_load_ansible_role_blueprint(ansible_blueprint) -> None:

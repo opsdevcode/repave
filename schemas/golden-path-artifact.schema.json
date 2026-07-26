@@ -106,7 +106,8 @@
                 "properties": {
                   "name": { "type": "string", "minLength": 1 },
                   "source": { "type": "string", "minLength": 1 },
-                  "version": { "type": "string" }
+                  "version": { "type": "string" },
+                  "repo_name": { "type": "string" }
                 }
               }
             }

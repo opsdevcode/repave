@@ -20,15 +20,8 @@ environment:
   type: str
   help: Environment tier (dev, staging, prod)
 
-module_name:
-  type: str
-  help: Logical name for the primary module block
-
-module_source:
-  type: str
-  help: Terraform module source
-
-module_version:
-  type: str
-  default: ""
-  help: Optional registry module version
+pinned_modules:
+  type: yaml
+  default:
+    - name: foundation
+      source: ./modules/_example

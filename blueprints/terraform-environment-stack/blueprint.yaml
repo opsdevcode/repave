@@ -36,21 +36,11 @@ spec:
         - staging
         - prod
       default: dev
-    - name: module_name
-      type: string
-      required: true
-      description: Logical name for the primary module block in main.tf (set via module picker).
-      default: foundation
-    - name: module_source
-      type: string
-      required: true
-      description: Terraform module source (populated from module inventory selection).
-      default: "./modules/_example"
-    - name: module_version
+    - name: pinned_modules
       type: string
       required: false
-      description: Module version ref or registry constraint (from inventory tag list).
-      default: ""
+      description: JSON array of pinned Terraform modules (portal module inventory picker).
+      default: '[{"name":"foundation","source":"./modules/_example","repo_name":"_example"}]'
   template:
     engine: copier
     path: template

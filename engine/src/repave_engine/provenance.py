@@ -59,22 +59,31 @@ def _build_environment_stack_spec(
     values: dict[str, Any],
 ) -> tuple[dict[str, Any], str]:
     stack_name = str(values.get("stack_name", blueprint.name))
-    module_name = str(values.get("module_name", "foundation")).strip()
-    module_source = str(values.get("module_source", "")).strip()
-    module_version = str(values.get("module_version", "")).strip()
-    pinned: dict[str, Any] = {
-        "name": module_name,
-        "source": module_source,
-    }
-    if module_version:
-        pinned["version"] = module_version
+    pinned_raw = values.get("pinned_modules")
+    pinned_list: list[dict[str, Any]] = []
+    if isinstance(pinned_raw, list):
+        for item in pinned_raw:
+            if not isinstance(item, dict):
+                continue
+            entry: dict[str, Any] = {
+                "name": str(item.get("name", "")).strip(),
+                "source": str(item.get("source", "")).strip(),
+            }
+            version = str(item.get("version", "")).strip()
+            if version:
+                entry["version"] = version
+            repo_name = str(item.get("repo_name", "")).strip()
+            if repo_name:
+                entry["repo_name"] = repo_name
+            if entry["name"] and entry["source"]:
+                pinned_list.append(entry)
     spec: dict[str, Any] = {
         "artifactType": "terraform-environment-stack",
         "terraformEnvironmentStack": {
             "stack_name": stack_name,
             "cloud_provider": str(values.get("cloud_provider", "")),
             "environment": str(values.get("environment", "dev")),
-            "pinned_modules": [pinned],
+            "pinned_modules": pinned_list,
         },
     }
     if blueprint.checkov_policies is not None:

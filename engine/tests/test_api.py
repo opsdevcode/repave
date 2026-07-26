@@ -229,10 +229,11 @@ def test_env_stack_form_renders_module_inventory_picker(repo_root, output_config
     response = client.get("/blueprints/terraform-environment-stack")
 
     assert response.status_code == 200
-    assert 'id="stack-module-select"' in response.text
-    assert 'id="stack-module-version-select"' in response.text
+    assert 'id="pinned-modules-rows"' in response.text
+    assert 'id="add-pinned-module"' in response.text
     assert "module-inventory" in response.text
-    assert 'name="module_source"' in response.text
+    assert 'name="pinned_modules"' in response.text
+    assert "form-layout--split" in response.text
 
 
 def test_ansible_playbook_form_renders_role_inventory_picker(repo_root, output_config) -> None:

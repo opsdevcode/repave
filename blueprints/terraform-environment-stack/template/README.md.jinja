@@ -7,7 +7,14 @@
 This repository is an **environment stack** for `{{ cloud_provider }}` / `{{ environment }}`.
 It composes pinned Terraform modules; provenance is recorded in `repave.yaml`.
 
-Primary module block: `{{ module_name }}` → `{{ module_source }}`{% if module_version %} @ `{{ module_version }}`{% endif %}.
+{% if pinned_modules %}
+Pinned modules:
+
+{% for mod in pinned_modules %}
+- `{{ mod.name }}` → `{{ mod.source }}`{% if mod.version %} @ `{{ mod.version }}`{% endif %}
+
+{% endfor %}
+{% endif %}
 
 ## Layout
 
@@ -28,7 +35,7 @@ terraform init
 terraform plan -var="environment=dev"
 ```
 
-Replace the `{{ module_name }}` module source in `main.tf` with your pinned
+Replace pinned module sources in `main.tf` with your estate
 `tf-*` / `tfm-*` module coordinates before deploying to shared environments.
 
 ## Local development
