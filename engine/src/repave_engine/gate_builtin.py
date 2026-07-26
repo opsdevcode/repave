@@ -12,6 +12,8 @@ from repave_engine.gate_runners import (
     run_datadog_monitor,
     run_docs_drift,
     run_grafana_dashboard,
+    run_helm_lint,
+    run_helm_template,
     run_molecule,
     run_opa,
     run_promtool,
@@ -31,6 +33,7 @@ _ANSIBLE_ARTIFACT_TYPES = frozenset(
     {"ansible-role", "ansible-playbook-project", "ansible-collection"}
 )
 _OBSERVABILITY_ARTIFACT_TYPES = frozenset({"observability"})
+_HELM_ARTIFACT_TYPES = frozenset({"helm-chart"})
 _SHARED_ARTIFACT_TYPES = frozenset(
     {
         "terraform-module",
@@ -39,6 +42,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "ansible-playbook-project",
         "ansible-collection",
         "observability",
+        "helm-chart",
         "opa-policy",
         "azure-policy",
         "checkov-policy",
@@ -126,7 +130,23 @@ register_gate(
     GateSpec(
         name="yamllint",
         runner=run_yamllint,
-        artifact_types=_ANSIBLE_ARTIFACT_TYPES | _OBSERVABILITY_ARTIFACT_TYPES,
+        artifact_types=_ANSIBLE_ARTIFACT_TYPES
+        | _OBSERVABILITY_ARTIFACT_TYPES
+        | _HELM_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="helm-lint",
+        runner=run_helm_lint,
+        artifact_types=_HELM_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="helm-template",
+        runner=run_helm_template,
+        artifact_types=_HELM_ARTIFACT_TYPES,
     )
 )
 register_gate(

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {% raw %}{{ include "repave.fullname" . }}{% endraw %}
+  labels:
+    {% raw %}{{- include "repave.labels" . | nindent 4 }}{% endraw %}
+spec:
+  type: {% raw %}{{ .Values.service.type }}{% endraw %}
+  ports:
+    - port: {% raw %}{{ .Values.service.port }}{% endraw %}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {% raw %}{{- include "repave.selectorLabels" . | nindent 4 }}{% endraw %}

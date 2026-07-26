@@ -17,6 +17,8 @@
           Policy · {{ policy_kind_label(blueprint.artifact_type) or blueprint.artifact_type }}
         {% elif bp_family == 'observability' %}
           Observability
+        {% elif bp_family == 'helm' %}
+          Kubernetes / Helm
         {% elif bp_family == 'terraform' %}
           Terraform
         {% elif bp_family == 'ansible' %}
@@ -29,7 +31,7 @@
   </div>
 </header>
 
-<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy') %} form-layout--split{% endif %}">
+<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm') %} form-layout--split{% endif %}">
   <aside class="governance-card governance-card--{{ bp_family }}" aria-labelledby="governance-heading">
     <h2 class="governance-card__title" id="governance-heading">Governance</h2>
     <dl class="governance-card__list">
@@ -38,6 +40,12 @@
         <dd>
           <code>{{ blueprint.standard_source }}</code>
           <span class="badge">@ {{ blueprint.standard_version }}</span>
+        </dd>
+      </div>
+      <div>
+        <dt>Lineage</dt>
+        <dd>
+          Engine <code>{{ app_version }}</code> · README <code>## Provenance</code> synced on generate
         </dd>
       </div>
       {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}

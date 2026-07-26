@@ -103,9 +103,20 @@ def test_policy_kind_label() -> None:
     assert policy_kind_label("terraform-module") is None
 
 
+def test_group_blueprints_includes_helm_family() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("helm-chart-generic", "helm-chart"),
+            _bp("tf-a", "terraform-module"),
+        ]
+    )
+    assert [g.family for g in groups] == ["terraform", "helm"]
+    assert groups[1].title == "Kubernetes / Helm"
+
+
 def test_group_blueprints_unknown_type_appended() -> None:
-    groups = group_blueprints_by_artifact([_bp("helm-x", "helm-chart")])
+    groups = group_blueprints_by_artifact([_bp("custom-x", "custom-artifact")])
 
     assert len(groups) == 1
-    assert groups[0].family == "helm-chart"
-    assert groups[0].title == "Helm Chart"
+    assert groups[0].family == "custom-artifact"
+    assert groups[0].title == "Custom Artifact"

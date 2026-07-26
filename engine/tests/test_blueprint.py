@@ -183,6 +183,59 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "opa-policy-generic" in names
     assert "azure-policy-generic" in names
     assert "checkov-policy-generic" in names
+    assert "helm-chart-generic" in names
+
+
+def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "helm-chart-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "helm-chart"
+    assert "helm-lint" in blueprint.gates
+    assert "helm-template" in blueprint.gates
+
+
+def test_validate_helm_chart_requires_ingress_host_when_enabled(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "helm-chart-generic",
+        repo_root,
+    )
+    with pytest.raises(ValueError, match="ingress_host"):
+        validate_inputs(
+            blueprint,
+            {
+                "chart_name": "api",
+                "app_name": "api",
+                "description": "API chart",
+                "image_repository": "ghcr.io/acme/api",
+                "enable_ingress": "true",
+                "ingress_host": "",
+            },
+        )
+
+
+def test_build_provenance_document_helm_chart(repo_root: Path) -> None:
+    from repave_engine.provenance import build_provenance_document
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "helm-chart-generic",
+        repo_root,
+    )
+    document = build_provenance_document(
+        blueprint,
+        validate_inputs(
+            blueprint,
+            {
+                "chart_name": "api",
+                "app_name": "api",
+                "description": "API chart",
+                "image_repository": "ghcr.io/acme/api",
+            },
+        ),
+    )
+    assert document["spec"]["artifactType"] == "helm-chart"
+    assert document["spec"]["helmChart"]["chart_name"] == "api"
 
 
 def test_load_checkov_policy_generic_blueprint(repo_root: Path) -> None:

@@ -26,6 +26,8 @@
   --family-policy-text: #e2d4f5;
   --family-observability: #e8a84a;
   --family-observability-text: #ffe8c8;
+  --family-helm: #326ce5;
+  --family-helm-text: #c8d8ff;
   --radius: 8px;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -1188,10 +1190,16 @@ details.file-panel summary {
   --group-title: var(--family-observability-text);
 }
 
+.catalog-group--helm {
+  --group-accent: var(--family-helm);
+  --group-title: var(--family-helm-text);
+}
+
 .catalog-group--terraform,
 .catalog-group--ansible,
 .catalog-group--policy,
-.catalog-group--observability {
+.catalog-group--observability,
+.catalog-group--helm {
   padding: var(--space-4);
   border-radius: calc(var(--radius) + 4px);
   background: color-mix(in srgb, var(--group-accent) 6%, var(--surface));
@@ -1211,7 +1219,8 @@ details.file-panel summary {
 .catalog-group--terraform .catalog-group__header,
 .catalog-group--ansible .catalog-group__header,
 .catalog-group--policy .catalog-group__header,
-.catalog-group--observability .catalog-group__header {
+.catalog-group--observability .catalog-group__header,
+.catalog-group--helm .catalog-group__header {
   margin-bottom: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border-left: 4px solid var(--group-accent);
@@ -1222,7 +1231,8 @@ details.file-panel summary {
 .catalog-group--terraform .catalog-group__title,
 .catalog-group--ansible .catalog-group__title,
 .catalog-group--policy .catalog-group__title,
-.catalog-group--observability .catalog-group__title {
+.catalog-group--observability .catalog-group__title,
+.catalog-group--helm .catalog-group__title {
   color: color-mix(in srgb, var(--group-title) 88%, var(--text));
 }
 
@@ -1287,6 +1297,11 @@ details.file-panel summary {
 .catalog-card--observability {
   --card-accent: var(--family-observability);
   border-top-color: var(--family-observability);
+}
+
+.catalog-card--helm-chart {
+  --card-accent: var(--family-helm);
+  border-top-color: var(--family-helm);
 }
 
 .catalog-card--checkov-policy,
@@ -1420,6 +1435,12 @@ details.file-panel summary {
   background: color-mix(in srgb, var(--family-observability) 24%, transparent);
   color: var(--family-observability-text);
   border-color: color-mix(in srgb, var(--family-observability) 50%, transparent);
+}
+
+.badge--helm {
+  background: color-mix(in srgb, var(--family-helm) 22%, transparent);
+  color: var(--family-helm-text);
+  border-color: color-mix(in srgb, var(--family-helm) 45%, transparent);
 }
 
 /* —— Blueprint form (Phase 3) —— */
@@ -1629,6 +1650,11 @@ details.file-panel summary {
 .governance-card--observability {
   border-top-color: var(--family-observability);
   border-left: 3px solid var(--family-observability);
+}
+
+.governance-card--helm {
+  border-top-color: var(--family-helm);
+  border-left: 3px solid var(--family-helm);
 }
 
 #configuration-mode-toggle.segmented {

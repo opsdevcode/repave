@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {% raw %}{{ include "repave.fullname" . }}{% endraw %}
+  labels:
+    {% raw %}{{- include "repave.labels" . | nindent 4 }}{% endraw %}
+spec:
+  replicas: {% raw %}{{ .Values.replicaCount }}{% endraw %}
+  selector:
+    matchLabels:
+      {% raw %}{{- include "repave.selectorLabels" . | nindent 6 }}{% endraw %}
+  template:
+    metadata:
+      labels:
+        {% raw %}{{- include "repave.selectorLabels" . | nindent 8 }}{% endraw %}
+    spec:
+      containers:
+        - name: {{ app_name }}
+          image: "{% raw %}{{ .Values.image.repository }}:{{ .Values.image.tag }}{% endraw %}"
+          imagePullPolicy: {% raw %}{{ .Values.image.pullPolicy }}{% endraw %}
+          ports:
+            - name: http
+              containerPort: {{ service_port }}
+              protocol: TCP

@@ -49,6 +49,10 @@ def test_build_provenance_document_includes_terraform_module(
     assert document["spec"]["terraformModule"]["cloud_provider"] == "aws"
     assert document["spec"]["terraformModule"]["provider_services"] == ["ec2", "s3"]
     assert document["spec"]["checkov"]["policies_source"] == "policy/checkov/policies"
+    ci = document["spec"]["ci"]
+    assert "terraform-test" in ci["gates"]
+    assert ci["workflow"] == ".github/workflows/terraform-gates.yml"
+    assert ci["toolchain"]["terraform"] == "1.9.8"
 
 
 def test_build_provenance_document_includes_ansible_role(

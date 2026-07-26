@@ -130,35 +130,40 @@ class Blueprint:
         default_factory=TerraformTestGateConfig
     )
     terraform_layout: str = "generic"
+    gate_config_raw: dict[str, Any] = dataclass_field(default_factory=dict)
 
     @property
     def template_dir(self) -> Path:
         return self.path / self.template_path
 
     def gate_config_for(self, gate_name: str) -> Mapping[str, Any]:
+        base: dict[str, Any] = {}
         if gate_name == "checkov":
-            return {
+            base = {
                 "external_checks_dir": self.checkov_gate.external_checks_dir,
                 "config_file": self.checkov_gate.config_file,
                 "scan_dir": self.checkov_gate.scan_dir,
                 "skip_checks": self.checkov_gate.skip_checks,
                 "soft_fail": self.checkov_gate.soft_fail,
             }
-        if gate_name == "tflint":
-            return {"config_file": self.tflint_gate.config_file}
-        if gate_name == "terraform-validate":
-            return {"var_files": self.terraform_validate_gate.var_files}
-        if gate_name == "terraform-test":
-            return {"test_directory": self.terraform_test_gate.test_directory}
-        if gate_name == "opa":
-            return {
+        elif gate_name == "tflint":
+            base = {"config_file": self.tflint_gate.config_file}
+        elif gate_name == "terraform-validate":
+            base = {"var_files": self.terraform_validate_gate.var_files}
+        elif gate_name == "terraform-test":
+            base = {"test_directory": self.terraform_test_gate.test_directory}
+        elif gate_name == "opa":
+            base = {
                 "policies_dir": self.opa_gate.policies_dir,
                 "fixtures_dir": self.opa_gate.fixtures_dir,
                 "plan_subdir": self.opa_gate.plan_subdir,
             }
-        if gate_name == "ansible-lint":
-            return {"config_file": self.ansible_lint_gate.config_file}
-        return {}
+        elif gate_name == "ansible-lint":
+            base = {"config_file": self.ansible_lint_gate.config_file}
+        raw = self.gate_config_raw.get(gate_name, {})
+        if isinstance(raw, dict):
+            return {**base, **raw}
+        return base
 
 
 def load_schema(repo_root: Path) -> dict[str, Any]:
@@ -310,6 +315,7 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         terraform_validate_gate=terraform_validate_gate,
         terraform_test_gate=terraform_test_gate,
         terraform_layout=terraform_layout,
+        gate_config_raw=cast(dict[str, Any], gate_config) if isinstance(gate_config, dict) else {},
     )
 
 
@@ -389,7 +395,18 @@ def validate_inputs(
 
         normalize_dashboard_pack_inputs(blueprint, normalized, repo_root)
 
+    _validate_helm_chart_inputs(blueprint, normalized)
+
     return normalized
+
+
+def _validate_helm_chart_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    if blueprint.name != "helm-chart-generic":
+        return
+    if str(normalized.get("enable_ingress", "false")).strip() == "true":
+        host = str(normalized.get("ingress_host", "")).strip()
+        if not host:
+            raise ValueError("ingress_host is required when enable_ingress is true")
 
 
 def _validate_ansible_role_platforms(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
@@ -561,11 +578,19 @@ _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "ansible": ("Ansible", "Roles, collections, and playbook projects"),
     "policy": ("Policy", "Checkov, OPA (Conftest), and Azure Policy golden paths"),
     "observability": ("Observability", "Dashboards, alerts, and SLOs as code"),
+    "helm": ("Kubernetes / Helm", "Charts for workloads on Kubernetes"),
 }
-_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "policy", "observability")
+_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
+    "terraform",
+    "ansible",
+    "helm",
+    "policy",
+    "observability",
+)
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
+    "helm": ("helm-chart",),
     "policy": ("checkov-policy", "opa-policy", "azure-policy"),
     "observability": ("observability",),
 }
@@ -580,6 +605,8 @@ def artifact_family(artifact_type: str) -> str:
         return "terraform"
     if artifact_type.startswith("ansible-"):
         return "ansible"
+    if artifact_type == "helm-chart":
+        return "helm"
     return artifact_type
 
 
