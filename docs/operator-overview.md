@@ -1,8 +1,9 @@
 # Operator overview
 
-Kubernetes controller for **estate drift and blueprint upgrades** (alpha; v1.17
-slices). Generation does not require the operator; use it when many module repos
-must stay aligned with catalog pin changes.
+Kubernetes controller for **estate drift and blueprint upgrades** (v1.17 GA for
+inventory, upgrade planning, and dry-run remediation). Generation does not require
+the operator; use it when many module repos must stay aligned with catalog pin
+changes.
 
 Local development: [operator-local-dev.md](operator-local-dev.md) · GA scope:
 [operator-ga.md](operator-ga.md)
