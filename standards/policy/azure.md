@@ -29,5 +29,6 @@ Each file must be a valid Azure Policy **definition** document:
 ## Versioning
 
 - Pin starter pack version in blueprint `spec.azure_policy.policy_version` when vendoring
-  shared definitions from the repave monorepo.
+  shared definitions from the repave monorepo (`policy/azure/definitions/` — storage HTTPS,
+  public blob, tag audit, and required storage audit samples; see `policy/catalog.json`).
 - Record organization and policy set name in provenance `spec.azurePolicy`.
