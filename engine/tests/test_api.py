@@ -70,6 +70,7 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "sessionStorage" in response.text
     assert "initCopyButtons" in response.text
     assert "initBusyForms" in response.text
+    assert "initFormStepper" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -234,6 +235,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "policy-catalog" in response.text
     assert "data-repave-busy-form" in response.text
     assert "form-actions--sticky" in response.text
+    assert "Standard drift" in response.text
+    assert "data-terraform-stepper" in response.text
+    assert "form-stepper" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:

@@ -119,7 +119,7 @@
             </td>
             <td>
               {% if not gate.passed and not gate.skipped %}
-              <details class="gate-detail">
+              <details class="gate-detail motion-panel">
                 <summary>{{ gate.message | truncate(120, True, "…") }}</summary>
                 <div class="gate-detail__panel">
                   <div class="gate-detail__toolbar">
@@ -188,7 +188,7 @@
     </div>
     <div class="file-explorer-fallback">
       {% for file in result.rendered_files %}
-      <details class="file-panel"{% if loop.first %} open{% endif %}>
+      <details class="file-panel motion-panel"{% if loop.first %} open{% endif %}>
         <summary>
           {{ file.path }}
           {% if file.truncated %}

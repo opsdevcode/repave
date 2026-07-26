@@ -114,6 +114,23 @@
         var busyLabel = form.getAttribute("data-busy-label") || "Working…";
         btn.dataset.repaveOriginalLabel = btn.textContent;
         btn.textContent = busyLabel;
+        var stages = (form.getAttribute("data-busy-stages") || "")
+          .split("|")
+          .map(function (s) {
+            return s.trim();
+          })
+          .filter(Boolean);
+        if (stages.length > 1) {
+          var stageIndex = 0;
+          btn.textContent = stages[0];
+          if (form._repaveStageTimer) {
+            clearInterval(form._repaveStageTimer);
+          }
+          form._repaveStageTimer = setInterval(function () {
+            stageIndex = (stageIndex + 1) % stages.length;
+            btn.textContent = stages[stageIndex];
+          }, 2200);
+        }
       });
     });
   }
@@ -173,6 +190,65 @@
     }
   }
 
+  function initFormStepper() {
+    var form = document.querySelector("[data-terraform-stepper]");
+    if (!form) {
+      return;
+    }
+    var steps = form.querySelectorAll("[data-form-step]");
+    var navSteps = form.querySelectorAll("[data-stepper-index]");
+    var backBtn = form.querySelector("[data-stepper-back]");
+    var nextBtn = form.querySelector("[data-stepper-next]");
+    var submitBtn = form.querySelector('button[type="submit"]');
+    var current = 0;
+    var maxStep = 2;
+
+    function applyStep() {
+      steps.forEach(function (node) {
+        var step = Number(node.getAttribute("data-form-step"));
+        node.hidden = step !== current;
+      });
+      navSteps.forEach(function (node) {
+        var index = Number(node.getAttribute("data-stepper-index"));
+        node.classList.toggle("is-active", index === current);
+        node.setAttribute("aria-current", index === current ? "step" : "false");
+      });
+      if (backBtn) {
+        backBtn.hidden = current === 0;
+      }
+      if (nextBtn) {
+        nextBtn.hidden = current >= maxStep;
+      }
+      if (submitBtn) {
+        submitBtn.hidden = current !== maxStep;
+      }
+      form.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+
+    if (backBtn) {
+      backBtn.addEventListener("click", function () {
+        current = Math.max(0, current - 1);
+        applyStep();
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        if (current === 0 && typeof form.reportValidity === "function") {
+          var stepFields = form.querySelectorAll('[data-form-step="0"] input, [data-form-step="0"] select, [data-form-step="0"] textarea');
+          for (var i = 0; i < stepFields.length; i += 1) {
+            if (!stepFields[i].checkValidity()) {
+              stepFields[i].reportValidity();
+              return;
+            }
+          }
+        }
+        current = Math.min(maxStep, current + 1);
+        applyStep();
+      });
+    }
+    applyStep();
+  }
+
   window.repavePortal = {
     saveLastRun: function (payload) {
       try {
@@ -196,5 +272,6 @@
     initCopyButtons();
     initFileExplorer();
     initBusyForms();
+    initFormStepper();
   });
 })();
