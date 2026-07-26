@@ -7,7 +7,6 @@ on:
       - "operator/**"
       - ".github/workflows/operator.yml"
   pull_request:
-  merge_group:
 
 jobs:
   test:

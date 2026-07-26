@@ -24,6 +24,6 @@ When opening PRs for this repository (including via `gh pr create`):
 
 ## Merging to `main`
 
-When the repository merge queue is enabled, use **Merge when ready** after required
-checks pass. Release automation (`chore/release/*`) still admin-merges outside the queue.
+After required checks pass, use the normal **Merge pull request** control on GitHub.
+Release automation (`chore/release/*`) still admin-merges outside branch rules.
 See [CONTRIBUTING.md](../CONTRIBUTING.md) and [`.github/rulesets/README.md`](../.github/rulesets/README.md).
