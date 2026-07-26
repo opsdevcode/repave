@@ -93,18 +93,40 @@
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
 
-      {% if policy_customization %}
+      {% if policy_customization and policy_catalog %}
       <div class="field-block policy-customization" id="policy-customization">
         <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
         <p class="hint">Pack source, profile, and every catalog rule for this golden path. Required rules stay on.</p>
         <label for="policy_pack_source">Policy pack source</label>
-        <select class="select" id="policy_pack_source" name="policy_pack_source"></select>
+        <select class="select" id="policy_pack_source" name="policy_pack_source">
+          {% for pack in policy_catalog.pack_sources %}
+          <option
+            value="{{ pack['id'] }}"
+            {% if pack['id'] == policy_defaults.policy_pack_source %}selected{% endif %}
+            {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+          >{{ pack.get('label') or pack['id'] }}</option>
+          {% endfor %}
+        </select>
         <p class="hint" id="policy-pack-hint"></p>
         <label for="policy_profile">Policy profile</label>
-        <select class="select" id="policy_profile" name="policy_profile"></select>
+        <select class="select" id="policy_profile" name="policy_profile">
+          {% for profile_id, profile in policy_catalog.profiles.items() %}
+          <option
+            value="{{ profile_id }}"
+            {% if profile_id == policy_defaults.policy_profile %}selected{% endif %}
+            {% if profile.get('description') %}title="{{ profile['description'] }}"{% endif %}
+          >{{ profile.get('label') or profile_id }}</option>
+          {% endfor %}
+        </select>
         <details id="policy-rules-advanced" class="policy-rules-advanced" open>
           <summary>Individual rules</summary>
-          <p class="hint policy-rules-hint" id="policy-rules-hint"></p>
+          <p class="hint policy-rules-hint" id="policy-rules-hint">
+            {% if policy_defaults.policy_profile == 'custom' %}
+            Toggle optional rules; required rules stay enabled.
+            {% else %}
+            Rules included in this profile (switch to Custom to change optional rules).
+            {% endif %}
+          </p>
           <div class="policy-rules-actions">
             <button type="button" class="btn btn--ghost btn--sm" id="policy-rules-enable-optional">
               Enable all optional
@@ -114,7 +136,20 @@
             </button>
           </div>
           <input type="search" class="input" id="policy-rules-filter" placeholder="Filter rules…" />
-          <div id="policy-rules-list" class="policy-rules-list"></div>
+          <div id="policy-rules-list" class="policy-rules-list">
+            {% set initial_profile = policy_defaults.policy_profile %}
+            {% for rule in policy_catalog.rules %}
+            <label class="checkbox-row" data-rule-id="{{ rule['id'] }}">
+              <input
+                type="checkbox"
+                value="{{ rule['id'] }}"
+                {% if initial_profile != 'custom' or rule['required'] %}disabled{% endif %}
+                {% if rule['id'] in policy_enabled_rule_ids %}checked{% endif %}
+              />
+              {{ rule['title'] }} ({{ rule['id'] }})
+            </label>
+            {% endfor %}
+          </div>
         </details>
         <input type="hidden" id="policy_rules" name="policy_rules" value="" />
       </div>
@@ -1177,9 +1212,11 @@
 </script>
 {% endif %}
 {% endif %}
-{% if policy_customization %}
+{% if policy_customization and policy_catalog %}
+<script id="policy-catalog-data" type="application/json">{{ policy_catalog | tojson }}</script>
 <script>
 (function () {
+  const catalogEl = document.getElementById("policy-catalog-data");
   const root = document.getElementById("policy-customization");
   const profileSelect = document.getElementById("policy_profile");
   const packSelect = document.getElementById("policy_pack_source");
@@ -1191,12 +1228,47 @@
   const packHint = document.getElementById("policy-pack-hint");
   const enableOptionalBtn = document.getElementById("policy-rules-enable-optional");
   const useProfileBtn = document.getElementById("policy-rules-use-profile");
-  if (!root || !profileSelect || !rulesHidden || !rulesList) return;
+  if (!root || !profileSelect || !rulesHidden || !rulesList || !catalogEl) return;
 
   const blueprintName = {{ blueprint.name | tojson }};
-  let catalog = { rules: [], profiles: {}, pack_sources: [] };
-  let lastPresetProfile = "estate-default";
-  let customSeedProfile = "estate-default";
+  const policyDefaults = {{ policy_defaults | tojson }};
+  let catalog;
+  try {
+    catalog = JSON.parse(catalogEl.textContent || "{}");
+  } catch (_err) {
+    catalog = { rules: [], profiles: {}, pack_sources: [], defaults: {} };
+  }
+  let lastPresetProfile = profileSelect.value || policyDefaults.policy_profile || "estate-default";
+  let customSeedProfile = lastPresetProfile;
+
+  function resolveInitialPackId(packs) {
+    const preferred = policyDefaults.policy_pack_source;
+    if (preferred && packs.some((pack) => pack.id === preferred)) {
+      return preferred;
+    }
+    if (catalog.defaults?.policy_pack_source) {
+      const fromApi = catalog.defaults.policy_pack_source;
+      if (packs.some((pack) => pack.id === fromApi)) {
+        return fromApi;
+      }
+    }
+    return packs[0]?.id || "";
+  }
+
+  function resolveInitialProfileId(packs, packId) {
+    const preferred = policyDefaults.policy_profile;
+    if (preferred && catalog.profiles?.[preferred]) {
+      return preferred;
+    }
+    if (catalog.defaults?.policy_profile && catalog.profiles?.[catalog.defaults.policy_profile]) {
+      return catalog.defaults.policy_profile;
+    }
+    const pack = packs.find((item) => item.id === packId);
+    if (pack?.default_profile && catalog.profiles?.[pack.default_profile]) {
+      return pack.default_profile;
+    }
+    return catalog.profiles?.["estate-default"] ? "estate-default" : Object.keys(catalog.profiles || {})[0];
+  }
 
   function matchInclude(pattern, ruleId) {
     if (pattern === ruleId) return true;
@@ -1367,6 +1439,9 @@
   filterInput?.addEventListener("input", renderRules);
   rulesList.addEventListener("change", syncHiddenRules);
 
+  updatePackHint();
+  updateProfileUi();
+
   fetch(`/blueprints/${encodeURIComponent(blueprintName)}/policy-catalog`)
     .then((r) => {
       if (!r.ok) throw new Error(String(r.status));
@@ -1374,30 +1449,43 @@
     })
     .then((data) => {
       catalog = data;
-      if (packSelect && data.pack_sources?.length) {
+      const packs = data.pack_sources || [];
+      if (packSelect && packs.length) {
+        const selected = packSelect.value;
         packSelect.innerHTML = "";
-        for (const pack of data.pack_sources) {
+        for (const pack of packs) {
           const opt = document.createElement("option");
           opt.value = pack.id;
           opt.textContent = pack.label || pack.id;
           if (pack.description) opt.title = pack.description;
           packSelect.appendChild(opt);
         }
-        packSelect.value = data.pack_sources[0].id;
+        packSelect.value = packs.some((p) => p.id === selected)
+          ? selected
+          : resolveInitialPackId(packs);
       }
-      const initialPack = (data.pack_sources || [])[0];
-      const initialProfile =
-        initialPack?.default_profile && data.profiles?.[initialPack.default_profile]
-          ? initialPack.default_profile
-          : "estate-default";
-      populateProfileSelect(initialProfile);
-      lastPresetProfile = initialProfile;
-      customSeedProfile = initialProfile;
+      if (data.profiles && profileSelect) {
+        const selectedProfile = profileSelect.value;
+        profileSelect.innerHTML = "";
+        for (const [id, meta] of Object.entries(data.profiles)) {
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = meta.label || id;
+          if (meta.description) opt.title = meta.description;
+          profileSelect.appendChild(opt);
+        }
+        profileSelect.value = data.profiles[selectedProfile]
+          ? selectedProfile
+          : resolveInitialProfileId(packs, packSelect?.value || "");
+      }
+      lastPresetProfile = profileSelect.value;
+      customSeedProfile = lastPresetProfile;
       updateProfileUi();
     })
     .catch(() => {
       if (rulesHint) {
-        rulesHint.textContent = "Could not load the policy catalog; refresh and try again.";
+        rulesHint.textContent =
+          "Could not refresh the policy catalog; using server defaults. Submit still works.";
       }
       updateProfileUi();
     });

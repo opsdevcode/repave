@@ -2,7 +2,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from repave_engine.policy_catalog import load_policy_catalog, resolve_profile_rule_ids
+from repave_engine.blueprint import load_blueprint
+from repave_engine.policy_catalog import (
+    load_policy_catalog,
+    pack_sources_for_artifact,
+    resolve_profile_rule_ids,
+)
+from repave_engine.policy_selection import policy_input_defaults
+
+
+def test_pack_sources_filtered_for_azure_policy(repo_root: Path) -> None:
+    catalog = load_policy_catalog(repo_root)
+    packs = pack_sources_for_artifact(catalog, "azure-policy")
+    ids = {pack["id"] for pack in packs}
+    assert "repave-azure-samples" in ids
+    assert "repave-terraform-strict" not in ids
+
+
+def test_policy_input_defaults_from_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(repo_root / "blueprints" / "checkov-policy-generic", repo_root)
+    defaults = policy_input_defaults(blueprint)
+    assert defaults["policy_pack_source"] == "repave-checkov-pack"
+    assert defaults["policy_profile"] == "checkov-full"
 
 
 def test_resolve_estate_default_includes_required(repo_root: Path) -> None:

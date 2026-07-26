@@ -66,49 +66,62 @@
       "label": "Repave community pack",
       "description": "Vendored packs from this repository (Checkov, OPA, Azure samples).",
       "default_profile": "estate-default",
-      "reference_url": "https://github.com/opsdevcode/repave/tree/main/policy"
+      "reference_url": "https://github.com/opsdevcode/repave/tree/main/policy",
+      "artifact_types": [
+        "terraform-module",
+        "terraform-environment-stack",
+        "checkov-policy",
+        "opa-policy",
+        "azure-policy"
+      ]
     },
     {
       "id": "repave-terraform-strict",
       "label": "Repave Terraform — strict profile",
       "description": "Same monorepo Checkov/OPA packs; starts from the strict profile.",
       "default_profile": "strict",
-      "reference_url": "https://github.com/opsdevcode/repave/blob/main/examples/checkov/README.md"
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/examples/checkov/README.md",
+      "artifact_types": ["terraform-module", "terraform-environment-stack"]
     },
     {
       "id": "repave-terraform-layout",
       "label": "Repave Terraform — layout profile",
       "description": "Module layout and required-variable conventions from the Terraform standards pack.",
       "default_profile": "layout",
-      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/terraform-standards/terraform-standards.md"
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/terraform-standards/terraform-standards.md",
+      "artifact_types": ["terraform-module", "terraform-environment-stack"]
     },
     {
       "id": "repave-terraform-security",
       "label": "Repave Terraform — security profile",
       "description": "Security-focused Checkov rules aligned with common IaC secret-hygiene guidance.",
       "default_profile": "security",
-      "reference_url": "https://github.com/opsdevcode/repave/blob/main/policy/checkov/policies/repave_security.py"
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/policy/checkov/policies/repave_security.py",
+      "artifact_types": ["terraform-module", "terraform-environment-stack"]
     },
     {
       "id": "repave-opa-pack",
       "label": "Repave OPA / Conftest pack",
       "description": "Plan-time Rego under policy/opa/policies (Terraform and opa-policy artifacts).",
       "default_profile": "opa-focused",
-      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/opa.md"
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/opa.md",
+      "artifact_types": ["opa-policy", "terraform-module", "terraform-environment-stack"]
     },
     {
       "id": "repave-azure-samples",
       "label": "Repave Azure Policy samples",
       "description": "Sample definition JSON under policy/azure/definitions (azure-policy artifacts).",
       "default_profile": "azure-community",
-      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/azure.md"
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/azure.md",
+      "artifact_types": ["azure-policy"]
     },
     {
       "id": "repave-checkov-pack",
       "label": "Repave Checkov policy pack",
       "description": "Full community Checkov pack: module layout, version bounds, and security rules.",
       "default_profile": "checkov-full",
-      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/checkov.md"
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/checkov.md",
+      "artifact_types": ["checkov-policy", "terraform-module", "terraform-environment-stack"]
     }
   ],
   "rules": [

@@ -25,12 +25,12 @@ spec:
     - name: policy_pack_source
       type: string
       required: false
-      default: repave-default
+      default: repave-opa-pack
       description: Pack registry entry from policy/catalog.json pack_sources.
     - name: policy_profile
       type: string
       required: false
-      default: estate-default
+      default: opa-focused
       description: Profile from policy/catalog.json (use custom with policy_rules).
     - name: policy_rules
       type: string

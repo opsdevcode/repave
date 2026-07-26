@@ -43,6 +43,18 @@ def blueprint_supports_policy_customization(blueprint: Blueprint) -> bool:
     return any(field.name == "policy_profile" for field in blueprint.inputs)
 
 
+def policy_input_defaults(blueprint: Blueprint) -> dict[str, str]:
+    """Blueprint-declared defaults for policy pack source and profile."""
+    defaults = {
+        "policy_pack_source": "repave-default",
+        "policy_profile": "estate-default",
+    }
+    for field in blueprint.inputs:
+        if field.name in defaults and field.default not in (None, ""):
+            defaults[field.name] = str(field.default)
+    return defaults
+
+
 def _parse_custom_rules(raw: Any) -> tuple[str, ...]:
     if raw in (None, ""):
         return ()

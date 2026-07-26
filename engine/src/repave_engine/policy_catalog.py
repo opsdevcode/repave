@@ -71,6 +71,9 @@ def load_policy_catalog(repo_root: Path) -> PolicyCatalog:
         for key in ("label", "description", "default_profile", "reference_url"):
             if key in item and item[key] is not None:
                 entry[key] = str(item[key])
+        artifact_types = item.get("artifact_types")
+        if isinstance(artifact_types, list):
+            entry["artifact_types"] = ",".join(str(t) for t in artifact_types)
         pack_sources.append(entry)
     pack_sources_tuple = tuple(pack_sources)
     return PolicyCatalog(
@@ -83,6 +86,21 @@ def load_policy_catalog(repo_root: Path) -> PolicyCatalog:
 
 def rules_for_artifact(catalog: PolicyCatalog, artifact_type: str) -> tuple[PolicyRule, ...]:
     return tuple(rule for rule in catalog.rules if artifact_type in rule.artifact_types)
+
+
+def pack_sources_for_artifact(
+    catalog: PolicyCatalog,
+    artifact_type: str,
+) -> tuple[dict[str, str], ...]:
+    selected: list[dict[str, str]] = []
+    for pack in catalog.pack_sources:
+        raw = pack.get("artifact_types", "").strip()
+        if not raw:
+            selected.append(pack)
+            continue
+        if artifact_type in {part.strip() for part in raw.split(",") if part.strip()}:
+            selected.append(pack)
+    return tuple(selected)
 
 
 def _match_includes(pattern: str, rule_id: str, family: str) -> bool:
@@ -129,10 +147,38 @@ def resolve_profile_rule_ids(
     return resolved
 
 
-def catalog_for_api(catalog: PolicyCatalog, artifact_type: str) -> dict[str, Any]:
+def enabled_rule_ids_for_profile(
+    catalog: PolicyCatalog,
+    *,
+    profile: str,
+    artifact_type: str,
+    custom_rules: tuple[str, ...] = (),
+) -> set[str]:
+    """Rule IDs checked on the blueprint form for the given profile."""
+    try:
+        return resolve_profile_rule_ids(
+            catalog,
+            profile=profile,
+            artifact_type=artifact_type,
+            custom_rules=custom_rules,
+        )
+    except ValueError:
+        return {rule.id for rule in rules_for_artifact(catalog, artifact_type) if rule.required}
+
+
+def catalog_for_api(
+    catalog: PolicyCatalog,
+    artifact_type: str,
+    *,
+    defaults: dict[str, str] | None = None,
+) -> dict[str, Any]:
     rules = rules_for_artifact(catalog, artifact_type)
+    packs = pack_sources_for_artifact(catalog, artifact_type)
+    if not packs:
+        packs = catalog.pack_sources
     return {
         "version": catalog.version,
+        "defaults": defaults or {},
         "profiles": {
             key: {
                 "label": value.get("label", key),
@@ -143,7 +189,7 @@ def catalog_for_api(catalog: PolicyCatalog, artifact_type: str) -> dict[str, Any
             }
             for key, value in catalog.profiles.items()
         },
-        "pack_sources": list(catalog.pack_sources),
+        "pack_sources": list(packs),
         "rules": [
             {
                 "id": rule.id,
