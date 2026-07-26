@@ -1,3 +1,3 @@
 """repave generation engine."""
 
-__version__ = "1.25.0"
+__version__ = "1.26.0"
