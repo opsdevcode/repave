@@ -508,6 +508,8 @@ manifest snapshots).
 
 ---
 
+### v1.30 — Audit log, metrics, and traces
+
 **Problem:** There is no durable record of who generated what, when, and with
 which pins, and no metrics for operating repave as a shared service.
 
@@ -527,6 +529,10 @@ which pins, and no metrics for operating repave as a shared service.
 
 **Done when:** Every generation emits an audit record and metrics, and a trace
 shows per-stage timing.
+
+**Status:** Shipped on `main` (`audit.py` JSONL sink, `/metrics` Prometheus
+endpoint, pipeline spans and `repave_generation_*` counters; configure via
+`repave.config.yaml` `audit` and `REPAVE_ACTING_USER`).
 
 ---
 

@@ -20,6 +20,14 @@ def test_health(repo_root, output_config) -> None:
     assert response.json() == {"status": "ok"}
 
 
+def test_metrics_exposes_prometheus(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "repave_generations_total" in response.text
+
+
 def test_index_lists_blueprints(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")

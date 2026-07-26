@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from repave_engine.audit import AuditRecord, acting_user_from_env, append_audit_record
 from repave_engine.blueprint import (
     Blueprint,
     _find_repo_root,
@@ -13,6 +15,7 @@ from repave_engine.blueprint import (
     validate_inputs,
 )
 from repave_engine.gates import GateResult, all_gates_passed, clean_gate_artifacts, run_gates
+from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
 from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
 from repave_engine.render import (
@@ -21,12 +24,13 @@ from repave_engine.render import (
     collect_rendered_files,
     render_blueprint,
 )
-from repave_engine.settings import OutputConfig, load_gate_overrides
+from repave_engine.settings import OutputConfig, load_audit_config, load_gate_overrides
 from repave_engine.target_repo import (
     ModuleRepository,
     publish_to_module_repository,
     resolve_module_repository,
 )
+from repave_engine.tracing import pipeline_span
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,51 @@ class GenerationResult:
     dry_run: bool = True
 
 
+def _gates_outcome(gates: list[GateResult]) -> str:
+    if not gates:
+        return "empty"
+    if all(gate.passed or gate.skipped for gate in gates):
+        return "passed"
+    return "failed"
+
+
+def _record_operability(
+    catalog_root: Path,
+    *,
+    blueprint: Blueprint,
+    module_name: str,
+    dry_run: bool,
+    gates: list[GateResult],
+    repository: ModuleRepository | None,
+    started_at: float,
+) -> None:
+    elapsed = time.perf_counter() - started_at
+    outcome = _gates_outcome(gates)
+    GENERATION_DURATION.labels(blueprint=blueprint.name).observe(elapsed)
+    GENERATION_TOTAL.labels(outcome=outcome, blueprint=blueprint.name).inc()
+
+    try:
+        audit_cfg = load_audit_config(catalog_root)
+    except ValueError:
+        audit_cfg = None
+    if audit_cfg is None or not audit_cfg.enabled:
+        return
+    append_audit_record(
+        audit_cfg.file,
+        AuditRecord(
+            event="generation",
+            blueprint_name=blueprint.name,
+            blueprint_version=blueprint.version,
+            module_name=module_name,
+            dry_run=dry_run,
+            gates_outcome=outcome,
+            repository_url=repository.web_url if repository is not None else None,
+            acting_user=acting_user_from_env(),
+            extra={"duration_seconds": round(elapsed, 3)},
+        ),
+    )
+
+
 def generate_from_blueprint(
     blueprint: Blueprint,
     values: dict[str, Any],
@@ -51,15 +100,17 @@ def generate_from_blueprint(
     staging_root: Path | None = None,
     repo_root: Path | None = None,
 ) -> GenerationResult:
+    started_at = time.perf_counter()
     pack_root = repo_root if repo_root is not None else _find_repo_root(blueprint.path)
     gate_overrides = load_gate_overrides(pack_root)
     catalog_root = _find_repo_root(blueprint.path)
-    normalized = validate_inputs(
-        blueprint,
-        values,
-        repo_root=catalog_root,
-        gate_overrides=gate_overrides,
-    )
+    with pipeline_span("repave.validate"):
+        normalized = validate_inputs(
+            blueprint,
+            values,
+            repo_root=catalog_root,
+            gate_overrides=gate_overrides,
+        )
     module_name = primary_publish_name(blueprint, normalized)
     module_repository = resolve_module_repository(
         module_name=module_name,
@@ -79,14 +130,16 @@ def generate_from_blueprint(
         owns_staging = False
 
     try:
-        render_result = render_blueprint(blueprint, normalized, staging_dir)
+        with pipeline_span("repave.render"):
+            render_result = render_blueprint(blueprint, normalized, staging_dir)
         run_gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
-        gate_results = run_gates(
-            render_result.output_dir,
-            blueprint.gates,
-            blueprint=blueprint,
-            gate_overrides=run_gate_overrides,
-        )
+        with pipeline_span("repave.gates"):
+            gate_results = run_gates(
+                render_result.output_dir,
+                blueprint.gates,
+                blueprint=blueprint,
+                gate_overrides=run_gate_overrides,
+            )
         clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)
 
         pr_plan: PullRequestPlan | None = None
@@ -94,12 +147,13 @@ def generate_from_blueprint(
         published_repository: ModuleRepository | None = module_repository
 
         if all_gates_passed(gate_results):
-            publish_message = publish_to_module_repository(
-                render_result.output_dir,
-                module_repository,
-                dry_run=dry_run,
-                artifact_type=blueprint.artifact_type,
-            )
+            with pipeline_span("repave.publish"):
+                publish_message = publish_to_module_repository(
+                    render_result.output_dir,
+                    module_repository,
+                    dry_run=dry_run,
+                    artifact_type=blueprint.artifact_type,
+                )
             pr_plan = plan_pull_request(
                 blueprint_name=blueprint.name,
                 blueprint_version=blueprint.version,
@@ -147,6 +201,16 @@ def generate_from_blueprint(
                 ),
                 module_name=module_name,
             ),
+        )
+
+        _record_operability(
+            catalog_root,
+            blueprint=blueprint,
+            module_name=module_name,
+            dry_run=dry_run,
+            gates=gate_results,
+            repository=published_repository,
+            started_at=started_at,
         )
 
         return GenerationResult(

@@ -80,6 +80,47 @@ def load_output_config(
 _DEFAULT_NOTIFY_EVENTS = frozenset({"publish_complete", "generation_failed"})
 
 
+@dataclass(frozen=True)
+class AuditConfig:
+    enabled: bool
+    file: Path
+
+
+def load_audit_config(repo_root: Path) -> AuditConfig | None:
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("audit")
+    if block is None:
+        env_path = os.environ.get("REPAVE_AUDIT_FILE", "").strip()
+        if not env_path:
+            return None
+        path = Path(env_path).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        return AuditConfig(enabled=True, file=path)
+
+    if not isinstance(block, dict):
+        raise ValueError("audit must be a mapping in repave.config.yaml")
+
+    enabled_raw = block.get("enabled", True)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("audit.enabled must be a boolean")
+
+    file_value = block.get("file", "audit/generation.jsonl")
+    path = Path(str(file_value)).expanduser()
+    if not path.is_absolute():
+        path = (repo_root / path).resolve()
+
+    env_override = os.environ.get("REPAVE_AUDIT_FILE", "").strip()
+    if env_override:
+        path = Path(env_override).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+
+    if not enabled_raw:
+        return AuditConfig(enabled=False, file=path)
+    return AuditConfig(enabled=True, file=path)
+
+
 def load_notifications_config(repo_root: Path) -> NotificationsConfig | None:
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("notifications")
