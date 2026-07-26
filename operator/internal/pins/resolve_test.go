@@ -22,16 +22,16 @@ func TestEffectiveDesiredStaticPins(t *testing.T) {
 		Spec: repavev1alpha1.GoldenPathRepoSpec{
 			DesiredPins: repavev1alpha1.DesiredPins{
 				BlueprintName:    "terraform-module-generic",
-				BlueprintVersion: "0.8.0",
-				StandardSource:   "standards",
-				StandardVersion:  "0.4.0",
+				BlueprintVersion: "0.9.0",
+				StandardSource:   "standards/terraform-standards",
+				StandardVersion:  "1.1.0",
 			},
 		},
 	}
 	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(repo).Build()
 	got, err := pins.EffectiveDesired(context.Background(), c, repo)
 	require.NoError(t, err)
-	require.Equal(t, "0.8.0", got.BlueprintVersion)
+	require.Equal(t, "0.9.0", got.BlueprintVersion)
 }
 
 func TestEffectiveDesiredFromBlueprintRef(t *testing.T) {
@@ -43,8 +43,8 @@ func TestEffectiveDesiredFromBlueprintRef(t *testing.T) {
 		Spec: repavev1alpha1.BlueprintSpec{
 			Version: "0.9.0",
 			Standard: repavev1alpha1.BlueprintStandardPins{
-				Source:  "standards",
-				Version: "0.5.0",
+				Source:  "standards/terraform-standards",
+				Version: "1.1.0",
 			},
 		},
 	}
@@ -64,5 +64,5 @@ func TestEffectiveDesiredFromBlueprintRef(t *testing.T) {
 	got, err := pins.EffectiveDesired(context.Background(), c, repo)
 	require.NoError(t, err)
 	require.Equal(t, "0.9.0", got.BlueprintVersion)
-	require.Equal(t, "0.5.0", got.StandardVersion)
+	require.Equal(t, "1.1.0", got.StandardVersion)
 }

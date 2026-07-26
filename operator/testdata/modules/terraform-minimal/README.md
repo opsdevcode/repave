@@ -1,6 +1,7 @@
 # example
 
-Minimal terraform module fixture for operator e2e (repave.yaml pins blueprint 0.1.0).
+Minimal terraform module fixture for operator e2e (`repave.yaml` pins
+`terraform-module-generic` 0.9.0 and `standards/terraform-standards` 1.1.0).
 
 ## Usage
 

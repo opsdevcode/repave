@@ -1,6 +1,6 @@
 # Repave Checkov policy pack
 
-Custom Checkov policies enforce the [Terraform module standard](../standards/terraform-module-standard.md)
+Custom Checkov policies enforce the [Terraform standards pack](../standards/terraform-standards/terraform-standards.md)
 on generated and hand-maintained module repositories.
 
 ## Layout

@@ -44,6 +44,13 @@ Ansible golden paths pin a multi-file standard under `standards/ansible/`
 ansible-lint pack at `policy/ansible-lint/pack/` is copied into generated roles
 at render time (parallel to Checkov policies for Terraform modules).
 
+## Terraform standards pack
+
+Terraform module blueprints pin `standards/terraform-standards/` (engineering
+standard + module layout). The monolithic `standards/terraform-module-standard.md`
+file is superseded but retained for diff reference. Generated module READMEs cite
+the pack version recorded in `repave.yaml`.
+
 ## Portal
 
 The bundled web UI maps blueprint inputs to generation and shows gate results on

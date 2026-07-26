@@ -273,6 +273,15 @@ fallback; three routes share one visual system (acceptance in portal-design).
 Host e2e smoke exercises the flag on the `terraform-minimal` fixture; validate on
 estate module repos before production remediation.
 
+### v1.21.0 — Estate Terraform standards pack (multi-file)
+
+- Vendored `terraform-standards.md` and `terraform-module-layout.md` under
+  `standards/terraform-standards/` (v1.1.0)
+- `terraform-module-generic` v0.9.0 and `terraform-module-resource` v0.2.0 pin
+  `spec.standard.source: standards/terraform-standards`
+- Scaffold: optional `name_prefix` with `coalesce` fallback; README cites the pack
+- Superseded monolithic `standards/terraform-module-standard.md` (legacy body retained)
+
 ---
 
 ### v1.20 — Additional golden paths
@@ -294,29 +303,6 @@ need more artifact types.
 **Dependencies:** v1.13 gate registry; v1.14 artifact-type provenance.
 
 **Done when:** At least one new blueprint ships with gates, standards pin, and docs.
-
----
-
-### v1.21 — Estate standards pack (multi-file)
-
-**Problem:** Module standard lives in a single sample file (`standards/
-terraform-module-standard.md`). Estate teams want the full Terraform standards
-corpus in-repo (engineering standard + module layout) with blueprint and scaffold
-aligned to a pinned version.
-
-**Approach:**
-
-- Vendor `terraform-standards.md` and `terraform-module-layout.md` under
-  `standards/terraform-standards/` (no summary files)
-- Pin blueprint at `standards/terraform-standards` v1.1.0
-- Align scaffold: `variable "name_prefix"` with `coalesce` fallback; `common_tags`
-  per layout standard
-- Retire or supersede the monolithic sample standard file
-
-**Dependencies:** v1.9 locals/layout scaffold.
-
-**Done when:** Generated README cites the multi-file standard path; blueprint and
-docs reference one authoritative in-repo standards directory.
 
 ---
 

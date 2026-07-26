@@ -112,6 +112,9 @@ def test_render_writes_scoped_resource_files(
     assert "common_tags = merge(" in locals_tf
     assert "sort(distinct(var.provider_services))" in locals_tf
     assert "name_prefix" in locals_tf
+    assert "coalesce(var.name_prefix" in locals_tf
+    variables = (output_dir / "variables.tf").read_text(encoding="utf-8")
+    assert 'variable "name_prefix"' in variables
     outputs = (output_dir / "outputs.tf").read_text(encoding="utf-8")
     assert "null_resource.ec2_diff.id" in outputs
     assert "null_resource.s3_bucket.id" in outputs

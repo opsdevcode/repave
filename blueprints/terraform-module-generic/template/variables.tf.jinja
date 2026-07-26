@@ -22,6 +22,13 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "name_prefix" {
+  type        = string
+  description = "Optional naming prefix; when null, defaults to module_name-environment."
+  default     = null
+  nullable    = true
+}
+
 variable "tags" {
   type        = map(string)
   description = "Resource tags applied by the module."
