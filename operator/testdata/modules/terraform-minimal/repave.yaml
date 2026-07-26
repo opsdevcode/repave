@@ -6,10 +6,10 @@ spec:
   artifactType: terraform-module
   blueprint:
     name: terraform-module-generic
-    version: "0.1.0"
+    version: "0.9.0"
   standard:
-    source: standards
-    version: "0.4.0"
+    source: standards/terraform-standards
+    version: "1.1.0"
   generation:
     engine_version: "1.16.0"
     generated_at: "2026-07-24T00:00:00Z"

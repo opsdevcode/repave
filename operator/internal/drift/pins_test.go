@@ -11,9 +11,9 @@ func TestPinsDiffer(t *testing.T) {
 	desired := drift.PinsFromDesired(repavev1alpha1.GoldenPathRepoSpec{
 		DesiredPins: repavev1alpha1.DesiredPins{
 			BlueprintName:    "terraform-module-generic",
-			BlueprintVersion: "0.1.0",
-			StandardSource:   "standards",
-			StandardVersion:  "0.4.0",
+			BlueprintVersion: "0.9.0",
+			StandardSource:   "standards/terraform-standards",
+			StandardVersion:  "1.1.0",
 		},
 	})
 	observed := desired

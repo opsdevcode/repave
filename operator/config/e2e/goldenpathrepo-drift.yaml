@@ -8,10 +8,10 @@ spec:
   localPath: /modules/terraform-minimal
   desiredPins:
     blueprintName: terraform-module-generic
-    # Fixture repave.yaml pins 0.1.0 — force OutOfDate.
+    # Fixture repave.yaml pins 0.9.0 — force OutOfDate.
     blueprintVersion: "9.9.9"
-    standardSource: standards
-    standardVersion: "0.4.0"
+    standardSource: standards/terraform-standards
+    standardVersion: "1.1.0"
   remediation:
     enabled: true
     dryRun: true

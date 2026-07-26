@@ -40,7 +40,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 			PlanUpgrader: &repave.StaticPlanUpgrader{
 				Result: repave.PlanResult{
 					BlueprintName:    "terraform-module-generic",
-					BlueprintVersion: "0.8.0",
+					BlueprintVersion: "9.9.9",
 					ChangedFileCount:   5,
 					Added:              []string{"README.md", "main.tf"},
 					Modified:           []string{"repave.yaml"},
@@ -51,7 +51,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 			ApplyUpgrader: &repave.StaticApplyUpgrader{
 				Result: repave.ApplyResult{
 					BlueprintName:    "terraform-module-generic",
-					BlueprintVersion: "0.8.0",
+					BlueprintVersion: "9.9.9",
 					ChangedFileCount: 5,
 					GitBranch:        "repave/upgrade/terraform-module-generic-9.9.9",
 					CommitSHA:        "abc123",
@@ -81,9 +81,9 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				LocalPath: fixtureModulePath(),
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
-					BlueprintVersion: "0.1.0",
-					StandardSource:   "standards",
-					StandardVersion:  "0.4.0",
+					BlueprintVersion: "0.9.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
 				},
 			},
 		}
@@ -94,7 +94,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
 		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseReady))
-		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.1.0"))
+		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.9.0"))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionReady)).To(BeTrue())
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeFalse())
 		Expect(repo.Status.UpgradePlan).To(BeNil())
@@ -108,8 +108,8 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
-					StandardSource:   "standards",
-					StandardVersion:  "0.4.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
 				},
 			},
 		}
@@ -131,7 +131,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		applier := &repave.StaticApplyUpgrader{
 			Result: repave.ApplyResult{
 				BlueprintName:    "terraform-module-generic",
-				BlueprintVersion: "0.8.0",
+				BlueprintVersion: "9.9.9",
 				ChangedFileCount: 5,
 				GitBranch:        "repave/upgrade/terraform-module-generic-9.9.9",
 				CommitSHA:        "abc123",
@@ -146,8 +146,8 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
-					StandardSource:   "standards",
-					StandardVersion:  "0.4.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
 				},
 				Remediation: repavev1alpha1.RemediationSpec{
 					Enabled: true,
@@ -174,7 +174,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		applier := &repave.StaticApplyUpgrader{
 			Result: repave.ApplyResult{
 				BlueprintName:    "terraform-module-generic",
-				BlueprintVersion: "0.8.0",
+				BlueprintVersion: "9.9.9",
 				ChangedFileCount: 5,
 				GitBranch:        "repave/upgrade/terraform-module-generic-9.9.9",
 				CommitSHA:        "abc123",
@@ -189,8 +189,8 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
-					StandardSource:   "standards",
-					StandardVersion:  "0.4.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
 				},
 				Remediation: repavev1alpha1.RemediationSpec{
 					Enabled:       true,
@@ -215,10 +215,10 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		bp := &repavev1alpha1.Blueprint{
 			ObjectMeta: metav1.ObjectMeta{Name: bpName, Namespace: "default"},
 			Spec: repavev1alpha1.BlueprintSpec{
-				Version: "0.1.0",
+				Version: "0.9.0",
 				Standard: repavev1alpha1.BlueprintStandardPins{
-					Source:  "standards",
-					Version: "0.4.0",
+					Source:  "standards/terraform-standards",
+					Version: "1.1.0",
 				},
 			},
 		}
@@ -268,9 +268,9 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				LocalPath: fixtureModulePath(),
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
-					BlueprintVersion: "0.1.0",
-					StandardSource:   "standards",
-					StandardVersion:  "0.4.0",
+					BlueprintVersion: "0.9.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
 				},
 			},
 		}

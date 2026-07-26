@@ -18,7 +18,7 @@ func TestCLIApplyUpgraderPassesPreserveLocalFlag(t *testing.T) {
 	if err := os.WriteFile(
 		script,
 		[]byte("#!/bin/sh\nprintf '%s\\n' \"$@\" >> \""+logPath+"\"\n"+
-			"echo '{\"blueprint_name\":\"terraform-module-generic\",\"blueprint_version\":\"0.8.0\","+
+			"echo '{\"blueprint_name\":\"terraform-module-generic\",\"blueprint_version\":\"0.9.0\","+
 			"\"changed_file_count\":1,\"git_branch\":\"b\",\"commit_sha\":\"c\",\"summary\":\"ok\"}'\n"),
 		0o755,
 	); err != nil {

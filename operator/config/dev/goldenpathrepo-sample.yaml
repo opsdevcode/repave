@@ -10,6 +10,6 @@ spec:
   localPath: /modules/terraform-minimal
   desiredPins:
     blueprintName: terraform-module-generic
-    blueprintVersion: "0.1.0"
-    standardSource: standards
-    standardVersion: "0.4.0"
+    blueprintVersion: "0.9.0"
+    standardSource: standards/terraform-standards
+    standardVersion: "1.1.0"
