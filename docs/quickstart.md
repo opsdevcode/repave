@@ -22,6 +22,8 @@ noted. For live calls and stakeholder-specific talking points, see
    catalog** to `true` and **owner** `group:platform` → dry-run → open
    `catalog-info.yaml` in the file preview.
 
+Maintainers: [Demo verification checklist](demo-verification.md) before releases or screenshot updates.
+
 ## Docker Compose (recommended)
 
 ```bash
