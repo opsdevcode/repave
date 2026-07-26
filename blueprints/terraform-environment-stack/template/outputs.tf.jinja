@@ -14,11 +14,15 @@ output "environment" {
 }
 
 output "primary_module_name" {
-  description = "Logical name of the primary module block."
-  value       = "{{ module_name }}"
+  description = "Logical name of the first pinned module block."
+  value       = "{{ pinned_modules[0].name }}"
 }
 
 output "resource_ids" {
   description = "Resource identifiers from composed modules (for terraform test)."
-  value       = module.{{ module_name }}.resource_ids
+  value = concat(
+{% for mod in pinned_modules %}
+    module.{{ mod.name }}.resource_ids{% if not loop.last %},{% endif %}
+{% endfor %}
+  )
 }

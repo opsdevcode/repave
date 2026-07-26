@@ -55,9 +55,9 @@ def env_stack_inputs() -> dict[str, str]:
         "description": "Example environment stack",
         "cloud_provider": "aws",
         "environment": "dev",
-        "module_name": "foundation",
-        "module_source": "./modules/_example",
-        "module_version": "",
+        "pinned_modules": (
+            '[{"name":"foundation","source":"./modules/_example","repo_name":"_example"}]'
+        ),
     }
 
 
@@ -68,6 +68,7 @@ def ansible_playbook_sample_inputs() -> dict[str, str]:
         "description": "Example playbook project",
         "min_ansible_version": "2.18",
         "environment": "dev",
+        "pinned_roles": "[]",
     }
 
 

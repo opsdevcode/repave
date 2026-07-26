@@ -37,6 +37,11 @@ spec:
         - staging
         - prod
       default: dev
+    - name: pinned_roles
+      type: string
+      required: false
+      description: JSON array of pinned Galaxy roles (portal role inventory picker).
+      default: "[]"
   template:
     engine: copier
     path: template

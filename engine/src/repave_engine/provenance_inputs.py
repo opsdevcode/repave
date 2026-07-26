@@ -73,17 +73,17 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         pinned = stack.get("pinned_modules")
         if not isinstance(pinned, list) or not pinned:
             raise ValueError("terraform-environment-stack provenance missing pinned_modules")
-        primary = pinned[0]
-        if not isinstance(primary, dict):
-            raise ValueError("pinned_modules entry must be an object")
+        import json
+
+        for entry in pinned:
+            if not isinstance(entry, dict):
+                raise ValueError("pinned_modules entry must be an object")
         stack_values: dict[str, Any] = {
             "stack_name": stack_name,
             "description": f"Repave upgrade plan for {stack_name}",
             "cloud_provider": str(stack.get("cloud_provider", "aws")).strip(),
             "environment": str(stack.get("environment", "dev")).strip(),
-            "module_name": str(primary.get("name", "foundation")).strip(),
-            "module_source": str(primary.get("source", "")).strip(),
-            "module_version": str(primary.get("version", "")).strip(),
+            "pinned_modules": json.dumps(pinned),
         }
         return stack_values
 
@@ -101,6 +101,13 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         }
         if project.get("min_ansible_version"):
             playbook_values["min_ansible_version"] = str(project["min_ansible_version"]).strip()
+        pinned = project.get("pinned_roles")
+        if isinstance(pinned, list) and pinned:
+            import json
+
+            playbook_values["pinned_roles"] = json.dumps(pinned)
+        else:
+            playbook_values["pinned_roles"] = "[]"
         return playbook_values
 
     if artifact_type == "ansible-role":

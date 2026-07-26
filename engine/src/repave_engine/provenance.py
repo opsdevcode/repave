@@ -59,22 +59,31 @@ def _build_environment_stack_spec(
     values: dict[str, Any],
 ) -> tuple[dict[str, Any], str]:
     stack_name = str(values.get("stack_name", blueprint.name))
-    module_name = str(values.get("module_name", "foundation")).strip()
-    module_source = str(values.get("module_source", "")).strip()
-    module_version = str(values.get("module_version", "")).strip()
-    pinned: dict[str, Any] = {
-        "name": module_name,
-        "source": module_source,
-    }
-    if module_version:
-        pinned["version"] = module_version
+    pinned_raw = values.get("pinned_modules")
+    pinned_list: list[dict[str, Any]] = []
+    if isinstance(pinned_raw, list):
+        for item in pinned_raw:
+            if not isinstance(item, dict):
+                continue
+            entry: dict[str, Any] = {
+                "name": str(item.get("name", "")).strip(),
+                "source": str(item.get("source", "")).strip(),
+            }
+            version = str(item.get("version", "")).strip()
+            if version:
+                entry["version"] = version
+            repo_name = str(item.get("repo_name", "")).strip()
+            if repo_name:
+                entry["repo_name"] = repo_name
+            if entry["name"] and entry["source"]:
+                pinned_list.append(entry)
     spec: dict[str, Any] = {
         "artifactType": "terraform-environment-stack",
         "terraformEnvironmentStack": {
             "stack_name": stack_name,
             "cloud_provider": str(values.get("cloud_provider", "")),
             "environment": str(values.get("environment", "dev")),
-            "pinned_modules": [pinned],
+            "pinned_modules": pinned_list,
         },
     }
     if blueprint.checkov_policies is not None:
@@ -100,6 +109,18 @@ def _build_ansible_playbook_project_spec(
     min_version = values.get("min_ansible_version")
     if min_version not in (None, ""):
         spec["ansiblePlaybookProject"]["min_ansible_version"] = str(min_version)
+    pinned = values.get("pinned_roles")
+    if isinstance(pinned, list) and pinned:
+        spec["ansiblePlaybookProject"]["pinned_roles"] = [
+            {
+                "galaxy_name": str(item.get("galaxy_name", "")),
+                "version": str(item.get("version", "")),
+                "src": str(item.get("src", "")),
+                **({"repo_name": str(item["repo_name"]).strip()} if item.get("repo_name") else {}),
+            }
+            for item in pinned
+            if isinstance(item, dict)
+        ]
     if blueprint.ansible_lint_pack is not None:
         spec["ansibleLint"] = {
             "pack_source": blueprint.ansible_lint_pack.pack_source,

@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from repave_engine.module_inventory import (
     build_git_module_source,
     list_inventory_module_versions,
     list_inventory_modules,
+    normalize_pinned_modules_raw,
 )
 
 
@@ -91,3 +93,9 @@ def test_build_git_module_source() -> None:
         build_git_module_source("https://github.com/acme/tf-aws-x.git", "v1.0.0")
         == "git::https://github.com/acme/tf-aws-x.git?ref=v1.0.0"
     )
+
+
+def test_normalize_pinned_modules_raw_requires_unique_names() -> None:
+    raw = '[{"name":"a","source":"./m1"},{"name":"a","source":"./m2"}]'
+    with pytest.raises(ValueError, match="duplicate"):
+        normalize_pinned_modules_raw(raw)

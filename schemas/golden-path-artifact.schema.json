@@ -106,7 +106,8 @@
                 "properties": {
                   "name": { "type": "string", "minLength": 1 },
                   "source": { "type": "string", "minLength": 1 },
-                  "version": { "type": "string" }
+                  "version": { "type": "string" },
+                  "repo_name": { "type": "string" }
                 }
               }
             }
@@ -129,7 +130,21 @@
           "properties": {
             "project_name": { "type": "string", "minLength": 1 },
             "environment": { "type": "string" },
-            "min_ansible_version": { "type": "string" }
+            "min_ansible_version": { "type": "string" },
+            "pinned_roles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["galaxy_name", "version", "src"],
+                "additionalProperties": false,
+                "properties": {
+                  "galaxy_name": { "type": "string", "minLength": 1 },
+                  "version": { "type": "string", "minLength": 1 },
+                  "src": { "type": "string", "minLength": 1 },
+                  "repo_name": { "type": "string" }
+                }
+              }
+            }
           }
         },
         "checkov": {
