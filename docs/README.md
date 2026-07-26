@@ -9,6 +9,7 @@ is the front door; use this index when you need depth.
 | --- | --- | --- |
 | [Quickstart](quickstart.md) | New users | Docker Compose, `make serve`, first generate, CLI |
 | [Sales demo runbook](sales-demo.md) | Field / leadership demos | Narrative, talking points, operator boundaries |
+| [Demo verification](demo-verification.md) | Maintainers / pre-release | Portal smoke checklist, screenshots, operator e2e |
 | [Concepts](concepts.md) | Everyone | Golden paths, blueprints, governance-by-construction, provenance |
 | [Module repositories](module-repositories.md) | Adopters | `REPAVE_MODULES_ROOT`, GitHub org, naming |
 | [Engine capabilities](engine-capabilities.md) | Platform engineers | Gates, CLI, blueprints, CI |

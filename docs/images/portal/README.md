@@ -1,7 +1,7 @@
 # Portal screenshots
 
 PNG captures for the root [README](../../README.md) and demos. Re-run after
-major portal UI changes.
+major portal UI changes (see [Demo verification](../demo-verification.md)).
 
 ## Files
 

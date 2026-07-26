@@ -2,6 +2,7 @@
 
 Use this script in **live calls**, executive briefings, and internal enablement.
 It complements the hands-on [Quickstart — Five-minute demo](quickstart.md#five-minute-demo-portal).
+Before a big meeting, run the [Demo verification checklist](demo-verification.md).
 
 **Audience:** platform leads, engineering managers, security/governance stakeholders.  
 **Duration:** ~5 minutes core; +3 minutes optional (OPA block, Backstage).  
