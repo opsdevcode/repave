@@ -153,12 +153,35 @@ def _create_user_repository(
     )
 
 
-def _github_request(
+def list_repository_tags(owner: str, repo: str, token: str) -> list[str]:
+    """Return tag names for a GitHub repository (API order, up to 500 tags)."""
+    tags: list[str] = []
+    page = 1
+    while page <= 5:
+        payload = _github_json(
+            "GET",
+            f"/repos/{owner}/{repo}/tags?per_page=100&page={page}",
+            token,
+        )
+        if not isinstance(payload, list) or not payload:
+            break
+        for item in payload:
+            if isinstance(item, dict):
+                name = str(item.get("name", "")).strip()
+                if name:
+                    tags.append(name)
+        if len(payload) < 100:
+            break
+        page += 1
+    return tags
+
+
+def _github_json(
     method: str,
     path: str,
     token: str,
     body: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+) -> Any:
     url = f"https://api.github.com{path}"
     payload = None if body is None else json.dumps(body).encode("utf-8")
     request = urllib.request.Request(  # nosec B310
@@ -178,12 +201,21 @@ def _github_request(
         with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
             raw = response.read().decode("utf-8")
             if not raw:
-                return {}
-            parsed = json.loads(raw)
-            return parsed if isinstance(parsed, dict) else {}
+                return None
+            return json.loads(raw)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
         raise GitHubError(exc.code, detail) from exc
+
+
+def _github_request(
+    method: str,
+    path: str,
+    token: str,
+    body: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    parsed = _github_json(method, path, token, body)
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def _name_already_exists(message: str) -> bool:

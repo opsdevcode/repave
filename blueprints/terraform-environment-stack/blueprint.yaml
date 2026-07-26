@@ -39,17 +39,17 @@ spec:
     - name: module_name
       type: string
       required: true
-      description: Logical name for the primary module block in main.tf.
+      description: Logical name for the primary module block in main.tf (set via module picker).
       default: foundation
     - name: module_source
       type: string
       required: true
-      description: Terraform module source (local path, registry, or git URL without ref).
+      description: Terraform module source (populated from module inventory selection).
       default: "./modules/_example"
     - name: module_version
       type: string
       required: false
-      description: Registry module version constraint (omit for local/git sources with ref in URL).
+      description: Module version ref or registry constraint (from inventory tag list).
       default: ""
   template:
     engine: copier

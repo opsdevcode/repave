@@ -15,6 +15,7 @@ from repave_engine.blueprint import (
     load_blueprint,
 )
 from repave_engine.gates import GateResult, all_gates_passed
+from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.settings import OutputConfig, load_output_config
@@ -95,6 +96,36 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if definition is None:
             return {"resources": [], "basic": []}
         return definition
+
+    @app.get("/blueprints/{blueprint_name}/module-inventory")
+    async def module_inventory(
+        blueprint_name: str,
+        cloud_provider: str = "",
+    ) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if blueprint.artifact_type != "terraform-environment-stack":
+            return {"modules": []}
+        return inventory_modules_json(
+            resolved_output.modules_root,
+            github_org=resolved_output.github_org,
+            cloud_provider=cloud_provider or None,
+        )
+
+    @app.get("/blueprints/{blueprint_name}/module-inventory/{repo_name}/versions")
+    async def module_inventory_versions(
+        blueprint_name: str,
+        repo_name: str,
+    ) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if blueprint.artifact_type != "terraform-environment-stack":
+            return {"repo_name": repo_name, "versions": []}
+        token = os.environ.get("GITHUB_TOKEN")
+        return inventory_versions_json(
+            resolved_output.modules_root,
+            repo_name,
+            github_org=resolved_output.github_org,
+            github_token=token,
+        )
 
     @app.post("/generate")
     async def generate(request: Request) -> HTMLResponse:
