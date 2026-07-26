@@ -6,6 +6,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from repave_engine.target_repo import _git_executable
+
 
 @dataclass(frozen=True)
 class StandardsDiffFile:
@@ -29,7 +31,7 @@ class StandardsDiffResult:
 
 def _git(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        ["git", *args],
+        [_git_executable(), *args],
         cwd=repo_root,
         capture_output=True,
         text=True,
