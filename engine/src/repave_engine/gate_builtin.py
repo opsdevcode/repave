@@ -17,9 +17,17 @@ from repave_engine.gate_runners import (
 )
 
 _TERRAFORM_ARTIFACT_TYPES = frozenset({"terraform-module", "terraform-environment-stack"})
-_ANSIBLE_ARTIFACT_TYPES = frozenset({"ansible-role", "ansible-playbook-project"})
+_ANSIBLE_ARTIFACT_TYPES = frozenset(
+    {"ansible-role", "ansible-playbook-project", "ansible-collection"}
+)
 _SHARED_ARTIFACT_TYPES = frozenset(
-    {"terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project"}
+    {
+        "terraform-module",
+        "terraform-environment-stack",
+        "ansible-role",
+        "ansible-playbook-project",
+        "ansible-collection",
+    }
 )
 
 register_gate(

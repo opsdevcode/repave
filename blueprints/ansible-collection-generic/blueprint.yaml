@@ -1,0 +1,56 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: ansible-collection-generic
+  version: 0.1.0
+  description: Galaxy-compatible Ansible collection with a starter role and lint pack.
+spec:
+  artifactType: ansible-collection
+  standard:
+    source: standards/ansible/collection-standard.md
+    version: 1.0.0
+  inputs:
+    - name: namespace
+      type: string
+      required: true
+      description: Galaxy namespace for the collection (immutable after publish).
+    - name: collection_name
+      type: string
+      required: true
+      description: Collection name (galaxy.yml name field).
+    - name: description
+      type: string
+      required: true
+      description: Short description of what the collection provides.
+    - name: min_ansible_version
+      type: string
+      required: true
+      description: Minimum supported Ansible core version (meta/runtime.yml).
+      default: "2.18"
+      enum:
+        - "2.18"
+        - "2.17"
+        - "2.16"
+        - "2.15"
+  template:
+    engine: copier
+    path: template
+  gates:
+    - yamllint
+    - ansible-lint
+    - secrets
+    - docs-drift
+    - provenance-drift
+  ansible_lint:
+    pack_source: policy/ansible-lint/pack
+    pack_version: 1.0.0
+  gate_config:
+    ansible-lint:
+      config_file: .ansible-lint
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "ansible-collection-{namespace}-{collection_name}"
+      title_template: "Bootstrap Ansible collection {namespace}.{collection_name}"

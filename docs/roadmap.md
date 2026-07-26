@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.36.0  
-**In progress:** v1.20 additional golden paths; operator `spec.repoURL` inventory (post-GA)  
+**In progress:** v1.23 generation provenance visibility; **v1.31** Helm chart golden path (accelerated)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
@@ -43,13 +43,14 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.36.0  today     v1.17 operator GA; v1.19 module updates shipped; v1.20 golden paths next
+v1.36.0  today     v1.22 Ansible collection shipped; v1.31 Helm chart next (accelerated)
   │
   ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
-  ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
-  ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
-  ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
-  ├─ v1.29–v1.34    operate + expand  conformance harness; observability; notifications; catalog; Helm + app-service paths
+  ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
+  ├─ v1.21–v1.26    estate-ready      standards pack; provenance; module CI; operator; k8s deploy
+  ├─ v1.27–v1.28    service + SSO     authenticated single-tenant service via OIDC
+  ├─ v1.31–v1.32    k8s artifacts     Helm chart + app-service golden paths (accelerated)
+  ├─ v1.29–v1.34    operate + expand  conformance harness; observability; notifications; catalog
   ├─ v1.35–v1.38    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
   ├─ v1.39          policy-as-code    optional OPA/conftest gate on plan + manifests
   ├─ v1.40          observability     dashboards/alerts/monitors as code (Datadog/Grafana/Prom/OTel)
@@ -60,11 +61,11 @@ v1.36.0  today     v1.17 operator GA; v1.19 module updates shipped; v1.20 golden
 | Theme | Releases | Outcome |
 | --- | --- | --- |
 | **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and opt-in OPA policy-as-code enforce the module contract, not just document it |
-| **Multi-artifact golden paths** | v1.13–v1.16, v1.33–v1.34, v1.40 | Engine decoupled from Terraform; Ansible role, Helm chart, app-service, and observability-as-code paths ship with standards + gates |
+| **Multi-artifact golden paths** | v1.13–v1.16, v1.20, v1.22, v1.31–v1.32, v1.40 | Engine decoupled from Terraform; Ansible role/collection/playbook, Helm, app-service, observability paths |
 | **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR; local envtest/kind required |
-| **Usability** | v1.18, v1.22 | Portal visual system and CLI usable by non-experts; visible pinned versions |
-| **Estate scale** | v1.20, v1.23, v1.25 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
-| **Access and multi-user** | v1.26–v1.27 | Authenticated single-tenant service with OIDC SSO and role-based access |
+| **Usability** | v1.18, v1.23 | Portal visual system and CLI usable by non-experts; visible pinned versions |
+| **Estate scale** | v1.20, v1.24, v1.26 | Multiple golden paths; generated repos CI themselves; k8s deploy option |
+| **Access and multi-user** | v1.27–v1.28 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
 | **In-cluster operations (Day-2)** | v1.35–v1.38 | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
@@ -273,6 +274,14 @@ fallback; three routes share one visual system (acceptance in portal-design).
 Host e2e smoke exercises the flag on the `terraform-minimal` fixture; validate on
 estate module repos before production remediation.
 
+### v1.22.0 — Ansible collection golden path
+
+- `blueprints/ansible-collection-generic/` v0.1.0 → `ansible-collection-{namespace}-{name}`
+- Pin `standards/ansible/collection-standard.md` v1.0.0
+- Scaffold: `galaxy.yml`, `meta/runtime.yml`, `roles/sample/`, changelog, ansible-lint pack
+- Gates: `yamllint`, `ansible-lint`, `secrets`, `docs-drift`, `provenance-drift`
+- `GoldenPathArtifact.spec.ansibleCollection` provenance; portal Ansible family ordering
+
 ### v1.21.0 — Estate Terraform standards pack (multi-file)
 
 - Vendored `terraform-standards.md` and `terraform-module-layout.md` under
@@ -282,31 +291,29 @@ estate module repos before production remediation.
 - Scaffold: optional `name_prefix` with `coalesce` fallback; README cites the pack
 - Superseded monolithic `standards/terraform-module-standard.md` (legacy body retained)
 
----
+### v1.20.0 — Additional golden paths
 
-### v1.20 — Additional golden paths
-
-**Problem:** Beyond the Terraform module and Ansible role paths, platform teams
-need more artifact types.
-
-**Progress:** `terraform-module-resource`, `terraform-environment-stack`, and
-`ansible-playbook-project` (v0.1.0) ship with gates, standards pins, and repo naming.
-
-**Candidates (remaining):**
-
-| Golden path | Output | Notes |
-| --- | --- | --- |
-| Cloud resource module (single resource) | Thin `tfm-*` wrapper | **Shipped:** `terraform-module-resource` |
-| Environment stack bootstrap | `env-*` composition repo | **Shipped:** `terraform-environment-stack` |
-| Ansible collection / playbook project | Collection or project repo | **Shipped:** `ansible-playbook-project` (playbook artifact) |
-
-**Dependencies:** v1.13 gate registry; v1.14 artifact-type provenance.
+- `terraform-module-resource`, `terraform-environment-stack`, and
+  `ansible-playbook-project` blueprints with gates, standards pins, and repo naming
+- Portal catalog groups Terraform and Ansible families (v1.18 follow-on)
 
 **Done when:** At least one new blueprint ships with gates, standards pin, and docs.
 
 ---
 
-### v1.22 — Generation provenance and version visibility
+### v1.20 — Additional golden paths
+
+**Status:** Shipped on `main` (see [v1.20.0 — Additional golden paths](#v1200--additional-golden-paths)).
+
+---
+
+### v1.22 — Ansible collection golden path
+
+**Status:** Shipped on `main` (see [v1.22.0 — Ansible collection golden path](#v1220--ansible-collection-golden-path)).
+
+---
+
+### v1.23 — Generation provenance and version visibility
 
 **Problem:** Operators need generated modules and the portal to show which blueprint,
 standard, and policy pack versions apply. Provenance in `repave.yaml` shipped in
@@ -329,7 +336,7 @@ repave source.
 
 ---
 
-### v1.23 — Generated module CI template
+### v1.24 — Generated module CI template
 
 **Problem:** Module repos rely on authors to wire CI; gates run in repave at
 generate time but not necessarily on every subsequent PR in the module repo.
@@ -349,7 +356,7 @@ shared gate-list contract.
 
 ---
 
-### v1.24 — Operator beta and fleet inventory
+### v1.25 — Operator beta and fleet inventory
 
 **Problem:** v1.17 operator scope is large; teams need a minimal inventory model
 before full reconciliation.
@@ -364,14 +371,14 @@ before full reconciliation.
 - Reuse **v1.17 slice 1** fixtures and `make operator-test` / envtest harness
   ([`operator-local-dev.md`](operator-local-dev.md))
 
-**Dependencies:** v1.17 CRD design and local test scaffold; v1.22 provenance fields.
+**Dependencies:** v1.17 CRD design and local test scaffold; v1.23 provenance fields.
 
 **Done when:** Operator reports “out of date” repos when blueprint standard/policy
 version bumps on `main`.
 
 ---
 
-### v1.25 — Kubernetes deploy path
+### v1.26 — Kubernetes deploy path
 
 **Problem:** Local Docker Compose is the only first-class deploy story; platform
 teams want repave API/portal on-cluster alongside the future operator.
@@ -391,7 +398,7 @@ form on-cluster with dry-run generation working.
 
 ---
 
-### v1.26 — Service mode and authentication (login)
+### v1.27 — Service mode and authentication (login)
 
 **Problem:** The API and portal are unauthenticated and assume trusted local use.
 Running repave as a shared hosted service needs identity and protected endpoints.
@@ -403,18 +410,18 @@ Running repave as a shared hosted service needs identity and protected endpoints
 - Session/JWT-backed login; protect all mutating API routes (generate, publish,
   register) and the portal
 - Identify the acting user and record it in generation provenance/audit
-- Config via `repave.config.yaml` + secrets (ties to v1.25 ConfigMap/secret wiring)
+- Config via `repave.config.yaml` + secrets (ties to v1.26 ConfigMap/secret wiring)
 
 **Scope:** single-tenant (one org per instance); no per-tenant isolation.
 
-**Dependencies:** v1.25 Kubernetes deploy path (hosted service); stable API surface.
+**Dependencies:** v1.26 Kubernetes deploy path (hosted service); stable API surface.
 
 **Done when:** A hosted repave instance rejects unauthenticated API/portal access,
 and a logged-in user can complete a generation.
 
 ---
 
-### v1.27 — SSO via OIDC and role-based access
+### v1.28 — SSO via OIDC and role-based access
 
 **Problem:** Enterprises require IdP-managed login (Okta, PingID, Entra, Auth0),
 not local accounts.
@@ -428,14 +435,14 @@ not local accounts.
 - Enforce roles on API endpoints; record the authenticated identity in the
   generation provenance/audit trail
 
-**Dependencies:** v1.26 authentication foundation.
+**Dependencies:** v1.27 authentication foundation.
 
 **Done when:** Login is delegated to an OIDC IdP and endpoint access is gated by
 mapped role claims; docs show an Okta and a PingID configuration example.
 
 ---
 
-### v1.28 — Remote and forked blueprint packs
+### v1.29 — Remote and forked blueprint packs
 
 **Problem:** Blueprints live only under `blueprints/` in the repave repo; enterprises
 want to fork repave and add paths, or pull read-only blueprint packs from git.
@@ -454,7 +461,7 @@ tree without patching engine code.
 
 ---
 
-### v1.29 — Blueprint conformance CI harness
+### v1.30 — Blueprint conformance CI harness
 
 **Problem:** Each new golden path (Ansible, Helm, app service) increases the risk
 of silent breakage. Today only engine unit tests exist; blueprints are not
@@ -549,7 +556,7 @@ into Backstage, and docs show the scaffolder action.
 
 ---
 
-### v1.33 — Helm chart golden path
+### v1.31 — Helm chart golden path (**accelerated**; was v1.33)
 
 **Problem:** Teams deploying to Kubernetes want a governed Helm chart scaffold, not
 only IaC modules.
@@ -572,7 +579,7 @@ present, and skips cleanly where it is absent.
 
 ---
 
-### v1.34 — Application service scaffold golden path
+### v1.32 — Application service scaffold golden path (**accelerated**; was v1.34)
 
 **Problem:** New services are bootstrapped inconsistently; teams want a governed
 application repository from the same golden-path engine.
@@ -580,16 +587,16 @@ application repository from the same golden-path engine.
 **Approach:**
 
 - New `blueprints/app-service-generic/` producing a service repo: `Dockerfile`, CI
-  workflow, lint/test config, `README.md`, an optional Helm chart reference (v1.33),
+  workflow, lint/test config, `README.md`, an optional Helm chart reference (v1.31),
   and `catalog-info.yaml` (v1.32)
 - Inputs: `service_name`, `runtime` (enum), `owner`, `port`
 - Gates: `docs-drift`, `provenance-drift`, `dockerfile-lint` (hadolint), language
   lint/test (skip-if-not-installed); the generated CI runs the same gates on push
-  (reusing the v1.23 module-CI-template pattern)
+  (reusing the v1.24 module-CI-template pattern)
 - Ship one runtime first (e.g. Python or Go); add others as follow-ons
 
-**Dependencies:** v1.13 gate registry; v1.14 provenance; v1.23 CI template pattern;
-v1.29 conformance harness.
+**Dependencies:** v1.13 gate registry; v1.14 provenance; v1.24 CI template pattern;
+v1.30 conformance harness.
 
 **Done when:** A service repo generates for at least one runtime with CI wired and
 gates green.
@@ -839,10 +846,6 @@ that passed every configured gate and policy, with full provenance and audit tra
 Ideas not yet scheduled for pre-v2 work — promote into [Planned](#planned) when
 there is an owner and a target release.
 
-- **Ansible collection golden path** — multi-role collection repo (`galaxy.yml`,
-  `roles/`, `plugins/`) building on the v1.15 role path
-- **Ansible playbook/project golden path** — `site.yml`, `inventories/`,
-  `group_vars/`, `roles/` project scaffold
 - **Molecule as a required gate** — make molecule non-skippable once test runners
   are standardized in CI
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC

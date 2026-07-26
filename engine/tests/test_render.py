@@ -240,3 +240,33 @@ def test_render_ansible_role_writes_windows_platform(ansible_blueprint, tmp_path
     meta = (output_dir / "meta" / "main.yml").read_text(encoding="utf-8")
     assert "name: Windows" in meta
     assert '"2022"' in meta
+
+
+def test_render_ansible_collection_writes_layout(repo_root: Path, tmp_path: Path) -> None:
+    from repave_engine.blueprint import load_blueprint, validate_inputs
+    from repave_engine.render import render_blueprint
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-collection-generic",
+        repo_root,
+    )
+    values = validate_inputs(
+        blueprint,
+        {
+            "namespace": "acme",
+            "collection_name": "platform",
+            "description": "Platform collection",
+            "min_ansible_version": "2.18",
+        },
+    )
+    output_dir = tmp_path / "collection"
+    render_blueprint(blueprint, values, output_dir)
+
+    assert (output_dir / "galaxy.yml").exists()
+    assert (output_dir / "meta" / "runtime.yml").exists()
+    assert (output_dir / "roles" / "sample" / "tasks" / "main.yml").exists()
+    assert (output_dir / "changelogs" / "changelog.yaml").exists()
+    assert (output_dir / "repave.yaml").exists()
+    galaxy = (output_dir / "galaxy.yml").read_text(encoding="utf-8")
+    assert "namespace: acme" in galaxy
+    assert "name: platform" in galaxy

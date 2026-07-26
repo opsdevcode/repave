@@ -25,8 +25,8 @@ repeatable, and automated.
 
 ### Generation engine (`engine/`)
 
-- **Golden paths:** Terraform module and Ansible role blueprints (`blueprints/`),
-  Copier render, frozen JSON schemas (`schemas/`).
+- **Golden paths:** Terraform modules, environment stacks, and Ansible roles,
+  collections, and playbook projects (`blueprints/`), Copier render, frozen JSON schemas (`schemas/`).
 - **Portal + API:** Server-rendered golden-path forms, gate results dashboard, and
   publish flow at `http://localhost:8088` (Compose) or `repave serve`.
 - **CLI:** `repave generate`, `repave list`, `repave update` (plan/apply blueprint
