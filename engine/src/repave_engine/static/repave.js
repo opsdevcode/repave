@@ -223,8 +223,10 @@
     var navSteps = form.querySelectorAll("[data-stepper-index]");
     var backBtn = form.querySelector("[data-stepper-back]");
     var nextBtn = form.querySelector("[data-stepper-next]");
-    var submitBtn = form.querySelector("[data-stepper-submit], button[type=\"submit\"]");
+    var submitBtn = form.querySelector("[data-stepper-submit]");
     var planBtn = form.querySelector("[data-stepper-run-plan]");
+    var planSubmitBtn = form.querySelector("[data-stepper-plan-submit]");
+    var planDryRunField = form.querySelector("[data-stepper-plan-dry-run]");
     var current = 0;
     var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
     if (Number.isNaN(maxStep)) {
@@ -289,30 +291,48 @@
       return true;
     }
 
-    function setDryRunForPlan() {
-      form.querySelectorAll('input[name="dry_run"]').forEach(function (input) {
-        if (input.type === "radio") {
-          input.checked = input.value === "true";
-        }
+    function dispatchPreSubmit() {
+      form.dispatchEvent(
+        new CustomEvent("repave:stepper-pre-submit", {
+          bubbles: true,
+          cancelable: false,
+        })
+      );
+    }
+
+    function setPlanSubmitMode(planMode) {
+      if (planDryRunField) {
+        planDryRunField.disabled = !planMode;
+      }
+      form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+        radio.disabled = planMode;
       });
     }
 
+    function deliveryWantsPlan() {
+      var planRadio = form.querySelector('input[name="dry_run"][type="radio"][value="true"]');
+      return !planRadio || planRadio.checked;
+    }
+
+    function submitViaPlanControl() {
+      var submitter = planSubmitBtn || submitBtn;
+      if (!submitter) {
+        return;
+      }
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit(submitter);
+      } else {
+        submitter.click();
+      }
+    }
+
     function runPlanFromStepper() {
+      dispatchPreSubmit();
       if (!validateStepsThroughDelivery()) {
         return;
       }
-      setDryRunForPlan();
-      if (!submitBtn) {
-        return;
-      }
-      var wasHidden = submitBtn.hidden;
-      submitBtn.hidden = false;
-      if (typeof form.requestSubmit === "function") {
-        form.requestSubmit(submitBtn);
-      } else {
-        form.submit();
-      }
-      submitBtn.hidden = wasHidden;
+      setPlanSubmitMode(true);
+      submitViaPlanControl();
     }
 
     function applyStep() {
@@ -330,9 +350,6 @@
       }
       if (nextBtn) {
         nextBtn.hidden = current >= maxStep;
-      }
-      if (planBtn) {
-        planBtn.hidden = current >= maxStep;
       }
       if (submitBtn) {
         submitBtn.hidden = current !== maxStep;
@@ -353,12 +370,21 @@
       planBtn.addEventListener("click", runPlanFromStepper);
     }
     form.addEventListener("submit", function (event) {
+      dispatchPreSubmit();
       if (!validateStepsThroughDelivery()) {
         event.preventDefault();
         return;
       }
-      if (current !== maxStep) {
-        setDryRunForPlan();
+      var submitter = event.submitter;
+      var viaPlanControl =
+        submitter &&
+        (submitter === planSubmitBtn ||
+          submitter.getAttribute("data-stepper-plan-submit") !== null ||
+          submitter.getAttribute("data-stepper-run-plan") !== null);
+      if (viaPlanControl || current !== maxStep) {
+        setPlanSubmitMode(true);
+      } else {
+        setPlanSubmitMode(deliveryWantsPlan());
       }
     });
     if (backBtn) {

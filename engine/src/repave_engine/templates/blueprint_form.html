@@ -165,6 +165,9 @@
     {% endif %}
   >
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
+    {% if form_stepper %}
+    <input type="hidden" name="dry_run" value="true" data-stepper-plan-dry-run disabled />
+    {% endif %}
     {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
     {% endif %}
@@ -754,7 +757,16 @@
       </p>
       <div id="form-draft-banner" class="form-draft-banner" hidden></div>
       {% if form_stepper %}
-      <button type="button" class="btn btn--secondary" data-stepper-run-plan hidden>
+      <button
+        type="submit"
+        class="stepper-plan-submit"
+        data-stepper-plan-submit
+        tabindex="-1"
+        aria-hidden="true"
+      >
+        Run plan
+      </button>
+      <button type="button" class="btn btn--primary" data-stepper-run-plan>
         Run plan
       </button>
       {% endif %}
@@ -796,6 +808,7 @@
   windowsCheckbox?.addEventListener("change", syncPlatformInputs);
   windowsSelect?.addEventListener("change", syncPlatformInputs);
   platformForm?.addEventListener("submit", syncPlatformInputs);
+  platformForm?.addEventListener("repave:stepper-pre-submit", syncPlatformInputs);
   syncPlatformInputs();
 </script>
 {% elif blueprint.artifact_type == "ansible-playbook-project" %}
@@ -1237,6 +1250,9 @@
   serviceSelect.addEventListener("change", () => {
     renderResources();
   });
+  form.addEventListener("repave:stepper-pre-submit", () => {
+    clearValidation();
+  });
   form.addEventListener("submit", (event) => {
     clearValidation();
     if (!serviceSelect.value) {
@@ -1615,6 +1631,10 @@
     clearValidation();
     await renderScopePanels();
   });
+  form.addEventListener("repave:stepper-pre-submit", () => {
+    syncServicesInput();
+    syncScopeInput();
+  });
   form.addEventListener("submit", (event) => {
     syncServicesInput();
     syncScopeInput();
@@ -1885,6 +1905,7 @@
   });
   filterInput?.addEventListener("input", renderRules);
   rulesList.addEventListener("change", syncHiddenRules);
+  document.getElementById("generate-form")?.addEventListener("repave:stepper-pre-submit", syncHiddenRules);
 
   updatePackHint();
   updateProfileUi();
@@ -2341,6 +2362,12 @@
     generateForm.addEventListener("repave:stepper-will-advance", (event) => {
       if (event.detail.fromStep === 0) {
         applyEffectiveDefaultsToForm();
+      }
+    });
+    generateForm.addEventListener("repave:stepper-pre-submit", () => {
+      applyEffectiveDefaultsToForm();
+      if (sourceSelect?.value) {
+        syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
       }
     });
     generateForm.addEventListener("submit", () => {
