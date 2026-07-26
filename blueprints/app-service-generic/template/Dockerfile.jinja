@@ -1,3 +1,4 @@
+{% if runtime == 'python' -%}
 FROM python:3.12-slim
 
 WORKDIR /app
@@ -12,3 +13,23 @@ RUN pip install --no-cache-dir .
 EXPOSE {{ port }}
 
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "{{ port }}"]
+{% else -%}
+FROM golang:1.23-alpine AS build
+
+WORKDIR /app
+
+COPY go.mod ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 go build -o /server ./cmd/server
+
+FROM gcr.io/distroless/static-debian12
+
+COPY --from=build /server /server
+
+EXPOSE {{ port }}
+
+USER nonroot:nonroot
+ENTRYPOINT ["/server"]
+{% endif %}

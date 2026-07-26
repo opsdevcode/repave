@@ -13,6 +13,7 @@ from repave_engine.blueprint import (
     validate_inputs,
 )
 from repave_engine.gates import GateResult, all_gates_passed, clean_gate_artifacts, run_gates
+from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
 from repave_engine.render import (
     RenderedFile,
@@ -133,6 +134,20 @@ def generate_from_blueprint(
         else:
             display_output_dir = render_result.output_dir
         display_render = RenderResult(output_dir=display_output_dir, values=render_result.values)
+
+        notify_after_generation(
+            catalog_root,
+            context=GenerationNotificationContext(
+                blueprint=blueprint,
+                gates=gate_results,
+                dry_run=dry_run,
+                pr_message=pr_message,
+                repository_web_url=(
+                    published_repository.web_url if published_repository is not None else None
+                ),
+                module_name=module_name,
+            ),
+        )
 
         return GenerationResult(
             blueprint=blueprint,

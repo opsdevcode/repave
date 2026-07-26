@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from repave_engine.settings import load_gate_overrides, load_output_config
+from repave_engine.settings import (
+    load_gate_overrides,
+    load_notifications_config,
+    load_output_config,
+)
 
 
 def test_load_output_config_from_environment(tmp_path: Path, monkeypatch) -> None:
@@ -126,3 +130,12 @@ def test_load_gate_overrides_rejects_non_list_skip_checks(tmp_path: Path) -> Non
 
     with pytest.raises(ValueError, match="must be a list"):
         load_gate_overrides(tmp_path)
+
+
+def test_load_notifications_config_requires_webhook_when_enabled(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "notifications:\n  enabled: true\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="no webhook URL"):
+        load_notifications_config(tmp_path)

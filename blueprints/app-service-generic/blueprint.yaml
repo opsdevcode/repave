@@ -2,8 +2,8 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: app-service-generic
-  version: 0.2.0
-  description: Governed application service repo (Python) with Dockerfile, tests, and Backstage catalog metadata.
+  version: 0.3.0
+  description: Governed application service repo (Python or Go) with Dockerfile, tests, and Backstage catalog metadata.
 spec:
   artifactType: app-service
   standard:
@@ -47,7 +47,8 @@ spec:
       default: python
       enum:
         - python
-      description: Application runtime (additional runtimes are follow-ons).
+        - go
+      description: Application runtime (Python FastAPI or Go HTTP service).
     - name: include_helm_reference
       type: string
       required: false
@@ -68,6 +69,8 @@ spec:
     - dockerfile-lint
     - python-lint
     - python-test
+    - go-lint
+    - go-test
     - secrets
     - docs-drift
     - provenance-drift

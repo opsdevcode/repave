@@ -1619,6 +1619,21 @@ details.file-panel summary {
   color: var(--family-observability-text);
 }
 
+.app-service-catalog {
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--family-app) 28%, var(--border));
+  border-radius: var(--radius);
+  border-left: 3px solid var(--family-app);
+  background: color-mix(in srgb, var(--family-app) 7%, var(--surface-raised));
+  display: grid;
+  gap: var(--space-3);
+}
+
+.app-service-catalog .form-section__subtitle {
+  margin: 0;
+  color: var(--family-app-text);
+}
+
 .obs-decision-fields,
 .dashboard-pack {
   padding-top: var(--space-2);

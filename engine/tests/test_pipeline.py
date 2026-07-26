@@ -502,6 +502,44 @@ def test_generate_app_service_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_app_service_go_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "payments-api",
+            "description": "Payments HTTP API",
+            "owner": "team:payments",
+            "system": "payments",
+            "catalog_lifecycle": "production",
+            "port": "8080",
+            "runtime": "go",
+            "include_helm_reference": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    assert (output_dir / "go.mod").is_file()
+    assert "module " in (output_dir / "go.mod").read_text(encoding="utf-8")
+    assert (output_dir / "cmd" / "server" / "main.go").is_file()
+    pyproject = output_dir / "pyproject.toml"
+    assert not pyproject.is_file() or not pyproject.read_text(encoding="utf-8").strip()
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["appService"]["runtime"] == "go"
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_observability_as_code_dry_run(
     repo_root: Path,
     output_config,

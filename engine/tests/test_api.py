@@ -456,6 +456,18 @@ def test_ansible_form_renders_split_governance(repo_root, output_config) -> None
     assert 'option value="2.18" selected' in response.text
 
 
+def test_app_service_form_renders_backstage_catalog(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/app-service-generic")
+
+    assert response.status_code == 200
+    assert 'id="app-service-catalog"' in response.text
+    assert "Backstage catalog" in response.text
+    assert 'id="catalog_lifecycle"' in response.text
+    assert 'id="runtime"' in response.text
+    assert ">go</option>" in response.text
+
+
 def test_provider_service_detail_unknown_returns_empty(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get(

@@ -18,3 +18,15 @@ gates:
     required_rules:
       - checkov:CKV2_REPAVE_1
       - opa:destructive_changes
+
+# Optional outbound notifications (Slack, Teams, or generic webhook).
+# Delivery is best-effort and never blocks generation.
+# notifications:
+#   enabled: true
+#   slack_webhook_url: https://hooks.slack.com/services/...
+#   teams_webhook_url: https://outlook.office.com/webhook/...
+#   webhook_url: https://example.com/repave-events
+#   events:
+#     - publish_complete
+#     - generation_failed
+#     - generation_succeeded

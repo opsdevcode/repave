@@ -163,6 +163,9 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
    Remediation (slice 3): set `spec.remediation.enabled: true`. Use
    `spec.remediation.dryRun: true` locally to apply on a git branch without
    GitHub; production PRs need `spec.repoURL` and `GITHUB_TOKEN` on the operator.
+   Set `spec.remediation.preserveLocal: true` to keep hand-edited scaffold files
+   during apply (same as `repave apply-upgrade --preserve-local`); covered by
+   `operator/hack/e2e.sh` on the terraform-minimal fixture.
 
 ### Git and GitHub
 
