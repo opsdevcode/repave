@@ -1,0 +1,63 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: checkov-policy-generic
+  version: 0.1.0
+  description: Standalone Checkov custom policy pack with layout, standards, and security rules.
+spec:
+  artifactType: checkov-policy
+  standard:
+    source: standards/policy/checkov.md
+    version: 1.0.0
+  inputs:
+    - name: policy_name
+      type: string
+      required: true
+      description: Short name for this Checkov policy set (used in repo name).
+    - name: organization
+      type: string
+      required: true
+      description: Owning team or organization slug.
+    - name: description
+      type: string
+      required: true
+      description: What this Checkov policy pack enforces.
+    - name: policy_pack_source
+      type: string
+      required: false
+      default: repave-checkov-pack
+      description: Pack registry entry from policy/catalog.json pack_sources.
+    - name: policy_profile
+      type: string
+      required: false
+      default: checkov-full
+      description: Profile from policy/catalog.json (use custom with policy_rules).
+    - name: policy_rules
+      type: string
+      required: false
+      multi: true
+      default: ""
+      description: Rule IDs from policy/catalog.json when policy_profile is custom.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - checkov
+    - secrets
+    - docs-drift
+    - provenance-drift
+  checkov:
+    policies_source: policy/checkov/policies
+    policy_version: 1.2.0
+  gate_config:
+    checkov:
+      external_checks_dir: policy/checkov
+      config_file: .checkov.yml
+      scan_dir: tests/fixtures/pass
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "checkov-policy-{organization}-{policy_name}"
+      title_template: "Bootstrap Checkov policy {policy_name} for {organization}"

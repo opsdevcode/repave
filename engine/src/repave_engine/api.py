@@ -14,13 +14,24 @@ from repave_engine.ansible_role_inventory import (
     inventory_roles_json,
 )
 from repave_engine.blueprint import (
+    artifact_family,
     group_blueprints_by_artifact,
     list_blueprints,
     load_blueprint,
+    policy_kind_label,
 )
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.pipeline import generate_from_blueprint
+from repave_engine.policy_catalog import (
+    catalog_for_api,
+    enabled_rule_ids_for_profile,
+    load_policy_catalog,
+)
+from repave_engine.policy_selection import (
+    blueprint_supports_policy_customization,
+    policy_input_defaults,
+)
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.settings import OutputConfig, load_output_config
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
@@ -30,6 +41,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     package_dir = Path(__file__).parent
     templates = Jinja2Templates(directory=str(package_dir / "templates"))
     templates.env.cache = None
+    templates.env.globals["artifact_family"] = artifact_family
+    templates.env.globals["policy_kind_label"] = policy_kind_label
     resolved_output = output_config or load_output_config(repo_root)
 
     app = FastAPI(title="repave", version=__version__)
@@ -80,12 +93,33 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        policy_catalog: dict[str, object] | None = None
+        policy_defaults: dict[str, str] = {}
+        policy_enabled_rule_ids: set[str] = set()
+        if blueprint_supports_policy_customization(blueprint):
+            policy_defaults = policy_input_defaults(blueprint)
+            catalog = load_policy_catalog(repo_root)
+            policy_catalog = catalog_for_api(
+                catalog,
+                blueprint.artifact_type,
+                defaults=policy_defaults,
+            )
+            profile = policy_defaults.get("policy_profile", "estate-default")
+            policy_enabled_rule_ids = enabled_rule_ids_for_profile(
+                catalog,
+                profile=profile,
+                artifact_type=blueprint.artifact_type,
+            )
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
             page_context(
                 blueprint=blueprint,
                 provider_catalog=load_provider_catalog(blueprint.path),
+                policy_customization=blueprint_supports_policy_customization(blueprint),
+                policy_defaults=policy_defaults,
+                policy_catalog=policy_catalog,
+                policy_enabled_rule_ids=policy_enabled_rule_ids,
                 nav_active="catalog",
             ),
         )
@@ -100,6 +134,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if definition is None:
             return {"resources": [], "basic": []}
         return definition
+
+    @app.get("/blueprints/{blueprint_name}/policy-catalog")
+    async def policy_catalog(blueprint_name: str) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if not blueprint_supports_policy_customization(blueprint):
+            return {"version": "0", "profiles": {}, "pack_sources": [], "rules": []}
+        catalog = load_policy_catalog(repo_root)
+        return catalog_for_api(
+            catalog,
+            blueprint.artifact_type,
+            defaults=policy_input_defaults(blueprint),
+        )
 
     @app.get("/blueprints/{blueprint_name}/module-inventory")
     async def module_inventory(

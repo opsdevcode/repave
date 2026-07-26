@@ -6,11 +6,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import yaml
 from copier import run_copy
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from repave_engine.blueprint import Blueprint, _find_repo_root
 from repave_engine.gates import is_gate_artifact_path
+from repave_engine.policy_selection import (
+    PolicySelection,
+    write_policy_selection_file,
+)
 
 
 @dataclass(frozen=True)
@@ -145,7 +150,15 @@ def render_blueprint(
         unsafe=True,
     )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
+    selection = payload.get("_policy_selection")
+    policy_selection = selection if isinstance(selection, PolicySelection) else None
+    if policy_selection is not None:
+        write_policy_selection_file(output_dir, policy_selection)
     _copy_checkov_policies(output_dir, blueprint)
+    if policy_selection is not None:
+        _apply_checkov_skip_config(output_dir, blueprint, policy_selection.checkov_skip_checks)
+    _copy_opa_policies(output_dir, blueprint, policy_selection)
+    _copy_azure_policy_definitions(output_dir, blueprint, policy_selection)
     _copy_ansible_lint_pack(output_dir, blueprint)
     if blueprint.provenance_file:
         from repave_engine.provenance import write_provenance_file
@@ -201,6 +214,81 @@ def _copy_checkov_policies(output_dir: Path, blueprint: Blueprint) -> None:
     destination = output_dir / blueprint.checkov_gate.external_checks_dir
     if destination.exists():
         shutil.rmtree(destination)
+    shutil.copytree(source_dir, destination)
+
+
+def _apply_checkov_skip_config(
+    output_dir: Path,
+    blueprint: Blueprint,
+    skip_checks: tuple[str, ...],
+) -> None:
+    if not skip_checks or blueprint.checkov_policies is None:
+        return
+    config_path = output_dir / blueprint.checkov_gate.config_file
+    data: dict[str, Any] = {}
+    if config_path.is_file():
+        loaded = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+        if isinstance(loaded, dict):
+            data = loaded
+    existing = data.get("skip-check", [])
+    if not isinstance(existing, list):
+        existing = []
+    merged = sorted({str(item) for item in existing} | set(skip_checks))
+    data["skip-check"] = merged
+    config_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+
+def _copy_named_files(source_dir: Path, destination: Path, filenames: tuple[str, ...]) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    for name in filenames:
+        src = source_dir / name
+        if not src.is_file():
+            raise FileNotFoundError(f"Policy file missing in pack: {src}")
+        shutil.copy2(src, destination / name)
+
+
+def _copy_opa_policies(
+    output_dir: Path,
+    blueprint: Blueprint,
+    selection: PolicySelection | None,
+) -> None:
+    if blueprint.opa_policies is None:
+        return
+
+    repo_root = _find_repo_root(blueprint.path)
+    source_dir = repo_root / blueprint.opa_policies.policies_source
+    if not source_dir.is_dir():
+        raise FileNotFoundError(f"OPA policy pack not found: {source_dir}")
+
+    destination = output_dir / blueprint.opa_gate.policies_dir
+    if destination.exists():
+        shutil.rmtree(destination)
+    if selection is not None and selection.opa_rego_files:
+        _copy_named_files(source_dir, destination, selection.opa_rego_files)
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source_dir, destination)
+
+
+def _copy_azure_policy_definitions(
+    output_dir: Path,
+    blueprint: Blueprint,
+    selection: PolicySelection | None,
+) -> None:
+    if blueprint.azure_policy_pack is None:
+        return
+
+    repo_root = _find_repo_root(blueprint.path)
+    source_dir = repo_root / blueprint.azure_policy_pack.definitions_source
+    if not source_dir.is_dir():
+        raise FileNotFoundError(f"Azure policy definitions not found: {source_dir}")
+
+    destination = output_dir / blueprint.azure_policy_gate.definitions_dir
+    if destination.exists():
+        shutil.rmtree(destination)
+    if selection is not None and selection.azure_definition_files:
+        _copy_named_files(source_dir, destination, selection.azure_definition_files)
+        return
     shutil.copytree(source_dir, destination)
 
 

@@ -92,6 +92,8 @@
               "molecule",
               "docs-drift",
               "provenance-drift",
+              "opa",
+              "azure-policy",
               "promtool"
             ]
           }
@@ -104,6 +106,9 @@
             "ansible-role",
             "ansible-playbook-project",
             "ansible-collection",
+            "checkov-policy",
+            "opa-policy",
+            "azure-policy",
             "observability"
           ],
           "default": "terraform-module",
@@ -134,6 +139,38 @@
               "type": "string",
               "pattern": "^\\d+\\.\\d+\\.\\d+$",
               "description": "Semantic version of the policy pack encoded by this blueprint."
+            }
+          }
+        },
+        "opa": {
+          "type": "object",
+          "required": ["policies_source"],
+          "additionalProperties": false,
+          "properties": {
+            "policies_source": {
+              "type": "string",
+              "description": "Repo-relative path to Conftest Rego policies copied into generated repos."
+            },
+            "policy_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Semantic version of the OPA policy pack encoded by this blueprint."
+            }
+          }
+        },
+        "azure_policy": {
+          "type": "object",
+          "required": ["definitions_source"],
+          "additionalProperties": false,
+          "properties": {
+            "definitions_source": {
+              "type": "string",
+              "description": "Repo-relative path to Azure Policy definition JSON copied into generated repos."
+            },
+            "policy_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Semantic version of the Azure policy starter pack encoded by this blueprint."
             }
           }
         },
@@ -179,6 +216,10 @@
                 "soft_fail": {
                   "type": "boolean",
                   "description": "Return exit code 0 when checks fail (report only)."
+                },
+                "scan_dir": {
+                  "type": "string",
+                  "description": "Directory to scan relative to repo root (standalone checkov-policy fixtures)."
                 }
               }
             },
@@ -212,6 +253,34 @@
                 "test_directory": {
                   "type": "string",
                   "description": "Directory containing .tftest.hcl files relative to module root."
+                }
+              }
+            },
+            "opa": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "policies_dir": {
+                  "type": "string",
+                  "description": "Directory for copied Rego policies relative to repo root."
+                },
+                "fixtures_dir": {
+                  "type": "string",
+                  "description": "Conftest input fixtures (standalone policy pack repos)."
+                },
+                "plan_subdir": {
+                  "type": "string",
+                  "description": "Workspace for terraform plan JSON when evaluating modules."
+                }
+              }
+            },
+            "azure-policy": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "definitions_dir": {
+                  "type": "string",
+                  "description": "Directory for Azure Policy definition JSON relative to repo root."
                 }
               }
             },

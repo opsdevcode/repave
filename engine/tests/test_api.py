@@ -40,6 +40,10 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "Ansible" in response.text
     assert 'class="catalog-group catalog-group--terraform"' in response.text
     assert 'class="catalog-group catalog-group--ansible"' in response.text
+    assert 'class="catalog-group catalog-group--policy"' in response.text
+    assert 'id="catalog-policy"' in response.text
+    assert "opa-policy-generic" in response.text
+    assert "azure-policy-generic" in response.text
 
 
 def test_static_repave_js_served(repo_root, output_config) -> None:
@@ -209,9 +213,47 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "service-presets" in response.text
     assert "form-validation" in response.text
     assert "scope-resource-filter" in response.text
+    assert "policy-rules-list" in response.text
+    assert "policy-catalog" in response.text
 
 
-def test_resource_blueprint_form_renders_catalog_dropdowns(repo_root, output_config) -> None:
+def test_policy_catalog_endpoint(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic/policy-catalog")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["rules"]) >= 1
+    assert "includes" in payload["profiles"]["estate-default"]
+    assert len(payload["pack_sources"]) >= 2
+    assert payload["pack_sources"][0].get("default_profile")
+    assert payload["defaults"]["policy_pack_source"] == "repave-default"
+
+
+def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    payload = client.get("/blueprints/azure-policy-generic/policy-catalog").json()
+    pack_ids = {item["id"] for item in payload["pack_sources"]}
+    assert pack_ids <= {"repave-azure-samples", "repave-default"}
+    assert payload["defaults"]["policy_pack_source"] == "repave-azure-samples"
+    assert payload["defaults"]["policy_profile"] == "azure-community"
+
+    form = client.get("/blueprints/azure-policy-generic")
+    assert form.status_code == 200
+    assert 'value="repave-azure-samples"' in form.text
+    assert (
+        "repave-azure-samples" in form.text
+        and "selected" in form.text.split("repave-azure-samples", 1)[1][:80]
+    )
+
+    checkov_form = client.get("/blueprints/checkov-policy-generic")
+    assert checkov_form.status_code == 200
+    assert 'value="repave-checkov-pack"' in checkov_form.text
+    assert "checkov-full" in checkov_form.text
+    assert "CKV2_REPAVE_1" in checkov_form.text
+    assert 'id="policy-rules-list"' in checkov_form.text
+    assert checkov_form.text.count('class="checkbox-row"') >= 12
+
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/terraform-module-resource")
 

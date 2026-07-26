@@ -22,12 +22,17 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
         ".terraform",
         ".terraform.lock.hcl",
         ".tflint.d",
+        ".repave",
     ),
     "terraform-environment-stack": (
         ".terraform",
         ".terraform.lock.hcl",
         ".tflint.d",
+        ".repave",
     ),
+    "opa-policy": (),
+    "azure-policy": (),
+    "checkov-policy": (),
     "ansible-role": (
         ".ansible",
         ".molecule",

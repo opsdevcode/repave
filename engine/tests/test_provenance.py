@@ -14,12 +14,20 @@ from repave_engine.provenance import (
 )
 
 
-def test_build_provenance_document_includes_terraform_module(terraform_blueprint) -> None:
-    values = {
-        "module_name": "networking-vnet",
-        "cloud_provider": "aws",
-        "provider_services": "ec2, s3",
-    }
+def test_build_provenance_document_includes_terraform_module(
+    repo_root: Path, terraform_blueprint
+) -> None:
+    values = validate_inputs(
+        terraform_blueprint,
+        {
+            "module_name": "networking-vnet",
+            "description": "Networking module",
+            "cloud_provider": "aws",
+            "provider_services": "ec2,s3",
+            "policy_profile": "estate-default",
+        },
+        repo_root=repo_root,
+    )
 
     document = build_provenance_document(terraform_blueprint, values)
 
@@ -30,6 +38,14 @@ def test_build_provenance_document_includes_terraform_module(terraform_blueprint
     assert document["spec"]["blueprint"]["name"] == "terraform-module-generic"
     assert document["spec"]["standard"]["source"] == "standards/terraform-standards"
     assert document["spec"]["standard"]["version"] == "1.1.0"
+    assert document["spec"]["opa"]["policy_version"] == "1.0.0"
+    assert document["spec"]["governance"]["baseline_source"] == (
+        "standards/policy/governance-baseline.md"
+    )
+    policy = document["spec"]["policy"]
+    assert policy["profile"] == "estate-default"
+    assert policy["pack_source"] == "repave-default"
+    assert "checkov:CKV2_REPAVE_1" in policy["enabled_rules"]
     assert document["spec"]["terraformModule"]["cloud_provider"] == "aws"
     assert document["spec"]["terraformModule"]["provider_services"] == ["ec2", "s3"]
     assert document["spec"]["checkov"]["policies_source"] == "policy/checkov/policies"

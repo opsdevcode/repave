@@ -10,12 +10,14 @@ from typing import Any
 
 from repave_engine.blueprint import load_blueprint, validate_inputs
 from repave_engine.github import create_github_pull_request, push_git_branch
+from repave_engine.policy_selection import diff_policy_provenance
 from repave_engine.provenance_inputs import (
     blueprint_name_from_provenance,
     inputs_from_provenance,
     load_provenance_document,
 )
 from repave_engine.render import render_blueprint
+from repave_engine.settings import load_gate_overrides
 from repave_engine.target_repo import _git_executable, _run_git, resolve_module_repository_from_git
 
 _SKIP_DIR_NAMES = frozenset({".git", "__pycache__", ".terraform", ".pytest_cache", ".ruff_cache"})
@@ -28,6 +30,7 @@ class UpgradePlanResult:
     removed: tuple[str, ...]
     blueprint_name: str
     blueprint_version: str
+    policy_changes: tuple[str, ...] = ()
 
     @property
     def changed_file_count(self) -> int:
@@ -35,12 +38,15 @@ class UpgradePlanResult:
 
     @property
     def summary(self) -> str:
-        return (
+        base = (
             f"{self.changed_file_count} file(s) differ "
             f"({len(self.added)} added, {len(self.modified)} modified, "
             f"{len(self.removed)} removed) "
             f"for blueprint {self.blueprint_name}@{self.blueprint_version}"
         )
+        if self.policy_changes:
+            return f"{base}; {len(self.policy_changes)} policy change(s)"
+        return base
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
@@ -50,6 +56,7 @@ class UpgradePlanResult:
             "added": list(self.added),
             "modified": list(self.modified),
             "removed": list(self.removed),
+            "policy_changes": list(self.policy_changes),
             "summary": self.summary,
         }
 
@@ -119,6 +126,10 @@ def build_upgrade_pull_request_body(plan: UpgradePlanResult) -> str:
         lines.append("")
         lines.append("Removed:")
         lines.extend(f"- `{path}`" for path in plan.removed)
+    if plan.policy_changes:
+        lines.append("")
+        lines.append("### Policy changes")
+        lines.extend(f"- {note}" for note in plan.policy_changes)
     lines.extend(
         [
             "",
@@ -286,10 +297,17 @@ def _render_upgrade_staging(
         raise FileNotFoundError(f"missing provenance file: {provenance_path}")
 
     doc = load_provenance_document(provenance_path)
+    old_policy = doc.get("spec", {}).get("policy") if isinstance(doc.get("spec"), dict) else None
     resolved_blueprint = (blueprint_name or blueprint_name_from_provenance(doc)).strip()
     blueprint_path = repo_root / "blueprints" / resolved_blueprint
     blueprint = load_blueprint(blueprint_path, repo_root)
-    values = validate_inputs(blueprint, inputs_from_provenance(doc))
+    gate_overrides = load_gate_overrides(repo_root)
+    values = validate_inputs(
+        blueprint,
+        inputs_from_provenance(doc),
+        repo_root=repo_root,
+        gate_overrides=gate_overrides,
+    )
 
     owns_staging = staging_root is None
     temp_dir: tempfile.TemporaryDirectory[str] | None = None
@@ -302,12 +320,29 @@ def _render_upgrade_staging(
 
     render_blueprint(blueprint, values, staging_dir)
     added, modified, removed = diff_directories(target_repo, staging_dir)
+    new_policy: dict[str, Any] | None = None
+    staged_prov = staging_dir / "repave.yaml"
+    if staged_prov.is_file():
+        import yaml
+
+        staged_doc = yaml.safe_load(staged_prov.read_text(encoding="utf-8"))
+        if isinstance(staged_doc, dict):
+            spec = staged_doc.get("spec")
+            if isinstance(spec, dict):
+                raw_policy = spec.get("policy")
+                if isinstance(raw_policy, dict):
+                    new_policy = raw_policy
+    policy_changes = diff_policy_provenance(
+        old_policy if isinstance(old_policy, dict) else None,
+        new_policy,
+    )
     result = UpgradePlanResult(
         added=tuple(added),
         modified=tuple(modified),
         removed=tuple(removed),
         blueprint_name=blueprint.name,
         blueprint_version=blueprint.version,
+        policy_changes=policy_changes,
     )
     return result, staging_dir, temp_dir, owns_staging
 

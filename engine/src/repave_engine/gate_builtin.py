@@ -4,9 +4,11 @@ from repave_engine.gate_registry import GateSpec, register_gate
 from repave_engine.gate_runners import (
     run_ansible_lint,
     run_ansible_syntax_check,
+    run_azure_policy,
     run_checkov,
     run_docs_drift,
     run_molecule,
+    run_opa,
     run_promtool,
     run_provenance_drift,
     run_secrets,
@@ -30,7 +32,13 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "ansible-playbook-project",
         "ansible-collection",
         "observability",
+        "opa-policy",
+        "azure-policy",
+        "checkov-policy",
     }
+)
+_OPA_GATE_ARTIFACT_TYPES = frozenset(
+    {"terraform-module", "terraform-environment-stack", "opa-policy"}
 )
 
 register_gate(
@@ -68,7 +76,22 @@ register_gate(
     GateSpec(
         name="checkov",
         runner=run_checkov,
-        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES | frozenset({"checkov-policy"}),
+    )
+)
+register_gate(
+    GateSpec(
+        name="opa",
+        runner=run_opa,
+        artifact_types=_OPA_GATE_ARTIFACT_TYPES,
+        artifact_paths=(".repave",),
+    )
+)
+register_gate(
+    GateSpec(
+        name="azure-policy",
+        runner=run_azure_policy,
+        artifact_types=frozenset({"azure-policy"}),
     )
 )
 register_gate(

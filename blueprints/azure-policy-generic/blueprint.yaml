@@ -1,0 +1,61 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: azure-policy-generic
+  version: 0.2.0
+  description: Azure Policy definition repository with JSON validation gate.
+spec:
+  artifactType: azure-policy
+  standard:
+    source: standards/policy/azure.md
+    version: 1.0.0
+  inputs:
+    - name: policy_name
+      type: string
+      required: true
+      description: Short name for this policy set (used in repo name).
+    - name: organization
+      type: string
+      required: true
+      description: Owning team or organization slug.
+    - name: description
+      type: string
+      required: true
+      description: What these Azure Policy definitions enforce.
+    - name: policy_pack_source
+      type: string
+      required: false
+      default: repave-azure-samples
+      description: Pack registry entry from policy/catalog.json pack_sources.
+    - name: policy_profile
+      type: string
+      required: false
+      default: azure-community
+      description: Profile from policy/catalog.json (use custom with policy_rules).
+    - name: policy_rules
+      type: string
+      required: false
+      multi: true
+      default: ""
+      description: Rule IDs from policy/catalog.json when policy_profile is custom.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - azure-policy
+    - secrets
+    - docs-drift
+    - provenance-drift
+  azure_policy:
+    definitions_source: policy/azure/definitions
+    policy_version: 1.0.0
+  gate_config:
+    azure-policy:
+      definitions_dir: policy/definitions
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "azure-policy-{organization}-{policy_name}"
+      title_template: "Bootstrap Azure Policy {policy_name} for {organization}"

@@ -35,6 +35,18 @@ class CheckovPolicyPack:
 
 
 @dataclass(frozen=True)
+class OpaPolicyPack:
+    policies_source: str
+    policy_version: str
+
+
+@dataclass(frozen=True)
+class AzurePolicyPack:
+    definitions_source: str
+    policy_version: str
+
+
+@dataclass(frozen=True)
 class AnsibleLintPolicyPack:
     pack_source: str
     pack_version: str
@@ -49,8 +61,21 @@ class AnsibleLintGateConfig:
 class CheckovGateConfig:
     external_checks_dir: str = "policy/checkov"
     config_file: str = ".checkov.yml"
+    scan_dir: str = ""
     skip_checks: tuple[str, ...] = ()
     soft_fail: bool = False
+
+
+@dataclass(frozen=True)
+class OpaGateConfig:
+    policies_dir: str = "policy/opa/policies"
+    fixtures_dir: str = "tests/fixtures"
+    plan_subdir: str = ".repave"
+
+
+@dataclass(frozen=True)
+class AzurePolicyGateConfig:
+    definitions_dir: str = "policy/definitions"
 
 
 @dataclass(frozen=True)
@@ -86,8 +111,14 @@ class Blueprint:
     output_title_template: str
     provenance_file: str | None = None
     checkov_policies: CheckovPolicyPack | None = None
+    opa_policies: OpaPolicyPack | None = None
+    azure_policy_pack: AzurePolicyPack | None = None
     ansible_lint_pack: AnsibleLintPolicyPack | None = None
     checkov_gate: CheckovGateConfig = dataclass_field(default_factory=CheckovGateConfig)
+    opa_gate: OpaGateConfig = dataclass_field(default_factory=OpaGateConfig)
+    azure_policy_gate: AzurePolicyGateConfig = dataclass_field(
+        default_factory=AzurePolicyGateConfig
+    )
     ansible_lint_gate: AnsibleLintGateConfig = dataclass_field(
         default_factory=AnsibleLintGateConfig
     )
@@ -109,6 +140,7 @@ class Blueprint:
             return {
                 "external_checks_dir": self.checkov_gate.external_checks_dir,
                 "config_file": self.checkov_gate.config_file,
+                "scan_dir": self.checkov_gate.scan_dir,
                 "skip_checks": self.checkov_gate.skip_checks,
                 "soft_fail": self.checkov_gate.soft_fail,
             }
@@ -118,6 +150,12 @@ class Blueprint:
             return {"var_files": self.terraform_validate_gate.var_files}
         if gate_name == "terraform-test":
             return {"test_directory": self.terraform_test_gate.test_directory}
+        if gate_name == "opa":
+            return {
+                "policies_dir": self.opa_gate.policies_dir,
+                "fixtures_dir": self.opa_gate.fixtures_dir,
+                "plan_subdir": self.opa_gate.plan_subdir,
+            }
         if gate_name == "ansible-lint":
             return {"config_file": self.ansible_lint_gate.config_file}
         return {}
@@ -175,6 +213,22 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
             policy_version=str(checkov_spec.get("policy_version", "1.0.0")),
         )
 
+    opa_spec = spec.get("opa")
+    opa_policies: OpaPolicyPack | None = None
+    if opa_spec is not None:
+        opa_policies = OpaPolicyPack(
+            policies_source=str(opa_spec["policies_source"]),
+            policy_version=str(opa_spec.get("policy_version", "1.0.0")),
+        )
+
+    azure_policy_spec = spec.get("azure_policy")
+    azure_policy_pack: AzurePolicyPack | None = None
+    if azure_policy_spec is not None:
+        azure_policy_pack = AzurePolicyPack(
+            definitions_source=str(azure_policy_spec["definitions_source"]),
+            policy_version=str(azure_policy_spec.get("policy_version", "1.0.0")),
+        )
+
     ansible_lint_spec = spec.get("ansible_lint")
     ansible_lint_pack: AnsibleLintPolicyPack | None = None
     if ansible_lint_spec is not None:
@@ -188,8 +242,19 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
     checkov_gate = CheckovGateConfig(
         external_checks_dir=str(checkov_gate_raw.get("external_checks_dir", "policy/checkov")),
         config_file=str(checkov_gate_raw.get("config_file", ".checkov.yml")),
+        scan_dir=str(checkov_gate_raw.get("scan_dir", "")),
         skip_checks=tuple(checkov_gate_raw.get("skip_checks", [])),
         soft_fail=bool(checkov_gate_raw.get("soft_fail", False)),
+    )
+    opa_gate_raw = gate_config.get("opa", {}) if isinstance(gate_config, dict) else {}
+    opa_gate = OpaGateConfig(
+        policies_dir=str(opa_gate_raw.get("policies_dir", "policy/opa/policies")),
+        fixtures_dir=str(opa_gate_raw.get("fixtures_dir", "tests/fixtures")),
+        plan_subdir=str(opa_gate_raw.get("plan_subdir", ".repave")),
+    )
+    azure_gate_raw = gate_config.get("azure-policy", {}) if isinstance(gate_config, dict) else {}
+    azure_policy_gate = AzurePolicyGateConfig(
+        definitions_dir=str(azure_gate_raw.get("definitions_dir", "policy/definitions")),
     )
     tflint_gate_raw = gate_config.get("tflint", {}) if isinstance(gate_config, dict) else {}
     tflint_gate = TflintGateConfig(
@@ -234,8 +299,12 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         output_title_template=str(title_template),
         provenance_file=provenance_file,
         checkov_policies=checkov_policies,
+        opa_policies=opa_policies,
+        azure_policy_pack=azure_policy_pack,
         ansible_lint_pack=ansible_lint_pack,
         checkov_gate=checkov_gate,
+        opa_gate=opa_gate,
+        azure_policy_gate=azure_policy_gate,
         ansible_lint_gate=ansible_lint_gate,
         tflint_gate=tflint_gate,
         terraform_validate_gate=terraform_validate_gate,
@@ -244,7 +313,13 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
     )
 
 
-def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
+def validate_inputs(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+    *,
+    repo_root: Path | None = None,
+    gate_overrides: Any = None,
+) -> dict[str, Any]:
     normalized: dict[str, Any] = {}
     for field in blueprint.inputs:
         if field.name in values:
@@ -257,6 +332,12 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
     unknown = set(values) - {f.name for f in blueprint.inputs}
     if unknown:
         raise ValueError(f"Unknown input fields: {', '.join(sorted(unknown))}")
+
+    for field in blueprint.inputs:
+        if field.name not in normalized:
+            continue
+        if normalized[field.name] in (None, "") and field.default is not None:
+            normalized[field.name] = field.default
 
     for field in blueprint.inputs:
         if field.name not in normalized or field.enum == ():
@@ -285,6 +366,16 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
     _validate_pinned_roles(blueprint, normalized)
     _validate_pinned_modules(blueprint, normalized)
     _validate_ansible_role_platforms(blueprint, normalized)
+
+    if repo_root is not None:
+        from repave_engine.policy_selection import normalize_policy_inputs
+
+        normalize_policy_inputs(
+            blueprint,
+            normalized,
+            repo_root,
+            gate_overrides=gate_overrides,
+        )
 
     return normalized
 
@@ -342,6 +433,12 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
         return str(values.get("collection_name", blueprint.name))
     if blueprint.artifact_type == "observability":
         return str(values.get("service_name", blueprint.name))
+    if blueprint.artifact_type == "azure-policy":
+        return str(values.get("policy_name", blueprint.name))
+    if blueprint.artifact_type == "opa-policy":
+        return str(values.get("policy_name", blueprint.name))
+    if blueprint.artifact_type == "checkov-policy":
+        return str(values.get("policy_name", blueprint.name))
     if blueprint.artifact_type == "ansible-role":
         return str(values.get("role_name", blueprint.name))
     return str(values.get("module_name", blueprint.name))
@@ -450,12 +547,14 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
 _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
     "ansible": ("Ansible", "Roles, collections, and playbook projects"),
+    "policy": ("Policy", "Checkov, OPA (Conftest), and Azure Policy golden paths"),
     "observability": ("Observability", "Dashboards, alerts, and SLOs as code"),
 }
-_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "observability")
+_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "policy", "observability")
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
+    "policy": ("checkov-policy", "opa-policy", "azure-policy"),
     "observability": ("observability",),
 }
 
@@ -463,11 +562,22 @@ _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
 def artifact_family(artifact_type: str) -> str:
     if artifact_type == "observability":
         return "observability"
+    if artifact_type in ("checkov-policy", "opa-policy", "azure-policy"):
+        return "policy"
     if artifact_type.startswith("terraform-"):
         return "terraform"
     if artifact_type.startswith("ansible-"):
         return "ansible"
     return artifact_type
+
+
+def policy_kind_label(artifact_type: str) -> str | None:
+    """Short label for policy-family artifact types (portal badges)."""
+    return {
+        "checkov-policy": "Checkov",
+        "opa-policy": "OPA",
+        "azure-policy": "Azure Policy",
+    }.get(artifact_type)
 
 
 @dataclass(frozen=True)

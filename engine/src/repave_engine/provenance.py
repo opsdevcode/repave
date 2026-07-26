@@ -10,6 +10,26 @@ import yaml
 
 from repave_engine import __version__
 from repave_engine.blueprint import Blueprint
+from repave_engine.governance import governance_provenance_block
+from repave_engine.policy_selection import PolicySelection, policy_provenance_block
+
+
+def _opa_provenance_block(blueprint: Blueprint) -> dict[str, str] | None:
+    if blueprint.opa_policies is None:
+        return None
+    return {
+        "policies_source": blueprint.opa_policies.policies_source,
+        "policy_version": blueprint.opa_policies.policy_version,
+    }
+
+
+def _azure_policy_provenance_block(blueprint: Blueprint) -> dict[str, str] | None:
+    if blueprint.azure_policy_pack is None:
+        return None
+    return {
+        "definitions_source": blueprint.azure_policy_pack.definitions_source,
+        "policy_version": blueprint.azure_policy_pack.policy_version,
+    }
 
 
 def load_artifact_schema(repo_root: Path) -> dict[str, Any]:
@@ -51,6 +71,9 @@ def _build_terraform_spec(
             "policies_source": blueprint.checkov_policies.policies_source,
             "policy_version": blueprint.checkov_policies.policy_version,
         }
+    opa = _opa_provenance_block(blueprint)
+    if opa is not None:
+        spec["opa"] = opa
     return spec, module_name
 
 
@@ -91,6 +114,9 @@ def _build_environment_stack_spec(
             "policies_source": blueprint.checkov_policies.policies_source,
             "policy_version": blueprint.checkov_policies.policy_version,
         }
+    opa = _opa_provenance_block(blueprint)
+    if opa is not None:
+        spec["opa"] = opa
     return spec, stack_name
 
 
@@ -206,6 +232,62 @@ def _build_observability_spec(
     return spec, service_name
 
 
+def _build_opa_policy_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    policy_name = str(values.get("policy_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "opa-policy",
+        "opaPolicy": {
+            "policy_name": policy_name,
+            "organization": str(values.get("organization", "")).strip(),
+        },
+    }
+    opa = _opa_provenance_block(blueprint)
+    if opa is not None:
+        spec["opa"] = opa
+    return spec, policy_name
+
+
+def _build_azure_policy_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    policy_name = str(values.get("policy_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "azure-policy",
+        "azurePolicy": {
+            "policy_name": policy_name,
+            "organization": str(values.get("organization", "")).strip(),
+        },
+    }
+    azure = _azure_policy_provenance_block(blueprint)
+    if azure is not None:
+        spec["azurePolicyDefinitions"] = azure
+    return spec, policy_name
+
+
+def _build_checkov_policy_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    policy_name = str(values.get("policy_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "checkov-policy",
+        "checkovPolicy": {
+            "policy_name": policy_name,
+            "organization": str(values.get("organization", "")).strip(),
+        },
+    }
+    if blueprint.checkov_policies is not None:
+        spec["checkov"] = {
+            "policies_source": blueprint.checkov_policies.policies_source,
+            "policy_version": blueprint.checkov_policies.policy_version,
+        }
+    return spec, policy_name
+
+
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
@@ -213,6 +295,12 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_ansible_playbook_project_spec(blueprint, values)
     elif blueprint.artifact_type == "ansible-collection":
         artifact_spec, metadata_name = _build_ansible_collection_spec(blueprint, values)
+    elif blueprint.artifact_type == "opa-policy":
+        artifact_spec, metadata_name = _build_opa_policy_spec(blueprint, values)
+    elif blueprint.artifact_type == "azure-policy":
+        artifact_spec, metadata_name = _build_azure_policy_spec(blueprint, values)
+    elif blueprint.artifact_type == "checkov-policy":
+        artifact_spec, metadata_name = _build_checkov_policy_spec(blueprint, values)
     elif blueprint.artifact_type == "terraform-environment-stack":
         artifact_spec, metadata_name = _build_environment_stack_spec(blueprint, values)
     elif blueprint.artifact_type == "observability":
@@ -220,25 +308,35 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 
+    policy_block = policy_provenance_block(
+        values.get("_policy_selection")
+        if isinstance(values.get("_policy_selection"), PolicySelection)
+        else None
+    )
+    spec_body: dict[str, Any] = {
+        **artifact_spec,
+        "governance": governance_provenance_block(),
+        "blueprint": {
+            "name": blueprint.name,
+            "version": blueprint.version,
+        },
+        "standard": {
+            "source": blueprint.standard_source,
+            "version": blueprint.standard_version,
+        },
+        "generation": {
+            "engine_version": __version__,
+            "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        },
+    }
+    if policy_block is not None:
+        spec_body["policy"] = policy_block
+
     return {
         "apiVersion": "repave.dev/v1beta1",
         "kind": "GoldenPathArtifact",
         "metadata": {"name": metadata_name},
-        "spec": {
-            **artifact_spec,
-            "blueprint": {
-                "name": blueprint.name,
-                "version": blueprint.version,
-            },
-            "standard": {
-                "source": blueprint.standard_source,
-                "version": blueprint.standard_version,
-            },
-            "generation": {
-                "engine_version": __version__,
-                "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-            },
-        },
+        "spec": spec_body,
     }
 
 

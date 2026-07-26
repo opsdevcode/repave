@@ -69,6 +69,40 @@ def test_group_blueprints_includes_observability_family() -> None:
     assert groups[1].title == "Observability"
 
 
+def test_group_blueprints_policy_family_groups_opa_and_azure() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("azure-policy-generic", "azure-policy"),
+            _bp("checkov-policy-generic", "checkov-policy"),
+            _bp("opa-policy-generic", "opa-policy"),
+            _bp("tf-a", "terraform-module"),
+        ]
+    )
+
+    assert [group.family for group in groups] == ["terraform", "policy"]
+    policy = groups[1]
+    assert policy.title == "Policy"
+    assert [bp.name for bp in policy.blueprints] == [
+        "checkov-policy-generic",
+        "opa-policy-generic",
+        "azure-policy-generic",
+    ]
+
+
+def test_artifact_family_groups_policy_types() -> None:
+    assert artifact_family("checkov-policy") == "policy"
+    assert artifact_family("opa-policy") == "policy"
+    assert artifact_family("azure-policy") == "policy"
+
+
+def test_policy_kind_label() -> None:
+    from repave_engine.blueprint import policy_kind_label
+
+    assert policy_kind_label("checkov-policy") == "Checkov"
+    assert policy_kind_label("opa-policy") == "OPA"
+    assert policy_kind_label("terraform-module") is None
+
+
 def test_group_blueprints_unknown_type_appended() -> None:
     groups = group_blueprints_by_artifact([_bp("helm-x", "helm-chart")])
 

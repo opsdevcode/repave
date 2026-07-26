@@ -30,6 +30,8 @@ def test_builtin_gates_are_registered() -> None:
     assert "ansible-syntax-check" in names
     assert "molecule" in names
     assert "promtool" in names
+    assert "azure-policy" in names
+    assert "opa" in names
 
 
 def test_get_gate_returns_spec_for_known_gate() -> None:
