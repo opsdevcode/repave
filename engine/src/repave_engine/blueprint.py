@@ -689,6 +689,17 @@ def group_blueprints_by_artifact(blueprints: list[Blueprint]) -> list[BlueprintC
                 blueprints=tuple(sorted(buckets[family], key=lambda bp: bp.name)),
             )
         )
+
+    family_rank = {name: index for index, name in enumerate(_ARTIFACT_FAMILY_ORDER)}
+
+    def group_sort_key(group: BlueprintCatalogGroup) -> tuple[int, int, str]:
+        return (
+            -len(group.blueprints),
+            family_rank.get(group.family, len(_ARTIFACT_FAMILY_ORDER)),
+            group.family,
+        )
+
+    groups.sort(key=group_sort_key)
     return groups
 
 
