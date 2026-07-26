@@ -437,6 +437,9 @@ Running repave as a shared hosted service needs identity and protected endpoints
 **Done when:** A hosted repave instance rejects unauthenticated API/portal access,
 and a logged-in user can complete a generation.
 
+**Status:** Foundation shipped on `main` (OIDC authorization-code flow, session
+roles, protected generate/update/API; [`docs/auth-service-mode.md`](auth-service-mode.md)).
+
 ---
 
 ### v1.28 — SSO via OIDC and role-based access
@@ -457,6 +460,9 @@ not local accounts.
 
 **Done when:** Login is delegated to an OIDC IdP and endpoint access is gated by
 mapped role claims; docs show an Okta and a PingID configuration example.
+
+**Status:** Shipped with v1.27 foundation (group → role mapping, generator/admin
+gates on mutating routes).
 
 ---
 
@@ -584,7 +590,7 @@ into Backstage, and docs show the scaffolder action.
 
 **Status:** Shipped on `main` (`backstage_catalog.py`, optional catalog on Terraform/Helm,
 required on app-service, `standards/backstage/catalog-standard.md`, [`docs/backstage.md`](backstage.md)
-with Scaffolder template sketch and parameter mapping).
+with Scaffolder template sketch, parameter mapping, and `POST /api/v1/generate`).
 
 ---
 
@@ -685,6 +691,9 @@ dashboards to detect and triage problems.
 
 **Done when:** Alerts fire in a test cluster on induced failures, and the dashboard
 shows throughput, success rate, and per-stage latency.
+
+**Status:** Starter pack on `main` (`deploy/k8s/prometheus-rules.yaml`,
+`grafana-dashboard-repave.json`, [`docs/operations/README.md`](operations/README.md)).
 
 ---
 
@@ -869,8 +878,8 @@ that passed every configured gate and policy, with full provenance and audit tra
 Ideas not yet scheduled for pre-v2 work — promote into [Planned](#planned) when
 there is an owner and a target release.
 
-- **Molecule as a required gate** — make molecule non-skippable once test runners
-  are standardized in CI
+- **Portal white-label** — custom logo URL and accent color override via config
+  (deferred from v1.18 Phase 5; target v2 theming)
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
 - **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
   an alternative to in-app OIDC

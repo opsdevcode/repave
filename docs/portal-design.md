@@ -227,7 +227,8 @@ at most two interactions.
 feedback, generate/update busy states, sticky generate bar, skip link, upgrade
 diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity,
 standards drift diff, and staged generate labels shipped. White-label / compact
-density and light theme remain optional.
+density and light theme remain optional. **Compact density** (`portal.density:
+compact`) ships for Backstage-adjacent layouts; **white-label** accents move to v2.
 
 Pick based on audience and hosting model (v1.25+).
 
@@ -246,7 +247,7 @@ Further craft (illustration, stepper) is optional.
 | **Motion** | Expand/collapse on scope and gate rows; honor `prefers-reduced-motion` |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
-| **White-label** | Optional logo URL and accent override via `repave.config.yaml` |
+| **White-label** | Deferred to **v2** — optional logo URL and accent override (not v1.18 scope) |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
 | **Conversational UI (v2)** | Chat entry in same shell; results reuse Phase 4 dashboard |

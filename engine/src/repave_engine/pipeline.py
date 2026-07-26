@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.audit import AuditRecord, acting_user_from_env, append_audit_record
+from repave_engine.audit import AuditRecord, append_audit_record
+from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import (
     Blueprint,
     _find_repo_root,
@@ -84,7 +85,7 @@ def _record_operability(
             dry_run=dry_run,
             gates_outcome=outcome,
             repository_url=repository.web_url if repository is not None else None,
-            acting_user=acting_user_from_env(),
+            acting_user=current_acting_user(),
             extra={"duration_seconds": round(elapsed, 3)},
         ),
     )

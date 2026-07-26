@@ -674,3 +674,38 @@ def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config
     assert response.status_code == 200
     assert "alert--fail" in response.text
     assert "repave.yaml" in response.text
+
+
+def test_readyz(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/readyz")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ready"
+    assert payload["config_loaded"] is True
+
+
+def test_api_v1_generate_dry_run(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
+    monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/api/v1/generate",
+        json={
+            "blueprint": "terraform-module-resource",
+            "dry_run": True,
+            "inputs": {
+                "module_name": "api-demo",
+                "description": "API test",
+                "cloud_provider": "aws",
+                "provider_service": "s3",
+                "provider_resource": "bucket",
+            },
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["blueprint"] == "terraform-module-resource"
+    assert payload["dry_run"] is True
+    assert "gates_outcome" in payload

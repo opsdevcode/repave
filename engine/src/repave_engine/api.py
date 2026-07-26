@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from starlette.middleware.sessions import SessionMiddleware
 
 from repave_engine import __version__
 from repave_engine.ansible_role_inventory import (
@@ -15,6 +16,18 @@ from repave_engine.ansible_role_inventory import (
     inventory_roles_json,
 )
 from repave_engine.audit_history import AuditHistoryEntry, read_recent_audit_entries
+from repave_engine.auth import (
+    ROLE_ADMIN,
+    ROLE_GENERATOR,
+    build_login_redirect,
+    clear_session,
+    complete_oidc_callback,
+    fetch_oidc_discovery,
+    is_public_path,
+    require_role,
+    session_user,
+)
+from repave_engine.auth_context import reset_acting_user, set_acting_user
 from repave_engine.blueprint import (
     artifact_family,
     group_blueprints_by_artifact,
@@ -24,6 +37,7 @@ from repave_engine.blueprint import (
 )
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.gates import GateResult, all_gates_passed
+from repave_engine.generate_api import run_generate_api
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
 from repave_engine.observability_catalog import (
@@ -46,7 +60,13 @@ from repave_engine.policy_selection import (
     policy_input_defaults,
 )
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
-from repave_engine.settings import OutputConfig, load_audit_config, load_output_config
+from repave_engine.settings import (
+    OutputConfig,
+    load_audit_config,
+    load_auth_config,
+    load_output_config,
+    load_portal_config,
+)
 from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 
@@ -58,20 +78,64 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     templates.env.globals["artifact_family"] = artifact_family
     templates.env.globals["policy_kind_label"] = policy_kind_label
     resolved_output = output_config or load_output_config(repo_root)
+    portal_config = load_portal_config(repo_root)
+    try:
+        auth_config = load_auth_config(repo_root)
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
 
     app = FastAPI(title="repave", version=__version__)
+    session_secret = os.environ.get("REPAVE_SESSION_SECRET", "").strip()
+    if auth_config is not None and auth_config.service_enabled:
+        session_secret = auth_config.session_secret
+    elif not session_secret:
+        session_secret = "dev-insecure-session-secret"
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=session_secret,
+        same_site="lax",
+        https_only=False,
+    )
     app.mount(
         "/static",
         StaticFiles(directory=str(package_dir / "static")),
         name="static",
     )
 
-    def page_context(**extra: object) -> dict[str, object]:
+    def page_context(request: Request | None = None, **extra: object) -> dict[str, object]:
+        auth_user = session_user(request) if request is not None else None
         return {
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
+            "portal_density": portal_config.density,
+            "auth_enabled": auth_config is not None and auth_config.service_enabled,
+            "auth_user": auth_user,
             **extra,
         }
+
+    @app.middleware("http")
+    async def enforce_service_auth(request: Request, call_next):  # type: ignore[no-untyped-def]
+        if auth_config is None or not auth_config.service_enabled:
+            return await call_next(request)
+        path = request.url.path
+        if is_public_path(path):
+            return await call_next(request)
+        user = session_user(request)
+        if user is None:
+            if request.method == "POST" and path in {"/generate", "/update", "/api/v1/generate"}:
+                return JSONResponse(
+                    status_code=401,
+                    content={"detail": "Authentication required"},
+                )
+            if path.startswith("/api/"):
+                return JSONResponse(status_code=401, content={"detail": "Authentication required"})
+            login = f"/auth/login?next={path}"
+            return RedirectResponse(login, status_code=302)
+        token = set_acting_user(user.email or user.subject)
+        try:
+            return await call_next(request)
+        finally:
+            reset_acting_user(token)
 
     def portal_recent_activity() -> tuple[AuditHistoryEntry, ...]:
         try:
@@ -107,6 +171,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             request,
             "index.html",
             page_context(
+                request,
                 blueprints=blueprints,
                 catalog_groups=catalog_groups,
                 nav_active="catalog",
@@ -165,6 +230,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             request,
             "blueprint_form.html",
             page_context(
+                request,
                 blueprint=blueprint,
                 provider_catalog=provider_catalog,
                 terraform_stepper=terraform_stepper,
@@ -292,6 +358,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.post("/generate")
     async def generate(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         form = await request.form()
         blueprint_name = str(form.get("blueprint_name", ""))
         dry_run = str(form.get("dry_run", "true")).lower() != "false"
@@ -339,6 +408,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             request,
             "result.html",
             page_context(
+                request,
                 result=result,
                 nav_active="catalog",
                 gate_summary=gate_summary(result.gates),
@@ -354,16 +424,80 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def metrics() -> Response:
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
+    @app.get("/readyz")
+    async def readyz() -> dict[str, str | bool]:
+        token_ok = bool(os.environ.get("GITHUB_TOKEN", "").strip())
+        return {
+            "status": "ready",
+            "config_loaded": True,
+            "github_token_configured": token_ok,
+        }
+
+    @app.get("/auth/login")
+    async def auth_login(request: Request) -> RedirectResponse:
+        if auth_config is None or not auth_config.service_enabled:
+            return RedirectResponse("/", status_code=302)
+        discovery = await fetch_oidc_discovery(auth_config.oidc_issuer)
+        return build_login_redirect(request, auth_config, discovery)
+
+    @app.get("/auth/callback")
+    async def auth_callback(
+        request: Request,
+        code: str = "",
+        state: str = "",
+    ) -> RedirectResponse:
+        if auth_config is None or not auth_config.service_enabled:
+            raise HTTPException(status_code=404, detail="Auth not enabled")
+        if not code or not state:
+            raise HTTPException(status_code=400, detail="Missing code or state")
+        return await complete_oidc_callback(request, auth_config, code=code, state=state)
+
+    @app.post("/auth/logout")
+    async def auth_logout(request: Request) -> RedirectResponse:
+        return clear_session(request)
+
+    @app.post("/api/v1/generate")
+    async def api_generate(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Expected JSON object")
+        blueprint_name = str(payload.get("blueprint", "")).strip()
+        if not blueprint_name:
+            raise HTTPException(status_code=400, detail="blueprint is required")
+        dry_run = bool(payload.get("dry_run", True))
+        inputs_raw = payload.get("inputs", {})
+        if not isinstance(inputs_raw, dict):
+            raise HTTPException(status_code=400, detail="inputs must be an object")
+        github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
+        try:
+            body = run_generate_api(
+                repo_root=repo_root,
+                output_config=resolved_output,
+                blueprint_name=blueprint_name,
+                inputs=inputs_raw,
+                dry_run=dry_run,
+                github_token=github_token,
+            )
+        except (ValueError, FileNotFoundError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(body)
+
     @app.get("/update", response_class=HTMLResponse)
     async def update_form(request: Request) -> HTMLResponse:
         return templates.TemplateResponse(
             request,
             "update.html",
-            page_context(nav_active="update"),
+            page_context(request, nav_active="update"),
         )
 
     @app.post("/update", response_class=HTMLResponse)
     async def update_plan(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         form = await request.form()
         target_repo_raw = str(form.get("target_repo", "")).strip()
         blueprint_override = str(form.get("blueprint", "")).strip() or None
@@ -373,6 +507,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 "update.html",
                 page_context(
+                    request,
                     nav_active="update",
                     error_message="Repository path is required.",
                     target_repo=target_repo_raw,
@@ -392,6 +527,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 "update.html",
                 page_context(
+                    request,
                     nav_active="update",
                     error_message=str(exc),
                     target_repo=target_repo_raw,
@@ -407,6 +543,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             request,
             "update_result.html",
             page_context(
+                request,
                 nav_active="update",
                 plan=plan,
                 target_repo=str(target_repo.resolve()),

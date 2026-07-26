@@ -1,0 +1,38 @@
+# PrometheusRule for repave engine (v1.36 starter).
+# Apply in the namespace where repave runs; expects ServiceMonitor on /metrics.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: repave-alerts
+  labels:
+    app.kubernetes.io/name: repave
+spec:
+  groups:
+    - name: repave.generation
+      rules:
+        - alert: RepaveGenerationFailureRateHigh
+          expr: |
+            (
+              sum(rate(repave_generations_total{outcome="failed"}[15m]))
+              /
+              clamp_min(sum(rate(repave_generations_total[15m])), 0.001)
+            ) > 0.25
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Repave generation failure rate above 25%
+            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
+
+        - alert: RepaveGenerationLatencyHigh
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum(rate(repave_generation_seconds_bucket[15m])) by (le, blueprint)
+            ) > 120
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Repave p95 generation latency above 120s
+            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#slow-generations

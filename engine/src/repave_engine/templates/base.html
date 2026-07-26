@@ -17,7 +17,7 @@
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <div class="shell">
+    <div class="shell{% if portal_density == 'compact' %} shell--compact{% endif %}">
       <div class="shell__atmosphere" aria-hidden="true"></div>
       <header class="shell__bar">
         <a class="shell__brand" href="/" aria-label="repave home">
@@ -32,6 +32,14 @@
           </a>
         </nav>
         <div class="shell__meta">
+          {% if auth_enabled and auth_user %}
+          <span class="shell__user muted">{{ auth_user.email }}</span>
+          <form class="shell__logout" method="post" action="/auth/logout">
+            <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
+          </form>
+          {% elif auth_enabled %}
+          <a class="btn btn--secondary btn--sm" href="/auth/login">Sign in</a>
+          {% endif %}
           {% if env_badge %}
           <span class="badge badge--env">{{ env_badge }}</span>
           {% endif %}
