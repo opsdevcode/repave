@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -62,9 +63,12 @@ def load_snapshot(repo_root: Path) -> dict[str, Any]:
 
 
 def _fetch(url: str) -> tuple[int, bytes, str | None]:
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "https" or not parsed.netloc:
+        return 0, b"", f"URL must use https: {url!r}"
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=45) as response:
+        with urllib.request.urlopen(request, timeout=45) as response:  # nosec B310
             body = response.read()
             return int(response.status), body, None
     except urllib.error.HTTPError as exc:
