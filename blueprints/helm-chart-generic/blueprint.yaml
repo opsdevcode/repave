@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: helm-chart-generic
-  version: 0.1.0
+  version: 0.2.0
   description: Governed Helm chart for Kubernetes workloads (Deployment, Service, optional Ingress).
 spec:
   artifactType: helm-chart
@@ -92,9 +92,13 @@ spec:
     - yamllint
     - helm-lint
     - helm-template
+    - opa
     - secrets
     - docs-drift
     - provenance-drift
+  opa:
+    policies_source: policy/opa/policies
+    policy_version: 1.0.0
   gate_config:
     yamllint:
       paths:
@@ -105,6 +109,9 @@ spec:
     helm-template:
       chart_path: "."
       release_name: repave-test
+    opa:
+      policies_dir: policy/opa/policies
+      helm_release_name: repave-test
   output:
     type: pull_request
     provenance:

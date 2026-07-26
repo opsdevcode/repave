@@ -56,7 +56,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
     }
 )
 _OPA_GATE_ARTIFACT_TYPES = frozenset(
-    {"terraform-module", "terraform-environment-stack", "opa-policy", "observability"}
+    {"terraform-module", "terraform-environment-stack", "opa-policy", "observability", "helm-chart"}
 )
 
 register_gate(

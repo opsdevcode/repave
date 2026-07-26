@@ -301,6 +301,10 @@
                   "type": "array",
                   "items": { "type": "string" },
                   "description": "Glob patterns for native observability files when running conftest without Terraform."
+                },
+                "helm_release_name": {
+                  "type": "string",
+                  "description": "Helm release name when rendering charts for conftest (helm-chart artifact)."
                 }
               }
             },

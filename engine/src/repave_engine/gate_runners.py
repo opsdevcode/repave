@@ -753,6 +753,58 @@ def run_helm_template(ctx: GateContext) -> GateResult:
     return GateResult("helm-template", False, False, detail)
 
 
+def _write_helm_rendered_manifest(output_dir: Path, ctx: GateContext) -> tuple[Path | None, str]:
+    if not tool_available("helm"):
+        return None, "helm not installed"
+    chart_dir = _helm_chart_dir(output_dir, ctx, "opa")
+    if not (chart_dir / "Chart.yaml").is_file():
+        return None, "no Chart.yaml found"
+    cfg = ctx.config("opa")
+    release = str(cfg.get("helm_release_name", cfg.get("release_name", "repave-test")))
+    result = run_command(
+        [
+            "helm",
+            "template",
+            release,
+            str(chart_dir.relative_to(output_dir)),
+        ],
+        output_dir,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "helm template failed"
+        return None, detail
+    manifest_path = output_dir / ".repave" / "helm-rendered.yaml"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(result.stdout, encoding="utf-8")
+    return manifest_path, ""
+
+
+def _run_opa_helm_chart(
+    ctx: GateContext,
+    policies_dir: Path,
+    output_dir: Path,
+) -> GateResult:
+    manifest_path, err = _write_helm_rendered_manifest(output_dir, ctx)
+    if manifest_path is None:
+        if err == "helm not installed":
+            return GateResult("opa", True, True, "helm not installed; skipped")
+        if err == "no Chart.yaml found":
+            return GateResult("opa", True, True, "no Helm chart found; skipped")
+        return GateResult("opa", False, False, err)
+    cmd = [
+        "conftest",
+        "test",
+        str(manifest_path.relative_to(output_dir)),
+        "-p",
+        str(policies_dir),
+    ]
+    result = run_command(cmd, output_dir)
+    if result.returncode == 0:
+        return GateResult("opa", True, False, "conftest passed on helm-rendered manifests")
+    detail = result.stderr.strip() or result.stdout.strip() or "conftest failed"
+    return GateResult("opa", False, False, detail)
+
+
 def _ensure_python_project_installed(output_dir: Path) -> None:
     marker = output_dir / ".repave" / "python_dev_installed"
     if marker.is_file():
@@ -1129,6 +1181,8 @@ def run_opa(ctx: GateContext) -> GateResult:
                 "terraform plan JSON could not be produced for opa evaluation",
             )
         target = str(plan_json)
+    elif artifact == "helm-chart":
+        return _run_opa_helm_chart(ctx, policies_dir, output_dir)
     else:
         return GateResult("opa", True, True, "opa gate not applicable to this artifact type")
 
