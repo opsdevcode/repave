@@ -1,0 +1,37 @@
+name: Operator e2e
+
+on:
+  schedule:
+    # Nightly 06:00 UTC — kind + Docker; not run on every PR.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "operator/**"
+      - "engine/**"
+      - "blueprints/**"
+      - "schemas/**"
+      - "examples/**"
+      - ".github/workflows/operator-e2e.yml"
+
+jobs:
+  kind-e2e:
+    name: operator-e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: operator/go.mod
+          cache-dependency-path: operator/go.sum
+
+      - name: Install kind
+        run: go install sigs.k8s.io/kind@v0.27.0
+
+      - name: Run operator e2e (kind)
+        env:
+          KIND_BIN: ${{ github.workspace }}/go/bin/kind
+          PATH: ${{ github.workspace }}/go/bin:${{ PATH }}
+        run: make operator-e2e

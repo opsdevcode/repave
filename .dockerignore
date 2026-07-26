@@ -1,0 +1,13 @@
+.git
+.github
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.coverage
+**/cover.out
+operator/bin
+deploy/local
+docs
+*.md
+!engine/README.md

@@ -20,7 +20,7 @@ inventory lands.
 [`operator/CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator-alpha)
-(shipped alpha); [v1.17 GA / e2e](../docs/roadmap.md#next--v117-ga-operator-e2e).
+(shipped alpha + GA e2e).
 
 ---
 
@@ -81,7 +81,7 @@ From repository root:
 ```bash
 make operator-test      # unit + envtest (no kind)
 make operator-run       # controller against current kubeconfig
-make operator-e2e       # kind + image + OutOfDate fixture (needs Docker, kind)
+make operator-e2e       # kind + Dockerfile.e2e (repave CLI) + OutOfDate/UpgradePlanned
 ```
 
 Generate fixture module repos with the same engine path as production:

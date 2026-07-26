@@ -180,9 +180,12 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 - Prerequisites: Docker, kubectl, [kind](https://kind.sigs.k8.io/)
   (`go install sigs.k8s.io/kind@v0.27.0`).
 - Flow (`operator/hack/e2e.sh`): kind up (`repave-local` + fixture hostPath) →
-  `docker build` / `kind load` → apply CRDs + `config/e2e/` → assert
-  `GoldenPathRepo` `status.phase=OutOfDate` for a stale blueprint pin.
-- No `GITHUB_TOKEN` required (inventory drift only; remediation stays dry-run).
+  `docker build -f Dockerfile.e2e` (bundled `repave` CLI + blueprints) →
+  `kind load` → apply CRDs + `config/e2e/` → assert `OutOfDate`,
+  `UpgradePlanned=True`, and non-empty `status.upgradePlan`.
+- No `GITHUB_TOKEN` required (inventory + plan diff; remediation stays dry-run).
+- CI: `.github/workflows/operator-e2e.yml` (nightly, `workflow_dispatch`, main
+  path triggers). PR gate remains `operator-test` (envtest).
 - Keep the cluster for debugging: `E2E_KEEP_CLUSTER=1 make operator-e2e`.
 - Shares cluster naming with [deploy/local kind](../deploy/local/README.md#kind-optional).
 
@@ -213,7 +216,7 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 | --- | --- | --- |
 | `operator-test` | PR touching `operator/**` | envtest + unit; no kind |
 | `operator-lint` | Same | golangci-lint (`make operator-lint`) |
-| `operator-e2e` | Nightly or pre-release | kind; may start as optional |
+| `operator-e2e` | Nightly, workflow_dispatch, main path changes | kind + `Dockerfile.e2e` |
 
 Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows.
 
@@ -225,8 +228,8 @@ Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows
    asset setup documented in `operator/README.md`).
 2. **New contributor path ≤ 15 minutes** to: apply sample `GoldenPathRepo` → see
    status reflect fixture drift **without** `GITHUB_TOKEN`.
-3. **At least one e2e** (before v1.17 GA): stale standard pin → `OutOfDate` status
-   or mock PR recorded.
+3. **At least one e2e** (v1.17 GA): stale pin → `OutOfDate`, `UpgradePlanned`,
+   and non-empty `status.upgradePlan` (real `repave plan-upgrade` in-cluster).
 4. **Engine subprocess contract** documented: which `repave` CLI flags the
    operator calls for dry-run upgrade diff (aligns with v1.19 `repave update`).
 

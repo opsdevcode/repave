@@ -39,6 +39,11 @@ spec:
               port: health
             initialDelaySeconds: 5
             periodSeconds: 5
+          env:
+            - name: REPAVE_REPO_ROOT
+              value: /repave
+            - name: REPAVE_CLI
+              value: /repave/engine/.venv/bin/repave
           volumeMounts:
             - name: modules
               mountPath: /modules
