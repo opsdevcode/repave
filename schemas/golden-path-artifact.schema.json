@@ -33,7 +33,7 @@
       "properties": {
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "opa-policy", "azure-policy"]
+          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "checkov-policy", "opa-policy", "azure-policy"]
         },
         "blueprint": {
           "type": "object",
@@ -193,6 +193,15 @@
             "organization": { "type": "string" }
           }
         },
+        "checkovPolicy": {
+          "type": "object",
+          "required": ["policy_name"],
+          "additionalProperties": false,
+          "properties": {
+            "policy_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string" }
+          }
+        },
         "azurePolicy": {
           "type": "object",
           "required": ["policy_name"],
@@ -304,6 +313,17 @@
           },
           "then": {
             "required": ["opaPolicy"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "checkov-policy" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["checkovPolicy"]
           }
         },
         {

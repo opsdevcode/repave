@@ -1,0 +1,13 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+policy_name:
+  type: str
+
+organization:
+  type: str
+
+description:
+  type: str

@@ -60,7 +60,7 @@
       <div class="catalog-card__meta">
         <span class="badge badge--muted">v{{ bp.version }}</span>
         {% if artifact_family(bp.artifact_type) == 'policy' %}
-        <span class="badge badge--muted">{{ bp.artifact_type }}</span>
+        <span class="badge badge--policy">{{ policy_kind_label(bp.artifact_type) or bp.artifact_type }}</span>
         {% endif %}
       </div>
       <div class="catalog-card__chips" aria-label="Gates">

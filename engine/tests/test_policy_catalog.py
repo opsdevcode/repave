@@ -13,8 +13,20 @@ def test_resolve_estate_default_includes_required(repo_root: Path) -> None:
         artifact_type="terraform-module",
     )
     assert "checkov:CKV2_REPAVE_1" in enabled
+    assert "checkov:CKV2_REPAVE_3" in enabled
     assert "opa:destructive_changes" in enabled
     assert "checkov:CKV2_REPAVE_2" not in enabled
+
+
+def test_layout_profile_enables_layout_rules(repo_root: Path) -> None:
+    catalog = load_policy_catalog(repo_root)
+    enabled = resolve_profile_rule_ids(
+        catalog,
+        profile="layout",
+        artifact_type="terraform-module",
+    )
+    assert "checkov:CKV2_REPAVE_7" in enabled
+    assert "checkov:CKV2_REPAVE_8" not in enabled
 
 
 def test_strict_enables_all_terraform_rules(repo_root: Path) -> None:

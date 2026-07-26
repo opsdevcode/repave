@@ -150,7 +150,8 @@ def build_checkov_command(
     *,
     extra_skip_checks: tuple[str, ...] = (),
 ) -> list[str]:
-    cmd = ["checkov", "-d", str(output_dir)]
+    scan_root = output_dir / config.scan_dir if config.scan_dir else output_dir
+    cmd = ["checkov", "-d", str(scan_root)]
     config_path = output_dir / config.config_file
     if config_path.is_file():
         cmd.extend(["--config-file", str(config_path)])
@@ -204,10 +205,11 @@ def run_checkov(ctx: GateContext) -> GateResult:
     if selection is not None:
         extra_skip = (*extra_skip, *selection.checkov_skip_checks)
     cmd = build_checkov_command(output_dir, config, extra_skip_checks=extra_skip)
+    scan_root = output_dir / config.scan_dir if config.scan_dir else output_dir
     result = run_command(
         cmd,
         output_dir,
-        extra_env={"REPAVE_CHECKOV_SCAN_ROOT": str(output_dir.resolve())},
+        extra_env={"REPAVE_CHECKOV_SCAN_ROOT": str(scan_root.resolve())},
     )
     if result.returncode == 0:
         return GateResult("checkov", True, False, "checkov passed")

@@ -182,6 +182,18 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "ansible-collection-generic" in names
     assert "opa-policy-generic" in names
     assert "azure-policy-generic" in names
+    assert "checkov-policy-generic" in names
+
+
+def test_load_checkov_policy_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "checkov-policy-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "checkov-policy"
+    assert "checkov" in blueprint.gates
+    assert blueprint.checkov_policies is not None
+    assert blueprint.checkov_gate.scan_dir == "tests/fixtures/pass"
 
 
 def test_load_opa_policy_generic_blueprint(repo_root: Path) -> None:

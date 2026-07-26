@@ -5,6 +5,7 @@ Repave treats **policy** as its own artifact family alongside Terraform and Ansi
 | Standard | Artifact type | Purpose |
 | -------- | ------------- | ------- |
 | [governance-baseline.md](governance-baseline.md) | All | Required gates, standards pins, and security hygiene |
+| [checkov.md](checkov.md) | `checkov-policy` | Checkov custom policy pack repos |
 | [opa.md](opa.md) | `opa-policy` | Conftest / Rego on plan JSON or fixtures |
 | [azure.md](azure.md) | `azure-policy` | Azure Policy definition repos |
 

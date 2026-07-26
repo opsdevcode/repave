@@ -1,27 +1,114 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "profiles": {
     "estate-default": {
       "label": "Estate default",
-      "description": "Community-aligned repave pack; balanced security and ergonomics.",
-      "includes": ["checkov:CKV2_REPAVE_1", "opa:destructive_changes"]
+      "description": "Community-aligned repave pack: version pins, layout basics, plan-time OPA, and core security.",
+      "includes": [
+        "checkov:CKV2_REPAVE_1",
+        "checkov:CKV2_REPAVE_3",
+        "checkov:CKV2_REPAVE_6",
+        "checkov:CKV2_REPAVE_8",
+        "checkov:CKV2_REPAVE_9",
+        "opa:destructive_changes"
+      ]
     },
     "strict": {
       "label": "Strict",
-      "description": "All catalog rules enabled for this artifact family.",
+      "description": "Every catalog rule for this artifact family.",
       "includes": ["checkov:*", "opa:*", "azure:*"]
+    },
+    "layout": {
+      "label": "Module layout",
+      "description": "Terraform module structure and required inputs (repave module standard).",
+      "includes": ["checkov:CKV2_REPAVE_3", "checkov:CKV2_REPAVE_4", "checkov:CKV2_REPAVE_5", "checkov:CKV2_REPAVE_6", "checkov:CKV2_REPAVE_7"]
+    },
+    "security": {
+      "label": "Security baseline",
+      "description": "Credential, secret, provisioner, and output hygiene checks.",
+      "includes": [
+        "checkov:CKV2_REPAVE_8",
+        "checkov:CKV2_REPAVE_9",
+        "checkov:CKV2_REPAVE_10",
+        "checkov:CKV2_REPAVE_11",
+        "checkov:CKV2_REPAVE_12"
+      ]
+    },
+    "terraform-full": {
+      "label": "Terraform full pack",
+      "description": "All repave Checkov rules plus plan-time OPA for Terraform artifacts.",
+      "includes": ["checkov:*", "opa:*"]
+    },
+    "opa-focused": {
+      "label": "OPA / Conftest only",
+      "description": "Plan-time Rego policies without optional Checkov toggles.",
+      "includes": ["opa:*"]
+    },
+    "azure-community": {
+      "label": "Azure Policy samples",
+      "description": "Shipped sample Azure Policy definition JSON from the repave pack.",
+      "includes": ["azure:*"]
+    },
+    "checkov-full": {
+      "label": "Checkov full pack",
+      "description": "All repave Checkov custom policies (layout, version, and security).",
+      "includes": ["checkov:*"]
     },
     "custom": {
       "label": "Custom",
-      "description": "Pick individual rules (required rules cannot be disabled).",
+      "description": "Pick individual rules (required rules always on).",
       "includes": []
     }
   },
   "pack_sources": [
     {
       "id": "repave-default",
-      "label": "Repave monorepo packs",
-      "description": "Vendored packs from this repository (default)."
+      "label": "Repave community pack",
+      "description": "Vendored packs from this repository (Checkov, OPA, Azure samples).",
+      "default_profile": "estate-default",
+      "reference_url": "https://github.com/opsdevcode/repave/tree/main/policy"
+    },
+    {
+      "id": "repave-terraform-strict",
+      "label": "Repave Terraform — strict profile",
+      "description": "Same monorepo Checkov/OPA packs; starts from the strict profile.",
+      "default_profile": "strict",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/examples/checkov/README.md"
+    },
+    {
+      "id": "repave-terraform-layout",
+      "label": "Repave Terraform — layout profile",
+      "description": "Module layout and required-variable conventions from the Terraform standards pack.",
+      "default_profile": "layout",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/terraform-standards/terraform-standards.md"
+    },
+    {
+      "id": "repave-terraform-security",
+      "label": "Repave Terraform — security profile",
+      "description": "Security-focused Checkov rules aligned with common IaC secret-hygiene guidance.",
+      "default_profile": "security",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/policy/checkov/policies/repave_security.py"
+    },
+    {
+      "id": "repave-opa-pack",
+      "label": "Repave OPA / Conftest pack",
+      "description": "Plan-time Rego under policy/opa/policies (Terraform and opa-policy artifacts).",
+      "default_profile": "opa-focused",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/opa.md"
+    },
+    {
+      "id": "repave-azure-samples",
+      "label": "Repave Azure Policy samples",
+      "description": "Sample definition JSON under policy/azure/definitions (azure-policy artifacts).",
+      "default_profile": "azure-community",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/azure.md"
+    },
+    {
+      "id": "repave-checkov-pack",
+      "label": "Repave Checkov policy pack",
+      "description": "Full community Checkov pack: module layout, version bounds, and security rules.",
+      "default_profile": "checkov-full",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/checkov.md"
     }
   ],
   "rules": [
@@ -30,7 +117,7 @@
       "family": "checkov",
       "checkov_id": "CKV2_REPAVE_1",
       "title": "Terraform required_version must be declared",
-      "artifact_types": ["terraform-module", "terraform-environment-stack"],
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
       "required": true,
       "removable": false
     },
@@ -39,7 +126,97 @@
       "family": "checkov",
       "checkov_id": "CKV2_REPAVE_2",
       "title": "Terraform required_version must cap below 2.x",
-      "artifact_types": ["terraform-module", "terraform-environment-stack"],
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_3",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_3",
+      "title": "Module must include locals.tf for shared derived values",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_4",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_4",
+      "title": "variables.tf must not declare resource blocks",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_5",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_5",
+      "title": "main.tf must not contain standalone resource blocks",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_6",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_6",
+      "title": "Module must declare environment and tags input variables",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_7",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_7",
+      "title": "Scaffold resources must reference shared locals for naming and tags",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_8",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_8",
+      "title": "Provider blocks must not embed credential literals",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_9",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_9",
+      "title": "Terraform source must not contain hardcoded secrets",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_10",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_10",
+      "title": "Module must not use local-exec or remote-exec provisioners",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_11",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_11",
+      "title": "Sensitive outputs must declare sensitive = true",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_12",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_12",
+      "title": "Variable defaults must not embed secret material",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
       "required": false,
       "removable": true
     },
@@ -48,11 +225,7 @@
       "family": "opa",
       "rego_file": "destructive_changes.rego",
       "title": "Deny destructive Terraform plan changes without replacement",
-      "artifact_types": [
-        "terraform-module",
-        "terraform-environment-stack",
-        "opa-policy"
-      ],
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "opa-policy"],
       "required": true,
       "removable": false
     },

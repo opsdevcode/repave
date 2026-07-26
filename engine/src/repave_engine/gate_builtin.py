@@ -31,6 +31,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "ansible-collection",
         "opa-policy",
         "azure-policy",
+        "checkov-policy",
     }
 )
 _OPA_GATE_ARTIFACT_TYPES = frozenset(
@@ -72,7 +73,7 @@ register_gate(
     GateSpec(
         name="checkov",
         runner=run_checkov,
-        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES | frozenset({"checkov-policy"}),
     )
 )
 register_gate(

@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "description": "External references monitored for community standard drift. Update policy/catalog.json when snapshots change.",
+  "sources": [
+    {
+      "id": "checkov-latest-release",
+      "url": "https://api.github.com/repos/bridgecrewio/checkov/releases/latest",
+      "kind": "json",
+      "json_path": "tag_name",
+      "notes": "Upstream Checkov release tag; bump blueprint checkov policy_version when adopting new scanner features."
+    },
+    {
+      "id": "conftest-latest-release",
+      "url": "https://api.github.com/repos/open-policy-agent/conftest/releases/latest",
+      "kind": "json",
+      "json_path": "tag_name",
+      "notes": "Conftest release used by the opa gate."
+    },
+    {
+      "id": "terraform-latest-release",
+      "url": "https://api.github.com/repos/hashicorp/terraform/releases/latest",
+      "kind": "json",
+      "json_path": "tag_name",
+      "notes": "Upstream Terraform release tag (version constraint guidance for modules)."
+    },
+    {
+      "id": "azure-policy-github-readme",
+      "url": "https://raw.githubusercontent.com/Azure/azure-policy/master/README.md",
+      "kind": "text",
+      "notes": "Azure Policy sample repository index."
+    },
+    {
+      "id": "opa-conftest-readme",
+      "url": "https://raw.githubusercontent.com/open-policy-agent/conftest/master/README.md",
+      "kind": "text",
+      "notes": "Conftest usage and policy layout conventions."
+    }
+  ]
+}

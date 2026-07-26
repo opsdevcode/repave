@@ -43,6 +43,7 @@ Additional gates by artifact:
 
 | Artifact | Gates |
 | -------- | ----- |
+| `checkov-policy` | `checkov` + baseline |
 | `opa-policy` | `opa` + baseline |
 | `azure-policy` | `azure-policy` + baseline |
 

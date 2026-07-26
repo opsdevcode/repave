@@ -61,6 +61,7 @@ class AnsibleLintGateConfig:
 class CheckovGateConfig:
     external_checks_dir: str = "policy/checkov"
     config_file: str = ".checkov.yml"
+    scan_dir: str = ""
     skip_checks: tuple[str, ...] = ()
     soft_fail: bool = False
 
@@ -139,6 +140,7 @@ class Blueprint:
             return {
                 "external_checks_dir": self.checkov_gate.external_checks_dir,
                 "config_file": self.checkov_gate.config_file,
+                "scan_dir": self.checkov_gate.scan_dir,
                 "skip_checks": self.checkov_gate.skip_checks,
                 "soft_fail": self.checkov_gate.soft_fail,
             }
@@ -240,6 +242,7 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
     checkov_gate = CheckovGateConfig(
         external_checks_dir=str(checkov_gate_raw.get("external_checks_dir", "policy/checkov")),
         config_file=str(checkov_gate_raw.get("config_file", ".checkov.yml")),
+        scan_dir=str(checkov_gate_raw.get("scan_dir", "")),
         skip_checks=tuple(checkov_gate_raw.get("skip_checks", [])),
         soft_fail=bool(checkov_gate_raw.get("soft_fail", False)),
     )
@@ -331,10 +334,14 @@ def validate_inputs(
         raise ValueError(f"Unknown input fields: {', '.join(sorted(unknown))}")
 
     for field in blueprint.inputs:
-        if field.name not in normalized or field.enum == ():
+        if field.name not in normalized:
             continue
         if normalized[field.name] in (None, "") and field.default is not None:
             normalized[field.name] = field.default
+
+    for field in blueprint.inputs:
+        if field.name not in normalized or field.enum == ():
+            continue
         value = str(normalized[field.name])
         if field.multi:
             parts = [part.strip() for part in value.split(",") if part.strip()]
@@ -427,6 +434,8 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
     if blueprint.artifact_type == "azure-policy":
         return str(values.get("policy_name", blueprint.name))
     if blueprint.artifact_type == "opa-policy":
+        return str(values.get("policy_name", blueprint.name))
+    if blueprint.artifact_type == "checkov-policy":
         return str(values.get("policy_name", blueprint.name))
     if blueprint.artifact_type == "ansible-role":
         return str(values.get("role_name", blueprint.name))
@@ -536,24 +545,33 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
 _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
     "ansible": ("Ansible", "Roles, collections, and playbook projects"),
-    "policy": ("Policy", "OPA (Conftest) and Azure Policy golden paths"),
+    "policy": ("Policy", "Checkov, OPA (Conftest), and Azure Policy golden paths"),
 }
 _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "policy")
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
-    "policy": ("opa-policy", "azure-policy"),
+    "policy": ("checkov-policy", "opa-policy", "azure-policy"),
 }
 
 
 def artifact_family(artifact_type: str) -> str:
-    if artifact_type in ("opa-policy", "azure-policy"):
+    if artifact_type in ("checkov-policy", "opa-policy", "azure-policy"):
         return "policy"
     if artifact_type.startswith("terraform-"):
         return "terraform"
     if artifact_type.startswith("ansible-"):
         return "ansible"
     return artifact_type
+
+
+def policy_kind_label(artifact_type: str) -> str | None:
+    """Short label for policy-family artifact types (portal badges)."""
+    return {
+        "checkov-policy": "Checkov",
+        "opa-policy": "OPA",
+        "azure-policy": "Azure Policy",
+    }.get(artifact_type)
 
 
 @dataclass(frozen=True)

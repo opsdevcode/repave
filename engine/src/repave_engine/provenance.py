@@ -245,6 +245,26 @@ def _build_azure_policy_spec(
     return spec, policy_name
 
 
+def _build_checkov_policy_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    policy_name = str(values.get("policy_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "checkov-policy",
+        "checkovPolicy": {
+            "policy_name": policy_name,
+            "organization": str(values.get("organization", "")).strip(),
+        },
+    }
+    if blueprint.checkov_policies is not None:
+        spec["checkov"] = {
+            "policies_source": blueprint.checkov_policies.policies_source,
+            "policy_version": blueprint.checkov_policies.policy_version,
+        }
+    return spec, policy_name
+
+
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
@@ -256,6 +276,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_opa_policy_spec(blueprint, values)
     elif blueprint.artifact_type == "azure-policy":
         artifact_spec, metadata_name = _build_azure_policy_spec(blueprint, values)
+    elif blueprint.artifact_type == "checkov-policy":
+        artifact_spec, metadata_name = _build_checkov_policy_spec(blueprint, values)
     elif blueprint.artifact_type == "terraform-environment-stack":
         artifact_spec, metadata_name = _build_environment_stack_spec(blueprint, values)
     else:

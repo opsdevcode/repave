@@ -21,9 +21,17 @@ layouts.
 
 ## Portal
 
-On supported blueprints, the form shows a **Policy profile** dropdown and an
-advanced **Customize individual rules** panel (search + checkboxes). Required
-rules are locked.
+On supported blueprints, the form loads **Policy pack source**, **Policy profile**, and
+**Individual rules** from `policy/catalog.json` (all pack sources, profiles, and rules for
+the artifact). Required rules are locked; optional rules can be toggled under the **Custom**
+profile or via **Enable all optional**.
+
+## Community standards watch
+
+External references (Checkov, Conftest, Terraform docs, Azure Policy samples) are listed in
+[`policy/standards-watch.json`](../../policy/standards-watch.json). Run `make policy-standards-watch`
+locally; GitHub Actions opens a PR when upstream content drifts so maintainers can update
+the catalog and pack pins.
 
 ## Provenance
 

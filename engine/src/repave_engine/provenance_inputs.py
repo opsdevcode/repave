@@ -180,4 +180,17 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         _apply_policy_from_spec(spec, azure_values)
         return azure_values
 
+    if artifact_type == "checkov-policy":
+        checkov_policy = spec.get("checkovPolicy")
+        if not isinstance(checkov_policy, dict):
+            raise ValueError("checkov-policy provenance missing spec.checkovPolicy")
+        policy_name = str(checkov_policy.get("policy_name", artifact_name)).strip()
+        checkov_values: dict[str, Any] = {
+            "policy_name": policy_name,
+            "organization": str(checkov_policy.get("organization", "")).strip(),
+            "description": f"Repave upgrade plan for {policy_name}",
+        }
+        _apply_policy_from_spec(spec, checkov_values)
+        return checkov_values
+
     raise ValueError(f"unsupported artifactType {artifact_type!r}")

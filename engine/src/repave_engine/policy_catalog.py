@@ -14,6 +14,7 @@ POLICY_CUSTOMIZABLE_ARTIFACTS = frozenset(
         "terraform-environment-stack",
         "opa-policy",
         "azure-policy",
+        "checkov-policy",
     }
 )
 
@@ -62,15 +63,20 @@ def load_policy_catalog(repo_root: Path) -> PolicyCatalog:
             )
         )
     profiles = cast(dict[str, dict[str, Any]], data.get("profiles", {}))
-    pack_sources = tuple(
-        {k: str(item[k]) for k in ("id", "label") if k in item}
-        for item in data.get("pack_sources", [])
-        if isinstance(item, dict)
-    )
+    pack_sources: list[dict[str, str]] = []
+    for item in data.get("pack_sources", []):
+        if not isinstance(item, dict) or "id" not in item:
+            continue
+        entry: dict[str, str] = {"id": str(item["id"])}
+        for key in ("label", "description", "default_profile", "reference_url"):
+            if key in item and item[key] is not None:
+                entry[key] = str(item[key])
+        pack_sources.append(entry)
+    pack_sources_tuple = tuple(pack_sources)
     return PolicyCatalog(
         version=str(data.get("version", "1.0.0")),
         profiles=profiles,
-        pack_sources=pack_sources,
+        pack_sources=pack_sources_tuple,
         rules=tuple(rules),
     )
 
@@ -131,6 +137,9 @@ def catalog_for_api(catalog: PolicyCatalog, artifact_type: str) -> dict[str, Any
             key: {
                 "label": value.get("label", key),
                 "description": value.get("description", ""),
+                "includes": list(value.get("includes", []))
+                if isinstance(value.get("includes"), list)
+                else [],
             }
             for key, value in catalog.profiles.items()
         },

@@ -18,6 +18,7 @@ from repave_engine.blueprint import (
     group_blueprints_by_artifact,
     list_blueprints,
     load_blueprint,
+    policy_kind_label,
 )
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
@@ -34,6 +35,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     templates = Jinja2Templates(directory=str(package_dir / "templates"))
     templates.env.cache = None
     templates.env.globals["artifact_family"] = artifact_family
+    templates.env.globals["policy_kind_label"] = policy_kind_label
     resolved_output = output_config or load_output_config(repo_root)
 
     app = FastAPI(title="repave", version=__version__)
@@ -90,6 +92,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             page_context(
                 blueprint=blueprint,
                 provider_catalog=load_provider_catalog(blueprint.path),
+                policy_customization=blueprint_supports_policy_customization(blueprint),
                 nav_active="catalog",
             ),
         )

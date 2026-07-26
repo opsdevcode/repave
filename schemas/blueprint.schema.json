@@ -99,7 +99,7 @@
         },
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "opa-policy", "azure-policy"],
+          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "checkov-policy", "opa-policy", "azure-policy"],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
         },
@@ -205,6 +205,10 @@
                 "soft_fail": {
                   "type": "boolean",
                   "description": "Return exit code 0 when checks fail (report only)."
+                },
+                "scan_dir": {
+                  "type": "string",
+                  "description": "Directory to scan relative to repo root (standalone checkov-policy fixtures)."
                 }
               }
             },

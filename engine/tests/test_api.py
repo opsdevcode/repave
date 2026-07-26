@@ -213,9 +213,21 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "service-presets" in response.text
     assert "form-validation" in response.text
     assert "scope-resource-filter" in response.text
+    assert "policy-rules-list" in response.text
+    assert "policy-catalog" in response.text
 
 
-def test_resource_blueprint_form_renders_catalog_dropdowns(repo_root, output_config) -> None:
+def test_policy_catalog_endpoint(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic/policy-catalog")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert len(payload["rules"]) >= 1
+    assert "includes" in payload["profiles"]["estate-default"]
+    assert len(payload["pack_sources"]) >= 2
+    assert payload["pack_sources"][0].get("default_profile")
+
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/terraform-module-resource")
 

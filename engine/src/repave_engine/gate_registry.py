@@ -32,6 +32,7 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
     ),
     "opa-policy": (),
     "azure-policy": (),
+    "checkov-policy": (),
     "ansible-role": (
         ".ansible",
         ".molecule",

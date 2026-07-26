@@ -1,0 +1,57 @@
+name: Policy standards watch
+
+# Poll external community references; open a PR when snapshots drift.
+on:
+  schedule:
+    - cron: "0 15 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refresh standards snapshot
+        run: python3 scripts/sync_policy_standards.py --update
+
+      - name: Create PR when snapshot changed
+        env:
+          GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- policy/standards-watch.snapshot.json policy/standards-watch.report.md; then
+            echo "No external policy standards drift detected."
+            exit 0
+          fi
+          BRANCH="chore/policy-standards-watch-$(date -u +%Y%m%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${BRANCH}"
+          git add policy/standards-watch.snapshot.json policy/standards-watch.report.md
+          git commit -m "$(cat <<'EOF'
+          chore(policy): refresh standards watch snapshot
+
+          Automated drift check for external Checkov, Conftest, Terraform, and
+          Azure Policy references. Review policy/catalog.json and pack pins.
+          EOF
+          )"
+          git push -u origin "${BRANCH}"
+          gh pr create \
+            --title "chore(policy): refresh standards watch snapshot" \
+            --body "$(cat <<'EOF'
+          ## Summary
+          - Updates `policy/standards-watch.snapshot.json` after external reference drift.
+          - See `policy/standards-watch.report.md` for details.
+
+          ## Maintainer follow-up
+          - [ ] Compare upstream guidance with `policy/catalog.json` profiles and rules
+          - [ ] Bump Checkov/OPA/Azure pack versions in blueprints if needed
+          - [ ] Re-run `make test` if catalog or packs change
+
+          EOF
+          )"

@@ -50,6 +50,10 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         "azure-policy",
         *_BASELINE_GATES,
     ),
+    "checkov-policy": (
+        "checkov",
+        *_BASELINE_GATES,
+    ),
 }
 
 

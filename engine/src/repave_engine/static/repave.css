@@ -1221,6 +1221,7 @@ details.file-panel summary {
   border-top-color: #7dd3c0;
 }
 
+.catalog-card--checkov-policy,
 .catalog-card--opa-policy,
 .catalog-card--azure-policy {
   border-top-color: #c4a8e8;
@@ -1301,7 +1302,10 @@ details.file-panel summary {
   border-color: color-mix(in srgb, #7dd3c0 45%, transparent);
 }
 
-.badge--policy {
+.badge--policy,
+.badge--checkov-policy,
+.badge--opa-policy,
+.badge--azure-policy {
   background: color-mix(in srgb, #c4a8e8 22%, transparent);
   color: #e2d4f5;
   border-color: color-mix(in srgb, #c4a8e8 45%, transparent);
@@ -1481,6 +1485,13 @@ details.file-panel summary {
   padding: var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+.policy-rules-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .form-panel {
