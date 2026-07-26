@@ -14,6 +14,9 @@ lock:
 changelog:
 	cd engine && uv run semantic-release changelog
 
+sync-doc-versions:
+	python3 scripts/sync_doc_versions.py
+
 test:
 	cd engine && uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
 

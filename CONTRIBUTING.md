@@ -114,6 +114,11 @@ Configuration lives in `engine/pyproject.toml` (`repo_dir = ".."`, changelog at
 history and `CHANGELOG.md` diverge (run `make changelog` on `main` locally to
 preview).
 
+After each semver bump, Release runs `scripts/sync_doc_versions.py` so
+`README.md`, `docs/roadmap.md` (**Current release** and path `today` line), and
+`docs/portal-design.md` match the new engine tag. Locally: `make sync-doc-versions`
+(or `python3 scripts/sync_doc_versions.py --check` to verify).
+
 ## Commit messages (Conventional Commits)
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/)
