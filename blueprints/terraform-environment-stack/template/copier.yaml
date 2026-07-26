@@ -1,0 +1,34 @@
+# Copier template metadata for terraform-environment-stack
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+stack_name:
+  type: str
+  help: Stack name
+
+description:
+  type: str
+  help: Stack description
+
+cloud_provider:
+  type: str
+  help: Cloud provider (aws, azure, gcp)
+
+environment:
+  type: str
+  help: Environment tier (dev, staging, prod)
+
+module_name:
+  type: str
+  help: Logical name for the primary module block
+
+module_source:
+  type: str
+  help: Terraform module source
+
+module_version:
+  type: str
+  default: ""
+  help: Optional registry module version

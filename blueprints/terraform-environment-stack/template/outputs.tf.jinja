@@ -1,0 +1,24 @@
+output "stack_name" {
+  description = "Stack name."
+  value       = var.stack_name
+}
+
+output "cloud_provider" {
+  description = "Cloud provider for this stack."
+  value       = local.cloud_provider
+}
+
+output "environment" {
+  description = "Deployment environment tier."
+  value       = var.environment
+}
+
+output "primary_module_name" {
+  description = "Logical name of the primary module block."
+  value       = "{{ module_name }}"
+}
+
+output "resource_ids" {
+  description = "Resource identifiers from composed modules (for terraform test)."
+  value       = module.{{ module_name }}.resource_ids
+}

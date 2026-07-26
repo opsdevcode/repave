@@ -1,0 +1,12 @@
+locals {
+  cloud_provider = var.cloud_provider
+  common_tags = merge(
+    var.tags,
+    {
+      stack       = var.stack_name
+      environment = var.environment
+      managed_by  = "terraform"
+    },
+  )
+  name_prefix = "${var.stack_name}-${var.environment}"
+}

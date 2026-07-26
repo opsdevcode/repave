@@ -97,7 +97,7 @@
         },
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "ansible-role"],
+          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role"],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
         },

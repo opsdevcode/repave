@@ -1,0 +1,23 @@
+variable "stack_name" {
+  type        = string
+  description = "Name of this environment stack."
+  default     = "{{ stack_name }}"
+}
+
+variable "cloud_provider" {
+  type        = string
+  description = "Cloud provider for this stack."
+  default     = "{{ cloud_provider }}"
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment tier."
+  default     = "{{ environment }}"
+}
+
+variable "tags" {
+  type        = map(string)
+  description = "Additional resource tags."
+  default     = {}
+}

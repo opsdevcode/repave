@@ -1,0 +1,12 @@
+# Primary pinned module — replace source/version with your estate modules.
+module "{{ module_name }}" {
+  source = "{{ module_source }}"
+{% if module_version %}
+  version = "{{ module_version }}"
+{% endif %}
+
+  stack_name   = var.stack_name
+  environment  = var.environment
+  name_prefix  = local.name_prefix
+  tags         = local.common_tags
+}

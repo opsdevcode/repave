@@ -16,18 +16,20 @@ from repave_engine.gate_runners import (
     run_yamllint,
 )
 
+_TERRAFORM_ARTIFACT_TYPES = frozenset({"terraform-module", "terraform-environment-stack"})
+
 register_gate(
     GateSpec(
         name="terraform-fmt",
         runner=run_terraform_fmt,
-        artifact_types=frozenset({"terraform-module"}),
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
     )
 )
 register_gate(
     GateSpec(
         name="terraform-validate",
         runner=run_terraform_validate,
-        artifact_types=frozenset({"terraform-module"}),
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
         artifact_paths=(".terraform", ".terraform.lock.hcl"),
     )
 )
@@ -35,7 +37,7 @@ register_gate(
     GateSpec(
         name="terraform-test",
         runner=run_terraform_test,
-        artifact_types=frozenset({"terraform-module"}),
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
         artifact_paths=(".terraform", ".terraform.lock.hcl"),
     )
 )
@@ -43,7 +45,7 @@ register_gate(
     GateSpec(
         name="tflint",
         runner=run_tflint,
-        artifact_types=frozenset({"terraform-module"}),
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
         artifact_paths=(".tflint.d",),
     )
 )
@@ -51,28 +53,34 @@ register_gate(
     GateSpec(
         name="checkov",
         runner=run_checkov,
-        artifact_types=frozenset({"terraform-module"}),
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
     )
 )
 register_gate(
     GateSpec(
         name="secrets",
         runner=run_secrets,
-        artifact_types=frozenset({"terraform-module", "ansible-role"}),
+        artifact_types=frozenset(
+            {"terraform-module", "terraform-environment-stack", "ansible-role"}
+        ),
     )
 )
 register_gate(
     GateSpec(
         name="docs-drift",
         runner=run_docs_drift,
-        artifact_types=frozenset({"terraform-module", "ansible-role"}),
+        artifact_types=frozenset(
+            {"terraform-module", "terraform-environment-stack", "ansible-role"}
+        ),
     )
 )
 register_gate(
     GateSpec(
         name="provenance-drift",
         runner=run_provenance_drift,
-        artifact_types=frozenset({"terraform-module", "ansible-role"}),
+        artifact_types=frozenset(
+            {"terraform-module", "terraform-environment-stack", "ansible-role"}
+        ),
     )
 )
 register_gate(

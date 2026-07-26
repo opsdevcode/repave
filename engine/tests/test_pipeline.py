@@ -71,6 +71,36 @@ def test_generate_terraform_module_resource_single_file(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_terraform_environment_stack_publishes_repo(
+    repo_root: Path,
+    env_stack_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    from repave_engine.blueprint import load_blueprint
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-environment-stack",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        env_stack_inputs,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    module_repo = result.module_repository
+    assert module_repo is not None
+    assert module_repo.name == "env-aws-platform"
+    assert (module_repo.local_path / "main.tf").exists()
+    assert (module_repo.local_path / "modules" / "_example" / "main.tf").exists()
+    assert (module_repo.local_path / "repave.yaml").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_from_path(
     repo_root: Path,
     sample_inputs,

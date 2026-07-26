@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.blueprint import Blueprint, load_blueprint, validate_inputs
+from repave_engine.blueprint import Blueprint, load_blueprint, primary_publish_name, validate_inputs
 from repave_engine.gates import GateResult, all_gates_passed, clean_gate_artifacts, run_gates
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
 from repave_engine.render import (
@@ -45,7 +45,7 @@ def generate_from_blueprint(
     repo_root: Path | None = None,
 ) -> GenerationResult:
     normalized = validate_inputs(blueprint, values)
-    module_name = str(normalized.get("module_name", blueprint.name))
+    module_name = primary_publish_name(blueprint, normalized)
     module_repository = resolve_module_repository(
         module_name=module_name,
         config=output_config,
