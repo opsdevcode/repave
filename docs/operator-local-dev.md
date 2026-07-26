@@ -236,4 +236,5 @@ Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows
 
 - **v1.24** — inventory-only mode is slice 1; same local fixtures.
 - **v1.25** — Helm/k8s deploy co-install; kind smoke reuses operator e2e harness.
-- **v1.19** — `repave update` may supersede `plan-upgrade` for local diff; operator keeps the JSON contract stable.
+- **v1.19** — `repave update` is the local UX alias; operator keeps
+  `plan-upgrade` / `apply-upgrade` JSON contracts.

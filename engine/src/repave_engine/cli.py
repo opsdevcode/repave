@@ -152,6 +152,40 @@ def cmd_apply_upgrade(args: argparse.Namespace) -> int:
     return 0
 
 
+def _add_upgrade_target_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--target-repo",
+        "--path",
+        dest="target_repo",
+        required=True,
+        help="Path to an existing generated module or role repository",
+    )
+    parser.add_argument(
+        "--blueprint",
+        default=None,
+        help="Override blueprint name (default: read from repave.yaml)",
+    )
+    parser.add_argument(
+        "--staging-root",
+        default=None,
+        help="Optional directory to retain rendered output for debugging",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (json is stable for operator integration)",
+    )
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    if args.dry_run:
+        return cmd_plan_upgrade(args)
+    if not args.git_branch:
+        raise SystemExit("--git-branch is required when applying an upgrade (--no-dry-run)")
+    return cmd_apply_upgrade(args)
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     import uvicorn
 
@@ -232,27 +266,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Dry-run re-render from repave.yaml inputs and diff against an existing repo",
         parents=[common],
     )
-    plan.add_argument(
-        "--target-repo",
-        required=True,
-        help="Path to an existing generated module or role repository",
-    )
-    plan.add_argument(
-        "--blueprint",
-        default=None,
-        help="Override blueprint name (default: read from repave.yaml)",
-    )
-    plan.add_argument(
-        "--staging-root",
-        default=None,
-        help="Optional directory to retain rendered output for debugging",
-    )
-    plan.add_argument(
-        "--format",
-        choices=("text", "json"),
-        default="text",
-        help="Output format (json is stable for operator integration)",
-    )
+    _add_upgrade_target_options(plan)
     plan.set_defaults(func=cmd_plan_upgrade)
 
     apply_up = sub.add_parser(
@@ -260,17 +274,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Re-render, apply files to a git checkout, and commit on a branch",
         parents=[common],
     )
-    apply_up.add_argument("--target-repo", required=True, help="Path to target git repository")
-    apply_up.add_argument(
-        "--blueprint",
-        default=None,
-        help="Override blueprint name (default: read from repave.yaml)",
-    )
-    apply_up.add_argument(
-        "--staging-root",
-        default=None,
-        help="Optional directory to retain rendered output for debugging",
-    )
+    _add_upgrade_target_options(apply_up)
     apply_up.add_argument(
         "--git-branch",
         required=True,
@@ -281,13 +285,31 @@ def build_parser() -> argparse.ArgumentParser:
         default="chore(repave): apply blueprint upgrade",
         help="Git commit message for the applied upgrade",
     )
-    apply_up.add_argument(
-        "--format",
-        choices=("text", "json"),
-        default="text",
-        help="Output format (json is stable for operator integration)",
-    )
     apply_up.set_defaults(func=cmd_apply_upgrade)
+
+    update = sub.add_parser(
+        "update",
+        help="Plan or apply a blueprint upgrade for an existing module repository",
+        parents=[common],
+    )
+    _add_upgrade_target_options(update)
+    update.add_argument(
+        "--dry-run",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Show file diff only (default). Use --no-dry-run to apply on a git branch.",
+    )
+    update.add_argument(
+        "--git-branch",
+        default=None,
+        help="Branch to create or reset when applying (--no-dry-run)",
+    )
+    update.add_argument(
+        "--commit-message",
+        default="chore(repave): apply blueprint upgrade",
+        help="Git commit message when applying",
+    )
+    update.set_defaults(func=cmd_update)
 
     serve = sub.add_parser("serve", help="Run local web UI/API", parents=[common])
     _add_output_options(serve)

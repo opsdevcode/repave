@@ -29,8 +29,8 @@ repeatable, and automated.
   Copier render, frozen JSON schemas (`schemas/`).
 - **Portal + API:** Server-rendered golden-path forms, gate results dashboard, and
   publish flow at `http://localhost:8088` (Compose) or `repave serve`.
-- **CLI:** `repave generate`, `repave list`, gate execution, provenance in
-  `repave.yaml`.
+- **CLI:** `repave generate`, `repave list`, `repave update` (plan/apply blueprint
+  upgrades from `repave.yaml`), gate execution, provenance in `repave.yaml`.
 - **Gates (blueprint-configured):** Terraform — `fmt`, `validate`, `tflint`,
   Checkov (policy packs under `examples/`), secrets scanning; Ansible —
   production-profile **ansible-lint** pack and standards corpus under
