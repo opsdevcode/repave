@@ -37,7 +37,7 @@ This repository follows [dashboards-as-code v1.1.0](https://github.com/opsdevcod
 - `datadog/dashboards/service-golden-signals.json` — RED APM starter widgets
 {% endif %}
 
-## Import
+## Usage
 
 {% if backend == 'grafana' %}
 Import JSON from `grafana/dashboards/` via Grafana UI/API or GitOps (Grafana Operator,
@@ -46,6 +46,7 @@ Import JSON from `grafana/dashboards/` via Grafana UI/API or GitOps (Grafana Ope
 Import JSON via [Datadog dashboard API](https://docs.datadoghq.com/api/latest/dashboards/),
 Terraform `datadog_dashboard_json`, or your internal GitOps pipeline.
 {% endif %}
+On-call should start from **service-overview** and **service-golden-signals** before custom panels.
 
 ## Validate locally
 

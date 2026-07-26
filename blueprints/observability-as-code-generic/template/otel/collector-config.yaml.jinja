@@ -1,0 +1,34 @@
+# OpenTelemetry Collector config for {{ service_name }}
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+processors:
+  resource:
+    attributes:
+      - key: service.name
+        value: "{{ service_name }}"
+        action: upsert
+      - key: team
+        value: "{{ team }}"
+        action: upsert
+      - key: org
+        value: "{{ organization }}"
+        action: upsert
+
+exporters:
+  logging:
+    verbosity: basic
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resource]
+      exporters: [logging]
+    metrics:
+      receivers: [otlp]
+      processors: [resource]
+      exporters: [logging]

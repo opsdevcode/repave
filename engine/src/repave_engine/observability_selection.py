@@ -115,6 +115,18 @@ def normalize_observability_inputs(
             f"Invalid configuration_mode: {mode!r}. Allowed values: recommended, custom"
         )
     normalized["configuration_mode"] = mode
+    if blueprint.name == "observability-as-code-generic":
+        output_mode = str(normalized.get("output_mode", "native")).strip()
+        if output_mode not in ("native", "terraform"):
+            raise ValueError(
+                f"Invalid output_mode: {output_mode!r}. Allowed values: native, terraform"
+            )
+        normalized["output_mode"] = output_mode
+        backend = str(normalized.get("backend", "prometheus")).strip()
+        if output_mode == "terraform" and backend != "datadog":
+            raise ValueError(
+                "Terraform output_mode for observability-as-code requires backend: datadog"
+            )
 
 
 def _normalize_notification_inputs(

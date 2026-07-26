@@ -1,0 +1,29 @@
+resource "datadog_monitor" "{{ service_name | replace('-', '_') }}_target_down" {
+  name    = "${var.service_name} target down"
+  type    = "metric alert"
+  message = <<-EOT
+    ${var.description}
+
+    ${var.service_name} appears unavailable.
+
+    Runbook: ${var.runbook_url}
+    Notification target: ${var.notification_target}
+  EOT
+
+  query = "avg(last_5m):max:up{service:${var.service_name}} < 1"
+
+  monitor_thresholds {
+    critical = 1
+  }
+
+  notify_no_data    = true
+  no_data_timeframe = 10
+  include_tags      = true
+
+  tags = [
+    "service:${var.service_name}",
+    "team:${var.team}",
+    "org:${var.organization}",
+    "managed-by:repave",
+  ]
+}

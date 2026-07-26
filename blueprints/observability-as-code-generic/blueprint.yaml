@@ -2,13 +2,13 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: observability-as-code-generic
-  version: 0.1.0
-  description: Governed alerts and SLO rules for a service (Prometheus native MVP).
+  version: 0.2.0
+  description: Governed alerts and monitors across Prometheus, Grafana, Datadog, OTel, and Terraform.
 spec:
   artifactType: observability
   standard:
     source: standards/observability/observability-as-code.md
-    version: 1.0.0
+    version: 1.1.0
   inputs:
     - name: service_name
       type: string
@@ -43,14 +43,20 @@ spec:
         - grafana
         - datadog
         - otel
-      description: Observability backend (v1 templates focus on prometheus).
+      description: Observability backend for native mode (terraform mode requires datadog).
     - name: output_mode
       type: string
       required: false
       default: native
       enum:
         - native
-      description: native emits backend-native YAML/JSON; terraform mode is follow-up.
+        - terraform
+      description: native emits backend-native YAML/JSON; terraform emits Datadog Terraform at repo root.
+    - name: environment
+      type: string
+      required: false
+      default: prod
+      description: Environment slug for dashboard tags and metadata (for example prod).
     - name: notification_source
       type: string
       required: false
@@ -76,12 +82,20 @@ spec:
   gates:
     - yamllint
     - promtool
+    - grafana-dashboard
+    - datadog-monitor
+    - terraform-fmt
+    - terraform-validate
     - secrets
     - docs-drift
     - provenance-drift
   gate_config:
     promtool:
       rules_glob: prometheus/rules/*.y*ml
+    grafana-dashboard:
+      dashboards_glob: grafana/dashboards/*.json
+    datadog-monitor:
+      monitors_glob: datadog/monitors/*.json
   output:
     type: pull_request
     provenance:

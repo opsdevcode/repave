@@ -32,6 +32,7 @@ def test_builtin_gates_are_registered() -> None:
     assert "promtool" in names
     assert "grafana-dashboard" in names
     assert "datadog-dashboard" in names
+    assert "datadog-monitor" in names
     assert "azure-policy" in names
     assert "opa" in names
 

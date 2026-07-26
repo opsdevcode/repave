@@ -1,7 +1,13 @@
 {
   "title": "{{ service_name }} overview",
   "uid": "{{ service_name | replace('-', '_') }}_overview",
-  "tags": ["service:{{ service_name }}", "team:{{ team }}"],
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
