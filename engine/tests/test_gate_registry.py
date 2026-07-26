@@ -35,6 +35,9 @@ def test_builtin_gates_are_registered() -> None:
     assert "datadog-monitor" in names
     assert "helm-lint" in names
     assert "helm-template" in names
+    assert "dockerfile-lint" in names
+    assert "python-lint" in names
+    assert "python-test" in names
     assert "amtool" in names
     assert "azure-policy" in names
     assert "opa" in names

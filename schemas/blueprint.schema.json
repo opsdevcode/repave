@@ -101,7 +101,10 @@
               "datadog-monitor",
               "datadog-api-validate",
               "helm-lint",
-              "helm-template"
+              "helm-template",
+              "dockerfile-lint",
+              "python-lint",
+              "python-test"
             ]
           }
         },
@@ -117,7 +120,8 @@
             "opa-policy",
             "azure-policy",
             "observability",
-            "helm-chart"
+            "helm-chart",
+            "app-service"
           ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
@@ -389,6 +393,36 @@
                 "release_name": {
                   "type": "string",
                   "description": "Release name passed to helm template during generate gates."
+                }
+              }
+            },
+            "dockerfile-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dockerfile": {
+                  "type": "string",
+                  "description": "Dockerfile path relative to the generated repo root."
+                }
+              }
+            },
+            "python-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_file": {
+                  "type": "string",
+                  "description": "Python project config (pyproject.toml) for ruff."
+                }
+              }
+            },
+            "python-test": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "test_directory": {
+                  "type": "string",
+                  "description": "Directory containing pytest files."
                 }
               }
             }

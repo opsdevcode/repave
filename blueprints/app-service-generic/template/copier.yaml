@@ -1,0 +1,29 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+service_name:
+  type: str
+
+description:
+  type: str
+
+owner:
+  type: str
+
+port:
+  type: str
+  default: "8080"
+
+runtime:
+  type: str
+  default: python
+
+include_helm_reference:
+  type: str
+  default: "false"
+
+helm_chart_repo:
+  type: str
+  default: ""

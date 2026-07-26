@@ -753,6 +753,91 @@ def run_helm_template(ctx: GateContext) -> GateResult:
     return GateResult("helm-template", False, False, detail)
 
 
+def _ensure_python_project_installed(output_dir: Path) -> None:
+    marker = output_dir / ".repave" / "python_dev_installed"
+    if marker.is_file():
+        return
+    import sys
+
+    install = run_command(
+        [sys.executable, "-m", "pip", "install", "-e", ".[dev]"],
+        output_dir,
+    )
+    if install.returncode == 0:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text("ok", encoding="utf-8")
+
+
+def run_dockerfile_lint(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult(
+            "dockerfile-lint",
+            True,
+            True,
+            "dockerfile-lint gate not applicable; skipped",
+        )
+
+    if not tool_available("hadolint"):
+        return GateResult("dockerfile-lint", True, True, "hadolint not installed; skipped")
+
+    raw = ctx.config("dockerfile-lint")
+    dockerfile = str(raw.get("dockerfile", "Dockerfile")).strip() or "Dockerfile"
+    path = output_dir / dockerfile
+    if not path.is_file():
+        return GateResult("dockerfile-lint", True, True, "no Dockerfile found; skipped")
+
+    result = run_command(["hadolint", dockerfile], output_dir)
+    if result.returncode == 0:
+        return GateResult("dockerfile-lint", True, False, "hadolint passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "hadolint failed"
+    return GateResult("dockerfile-lint", False, False, detail)
+
+
+def run_python_lint(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("python-lint", True, True, "python-lint gate not applicable; skipped")
+
+    if not tool_available("ruff"):
+        return GateResult("python-lint", True, True, "ruff not installed; skipped")
+
+    pyproject = output_dir / "pyproject.toml"
+    if not pyproject.is_file():
+        return GateResult("python-lint", True, True, "no pyproject.toml found; skipped")
+
+    _ensure_python_project_installed(output_dir)
+
+    result = run_command(["ruff", "check", "src", "tests"], output_dir)
+    if result.returncode == 0:
+        return GateResult("python-lint", True, False, "ruff check passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "ruff check failed"
+    return GateResult("python-lint", False, False, detail)
+
+
+def run_python_test(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("python-test", True, True, "python-test gate not applicable; skipped")
+
+    if not tool_available("pytest"):
+        return GateResult("python-test", True, True, "pytest not installed; skipped")
+
+    raw = ctx.config("python-test")
+    test_directory = str(raw.get("test_directory", "tests"))
+    test_dir = output_dir / test_directory
+    if not test_dir.is_dir() or not any(test_dir.glob("test_*.py")):
+        return GateResult("python-test", True, True, "no python tests; skipped")
+
+    _ensure_python_project_installed(output_dir)
+
+    result = run_command(["pytest", test_directory], output_dir)
+    if result.returncode == 0:
+        return GateResult("python-test", True, False, "pytest passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "pytest failed"
+    return GateResult("python-test", False, False, detail)
+
+
 def _opa_native_globs(ctx: GateContext) -> list[str]:
     raw = ctx.config("opa")
     configured = raw.get("native_globs")

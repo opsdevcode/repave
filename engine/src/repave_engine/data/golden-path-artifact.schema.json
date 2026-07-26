@@ -43,7 +43,8 @@
             "opa-policy",
             "azure-policy",
             "observability",
-            "helm-chart"
+            "helm-chart",
+            "app-service"
           ]
         },
         "blueprint": {
@@ -260,6 +261,19 @@
             "ingress_host": { "type": "string" }
           }
         },
+        "appService": {
+          "type": "object",
+          "required": ["service_name", "owner", "port", "runtime", "include_helm_reference"],
+          "additionalProperties": false,
+          "properties": {
+            "service_name": { "type": "string", "minLength": 1 },
+            "owner": { "type": "string", "minLength": 1 },
+            "port": { "type": "string" },
+            "runtime": { "type": "string" },
+            "include_helm_reference": { "type": "string" },
+            "helm_chart_repo": { "type": "string" }
+          }
+        },
         "opaPolicy": {
           "type": "object",
           "required": ["policy_name"],
@@ -400,6 +414,17 @@
           },
           "then": {
             "required": ["helmChart"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "app-service" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["appService"]
           }
         },
         {

@@ -60,6 +60,15 @@ jobs:
 {% endif %}{% if needs_molecule %}
       - name: Molecule (Docker)
         run: pip install molecule molecule-plugins[docker] docker
+{% endif %}{% if needs_hadolint %}
+      - name: Install Hadolint
+        run: |
+          curl -sSL -o /usr/local/bin/hadolint \
+            "https://github.com/hadolint/hadolint/releases/download/v{{ hadolint_version }}/hadolint-Linux-x86_64"
+          chmod +x /usr/local/bin/hadolint
+{% endif %}{% if needs_python %}
+      - name: Install service dev dependencies
+        run: pip install -e ".[dev]"
 {% endif %}
       - name: Run golden path gates
         run: repave gates --path .

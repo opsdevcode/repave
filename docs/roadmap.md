@@ -618,6 +618,9 @@ v1.30 conformance harness.
 **Done when:** A service repo generates for at least one runtime with CI wired and
 gates green.
 
+**Status:** In progress on `feat/app-service-v1.32` (`app-service-generic`, Python runtime,
+`dockerfile-lint` / `python-lint` / `python-test`, Backstage `catalog-info.yaml`).
+
 ---
 
 ### v1.35 — Service health, resource management, and autoscaling

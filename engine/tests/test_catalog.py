@@ -103,6 +103,17 @@ def test_policy_kind_label() -> None:
     assert policy_kind_label("terraform-module") is None
 
 
+def test_group_blueprints_includes_app_family() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("app-service-generic", "app-service"),
+            _bp("helm-chart-generic", "helm-chart"),
+        ]
+    )
+    assert [g.family for g in groups] == ["helm", "app"]
+    assert groups[1].title == "Application services"
+
+
 def test_group_blueprints_includes_helm_family() -> None:
     groups = group_blueprints_by_artifact(
         [

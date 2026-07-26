@@ -11,6 +11,7 @@ from repave_engine.blueprint import Blueprint, artifact_family
 from repave_engine.ci_toolchain import (
     CHECKOV_PIP_SPEC,
     CONFTEST_VERSION,
+    HADOLINT_VERSION,
     HELM_VERSION,
     PYTHON_VERSION,
     TERRAFORM_VERSION,
@@ -90,6 +91,8 @@ def _gate_needs(gates: tuple[str, ...]) -> dict[str, bool]:
         "needs_amtool": "amtool" in gate_set,
         "needs_molecule": "molecule" in gate_set,
         "needs_datadog_api": "datadog-api-validate" in gate_set,
+        "needs_hadolint": "dockerfile-lint" in gate_set,
+        "needs_python": bool(gate_set & {"python-lint", "python-test"}),
     }
 
 
@@ -111,6 +114,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         checkov_spec=CHECKOV_PIP_SPEC,
         helm_version=HELM_VERSION,
         conftest_version=CONFTEST_VERSION,
+        hadolint_version=HADOLINT_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,
         alertmanager_version=_ALERTMANAGER_VERSION,
         **needs,

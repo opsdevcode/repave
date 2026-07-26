@@ -184,6 +184,17 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "azure-policy-generic" in names
     assert "checkov-policy-generic" in names
     assert "helm-chart-generic" in names
+    assert "app-service-generic" in names
+
+
+def test_load_app_service_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "app-service"
+    assert "dockerfile-lint" in blueprint.gates
+    assert "python-test" in blueprint.gates
 
 
 def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:

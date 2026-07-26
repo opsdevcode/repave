@@ -460,6 +460,44 @@ def test_generate_helm_chart_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_app_service_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "checkout-api",
+            "description": "Checkout HTTP API",
+            "owner": "team:payments",
+            "port": "8080",
+            "runtime": "python",
+            "include_helm_reference": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    assert (output_dir / "Dockerfile").is_file()
+    assert (output_dir / "catalog-info.yaml").is_file()
+    assert (output_dir / "src" / "app" / "main.py").is_file()
+    assert (output_dir / ".github" / "workflows" / "repave-gates.yml").is_file()
+    readme = (output_dir / "README.md").read_text(encoding="utf-8")
+    assert "## Provenance" in readme
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["artifactType"] == "app-service"
+    assert spec["appService"]["service_name"] == "checkout-api"
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_observability_as_code_dry_run(
     repo_root: Path,
     output_config,
