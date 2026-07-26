@@ -9,7 +9,9 @@ import pytest
 
 from repave_engine.github import (
     GitHubError,
+    create_github_pull_request,
     ensure_github_repository,
+    push_git_branch,
     push_module_repository,
 )
 from repave_engine.settings import OutputConfig
@@ -144,3 +146,54 @@ def test_push_module_repository_updates_existing_origin(tmp_path: Path) -> None:
         push_module_repository(repository, "ghp_test")
 
     assert run_git.call_args_list[0].args[0][:2] == ["remote", "set-url"]
+
+
+def test_push_git_branch_pushes_named_branch(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    repository.local_path.mkdir(parents=True)
+
+    with (
+        patch("repave_engine.github._git_executable", return_value="git"),
+        patch(
+            "repave_engine.github.subprocess.run",
+        ) as run,
+        patch("repave_engine.github._run_git") as run_git,
+    ):
+        run.return_value = MagicMock(stdout="origin\n")
+        push_git_branch(
+            repository.local_path,
+            owner=repository.owner,
+            name=repository.name,
+            token="ghp_test",
+            branch="repave/upgrade-demo",
+        )
+
+    assert run_git.call_args_list[0].args[0][:2] == ["remote", "set-url"]
+    assert run_git.call_args_list[1].args[0] == ["push", "-u", "origin", "repave/upgrade-demo"]
+
+
+def test_create_github_pull_request_posts_pulls_endpoint(tmp_path: Path) -> None:
+    with patch("repave_engine.github._github_request") as request:
+        request.return_value = {"html_url": "https://github.com/o/r/pull/1", "number": 1}
+        payload = create_github_pull_request(
+            "example-org",
+            "tf-aws-networking",
+            title="chore(repave): upgrade demo to 1.0.0",
+            body="body",
+            head="repave/upgrade",
+            base="main",
+            token="ghp_test",
+        )
+
+    assert payload["number"] == 1
+    request.assert_called_once_with(
+        "POST",
+        "/repos/example-org/tf-aws-networking/pulls",
+        "ghp_test",
+        {
+            "title": "chore(repave): upgrade demo to 1.0.0",
+            "body": "body",
+            "head": "repave/upgrade",
+            "base": "main",
+        },
+    )

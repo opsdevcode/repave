@@ -4,6 +4,7 @@ import json
 import subprocess
 import urllib.error
 import urllib.request
+from pathlib import Path
 from typing import Any
 
 from repave_engine.target_repo import ModuleRepository, _git_executable, _run_git
@@ -43,8 +44,48 @@ def push_module_repository(
     *,
     branch: str = "main",
 ) -> None:
-    auth_url = f"https://x-access-token:{token}@github.com/{repository.owner}/{repository.name}.git"
-    repo_dir = repository.local_path
+    _configure_git_origin(repository.local_path, repository.owner, repository.name, token)
+    _run_git(["branch", "-M", branch], cwd=repository.local_path)
+    _run_git(["push", "-u", "origin", branch], cwd=repository.local_path)
+
+
+def push_git_branch(
+    repo_dir: Path,
+    *,
+    owner: str,
+    name: str,
+    token: str,
+    branch: str,
+) -> None:
+    _configure_git_origin(repo_dir, owner, name, token)
+    _run_git(["push", "-u", "origin", branch], cwd=repo_dir)
+
+
+def create_github_pull_request(
+    owner: str,
+    repo: str,
+    *,
+    title: str,
+    body: str,
+    head: str,
+    base: str,
+    token: str,
+) -> dict[str, Any]:
+    return _github_request(
+        "POST",
+        f"/repos/{owner}/{repo}/pulls",
+        token,
+        {
+            "title": title,
+            "body": body,
+            "head": head,
+            "base": base,
+        },
+    )
+
+
+def _configure_git_origin(repo_dir: Path, owner: str, name: str, token: str) -> None:
+    auth_url = f"https://x-access-token:{token}@github.com/{owner}/{name}.git"
     remotes = subprocess.run(
         [_git_executable(), "remote"],
         cwd=repo_dir,
@@ -56,9 +97,6 @@ def push_module_repository(
         _run_git(["remote", "set-url", "origin", auth_url], cwd=repo_dir)
     else:
         _run_git(["remote", "add", "origin", auth_url], cwd=repo_dir)
-
-    _run_git(["branch", "-M", branch], cwd=repo_dir)
-    _run_git(["push", "-u", "origin", branch], cwd=repo_dir)
 
 
 def _repository_exists(repository: ModuleRepository, token: str) -> bool:
