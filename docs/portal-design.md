@@ -223,8 +223,9 @@ at most two interactions.
 
 ## Phase 5 — Polish and extensions
 
-**Status:** Partial — home hero, catalog hover, browser last-run snippet shipped.
-Remaining items are optional or depend on later roadmap work.
+**Status:** Partial — home hero, catalog hover, browser last-run snippet, copy
+feedback, generate/update busy states, sticky generate bar, skip link, and upgrade
+diff styling shipped. Remaining items are optional or depend on later roadmap work.
 
 Pick based on audience and hosting model (v1.25+).
 

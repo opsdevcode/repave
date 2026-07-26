@@ -2,6 +2,8 @@
 
 {% block title %}Update repository — repave{% endblock %}
 
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
 {% block content %}
 <p class="breadcrumb"><a href="/">← Golden paths</a></p>
 <header class="form-hero">
@@ -17,7 +19,13 @@
 <div class="alert alert--fail" role="alert">{{ error_message }}</div>
 {% endif %}
 
-<form class="form-panel" method="post" action="/update">
+<form
+  class="form-panel"
+  method="post"
+  action="/update"
+  data-repave-busy-form
+  data-busy-label="Planning upgrade…"
+>
   <div class="field">
     <label class="field__label" for="target_repo">Repository path</label>
     <input

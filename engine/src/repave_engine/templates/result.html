@@ -5,7 +5,11 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/">← Golden paths</a></p>
+<p class="breadcrumb">
+  <a href="/">← Golden paths</a>
+  ·
+  <a href="/blueprints/{{ result.blueprint.name }}">← {{ result.blueprint.name }}</a>
+</p>
 
 <section
   class="result-hero result-hero--{{ gate_summary.outcome }}"
@@ -213,44 +217,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-  (function () {
-    document.querySelectorAll("[data-copy-target]").forEach(function (button) {
-      button.addEventListener("click", function () {
-        var selector = button.getAttribute("data-copy-target");
-        var node = selector ? document.querySelector(selector) : null;
-        if (!node) {
-          return;
-        }
-        var text = node.textContent || "";
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).catch(function () {});
-        }
-      });
-    });
-
-    var explorer = document.querySelector("[data-file-explorer]");
-    if (!explorer) {
-      return;
-    }
-    var tabs = explorer.querySelectorAll(".file-explorer__tab");
-    var panes = explorer.querySelectorAll(".file-explorer__pane");
-    tabs.forEach(function (tab) {
-      tab.addEventListener("click", function () {
-        var index = tab.getAttribute("data-file-index");
-        tabs.forEach(function (other) {
-          other.classList.toggle("is-active", other === tab);
-          other.setAttribute("aria-selected", other === tab ? "true" : "false");
-        });
-        panes.forEach(function (pane) {
-          var active = pane.getAttribute("data-file-pane") === index;
-          pane.classList.toggle("is-active", active);
-          pane.hidden = !active;
-        });
-      });
-    });
-  })();
-</script>
 <script>
   (function () {
     if (!window.repavePortal || !window.repavePortal.saveLastRun) {

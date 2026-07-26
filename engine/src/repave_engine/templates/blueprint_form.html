@@ -102,7 +102,14 @@
     </p>
   </aside>
 
-  <form method="post" action="/generate" id="generate-form" class="form-panel">
+  <form
+    method="post"
+    action="/generate"
+    id="generate-form"
+    class="form-panel"
+    data-repave-busy-form
+    data-busy-label="Generating…"
+  >
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
     {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
@@ -613,7 +620,7 @@
       </p>
     </section>
 
-    <div class="form-actions">
+    <div class="form-actions form-actions--sticky">
       <button class="btn btn--primary" type="submit">Generate</button>
     </div>
   </form>

@@ -37,6 +37,9 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "/static/repave.css" in response.text
     assert "/static/repave.js" in response.text
     assert 'id="last-run-snippet"' in response.text
+    assert 'class="skip-link"' in response.text
+    assert 'id="main-content"' in response.text
+    assert 'id="repave-toast"' in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
     assert "home-hero" in response.text
@@ -65,6 +68,8 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "repavePortal" in response.text
     assert "sessionStorage" in response.text
+    assert "initCopyButtons" in response.text
+    assert "initBusyForms" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -227,6 +232,8 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "scope-resource-filter" in response.text
     assert "policy-rules-list" in response.text
     assert "policy-catalog" in response.text
+    assert "data-repave-busy-form" in response.text
+    assert "form-actions--sticky" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:
@@ -626,6 +633,8 @@ def test_update_form_page(repo_root, output_config) -> None:
     assert "Update existing repository" in response.text
     assert 'name="target_repo"' in response.text
     assert "Update repo" in response.text
+    assert "data-repave-busy-form" in response.text
+    assert "shell__main--golden-path" in response.text
 
 
 def test_update_plan_preview(repo_root, output_config) -> None:
@@ -644,6 +653,7 @@ def test_update_plan_preview(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "Upgrade preview" in response.text
     assert "upgrade-diff" in response.text
+    assert "upgrade-diff__item--" in response.text
     assert "repave update --no-dry-run" in response.text
 
 
