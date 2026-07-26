@@ -139,17 +139,38 @@ jobs:
             git checkout -B main origin/main
           fi
 
+          read_version() {
+            grep '^version =' engine/pyproject.toml | sed 's/version = "\(.*\)"/\1/'
+          }
+
+          publish_tag_and_release() {
+            local tag="$1"
+            local release_sha="$2"
+            echo "Publishing ${tag} at ${release_sha}."
+            git tag -f "${tag}" "${release_sha}"
+            git push origin "refs/tags/${tag}" --force
+            publish_github_release "${tag}"
+          }
+
           BEFORE="$(git rev-parse HEAD)"
           cd engine
           psr version --no-push --no-tag
           cd "${GITHUB_WORKSPACE}"
           AFTER="$(git rev-parse HEAD)"
+          VERSION="$(read_version)"
+          TAG="v${VERSION}"
+
           if [ "${BEFORE}" = "${AFTER}" ]; then
-            echo "No release needed."
+            if gh release view "${TAG}" >/dev/null 2>&1; then
+              echo "No release needed."
+              exit 0
+            fi
+            echo "Version ${VERSION} on main has no GitHub release (release PR may have merged first)."
+            publish_tag_and_release "${TAG}" "${AFTER}"
             exit 0
           fi
 
-          VERSION="$(grep '^version =' engine/pyproject.toml | sed 's/version = "\(.*\)"/\1/')"
+          VERSION="$(read_version)"
           python3 scripts/sync_doc_versions.py "${VERSION}"
           if ! git diff --quiet docs/roadmap.md README.md docs/portal-design.md; then
             git add docs/roadmap.md README.md docs/portal-design.md
@@ -174,7 +195,4 @@ jobs:
           git fetch origin main
           git checkout -B main origin/main
 
-          git tag -f "${TAG}" "${RELEASE_SHA}"
-          git push origin "refs/tags/${TAG}" --force
-
-          publish_github_release "${TAG}"
+          publish_tag_and_release "${TAG}" "${RELEASE_SHA}"
