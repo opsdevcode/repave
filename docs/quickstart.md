@@ -2,6 +2,25 @@
 
 Run the full generate → gates → preview loop without Kubernetes.
 
+## Five-minute demo (portal)
+
+Use this script when showing repave to someone new. Everything is dry-run unless
+noted.
+
+1. **Start:** `make serve` or [Docker Compose](#docker-compose-recommended) →
+   http://localhost:8088
+2. **Generate:** **terraform-module-generic** → module `demo`, AWS, scope **ec2 +
+   s3** → **Dry-run preview** on → **Generate**. Scroll to **Lineage & receipt**,
+   policy rules, and the gate dashboard.
+3. **OPA block (optional):** **opa-policy-generic** → set **plan demo** to
+   `destructive_delete` → dry-run → **opa** fails with **Publish blocked** (see
+   [examples/policy](../examples/policy/README.md)).
+4. **Repave an existing repo:** **Update repo** → **Use terraform-minimal** →
+   **Preview upgrade** → copy **Apply locally** or **Open remediation PR**.
+5. **Backstage (optional):** on the Terraform form, set **Include Backstage
+   catalog** to `true` and **owner** `group:platform` → dry-run → open
+   `catalog-info.yaml` in the file preview.
+
 ## Docker Compose (recommended)
 
 ```bash
