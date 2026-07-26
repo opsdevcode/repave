@@ -1,4 +1,14 @@
 ---
 # Pin Galaxy roles and collections here (see playbook-project-standard.md).
+{% if pinned_roles %}
+roles:
+{% for role in pinned_roles %}
+  - name: {{ role.galaxy_name }}
+    scm: git
+    src: {{ role.src }}
+    version: "{{ role.version }}"
+{% endfor %}
+{% else %}
 roles: []
+{% endif %}
 collections: []

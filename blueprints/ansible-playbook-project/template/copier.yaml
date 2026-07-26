@@ -14,3 +14,7 @@ min_ansible_version:
 
 environment:
   type: str
+
+pinned_roles:
+  type: yaml
+  default: []

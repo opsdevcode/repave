@@ -68,6 +68,7 @@ def ansible_playbook_sample_inputs() -> dict[str, str]:
         "description": "Example playbook project",
         "min_ansible_version": "2.18",
         "environment": "dev",
+        "pinned_roles": "[]",
     }
 
 

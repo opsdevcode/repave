@@ -282,8 +282,18 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
             )
 
     _validate_provider_scope(blueprint, normalized)
+    _validate_pinned_roles(blueprint, normalized)
 
     return normalized
+
+
+def _validate_pinned_roles(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    if blueprint.artifact_type != "ansible-playbook-project":
+        return
+    from repave_engine.ansible_role_inventory import normalize_pinned_roles_raw
+
+    raw = normalized.get("pinned_roles", "[]")
+    normalized["pinned_roles"] = normalize_pinned_roles_raw(raw)
 
 
 def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:

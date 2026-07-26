@@ -207,6 +207,53 @@ def test_build_provenance_document_ansible_playbook_project(repo_root: Path) -> 
     assert document["spec"]["ansiblePlaybookProject"]["project_name"] == "baseline"
 
 
+def test_validate_ansible_playbook_pinned_roles(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    normalized = validate_inputs(
+        blueprint,
+        {
+            "project_name": "baseline",
+            "description": "Core playbooks",
+            "min_ansible_version": "2.18",
+            "environment": "dev",
+            "pinned_roles": '[{"galaxy_name":"acme.web","version":"1.0.0","src":"https://github.com/acme/ansible-role-web","repo_name":"ansible-role-web"}]',
+        },
+    )
+    assert len(normalized["pinned_roles"]) == 1
+    assert normalized["pinned_roles"][0]["galaxy_name"] == "acme.web"
+
+
+def test_build_provenance_document_ansible_playbook_pinned_roles(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    from repave_engine.provenance import build_provenance_document
+
+    document = build_provenance_document(
+        blueprint,
+        {
+            "project_name": "baseline",
+            "description": "Core playbooks",
+            "min_ansible_version": "2.18",
+            "environment": "dev",
+            "pinned_roles": [
+                {
+                    "galaxy_name": "acme.web",
+                    "version": "1.0.0",
+                    "src": "https://github.com/acme/ansible-role-web",
+                    "repo_name": "ansible-role-web",
+                }
+            ],
+        },
+    )
+    pinned = document["spec"]["ansiblePlaybookProject"]["pinned_roles"]
+    assert pinned[0]["version"] == "1.0.0"
+
+
 def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-resource",

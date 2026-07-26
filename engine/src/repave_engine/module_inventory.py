@@ -129,16 +129,13 @@ def _filter_by_provider(
     return filtered
 
 
-def list_inventory_module_versions(
+def list_repo_versions(
     modules_root: Path,
     repo_name: str,
     *,
     github_org: str,
     github_token: str | None = None,
 ) -> list[str]:
-    if repo_name == "_example":
-        return ["local"]
-
     repo_dir = modules_root / repo_name
     if not repo_dir.is_dir():
         return []
@@ -172,6 +169,24 @@ def list_inventory_module_versions(
                 return [f"v{version}" if not version.startswith("v") else version, "main"]
 
     return ["main"]
+
+
+def list_inventory_module_versions(
+    modules_root: Path,
+    repo_name: str,
+    *,
+    github_org: str,
+    github_token: str | None = None,
+) -> list[str]:
+    if repo_name == "_example":
+        return ["local"]
+
+    return list_repo_versions(
+        modules_root,
+        repo_name,
+        github_org=github_org,
+        github_token=github_token,
+    )
 
 
 def build_git_module_source(git_url: str, ref: str) -> str:

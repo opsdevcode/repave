@@ -14,7 +14,7 @@
   </div>
 </header>
 
-<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' %} form-layout--split{% endif %}">
+<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' %} form-layout--split{% endif %}">
   <aside class="governance-card" aria-labelledby="governance-heading">
     <h2 class="governance-card__title" id="governance-heading">Governance</h2>
     <dl class="governance-card__list">
@@ -116,6 +116,15 @@
         <input type="hidden" id="module_version" name="module_version" value="" />
       </div>
       {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name in ("module_source", "module_version") %}
+      {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "pinned_roles" %}
+      <div class="field-block">
+        <label>Galaxy roles</label>
+        <div class="hint">Pin one or more roles from <code>REPAVE_MODULES_ROOT</code> (<code>ansible-role-*</code> repos).</div>
+        <div id="pinned-roles-rows" class="pinned-roles"></div>
+        <button type="button" class="btn btn--ghost btn--sm" id="add-pinned-role">Add role</button>
+        <p id="pinned-roles-validation" class="form-validation" role="alert" hidden></p>
+        <input type="hidden" id="pinned_roles" name="pinned_roles" value="[]" />
+      </div>
       {% elif provider_catalog and field.name == "provider_services" %}
       <div class="field-block">
         <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -198,7 +207,140 @@
 {% endblock %}
 
 {% block scripts %}
-{% if blueprint.artifact_type == "terraform-environment-stack" %}
+{% if blueprint.artifact_type == "ansible-playbook-project" %}
+<script>
+  const playbookBlueprintName = {{ blueprint.name | tojson }};
+  const rolesPanel = document.getElementById("pinned-roles-rows");
+  const addRoleButton = document.getElementById("add-pinned-role");
+  const pinnedRolesInput = document.getElementById("pinned_roles");
+  const form = document.getElementById("generate-form");
+  const rolesValidation = document.getElementById("pinned-roles-validation");
+  let inventoryRoles = [];
+
+  function clearRolesValidation() {
+    if (!rolesValidation) return;
+    rolesValidation.hidden = true;
+    rolesValidation.textContent = "";
+  }
+
+  function showRolesValidation(message) {
+    if (!rolesValidation) return;
+    rolesValidation.textContent = message;
+    rolesValidation.hidden = false;
+  }
+
+  function syncPinnedRolesInput() {
+    const payload = [];
+    for (const row of rolesPanel.querySelectorAll(".pinned-role-row")) {
+      const roleSelect = row.querySelector(".pinned-role-select");
+      const versionSelect = row.querySelector(".pinned-role-version");
+      const option = roleSelect.selectedOptions[0];
+      if (!option || !option.dataset.payload || !versionSelect.value) {
+        continue;
+      }
+      const role = JSON.parse(option.dataset.payload);
+      payload.push({
+        repo_name: role.repo_name,
+        galaxy_name: role.galaxy_name,
+        version: versionSelect.value,
+        src: role.git_url.replace(/\.git$/, ""),
+      });
+    }
+    pinnedRolesInput.value = JSON.stringify(payload);
+  }
+
+  function fillRoleSelect(select, placeholder) {
+    select.innerHTML = "";
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+    for (const role of inventoryRoles) {
+      const el = document.createElement("option");
+      el.value = role.repo_name;
+      el.textContent = `${role.galaxy_name} (${role.repo_name})`;
+      el.dataset.payload = JSON.stringify(role);
+      select.appendChild(el);
+    }
+  }
+
+  async function loadVersions(select, repoName) {
+    const versionSelect = select.closest(".pinned-role-row")?.querySelector(".pinned-role-version");
+    if (!versionSelect) return;
+    if (!repoName) {
+      versionSelect.innerHTML = "<option value=\"\" disabled selected>Select a role first…</option>";
+      versionSelect.disabled = true;
+      return;
+    }
+    versionSelect.disabled = true;
+    versionSelect.innerHTML = "<option value=\"\">Loading…</option>";
+    const response = await fetch(
+      `/blueprints/${playbookBlueprintName}/role-inventory/${encodeURIComponent(repoName)}/versions`,
+    );
+    const data = await response.json();
+    versionSelect.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "Select version…";
+    ph.disabled = true;
+    ph.selected = true;
+    versionSelect.appendChild(ph);
+    for (const tag of data.versions || []) {
+      const opt = document.createElement("option");
+      opt.value = tag;
+      opt.textContent = tag;
+      versionSelect.appendChild(opt);
+    }
+    versionSelect.disabled = (data.versions || []).length === 0;
+    syncPinnedRolesInput();
+  }
+
+  function addRoleRow() {
+    const row = document.createElement("div");
+    row.className = "pinned-role-row field-block";
+    row.innerHTML = `
+      <div class="pinned-role-row__controls">
+        <select class="select pinned-role-select" aria-label="Ansible role"><option disabled selected>Loading…</option></select>
+        <select class="select pinned-role-version" aria-label="Role version" disabled><option disabled selected>Select a role first…</option></select>
+        <button type="button" class="btn btn--ghost btn--sm pinned-role-remove">Remove</button>
+      </div>
+    `;
+    rolesPanel.appendChild(row);
+    const roleSelect = row.querySelector(".pinned-role-select");
+    fillRoleSelect(roleSelect, "Select role…");
+    roleSelect.addEventListener("change", () => {
+      void loadVersions(roleSelect, roleSelect.value);
+      syncPinnedRolesInput();
+    });
+    row.querySelector(".pinned-role-version").addEventListener("change", syncPinnedRolesInput);
+    row.querySelector(".pinned-role-remove").addEventListener("click", () => {
+      row.remove();
+      syncPinnedRolesInput();
+    });
+  }
+
+  addRoleButton.addEventListener("click", () => {
+    addRoleRow();
+    clearRolesValidation();
+  });
+
+  form.addEventListener("submit", () => {
+    syncPinnedRolesInput();
+    clearRolesValidation();
+  });
+
+  async function initRoleInventory() {
+    const response = await fetch(`/blueprints/${playbookBlueprintName}/role-inventory`);
+    const data = await response.json();
+    inventoryRoles = data.roles || [];
+    addRoleRow();
+  }
+
+  void initRoleInventory();
+</script>
+{% elif blueprint.artifact_type == "terraform-environment-stack" %}
 <script>
   const stackBlueprintName = {{ blueprint.name | tojson }};
   const providerSelect = document.getElementById("cloud_provider");

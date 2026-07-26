@@ -101,6 +101,13 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         }
         if project.get("min_ansible_version"):
             playbook_values["min_ansible_version"] = str(project["min_ansible_version"]).strip()
+        pinned = project.get("pinned_roles")
+        if isinstance(pinned, list) and pinned:
+            import json
+
+            playbook_values["pinned_roles"] = json.dumps(pinned)
+        else:
+            playbook_values["pinned_roles"] = "[]"
         return playbook_values
 
     if artifact_type == "ansible-role":

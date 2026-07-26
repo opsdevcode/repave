@@ -9,6 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from repave_engine import __version__
+from repave_engine.ansible_role_inventory import (
+    inventory_role_versions_json,
+    inventory_roles_json,
+)
 from repave_engine.blueprint import (
     group_blueprints_by_artifact,
     list_blueprints,
@@ -121,6 +125,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             return {"repo_name": repo_name, "versions": []}
         token = os.environ.get("GITHUB_TOKEN")
         return inventory_versions_json(
+            resolved_output.modules_root,
+            repo_name,
+            github_org=resolved_output.github_org,
+            github_token=token,
+        )
+
+    @app.get("/blueprints/{blueprint_name}/role-inventory")
+    async def role_inventory(blueprint_name: str) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if blueprint.artifact_type != "ansible-playbook-project":
+            return {"roles": []}
+        return inventory_roles_json(
+            resolved_output.modules_root,
+            github_org=resolved_output.github_org,
+        )
+
+    @app.get("/blueprints/{blueprint_name}/role-inventory/{repo_name}/versions")
+    async def role_inventory_versions(
+        blueprint_name: str,
+        repo_name: str,
+    ) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if blueprint.artifact_type != "ansible-playbook-project":
+            return {"repo_name": repo_name, "versions": []}
+        token = os.environ.get("GITHUB_TOKEN")
+        return inventory_role_versions_json(
             resolved_output.modules_root,
             repo_name,
             github_org=resolved_output.github_org,

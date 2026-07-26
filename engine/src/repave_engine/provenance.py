@@ -100,6 +100,18 @@ def _build_ansible_playbook_project_spec(
     min_version = values.get("min_ansible_version")
     if min_version not in (None, ""):
         spec["ansiblePlaybookProject"]["min_ansible_version"] = str(min_version)
+    pinned = values.get("pinned_roles")
+    if isinstance(pinned, list) and pinned:
+        spec["ansiblePlaybookProject"]["pinned_roles"] = [
+            {
+                "galaxy_name": str(item.get("galaxy_name", "")),
+                "version": str(item.get("version", "")),
+                "src": str(item.get("src", "")),
+                **({"repo_name": str(item["repo_name"]).strip()} if item.get("repo_name") else {}),
+            }
+            for item in pinned
+            if isinstance(item, dict)
+        ]
     if blueprint.ansible_lint_pack is not None:
         spec["ansibleLint"] = {
             "pack_source": blueprint.ansible_lint_pack.pack_source,

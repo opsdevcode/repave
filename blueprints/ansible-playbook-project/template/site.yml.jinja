@@ -2,6 +2,12 @@
 - name: Baseline play for {{ project_name }}
   hosts: all
   gather_facts: false
+{% if pinned_roles %}
+  roles:
+{% for role in pinned_roles %}
+    - role: {{ role.galaxy_name }}
+{% endfor %}
+{% endif %}
   tasks:
     - name: Verify connectivity
       ansible.builtin.ping:
