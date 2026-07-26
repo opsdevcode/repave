@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.43.0  
-**In progress:** v1.32 application service golden path  
+**In progress:** v1.29 blueprint conformance harness; v1.19 operator `preserveLocal` follow-up  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
@@ -43,7 +43,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.43.0  today     v1.22 Ansible collection shipped; v1.31 Helm chart next (accelerated)
+v1.43.0  today     Helm + app-service + Backstage catalog shipped; merge queue on main
   │
   ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
   ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
@@ -568,6 +568,9 @@ developer portal; many platform teams standardize on Backstage.
 **Done when:** A generated repo contains a valid `catalog-info.yaml` importable
 into Backstage, and docs show the scaffolder action.
 
+**Status:** Shipped on `main` (`backstage_catalog.py`, optional catalog on Terraform/Helm,
+required on app-service, `standards/backstage/catalog-standard.md`, [`docs/backstage.md`](backstage.md)).
+
 ---
 
 ### v1.31 — Helm chart golden path (**accelerated**; was v1.33)
@@ -618,8 +621,8 @@ v1.30 conformance harness.
 **Done when:** A service repo generates for at least one runtime with CI wired and
 gates green.
 
-**Status:** In progress on `feat/app-service-v1.32` (`app-service-generic`, Python runtime,
-`dockerfile-lint` / `python-lint` / `python-test`, Backstage `catalog-info.yaml`).
+**Status:** Shipped on `main` (`app-service-generic` v0.2.0, Python runtime,
+`dockerfile-lint` / `python-lint` / `python-test`, engine-written `catalog-info.yaml`).
 
 ---
 

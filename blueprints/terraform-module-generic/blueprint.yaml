@@ -50,6 +50,33 @@ spec:
       multi: true
       default: ""
       description: Rule IDs from policy/catalog.json when policy_profile is custom.
+    - name: include_backstage_catalog
+      type: string
+      required: false
+      default: "false"
+      enum:
+        - "true"
+        - "false"
+      description: Emit catalog-info.yaml for Backstage Software Catalog import.
+    - name: owner
+      type: string
+      required: false
+      default: ""
+      description: Backstage spec.owner (required when include_backstage_catalog is true).
+    - name: system
+      type: string
+      required: false
+      default: ""
+      description: Backstage spec.system (optional platform system name).
+    - name: catalog_lifecycle
+      type: string
+      required: false
+      default: experimental
+      enum:
+        - experimental
+        - production
+        - deprecated
+      description: Backstage spec.lifecycle for the generated component.
   template:
     engine: copier
     path: template

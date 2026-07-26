@@ -7,7 +7,7 @@ Governed application repositories from the `app-service-generic` golden path.
 - `Dockerfile` — container image for the service
 - `src/` — application source (Python first runtime)
 - `tests/` — unit tests run in CI and locally
-- `catalog-info.yaml` — Backstage component metadata
+- `catalog-info.yaml` — Backstage component metadata ([catalog standard](../../standards/backstage/catalog-standard.md))
 - `repave.yaml` — golden-path provenance and CI gate contract
 
 ## CI

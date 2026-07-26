@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: app-service-generic
-  version: 0.1.0
+  version: 0.2.0
   description: Governed application service repo (Python) with Dockerfile, tests, and Backstage catalog metadata.
 spec:
   artifactType: app-service
@@ -21,7 +21,21 @@ spec:
     - name: owner
       type: string
       required: true
-      description: Owning team or group (Backstage `spec.owner`, e.g. team:platform).
+      description: Owning team or group (Backstage `spec.owner`, e.g. group:platform).
+    - name: system
+      type: string
+      required: false
+      default: ""
+      description: Backstage `spec.system` (platform or product system name).
+    - name: catalog_lifecycle
+      type: string
+      required: false
+      default: experimental
+      enum:
+        - experimental
+        - production
+        - deprecated
+      description: Backstage `spec.lifecycle` for the generated component.
     - name: port
       type: string
       required: false
