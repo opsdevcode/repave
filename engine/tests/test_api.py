@@ -24,6 +24,8 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "terraform-module-generic" in response.text
     assert "/static/repave.css" in response.text
+    assert "/static/repave.js" in response.text
+    assert 'id="last-run-snippet"' in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
     assert "home-hero" in response.text
@@ -33,6 +35,15 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "catalog-group__title" in response.text
     assert "Terraform" in response.text
     assert "Ansible" in response.text
+
+
+def test_static_repave_js_served(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/static/repave.js")
+
+    assert response.status_code == 200
+    assert "repavePortal" in response.text
+    assert "sessionStorage" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -85,6 +96,7 @@ def test_generate_form_submission(
     assert "ec2_diff.tf" in response.text
     assert "s3_bucket.tf" in response.text
     assert "publish-plan" in response.text
+    assert "repavePortal.saveLastRun" in response.text
 
 
 def test_generate_publish_passes_github_token_from_env(

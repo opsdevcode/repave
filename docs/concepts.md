@@ -46,11 +46,11 @@ at render time (parallel to Checkov policies for Terraform modules).
 
 ## Portal
 
-The bundled web UI maps blueprint inputs to generation and shows gate results.
-Visual layout, components, and v1.18 acceptance criteria are documented in
-[`docs/portal-design.md`](portal-design.md). Functional UX items (catalog grouping,
-scope search, gate excerpts) ship in the same release as the shared CSS shell and
-cards described there.
+The bundled web UI maps blueprint inputs to generation and shows gate results on
+a shared night-ops shell (home catalog, governance-aware forms, results dashboard).
+Layout, components, and acceptance criteria are in
+[`docs/portal-design.md`](portal-design.md). Browser-local last-run summary uses
+`sessionStorage`; fleet-wide history is planned with audit (v1.30).
 
 ## Self-healing (planned)
 

@@ -12,6 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/repave.css" />
+    <script src="/static/repave.js" defer></script>
     {% block head %}{% endblock %}
   </head>
   <body>
@@ -32,6 +33,8 @@
           {% endif %}
         </div>
       </header>
+
+      <div id="last-run-snippet" class="last-run-snippet shell__last-run" hidden></div>
 
       <main class="shell__main{% block main_modifiers %}{% endblock %}">
         {% block content %}{% endblock %}

@@ -13,12 +13,12 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> **Status (engine [v1.23.0](https://github.com/opsdevcode/repave/releases/tag/v1.23.0)
+> **Status (engine [v1.25.0](https://github.com/opsdevcode/repave/releases/tag/v1.25.0)
 > on GitHub).** Generation runs locally or via Docker Compose — no Kubernetes
 > required for the engine. The **reconciliation operator** (alpha; v1.17 slices
-> 0–4 + kind e2e) reconciles `GoldenPathRepo` and `Blueprint` CRDs. Portal UX
-> (v1.18 theme): foundation through results dashboard + visual v2 home and scope
-> UX polish. See [`operator/`](operator/) and
+> 0–4 + kind e2e) reconciles `GoldenPathRepo` and `Blueprint` CRDs. **Portal UX**
+> (v1.18 theme) is complete: catalog, forms, results dashboard, and browser
+> last-run snippet. See [`operator/`](operator/) and
 > [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
 
 ## What you can do today
@@ -27,8 +27,8 @@ repeatable, and automated.
 
 - **Golden paths:** Terraform module and Ansible role blueprints (`blueprints/`),
   Copier render, frozen JSON schemas (`schemas/`).
-- **Portal + API:** Server-rendered form from blueprint input schema; gate results
-  and publish flow at `http://localhost:8088` (Compose) or `repave serve`.
+- **Portal + API:** Server-rendered golden-path forms, gate results dashboard, and
+  publish flow at `http://localhost:8088` (Compose) or `repave serve`.
 - **CLI:** `repave generate`, `repave list`, gate execution, provenance in
   `repave.yaml`.
 - **Gates (blueprint-configured):** Terraform — `fmt`, `validate`, `tflint`,
@@ -174,9 +174,9 @@ docs/          # concepts, roadmap, portal design, operator local dev
 
 ## Roadmap
 
-**Current focus:** v1.18 portal UX results slice (foundation + catalog + form
-landed; Visual v2 polish deferred)
-([`docs/roadmap.md`](docs/roadmap.md), [`docs/portal-design.md`](docs/portal-design.md)).
+**Current focus:** v1.19 update flow for existing module repos and v1.17 operator
+GA close-out ([`docs/roadmap.md`](docs/roadmap.md)). Portal planning and acceptance
+criteria live in [`docs/portal-design.md`](docs/portal-design.md) (theme complete).
 
 High-level release history and planning through **v2.0.0** live in
 [`docs/roadmap.md`](docs/roadmap.md).

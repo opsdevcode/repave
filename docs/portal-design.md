@@ -3,18 +3,25 @@
 Planning document for the repave web portal (Jinja templates under
 `engine/src/repave_engine/templates/`). The [roadmap](roadmap.md) tracks release
 labels; this file holds **visual layout**, **component patterns**, and
-**acceptance signals** for portal work, primarily **v1.18**.
+**acceptance signals** for portal work shipped under the **v1.18 theme**
+(engine tags through **v1.25.0**).
 
-**Current UI:** night-ops console — deep charcoal canvas, teal accent, fine grid
-atmosphere, shared `base.html` + `/static/repave.css`, home catalog grouped by
-artifact type, blueprint form with sticky governance card (split on Terraform),
-and a generation **results dashboard** (Phase 4). **Visual v2** home hero and
-scope UX presets landed (Phase 5, partial). Further Phase 5 items (history UI,
-white-label) remain optional.
+**Current UI (shipped):** night-ops console — shared `base.html`, `/static/repave.css`,
+`/static/repave.js`, sticky shell with optional environment badge.
 
-**Visual v2 (deferred):** a dedicated polish pass for hero-first home composition
-and stronger craft — do not block form/results slices. See come-back plan notes
-under [Phase 5](#phase-5--polish-and-extensions).
+| Route | Template | Highlights |
+| --- | --- | --- |
+| Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
+| Blueprint form | `blueprint_form.html` | Governance card (standard + policy pins + gates); Terraform split layout with scope filter, presets, validation; Ansible enum dropdowns for platforms and min Ansible version |
+| Generation result | `result.html` | Status hero, gate table with expandable failure output, repo card, file tree + preview, collapsible publish plan |
+
+**Last run:** After generate, the result page stores a summary in **sessionStorage**
+and the shell shows a “Last run in this browser” snippet on home and form routes.
+Server-side history across users waits on audit (roadmap v1.30).
+
+**Deferred (Phase 5+):** white-label accents, standards diff UI, light theme,
+Backstage-adjacent density, conversational entry — see
+[Phase 5](#phase-5--polish-and-extensions).
 
 **Target:** a coherent product surface without mandating a SPA rewrite — shared
 static assets, CSS tokens, and a base layout template.
@@ -25,40 +32,28 @@ static assets, CSS tokens, and a base layout template.
 
 | Roadmap item | Visual / UX home |
 | --- | --- |
-| v1.18 Portal and UX hardening | Phases 1–4 below (foundation through results) |
-| v1.18 functional items (search, presets, gate excerpts, grouping) | Implemented inside the same layouts and components |
+| v1.18 Portal and UX hardening | **Complete** — Phases 1–4 + visual v2 + scope UX (see [Shipped](roadmap.md#shipped)) |
+| v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns |
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
+| v1.30 Operability and audit | Replace browser last-run with server-side history |
 | Parking lot: standards diff in portal | Phase 5 — needs cards and side panels from Phase 1–2 |
 | v2.0 conversational generation | Second entry point in the same app shell (Phase 5) |
 
-Suggested delivery slices on **v1.18** (separate PRs if helpful):
+Delivery slices (all landed on `main`):
 
 ```text
 v1.18-foundation   base layout + tokens + shell + core components
 v1.18-catalog      home cards + artifact grouping + gate/standard chips
 v1.18-form         governance card + scope visual refresh + functional UX
 v1.18-results      gate dashboard + repo card + file preview layout
+v1.18-polish       home hero, scope presets, browser last-run snippet
 ```
 
 ---
 
-## Current state
-
-| Page | Template | Visual state |
-| --- | --- | --- |
-| Home | `index.html` | Plain list of blueprint links in one card |
-| Blueprint form | `blueprint_form.html` | Long vertical form; scope in nested gray boxes; no steps |
-| Generation result | `result.html` | Colored text for gates; files in `<details>`; no run summary |
-
-Implementation notes:
-
-- Styles are duplicated per page; change accent or spacing in three places today.
-- Terraform provider scope UI is dense but unguided; Ansible forms are short.
-- Result page is diagnosable for experts, not scannable for occasional users.
-
----
-
 ## Phase 1 — Visual foundation
+
+**Status:** Shipped.
 
 **Goal:** One coherent repave surface across all routes.
 
@@ -98,15 +93,14 @@ Reusable classes (names illustrative):
 - **Status:** `.badge`, `.badge--terraform`, `.badge--ansible`, `.alert`
 - **Forms:** `.field`, `.label`, `.hint`, `.input`, `.select`, `.checkbox-grid`
 
-**Done when:** All three pages share one stylesheet and shell; accent and radius
-change in a single file.
+**Done when:** All three portal routes share one shell, tokens, and component
+vocabulary; `/static/repave.css` is the single source of styling truth.
 
 ---
 
 ## Phase 2 — Catalog (home)
 
-**Status:** Landed (structure on night-ops tokens). Visual v2 may refine hero
-composition later without changing the grouping contract.
+**Status:** Shipped (including visual v2 home hero).
 
 **Goal:** Golden paths read as a **catalog**, not a README list.
 
@@ -139,8 +133,8 @@ repo docs.
 
 ## Phase 3 — Blueprint form
 
-**Status:** Landed (governance card, split layout for Terraform, publish toggle,
-segmented scope mode). Stepper and presets remain future polish.
+**Status:** Shipped (governance card, split layout for Terraform, publish toggle,
+segmented scope mode, scope presets and inline validation, Ansible enum inputs).
 
 **Goal:** Long Terraform flows feel guided; Ansible flows stay simple but polished.
 
@@ -185,6 +179,8 @@ distinct per service; Ansible form matches the same tokens without extra steps.
 
 ## Phase 4 — Generation result
 
+**Status:** Shipped.
+
 **Goal:** Run output reads as a **summary dashboard**, not a log wall.
 
 ### Status hero
@@ -227,28 +223,29 @@ at most two interactions.
 
 ## Phase 5 — Polish and extensions
 
+**Status:** Partial — home hero, catalog hover, browser last-run snippet shipped.
+Remaining items are optional or depend on later roadmap work.
+
 Pick based on audience and hosting model (v1.25+).
 
-### Visual v2 (deferred — come back)
+### Visual v2 (shipped)
 
-Night-ops foundation + catalog structure ship first. When returning for craft:
+- Home hero: oversized **repave** wordmark, one line, CTAs; catalog below fold
+- Console-native catalog card hover (respects `prefers-reduced-motion`)
+- Form/results use Phase 3–4 markup (governance rail, status hero)
 
-- Home hero: oversized **repave** wordmark, one line, one CTA; catalog below fold
-- Stronger atmosphere (still no neon glow stacks); console-native card hover
-- Form/results visuals once Phase 3–4 markup exists (governance rail, status hero)
-
-Acceptance: a home screenshot reads as “repave night console” without body copy.
+Further craft (illustration, stepper) is optional.
 
 | Enhancement | Notes |
 | --- | --- |
-| **Visual v2** | Deferred craft pass above; keep night-ops brand |
+| **Visual v2 follow-ups** | Optional stepper, illustration — not required for v1.18 close-out |
 | **Dark mode** | Night-ops is default; light theme / toggle only if needed later |
 | **Motion** | Expand/collapse on scope and gate rows; honor `prefers-reduced-motion` |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
 | **White-label** | Optional logo URL and accent override via `repave.config.yaml` |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
-| **History / last run** | Roadmap v1.18 — sidebar or footer on form and home from server-side session or audit sink (v1.30) |
+| **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
 | **Conversational UI (v2)** | Chat entry in same shell; results reuse Phase 4 dashboard |
 
 ---
@@ -279,6 +276,7 @@ Acceptance: a home screenshot reads as “repave night console” without body c
 | Area | Location today |
 | --- | --- |
 | Templates | `engine/src/repave_engine/templates/` |
+| Static assets | `engine/src/repave_engine/static/repave.css`, `repave.js` |
 | Form logic | Inline script in `blueprint_form.html` (provider catalog) |
 | API routes | Engine FastAPI app (serves HTML responses) |
 
@@ -290,6 +288,6 @@ optional; snapshot HTML only if the team wants guardrails against template drift
 
 ## Related docs
 
-- [Roadmap — v1.18](roadmap.md#v118--portal-and-ux-hardening)
+- [Roadmap — shipped portal UX](roadmap.md#v118--portal-ux-theme)
 - [Concepts — golden path and governance](concepts.md)
 - [Engine README](../engine/README.md) — local portal URL

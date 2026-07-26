@@ -249,4 +249,19 @@
     });
   })();
 </script>
+<script>
+  (function () {
+    if (!window.repavePortal || !window.repavePortal.saveLastRun) {
+      return;
+    }
+    window.repavePortal.saveLastRun({
+      blueprint: {{ result.blueprint.name | tojson }},
+      blueprintVersion: {{ result.blueprint.version | tojson }},
+      outcome: {{ gate_summary.outcome | tojson }},
+      dryRun: {{ result.dry_run | tojson }},
+      gatesPassed: {{ gate_summary.passed }},
+      gatesFailed: {{ gate_summary.failed }},
+    });
+  })();
+</script>
 {% endblock %}
