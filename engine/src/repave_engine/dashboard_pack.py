@@ -73,3 +73,9 @@ def materialize_dashboard_pack(
         dest = output_dir / entry.dest
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(rendered, encoding="utf-8")
+
+
+def write_dashboard_pack_terraform(output_dir: Path, *, backend: str) -> None:
+    from repave_engine.dashboard_pack_terraform import write_dashboard_pack_terraform as _write
+
+    _write(output_dir, backend=backend)

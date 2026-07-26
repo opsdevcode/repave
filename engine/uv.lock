@@ -1398,11 +1398,12 @@ wheels = [
 
 [[package]]
 name = "repave-engine"
-version = "1.38.0"
+version = "1.40.0"
 source = { editable = "." }
 dependencies = [
     { name = "copier" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jinja2" },
     { name = "jsonschema" },
     { name = "python-multipart" },
@@ -1427,6 +1428,7 @@ requires-dist = [
     { name = "bandit", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "copier", specifier = ">=9.0.0" },
     { name = "fastapi", specifier = ">=0.110.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.27.0" },
     { name = "jinja2", specifier = ">=3.1.0" },
     { name = "jsonschema", specifier = ">=4.0" },

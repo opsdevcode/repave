@@ -12,16 +12,6 @@ terraform {
       source  = "grafana/grafana"
       version = "~> 3.0"
     }
-{% elif backend == 'prometheus' %}
-    prometheus = {
-      source  = "prometheus-community/prometheus"
-      version = "~> 1.0"
-    }
-{% elif backend == 'otel' %}
-    helm = {
-      source  = "hashicorp/helm"
-      version = "~> 2.0"
-    }
 {% endif %}
   }
 }

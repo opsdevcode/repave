@@ -561,6 +561,182 @@ def test_generate_observability_terraform_datadog_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_observability_terraform_grafana_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout TF dashboard",
+            "backend": "grafana",
+            "environment": "prod",
+            "output_mode": "terraform",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "dashboard.tf").is_file()
+    assert not (output_dir / "grafana").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_dashboards_terraform_grafana_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout TF dashboards",
+            "backend": "grafana",
+            "output_mode": "terraform",
+            "environment": "prod",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "dashboard.tf").is_file()
+    assert not (output_dir / "datadog").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_observability_terraform_prometheus_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout TF rules",
+            "backend": "prometheus",
+            "output_mode": "terraform",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            "slo_target_percent": "99.9",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "prometheus_rules.tf").is_file()
+    assert (output_dir / "alertmanager.tf").is_file()
+    assert not (output_dir / "prometheus").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_observability_terraform_otel_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout OTel TF",
+            "backend": "otel",
+            "output_mode": "terraform",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "otel_collector.tf").is_file()
+    assert not (output_dir / "otel").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_dashboards_terraform_with_pack_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout dashboards pack TF",
+            "backend": "grafana",
+            "output_mode": "terraform",
+            "dashboard_pack_source": "grafana-red-plus-node-exporter-1860",
+            "environment": "prod",
+            "datasource_uid": "prometheus",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "dashboard_packs.tf").is_file()
+    assert (output_dir / "grafana" / "dashboards").is_dir()
+    assert not (output_dir / "dashboard.tf").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_dashboards_as_code_dry_run(
     repo_root: Path,
     output_config,

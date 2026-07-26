@@ -1,0 +1,62 @@
+resource "helm_release" "{{ service_name | replace('-', '_') }}_otel_collector" {
+  name       = "${var.service_name}-otel"
+  repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  chart      = "opentelemetry-collector"
+  version    = "0.88.0"
+
+  values = [
+    yamlencode({
+      mode = "deployment"
+      config = {
+        receivers = {
+          otlp = {
+            protocols = {
+              grpc = {}
+              http = {}
+            }
+          }
+        }
+        processors = {
+          resource = {
+            attributes = [
+              {
+                key    = "service.name"
+                value  = var.service_name
+                action = "upsert"
+              },
+              {
+                key    = "team"
+                value  = var.team
+                action = "upsert"
+              },
+              {
+                key    = "org"
+                value  = var.organization
+                action = "upsert"
+              },
+            ]
+          }
+        }
+        exporters = {
+          logging = {
+            verbosity = "basic"
+          }
+        }
+        service = {
+          pipelines = {
+            traces = {
+              receivers  = ["otlp"]
+              processors = ["resource"]
+              exporters  = ["logging"]
+            }
+            metrics = {
+              receivers  = ["otlp"]
+              processors = ["resource"]
+              exporters  = ["logging"]
+            }
+          }
+        }
+      }
+    }),
+  ]
+}

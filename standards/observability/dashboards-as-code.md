@@ -1,4 +1,4 @@
-# Dashboards-as-code standard v1.1.0
+# Dashboards-as-code standard v1.2.0
 
 Governed **Grafana** and **Datadog** dashboard JSON for the
 `dashboards-as-code-generic` golden path. This standard aligns repave output with
@@ -94,9 +94,16 @@ applicable.
 | --- | --- |
 | `grafana-dashboard` | Grafana JSON present under `grafana/dashboards/` |
 | `datadog-dashboard` | Datadog JSON present under `datadog/dashboards/` |
+| `terraform-fmt`, `terraform-validate` | `.tf` files at repo root (`output_mode=terraform`) |
+| `opa` | Terraform mode when `conftest` is installed (managed-by tags) |
 | `secrets`, `docs-drift`, `provenance-drift` | Always |
 
-Only one backend’s dashboard directory is emitted per generate (`backend` input).
+Native mode materializes **community dashboard packs** from `observability/dashboards/`.
+Terraform mode can materialize the same packs and emit `dashboard_packs.tf` (`file()`-backed
+`grafana_dashboard` / `datadog_dashboard_json` resources) or a starter `dashboard.tf` when the
+pack has no vendored files.
+
+Only one backend’s dashboard directory is emitted per generate (`backend` input) in native mode.
 
 ## Community dashboard packs
 

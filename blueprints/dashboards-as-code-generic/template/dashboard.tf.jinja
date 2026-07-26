@@ -1,0 +1,24 @@
+resource "grafana_dashboard" "{{ service_name | replace('-', '_') }}_overview" {
+  config_json = jsonencode({
+    title    = "${var.service_name} overview"
+    uid      = "${replace(var.service_name, "-", "_")}_overview"
+    timezone = "browser"
+    tags = [
+      "service:${var.service_name}",
+      "team:${var.team}",
+      "org:${var.organization}",
+      "env:${var.environment}",
+      "managed-by:repave",
+    ]
+    panels = [
+      {
+        type    = "text"
+        title   = "About"
+        gridPos = { h = 4, w = 24, x = 0, y = 0 }
+        options = {
+          content = var.description
+        }
+      },
+    ]
+  })
+}

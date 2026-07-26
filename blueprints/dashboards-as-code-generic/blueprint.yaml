@@ -2,13 +2,13 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: dashboards-as-code-generic
-  version: 0.2.0
+  version: 0.4.0
   description: Governed Grafana and Datadog dashboards (RED / golden signals, community tags).
 spec:
   artifactType: observability
   standard:
     source: standards/observability/dashboards-as-code.md
-    version: 1.1.0
+    version: 1.2.0
   inputs:
     - name: service_name
       type: string
@@ -58,7 +58,8 @@ spec:
       default: native
       enum:
         - native
-      description: native emits backend-native JSON; terraform mode is follow-up.
+        - terraform
+      description: native emits backend JSON and optional community packs; terraform emits provider dashboards at repo root.
     - name: observability_focus
       type: string
       required: false
@@ -92,14 +93,26 @@ spec:
   gates:
     - grafana-dashboard
     - datadog-dashboard
+    - datadog-api-validate
+    - terraform-fmt
+    - terraform-validate
+    - opa
     - secrets
     - docs-drift
     - provenance-drift
+  opa:
+    policies_source: policy/opa/policies
+    policy_version: 1.1.0
   gate_config:
     grafana-dashboard:
       dashboards_glob: grafana/dashboards/*.json
     datadog-dashboard:
       dashboards_glob: datadog/dashboards/*.json
+    opa:
+      policies_dir: policy/opa/policies
+      native_globs:
+        - datadog/dashboards/*.json
+        - grafana/dashboards/*.json
   output:
     type: pull_request
     provenance:

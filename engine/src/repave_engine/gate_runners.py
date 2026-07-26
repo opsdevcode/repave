@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shutil
 import subprocess
 from pathlib import Path
 
+import httpx
 import jsonschema
 
 from repave_engine.blueprint import CheckovGateConfig, TflintGateConfig, _find_repo_root
@@ -322,6 +324,48 @@ def run_promtool(ctx: GateContext) -> GateResult:
     return GateResult("promtool", True, False, f"promtool validated {len(rule_files)} rule file(s)")
 
 
+def _amtool_config_files(output_dir: Path, ctx: GateContext) -> list[Path]:
+    raw = ctx.config("amtool")
+    glob_pattern = str(raw.get("config_glob", "prometheus/alertmanager/*.y*ml"))
+    return sorted(output_dir.glob(glob_pattern))
+
+
+def run_amtool(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "observability":
+        return GateResult("amtool", True, True, "amtool gate not applicable; skipped")
+
+    if not tool_available("amtool"):
+        return GateResult("amtool", True, True, "amtool not installed; skipped")
+
+    config_files = _amtool_config_files(output_dir, ctx)
+    if not config_files:
+        return GateResult(
+            "amtool",
+            True,
+            True,
+            "no Alertmanager config files found; skipped",
+        )
+
+    errors: list[str] = []
+    for path in config_files:
+        result = run_command(
+            ["amtool", "check-config", str(path.relative_to(output_dir))],
+            output_dir,
+        )
+        if result.returncode != 0:
+            detail = result.stderr.strip() or result.stdout.strip() or "check failed"
+            errors.append(f"{path.name}: {detail}")
+    if errors:
+        return GateResult("amtool", False, False, "; ".join(errors))
+    return GateResult(
+        "amtool",
+        True,
+        False,
+        f"amtool validated {len(config_files)} Alertmanager config file(s)",
+    )
+
+
 def _grafana_dashboard_files(output_dir: Path, ctx: GateContext) -> list[Path]:
     raw = ctx.config("grafana-dashboard")
     glob_pattern = str(raw.get("dashboards_glob", "grafana/dashboards/*.json"))
@@ -524,6 +568,172 @@ def run_datadog_monitor(ctx: GateContext) -> GateResult:
     )
 
 
+def _datadog_api_credentials() -> tuple[str, str, str] | None:
+    api_key = os.environ.get("DD_API_KEY", "").strip()
+    app_key = os.environ.get("DD_APP_KEY", "").strip()
+    if not api_key or not app_key:
+        return None
+    site = os.environ.get("DD_SITE", "datadoghq.com").strip() or "datadoghq.com"
+    return api_key, app_key, site
+
+
+def _datadog_api_post(
+    site: str,
+    path: str,
+    *,
+    api_key: str,
+    app_key: str,
+    payload: object,
+) -> tuple[int, str]:
+    url = f"https://api.{site}{path}"
+    headers = {
+        "DD-API-KEY": api_key,
+        "DD-APPLICATION-KEY": app_key,
+        "Content-Type": "application/json",
+    }
+    response = httpx.post(url, headers=headers, json=payload, timeout=30.0)
+    detail = response.text.strip()
+    if len(detail) > 500:
+        detail = detail[:500] + "..."
+    return response.status_code, detail
+
+
+def run_datadog_api_validate(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "observability":
+        return GateResult(
+            "datadog-api-validate",
+            True,
+            True,
+            "datadog-api-validate gate not applicable; skipped",
+        )
+
+    creds = _datadog_api_credentials()
+    if creds is None:
+        return GateResult(
+            "datadog-api-validate",
+            True,
+            True,
+            "DD_API_KEY/DD_APP_KEY not set; skipped",
+        )
+
+    api_key, app_key, site = creds
+    monitor_files = _datadog_monitor_files(output_dir, ctx)
+    dashboard_files = _datadog_dashboard_files(output_dir, ctx)
+    if not monitor_files and not dashboard_files:
+        return GateResult(
+            "datadog-api-validate",
+            True,
+            True,
+            "no Datadog JSON to validate; skipped",
+        )
+
+    errors: list[str] = []
+    validated = 0
+    for path in monitor_files:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.name}: invalid JSON ({exc.msg})")
+            continue
+        for payload in _monitor_payloads(path, data):
+            status, detail = _datadog_api_post(
+                site,
+                "/api/v1/monitor/validate",
+                api_key=api_key,
+                app_key=app_key,
+                payload=payload,
+            )
+            validated += 1
+            if status >= 400:
+                errors.append(f"{path.name}: monitor validate HTTP {status}: {detail}")
+
+    for path in dashboard_files:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.name}: invalid JSON ({exc.msg})")
+            continue
+        if not isinstance(payload, dict):
+            errors.append(f"{path.name}: dashboard root must be a JSON object")
+            continue
+        status, detail = _datadog_api_post(
+            site,
+            "/api/v1/dashboard/validate",
+            api_key=api_key,
+            app_key=app_key,
+            payload=payload,
+        )
+        validated += 1
+        if status >= 400:
+            errors.append(f"{path.name}: dashboard validate HTTP {status}: {detail}")
+
+    if errors:
+        return GateResult("datadog-api-validate", False, False, "; ".join(errors))
+    return GateResult(
+        "datadog-api-validate",
+        True,
+        False,
+        f"Datadog API validated {validated} artifact(s)",
+    )
+
+
+def _opa_native_globs(ctx: GateContext) -> list[str]:
+    raw = ctx.config("opa")
+    configured = raw.get("native_globs")
+    if isinstance(configured, list) and configured:
+        return [str(item) for item in configured]
+    return [
+        "datadog/monitors/*.json",
+        "datadog/dashboards/*.json",
+        "grafana/dashboards/*.json",
+        "prometheus/rules/*.y*ml",
+    ]
+
+
+def _run_opa_native_observability(
+    ctx: GateContext,
+    policies_dir: Path,
+    output_dir: Path,
+) -> GateResult:
+    targets: list[Path] = []
+    for pattern in _opa_native_globs(ctx):
+        targets.extend(sorted(output_dir.glob(pattern)))
+    if not targets:
+        return GateResult(
+            "opa",
+            True,
+            True,
+            "no native observability files for opa; skipped",
+        )
+
+    errors: list[str] = []
+    for path in targets:
+        parser = "yaml" if path.suffix in (".yaml", ".yml") else "json"
+        cmd = [
+            "conftest",
+            "test",
+            str(path.relative_to(output_dir)),
+            "-p",
+            str(policies_dir),
+            "--parser",
+            parser,
+        ]
+        result = run_command(cmd, output_dir)
+        if result.returncode != 0:
+            detail = result.stderr.strip() or result.stdout.strip() or "conftest failed"
+            errors.append(f"{path.name}: {detail}")
+
+    if errors:
+        return GateResult("opa", False, False, "; ".join(errors))
+    return GateResult(
+        "opa",
+        True,
+        False,
+        f"conftest passed for {len(targets)} native file(s)",
+    )
+
+
 def run_ansible_lint(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not tool_available("ansible-lint"):
@@ -675,7 +885,9 @@ def run_opa(ctx: GateContext) -> GateResult:
                 f"opa fixtures missing or empty: {cfg.fixtures_dir}",
             )
         target = str(fixtures)
-    elif artifact.startswith("terraform-"):
+    elif artifact.startswith("terraform-") or artifact == "observability":
+        if artifact == "observability" and not any(output_dir.glob("*.tf")):
+            return _run_opa_native_observability(ctx, policies_dir, output_dir)
         plan_json = _terraform_plan_json(output_dir, cfg.plan_subdir)
         if plan_json is None:
             return GateResult(

@@ -1,0 +1,9 @@
+{% if backend == 'datadog' %}
+provider "datadog" {
+  # Credentials are read from DD_API_KEY and DD_APP_KEY in the environment.
+}
+{% elif backend == 'grafana' %}
+provider "grafana" {
+  url = var.grafana_url
+}
+{% endif %}

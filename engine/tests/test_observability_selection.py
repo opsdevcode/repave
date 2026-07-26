@@ -53,28 +53,54 @@ def test_normalize_observability_inputs_rejects_bad_target(repo_root: Path) -> N
         )
 
 
-def test_normalize_observability_rejects_terraform_without_datadog(repo_root: Path) -> None:
+def test_normalize_observability_rejects_terraform_for_unsupported_backend(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
         repo_root,
     )
-    with pytest.raises(ValueError, match="backend: datadog"):
-        validate_inputs(
-            blueprint,
-            {
-                "configuration_mode": "custom",
-                "service_name": "checkout",
-                "organization": "platform",
-                "team": "payments",
-                "description": "x",
-                "backend": "prometheus",
-                "output_mode": "terraform",
-                "notification_source": "repave-estate-oncall",
-                "notification_target": "pagerduty-platform-primary",
-                "runbook_url": "https://wiki.example.com/runbooks/checkout",
-            },
-            repo_root=repo_root,
-        )
+    normalized = validate_inputs(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "x",
+            "backend": "prometheus",
+            "output_mode": "terraform",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        repo_root=repo_root,
+    )
+    assert normalized["backend"] == "prometheus"
+    assert normalized["output_mode"] == "terraform"
+
+
+def test_normalize_observability_terraform_grafana_backend(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    normalized = validate_inputs(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "x",
+            "backend": "grafana",
+            "output_mode": "terraform",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        repo_root=repo_root,
+    )
+    assert normalized["notification_provider"] == "pagerduty"
+    assert normalized["notification_target_label"] == "Payments on-call"
 
 
 def test_normalize_observability_inputs_accepts_catalog_target(repo_root: Path) -> None:

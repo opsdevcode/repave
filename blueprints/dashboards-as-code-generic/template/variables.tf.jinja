@@ -1,6 +1,6 @@
 variable "service_name" {
   type        = string
-  description = "Logical service name for monitor queries and tags."
+  description = "Logical service name for dashboard uid and tags."
   default     = "{{ service_name }}"
 }
 
@@ -18,26 +18,20 @@ variable "organization" {
 
 variable "description" {
   type        = string
-  description = "Human-readable scope for this observability repo."
+  description = "Human-readable scope for dashboards."
   default     = "{{ description | replace('\"', '\\\"') }}"
-}
-
-variable "runbook_url" {
-  type        = string
-  description = "HTTPS runbook linked from monitor messages."
-  default     = "{{ runbook_url }}"
-}
-
-variable "notification_target" {
-  type        = string
-  description = "Catalog notification target (PagerDuty service, Slack channel, etc.)."
-  default     = "{{ notification_target }}"
 }
 
 variable "environment" {
   type        = string
   description = "Deployment environment slug for tags."
   default     = "{{ environment }}"
+}
+
+variable "notification_target" {
+  type        = string
+  description = "Catalog notification target documented in README."
+  default     = "{{ notification_target }}"
 }
 
 {% if backend == 'grafana' %}

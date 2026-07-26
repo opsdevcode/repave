@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from repave_engine.gate_registry import GateSpec, register_gate
 from repave_engine.gate_runners import (
+    run_amtool,
     run_ansible_lint,
     run_ansible_syntax_check,
     run_azure_policy,
     run_checkov,
+    run_datadog_api_validate,
     run_datadog_dashboard,
     run_datadog_monitor,
     run_docs_drift,
@@ -43,7 +45,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
     }
 )
 _OPA_GATE_ARTIFACT_TYPES = frozenset(
-    {"terraform-module", "terraform-environment-stack", "opa-policy"}
+    {"terraform-module", "terraform-environment-stack", "opa-policy", "observability"}
 )
 
 register_gate(
@@ -136,6 +138,13 @@ register_gate(
 )
 register_gate(
     GateSpec(
+        name="amtool",
+        runner=run_amtool,
+        artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
         name="grafana-dashboard",
         runner=run_grafana_dashboard,
         artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
@@ -152,6 +161,13 @@ register_gate(
     GateSpec(
         name="datadog-monitor",
         runner=run_datadog_monitor,
+        artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="datadog-api-validate",
+        runner=run_datadog_api_validate,
         artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
     )
 )

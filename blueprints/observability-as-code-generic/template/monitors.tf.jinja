@@ -8,6 +8,7 @@ resource "datadog_monitor" "{{ service_name | replace('-', '_') }}_target_down" 
 
     Runbook: ${var.runbook_url}
     Notification target: ${var.notification_target}
+    Notify: @${var.notification_target}
   EOT
 
   query = "avg(last_5m):max:up{service:${var.service_name}} < 1"

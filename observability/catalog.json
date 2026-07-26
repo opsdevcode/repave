@@ -117,7 +117,7 @@
     {
       "id": "repave-slack-alerts",
       "label": "Slack alert channels",
-      "description": "Named Slack destinations documented in README (not wired by template yet).",
+      "description": "Named Slack destinations wired in Alertmanager stubs when selected.",
       "provider": "slack",
       "targets": [
         {

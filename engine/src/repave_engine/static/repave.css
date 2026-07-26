@@ -212,6 +212,14 @@ pre {
   --content-max-width: 68rem;
 }
 
+/* Blueprint generate + result: use horizontal margin on large viewports */
+.shell__main--golden-path {
+  --content-max-width: 96rem;
+  width: min(100%, var(--content-max-width));
+  padding-left: max(var(--space-5), clamp(var(--space-4), 4vw, var(--space-6)));
+  padding-right: max(var(--space-5), clamp(var(--space-4), 4vw, var(--space-6)));
+}
+
 .last-run-snippet {
   position: relative;
   z-index: 1;
@@ -1421,6 +1429,28 @@ details.file-panel summary {
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+  max-width: none;
+}
+
+.shell__main--golden-path .form-layout--split {
+  width: 100%;
+}
+
+@media (min-width: 960px) {
+  .shell__main--golden-path .form-layout--split {
+    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    gap: var(--space-6);
+  }
+}
+
+@media (min-width: 1280px) {
+  .shell__main--golden-path .form-layout--split {
+    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+  }
+
+  .shell__main--golden-path .form-panel {
+    padding: var(--space-5) var(--space-6);
+  }
 }
 
 .form-layout {

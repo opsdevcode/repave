@@ -95,9 +95,11 @@
               "opa",
               "azure-policy",
               "promtool",
+              "amtool",
               "grafana-dashboard",
               "datadog-dashboard",
-              "datadog-monitor"
+              "datadog-monitor",
+              "datadog-api-validate"
             ]
           }
         },
@@ -274,6 +276,11 @@
                 "plan_subdir": {
                   "type": "string",
                   "description": "Workspace for terraform plan JSON when evaluating modules."
+                },
+                "native_globs": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Glob patterns for native observability files when running conftest without Terraform."
                 }
               }
             },
@@ -304,6 +311,16 @@
                 "rules_glob": {
                   "type": "string",
                   "description": "Glob of Prometheus rule files relative to the generated repo root."
+                }
+              }
+            },
+            "amtool": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_glob": {
+                  "type": "string",
+                  "description": "Glob of Alertmanager config files relative to the generated repo root."
                 }
               }
             },

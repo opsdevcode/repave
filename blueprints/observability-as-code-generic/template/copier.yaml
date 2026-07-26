@@ -4,9 +4,17 @@ _exclude:
   - copier.yaml
   - "{% if output_mode != 'terraform' %}versions.tf{% endif %}"
   - "{% if output_mode != 'terraform' %}variables.tf{% endif %}"
-  - "{% if output_mode != 'terraform' %}monitors.tf{% endif %}"
   - "{% if output_mode != 'terraform' %}providers.tf{% endif %}"
+  - "{% if output_mode != 'terraform' or backend != 'datadog' %}monitors.tf{% endif %}"
+  - "{% if output_mode != 'terraform' or backend != 'grafana' %}dashboard.tf{% endif %}"
+  - "{% if output_mode != 'terraform' or backend != 'prometheus' %}prometheus_rules.tf{% endif %}"
+  - "{% if output_mode != 'terraform' or backend != 'prometheus' %}alertmanager.tf{% endif %}"
+  - "{% if output_mode != 'terraform' or backend != 'otel' %}otel_collector.tf{% endif %}"
   - "{% if output_mode == 'terraform' %}datadog/monitors/service-alerts.json{% endif %}"
+  - "{% if output_mode == 'terraform' and backend == 'grafana' %}grafana/dashboards/service-overview.json{% endif %}"
+  - "{% if output_mode == 'terraform' %}prometheus/rules/service-alerts.yaml{% endif %}"
+  - "{% if output_mode == 'terraform' %}prometheus/alertmanager/alertmanager.yaml{% endif %}"
+  - "{% if output_mode == 'terraform' %}otel/collector-config.yaml{% endif %}"
 
 service_name:
   type: str
@@ -39,6 +47,14 @@ notification_source:
 notification_target:
   type: str
   default: pagerduty-platform-primary
+
+notification_provider:
+  type: str
+  default: pagerduty
+
+notification_target_label:
+  type: str
+  default: Platform primary
 
 runbook_url:
   type: str
