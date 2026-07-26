@@ -142,6 +142,12 @@ operator/
   Makefile
 ```
 
+### Operator notifications (optional)
+
+Set the same webhook URLs as the engine on the operator Deployment. The controller
+posts best-effort Slack/Teams/generic messages on drift (`OutOfDate`) and remediation
+PR planned/opened. See `REPAVE_OPERATOR_NOTIFY_*` in [`repave.config.yaml.example`](../repave.config.yaml.example).
+
 Contributors: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
 **Slice 3:** `spec.remediation` + `repave apply-upgrade` + `status.remediationPR`.
 Set `spec.remediation.preserveLocal: true` to pass `--preserve-local` (keeps hand-edited scaffold files).

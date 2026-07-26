@@ -11,6 +11,7 @@ import (
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
+	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -55,7 +56,8 @@ func applyInventoryStatus(
 			observed.BlueprintName,
 			observed.BlueprintVersion,
 		)
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		notifyDrift := repo.Status.Phase != repavev1alpha1.GoldenPathRepoPhaseOutOfDate
+		err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			latest.Status.ObservedPins = observed.ToObserved()
 			latest.Status.Phase = repavev1alpha1.GoldenPathRepoPhaseOutOfDate
 			latest.Status.Message = msg
@@ -72,6 +74,19 @@ func applyInventoryStatus(
 				Message: "inventory complete; remediation pending",
 			})
 		})
+		if err != nil {
+			return err
+		}
+		if notifyDrift {
+			cfg := notify.LoadConfig()
+			notify.Send(cfg, notify.EventDriftDetected, notify.Payload{
+				Namespace:  repo.Namespace,
+				Name:       repo.Name,
+				Repository: displayLocation(repo.Spec),
+				Message:    msg,
+			})
+		}
+		return nil
 	}
 
 	msg := fmt.Sprintf("pins aligned for %q", displayLocation(repo.Spec))

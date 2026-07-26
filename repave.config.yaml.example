@@ -30,3 +30,7 @@ gates:
 #     - publish_complete
 #     - generation_failed
 #     - generation_succeeded
+#
+# Operator drift/remediation (set the same webhook URLs on the operator Deployment):
+#   REPAVE_OPERATOR_NOTIFY_ENABLED=true
+#   REPAVE_OPERATOR_NOTIFY_EVENTS=drift_detected,remediation_pr_opened,remediation_pr_planned

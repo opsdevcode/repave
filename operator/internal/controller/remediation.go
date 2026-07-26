@@ -13,6 +13,7 @@ import (
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
 	"github.com/opsdevcode/repave/operator/internal/github"
+	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
@@ -133,7 +134,7 @@ func applyRemediationPRStatus(
 	}
 
 	if repo.Spec.Remediation.DryRun {
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			latest.Status.RemediationPR = &repavev1alpha1.RemediationPRStatus{
 				Branch:                  applyResult.GitBranch,
 				Title:                   title,
@@ -147,6 +148,12 @@ func applyRemediationPRStatus(
 				Message: fmt.Sprintf("dry-run remediation on branch %s", applyResult.GitBranch),
 			})
 		})
+		if err != nil {
+			return err
+		}
+		sendOperatorNotify(notify.EventRemediationPRPlanned, repo, applyResult.GitBranch, "", title,
+			fmt.Sprintf("dry-run remediation on branch %s", applyResult.GitBranch))
+		return nil
 	}
 
 	if repo.Spec.RepoURL == "" {
@@ -222,7 +229,7 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+	if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 		latest.Status.RemediationPR = &repavev1alpha1.RemediationPRStatus{
 			URL:                     pr.HTMLURL,
 			Number:                  pr.Number,
@@ -237,6 +244,34 @@ func applyRemediationPRStatus(
 			Reason:  status.ReasonRemediationPROpen,
 			Message: pr.HTMLURL,
 		})
+	}); err != nil {
+		return err
+	}
+	sendOperatorNotify(notify.EventRemediationPROpened, repo, applyResult.GitBranch, pr.HTMLURL, pr.Title,
+		fmt.Sprintf("Remediation PR opened: %s", pr.Title))
+	return nil
+}
+
+func sendOperatorNotify(
+	event string,
+	repo *repavev1alpha1.GoldenPathRepo,
+	branch string,
+	prURL string,
+	_ string,
+	message string,
+) {
+	repository := repo.Spec.RepoURL
+	if repository == "" {
+		repository = repo.Spec.LocalPath
+	}
+	cfg := notify.LoadConfig()
+	notify.Send(cfg, event, notify.Payload{
+		Namespace:  repo.Namespace,
+		Name:       repo.Name,
+		Repository: repository,
+		Message:    message,
+		PRURL:      prURL,
+		Branch:     branch,
 	})
 }
 
