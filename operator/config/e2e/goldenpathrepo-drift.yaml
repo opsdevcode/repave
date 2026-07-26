@@ -15,3 +15,5 @@ spec:
   remediation:
     enabled: true
     dryRun: true
+    # When true, operator passes --preserve-local to repave apply-upgrade.
+    preserveLocal: true

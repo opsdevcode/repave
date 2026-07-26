@@ -112,4 +112,53 @@ if [[ -z "${changed}" ]] || [[ "${changed}" -lt 1 ]]; then
 fi
 echo "OK: upgradePlan.changedFileCount=${changed}"
 
+echo "==> preserve-local apply-upgrade smoke (host copy of terraform-minimal)"
+run_preserve_local_smoke() {
+  local work staging_a
+  work="$(mktemp -d)"
+  staging_a="$(mktemp -d)"
+  cp -a "${MODULES_HOST}/terraform-minimal/." "${work}/"
+  (
+    cd "${work}"
+    git init -q
+    git config user.email e2e@repave.dev
+    git config user.name repave-e2e
+    git add -A
+    git commit -q -m "init fixture"
+  )
+  local repave_cli="${MONOREPO_ROOT}/engine/.venv/bin/repave"
+  if [[ ! -x "${repave_cli}" ]]; then
+    echo "skip preserve-local smoke: install engine venv (${repave_cli} missing)"
+    rm -rf "${work}" "${staging_a}"
+    return 0
+  fi
+  REPAVE_REPO_ROOT="${MONOREPO_ROOT}" "${repave_cli}" apply-upgrade \
+    --repo-root "${MONOREPO_ROOT}" \
+    --target-repo "${work}" \
+    --git-branch repave/e2e-base \
+    --commit-message "e2e base upgrade" \
+    --format json >/dev/null
+  echo "LOCAL EDIT" >>"${work}/README.md"
+  REPAVE_REPO_ROOT="${MONOREPO_ROOT}" "${repave_cli}" apply-upgrade \
+    --repo-root "${MONOREPO_ROOT}" \
+    --target-repo "${work}" \
+    --git-branch repave/e2e-preserve \
+    --commit-message "e2e preserve" \
+    --preserve-local \
+    --format json >/dev/null
+  if ! grep -q "LOCAL EDIT" "${work}/README.md"; then
+    echo "README.md was overwritten; preserve-local failed" >&2
+    rm -rf "${work}" "${staging_a}"
+    exit 1
+  fi
+  if [[ ! -f "${work}/.repave/upgrade-staging/README.md" ]]; then
+    echo "expected .repave/upgrade-staging/README.md hint" >&2
+    rm -rf "${work}" "${staging_a}"
+    exit 1
+  fi
+  rm -rf "${work}" "${staging_a}"
+  echo "OK: preserve-local smoke on real module fixture"
+}
+run_preserve_local_smoke
+
 kubectl get goldenpathrepo e2e-drift -o yaml

@@ -117,6 +117,7 @@ func applyRemediationPRStatus(
 		desired.BlueprintName,
 		branch,
 		commitMessage,
+		repo.Spec.Remediation.PreserveLocal,
 	)
 	if err != nil {
 		msg := err.Error()

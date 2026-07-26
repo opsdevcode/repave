@@ -102,6 +102,11 @@ type RemediationSpec struct {
 	// +optional
 	// +kubebuilder:validation:MaxLength=128
 	BranchPrefix string `json:"branchPrefix,omitempty"`
+
+	// PreserveLocal skips overwriting modified scaffold files during apply-upgrade
+	// (same as repave apply-upgrade --preserve-local).
+	// +optional
+	PreserveLocal bool `json:"preserveLocal,omitempty"`
 }
 
 // RemediationPRStatus records the last opened or planned remediation pull request.

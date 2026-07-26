@@ -28,6 +28,7 @@ type ApplyUpgrader interface {
 		blueprintName string,
 		gitBranch string,
 		commitMessage string,
+		preserveLocal bool,
 	) (ApplyResult, error)
 }
 
@@ -41,6 +42,7 @@ func (CLIApplyUpgrader) ApplyUpgrade(
 	blueprintName string,
 	gitBranch string,
 	commitMessage string,
+	preserveLocal bool,
 ) (ApplyResult, error) {
 	if strings.TrimSpace(cfg.RepoRoot) == "" {
 		return ApplyResult{}, fmt.Errorf("repave repo root is not configured")
@@ -60,6 +62,9 @@ func (CLIApplyUpgrader) ApplyUpgrade(
 	}
 	if blueprintName != "" {
 		args = append(args, "--blueprint", blueprintName)
+	}
+	if preserveLocal {
+		args = append(args, "--preserve-local")
 	}
 
 	cmd := exec.CommandContext(ctx, command, args...)
@@ -86,6 +91,8 @@ type StaticApplyUpgrader struct {
 	Result ApplyResult
 	Err    error
 	Calls  int
+	// LastPreserveLocal records the preserveLocal argument from the latest call.
+	LastPreserveLocal bool
 }
 
 func (s *StaticApplyUpgrader) ApplyUpgrade(
@@ -95,8 +102,10 @@ func (s *StaticApplyUpgrader) ApplyUpgrade(
 	_ string,
 	_ string,
 	_ string,
+	preserveLocal bool,
 ) (ApplyResult, error) {
 	s.Calls++
+	s.LastPreserveLocal = preserveLocal
 	if s.Err != nil {
 		return ApplyResult{}, s.Err
 	}

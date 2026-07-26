@@ -138,4 +138,5 @@ operator/
 
 Contributors: [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
 **Slice 3:** `spec.remediation` + `repave apply-upgrade` + `status.remediationPR`.
+Set `spec.remediation.preserveLocal: true` to pass `--preserve-local` (keeps hand-edited scaffold files).
 **Slice 4:** `Blueprint` CR + `spec.blueprintRef` + watch → reconcile GPR when catalog pins change.

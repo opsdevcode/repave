@@ -5,6 +5,7 @@ from pathlib import Path
 from repave_engine.blueprint import (
     Blueprint,
     BlueprintCatalogGroup,
+    artifact_family,
     group_blueprints_by_artifact,
 )
 
@@ -28,22 +29,27 @@ def _bp(name: str, artifact_type: str) -> Blueprint:
     )
 
 
-def test_group_blueprints_by_artifact_orders_known_types() -> None:
+def test_artifact_family_groups_terraform_types() -> None:
+    assert artifact_family("terraform-module") == "terraform"
+    assert artifact_family("terraform-environment-stack") == "terraform"
+
+
+def test_group_blueprints_by_artifact_collapses_families() -> None:
     groups = group_blueprints_by_artifact(
         [
+            _bp("playbook-a", "ansible-playbook-project"),
             _bp("role-a", "ansible-role"),
+            _bp("env-stack", "terraform-environment-stack"),
             _bp("tf-b", "terraform-module"),
             _bp("tf-a", "terraform-module"),
         ]
     )
 
-    assert [group.artifact_type for group in groups] == [
-        "terraform-module",
-        "ansible-role",
-    ]
+    assert [group.family for group in groups] == ["terraform", "ansible"]
     assert groups[0].title == "Terraform"
-    assert [bp.name for bp in groups[0].blueprints] == ["tf-b", "tf-a"]
+    assert [bp.name for bp in groups[0].blueprints] == ["tf-a", "tf-b", "env-stack"]
     assert groups[1].title == "Ansible"
+    assert [bp.name for bp in groups[1].blueprints] == ["role-a", "playbook-a"]
     assert isinstance(groups[0], BlueprintCatalogGroup)
 
 
@@ -51,5 +57,5 @@ def test_group_blueprints_unknown_type_appended() -> None:
     groups = group_blueprints_by_artifact([_bp("helm-x", "helm-chart")])
 
     assert len(groups) == 1
-    assert groups[0].artifact_type == "helm-chart"
+    assert groups[0].family == "helm-chart"
     assert groups[0].title == "Helm Chart"

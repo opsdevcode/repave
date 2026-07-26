@@ -34,28 +34,31 @@
 {% if catalog_groups %}
 {% for group in catalog_groups %}
 <section
-  class="catalog-group catalog-group--{{ group.artifact_type }}"
-  aria-labelledby="catalog-{{ group.artifact_type }}"
+  class="catalog-group catalog-group--{{ group.family }}"
+  aria-labelledby="catalog-{{ group.family }}"
 >
   <header class="catalog-group__header">
     <div>
-      <h2 class="catalog-group__title" id="catalog-{{ group.artifact_type }}">
+      <h2 class="catalog-group__title" id="catalog-{{ group.family }}">
         {{ group.title }}
       </h2>
       <p class="catalog-group__subtitle">{{ group.subtitle }}</p>
     </div>
-    <span class="badge badge--{{ group.artifact_type }}">{{ group.artifact_type }}</span>
+    <span class="badge badge--{{ group.family }}">{{ group.blueprints|length }} golden paths</span>
   </header>
   <div class="catalog-grid">
     {% for bp in group.blueprints %}
     <a class="catalog-card catalog-card--{{ bp.artifact_type }}" href="/blueprints/{{ bp.name }}">
       <div class="catalog-card__top">
         <h3 class="catalog-card__name">{{ bp.name }}</h3>
-        <span class="badge">v{{ bp.version }}</span>
+        <span class="badge badge--{{ bp.artifact_type }}">{{ bp.artifact_type }}</span>
       </div>
       {% if bp.description %}
       <p class="catalog-card__desc">{{ bp.description }}</p>
       {% endif %}
+      <div class="catalog-card__meta">
+        <span class="badge badge--muted">v{{ bp.version }}</span>
+      </div>
       <div class="catalog-card__chips" aria-label="Gates">
         {% for gate in bp.gates[:4] %}
         <span class="chip">{{ gate }}</span>
