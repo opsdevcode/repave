@@ -106,7 +106,7 @@ def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) ->
 
     assert response.status_code == 200
     assert "data-repave-form-draft" in response.text
-    assert "Standard drift" in response.text
+    assert "Standard pin drift" in response.text
     assert "form-actions__preflight" in response.text
 
 
@@ -153,7 +153,7 @@ def test_generate_form_submission(
 
     assert response.status_code == 200
     assert "tf-aws-example" in response.text
-    assert "Dry-run" in response.text
+    assert "Plan only" in response.text
     assert "result-hero" in response.text
     assert "gate-table" in response.text
     assert "data-gate-dashboard" in response.text
@@ -263,8 +263,8 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "provider_services" in response.text
     assert "governance-card" in response.text
     assert "form-layout--split" in response.text
-    assert "Dry-run preview" in response.text
-    assert "Publish locally" in response.text
+    assert "Plan (validate only)" in response.text
+    assert "Apply to modules root" in response.text
     assert "chip" in response.text
     assert "service-presets" in response.text
     assert "form-validation" in response.text
@@ -273,7 +273,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "policy-catalog" in response.text
     assert "data-repave-busy-form" in response.text
     assert "form-actions--sticky" in response.text
-    assert "Standard drift" in response.text
+    assert "Standard pin drift" in response.text
     assert "data-form-stepper" in response.text
     assert 'data-form-stepper-kind="terraform"' in response.text
     assert "form-stepper" in response.text
@@ -292,7 +292,7 @@ def test_observability_form_stepper(repo_root, output_config) -> None:
     response = client.get("/blueprints/observability-as-code-generic")
     assert response.status_code == 200
     assert 'data-form-stepper-kind="observability"' in response.text
-    assert "governance-drift-details" in response.text or "Standard drift" in response.text
+    assert "governance-drift-details" in response.text or "Standard pin drift" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:
@@ -698,7 +698,7 @@ def test_result_dashboard_published_repo_card(
 
     assert response.status_code == 200
     assert "result-hero--passed" in response.text
-    assert "Published locally" in response.text
+    assert "Applied locally" in response.text
     assert "repo-card" in response.text
     assert "Open on GitHub" in response.text
     assert "repo-local-path" in response.text
@@ -753,9 +753,9 @@ def test_update_form_page(repo_root, output_config) -> None:
     response = client.get("/update")
 
     assert response.status_code == 200
-    assert "Update existing repository" in response.text
+    assert "Upgrade existing repository" in response.text
     assert 'name="target_repo"' in response.text
-    assert "Update repo" in response.text
+    assert "Upgrade repo" in response.text
     assert "data-repave-busy-form" in response.text
     assert "data-busy-stages" in response.text
     assert "shell__main--golden-path" in response.text

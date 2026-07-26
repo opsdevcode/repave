@@ -13,7 +13,7 @@ from repave_engine.observability_catalog import (
 
 def test_catalog_has_field_options(repo_root) -> None:
     catalog = load_observability_catalog(repo_root)
-    assert catalog.version == "1.3.0"
+    assert catalog.version == "1.4.0"
     assert catalog_has_field_options(catalog)
     assert len(catalog.services) >= 2
 

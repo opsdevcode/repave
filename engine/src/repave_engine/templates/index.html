@@ -10,11 +10,11 @@
     <div class="home-hero__primary">
       <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
       <p class="home-hero__tagline">
-        Governed golden paths — generate compliant modules without the CLI.
+        Internal developer platform templates—scaffold compliant repos without the CLI.
       </p>
       <div class="home-hero__actions">
-        <a class="btn btn--primary btn--glow" href="#golden-paths">Browse golden paths</a>
-        <a class="btn btn--secondary" href="/update">Update existing repo</a>
+        <a class="btn btn--primary btn--glow" href="#golden-paths">Browse catalog</a>
+        <a class="btn btn--secondary" href="/update">Upgrade existing repo</a>
         <span id="home-resume-chip" class="home-resume-chip" hidden></span>
         {% if catalog_groups %}
         {% set ns = namespace(starter=none) %}
@@ -39,14 +39,14 @@
     <ul class="home-hero__metrics" aria-label="Catalog summary">
       <li>
         <span class="home-hero__metric-value">{{ stats.paths }}</span>
-        <span class="home-hero__metric-label">golden paths</span>
+        <span class="home-hero__metric-label">platform templates</span>
       </li>
       <li>
         <span class="home-hero__metric-value">{{ catalog_groups|length }}</span>
         <span class="home-hero__metric-label">artifact families</span>
       </li>
       <li class="home-hero__metric-note">
-        Gates on every generate
+        Gates on every scaffold
       </li>
     </ul>
     {% endif %}
@@ -57,15 +57,15 @@
   <ol class="demo-pipeline__steps">
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">1</span>
-      <span><strong>Pick</strong> a path from the catalog</span>
+      <span><strong>Select</strong> a template from the catalog</span>
     </li>
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">2</span>
-      <span><strong>Configure</strong> scope and governance pins</span>
+      <span><strong>Configure</strong> service scope and policy pins</span>
     </li>
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">3</span>
-      <span><strong>Generate</strong> — render, gates, publish</span>
+      <span><strong>Scaffold</strong> — render, gates, delivery</span>
     </li>
   </ol>
 </nav>
@@ -119,7 +119,7 @@
       </div>
     </nav>
     <div class="home-quicknav__extras">
-      <a class="home-quicknav__extra" href="/update">Update repo</a>
+      <a class="home-quicknav__extra" href="/update">Upgrade repo</a>
       <a class="home-quicknav__extra" href="/activity">All activity</a>
       {% if recent_activity %}
       <a class="home-quicknav__extra" href="#activity-heading" data-quicknav-section="activity-heading">
@@ -134,7 +134,7 @@
   <div class="home-layout__main">
 {% if catalog_groups %}
 <div class="catalog-search" data-catalog-search>
-  <label class="catalog-search__label" for="catalog-search-input">Search golden paths</label>
+  <label class="catalog-search__label" for="catalog-search-input">Search platform templates</label>
   <input
     class="catalog-search__input field__input"
     type="search"
@@ -175,7 +175,7 @@
       </h2>
       <p class="catalog-group__subtitle">{{ group.subtitle }}</p>
     </div>
-    <span class="badge badge--{{ group.family }}">{{ group.blueprints|length }} golden paths</span>
+    <span class="badge badge--{{ group.family }}">{{ group.blueprints|length }} templates</span>
   </header>
   <div class="catalog-grid">
     {% for bp in group.blueprints %}
@@ -222,7 +222,7 @@
 </div>
 {% endif %}
 <div class="alert alert--info catalog-search-empty" id="catalog-search-empty" hidden>
-  No golden paths match your search. Clear the filter to see the full catalog.
+  No templates match your search. Clear the filter to see the full catalog.
 </div>
 </div>
   </div>

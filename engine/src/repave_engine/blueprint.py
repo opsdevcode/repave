@@ -584,12 +584,15 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
 
 # Portal catalog grouping (v1.18). Families collapse artifact types in the home UI.
 _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
-    "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
-    "ansible": ("Ansible", "Roles, collections, and playbook projects"),
-    "policy": ("Policy", "Checkov, OPA (Conftest), and Azure Policy golden paths"),
-    "observability": ("Observability", "Dashboards, alerts, and SLOs as code"),
-    "helm": ("Kubernetes / Helm", "Charts for workloads on Kubernetes"),
-    "app": ("Application services", "Containerized services with Dockerfile and CI"),
+    "terraform": ("Terraform", "Landing-zone modules, shared services, and environment stacks"),
+    "ansible": ("Ansible", "Roles, collections, and automation projects for fleet operations"),
+    "policy": ("Policy", "Guardrails as code—Checkov, OPA, and Azure Policy packs"),
+    "observability": (
+        "Observability",
+        "Dashboards, alerts, and SLOs aligned to platform standards",
+    ),
+    "helm": ("Kubernetes / Helm", "Workload charts for cluster delivery teams"),
+    "app": ("Application services", "Service repos with Dockerfile, CI, and catalog metadata"),
 }
 _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
     "terraform",
