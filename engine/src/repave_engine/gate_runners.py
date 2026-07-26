@@ -1173,14 +1173,19 @@ def run_opa(ctx: GateContext) -> GateResult:
         if artifact == "observability" and not any(output_dir.glob("*.tf")):
             return _run_opa_native_observability(ctx, policies_dir, output_dir)
         plan_json = _terraform_plan_json(output_dir, cfg.plan_subdir)
-        if plan_json is None:
-            return GateResult(
-                "opa",
-                False,
-                False,
-                "terraform plan JSON could not be produced for opa evaluation",
-            )
-        target = str(plan_json)
+        if plan_json is not None:
+            target = str(plan_json)
+        else:
+            fixtures = output_dir / cfg.fixtures_dir
+            if fixtures.is_dir() and any(fixtures.glob("*.json")):
+                target = str(fixtures)
+            else:
+                return GateResult(
+                    "opa",
+                    False,
+                    False,
+                    "terraform plan JSON could not be produced for opa evaluation",
+                )
     elif artifact == "helm-chart":
         return _run_opa_helm_chart(ctx, policies_dir, output_dir)
     else:

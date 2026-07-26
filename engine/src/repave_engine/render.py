@@ -199,6 +199,7 @@ def render_blueprint(
     if policy_selection is not None:
         _apply_checkov_skip_config(output_dir, blueprint, policy_selection.checkov_skip_checks)
     _copy_opa_policies(output_dir, blueprint, policy_selection)
+    _copy_opa_plan_fixtures(output_dir, blueprint)
     _apply_opa_plan_demo_fixture(output_dir, blueprint, payload)
     _copy_azure_policy_definitions(output_dir, blueprint, policy_selection)
     _copy_ansible_lint_pack(output_dir, blueprint)
@@ -420,6 +421,23 @@ def _copy_opa_policies(
         return
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copytree(source_dir, destination)
+
+
+def _copy_opa_plan_fixtures(output_dir: Path, blueprint: Blueprint) -> None:
+    """Vend plan JSON fixtures so module CI can run conftest without cloud credentials."""
+    if blueprint.opa_policies is None:
+        return
+    if not blueprint.artifact_type.startswith("terraform-"):
+        return
+
+    repo_root = _find_repo_root(blueprint.path)
+    source = repo_root / "policy" / "opa" / "fixtures" / "plan-create-only.json"
+    if not source.is_file():
+        raise FileNotFoundError(f"OPA plan fixture missing: {source}")
+
+    fixtures_dir = output_dir / blueprint.opa_gate.fixtures_dir
+    fixtures_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, fixtures_dir / "plan-create-only.json")
 
 
 def _apply_opa_plan_demo_fixture(

@@ -10,11 +10,12 @@ GitHub** — standards enforced by construction, not review theater.
 Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  →  Publish
 ```
 
-> **Engine [v1.53.0](https://github.com/opsdevcode/repave/releases)** · Portal + CLI +
-> optional Kubernetes operator. Run locally with Docker Compose — no cluster required
+> **Engine [v1.55.0](https://github.com/opsdevcode/repave/releases)** · Portal + CLI +
+> optional Kubernetes **operator (GA)**. Run locally with Docker Compose — no cluster required
 > for generation.
 
-**Try it:** [Quickstart](docs/quickstart.md) → http://localhost:8088
+**Try it:** [Quickstart](docs/quickstart.md) · **[5-minute demo](docs/quickstart.md#five-minute-demo-portal)** ·
+[Sales demo runbook](docs/sales-demo.md) → http://localhost:8088
 
 ---
 
@@ -79,7 +80,7 @@ Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md)
 - **Portal + API** at `:8088` — forms, `/activity` audit view, [`POST /api/v1/generate`](docs/backstage.md).
 - **CLI** — `repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades).
 - **Publish** — local git under `REPAVE_MODULES_ROOT` or GitHub with `GITHUB_TOKEN` ([module repos](docs/module-repositories.md)).
-- **Operator (alpha)** — drift detection and remediation PRs ([operator overview](docs/operator-overview.md)).
+- **Operator (GA)** — drift detection, upgrade plans, and remediation PRs ([overview](docs/operator-overview.md) · [GA scope](docs/operator-ga.md))
 
 Gates, schemas, and CI detail: [Engine capabilities](docs/engine-capabilities.md)
 
@@ -118,6 +119,7 @@ Optional **operator** loop (estate scale): [Operator overview](docs/operator-ove
 | --- | --- |
 | **Index** | [docs/README.md](docs/README.md) |
 | Quickstart | [docs/quickstart.md](docs/quickstart.md) |
+| Sales demo (live calls) | [docs/sales-demo.md](docs/sales-demo.md) |
 | Concepts & provenance | [docs/concepts.md](docs/concepts.md) |
 | Engine & gates | [docs/engine-capabilities.md](docs/engine-capabilities.md) |
 | Portal UX spec | [docs/portal-design.md](docs/portal-design.md) |
@@ -138,7 +140,7 @@ engine/      Generation engine, portal, CLI, API
 blueprints/  Versioned golden paths
 standards/   Standards corpus (pinned by blueprints)
 policy/      Checkov, OPA, ansible-lint packs
-operator/    Kubernetes reconciliation (alpha)
+operator/    Kubernetes reconciliation (GA — inventory & upgrade PRs)
 deploy/local Docker Compose quickstart
 docs/        Product & engineering documentation
 schemas/     Frozen JSON contracts

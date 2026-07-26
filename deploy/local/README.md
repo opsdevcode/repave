@@ -50,10 +50,12 @@ kubectl cluster-info --context kind-repave-local
 Kubernetes is optional for local development. The operator and Helm chart are
 planned for a future release.
 
-## Operator (v1.17 alpha)
+## Operator (v1.17 GA)
 
 The reconciliation operator runs on Kubernetes (kind locally). **Local testing
 is first-class** — no GitHub for default `make operator-test` (envtest) or kind e2e.
+
+GA scope: [`docs/operator-ga.md`](../../docs/operator-ga.md).
 
 ```bash
 make operator-test    # unit + envtest (Go only)

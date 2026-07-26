@@ -7,6 +7,7 @@ live under [`standards/policy/`](../standards/policy/README.md).
 | ---- | ------- |
 | [`checkov/`](checkov/policies/) | Terraform modules, environment stacks, and `checkov-policy` artifacts |
 | [`opa/`](opa/policies/) | `opa-policy` artifacts and Terraform plan-time Rego |
+| [`opa/fixtures/`](opa/fixtures/) | Create-only Terraform plan JSON for module CI (`conftest`) when live plan is unavailable |
 | [`azure/`](azure/definitions/) | `azure-policy` artifacts |
 | [`ansible-lint/`](ansible-lint/pack/) | Ansible roles, collections, and playbook projects |
 

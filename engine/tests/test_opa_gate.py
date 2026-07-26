@@ -108,6 +108,47 @@ def test_format_opa_failure_adds_publish_blocked_message() -> None:
     assert detail in formatted
 
 
+def test_opa_terraform_falls_back_to_vendored_plan_fixture(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bp = make_blueprint(tmp_path, gates=("opa",), artifact_type="terraform-module")
+    bp = replace(
+        bp,
+        opa_policies=OpaPolicyPack(
+            policies_source="policy/opa/policies",
+            policy_version="1.0.0",
+        ),
+        opa_gate=OpaGateConfig(
+            policies_dir="policy/opa/policies",
+            fixtures_dir="policy/opa/fixtures",
+        ),
+    )
+    policies = tmp_path / "policy" / "opa" / "policies"
+    policies.mkdir(parents=True)
+    (policies / "allow.rego").write_text("package terraform.plan\n", encoding="utf-8")
+    fixtures = tmp_path / "policy" / "opa" / "fixtures"
+    fixtures.mkdir(parents=True)
+    (fixtures / "plan-create-only.json").write_text('{"resource_changes": []}\n', encoding="utf-8")
+
+    captured: dict[str, list[str]] = {}
+
+    def fake_run_command(cmd: list[str], cwd: Path) -> CompletedProcess[str]:
+        captured["cmd"] = cmd
+        return CompletedProcess(cmd, 0, "", "")
+
+    def conftest_only(name: str) -> bool:
+        return name == "conftest"
+
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", conftest_only)
+    monkeypatch.setattr("repave_engine.gate_runners._terraform_plan_json", lambda *_a, **_k: None)
+    monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run_command)
+
+    result = run_opa(GateContext(output_dir=tmp_path, blueprint=bp))
+    assert result.passed is True
+    assert captured["cmd"][:3] == ["conftest", "test", str(fixtures)]
+
+
 def test_conftest_rejects_destructive_plan_fixture(repo_root: Path) -> None:
     import shutil
     import subprocess
