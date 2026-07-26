@@ -23,4 +23,9 @@ run_capture "$BASE/" home-catalog.png
 run_capture "$BASE/blueprints/terraform-module-generic" blueprint-form.png
 run_capture "$BASE/update" update-repo.png
 
+echo "Capturing generate result (requires REPAVE_GITHUB_ORG and REPAVE_MODULES_ROOT)…"
+cd "$ROOT/engine" && REPAVE_GITHUB_ORG="${REPAVE_GITHUB_ORG:-opsdevcode}" \
+  REPAVE_MODULES_ROOT="${REPAVE_MODULES_ROOT:-$HOME/repave-modules}" \
+  uv run --with playwright python ../scripts/capture_generate_result.py
+
 echo "Wrote PNGs under $OUT"

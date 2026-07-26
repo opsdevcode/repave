@@ -10,40 +10,28 @@ major portal UI changes.
 | `home-catalog.png` | `/` | Catalog, quick menu, search, hero |
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
 | `update-repo.png` | `/update` | Upgrade / re-render flow |
-| `generate-result.png` | `/generate` (dry-run) | Lineage, policy rules, gate dashboard |
+| `generate-result.png` | dry-run generate | Lineage, policy rules, gate dashboard |
 
-Optional fourth capture for results (dry-run gate dashboard + lineage):
+## Refresh
 
-- Generate from **terraform-module-generic** with **Dry-run preview**, then save as `generate-result.png`.
-
-## Refresh locally
-
-1. Start the portal (requires `REPAVE_GITHUB_ORG` and `REPAVE_MODULES_ROOT`):
-
-   ```bash
-   export REPAVE_GITHUB_ORG=your-org
-   export REPAVE_MODULES_ROOT=$HOME/repave-modules
-   cd engine && uv run repave serve --repo-root .. --host 127.0.0.1 --port 8088
-   ```
-
-   Or: `cd deploy/local && docker compose up --build` then open http://localhost:8088.
-
-2. Capture at **1280×800** (or full-page for home) and overwrite the PNGs above.
-
-3. Prefer **dark mode** (default night-ops theme) and a wide viewport so the
-   governance split layout is visible on blueprint forms.
-
-## Script
+From repo root (portal on `:8088` for static pages; generate capture uses TestClient):
 
 ```bash
+export REPAVE_GITHUB_ORG=your-org
+export REPAVE_MODULES_ROOT=$HOME/repave-modules
 ./scripts/capture_portal_screenshots.sh
 ```
 
-Requires Node.js and [Playwright](https://playwright.dev/) CLI:
+- Static routes use Playwright CLI (`npx playwright screenshot …`).
+- `generate-result.png` uses `scripts/capture_generate_result.py` (`cd engine &&
+  uv run --with playwright python ../scripts/capture_generate_result.py`).
+
+Prefer **dark mode** (default) and ~1280×800 viewport. For blueprint forms use a
+wide window so the governance split layout is visible.
+
+## Manual serve
 
 ```bash
-# one-time
-npx playwright install chromium
-
-./scripts/capture_portal_screenshots.sh
+cd deploy/local && docker compose up --build
+# or: make serve  →  http://127.0.0.1:8088
 ```

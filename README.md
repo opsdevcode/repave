@@ -56,7 +56,13 @@ Terraform, gate dashboard on results, upgrade preview for existing repos.
   </tr>
 </table>
 
-Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md) (include `generate-result.png` after a dry-run generate for the lineage + gates view).
+<p align="center">
+  <img src="docs/images/portal/generate-result.png" alt="Dry-run generate result — lineage, policy rules, and gate dashboard" width="920" />
+  <br />
+  <sub>Generate result — lineage, policy pack, gates (dry-run)</sub>
+</p>
+
+Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md)
 
 ---
 
