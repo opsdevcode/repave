@@ -18,8 +18,8 @@ description:
 
 min_ansible_version:
   type: str
-  help: Minimum supported Ansible version
-  default: "2.15"
+  help: Minimum supported Ansible core version
+  default: "2.18"
 
 target_platforms:
   type: str

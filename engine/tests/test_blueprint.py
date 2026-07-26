@@ -196,6 +196,12 @@ def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert platforms.multi is True
     assert "Windows:2022" in platforms.enum
     assert "Ubuntu:jammy" in platforms.enum
+    min_ansible = next(
+        field for field in ansible_blueprint.inputs if field.name == "min_ansible_version"
+    )
+    assert min_ansible.default == "2.18"
+    assert min_ansible.enum[0] == "2.18"
+    assert "2.15" in min_ansible.enum
 
 
 def test_validate_ansible_target_platforms_multi_value(ansible_blueprint) -> None:
