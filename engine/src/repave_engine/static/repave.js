@@ -215,7 +215,7 @@
   }
 
   function initFormStepper() {
-    var form = document.querySelector("[data-terraform-stepper]");
+    var form = document.querySelector("[data-form-stepper]");
     if (!form) {
       return;
     }
@@ -225,7 +225,47 @@
     var nextBtn = form.querySelector("[data-stepper-next]");
     var submitBtn = form.querySelector('button[type="submit"]');
     var current = 0;
-    var maxStep = 2;
+    var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
+    if (Number.isNaN(maxStep)) {
+      maxStep = 2;
+    }
+
+    function isFieldVisible(field) {
+      if (!field || field.disabled) {
+        return false;
+      }
+      if (field.type === "hidden") {
+        return false;
+      }
+      var node = field;
+      while (node && node !== form) {
+        if (node.hidden) {
+          return false;
+        }
+        node = node.parentElement;
+      }
+      return true;
+    }
+
+    function validateStep(stepIndex) {
+      if (typeof form.reportValidity !== "function") {
+        return true;
+      }
+      var stepRoots = form.querySelectorAll('[data-form-step="' + stepIndex + '"]');
+      var fields = [];
+      stepRoots.forEach(function (root) {
+        root.querySelectorAll("input, select, textarea").forEach(function (field) {
+          fields.push(field);
+        });
+      });
+      for (var i = 0; i < fields.length; i += 1) {
+        if (isFieldVisible(fields[i]) && !fields[i].checkValidity()) {
+          fields[i].reportValidity();
+          return false;
+        }
+      }
+      return true;
+    }
 
     function applyStep() {
       steps.forEach(function (node) {
@@ -246,6 +286,15 @@
       if (submitBtn) {
         submitBtn.hidden = current !== maxStep;
       }
+      var stickyActions = form.querySelector(".form-actions--sticky");
+      if (stickyActions) {
+        stickyActions.classList.toggle("form-actions--stepper-final", current === maxStep);
+      }
+      form.dispatchEvent(
+        new CustomEvent("repave:stepper-change", {
+          detail: { step: current, maxStep: maxStep },
+        })
+      );
       form.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
@@ -257,14 +306,15 @@
     }
     if (nextBtn) {
       nextBtn.addEventListener("click", function () {
-        if (current === 0 && typeof form.reportValidity === "function") {
-          var stepFields = form.querySelectorAll('[data-form-step="0"] input, [data-form-step="0"] select, [data-form-step="0"] textarea');
-          for (var i = 0; i < stepFields.length; i += 1) {
-            if (!stepFields[i].checkValidity()) {
-              stepFields[i].reportValidity();
-              return;
-            }
-          }
+        if (!validateStep(current)) {
+          return;
+        }
+        var willAdvance = new CustomEvent("repave:stepper-will-advance", {
+          detail: { fromStep: current, toStep: Math.min(maxStep, current + 1) },
+          cancelable: true,
+        });
+        if (!form.dispatchEvent(willAdvance)) {
+          return;
         }
         current = Math.min(maxStep, current + 1);
         applyStep();

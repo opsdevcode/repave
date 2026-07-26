@@ -2159,14 +2159,15 @@ details.file-panel summary {
 
 @media (min-width: 960px) {
   .shell__main--golden-path .form-layout--split {
-    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
-    gap: var(--space-6);
+    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+    gap: var(--space-5);
   }
 }
 
 @media (min-width: 1280px) {
   .shell__main--golden-path .form-layout--split {
-    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+    grid-template-columns: minmax(17rem, 22rem) minmax(0, 1fr);
+    gap: var(--space-6);
   }
 
   .shell__main--golden-path .form-panel {
@@ -2185,12 +2186,17 @@ details.file-panel summary {
 
 @media (min-width: 960px) {
   .form-layout--split {
-    grid-template-columns: minmax(240px, 280px) minmax(0, 1fr);
+    grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
   }
 
   .form-layout--split .governance-card {
     position: sticky;
-    top: calc(var(--shell-height) + var(--space-4));
+    top: calc(var(--shell-height, 3.5rem) + var(--space-4));
+    align-self: start;
+    max-height: calc(100vh - var(--shell-height, 3.5rem) - var(--space-6));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 
@@ -2200,6 +2206,7 @@ details.file-panel summary {
   border-radius: calc(var(--radius) + 2px);
   border-top: 3px solid var(--accent);
   padding: var(--space-4);
+  min-width: 0;
 }
 
 .governance-card__title {
@@ -2232,8 +2239,76 @@ details.file-panel summary {
   word-break: break-word;
 }
 
+.governance-card__value {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.governance-card__value--inline {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.governance-card__code {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  word-break: break-all;
+  max-width: 100%;
+}
+
 .governance-card__gates {
   gap: var(--space-2);
+  max-height: 9rem;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+  align-content: flex-start;
+}
+
+.governance-drift-summary {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.governance-drift-details {
+  margin-top: var(--space-2);
+  font-size: 0.85rem;
+}
+
+.governance-drift-details summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.governance-drift-files {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
+}
+
+.governance-drift-files__path {
+  font-size: 0.75rem;
+  word-break: break-all;
+}
+
+.governance-drift-hint {
+  margin: var(--space-2) 0 0;
+  font-size: 0.82rem;
+}
+
+.governance-drift-ok {
+  margin: 0;
+}
+
+.governance-card__pin code {
+  font-size: 0.78rem;
+  word-break: break-all;
 }
 
 .governance-card__section {
@@ -2500,7 +2575,30 @@ details.file-panel summary {
 
 .form-stepper__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.form-step-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.form-actions--sticky:not(.form-actions--stepper-final) {
+  border-top-color: transparent;
+}
+
+.form-actions--sticky:not(.form-actions--stepper-final) .btn--primary {
+  display: none;
+}
+
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final)::after {
+  content: "Use Next above to continue";
+  display: block;
+  width: 100%;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
 }
 
 .activity-card {

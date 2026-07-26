@@ -255,9 +255,16 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 catalog_service_ids=obs_catalog_service_ids,
             )
         provider_catalog = load_provider_catalog(blueprint.path)
-        terraform_stepper = (
-            provider_catalog is not None and blueprint.terraform_layout != "single-resource"
-        )
+        if (
+            artifact_family(blueprint.artifact_type) == "terraform"
+            and provider_catalog
+            and blueprint.terraform_layout != "single-resource"
+        ):
+            form_stepper = "terraform"
+        elif observability_field_catalog:
+            form_stepper = "observability"
+        else:
+            form_stepper = "standard"
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
@@ -265,7 +272,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 blueprint=blueprint,
                 provider_catalog=provider_catalog,
-                terraform_stepper=terraform_stepper,
+                form_stepper=form_stepper,
                 standards_diff=standards_diff_for_pin(
                     repo_root,
                     standard_source=blueprint.standard_source,
