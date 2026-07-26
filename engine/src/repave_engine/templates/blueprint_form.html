@@ -60,7 +60,9 @@
 
   <form method="post" action="/generate" id="generate-form" class="form-panel">
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
+    {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
+    {% endif %}
 
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
@@ -76,6 +78,23 @@
           <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
         </select>
+      </div>
+      {% elif provider_catalog and blueprint.terraform_layout == "single-resource" and field.name == "provider_service" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          <option value="" disabled selected>Select a service…</option>
+        </select>
+      </div>
+      {% elif provider_catalog and blueprint.terraform_layout == "single-resource" and field.name == "provider_resource" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %} disabled>
+          <option value="" disabled selected>Select a resource…</option>
+        </select>
+        <p id="single-resource-validation" class="form-validation" role="alert" hidden></p>
       </div>
       {% elif provider_catalog and field.name == "provider_services" %}
       <div class="field-block">
@@ -161,6 +180,104 @@
 {% block scripts %}
 {% if provider_catalog %}
 <script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>
+{% if blueprint.terraform_layout == "single-resource" %}
+<script>
+  const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
+  const providerSelect = document.getElementById("cloud_provider");
+  const serviceSelect = document.getElementById("provider_service");
+  const resourceSelect = document.getElementById("provider_resource");
+  const form = document.getElementById("generate-form");
+  const validationBanner = document.getElementById("single-resource-validation");
+
+  function providerServices(provider) {
+    return Object.keys(catalog[provider] || {}).sort();
+  }
+
+  function serviceResources(provider, service) {
+    const definition = catalog[provider]?.[service];
+    if (!definition?.resources?.length) {
+      return [];
+    }
+    return [...new Set(definition.resources)].sort();
+  }
+
+  function fillSelect(select, options, placeholder) {
+    select.innerHTML = "";
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+    for (const option of options) {
+      const el = document.createElement("option");
+      el.value = option;
+      el.textContent = option;
+      select.appendChild(el);
+    }
+  }
+
+  function clearValidation() {
+    if (!validationBanner) {
+      return;
+    }
+    validationBanner.hidden = true;
+    validationBanner.textContent = "";
+  }
+
+  function showValidation(message) {
+    if (!validationBanner) {
+      return;
+    }
+    validationBanner.textContent = message;
+    validationBanner.hidden = false;
+    validationBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function renderServices() {
+    const provider = providerSelect.value;
+    fillSelect(serviceSelect, providerServices(provider), "Select a service…");
+    fillSelect(resourceSelect, [], "Select a resource…");
+    resourceSelect.disabled = true;
+    clearValidation();
+  }
+
+  function renderResources() {
+    const provider = providerSelect.value;
+    const service = serviceSelect.value;
+    if (!service) {
+      fillSelect(resourceSelect, [], "Select a resource…");
+      resourceSelect.disabled = true;
+      return;
+    }
+    const resources = serviceResources(provider, service);
+    fillSelect(resourceSelect, resources, "Select a resource…");
+    resourceSelect.disabled = resources.length === 0;
+    clearValidation();
+  }
+
+  providerSelect.addEventListener("change", () => {
+    renderServices();
+  });
+  serviceSelect.addEventListener("change", () => {
+    renderResources();
+  });
+  form.addEventListener("submit", (event) => {
+    clearValidation();
+    if (!serviceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider service before generating.");
+      return;
+    }
+    if (!resourceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider resource before generating.");
+    }
+  });
+
+  renderServices();
+</script>
+{% else %}
 <script>
   const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
   const blueprintName = {{ blueprint.name | tojson }};
@@ -550,5 +667,6 @@
 
   renderServices(providerSelect.value);
 </script>
+{% endif %}
 {% endif %}
 {% endblock %}

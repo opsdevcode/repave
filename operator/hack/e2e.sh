@@ -10,10 +10,13 @@ cd "${ROOT}"
 CLUSTER_NAME="${KIND_CLUSTER_NAME:-repave-local}"
 IMG="${IMG:-repave-operator:dev}"
 TIMEOUT_SEC="${E2E_TIMEOUT_SEC:-180}"
-KIND_BIN="${KIND_BIN:-kind}"
 DOCKERFILE="${OPERATOR_E2E_DOCKERFILE:-${ROOT}/Dockerfile.e2e}"
 
-if ! command -v "${KIND_BIN}" >/dev/null 2>&1; then
+if [[ -n "${KIND_BIN:-}" ]] && [[ -x "${KIND_BIN}" ]]; then
+  :
+elif command -v kind >/dev/null 2>&1; then
+  KIND_BIN="$(command -v kind)"
+else
   echo "kind not found; install with: go install sigs.k8s.io/kind@v0.27.0" >&2
   exit 1
 fi

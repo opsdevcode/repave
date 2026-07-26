@@ -206,6 +206,60 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "scope-resource-filter" in response.text
 
 
+def test_resource_blueprint_form_renders_catalog_dropdowns(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-resource")
+
+    assert response.status_code == 200
+    assert 'id="cloud_provider"' in response.text
+    assert 'id="provider_service"' in response.text
+    assert 'id="provider_resource"' in response.text
+    assert "Select a service" in response.text
+    assert "Select a resource" in response.text
+    assert "provider-services" not in response.text
+    assert "service-presets" not in response.text
+    assert "form-layout--split" in response.text
+
+
+def test_generate_resource_module_from_form(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
+    monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
+    captured: dict[str, object] = {}
+
+    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+        captured["values"] = values
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=output_config.modules_root, values=values),
+            gates=[],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="dry-run",
+        )
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", fake_generate)
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-resource",
+            "dry_run": "true",
+            "module_name": "acme-bucket",
+            "description": "Example",
+            "cloud_provider": "aws",
+            "provider_service": "s3",
+            "provider_resource": "bucket",
+        },
+    )
+
+    assert response.status_code == 200
+    values = captured["values"]
+    assert isinstance(values, dict)
+    assert values["provider_service"] == "s3"
+    assert values["provider_resource"] == "bucket"
+
+
 def test_ansible_form_is_single_column(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/ansible-role-generic")
