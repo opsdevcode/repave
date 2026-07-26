@@ -1,8 +1,10 @@
-# repave operator (v1.17)
+# repave operator (v1.17 GA)
 
 Kubernetes reconciliation for generated golden-path repositories: detect drift
 and pinned-version bumps, then open **governed remediation pull requests** (never
 direct pushes to module repos).
+
+GA scope, checklist, and out-of-scope items: [`docs/operator-ga.md`](../docs/operator-ga.md).
 
 **Slice 0 (scaffold):** `GoldenPathRepo` CRD (`repave.dev/v1alpha1`), baseline
 reconciler, `make operator-test` with envtest.
@@ -19,8 +21,7 @@ inventory lands.
 [`docs/operator-standards.md`](../docs/operator-standards.md) and
 [`operator/CONTRIBUTING.md`](CONTRIBUTING.md).
 
-Scope and release sequencing: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator-alpha)
-(shipped alpha + GA e2e).
+Release history: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator-alpha).
 
 ---
 

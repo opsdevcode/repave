@@ -25,10 +25,22 @@ today and what remains intentionally out of scope.
 
 ## GA checklist (maintainers)
 
-- [ ] `make operator-test` and `make operator-e2e` pass on `main`
-- [ ] Sample manifests under `operator/config/e2e/` match blueprint pins on `main`
-- [ ] `operator/README.md` and [`operator-local-dev.md`](operator-local-dev.md) match controller behavior
+Last verified on **`main`**: 2026-07-26 (engine **v1.55.0**).
+
+- [x] `make operator-test` and `make operator-e2e` pass on `main`
+- [x] Sample manifests under `operator/config/e2e/` match blueprint pins on `main`
+- [x] `operator/README.md` and [`operator-local-dev.md`](operator-local-dev.md) match controller behavior
 - [ ] Breaking CRD changes follow [`operator-standards.md`](operator-standards.md) and release notes
+
+### E2E fixture contract
+
+| Source | Role |
+| --- | --- |
+| `operator/testdata/modules/terraform-minimal/repave.yaml` | **Observed** pins: blueprint `terraform-module-generic@0.9.0`, standard `standards/terraform-standards@1.1.0` (fixture stays behind catalog on purpose). |
+| `operator/config/e2e/goldenpathrepo-drift.yaml` | **Desired** blueprint `9.9.9` forces `OutOfDate`; standard fields match the fixture. |
+| Catalog `blueprints/terraform-module-generic/blueprint.yaml` | **Current** blueprint version (for example `0.11.0`) is what `repave plan-upgrade` targets in `status.upgradePlan`. |
+
+When bumping the terraform-module-generic blueprint or standard pins, update the fixture README and any envtest assertions; keep e2e **desired** blueprint ahead of **observed** (see [`operator/README.md`](../operator/README.md#baseline-from-generation-v114)).
 
 ## Related
 
