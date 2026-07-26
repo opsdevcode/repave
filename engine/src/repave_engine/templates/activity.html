@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Activity — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/">← Golden paths</a></p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Generation activity</h1>
+    <p class="page-lead">
+      Recent runs from the audit log when <code>audit.enabled</code> is set in config.
+    </p>
+  </div>
+</header>
+
+{% if audit_enabled %}
+  {% if recent_activity %}
+<section class="card activity-card" aria-labelledby="activity-full-heading">
+  <div class="card__header">
+    <h2 id="activity-full-heading">Recent generations</h2>
+    <p class="muted card__subtitle">Newest first · showing up to {{ activity_limit }} entries</p>
+  </div>
+  <div class="card__body">
+    {% include "partials/activity_list.html" %}
+  </div>
+</section>
+  {% else %}
+<div class="alert alert--info">
+  Audit is enabled but no generation events were recorded yet. Run a generate from the portal or CLI.
+</div>
+  {% endif %}
+{% else %}
+<div class="alert alert--info" role="status">
+  Enable audit in <code>repave.config.yaml</code> to record fleet-wide generation history here.
+</div>
+{% endif %}
+{% endblock %}

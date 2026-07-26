@@ -25,6 +25,7 @@
   action="/update"
   data-repave-busy-form
   data-busy-label="Planning upgrade…"
+  data-busy-stages="Reading repave.yaml…|Rendering blueprint…|Diffing files…"
 >
   <div class="field">
     <label class="field__label" for="target_repo">Repository path</label>
@@ -56,7 +57,7 @@
     />
   </div>
 
-  <div class="form-panel__actions">
+  <div class="form-panel__actions form-actions form-actions--sticky">
     <button class="btn btn--primary" type="submit">Preview upgrade</button>
   </div>
 </form>

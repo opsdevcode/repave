@@ -375,11 +375,23 @@
       return;
     }
 
+    function openQuicknavGroupForSection(sectionId) {
+      if (!sectionId || sectionId.indexOf("catalog-") !== 0) {
+        return;
+      }
+      var family = sectionId.replace("catalog-", "");
+      var details = quicknav.querySelector('[data-quicknav-group="' + family + '"]');
+      if (details && !details.open) {
+        details.setAttribute("open", "");
+      }
+    }
+
     function setActive(id) {
       sectionLinks.forEach(function (link) {
         var match = link.getAttribute("data-quicknav-section") === id;
         link.classList.toggle("is-active", match);
       });
+      openQuicknavGroupForSection(id);
     }
 
     if ("IntersectionObserver" in window) {
@@ -422,6 +434,261 @@
     });
   }
 
+  function initHomeResumeChip() {
+    var mount = document.getElementById("home-resume-chip");
+    if (!mount) {
+      return;
+    }
+    var run = readLastRun();
+    if (!run || !run.blueprint) {
+      mount.hidden = true;
+      mount.innerHTML = "";
+      return;
+    }
+    var href = "/blueprints/" + encodeURIComponent(run.blueprint);
+    mount.innerHTML =
+      '<a class="btn btn--secondary" href="' +
+      href +
+      '">Resume <code>' +
+      run.blueprint +
+      "</code></a>";
+    mount.hidden = false;
+  }
+
+  function initCatalogSearch() {
+    var root = document.querySelector("[data-catalog-search]");
+    var input = document.querySelector("[data-catalog-search-input]");
+    if (!root || !input) {
+      return;
+    }
+    var meta = root.querySelector("[data-catalog-search-meta]");
+    var emptyState = document.getElementById("catalog-search-empty");
+    var cards = document.querySelectorAll("[data-catalog-card]");
+    var groups = document.querySelectorAll("[data-catalog-group]");
+    var quickPaths = document.querySelectorAll("[data-quicknav-path]");
+
+    function normalize(value) {
+      return (value || "").toLowerCase().trim();
+    }
+
+    function applyFilter() {
+      var query = normalize(input.value);
+      var terms = query ? query.split(/\s+/).filter(Boolean) : [];
+      var visibleCards = 0;
+
+      cards.forEach(function (card) {
+        var haystack = normalize(card.getAttribute("data-search-text"));
+        var match =
+          terms.length === 0 || terms.every(function (term) {
+            return haystack.indexOf(term) !== -1;
+          });
+        card.hidden = !match;
+        if (match) {
+          visibleCards += 1;
+        }
+      });
+
+      groups.forEach(function (group) {
+        var sectionCards = group.querySelectorAll("[data-catalog-card]");
+        var anyVisible = false;
+        sectionCards.forEach(function (card) {
+          if (!card.hidden) {
+            anyVisible = true;
+          }
+        });
+        group.hidden = !anyVisible && terms.length > 0;
+      });
+
+      quickPaths.forEach(function (row) {
+        var haystack = normalize(row.getAttribute("data-search-text"));
+        var match =
+          terms.length === 0 || terms.every(function (term) {
+            return haystack.indexOf(term) !== -1;
+          });
+        row.hidden = !match;
+      });
+
+      if (meta) {
+        if (terms.length === 0) {
+          meta.hidden = true;
+        } else {
+          meta.hidden = false;
+          meta.textContent =
+            visibleCards === 1
+              ? "1 golden path matches"
+              : visibleCards + " golden paths match";
+        }
+      }
+      if (emptyState) {
+        emptyState.hidden = !(terms.length > 0 && visibleCards === 0);
+      }
+    }
+
+    input.addEventListener("input", applyFilter);
+    applyFilter();
+  }
+
+  function initGateDashboard() {
+    var dashboard = document.querySelector("[data-gate-dashboard]");
+    if (!dashboard) {
+      return;
+    }
+    var rows = dashboard.querySelectorAll("[data-gate-row]");
+    var jumpBtn = dashboard.querySelector("[data-gate-jump-fail]");
+    var copyBtn = dashboard.querySelector("[data-copy-result-summary]");
+
+    function applyGateFilter(value) {
+      dashboard.querySelectorAll(".gate-filter").forEach(function (chip) {
+        chip.classList.toggle(
+          "is-active",
+          chip.getAttribute("data-gate-filter-value") === value
+        );
+      });
+      rows.forEach(function (row) {
+        var status = row.getAttribute("data-gate-status");
+        var show = value === "all" || status === value;
+        row.hidden = !show;
+      });
+    }
+
+    dashboard.querySelectorAll(".gate-filter").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        applyGateFilter(chip.getAttribute("data-gate-filter-value") || "all");
+      });
+    });
+
+    if (jumpBtn) {
+      jumpBtn.addEventListener("click", function () {
+        var target = dashboard.querySelector('[data-gate-status="fail"]');
+        if (!target) {
+          return;
+        }
+        applyGateFilter("fail");
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        var details = target.querySelector("details");
+        if (details) {
+          details.open = true;
+        }
+      });
+    }
+
+    if (copyBtn) {
+      copyBtn.addEventListener("click", function () {
+        var node = document.getElementById("result-summary-json");
+        if (!node) {
+          return;
+        }
+        var text = node.textContent || "";
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function () {
+            showToast("Result summary copied");
+          });
+        }
+      });
+    }
+  }
+
+  function initFormDraft() {
+    var form = document.querySelector("[data-repave-form-draft]");
+    if (!form) {
+      return;
+    }
+    var blueprintId = form.getAttribute("data-blueprint-id") || "default";
+    var storageKey = "repave:draft:" + blueprintId;
+    var banner = document.getElementById("form-draft-banner");
+    var saveTimer = null;
+
+    function serializeForm() {
+      var data = {};
+      form.querySelectorAll("input, select, textarea").forEach(function (field) {
+        if (!field.name || field.type === "file") {
+          return;
+        }
+        if (field.type === "checkbox") {
+          data[field.name] = field.checked;
+        } else if (field.type === "radio") {
+          if (field.checked) {
+            data[field.name] = field.value;
+          }
+        } else {
+          data[field.name] = field.value;
+        }
+      });
+      return data;
+    }
+
+    function applyDraft(data) {
+      Object.keys(data).forEach(function (name) {
+        var fields = form.querySelectorAll('[name="' + name + '"]');
+        fields.forEach(function (field) {
+          if (field.type === "checkbox") {
+            field.checked = Boolean(data[name]);
+          } else if (field.type === "radio") {
+            field.checked = field.value === String(data[name]);
+          } else {
+            field.value = data[name];
+          }
+          field.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      });
+    }
+
+    function saveDraft() {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(serializeForm()));
+      } catch (_err) {
+        /* ignore */
+      }
+    }
+
+    function scheduleSave() {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+      }
+      saveTimer = setTimeout(saveDraft, 450);
+    }
+
+    try {
+      var raw = localStorage.getItem(storageKey);
+      if (raw && banner) {
+        banner.hidden = false;
+        banner.innerHTML =
+          '<span class="muted">Saved draft for this blueprint.</span> ' +
+          '<button type="button" class="btn btn--ghost btn--sm" data-draft-restore>Restore</button> ' +
+          '<button type="button" class="btn btn--ghost btn--sm" data-draft-discard>Discard</button>';
+        banner.querySelector("[data-draft-restore]").addEventListener("click", function () {
+          try {
+            applyDraft(JSON.parse(raw));
+            showToast("Draft restored");
+          } catch (_err2) {
+            /* ignore */
+          }
+        });
+        banner.querySelector("[data-draft-discard]").addEventListener("click", function () {
+          try {
+            localStorage.removeItem(storageKey);
+          } catch (_err3) {
+            /* ignore */
+          }
+          banner.hidden = true;
+          banner.innerHTML = "";
+        });
+      }
+    } catch (_err4) {
+      /* ignore */
+    }
+
+    form.addEventListener("input", scheduleSave);
+    form.addEventListener("change", scheduleSave);
+    form.addEventListener("submit", function () {
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (_err5) {
+        /* ignore */
+      }
+    });
+  }
+
   window.repavePortal = {
     saveLastRun: function (payload) {
       try {
@@ -435,17 +702,25 @@
         /* ignore quota / private mode */
       }
       renderLastRun();
+      initHomeResumeChip();
     },
-    renderLastRun: renderLastRun,
+    renderLastRun: function () {
+      renderLastRun();
+      initHomeResumeChip();
+    },
     showToast: showToast,
   };
 
   document.addEventListener("DOMContentLoaded", function () {
     renderLastRun();
+    initHomeResumeChip();
     initCopyButtons();
     initFileExplorer();
     initBusyForms();
     initFormStepper();
     initHomeQuicknav();
+    initCatalogSearch();
+    initGateDashboard();
+    initFormDraft();
   });
 })();

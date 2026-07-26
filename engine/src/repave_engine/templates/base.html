@@ -31,6 +31,9 @@
           <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>
             Update repo
           </a>
+          <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
+            Activity
+          </a>
         </nav>
         <div class="shell__meta">
           {% if auth_enabled and auth_user %}
@@ -72,6 +75,7 @@
 
       <footer class="shell__footer">
         Governed golden paths · engine {{ app_version }}
+        · <a class="shell__footer-link" href="/health">health</a>
       </footer>
     </div>
     {% block scripts %}{% endblock %}

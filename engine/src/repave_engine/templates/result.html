@@ -94,9 +94,21 @@
 {% endif %}
 
 {% if result.gates %}
-<section class="card" aria-labelledby="gates-heading">
-  <div class="card__header">
-    <h2 id="gates-heading">Gates</h2>
+<section class="card" aria-labelledby="gates-heading" data-gate-dashboard>
+  <div class="card__header card__header--toolbar">
+    <div>
+      <h2 id="gates-heading">Gates</h2>
+    </div>
+    <div class="gate-toolbar" data-gate-filter role="toolbar" aria-label="Filter gates">
+      <button type="button" class="chip gate-filter is-active" data-gate-filter-value="all">All</button>
+      <button type="button" class="chip gate-filter" data-gate-filter-value="pass">Passed</button>
+      <button type="button" class="chip gate-filter" data-gate-filter-value="fail">Failed</button>
+      <button type="button" class="chip gate-filter" data-gate-filter-value="skip">Skipped</button>
+      {% if gate_summary.failed %}
+      <button type="button" class="btn btn--ghost btn--sm" data-gate-jump-fail>Jump to first failure</button>
+      {% endif %}
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-result-summary>Copy summary</button>
+    </div>
   </div>
   <div class="card__body">
     <div class="gate-table-wrap">
@@ -110,7 +122,12 @@
         </thead>
         <tbody>
           {% for gate in result.gates %}
-          <tr class="gate-table__row gate-table__row--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}">
+          <tr
+            class="gate-table__row gate-table__row--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}"
+            data-gate-row
+            data-gate-status="{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}"
+            id="gate-row-{{ loop.index }}"
+          >
             <th scope="row">{{ gate.name }}</th>
             <td>
               <span class="badge {% if gate.skipped %}badge--skip{% elif gate.passed %}badge--pass{% else %}badge--fail{% endif %}">
@@ -204,19 +221,32 @@
 {% endif %}
 
 <section class="card stack-gap" aria-labelledby="publish-heading">
-  <details class="publish-plan">
+  <details class="publish-plan" open>
     <summary class="publish-plan__summary">
       <h2 id="publish-heading" class="publish-plan__title">Publish plan</h2>
       <span class="muted">PR description preview</span>
     </summary>
-    <div class="publish-plan__body">
-      <pre class="panel-code">{{ result.pr_message }}</pre>
+    <div class="publish-plan__body publish-plan__body--markdown">
+      <pre class="panel-code publish-plan__markdown">{{ result.pr_message }}</pre>
     </div>
   </details>
 </section>
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="result-summary-json">
+{
+  "blueprint": {{ result.blueprint.name | tojson }},
+  "version": {{ result.blueprint.version | tojson }},
+  "outcome": {{ gate_summary.outcome | tojson }},
+  "dryRun": {{ result.dry_run | tojson }},
+  "gates": {
+    "passed": {{ gate_summary.passed }},
+    "failed": {{ gate_summary.failed }},
+    "skipped": {{ gate_summary.skipped }}
+  }
+}
+</script>
 <script>
   (function () {
     if (!window.repavePortal || !window.repavePortal.saveLastRun) {

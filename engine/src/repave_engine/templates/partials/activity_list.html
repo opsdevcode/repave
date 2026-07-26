@@ -1,0 +1,21 @@
+<ul class="activity-list{% if compact %} activity-list--compact{% endif %}">
+  {% for row in recent_activity %}
+  <li class="activity-list__item">
+    <div class="activity-list__primary">
+      <a href="/blueprints/{{ row.blueprint_name }}"><code>{{ row.blueprint_name }}</code></a>
+      @ {{ row.blueprint_version }}
+      {% if row.module_name %}
+      <span class="muted">· {{ row.module_name }}</span>
+      {% endif %}
+    </div>
+    <div class="activity-list__meta">
+      <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
+        {{ row.gates_outcome }}
+      </span>
+      <span class="badge badge--skip">{% if row.dry_run %}dry-run{% else %}publish{% endif %}</span>
+      <span class="muted">{{ row.acting_user }}</span>
+      <time class="muted" datetime="{{ row.timestamp }}">{{ row.timestamp[:19] }}</time>
+    </div>
+  </li>
+  {% endfor %}
+</ul>

@@ -226,9 +226,12 @@ at most two interactions.
 **Status:** Partial — home hero, catalog hover, browser last-run snippet, copy
 feedback, generate/update busy states, sticky generate bar, skip link, upgrade
 diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity,
-standards drift diff, and staged generate labels shipped. White-label / compact
-density and light theme remain optional. **Compact density** (`portal.density:
-compact`) ships for Backstage-adjacent layouts; **white-label** accents move to v2.
+standards drift diff, staged generate labels, **home quick menu** (collapsible
+sidebar and families, count-sorted catalog, search, resume chip), **`/activity`**
+page, standards drift two-pane layout, form draft restore, result gate filters, and
+update busy stages shipped. White-label / compact density and light theme remain
+optional. **Compact density** (`portal.density: compact`) ships for
+Backstage-adjacent layouts; **white-label** accents move to v2.
 
 Pick based on audience and hosting model (v1.25+).
 
