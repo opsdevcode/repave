@@ -174,6 +174,57 @@ def test_open_upgrade_pull_request(repo_root: Path, tmp_path: Path) -> None:
     assert result.apply.plan.changed_file_count > 0
 
 
+def test_apply_upgrade_preserve_local_skips_modified_overwrite(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    import subprocess
+
+    target = tmp_path / "module"
+    target.mkdir()
+    fixture_yaml = (
+        repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    )
+    (target / "repave.yaml").write_text(fixture_yaml.read_text(encoding="utf-8"), encoding="utf-8")
+    subprocess.run(["git", "init"], cwd=target, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=target, check=True)
+    subprocess.run(["git", "add", "repave.yaml"], cwd=target, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=target, check=True, capture_output=True)
+
+    first = apply_upgrade(
+        target,
+        repo_root,
+        staging_root=tmp_path / "staging-a",
+        git_branch="repave/upgrade-base",
+        commit_message="apply upgrade",
+    )
+    candidates = [
+        path
+        for path in (*first.plan.modified, *first.plan.added)
+        if path != "repave.yaml" and not path.startswith(".repave/")
+    ]
+    assert candidates, "expected at least one scaffold file to edit"
+    edited_rel = candidates[0]
+    edited_path = target / edited_rel
+    edited_path.write_text("LOCAL EDIT\n", encoding="utf-8")
+
+    preserved = apply_upgrade(
+        target,
+        repo_root,
+        staging_root=tmp_path / "staging-b",
+        git_branch="repave/upgrade-preserve",
+        commit_message="apply with preserve",
+        preserve_local=True,
+    )
+
+    assert edited_rel in preserved.preserved_local
+    assert edited_path.read_text(encoding="utf-8") == "LOCAL EDIT\n"
+    blueprint_copy = target / ".repave" / "upgrade-staging" / edited_rel
+    assert blueprint_copy.is_file()
+    assert blueprint_copy.read_text(encoding="utf-8") != "LOCAL EDIT\n"
+
+
 def test_load_provenance_document(tmp_path: Path) -> None:
     path = tmp_path / "repave.yaml"
     path.write_text("apiVersion: repave.dev/v1beta1\nkind: GoldenPathArtifact\n", encoding="utf-8")

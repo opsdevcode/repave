@@ -278,12 +278,13 @@ requires manual merge or re-generation.
 workflows (`--path`, dry-run by default, `--no-dry-run --git-branch` to commit).
 `--open-pr` pushes the upgrade branch and opens a GitHub pull request when
 `GITHUB_TOKEN` (or `--github-token`) is set. Portal **Update repo** runs the
-same plan preview against a local path. Operator still calls
+same plan preview against a local path. `--preserve-local` skips overwriting
+locally modified files and writes blueprint copies under
+`.repave/upgrade-staging/` for manual merge. Operator still calls
 `plan-upgrade` / `apply-upgrade` JSON contracts.
 
-**Approach (remaining):**
-
-- Three-way aware merge for edits outside scaffold — see PR #82
+**Approach (remaining):** Validate end-to-end on a real module repo; operator
+remediation may adopt `--preserve-local` when applying upgrades.
 
 **Done when:** A module repo created by repave can receive a blueprint version
 bump via PR without full manual copy.
