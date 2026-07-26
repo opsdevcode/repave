@@ -40,6 +40,10 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "Ansible" in response.text
     assert 'class="catalog-group catalog-group--terraform"' in response.text
     assert 'class="catalog-group catalog-group--ansible"' in response.text
+    assert 'class="catalog-group catalog-group--policy"' in response.text
+    assert 'id="catalog-policy"' in response.text
+    assert "opa-policy-generic" in response.text
+    assert "azure-policy-generic" in response.text
 
 
 def test_static_repave_js_served(repo_root, output_config) -> None:

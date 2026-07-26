@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-module-resource
-  version: 0.2.0
+  version: 0.4.0
   description: Thin Terraform module for a single in-scope cloud resource (tfm-* repos).
 spec:
   artifactType: terraform-module
@@ -37,6 +37,26 @@ spec:
       type: string
       required: true
       description: Single resource type within the service to scaffold.
+    - name: policy_pack_source
+      type: string
+      required: false
+      default: repave-default
+      enum:
+        - repave-default
+    - name: policy_profile
+      type: string
+      required: false
+      default: estate-default
+      enum:
+        - estate-default
+        - strict
+        - custom
+    - name: policy_rules
+      type: string
+      required: false
+      multi: true
+      default: ""
+      description: Rule IDs from policy/catalog.json when policy_profile is custom.
   template:
     engine: copier
     path: template
@@ -46,15 +66,21 @@ spec:
     - tflint
     - checkov
     - secrets
+    - opa
     - docs-drift
     - provenance-drift
   checkov:
     policies_source: policy/checkov/policies
     policy_version: 1.2.0
+  opa:
+    policies_source: policy/opa/policies
+    policy_version: 1.0.0
   gate_config:
     checkov:
       external_checks_dir: policy/checkov
       config_file: .checkov.yml
+    opa:
+      policies_dir: policy/opa/policies
   output:
     type: pull_request
     provenance:

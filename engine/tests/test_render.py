@@ -84,13 +84,14 @@ def test_build_scoped_resources_deduplicates_repeated_resources() -> None:
 
 
 def test_render_writes_scoped_resource_files(
+    repo_root: Path,
     terraform_blueprint,
     sample_inputs,
     tmp_path: Path,
 ) -> None:
     from repave_engine.blueprint import validate_inputs
 
-    values = validate_inputs(terraform_blueprint, sample_inputs)
+    values = validate_inputs(terraform_blueprint, sample_inputs, repo_root=repo_root)
     output_dir = tmp_path / "module"
 
     render_blueprint(terraform_blueprint, values, output_dir)
@@ -120,6 +121,7 @@ def test_render_writes_scoped_resource_files(
     assert "null_resource.s3_bucket.id" in outputs
     assert (output_dir / ".checkov.yml").exists()
     assert (output_dir / "policy/checkov/custom_001_terraform_version_exists.yaml").exists()
+    assert (output_dir / "policy/opa/policies/destructive_changes.rego").exists()
 
 
 def test_collect_rendered_files_returns_text_files(tmp_path: Path) -> None:
@@ -168,6 +170,7 @@ def test_build_scoped_resources_rejects_non_object_scope() -> None:
 
 
 def test_copy_checkov_policies_raises_when_pack_missing(
+    repo_root: Path,
     terraform_blueprint,
     sample_inputs,
     tmp_path: Path,
@@ -175,7 +178,7 @@ def test_copy_checkov_policies_raises_when_pack_missing(
 ) -> None:
     from repave_engine.blueprint import validate_inputs
 
-    values = validate_inputs(terraform_blueprint, sample_inputs)
+    values = validate_inputs(terraform_blueprint, sample_inputs, repo_root=repo_root)
     output_dir = tmp_path / "module"
     monkeypatch.setattr("repave_engine.render._find_repo_root", lambda _: tmp_path)
 

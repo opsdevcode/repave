@@ -54,6 +54,26 @@ def test_group_blueprints_by_artifact_collapses_families() -> None:
     assert isinstance(groups[0], BlueprintCatalogGroup)
 
 
+def test_group_blueprints_policy_family_groups_opa_and_azure() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("azure-policy-generic", "azure-policy"),
+            _bp("opa-policy-generic", "opa-policy"),
+            _bp("tf-a", "terraform-module"),
+        ]
+    )
+
+    assert [group.family for group in groups] == ["terraform", "policy"]
+    policy = groups[1]
+    assert policy.title == "Policy"
+    assert [bp.name for bp in policy.blueprints] == ["opa-policy-generic", "azure-policy-generic"]
+
+
+def test_artifact_family_groups_policy_types() -> None:
+    assert artifact_family("opa-policy") == "policy"
+    assert artifact_family("azure-policy") == "policy"
+
+
 def test_group_blueprints_unknown_type_appended() -> None:
     groups = group_blueprints_by_artifact([_bp("helm-x", "helm-chart")])
 

@@ -11,6 +11,7 @@ import yaml
 @dataclass(frozen=True)
 class GateOverrides:
     checkov_skip_checks: tuple[str, ...] = ()
+    blocked_policy_rule_skips: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -74,7 +75,18 @@ def load_gate_overrides(repo_root: Path) -> GateOverrides:
     if not isinstance(skip_checks, list):
         raise ValueError("gates.checkov.skip_checks must be a list of check IDs")
 
-    return GateOverrides(checkov_skip_checks=tuple(str(item) for item in skip_checks))
+    policy = gates.get("policy", {})
+    blocked: tuple[str, ...] = ()
+    if isinstance(policy, dict):
+        floor = policy.get("required_rules", [])
+        if floor is not None and not isinstance(floor, list):
+            raise ValueError("gates.policy.required_rules must be a list of rule IDs")
+        blocked = tuple(str(item) for item in (floor or []))
+
+    return GateOverrides(
+        checkov_skip_checks=tuple(str(item) for item in skip_checks),
+        blocked_policy_rule_skips=blocked,
+    )
 
 
 def _load_config_file(path: Path) -> dict[str, Any]:

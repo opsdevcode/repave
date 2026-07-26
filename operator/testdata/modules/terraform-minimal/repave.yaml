@@ -13,6 +13,9 @@ spec:
   generation:
     engine_version: "1.16.0"
     generated_at: "2026-07-24T00:00:00Z"
+  governance:
+    baseline_source: standards/policy/governance-baseline.md
+    baseline_version: "1.0.0"
   terraformModule:
     module_name: example
     cloud_provider: aws

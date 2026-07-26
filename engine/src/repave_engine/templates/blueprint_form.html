@@ -25,12 +25,31 @@
           <span class="badge">@ {{ blueprint.standard_version }}</span>
         </dd>
       </div>
-      {% if blueprint.checkov_policies %}
-      <div>
-        <dt>Checkov pack</dt>
-        <dd>
-          <code>{{ blueprint.checkov_policies.policies_source }}</code>
-          <span class="badge">@ {{ blueprint.checkov_policies.policy_version }}</span>
+      {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
+      <div class="governance-card__section">
+        <dt class="governance-card__section-title">Policy</dt>
+        <dd class="governance-card__section-body">
+          {% if blueprint.checkov_policies %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">Checkov</span>
+            <code>{{ blueprint.checkov_policies.policies_source }}</code>
+            <span class="badge">@ {{ blueprint.checkov_policies.policy_version }}</span>
+          </div>
+          {% endif %}
+          {% if blueprint.opa_policies %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">OPA</span>
+            <code>{{ blueprint.opa_policies.policies_source }}</code>
+            <span class="badge">@ {{ blueprint.opa_policies.policy_version }}</span>
+          </div>
+          {% endif %}
+          {% if blueprint.azure_policy_pack %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">Azure Policy</span>
+            <code>{{ blueprint.azure_policy_pack.definitions_source }}</code>
+            <span class="badge">@ {{ blueprint.azure_policy_pack.policy_version }}</span>
+          </div>
+          {% endif %}
         </dd>
       </div>
       {% endif %}
@@ -67,8 +86,36 @@
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
 
+      {% set ns_policy = namespace(enabled=false) %}
+      {% for field in blueprint.inputs %}
+        {% if field.name == 'policy_profile' %}{% set ns_policy.enabled = true %}{% endif %}
+      {% endfor %}
+      {% if ns_policy.enabled %}
+      <div class="field-block policy-customization" id="policy-customization">
+        <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
+        <p class="hint">Choose a profile or customize individual rules. Required rules cannot be disabled.</p>
+        <label for="policy_pack_source">Policy pack source</label>
+        <select class="select" id="policy_pack_source" name="policy_pack_source">
+          <option value="repave-default" selected>repave-default</option>
+        </select>
+        <label for="policy_profile">Policy profile</label>
+        <select class="select" id="policy_profile" name="policy_profile">
+          <option value="estate-default" selected>Estate default</option>
+          <option value="strict">Strict</option>
+          <option value="custom">Custom</option>
+        </select>
+        <details id="policy-rules-advanced" class="policy-rules-advanced" hidden>
+          <summary>Customize individual rules</summary>
+          <input type="search" class="input" id="policy-rules-filter" placeholder="Filter rules…" />
+          <div id="policy-rules-list" class="policy-rules-list"></div>
+        </details>
+        <input type="hidden" id="policy_rules" name="policy_rules" value="" />
+      </div>
+      {% endif %}
+
       {% for field in blueprint.inputs %}
       {% if field.name == "provider_service_scope" %}
+      {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules") %}
       {% elif provider_catalog and field.name == "cloud_provider" %}
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -1123,4 +1170,82 @@
 </script>
 {% endif %}
 {% endif %}
+<script>
+(function () {
+  const profileSelect = document.getElementById("policy_profile");
+  const packSelect = document.getElementById("policy_pack_source");
+  const rulesHidden = document.getElementById("policy_rules");
+  const advanced = document.getElementById("policy-rules-advanced");
+  const rulesList = document.getElementById("policy-rules-list");
+  const filterInput = document.getElementById("policy-rules-filter");
+  if (!profileSelect || !rulesHidden || !rulesList) return;
+
+  let catalog = { rules: [], profiles: {} };
+
+  function syncHiddenRules() {
+    const checked = [...rulesList.querySelectorAll('input[type="checkbox"]:checked')]
+      .map((el) => el.value);
+    rulesHidden.value = checked.join(",");
+  }
+
+  function renderRules() {
+    const filter = (filterInput?.value || "").toLowerCase();
+    rulesList.innerHTML = "";
+    for (const rule of catalog.rules || []) {
+      if (filter && !rule.title.toLowerCase().includes(filter) && !rule.id.toLowerCase().includes(filter)) {
+        continue;
+      }
+      const label = document.createElement("label");
+      label.className = "checkbox-row";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = rule.id;
+      input.disabled = rule.required;
+      input.checked = rule.required;
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(`${rule.title} (${rule.id})`));
+      rulesList.appendChild(label);
+    }
+    syncHiddenRules();
+  }
+
+  function updateProfileUi() {
+    const custom = profileSelect.value === "custom";
+    if (advanced) advanced.hidden = !custom;
+    if (!custom) {
+      rulesHidden.value = "";
+    } else {
+      renderRules();
+    }
+  }
+
+  profileSelect.addEventListener("change", updateProfileUi);
+  filterInput?.addEventListener("input", renderRules);
+  rulesList.addEventListener("change", syncHiddenRules);
+
+  fetch("/blueprints/{{ blueprint.name }}/policy-catalog")
+    .then((r) => r.json())
+    .then((data) => {
+      catalog = data;
+      if (packSelect && data.pack_sources?.length) {
+        packSelect.innerHTML = "";
+        for (const pack of data.pack_sources) {
+          const opt = document.createElement("option");
+          opt.value = pack.id;
+          opt.textContent = pack.label || pack.id;
+          packSelect.appendChild(opt);
+        }
+      }
+      if (data.profiles && profileSelect) {
+        for (const opt of profileSelect.options) {
+          const meta = data.profiles[opt.value];
+          if (meta?.description) opt.title = meta.description;
+        }
+      }
+      renderRules();
+      updateProfileUi();
+    })
+    .catch(() => updateProfileUi());
+})();
+</script>
 {% endblock %}

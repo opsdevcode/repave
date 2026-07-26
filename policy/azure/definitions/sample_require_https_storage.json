@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "displayName": "Repave sample require HTTPS on storage",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Denies storage accounts that do not require secure transfer.",
+    "metadata": {
+      "category": "Storage"
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Storage/storageAccounts"
+          },
+          {
+            "field": "Microsoft.Storage/storageAccounts/supportsHttpsTrafficOnly",
+            "equals": "false"
+          }
+        ]
+      },
+      "then": {
+        "effect": "deny"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+# Shared policy customization inputs (reference — keep in sync across blueprints)
+#
+#   - name: policy_pack_source
+#     type: string
+#     required: false
+#     default: repave-default
+#     enum: [repave-default]
+#   - name: policy_profile
+#     type: string
+#     required: false
+#     default: estate-default
+#     enum: [estate-default, strict, custom]
+#   - name: policy_rules
+#     type: string
+#     required: false
+#     multi: true
+#     default: ""
+#     description: Rule IDs from policy/catalog.json when policy_profile is custom.

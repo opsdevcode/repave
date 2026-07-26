@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-environment-stack
-  version: 0.1.0
+  version: 0.3.0
   description: Environment composition stack with pinned module sources (env-* repos).
 spec:
   artifactType: terraform-environment-stack
@@ -41,6 +41,26 @@ spec:
       required: false
       description: JSON array of pinned Terraform modules (portal module inventory picker).
       default: '[{"name":"foundation","source":"./modules/_example","repo_name":"_example"}]'
+    - name: policy_pack_source
+      type: string
+      required: false
+      default: repave-default
+      enum:
+        - repave-default
+    - name: policy_profile
+      type: string
+      required: false
+      default: estate-default
+      enum:
+        - estate-default
+        - strict
+        - custom
+    - name: policy_rules
+      type: string
+      required: false
+      multi: true
+      default: ""
+      description: Rule IDs from policy/catalog.json when policy_profile is custom.
   template:
     engine: copier
     path: template
@@ -50,15 +70,21 @@ spec:
     - tflint
     - checkov
     - secrets
+    - opa
     - docs-drift
     - provenance-drift
   checkov:
     policies_source: policy/checkov/policies
     policy_version: 1.2.0
+  opa:
+    policies_source: policy/opa/policies
+    policy_version: 1.0.0
   gate_config:
     checkov:
       external_checks_dir: policy/checkov
       config_file: .checkov.yml
+    opa:
+      policies_dir: policy/opa/policies
   output:
     type: pull_request
     provenance:

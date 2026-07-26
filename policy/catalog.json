@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "profiles": {
+    "estate-default": {
+      "label": "Estate default",
+      "description": "Community-aligned repave pack; balanced security and ergonomics.",
+      "includes": ["checkov:CKV2_REPAVE_1", "opa:destructive_changes"]
+    },
+    "strict": {
+      "label": "Strict",
+      "description": "All catalog rules enabled for this artifact family.",
+      "includes": ["checkov:*", "opa:*", "azure:*"]
+    },
+    "custom": {
+      "label": "Custom",
+      "description": "Pick individual rules (required rules cannot be disabled).",
+      "includes": []
+    }
+  },
+  "pack_sources": [
+    {
+      "id": "repave-default",
+      "label": "Repave monorepo packs",
+      "description": "Vendored packs from this repository (default)."
+    }
+  ],
+  "rules": [
+    {
+      "id": "checkov:CKV2_REPAVE_1",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_1",
+      "title": "Terraform required_version must be declared",
+      "artifact_types": ["terraform-module", "terraform-environment-stack"],
+      "required": true,
+      "removable": false
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_2",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_2",
+      "title": "Terraform required_version must cap below 2.x",
+      "artifact_types": ["terraform-module", "terraform-environment-stack"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "opa:destructive_changes",
+      "family": "opa",
+      "rego_file": "destructive_changes.rego",
+      "title": "Deny destructive Terraform plan changes without replacement",
+      "artifact_types": [
+        "terraform-module",
+        "terraform-environment-stack",
+        "opa-policy"
+      ],
+      "required": true,
+      "removable": false
+    },
+    {
+      "id": "azure:sample_require_https_storage",
+      "family": "azure",
+      "definition_file": "sample_require_https_storage.json",
+      "title": "Sample require HTTPS on storage accounts",
+      "artifact_types": ["azure-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "azure:sample_audit_storage",
+      "family": "azure",
+      "definition_file": "sample_audit_storage.json",
+      "title": "Sample audit storage account policy",
+      "artifact_types": ["azure-policy"],
+      "required": true,
+      "removable": false
+    }
+  ]
+}
