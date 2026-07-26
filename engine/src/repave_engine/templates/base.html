@@ -16,6 +16,7 @@
     {% block head %}{% endblock %}
   </head>
   <body>
+    <a class="skip-link" href="#main-content">Skip to content</a>
     <div class="shell">
       <div class="shell__atmosphere" aria-hidden="true"></div>
       <header class="shell__bar">
@@ -39,9 +40,11 @@
 
       <div id="last-run-snippet" class="last-run-snippet shell__last-run" hidden></div>
 
-      <main class="shell__main{% block main_modifiers %}{% endblock %}">
+      <main id="main-content" class="shell__main{% block main_modifiers %}{% endblock %}">
         {% block content %}{% endblock %}
       </main>
+
+      <div id="repave-toast" class="toast" role="status" aria-live="polite" hidden></div>
 
       <footer class="shell__footer">
         Governed golden paths · engine {{ app_version }}
