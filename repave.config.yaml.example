@@ -2,6 +2,8 @@
 #
 # Generated Terraform modules are written to their own git repositories under
 # modules_root — never inside the repave platform repository.
+# The portal also scans this root for observability-* / dashboards-* repos to
+# populate the Service dropdown (see standards/observability/service-registry.md).
 
 output:
   github_org: your-github-org

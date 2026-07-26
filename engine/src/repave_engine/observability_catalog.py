@@ -361,6 +361,7 @@ def catalog_for_api(
     defaults: dict[str, str] | None = None,
     backend: str | None = None,
     blueprint_name: str | None = None,
+    catalog_service_ids: frozenset[str] | None = None,
 ) -> dict[str, Any]:
     merged = {**catalog.defaults, **(defaults or {})}
     if backend:
@@ -391,6 +392,17 @@ def catalog_for_api(
                 "team": service.team,
                 "description": service.description,
                 "runbook_url": service.runbook_url,
+                **(
+                    {
+                        "source_kind": (
+                            "catalog"
+                            if catalog_service_ids is None or service.id in catalog_service_ids
+                            else "discovered"
+                        )
+                    }
+                    if catalog_service_ids is not None
+                    else {}
+                ),
             }
             for service in catalog.services
         ],

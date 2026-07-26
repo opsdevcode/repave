@@ -332,6 +332,10 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
     assert 'id="notification_target"' in obs_form.text
     assert 'value="pagerduty-platform-primary"' in obs_form.text
 
+    inv = client.get("/blueprints/observability-as-code-generic/service-inventory").json()
+    assert "services" in inv
+    assert inv["merge_catalog"] is True
+
     dash_form = client.get("/blueprints/dashboards-as-code-generic")
     assert dash_form.status_code == 200
     assert 'id="obs-backend-decision"' in dash_form.text

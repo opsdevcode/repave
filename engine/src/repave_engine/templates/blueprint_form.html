@@ -227,7 +227,7 @@
           </label>
         </fieldset>
         <p class="hint" id="configuration-mode-hint">
-          Pick service (and backend{% if observability_dashboard_packs %}, dashboard pack{% endif %}); we fill org, team, runbook, notifications, and more from the catalog.
+          Pick service (and backend{% if observability_dashboard_packs %}, dashboard pack{% endif %}); we fill org, team, runbook, notifications, and more from the catalog and service inventory.
         </p>
         <label for="service_name">Service *</label>
         <select class="select" id="service_name" name="service_name" required>
@@ -236,9 +236,10 @@
             value="{{ svc['id'] }}"
             {% if svc['id'] == observability_defaults.service_name %}selected{% endif %}
             {% if svc.get('description') %}title="{{ svc['description'] }}"{% endif %}
-          >{{ svc.get('label') or svc['id'] }}</option>
+          >{{ svc.get('label') or svc['id'] }}{% if svc.get('source_kind') == 'discovered' %} (inventory){% endif %}</option>
           {% endfor %}
         </select>
+        <p class="hint" id="service-inventory-hint" aria-live="polite"></p>
         <p class="hint" id="obs-defaults-summary" aria-live="polite"></p>
         {% for field in blueprint.inputs %}
           {% if field.name == "backend" and field.enum %}
@@ -1912,6 +1913,7 @@
   if (!catalogEl) return;
 
   const observabilityDefaults = {{ observability_defaults | tojson }};
+  const blueprintName = {{ blueprint.name | tojson }};
   let catalog;
   try {
     catalog = JSON.parse(catalogEl.textContent || "{}");
@@ -2238,11 +2240,52 @@
   }
   const serviceSelect = document.getElementById("service_name");
   if (serviceSelect) {
+    function populateServiceSelect(services, selectedId) {
+      const current = selectedId || serviceSelect.value;
+      serviceSelect.innerHTML = "";
+      for (const svc of services || []) {
+        const opt = document.createElement("option");
+        opt.value = svc.id;
+        const suffix = svc.source_kind === "discovered" ? " (inventory)" : "";
+        opt.textContent = (svc.label || svc.id) + suffix;
+        if (svc.description) opt.title = svc.description;
+        serviceSelect.appendChild(opt);
+      }
+      if (current && [...serviceSelect.options].some((o) => o.value === current)) {
+        serviceSelect.value = current;
+      }
+    }
+
+    async function refreshServiceInventory() {
+      const hint = document.getElementById("service-inventory-hint");
+      try {
+        const resp = await fetch(`/blueprints/${blueprintName}/observability-catalog`);
+        if (!resp.ok) return;
+        const payload = await resp.json();
+        if (payload.services?.length) {
+          catalog.services = payload.services;
+          populateServiceSelect(payload.services, serviceSelect.value);
+        }
+        const discovered = (payload.services || []).filter(
+          (s) => s.source_kind === "discovered"
+        ).length;
+        if (hint) {
+          hint.textContent = discovered
+            ? `${discovered} service(s) from modules_root inventory (see standards/observability/service-registry.md).`
+            : "";
+        }
+      } catch (_err) {
+        if (hint) hint.textContent = "";
+      }
+    }
+
     serviceSelect.addEventListener("change", () => {
       applyServiceSelection();
       applyEffectiveDefaultsToForm();
     });
-    applyServiceSelection();
+    refreshServiceInventory().then(() => {
+      applyServiceSelection();
+    });
   } else if (orgSelect) {
     syncTeamsForOrganization(observabilityDefaults.team || "");
   }
