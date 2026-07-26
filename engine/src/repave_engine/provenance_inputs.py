@@ -51,12 +51,17 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(module, dict):
             raise ValueError("terraform-module provenance missing spec.terraformModule")
         module_name = str(module.get("module_name", artifact_name)).strip()
-        return {
+        terraform_values: dict[str, Any] = {
             "module_name": module_name,
             "description": f"Repave upgrade plan for {module_name}",
             "cloud_provider": str(module.get("cloud_provider", "aws")).strip(),
             "provider_services": _join_provider_services(module.get("provider_services")),
         }
+        if module.get("provider_service"):
+            terraform_values["provider_service"] = str(module["provider_service"]).strip()
+        if module.get("provider_resource"):
+            terraform_values["provider_resource"] = str(module["provider_resource"]).strip()
+        return terraform_values
 
     if artifact_type == "ansible-role":
         role = spec.get("ansibleRole")

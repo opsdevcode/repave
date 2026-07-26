@@ -1,0 +1,11 @@
+# {{ cloud_provider | upper }} {{ service }} — {{ resource }}
+# Replace this scaffold with {{ cloud_provider }}_{{ service }}_{{ resource }}.
+resource "null_resource" "{{ file_stem }}" {
+  triggers = {
+    service     = "{{ service }}"
+    resource    = "{{ resource }}"
+    mode        = local.provider_service_scope["{{ service }}"].mode
+    name_prefix = local.name_prefix
+    tags        = jsonencode(local.common_tags)
+  }
+}

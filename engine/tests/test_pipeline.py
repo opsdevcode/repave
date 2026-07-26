@@ -40,6 +40,37 @@ def test_generate_terraform_module_generic_publishes_module_repo(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_terraform_module_resource_single_file(
+    repo_root: Path,
+    resource_module_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    from repave_engine.blueprint import load_blueprint
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-module-resource",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        resource_module_inputs,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
+    )
+
+    module_repo = result.module_repository
+    assert module_repo is not None
+    assert module_repo.name == "tfm-aws-s3-acme-bucket"
+    assert (module_repo.local_path / "s3_bucket.tf").exists()
+    assert not (module_repo.local_path / "ec2_diff.tf").exists()
+    assert (module_repo.local_path / "repave.yaml").exists()
+    provenance = (module_repo.local_path / "repave.yaml").read_text(encoding="utf-8")
+    assert "provider_service: s3" in provenance or '"provider_service": "s3"' in provenance
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_from_path(
     repo_root: Path,
     sample_inputs,

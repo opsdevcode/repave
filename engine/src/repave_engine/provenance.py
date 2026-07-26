@@ -39,6 +39,13 @@ def _build_terraform_spec(
             "provider_services": _parse_provider_services(values),
         },
     }
+    if blueprint.terraform_layout == "single-resource":
+        spec["terraformModule"]["provider_service"] = str(
+            values.get("provider_service", "")
+        ).strip()
+        spec["terraformModule"]["provider_resource"] = str(
+            values.get("provider_resource", "")
+        ).strip()
     if blueprint.checkov_policies is not None:
         spec["checkov"] = {
             "policies_source": blueprint.checkov_policies.policies_source,

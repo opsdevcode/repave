@@ -38,6 +38,17 @@ def staging_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def resource_module_inputs() -> dict[str, str]:
+    return {
+        "module_name": "acme-bucket",
+        "description": "Example S3 bucket module",
+        "cloud_provider": "aws",
+        "provider_service": "s3",
+        "provider_resource": "bucket",
+    }
+
+
+@pytest.fixture
 def sample_inputs() -> dict[str, str]:
     return {
         "module_name": "example",

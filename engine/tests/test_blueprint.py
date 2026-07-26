@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -170,7 +171,41 @@ def test_list_blueprints(repo_root: Path) -> None:
     blueprints = list_blueprints(repo_root / "blueprints")
     names = [bp.name for bp in blueprints]
     assert "terraform-module-generic" in names
+    assert "terraform-module-resource" in names
     assert "ansible-role-generic" in names
+
+
+def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-module-resource",
+        repo_root,
+    )
+    assert blueprint.name == "terraform-module-resource"
+    assert blueprint.version == "0.1.0"
+    assert blueprint.terraform_layout == "single-resource"
+    assert blueprint.output_repo_name_template.startswith("tfm-")
+    input_names = {field.name for field in blueprint.inputs}
+    assert {"provider_service", "provider_resource"}.issubset(input_names)
+
+
+def test_validate_single_resource_inputs(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-module-resource",
+        repo_root,
+    )
+    normalized = validate_inputs(
+        blueprint,
+        {
+            "module_name": "acme-bucket",
+            "description": "S3 bucket module",
+            "cloud_provider": "aws",
+            "provider_service": "s3",
+            "provider_resource": "bucket",
+        },
+    )
+    assert normalized["provider_services"] == "s3"
+    scope = json.loads(normalized["provider_service_scope"])
+    assert scope["s3"]["resources"] == ["bucket"]
 
 
 def test_load_ansible_role_blueprint(ansible_blueprint) -> None:

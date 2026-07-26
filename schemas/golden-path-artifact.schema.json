@@ -75,6 +75,16 @@
             "provider_services": {
               "type": "array",
               "items": { "type": "string" }
+            },
+            "provider_service": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Single-resource layout: one provider service from the catalog."
+            },
+            "provider_resource": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Single-resource layout: one resource type within provider_service."
             }
           }
         },
