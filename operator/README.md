@@ -125,6 +125,12 @@ Generated repos include `repave.yaml` provenance (Terraform `terraformModule`,
 Ansible `ansibleRole` + lint pack pins). Drift detection must match what the
 `provenance-drift` gate already validates.
 
+When Terraform module blueprint or standard pins change in `blueprints/`, update
+`testdata/modules/terraform-minimal/repave.yaml`, `config/dev/*` samples, and
+operator tests that assert observed pins so the fixture matches catalog **current**
+pins. E2E drift YAML should keep **desired** pins ahead of the fixture (for example
+blueprint `9.9.9`) while standard fields stay aligned with the fixture.
+
 ---
 
 ## Directory map (target)
