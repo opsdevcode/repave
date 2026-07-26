@@ -62,6 +62,10 @@ from repave_engine.policy_selection import (
 )
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.service_inventory import (
+    load_merged_observability_catalog,
+    services_inventory_json,
+)
 from repave_engine.settings import (
     OutputConfig,
     load_audit_config,
@@ -236,7 +240,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             for field in blueprint.inputs:
                 if field.name == "backend" and field.default not in (None, ""):
                     observability_defaults.setdefault("backend", str(field.default))
-            obs_cat = load_observability_catalog(repo_root)
+            obs_cat, obs_catalog_service_ids = load_merged_observability_catalog(
+                repo_root,
+                resolved_output.modules_root,
+            )
             observability_field_catalog = blueprint_supports_observability_field_catalog(
                 blueprint
             ) and catalog_has_field_options(obs_cat)
@@ -245,6 +252,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 defaults=observability_defaults,
                 backend=observability_defaults.get("backend", "grafana"),
                 blueprint_name=blueprint.name,
+                catalog_service_ids=obs_catalog_service_ids,
             )
         provider_catalog = load_provider_catalog(blueprint.path)
         terraform_stepper = (
@@ -317,11 +325,30 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "dashboard_packs": [],
                 "defaults": {},
             }
-        catalog = load_observability_catalog(repo_root)
+        obs_cat, obs_catalog_service_ids = load_merged_observability_catalog(
+            repo_root,
+            resolved_output.modules_root,
+        )
         defaults = observability_input_defaults(blueprint, repo_root)
         backend = defaults.get("backend", "grafana")
         return observability_catalog_for_api(
-            catalog, defaults=defaults, backend=backend, blueprint_name=blueprint.name
+            obs_cat,
+            defaults=defaults,
+            backend=backend,
+            blueprint_name=blueprint.name,
+            catalog_service_ids=obs_catalog_service_ids,
+        )
+
+    @app.get("/blueprints/{blueprint_name}/service-inventory")
+    async def service_inventory(blueprint_name: str) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if blueprint.artifact_type != "observability":
+            return {"services": [], "discovered_count": 0}
+        catalog = load_observability_catalog(repo_root)
+        return services_inventory_json(
+            resolved_output.modules_root,
+            catalog,
+            merge=True,
         )
 
     @app.get("/blueprints/{blueprint_name}/module-inventory")
