@@ -28,6 +28,8 @@ def test_builtin_gates_are_registered() -> None:
     assert "yamllint" in names
     assert "ansible-lint" in names
     assert "ansible-syntax-check" in names
+    assert "molecule" in names
+    assert "promtool" in names
     assert "azure-policy" in names
     assert "opa" in names
 

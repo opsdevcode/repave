@@ -33,7 +33,17 @@
       "properties": {
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "checkov-policy", "opa-policy", "azure-policy"]
+          "enum": [
+            "terraform-module",
+            "terraform-environment-stack",
+            "ansible-role",
+            "ansible-playbook-project",
+            "ansible-collection",
+            "checkov-policy",
+            "opa-policy",
+            "azure-policy",
+            "observability"
+          ]
         },
         "blueprint": {
           "type": "object",
@@ -184,6 +194,22 @@
             "min_ansible_version": { "type": "string" }
           }
         },
+        "observability": {
+          "type": "object",
+          "required": ["service_name", "organization", "team", "backend", "output_mode"],
+          "additionalProperties": false,
+          "properties": {
+            "service_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string", "minLength": 1 },
+            "team": { "type": "string", "minLength": 1 },
+            "backend": { "type": "string" },
+            "output_mode": { "type": "string" },
+            "notification_source": { "type": "string" },
+            "notification_target": { "type": "string" },
+            "runbook_url": { "type": "string", "minLength": 1 },
+            "slo_target_percent": { "type": "string" }
+          }
+        },
         "opaPolicy": {
           "type": "object",
           "required": ["policy_name"],
@@ -302,6 +328,17 @@
           },
           "then": {
             "required": ["ansibleCollection"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "observability" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["observability"]
           }
         },
         {

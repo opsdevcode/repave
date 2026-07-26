@@ -1,0 +1,37 @@
+# Prometheus alerting rules for {{ service_name }}
+groups:
+  - name: {{ service_name }}-alerts
+    rules:
+      - alert: {{ service_name | replace('-', '_') }}_target_down
+        expr: up{job="{{ service_name }}"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: {{ service_name }}
+          team: {{ team }}
+        annotations:
+          summary: "{{ service_name }} scrape target is down"
+          description: >
+            Prometheus has not scraped job {{ service_name }} successfully for 5 minutes.
+          runbook_url: "{{ runbook_url }}"
+{% if slo_target_percent %}
+      - record: {{ service_name | replace('-', '_') }}:slo:availability:ratio
+        expr: |
+          sum(rate(http_requests_total{job="{{ service_name }}",code!~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="{{ service_name }}"}[5m]))
+      - alert: {{ service_name | replace('-', '_') }}_slo_burn
+        expr: |
+          (1 - {{ service_name | replace('-', '_') }}:slo:availability:ratio) * 100
+          > (100 - {{ slo_target_percent }}) * 14
+        for: 15m
+        labels:
+          severity: warning
+          service: {{ service_name }}
+          team: {{ team }}
+        annotations:
+          summary: "{{ service_name }} SLO burn rate elevated"
+          description: >
+            Availability is below the {{ slo_target_percent }}% target (fast burn window).
+          runbook_url: "{{ runbook_url }}"
+{% endif %}

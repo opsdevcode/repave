@@ -1221,6 +1221,10 @@ details.file-panel summary {
   border-top-color: #7dd3c0;
 }
 
+.catalog-card--observability {
+  border-top-color: #d4a35b;
+}
+
 .catalog-card--checkov-policy,
 .catalog-card--opa-policy,
 .catalog-card--azure-policy {
@@ -1345,6 +1349,12 @@ details.file-panel summary {
   background: color-mix(in srgb, #7dd3c0 18%, transparent);
   color: #a8e6d9;
   border-color: color-mix(in srgb, #7dd3c0 40%, transparent);
+}
+
+.badge--observability {
+  background: color-mix(in srgb, #d4a35b 18%, transparent);
+  color: #f0d4a8;
+  border-color: color-mix(in srgb, #d4a35b 40%, transparent);
 }
 
 /* —— Blueprint form (Phase 3) —— */

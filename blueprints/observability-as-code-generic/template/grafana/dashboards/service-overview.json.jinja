@@ -1,0 +1,18 @@
+{
+  "title": "{{ service_name }} overview",
+  "uid": "{{ service_name | replace('-', '_') }}_overview",
+  "tags": ["service:{{ service_name }}", "team:{{ team }}"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "text",
+      "title": "About",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "content": "{{ description | replace('\"', '') }}"
+      }
+    }
+  ]
+}

@@ -376,6 +376,9 @@ def validate_inputs(
             repo_root,
             gate_overrides=gate_overrides,
         )
+        from repave_engine.observability_selection import normalize_observability_inputs
+
+        normalize_observability_inputs(blueprint, normalized, repo_root)
 
     return normalized
 
@@ -431,6 +434,8 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
         return str(values.get("project_name", blueprint.name))
     if blueprint.artifact_type == "ansible-collection":
         return str(values.get("collection_name", blueprint.name))
+    if blueprint.artifact_type == "observability":
+        return str(values.get("service_name", blueprint.name))
     if blueprint.artifact_type == "azure-policy":
         return str(values.get("policy_name", blueprint.name))
     if blueprint.artifact_type == "opa-policy":
@@ -546,16 +551,20 @@ _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
     "ansible": ("Ansible", "Roles, collections, and playbook projects"),
     "policy": ("Policy", "Checkov, OPA (Conftest), and Azure Policy golden paths"),
+    "observability": ("Observability", "Dashboards, alerts, and SLOs as code"),
 }
-_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "policy")
+_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "policy", "observability")
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
     "policy": ("checkov-policy", "opa-policy", "azure-policy"),
+    "observability": ("observability",),
 }
 
 
 def artifact_family(artifact_type: str) -> str:
+    if artifact_type == "observability":
+        return "observability"
     if artifact_type in ("checkov-policy", "opa-policy", "azure-policy"):
         return "policy"
     if artifact_type.startswith("terraform-"):

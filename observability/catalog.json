@@ -1,0 +1,64 @@
+{
+  "version": "1.0.0",
+  "defaults": {
+    "notification_source": "repave-estate-oncall",
+    "notification_target": "pagerduty-platform-primary"
+  },
+  "notification_sources": [
+    {
+      "id": "repave-estate-oncall",
+      "label": "Estate on-call (PagerDuty)",
+      "description": "Platform-curated PagerDuty services for golden-path repos.",
+      "provider": "pagerduty",
+      "reference_url": "https://github.com/opsdevcode/repave/tree/main/observability",
+      "targets": [
+        {
+          "id": "pagerduty-platform-primary",
+          "label": "Platform primary",
+          "description": "Default platform incident routing."
+        },
+        {
+          "id": "pagerduty-payments",
+          "label": "Payments on-call",
+          "description": "Checkout and billing services."
+        },
+        {
+          "id": "pagerduty-data",
+          "label": "Data platform",
+          "description": "Pipelines, warehouses, and batch jobs."
+        }
+      ]
+    },
+    {
+      "id": "repave-slack-alerts",
+      "label": "Slack alert channels",
+      "description": "Named Slack destinations documented in README (not wired by template yet).",
+      "provider": "slack",
+      "targets": [
+        {
+          "id": "slack-alerts-platform",
+          "label": "#alerts-platform",
+          "description": "Shared platform alert channel."
+        },
+        {
+          "id": "slack-alerts-payments",
+          "label": "#alerts-payments",
+          "description": "Payments team alert channel."
+        }
+      ]
+    },
+    {
+      "id": "repave-email-escalation",
+      "label": "Email escalation",
+      "description": "Mailing lists for low-urgency or compliance routing.",
+      "provider": "email",
+      "targets": [
+        {
+          "id": "email-platform-oncall",
+          "label": "platform-oncall@example.com",
+          "description": "Platform on-call mailing list."
+        }
+      ]
+    }
+  ]
+}

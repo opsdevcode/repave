@@ -155,9 +155,47 @@
       </div>
       {% endif %}
 
+      {% if observability_notifications and observability_catalog %}
+      <div class="field-block observability-notifications" id="observability-notifications">
+        <h3 class="form-section__subtitle" id="notifications-heading">Notifications</h3>
+        <p class="hint">
+          Targets come from <code>observability/catalog.json</code>. Pick a source, then a target
+          documented in the generated README.
+        </p>
+        <label for="notification_source">Notification source</label>
+        <select class="select" id="notification_source" name="notification_source">
+          {% for source in observability_catalog.notification_sources %}
+          <option
+            value="{{ source['id'] }}"
+            {% if source['id'] == observability_defaults.notification_source %}selected{% endif %}
+            {% if source.get('description') %}title="{{ source['description'] }}"{% endif %}
+          >{{ source.get('label') or source['id'] }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="notification-source-hint"></p>
+        <label for="notification_target">Notification target</label>
+        <select class="select" id="notification_target" name="notification_target">
+          {% set initial_source = observability_defaults.notification_source %}
+          {% for source in observability_catalog.notification_sources %}
+            {% if source['id'] == initial_source %}
+              {% for target in source['targets'] %}
+              <option
+                value="{{ target['id'] }}"
+                {% if target['id'] == observability_defaults.notification_target %}selected{% endif %}
+                {% if target.get('description') %}title="{{ target['description'] }}"{% endif %}
+              >{{ target.get('label') or target['id'] }}</option>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </select>
+        <p class="hint" id="notification-target-hint"></p>
+      </div>
+      {% endif %}
+
       {% for field in blueprint.inputs %}
       {% if field.name == "provider_service_scope" %}
       {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules") %}
+      {% elif field.name in ("notification_source", "notification_target") %}
       {% elif provider_catalog and field.name == "cloud_provider" %}
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -1489,6 +1527,86 @@
       }
       updateProfileUi();
     });
+})();
+</script>
+{% endif %}
+{% if observability_notifications and observability_catalog %}
+<script id="observability-catalog-data" type="application/json">{{ observability_catalog | tojson }}</script>
+<script>
+(function () {
+  const catalogEl = document.getElementById("observability-catalog-data");
+  const sourceSelect = document.getElementById("notification_source");
+  const targetSelect = document.getElementById("notification_target");
+  const sourceHint = document.getElementById("notification-source-hint");
+  const targetHint = document.getElementById("notification-target-hint");
+  if (!catalogEl || !sourceSelect || !targetSelect) return;
+
+  const observabilityDefaults = {{ observability_defaults | tojson }};
+  let catalog;
+  try {
+    catalog = JSON.parse(catalogEl.textContent || "{}");
+  } catch (_err) {
+    catalog = { notification_sources: [], defaults: {} };
+  }
+
+  function sources() {
+    return catalog.notification_sources || [];
+  }
+
+  function sourceById(sourceId) {
+    return sources().find((item) => item.id === sourceId);
+  }
+
+  function resolveTargetId(source, preferred) {
+    const targets = source?.targets || [];
+    if (!targets.length) return "";
+    if (preferred && targets.some((t) => t.id === preferred)) {
+      return preferred;
+    }
+    const fromDefaults = catalog.defaults?.notification_target;
+    if (fromDefaults && targets.some((t) => t.id === fromDefaults)) {
+      return fromDefaults;
+    }
+    return targets[0].id;
+  }
+
+  function renderTargets(sourceId, preferredTarget) {
+    const source = sourceById(sourceId);
+    const targets = source?.targets || [];
+    targetSelect.innerHTML = "";
+    for (const target of targets) {
+      const opt = document.createElement("option");
+      opt.value = target.id;
+      opt.textContent = target.label || target.id;
+      if (target.description) opt.title = target.description;
+      targetSelect.appendChild(opt);
+    }
+    const chosen = resolveTargetId(source, preferredTarget);
+    if (chosen) targetSelect.value = chosen;
+    if (sourceHint) {
+      sourceHint.textContent = source?.description || "";
+    }
+    const active = targets.find((t) => t.id === targetSelect.value);
+    if (targetHint) {
+      targetHint.textContent = active?.description || "";
+    }
+  }
+
+  sourceSelect.addEventListener("change", () => {
+    renderTargets(sourceSelect.value, "");
+  });
+  targetSelect.addEventListener("change", () => {
+    const source = sourceById(sourceSelect.value);
+    const active = (source?.targets || []).find((t) => t.id === targetSelect.value);
+    if (targetHint) {
+      targetHint.textContent = active?.description || "";
+    }
+  });
+
+  renderTargets(
+    sourceSelect.value || observabilityDefaults.notification_source,
+    observabilityDefaults.notification_target
+  );
 })();
 </script>
 {% endif %}

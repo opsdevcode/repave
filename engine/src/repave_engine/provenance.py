@@ -209,6 +209,30 @@ def _build_ansible_collection_spec(
     return spec, metadata_name
 
 
+def _build_observability_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    service_name = str(values.get("service_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "observability",
+        "observability": {
+            "service_name": service_name,
+            "organization": str(values.get("organization", "")).strip(),
+            "team": str(values.get("team", "")).strip(),
+            "backend": str(values.get("backend", "prometheus")).strip(),
+            "output_mode": str(values.get("output_mode", "native")).strip(),
+            "notification_source": str(values.get("notification_source", "")).strip(),
+            "notification_target": str(values.get("notification_target", "")).strip(),
+            "runbook_url": str(values.get("runbook_url", "")).strip(),
+        },
+    }
+    slo = str(values.get("slo_target_percent", "")).strip()
+    if slo:
+        spec["observability"]["slo_target_percent"] = slo
+    return spec, service_name
+
+
 def _build_opa_policy_spec(
     blueprint: Blueprint,
     values: dict[str, Any],
@@ -280,6 +304,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_checkov_policy_spec(blueprint, values)
     elif blueprint.artifact_type == "terraform-environment-stack":
         artifact_spec, metadata_name = _build_environment_stack_spec(blueprint, values)
+    elif blueprint.artifact_type == "observability":
+        artifact_spec, metadata_name = _build_observability_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

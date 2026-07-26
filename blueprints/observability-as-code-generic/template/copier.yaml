@@ -1,0 +1,39 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+service_name:
+  type: str
+
+organization:
+  type: str
+
+team:
+  type: str
+
+description:
+  type: str
+
+backend:
+  type: str
+  default: prometheus
+
+output_mode:
+  type: str
+  default: native
+
+notification_source:
+  type: str
+  default: repave-estate-oncall
+
+notification_target:
+  type: str
+  default: pagerduty-platform-primary
+
+runbook_url:
+  type: str
+
+slo_target_percent:
+  type: str
+  default: ""

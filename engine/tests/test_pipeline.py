@@ -411,3 +411,42 @@ def test_generate_ansible_role_generic_publishes_role_repo(
     assert (role_repo.local_path / ".git").exists()
     assert result.pr_plan is not None
     assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_observability_as_code_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout API alerts",
+            "backend": "prometheus",
+            "output_mode": "native",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            "slo_target_percent": "99.9",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    rules = output_dir / "prometheus" / "rules" / "service-alerts.yaml"
+    assert rules.is_file()
+    text = rules.read_text(encoding="utf-8")
+    assert "checkout_target_down" in text
+    assert "runbook_url" in text
+    assert (output_dir / "repave.yaml").is_file()
+    assert all(g.passed or g.skipped for g in result.gates)

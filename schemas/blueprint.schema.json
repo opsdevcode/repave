@@ -93,13 +93,24 @@
               "docs-drift",
               "provenance-drift",
               "opa",
-              "azure-policy"
+              "azure-policy",
+              "promtool"
             ]
           }
         },
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "checkov-policy", "opa-policy", "azure-policy"],
+          "enum": [
+            "terraform-module",
+            "terraform-environment-stack",
+            "ansible-role",
+            "ansible-playbook-project",
+            "ansible-collection",
+            "checkov-policy",
+            "opa-policy",
+            "azure-policy",
+            "observability"
+          ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
         },
@@ -280,6 +291,16 @@
                 "config_file": {
                   "type": "string",
                   "description": "ansible-lint config file relative to the generated role root."
+                }
+              }
+            },
+            "promtool": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "rules_glob": {
+                  "type": "string",
+                  "description": "Glob of Prometheus rule files relative to the generated repo root."
                 }
               }
             }

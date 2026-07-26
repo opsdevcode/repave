@@ -9,6 +9,7 @@ from repave_engine.gate_runners import (
     run_docs_drift,
     run_molecule,
     run_opa,
+    run_promtool,
     run_provenance_drift,
     run_secrets,
     run_terraform_fmt,
@@ -22,6 +23,7 @@ _TERRAFORM_ARTIFACT_TYPES = frozenset({"terraform-module", "terraform-environmen
 _ANSIBLE_ARTIFACT_TYPES = frozenset(
     {"ansible-role", "ansible-playbook-project", "ansible-collection"}
 )
+_OBSERVABILITY_ARTIFACT_TYPES = frozenset({"observability"})
 _SHARED_ARTIFACT_TYPES = frozenset(
     {
         "terraform-module",
@@ -29,6 +31,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "ansible-role",
         "ansible-playbook-project",
         "ansible-collection",
+        "observability",
         "opa-policy",
         "azure-policy",
         "checkov-policy",
@@ -116,7 +119,14 @@ register_gate(
     GateSpec(
         name="yamllint",
         runner=run_yamllint,
-        artifact_types=_ANSIBLE_ARTIFACT_TYPES,
+        artifact_types=_ANSIBLE_ARTIFACT_TYPES | _OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="promtool",
+        runner=run_promtool,
+        artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
     )
 )
 register_gate(
