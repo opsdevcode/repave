@@ -13,6 +13,12 @@
       <span class="badge badge--{{ bp_family }}">
         {% if bp_family == 'policy' %}
           Policy · {{ policy_kind_label(blueprint.artifact_type) or blueprint.artifact_type }}
+        {% elif bp_family == 'observability' %}
+          Observability
+        {% elif bp_family == 'terraform' %}
+          Terraform
+        {% elif bp_family == 'ansible' %}
+          Ansible
         {% else %}
           {{ blueprint.artifact_type }}
         {% endif %}
@@ -21,8 +27,8 @@
   </div>
 </header>
 
-<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' %} form-layout--split{% endif %}">
-  <aside class="governance-card" aria-labelledby="governance-heading">
+<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy') %} form-layout--split{% endif %}">
+  <aside class="governance-card governance-card--{{ bp_family }}" aria-labelledby="governance-heading">
     <h2 class="governance-card__title" id="governance-heading">Governance</h2>
     <dl class="governance-card__list">
       <div>

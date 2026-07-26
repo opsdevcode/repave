@@ -15,6 +15,17 @@
   --warning: #e6b84d;
   --error: #f07167;
   --skip: #8a9a93;
+  /* Golden-path family accents (home catalog grouping) */
+  --family-terraform: #5b9fd4;
+  --family-terraform-stack: #6b8fd4;
+  --family-terraform-text: #9ec9ef;
+  --family-ansible: #7dd3c0;
+  --family-ansible-playbook: #9ed4c8;
+  --family-ansible-text: #a8e6d9;
+  --family-policy: #c4a8e8;
+  --family-policy-text: #e2d4f5;
+  --family-observability: #e8a84a;
+  --family-observability-text: #ffe8c8;
   --radius: 8px;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -1145,6 +1156,38 @@ details.file-panel summary {
 
 .catalog-group {
   margin-bottom: var(--space-6);
+  --group-accent: var(--accent);
+  --group-title: var(--text);
+}
+
+.catalog-group--terraform {
+  --group-accent: var(--family-terraform);
+  --group-title: var(--family-terraform-text);
+}
+
+.catalog-group--ansible {
+  --group-accent: var(--family-ansible);
+  --group-title: var(--family-ansible-text);
+}
+
+.catalog-group--policy {
+  --group-accent: var(--family-policy);
+  --group-title: var(--family-policy-text);
+}
+
+.catalog-group--observability {
+  --group-accent: var(--family-observability);
+  --group-title: var(--family-observability-text);
+}
+
+.catalog-group--terraform,
+.catalog-group--ansible,
+.catalog-group--policy,
+.catalog-group--observability {
+  padding: var(--space-4);
+  border-radius: calc(var(--radius) + 4px);
+  background: color-mix(in srgb, var(--group-accent) 6%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--group-accent) 28%, var(--border));
 }
 
 .catalog-group__header {
@@ -1157,16 +1200,22 @@ details.file-panel summary {
   border-left: 3px solid var(--accent);
 }
 
-.catalog-group--terraform .catalog-group__header {
-  border-left-color: #5b9fd4;
+.catalog-group--terraform .catalog-group__header,
+.catalog-group--ansible .catalog-group__header,
+.catalog-group--policy .catalog-group__header,
+.catalog-group--observability .catalog-group__header {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-left: 4px solid var(--group-accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--group-accent) 10%, transparent);
 }
 
-.catalog-group--ansible .catalog-group__header {
-  border-left-color: #7dd3c0;
-}
-
-.catalog-group--policy .catalog-group__header {
-  border-left-color: #c4a8e8;
+.catalog-group--terraform .catalog-group__title,
+.catalog-group--ansible .catalog-group__title,
+.catalog-group--policy .catalog-group__title,
+.catalog-group--observability .catalog-group__title {
+  color: color-mix(in srgb, var(--group-title) 88%, var(--text));
 }
 
 .catalog-group__title {
@@ -1197,6 +1246,7 @@ details.file-panel summary {
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
   border-top: 3px solid var(--accent);
+  --card-accent: var(--accent);
   color: var(--text);
   text-decoration: none;
   transition:
@@ -1206,36 +1256,43 @@ details.file-panel summary {
 }
 
 .catalog-card--terraform-module {
-  border-top-color: #5b9fd4;
+  --card-accent: var(--family-terraform);
+  border-top-color: var(--family-terraform);
 }
 
 .catalog-card--terraform-environment-stack {
-  border-top-color: #6b8fd4;
+  --card-accent: var(--family-terraform-stack);
+  border-top-color: var(--family-terraform-stack);
 }
 
 .catalog-card--ansible-playbook-project {
-  border-top-color: #9ed4c8;
+  --card-accent: var(--family-ansible-playbook);
+  border-top-color: var(--family-ansible-playbook);
 }
 
-.catalog-card--ansible-role {
-  border-top-color: #7dd3c0;
+.catalog-card--ansible-role,
+.catalog-card--ansible-collection {
+  --card-accent: var(--family-ansible);
+  border-top-color: var(--family-ansible);
 }
 
 .catalog-card--observability {
-  border-top-color: #d4a35b;
+  --card-accent: var(--family-observability);
+  border-top-color: var(--family-observability);
 }
 
 .catalog-card--checkov-policy,
 .catalog-card--opa-policy,
 .catalog-card--azure-policy {
-  border-top-color: #c4a8e8;
+  --card-accent: var(--family-policy);
+  border-top-color: var(--family-policy);
 }
 
 .catalog-card:hover {
   color: var(--text);
   text-decoration: none;
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  background: var(--surface-raised);
+  border-color: color-mix(in srgb, var(--card-accent) 42%, var(--border));
+  background: color-mix(in srgb, var(--card-accent) 6%, var(--surface-raised));
   transform: translateY(-1px);
 }
 
@@ -1295,24 +1352,24 @@ details.file-panel summary {
 }
 
 .badge--terraform {
-  background: color-mix(in srgb, #5b9fd4 22%, transparent);
-  color: #9ec9ef;
-  border-color: color-mix(in srgb, #5b9fd4 45%, transparent);
+  background: color-mix(in srgb, var(--family-terraform) 22%, transparent);
+  color: var(--family-terraform-text);
+  border-color: color-mix(in srgb, var(--family-terraform) 45%, transparent);
 }
 
 .badge--ansible {
-  background: color-mix(in srgb, #7dd3c0 22%, transparent);
-  color: #a8e6d9;
-  border-color: color-mix(in srgb, #7dd3c0 45%, transparent);
+  background: color-mix(in srgb, var(--family-ansible) 22%, transparent);
+  color: var(--family-ansible-text);
+  border-color: color-mix(in srgb, var(--family-ansible) 45%, transparent);
 }
 
 .badge--policy,
 .badge--checkov-policy,
 .badge--opa-policy,
 .badge--azure-policy {
-  background: color-mix(in srgb, #c4a8e8 22%, transparent);
-  color: #e2d4f5;
-  border-color: color-mix(in srgb, #c4a8e8 45%, transparent);
+  background: color-mix(in srgb, var(--family-policy) 22%, transparent);
+  color: var(--family-policy-text);
+  border-color: color-mix(in srgb, var(--family-policy) 45%, transparent);
 }
 
 .badge--muted {
@@ -1328,33 +1385,33 @@ details.file-panel summary {
 }
 
 .badge--terraform-module {
-  background: color-mix(in srgb, #5b9fd4 18%, transparent);
-  color: #9ec9ef;
-  border-color: color-mix(in srgb, #5b9fd4 40%, transparent);
+  background: color-mix(in srgb, var(--family-terraform) 18%, transparent);
+  color: var(--family-terraform-text);
+  border-color: color-mix(in srgb, var(--family-terraform) 40%, transparent);
 }
 
 .badge--terraform-environment-stack {
-  background: color-mix(in srgb, #6b8fd4 18%, transparent);
+  background: color-mix(in srgb, var(--family-terraform-stack) 18%, transparent);
   color: #b0c4ef;
-  border-color: color-mix(in srgb, #6b8fd4 40%, transparent);
+  border-color: color-mix(in srgb, var(--family-terraform-stack) 40%, transparent);
 }
 
 .badge--ansible-playbook-project {
-  background: color-mix(in srgb, #9ed4c8 18%, transparent);
+  background: color-mix(in srgb, var(--family-ansible-playbook) 18%, transparent);
   color: #c8f0e8;
-  border-color: color-mix(in srgb, #9ed4c8 40%, transparent);
+  border-color: color-mix(in srgb, var(--family-ansible-playbook) 40%, transparent);
 }
 
 .badge--ansible-role {
-  background: color-mix(in srgb, #7dd3c0 18%, transparent);
-  color: #a8e6d9;
-  border-color: color-mix(in srgb, #7dd3c0 40%, transparent);
+  background: color-mix(in srgb, var(--family-ansible) 18%, transparent);
+  color: var(--family-ansible-text);
+  border-color: color-mix(in srgb, var(--family-ansible) 40%, transparent);
 }
 
 .badge--observability {
-  background: color-mix(in srgb, #d4a35b 18%, transparent);
-  color: #f0d4a8;
-  border-color: color-mix(in srgb, #d4a35b 40%, transparent);
+  background: color-mix(in srgb, var(--family-observability) 24%, transparent);
+  color: var(--family-observability-text);
+  border-color: color-mix(in srgb, var(--family-observability) 50%, transparent);
 }
 
 /* —— Blueprint form (Phase 3) —— */
@@ -1465,15 +1522,46 @@ details.file-panel summary {
 
 .policy-customization {
   padding: var(--space-4);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--family-policy) 28%, var(--border));
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+  border-left: 3px solid var(--family-policy);
+  background: color-mix(in srgb, var(--family-policy) 7%, var(--surface-raised));
   display: grid;
   gap: var(--space-3);
 }
 
 .policy-customization .form-section__subtitle {
   margin: 0;
+  color: var(--family-policy-text);
+}
+
+.observability-field-catalog,
+.observability-notifications {
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--family-observability) 28%, var(--border));
+  border-radius: var(--radius);
+  border-left: 3px solid var(--family-observability);
+  background: color-mix(in srgb, var(--family-observability) 7%, var(--surface-raised));
+  display: grid;
+  gap: var(--space-3);
+}
+
+.observability-field-catalog .form-section__subtitle,
+.observability-notifications .form-section__subtitle {
+  margin: 0;
+  color: var(--family-observability-text);
+}
+
+.obs-decision-fields,
+.dashboard-pack {
+  padding-top: var(--space-2);
+  border-top: 1px solid color-mix(in srgb, var(--family-observability) 18%, var(--border));
+}
+
+.obs-decision-fields:first-of-type,
+#obs-backend-decision {
+  border-top: none;
+  padding-top: 0;
 }
 
 .dashboard-pack-includes {
@@ -1491,6 +1579,39 @@ details.file-panel summary {
 .form-section__subtitle--sm {
   font-size: 0.95rem;
   margin: 0;
+}
+
+.governance-card--terraform {
+  border-top-color: var(--family-terraform);
+  border-left: 3px solid var(--family-terraform);
+}
+
+.governance-card--ansible {
+  border-top-color: var(--family-ansible);
+  border-left: 3px solid var(--family-ansible);
+}
+
+.governance-card--policy {
+  border-top-color: var(--family-policy);
+  border-left: 3px solid var(--family-policy);
+}
+
+.governance-card--observability {
+  border-top-color: var(--family-observability);
+  border-left: 3px solid var(--family-observability);
+}
+
+#configuration-mode-toggle.segmented {
+  border-color: color-mix(in srgb, var(--family-observability) 35%, var(--border));
+}
+
+#configuration-mode-toggle .segmented__option:has(input:checked) {
+  background: color-mix(in srgb, var(--family-observability) 18%, var(--surface));
+  color: var(--family-observability-text);
+}
+
+.obs-backend-panel[hidden] {
+  display: none !important;
 }
 
 .policy-rules-advanced {

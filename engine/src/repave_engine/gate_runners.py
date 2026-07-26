@@ -454,6 +454,76 @@ def run_datadog_dashboard(ctx: GateContext) -> GateResult:
     )
 
 
+def _datadog_monitor_files(output_dir: Path, ctx: GateContext) -> list[Path]:
+    raw = ctx.config("datadog-monitor")
+    glob_pattern = str(raw.get("monitors_glob", "datadog/monitors/*.json"))
+    return sorted(output_dir.glob(glob_pattern))
+
+
+def _monitor_payloads(path: Path, data: object) -> list[dict[str, object]]:
+    if isinstance(data, dict):
+        return [data]
+    if isinstance(data, list):
+        return [item for item in data if isinstance(item, dict)]
+    return []
+
+
+def _validate_datadog_monitor(path: Path, payload: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    for key in ("name", "type", "query", "message"):
+        if key not in payload:
+            errors.append(f"{path.name}: monitor missing {key!r}")
+    tags = payload.get("tags")
+    if tags is not None:
+        errors.extend(_validate_dashboard_tags(path, tags))
+    return errors
+
+
+def run_datadog_monitor(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "observability":
+        return GateResult(
+            "datadog-monitor",
+            True,
+            True,
+            "datadog-monitor gate not applicable; skipped",
+        )
+
+    monitor_files = _datadog_monitor_files(output_dir, ctx)
+    if not monitor_files:
+        return GateResult(
+            "datadog-monitor",
+            True,
+            True,
+            "no Datadog monitor JSON found; skipped",
+        )
+
+    errors: list[str] = []
+    monitor_count = 0
+    for path in monitor_files:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.name}: invalid JSON ({exc.msg})")
+            continue
+        payloads = _monitor_payloads(path, data)
+        if not payloads:
+            errors.append(f"{path.name}: expected a monitor object or array of monitors")
+            continue
+        for payload in payloads:
+            monitor_count += 1
+            errors.extend(_validate_datadog_monitor(path, payload))
+
+    if errors:
+        return GateResult("datadog-monitor", False, False, "; ".join(errors))
+    return GateResult(
+        "datadog-monitor",
+        True,
+        False,
+        f"validated {monitor_count} Datadog monitor(s)",
+    )
+
+
 def run_ansible_lint(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not tool_available("ansible-lint"):

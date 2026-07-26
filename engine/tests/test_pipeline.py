@@ -452,6 +452,115 @@ def test_generate_observability_as_code_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_observability_datadog_native_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout monitors",
+            "backend": "datadog",
+            "environment": "prod",
+            "output_mode": "native",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    monitors = output_dir / "datadog" / "monitors" / "service-alerts.json"
+    assert monitors.is_file()
+    assert not (output_dir / "prometheus").exists()
+    dd_gate = next(g for g in result.gates if g.name == "datadog-monitor")
+    assert dd_gate.passed or dd_gate.skipped
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_observability_grafana_native_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout grafana",
+            "backend": "grafana",
+            "environment": "prod",
+            "output_mode": "native",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    dash = output_dir / "grafana" / "dashboards" / "service-overview.json"
+    assert dash.is_file()
+    assert not (output_dir / "datadog").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_observability_terraform_datadog_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout TF monitors",
+            "backend": "datadog",
+            "environment": "prod",
+            "output_mode": "terraform",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "monitors.tf").is_file()
+    assert not (output_dir / "datadog").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_dashboards_as_code_dry_run(
     repo_root: Path,
     output_config,
@@ -495,6 +604,9 @@ def test_generate_dashboards_as_code_dry_run(
     assert not grafana_gate.skipped
     dd_gate = next(g for g in result.gates if g.name == "datadog-dashboard")
     assert dd_gate.skipped
+    docs_gate = next(g for g in result.gates if g.name == "docs-drift")
+    assert docs_gate.passed, docs_gate.message
+    assert all(g.passed or g.skipped for g in result.gates)
 
 
 def test_generate_dashboards_with_community_pack(
@@ -575,3 +687,6 @@ def test_generate_dashboards_as_code_datadog_dry_run(
     dd_gate = next(g for g in result.gates if g.name == "datadog-dashboard")
     assert dd_gate.passed
     assert not dd_gate.skipped
+    docs_gate = next(g for g in result.gates if g.name == "docs-drift")
+    assert docs_gate.passed, docs_gate.message
+    assert all(g.passed or g.skipped for g in result.gates)

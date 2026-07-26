@@ -41,6 +41,10 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'class="catalog-group catalog-group--terraform"' in response.text
     assert 'class="catalog-group catalog-group--ansible"' in response.text
     assert 'class="catalog-group catalog-group--policy"' in response.text
+    assert 'class="catalog-group catalog-group--observability"' in response.text
+    assert 'id="catalog-observability"' in response.text
+    assert "Observability" in response.text
+    assert "dashboards-as-code-generic" in response.text
     assert 'id="catalog-policy"' in response.text
     assert "opa-policy-generic" in response.text
     assert "azure-policy-generic" in response.text
@@ -435,13 +439,13 @@ def test_generate_resource_module_from_form(repo_root, output_config, monkeypatc
     assert values["provider_resource"] == "bucket"
 
 
-def test_ansible_form_is_single_column(repo_root, output_config) -> None:
+def test_ansible_form_renders_split_governance(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/ansible-role-generic")
 
     assert response.status_code == 200
-    assert "governance-card" in response.text
-    assert "form-layout--split" not in response.text
+    assert "governance-card governance-card--ansible" in response.text
+    assert "form-layout--split" in response.text
     assert "ansible-lint" in response.text or "ansible_lint" in response.text
     assert 'id="support_linux_cb"' in response.text
     assert 'name="support_linux"' in response.text

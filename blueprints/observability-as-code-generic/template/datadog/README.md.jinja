@@ -1,4 +1,8 @@
-# Datadog monitors (placeholder)
+# Datadog monitors
 
-Backend `datadog` is selected. Add monitor JSON and SLO definitions here in a follow-up
-release. See `standards/observability/observability-as-code.md`.
+Native Datadog monitor JSON lives under `monitors/`. Import via the
+[Datadog monitors API](https://docs.datadoghq.com/api/latest/monitors/) or your
+GitOps pipeline.
+
+For Terraform-managed monitors, regenerate with `output_mode=terraform` (see repo
+root `README.md`).

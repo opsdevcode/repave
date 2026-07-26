@@ -558,6 +558,9 @@ def test_load_observability_blueprint(repo_root: Path) -> None:
     )
     assert blueprint.artifact_type == "observability"
     assert "promtool" in blueprint.gates
+    assert "grafana-dashboard" in blueprint.gates
+    assert "datadog-monitor" in blueprint.gates
+    assert "terraform-validate" in blueprint.gates
     assert "yamllint" in blueprint.gates
     assert blueprint.output_repo_name_template.startswith("observability-")
 

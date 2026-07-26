@@ -2,6 +2,11 @@ _min_copier_version: "9.0.0"
 _templates_suffix: .jinja
 _exclude:
   - copier.yaml
+  - "{% if output_mode != 'terraform' %}versions.tf{% endif %}"
+  - "{% if output_mode != 'terraform' %}variables.tf{% endif %}"
+  - "{% if output_mode != 'terraform' %}monitors.tf{% endif %}"
+  - "{% if output_mode != 'terraform' %}providers.tf{% endif %}"
+  - "{% if output_mode == 'terraform' %}datadog/monitors/service-alerts.json{% endif %}"
 
 service_name:
   type: str
@@ -18,6 +23,10 @@ description:
 backend:
   type: str
   default: prometheus
+
+environment:
+  type: str
+  default: prod
 
 output_mode:
   type: str

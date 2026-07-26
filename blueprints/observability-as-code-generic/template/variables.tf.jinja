@@ -1,0 +1,35 @@
+variable "service_name" {
+  type        = string
+  description = "Logical service name for monitor queries and tags."
+  default     = "{{ service_name }}"
+}
+
+variable "team" {
+  type        = string
+  description = "Owning team slug."
+  default     = "{{ team }}"
+}
+
+variable "organization" {
+  type        = string
+  description = "Organization or business unit slug."
+  default     = "{{ organization }}"
+}
+
+variable "description" {
+  type        = string
+  description = "Human-readable scope for this observability repo."
+  default     = "{{ description | replace('\"', '\\\"') }}"
+}
+
+variable "runbook_url" {
+  type        = string
+  description = "HTTPS runbook linked from monitor messages."
+  default     = "{{ runbook_url }}"
+}
+
+variable "notification_target" {
+  type        = string
+  description = "Catalog notification target (PagerDuty service, Slack channel, etc.)."
+  default     = "{{ notification_target }}"
+}

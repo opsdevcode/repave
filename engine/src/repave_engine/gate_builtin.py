@@ -7,6 +7,7 @@ from repave_engine.gate_runners import (
     run_azure_policy,
     run_checkov,
     run_datadog_dashboard,
+    run_datadog_monitor,
     run_docs_drift,
     run_grafana_dashboard,
     run_molecule,
@@ -21,7 +22,9 @@ from repave_engine.gate_runners import (
     run_yamllint,
 )
 
-_TERRAFORM_ARTIFACT_TYPES = frozenset({"terraform-module", "terraform-environment-stack"})
+_TERRAFORM_ARTIFACT_TYPES = frozenset(
+    {"terraform-module", "terraform-environment-stack", "observability"}
+)
 _ANSIBLE_ARTIFACT_TYPES = frozenset(
     {"ansible-role", "ansible-playbook-project", "ansible-collection"}
 )
@@ -142,6 +145,13 @@ register_gate(
     GateSpec(
         name="datadog-dashboard",
         runner=run_datadog_dashboard,
+        artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="datadog-monitor",
+        runner=run_datadog_monitor,
         artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
     )
 )

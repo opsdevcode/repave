@@ -1,0 +1,14 @@
+# Alertmanager routing stub for {{ service_name }}
+# Wire receivers to notification_target: {{ notification_target }}
+route:
+  receiver: default
+  group_by: [alertname, service]
+  routes:
+    - matchers:
+        - service="{{ service_name }}"
+      receiver: default
+      continue: false
+
+receivers:
+  - name: default
+    # Example: PagerDuty, Slack, or email — map to {{ notification_target }} in your deploy pipeline.

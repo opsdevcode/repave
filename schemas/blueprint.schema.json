@@ -96,7 +96,8 @@
               "azure-policy",
               "promtool",
               "grafana-dashboard",
-              "datadog-dashboard"
+              "datadog-dashboard",
+              "datadog-monitor"
             ]
           }
         },
@@ -323,6 +324,16 @@
                 "dashboards_glob": {
                   "type": "string",
                   "description": "Glob of Datadog dashboard JSON files relative to the generated repo root."
+                }
+              }
+            },
+            "datadog-monitor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "monitors_glob": {
+                  "type": "string",
+                  "description": "Glob of Datadog monitor JSON files relative to the generated repo root."
                 }
               }
             }

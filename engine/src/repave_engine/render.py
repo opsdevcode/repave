@@ -154,6 +154,12 @@ def render_blueprint(
         from repave_engine.dashboard_pack import materialize_dashboard_pack
 
         materialize_dashboard_pack(output_dir, _find_repo_root(blueprint.path), payload)
+    if blueprint.name == "observability-as-code-generic":
+        _prune_observability_backend_outputs(
+            output_dir,
+            backend=str(payload.get("backend", "prometheus")),
+            output_mode=str(payload.get("output_mode", "native")),
+        )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None
@@ -189,6 +195,37 @@ def _prune_dashboard_backend_outputs(output_dir: Path, backend: str) -> None:
         return
     if target.is_dir():
         shutil.rmtree(target)
+
+
+def _prune_observability_backend_outputs(
+    output_dir: Path,
+    *,
+    backend: str,
+    output_mode: str,
+) -> None:
+    """Keep native trees for the selected backend, or Terraform-only layout."""
+    mode = output_mode.strip().lower()
+    selected = backend.strip().lower()
+
+    if mode == "terraform":
+        for name in ("prometheus", "grafana", "datadog", "otel"):
+            path = output_dir / name
+            if path.is_dir():
+                shutil.rmtree(path)
+        return
+
+    for tf_name in ("versions.tf", "variables.tf", "monitors.tf", "providers.tf"):
+        tf_path = output_dir / tf_name
+        if tf_path.is_file():
+            tf_path.unlink()
+
+    backend_dirs = ("prometheus", "grafana", "datadog", "otel")
+    for name in backend_dirs:
+        if name == selected:
+            continue
+        path = output_dir / name
+        if path.is_dir():
+            shutil.rmtree(path)
 
 
 def _write_scoped_resource_files(
