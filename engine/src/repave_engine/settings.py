@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+from repave_engine.auth import AuthConfig
 
 
 @dataclass(frozen=True)
@@ -200,6 +203,116 @@ def load_gate_overrides(repo_root: Path) -> GateOverrides:
     return GateOverrides(
         checkov_skip_checks=tuple(str(item) for item in skip_checks),
         blocked_policy_rule_skips=blocked,
+    )
+
+
+@dataclass(frozen=True)
+class PortalConfig:
+    density: str
+
+
+def load_portal_config(repo_root: Path) -> PortalConfig:
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("portal")
+    if not isinstance(block, dict):
+        return PortalConfig(density="default")
+    density = str(block.get("density", "default")).strip().lower()
+    if density not in ("default", "compact"):
+        raise ValueError("portal.density must be 'default' or 'compact'")
+    return PortalConfig(density=density)
+
+
+def load_auth_config(repo_root: Path) -> AuthConfig | None:
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("auth")
+    env_service = os.environ.get("REPAVE_SERVICE_MODE", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    if block is None and not env_service:
+        return None
+    if block is not None and not isinstance(block, dict):
+        raise ValueError("auth must be a mapping in repave.config.yaml")
+
+    service_enabled = env_service
+    if isinstance(block, dict):
+        service_enabled = bool(block.get("service_mode", service_enabled))
+
+    session_secret = os.environ.get("REPAVE_SESSION_SECRET", "").strip()
+    if isinstance(block, dict) and block.get("session_secret"):
+        session_secret = str(block.get("session_secret")).strip() or session_secret
+    if service_enabled and not session_secret:
+        raise ValueError("auth.service_mode requires REPAVE_SESSION_SECRET or auth.session_secret")
+
+    oidc_block = block.get("oidc", {}) if isinstance(block, dict) else {}
+    if not isinstance(oidc_block, dict):
+        oidc_block = {}
+
+    issuer = str(oidc_block.get("issuer", os.environ.get("REPAVE_OIDC_ISSUER", ""))).strip()
+    client_id = str(
+        oidc_block.get("client_id", os.environ.get("REPAVE_OIDC_CLIENT_ID", ""))
+    ).strip()
+    client_secret = (
+        _resolve_secret(
+            oidc_block.get("client_secret"),
+            os.environ.get("REPAVE_OIDC_CLIENT_SECRET"),
+        )
+        or ""
+    )
+    redirect_uri = str(
+        oidc_block.get("redirect_uri", os.environ.get("REPAVE_OIDC_REDIRECT_URI", ""))
+    ).strip()
+    scopes_raw = oidc_block.get("scopes", ["openid", "profile", "email"])
+    if isinstance(scopes_raw, str):
+        scopes = tuple(part.strip() for part in scopes_raw.split() if part.strip())
+    elif isinstance(scopes_raw, list):
+        scopes = tuple(str(item).strip() for item in scopes_raw if str(item).strip())
+    else:
+        scopes = ("openid", "profile", "email")
+
+    groups_claim = str(oidc_block.get("groups_claim", "groups")).strip() or "groups"
+    roles_block = oidc_block.get("roles", {}) if isinstance(oidc_block, dict) else {}
+    if not isinstance(roles_block, dict):
+        roles_block = {}
+
+    def _groups(key: str) -> frozenset[str]:
+        raw = roles_block.get(key, [])
+        if not isinstance(raw, list):
+            return frozenset()
+        return frozenset(str(item).strip() for item in raw if str(item).strip())
+
+    if service_enabled and not all((issuer, client_id, client_secret, redirect_uri)):
+        raise ValueError(
+            "auth.service_mode requires oidc issuer, client_id, client_secret, and redirect_uri"
+        )
+
+    if not service_enabled:
+        return AuthConfig(
+            service_enabled=False,
+            session_secret=session_secret or secrets.token_hex(32),
+            oidc_issuer=issuer,
+            oidc_client_id=client_id,
+            oidc_client_secret=client_secret,
+            oidc_redirect_uri=redirect_uri,
+            oidc_scopes=scopes,
+            groups_claim=groups_claim,
+            admin_groups=_groups("admin"),
+            generator_groups=_groups("generator"),
+        )
+
+    return AuthConfig(
+        service_enabled=True,
+        session_secret=session_secret,
+        oidc_issuer=issuer,
+        oidc_client_id=client_id,
+        oidc_client_secret=client_secret,
+        oidc_redirect_uri=redirect_uri,
+        oidc_scopes=scopes,
+        groups_claim=groups_claim,
+        admin_groups=_groups("admin"),
+        generator_groups=_groups("generator"),
     )
 
 

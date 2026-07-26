@@ -8,6 +8,23 @@ output:
   modules_root: ../repave-modules
   repo_name_template: "tf-{cloud_provider}-{module_name}"
 
+# Optional portal layout (Backstage-adjacent density without white-label theming).
+# portal:
+#   density: compact   # default | compact
+
+# Optional hosted service authentication (OIDC). Local dev: leave disabled.
+# auth:
+#   service_mode: true
+#   oidc:
+#     issuer: https://your-idp.example.com/oauth2/default
+#     client_id: repave-portal
+#     redirect_uri: https://repave.example.com/auth/callback
+#     groups_claim: groups
+#     roles:
+#       admin: [repave-admins]
+#       generator: [repave-generators]
+# Secrets: REPAVE_SESSION_SECRET, REPAVE_OIDC_CLIENT_SECRET
+
 # Optional gate overrides applied during generation.
 gates:
   checkov:
@@ -24,7 +41,7 @@ gates:
 #   enabled: true
 #   file: ../repave-audit/generation.jsonl
 # Override path: REPAVE_AUDIT_FILE
-# Acting user: REPAVE_ACTING_USER (falls back to USER)
+# Acting user: REPAVE_ACTING_USER (falls back to USER; OIDC session when auth enabled)
 
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.

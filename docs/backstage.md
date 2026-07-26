@@ -87,10 +87,32 @@ For production Scaffolder flows:
 3. **Catalog** — commit includes `catalog-info.yaml` when enabled; register the new repo
    in Backstage via Location API or an org catalog repo.
 
-A dedicated HTTP JSON API for headless generate is not required for v1.32; the portal
-`POST /generate` form endpoint remains the browser UX. Scaffolder integrations should
-prefer the CLI in a container action (reuse `deploy/local/Dockerfile` tooling) until a
-stable REST contract is published as a follow-up.
+A dedicated HTTP JSON API is available for headless generate:
+
+```http
+POST /api/v1/generate
+Content-Type: application/json
+
+{
+  "blueprint": "terraform-module-generic",
+  "dry_run": true,
+  "inputs": {
+    "module_name": "checkout-vpc",
+    "description": "Scaffolder bootstrap",
+    "cloud_provider": "aws",
+    "provider_services": "s3",
+    "owner": "group:platform",
+    "include_backstage_catalog": "true"
+  }
+}
+```
+
+When `auth.service_mode` is enabled, the caller must have a `generator` or `admin`
+session (browser cookie) or call from an authenticated proxy. See
+[`docs/auth-service-mode.md`](auth-service-mode.md).
+
+The portal `POST /generate` form endpoint remains the browser UX. Scaffolder can
+use either this JSON API or the CLI in a container action (reuse `deploy/local/Dockerfile`).
 
 ### Suggested action inputs
 

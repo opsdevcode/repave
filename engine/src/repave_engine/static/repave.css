@@ -225,8 +225,21 @@ pre {
 
 .shell__meta {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-2);
+}
+
+.shell__user {
+  font-size: 0.88rem;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell__logout {
+  margin: 0;
 }
 
 .shell__main {
@@ -2189,6 +2202,43 @@ details.file-panel summary {
 .pinned-role-row__controls .select {
   flex: 1 1 12rem;
   min-width: 10rem;
+}
+
+.shell--compact {
+  --space-5: 1.25rem;
+  --space-6: 2rem;
+  font-size: 0.98rem;
+}
+
+.shell--compact .home-hero {
+  padding: var(--space-5) var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.shell--compact .home-hero__wordmark {
+  font-size: clamp(2.5rem, 9vw, 4rem);
+}
+
+.shell--compact .home-hero__tagline {
+  font-size: 1rem;
+  margin-bottom: var(--space-4);
+}
+
+.shell--compact .catalog-card {
+  padding: var(--space-3);
+}
+
+.shell--compact .catalog-card__desc {
+  font-size: 0.92rem;
+}
+
+.shell--compact .governance-card,
+.shell--compact .form-panel {
+  padding: var(--space-3) var(--space-4);
+}
+
+.shell--compact .form-section__title {
+  font-size: 1.05rem;
 }
 
 @media (max-width: 640px) {
