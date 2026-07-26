@@ -38,6 +38,7 @@ def test_group_blueprints_by_artifact_collapses_families() -> None:
     groups = group_blueprints_by_artifact(
         [
             _bp("playbook-a", "ansible-playbook-project"),
+            _bp("collection-a", "ansible-collection"),
             _bp("role-a", "ansible-role"),
             _bp("env-stack", "terraform-environment-stack"),
             _bp("tf-b", "terraform-module"),
@@ -49,7 +50,7 @@ def test_group_blueprints_by_artifact_collapses_families() -> None:
     assert groups[0].title == "Terraform"
     assert [bp.name for bp in groups[0].blueprints] == ["tf-a", "tf-b", "env-stack"]
     assert groups[1].title == "Ansible"
-    assert [bp.name for bp in groups[1].blueprints] == ["role-a", "playbook-a"]
+    assert [bp.name for bp in groups[1].blueprints] == ["role-a", "collection-a", "playbook-a"]
     assert isinstance(groups[0], BlueprintCatalogGroup)
 
 

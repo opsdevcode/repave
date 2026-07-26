@@ -2,7 +2,7 @@
 
 Version: 1.0.0
 
-Contract for Ansible collections (future `ansible-collection-generic` golden path).
+Contract for Ansible collections (`ansible-collection-generic` golden path).
 References [Ansible collection documentation](https://docs.ansible.com/projects/ansible/latest/collections_guide/index.html)
 and Galaxy publishing requirements.
 

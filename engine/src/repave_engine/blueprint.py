@@ -338,6 +338,8 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
         return str(values.get("stack_name", blueprint.name))
     if blueprint.artifact_type == "ansible-playbook-project":
         return str(values.get("project_name", blueprint.name))
+    if blueprint.artifact_type == "ansible-collection":
+        return str(values.get("collection_name", blueprint.name))
     if blueprint.artifact_type == "ansible-role":
         return str(values.get("role_name", blueprint.name))
     return str(values.get("module_name", blueprint.name))
@@ -445,13 +447,13 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
 # Portal catalog grouping (v1.18). Families collapse artifact types in the home UI.
 _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
-    "ansible": ("Ansible", "Roles and playbook projects"),
+    "ansible": ("Ansible", "Roles, collections, and playbook projects"),
 }
 _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible")
 # Sort order of blueprints within each family (unknown types sort last, then by name).
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
-    "ansible": ("ansible-role", "ansible-playbook-project"),
+    "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
 }
 
 

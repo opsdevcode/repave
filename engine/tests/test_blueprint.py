@@ -177,6 +177,39 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "terraform-environment-stack" in names
     assert "ansible-role-generic" in names
     assert "ansible-playbook-project" in names
+    assert "ansible-collection-generic" in names
+
+
+def test_load_ansible_collection_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-collection-generic",
+        repo_root,
+    )
+    assert blueprint.name == "ansible-collection-generic"
+    assert blueprint.artifact_type == "ansible-collection"
+    assert blueprint.standard_source == "standards/ansible/collection-standard.md"
+    assert blueprint.output_repo_name_template.startswith("ansible-collection-")
+
+
+def test_build_provenance_document_ansible_collection(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-collection-generic",
+        repo_root,
+    )
+    from repave_engine.provenance import build_provenance_document
+
+    document = build_provenance_document(
+        blueprint,
+        {
+            "namespace": "acme",
+            "collection_name": "platform",
+            "description": "Shared platform modules",
+            "min_ansible_version": "2.18",
+        },
+    )
+    assert document["spec"]["artifactType"] == "ansible-collection"
+    assert document["metadata"]["name"] == "acme.platform"
+    assert document["spec"]["ansibleCollection"]["collection_name"] == "platform"
 
 
 def test_load_ansible_playbook_project_blueprint(repo_root: Path) -> None:

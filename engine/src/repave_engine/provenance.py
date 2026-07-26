@@ -158,11 +158,38 @@ def _build_ansible_spec(blueprint: Blueprint, values: dict[str, Any]) -> tuple[d
     return spec, metadata_name
 
 
+def _build_ansible_collection_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    namespace = str(values.get("namespace", ""))
+    collection_name = str(values.get("collection_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "ansible-collection",
+        "ansibleCollection": {
+            "namespace": namespace,
+            "collection_name": collection_name,
+        },
+    }
+    min_version = values.get("min_ansible_version")
+    if min_version not in (None, ""):
+        spec["ansibleCollection"]["min_ansible_version"] = str(min_version)
+    if blueprint.ansible_lint_pack is not None:
+        spec["ansibleLint"] = {
+            "pack_source": blueprint.ansible_lint_pack.pack_source,
+            "pack_version": blueprint.ansible_lint_pack.pack_version,
+        }
+    metadata_name = f"{namespace}.{collection_name}" if namespace else collection_name
+    return spec, metadata_name
+
+
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
     elif blueprint.artifact_type == "ansible-playbook-project":
         artifact_spec, metadata_name = _build_ansible_playbook_project_spec(blueprint, values)
+    elif blueprint.artifact_type == "ansible-collection":
+        artifact_spec, metadata_name = _build_ansible_collection_spec(blueprint, values)
     elif blueprint.artifact_type == "terraform-environment-stack":
         artifact_spec, metadata_name = _build_environment_stack_spec(blueprint, values)
     else:

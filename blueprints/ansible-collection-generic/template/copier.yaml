@@ -1,0 +1,17 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+namespace:
+  type: str
+
+collection_name:
+  type: str
+
+description:
+  type: str
+
+min_ansible_version:
+  type: str
+  default: "2.18"
