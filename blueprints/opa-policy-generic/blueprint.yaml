@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: opa-policy-generic
-  version: 0.2.0
+  version: 0.3.0
   description: Standalone Conftest/OPA Rego policy artifact with fixture tests.
 spec:
   artifactType: opa-policy
@@ -38,6 +38,16 @@ spec:
       multi: true
       default: ""
       description: Rule IDs from policy/catalog.json when policy_profile is custom.
+    - name: plan_demo
+      type: string
+      required: false
+      default: pass
+      description: >-
+        Conftest fixture plan for demos. Use destructive_delete to see plan-time
+        OPA block publish messaging in the portal (dry-run).
+      enum:
+        - pass
+        - destructive_delete
   template:
     engine: copier
     path: template
