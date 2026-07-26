@@ -43,11 +43,16 @@ spec:
       enum:
         - native
       description: native emits backend-native YAML/JSON; terraform mode is follow-up.
+    - name: notification_source
+      type: string
+      required: false
+      default: repave-estate-oncall
+      description: Catalog source for notification targets (see observability/catalog.json).
     - name: notification_target
       type: string
       required: false
-      default: oncall-platform
-      description: Route hint (PagerDuty service, Slack channel, etc.) documented in README.
+      default: pagerduty-platform-primary
+      description: Target from the selected notification source (PagerDuty service, Slack channel, etc.).
     - name: runbook_url
       type: string
       required: true

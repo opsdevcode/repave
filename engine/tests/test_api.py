@@ -238,6 +238,23 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
     assert payload["defaults"]["policy_pack_source"] == "repave-azure-samples"
     assert payload["defaults"]["policy_profile"] == "azure-community"
 
+    obs_payload = client.get(
+        "/blueprints/observability-as-code-generic/observability-catalog"
+    ).json()
+    assert obs_payload["defaults"]["notification_source"] == "repave-estate-oncall"
+    assert len(obs_payload["notification_sources"]) >= 2
+    pagerduty = next(
+        s for s in obs_payload["notification_sources"] if s["id"] == "repave-estate-oncall"
+    )
+    assert any(t["id"] == "pagerduty-platform-primary" for t in pagerduty["targets"])
+
+    obs_form = client.get("/blueprints/observability-as-code-generic")
+    assert obs_form.status_code == 200
+    assert 'id="observability-notifications"' in obs_form.text
+    assert 'id="notification_source"' in obs_form.text
+    assert 'id="notification_target"' in obs_form.text
+    assert 'value="pagerduty-platform-primary"' in obs_form.text
+
     form = client.get("/blueprints/azure-policy-generic")
     assert form.status_code == 200
     assert 'value="repave-azure-samples"' in form.text

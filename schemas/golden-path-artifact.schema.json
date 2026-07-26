@@ -204,6 +204,7 @@
             "team": { "type": "string", "minLength": 1 },
             "backend": { "type": "string" },
             "output_mode": { "type": "string" },
+            "notification_source": { "type": "string" },
             "notification_target": { "type": "string" },
             "runbook_url": { "type": "string", "minLength": 1 },
             "slo_target_percent": { "type": "string" }

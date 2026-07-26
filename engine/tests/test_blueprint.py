@@ -578,7 +578,8 @@ def test_build_provenance_document_observability(repo_root: Path) -> None:
             "description": "Checkout alerts",
             "backend": "prometheus",
             "output_mode": "native",
-            "notification_target": "pagerduty-checkout",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
             "runbook_url": "https://wiki.example.com/runbooks/checkout",
             "slo_target_percent": "99.9",
         },
@@ -586,6 +587,8 @@ def test_build_provenance_document_observability(repo_root: Path) -> None:
     assert document["spec"]["artifactType"] == "observability"
     obs = document["spec"]["observability"]
     assert obs["service_name"] == "checkout"
+    assert obs["notification_source"] == "repave-estate-oncall"
+    assert obs["notification_target"] == "pagerduty-payments"
     assert obs["slo_target_percent"] == "99.9"
 
 

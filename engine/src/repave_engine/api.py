@@ -22,6 +22,12 @@ from repave_engine.blueprint import (
 )
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
+from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
+from repave_engine.observability_catalog import load_observability_catalog
+from repave_engine.observability_selection import (
+    blueprint_supports_observability_notifications,
+    observability_input_defaults,
+)
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.policy_catalog import (
     catalog_for_api,
@@ -110,6 +116,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 profile=profile,
                 artifact_type=blueprint.artifact_type,
             )
+        observability_catalog: dict[str, object] | None = None
+        observability_defaults: dict[str, str] = {}
+        if blueprint_supports_observability_notifications(blueprint):
+            observability_defaults = observability_input_defaults(blueprint, repo_root)
+            obs_cat = load_observability_catalog(repo_root)
+            observability_catalog = observability_catalog_for_api(
+                obs_cat,
+                defaults=observability_defaults,
+            )
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
@@ -120,6 +135,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 policy_defaults=policy_defaults,
                 policy_catalog=policy_catalog,
                 policy_enabled_rule_ids=policy_enabled_rule_ids,
+                observability_notifications=blueprint_supports_observability_notifications(
+                    blueprint
+                ),
+                observability_defaults=observability_defaults,
+                observability_catalog=observability_catalog,
                 nav_active="catalog",
             ),
         )
@@ -145,6 +165,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             catalog,
             blueprint.artifact_type,
             defaults=policy_input_defaults(blueprint),
+        )
+
+    @app.get("/blueprints/{blueprint_name}/observability-catalog")
+    async def observability_catalog(blueprint_name: str) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if not blueprint_supports_observability_notifications(blueprint):
+            return {"version": "0", "notification_sources": [], "defaults": {}}
+        catalog = load_observability_catalog(repo_root)
+        return observability_catalog_for_api(
+            catalog,
+            defaults=observability_input_defaults(blueprint, repo_root),
         )
 
     @app.get("/blueprints/{blueprint_name}/module-inventory")

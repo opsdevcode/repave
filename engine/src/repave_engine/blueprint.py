@@ -376,6 +376,9 @@ def validate_inputs(
             repo_root,
             gate_overrides=gate_overrides,
         )
+        from repave_engine.observability_selection import normalize_observability_inputs
+
+        normalize_observability_inputs(blueprint, normalized, repo_root)
 
     return normalized
 

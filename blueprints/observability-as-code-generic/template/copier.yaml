@@ -23,9 +23,13 @@ output_mode:
   type: str
   default: native
 
+notification_source:
+  type: str
+  default: repave-estate-oncall
+
 notification_target:
   type: str
-  default: oncall-platform
+  default: pagerduty-platform-primary
 
 runbook_url:
   type: str

@@ -222,6 +222,7 @@ def _build_observability_spec(
             "team": str(values.get("team", "")).strip(),
             "backend": str(values.get("backend", "prometheus")).strip(),
             "output_mode": str(values.get("output_mode", "native")).strip(),
+            "notification_source": str(values.get("notification_source", "")).strip(),
             "notification_target": str(values.get("notification_target", "")).strip(),
             "runbook_url": str(values.get("runbook_url", "")).strip(),
         },
