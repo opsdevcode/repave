@@ -756,6 +756,10 @@ def test_update_plan_preview(repo_root, output_config) -> None:
 
     assert response.status_code == 200
     assert "Upgrade preview" in response.text
+    assert (
+        "Standards &amp; pin changes" in response.text or "Standards & pin changes" in response.text
+    )
+    assert "pin-diff-table" in response.text
     assert "upgrade-diff" in response.text
     assert "upgrade-diff__item--" in response.text
     assert "repave update --no-dry-run" in response.text

@@ -57,6 +57,8 @@ def test_plan_upgrade_against_operator_fixture(repo_root: Path, tmp_path: Path) 
     payload = result.to_json_dict()
     assert payload["blueprint_name"] == "terraform-module-generic"
     assert payload["changed_file_count"] > 0
+    assert payload["pin_changes"]
+    assert any(row["field"] == "Blueprint version" for row in payload["pin_changes"])
     assert "repave.yaml" in payload["added"] or "repave.yaml" in payload["modified"]
 
 

@@ -5,7 +5,13 @@ from __future__ import annotations
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
+from repave_engine.blueprint import Blueprint
+from repave_engine.governance import (
+    GOVERNANCE_BASELINE_SOURCE,
+    GOVERNANCE_BASELINE_VERSION,
+)
 from repave_engine.target_repo import _git_executable
 
 
@@ -157,3 +163,88 @@ def standards_diff_for_pin(
         reason="",
         files=files,
     )
+
+
+@dataclass(frozen=True)
+class PinChange:
+    field: str
+    before: str
+    after: str
+
+    def to_dict(self) -> dict[str, str]:
+        return {"field": self.field, "before": self.before, "after": self.after}
+
+
+def _spec_str(spec: dict[str, Any], *keys: str) -> str:
+    current: Any = spec
+    for key in keys:
+        if not isinstance(current, dict):
+            return ""
+        current = current.get(key)
+    if current in (None, ""):
+        return ""
+    return str(current).strip()
+
+
+def diff_observed_vs_catalog_pins(
+    provenance_document: dict[str, Any],
+    blueprint: Blueprint,
+) -> tuple[PinChange, ...]:
+    """Rows where repave.yaml pins differ from the target blueprint catalog."""
+    spec = provenance_document.get("spec")
+    if not isinstance(spec, dict):
+        return ()
+
+    changes: list[PinChange] = []
+
+    def add(field: str, before: str, after: str) -> None:
+        if before == after:
+            return
+        changes.append(PinChange(field=field, before=before or "(none)", after=after or "(none)"))
+
+    bp_meta = spec.get("blueprint")
+    if isinstance(bp_meta, dict):
+        add("Blueprint name", _spec_str(spec, "blueprint", "name"), blueprint.name)
+        add("Blueprint version", _spec_str(spec, "blueprint", "version"), blueprint.version)
+
+    std = spec.get("standard")
+    if isinstance(std, dict) or blueprint.standard_source:
+        add("Standard source", _spec_str(spec, "standard", "source"), blueprint.standard_source)
+        add("Standard version", _spec_str(spec, "standard", "version"), blueprint.standard_version)
+
+    gov = spec.get("governance")
+    if isinstance(gov, dict) or blueprint.artifact_type:
+        add(
+            "Governance baseline",
+            _spec_str(spec, "governance", "baseline_source"),
+            GOVERNANCE_BASELINE_SOURCE,
+        )
+        add(
+            "Governance baseline version",
+            _spec_str(spec, "governance", "baseline_version"),
+            GOVERNANCE_BASELINE_VERSION,
+        )
+
+    if blueprint.checkov_policies is not None:
+        add(
+            "Checkov pack version",
+            _spec_str(spec, "checkov", "policy_version"),
+            blueprint.checkov_policies.policy_version,
+        )
+
+    if blueprint.opa_policies is not None:
+        add(
+            "OPA pack version",
+            _spec_str(spec, "opa", "policy_version"),
+            blueprint.opa_policies.policy_version,
+        )
+
+    if blueprint.azure_policy_pack is not None:
+        add(
+            "Azure Policy pack version",
+            _spec_str(spec, "azurePolicy", "policy_version")
+            or _spec_str(spec, "azure_policy", "policy_version"),
+            blueprint.azure_policy_pack.policy_version,
+        )
+
+    return tuple(changes)
