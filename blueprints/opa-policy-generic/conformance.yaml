@@ -1,0 +1,9 @@
+inputs:
+  policy_name: conformance
+  organization: platform
+  description: Conformance fixture OPA policy pack
+required_files:
+  - repave.yaml
+  - README.md
+  - policy/destructive_changes.rego
+snapshot: false

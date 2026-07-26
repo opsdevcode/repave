@@ -214,13 +214,11 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 
 | Job | Trigger | Notes |
 | --- | --- | --- |
-| `operator-test` | PR or merge queue touching `operator/**` | envtest + unit; no kind |
+| `operator-test` | PR touching `operator/**` | envtest + unit; no kind |
 | `operator-lint` | Same | golangci-lint (`make operator-lint`) |
 | `operator-e2e` | Nightly, workflow_dispatch, main path changes | kind + `Dockerfile.e2e` |
 
 Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows.
-Required checks also run on GitHub **merge queue** events when enabled on `main`
-(see [CONTRIBUTING.md](../CONTRIBUTING.md)).
 
 ---
 

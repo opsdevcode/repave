@@ -1,0 +1,8 @@
+inputs:
+  policy_name: conformance
+  organization: platform
+  description: Conformance fixture Azure Policy definitions
+required_files:
+  - repave.yaml
+  - README.md
+snapshot: false

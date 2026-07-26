@@ -29,6 +29,13 @@ make install
 make test
 ```
 
+### Blueprint conformance
+
+Every golden path under `blueprints/*/blueprint.yaml` must ship a sibling
+`conformance.yaml` with fixture `inputs` and `required_files`. CI runs
+`tests/test_blueprint_conformance.py` (render, gates, template hygiene). Optional `snapshot: true` enables `conformance.manifest.json`; refresh with
+`make blueprint-conformance-update`.
+
 Or from `engine/`:
 
 ```bash
@@ -52,8 +59,7 @@ make test
 
 ### Python quality and security tooling
 
-CI runs these OSS tools on every push, pull request, and merge queue run.
-**Docs-only** changes still trigger workflows (so required status checks complete) but jobs skip heavy work when
+CI runs these OSS tools on every push and pull request. **Docs-only** changes still trigger workflows (so required status checks complete) but jobs skip heavy work when
 the diff touches only:
 
 - `docs/**`
@@ -73,9 +79,8 @@ Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)
 requires on `main` for normal contributors:
 
 - Changes merged via pull request (no approving review required — solo maintainer)
-- **Merge queue** required (squash); add PRs with **Merge when ready** on GitHub
 - Status checks: `test`, `Code quality (Ruff + mypy)`, `Security (Bandit + pip-audit)`,
-  `commitlint`, `semantic-pull-request`, `operator-test` (on PR and merge queue)
+  `commitlint`, `semantic-pull-request`, `operator-test`
 - No force-push (`non_fast_forward`)
 
 **Release automation bypass:** the ruleset grants **repository administrators**
@@ -87,8 +92,7 @@ for everyday feature work (use PRs like everyone else).
 The **Release** and **Sync main branch ruleset** workflows apply the JSON from
 this repo before publishing so bypass stays in sync with git.
 
-Re-apply or update the ruleset after editing the JSON (see
-[`.github/rulesets/README.md`](.github/rulesets/README.md) for merge queue rollout):
+Re-apply or update the ruleset after editing the JSON:
 
 ```bash
 gh api --method POST repos/opsdevcode/repave/rulesets \
@@ -98,13 +102,8 @@ gh api --method POST repos/opsdevcode/repave/rulesets \
 To update an existing ruleset, `PUT repos/opsdevcode/repave/rulesets/{id}` with the
 same payload plus changes. List IDs with `gh ruleset list --repo opsdevcode/repave`.
 
-**Enabling the merge queue:** merge the PR that adds `merge_group` to required
-workflows first, then apply the ruleset JSON (or merge ruleset changes to `main` so
-**Sync main branch ruleset** runs). Turning the queue on before `merge_group` CI
-ships will block merges.
-
 Classic branch protection may still restrict who can push directly to `main`; the
-ruleset adds required checks, merge queue, and PR rules on top.
+ruleset adds required checks and PR rules on top.
 
 Tools on full CI runs:
 
@@ -171,8 +170,7 @@ bypass is configured in `.github/rulesets/main-branch.json`).
 After merging operator or engine features, semver advances automatically when
 **Release** succeeds on `main` (`feat:` → minor, `fix:` → patch). Feature PRs
 should not hand-edit `engine/pyproject.toml` version. Release opens and
-admin-merges a `chore/release/*` PR (Administrator ruleset bypass; not the merge
-queue) because rulesets block direct pushes to `main` even for some administrator
+admin-merges a `chore/release/*` PR (Administrator ruleset bypass) because rulesets block direct pushes to `main` even for some administrator
 tokens. The workflow tags the release commit after merge and creates the GitHub
 Release (with wheel artifacts) via `gh release create`; it also repairs a tagged
 version that has no GitHub Release yet.
@@ -204,9 +202,7 @@ gh secret set REPAVE_RELEASE_TOKEN --org opsdevcode --visibility private
 
 - Keep changes small and focused.
 - Use a Conventional Commit-style PR title.
-- Wait for required checks, then add the PR to the merge queue (**Merge when ready**
-  on GitHub). Do not expect a direct **Merge pull request** button once the merge
-  queue rule is active on `main`.
+- Wait for required checks, then merge the pull request on GitHub.
 - Include tests for engine logic changes.
 - Explain intent and any trade-offs in the PR description.
 
