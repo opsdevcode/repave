@@ -18,6 +18,7 @@ from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.settings import OutputConfig, load_output_config
+from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
@@ -155,4 +156,70 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
+    @app.get("/update", response_class=HTMLResponse)
+    async def update_form(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "update.html",
+            page_context(nav_active="update"),
+        )
+
+    @app.post("/update", response_class=HTMLResponse)
+    async def update_plan(request: Request) -> HTMLResponse:
+        form = await request.form()
+        target_repo_raw = str(form.get("target_repo", "")).strip()
+        blueprint_override = str(form.get("blueprint", "")).strip() or None
+
+        if not target_repo_raw:
+            return templates.TemplateResponse(
+                request,
+                "update.html",
+                page_context(
+                    nav_active="update",
+                    error_message="Repository path is required.",
+                    target_repo=target_repo_raw,
+                    blueprint=blueprint_override or "",
+                ),
+            )
+
+        target_repo = Path(target_repo_raw).expanduser()
+        try:
+            plan = plan_upgrade(
+                target_repo,
+                repo_root,
+                blueprint_name=blueprint_override,
+            )
+        except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
+            return templates.TemplateResponse(
+                request,
+                "update.html",
+                page_context(
+                    nav_active="update",
+                    error_message=str(exc),
+                    target_repo=target_repo_raw,
+                    blueprint=blueprint_override or "",
+                ),
+            )
+
+        branch = _suggested_upgrade_branch(plan)
+        cli_apply = (
+            f"repave update --no-dry-run --git-branch {branch} --path {target_repo.resolve()}"
+        )
+        return templates.TemplateResponse(
+            request,
+            "update_result.html",
+            page_context(
+                nav_active="update",
+                plan=plan,
+                target_repo=str(target_repo.resolve()),
+                cli_apply_command=cli_apply,
+            ),
+        )
+
     return app
+
+
+def _suggested_upgrade_branch(plan: UpgradePlanResult) -> str:
+    safe_name = plan.blueprint_name.replace("/", "-")
+    safe_version = plan.blueprint_version.replace("/", "-")
+    return f"repave/upgrade/{safe_name}-{safe_version}"

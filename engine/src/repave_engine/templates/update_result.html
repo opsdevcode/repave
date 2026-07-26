@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Upgrade preview — repave{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/update">← Update repository</a></p>
+
+<section class="result-hero result-hero--passed" aria-labelledby="upgrade-heading">
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">{{ plan.blueprint_name }}@{{ plan.blueprint_version }}</p>
+    <h1 id="upgrade-heading" class="result-hero__title">Upgrade preview</h1>
+    <p class="result-hero__banner">
+      <span class="badge badge--skip">Dry-run</span>
+      {{ plan.summary }}
+    </p>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="path-heading">
+  <div class="card__header">
+    <h2 id="path-heading">Target</h2>
+  </div>
+  <div class="card__body">
+    <code>{{ target_repo }}</code>
+  </div>
+</section>
+
+{% if plan.added or plan.modified or plan.removed %}
+<section class="card" aria-labelledby="diff-heading">
+  <div class="card__header">
+    <h2 id="diff-heading">File changes</h2>
+  </div>
+  <div class="card__body upgrade-diff">
+    {% if plan.added %}
+    <div class="upgrade-diff__group">
+      <h3 class="upgrade-diff__label">Added</h3>
+      <ul class="upgrade-diff__list">
+        {% for path in plan.added %}
+        <li><code>+ {{ path }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if plan.modified %}
+    <div class="upgrade-diff__group">
+      <h3 class="upgrade-diff__label">Modified</h3>
+      <ul class="upgrade-diff__list">
+        {% for path in plan.modified %}
+        <li><code>~ {{ path }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if plan.removed %}
+    <div class="upgrade-diff__group">
+      <h3 class="upgrade-diff__label">Removed</h3>
+      <ul class="upgrade-diff__list">
+        {% for path in plan.removed %}
+        <li><code>- {{ path }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% else %}
+<div class="alert alert--info">No file differences — the repo already matches the current blueprint render.</div>
+{% endif %}
+
+<section class="card" aria-labelledby="next-heading">
+  <div class="card__header">
+    <h2 id="next-heading">Next steps</h2>
+  </div>
+  <div class="card__body">
+    <div class="copy-row">
+      <span class="copy-row__label muted">Apply locally</span>
+      <code class="copy-row__value" id="upgrade-cli-apply">{{ cli_apply_command }}</code>
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-target="#upgrade-cli-apply">
+        Copy
+      </button>
+    </div>
+  </div>
+</section>
+{% endblock %}

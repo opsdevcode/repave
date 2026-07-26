@@ -362,3 +362,47 @@ def test_result_dashboard_published_repo_card(
     assert "repo-card" in response.text
     assert "Open on GitHub" in response.text
     assert "repo-local-path" in response.text
+
+
+def test_update_form_page(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/update")
+
+    assert response.status_code == 200
+    assert "Update existing repository" in response.text
+    assert 'name="target_repo"' in response.text
+    assert "Update repo" in response.text
+
+
+def test_update_plan_preview(repo_root, output_config) -> None:
+    fixture = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
+    if not fixture.is_dir():
+        import pytest
+
+        pytest.skip("operator fixture not present")
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/update",
+        data={"target_repo": str(fixture)},
+    )
+
+    assert response.status_code == 200
+    assert "Upgrade preview" in response.text
+    assert "upgrade-diff" in response.text
+    assert "repave update --no-dry-run" in response.text
+
+
+def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config, tmp_path) -> None:
+    empty = tmp_path / "empty-module"
+    empty.mkdir()
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/update",
+        data={"target_repo": str(empty)},
+    )
+
+    assert response.status_code == 200
+    assert "alert--fail" in response.text
+    assert "repave.yaml" in response.text
