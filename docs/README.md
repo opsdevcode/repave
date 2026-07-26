@@ -13,6 +13,7 @@ is the front door; use this index when you need depth.
 | [Concepts](concepts.md) | Everyone | Golden paths, blueprints, governance-by-construction, provenance |
 | [Module repositories](module-repositories.md) | Adopters | `REPAVE_MODULES_ROOT`, GitHub org, naming |
 | [Engine capabilities](engine-capabilities.md) | Platform engineers | Gates, CLI, blueprints, CI |
+| [Policy customization](../standards/policy/customization.md) | Platform / security | Profiles, catalog, portal, provenance, config floors |
 | [Roadmap](roadmap.md) | Planning | Shipped releases, planned themes, parking lot |
 | [Portal design](portal-design.md) | UX / frontend | Shell, catalog, forms, results |
 
