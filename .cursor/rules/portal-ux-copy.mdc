@@ -47,3 +47,6 @@ source. Labels, hints, and governance rails should explain **what they get**, no
 - [ ] No README section headers or “sync on generate” phrasing in templates/JS.
 - [ ] Hints explain user action or outcome, not internal sync/render steps.
 - [ ] New strings are consistent with `docs/portal-design.md` (Copy and voice).
+- [ ] **Behavior unchanged:** plan (dry-run) and scaffold still reach `/generate`
+  and show results — see `portal-ui-behavior.mdc`.
+- [ ] Copy/label renames update tests in `engine/tests/test_api.py` in the same PR.
