@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Update repository — repave{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/">← Golden paths</a></p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Update existing repository</h1>
+    <p class="page-lead">
+      Re-render from <code>repave.yaml</code> and preview file changes before you apply locally or open a PR.
+    </p>
+  </div>
+</header>
+
+{% if error_message %}
+<div class="alert alert--fail" role="alert">{{ error_message }}</div>
+{% endif %}
+
+<form class="form-panel" method="post" action="/update">
+  <div class="field">
+    <label class="field__label" for="target_repo">Repository path</label>
+    <input
+      class="field__input"
+      type="text"
+      id="target_repo"
+      name="target_repo"
+      required
+      placeholder="/path/to/tf-aws-my-module"
+      value="{{ target_repo or '' }}"
+      autocomplete="off"
+    />
+    <p class="field__hint muted">
+      Local checkout of a module or role repo that contains <code>repave.yaml</code>.
+    </p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="blueprint">Blueprint override</label>
+    <input
+      class="field__input"
+      type="text"
+      id="blueprint"
+      name="blueprint"
+      placeholder="Optional — default from repave.yaml"
+      value="{{ blueprint or '' }}"
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="form-panel__actions">
+    <button class="btn btn--primary" type="submit">Preview upgrade</button>
+  </div>
+</form>
+
+<section class="card" aria-labelledby="cli-heading">
+  <div class="card__header">
+    <h2 id="cli-heading">Apply from the CLI</h2>
+  </div>
+  <div class="card__body">
+    <p class="muted">
+      After reviewing the diff, commit on a branch with
+      <code>repave update --no-dry-run --git-branch … --path …</code>
+      or add <code>--open-pr</code> when <code>GITHUB_TOKEN</code> is set.
+    </p>
+  </div>
+</section>
+{% endblock %}

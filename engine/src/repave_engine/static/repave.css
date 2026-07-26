@@ -1459,6 +1459,30 @@ details.file-panel summary {
   font-weight: 650;
 }
 
+.upgrade-diff__group + .upgrade-diff__group {
+  margin-top: var(--space-4);
+}
+
+.upgrade-diff__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+}
+
+.upgrade-diff__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.upgrade-diff__list code {
+  font-size: 0.8125rem;
+}
+
 @media (max-width: 640px) {
   .shell__bar {
     flex-wrap: wrap;
