@@ -19,3 +19,7 @@ runs:
             - '!**/*.md'
             - '!LICENSE'
             - '!.github/pull_request_template.md'
+            - '!.github/actions/ci-paths/**'
+            - '!scripts/capture_portal_screenshots.sh'
+            - '!scripts/sync_doc_versions.py'
+            - '!Makefile'

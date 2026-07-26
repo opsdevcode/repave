@@ -36,6 +36,7 @@ squash/rebase, per repo settings) once required checks pass.
 **Release automation:** `chore/release/*` PRs merged with `REPAVE_RELEASE_TOKEN`
 use the Administrator ruleset bypass.
 
-Docs-only pull requests rely on workflows that **always run** but skip work via
-`.github/actions/ci-paths/` so required checks still report success. GitHub does
-not support path-based exceptions inside rulesets for status checks.
+Docs-only pull requests rely on workflows that **always run** but skip heavy steps
+via `.github/actions/ci-paths/` so required checks still report success (fast
+no-op jobs). Path list matches [CONTRIBUTING.md](../../CONTRIBUTING.md#python-quality-and-security-tooling).
+GitHub does not support path-based exceptions inside rulesets for status checks.
