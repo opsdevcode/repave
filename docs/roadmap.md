@@ -574,7 +574,8 @@ developer portal; many platform teams standardize on Backstage.
 into Backstage, and docs show the scaffolder action.
 
 **Status:** Shipped on `main` (`backstage_catalog.py`, optional catalog on Terraform/Helm,
-required on app-service, `standards/backstage/catalog-standard.md`, [`docs/backstage.md`](backstage.md)).
+required on app-service, `standards/backstage/catalog-standard.md`, [`docs/backstage.md`](backstage.md)
+with Scaffolder template sketch and parameter mapping).
 
 ---
 
