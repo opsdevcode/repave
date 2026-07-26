@@ -549,7 +549,8 @@ and gate summary.
 
 **Status:** Shipped on `main` (`repave.config.yaml` `notifications`, Slack/Teams/
 generic webhooks, publish and generation events; best-effort delivery from the
-generation pipeline).
+generation pipeline). Operator drift/remediation uses the same webhook URLs via
+`REPAVE_OPERATOR_NOTIFY_*` environment variables.
 
 ---
 
