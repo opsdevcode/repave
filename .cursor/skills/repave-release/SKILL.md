@@ -25,7 +25,7 @@ Read `.github/workflows/release.yml` and `engine/pyproject.toml` `[tool.semantic
 - **`upload_to_vcs_release = false`** — publish via `gh release create` in workflow.
 - Version file paths are **relative to `engine/`**, not `engine/engine/`.
 - Never push version commits directly to `main`; use `chore/release/*` +
-  `gh pr merge --admin` (release PRs bypass the merge queue via Administrator ruleset bypass).
+  `gh pr merge --admin`.
 
 ## Debug a failed Release run
 
