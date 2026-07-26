@@ -1,0 +1,63 @@
+{
+  "title": "Node Exporter Full (Grafana.com #1860 fork)",
+  "uid": "community_node_exporter_1860",
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave",
+    "community:grafana-1860"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "description": "Vendored fork of the popular Node Exporter Full dashboard (Grafana.com ID 1860, MIT). Metrics assume Prometheus node_exporter on hosts tagged for {{ service_name }}.",
+  "panels": [
+    {
+      "type": "text",
+      "title": "Community attribution",
+      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "**Upstream:** [Grafana.com dashboard 1860 — Node Exporter Full](https://grafana.com/grafana/dashboards/1860) (MIT).\n\nThis repave fork adds required tags and links the dashboard to service **{{ service_name }}**. Extend or replace queries to match your scrape config."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU busy (community layout)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "{{ datasource_uid }}" },
+      "targets": [
+        {
+          "expr": "avg(rate(node_cpu_seconds_total{mode!=\"idle\",service=\"{{ service_name }}\",environment=\"$environment\"}[5m])) * 100",
+          "legendFormat": "cpu busy %"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory used %",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "{{ datasource_uid }}" },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes{service=\"{{ service_name }}\",environment=\"$environment\"} / node_memory_MemTotal_bytes{service=\"{{ service_name }}\",environment=\"$environment\"})) * 100",
+          "legendFormat": "mem used %"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "type": "custom",
+        "query": "{{ environment }}",
+        "current": { "text": "{{ environment }}", "value": "{{ environment }}" }
+      }
+    ]
+  }
+}

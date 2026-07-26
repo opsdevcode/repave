@@ -38,6 +38,7 @@ def test_normalize_observability_inputs_rejects_bad_target(repo_root: Path) -> N
         validate_inputs(
             blueprint,
             {
+                "configuration_mode": "custom",
                 "service_name": "checkout",
                 "organization": "platform",
                 "team": "payments",

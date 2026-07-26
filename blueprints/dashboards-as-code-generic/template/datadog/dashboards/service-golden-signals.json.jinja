@@ -1,0 +1,76 @@
+{
+  "title": "{{ service_name }} golden signals",
+  "description": "RED starter — rate, errors, duration (Datadog APM / custom metrics)",
+  "layout_type": "ordered",
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave",
+    "repave:golden-signals"
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": ["{{ environment }}"],
+      "default": "{{ environment }}"
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "### RED — Rate, Errors, Duration\n\nQueries assume APM `service:{{ service_name }}` and `env:$env`. Adjust metric names to match your integration.",
+        "background_color": "gray",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left"
+      },
+      "layout": { "x": 0, "y": 0, "width": 12, "height": 2 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Rate (hits/s)",
+        "requests": [
+          {
+            "q": "sum:trace.http.request.hits{service:{{ service_name }},env:$env}.as_rate()",
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 2, "width": 4, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Errors",
+        "requests": [
+          {
+            "q": "sum:trace.http.request.errors{service:{{ service_name }},env:$env}.as_rate()",
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": { "x": 4, "y": 2, "width": 4, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Duration p99",
+        "requests": [
+          {
+            "q": "p99:trace.http.request.duration{service:{{ service_name }},env:$env}",
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": { "x": 8, "y": 2, "width": 4, "height": 3 }
+    }
+  ]
+}

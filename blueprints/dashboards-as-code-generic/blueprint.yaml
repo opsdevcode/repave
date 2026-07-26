@@ -1,0 +1,109 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: dashboards-as-code-generic
+  version: 0.2.0
+  description: Governed Grafana and Datadog dashboards (RED / golden signals, community tags).
+spec:
+  artifactType: observability
+  standard:
+    source: standards/observability/dashboards-as-code.md
+    version: 1.1.0
+  inputs:
+    - name: service_name
+      type: string
+      required: true
+      description: Logical service name (dashboard uid, tags, repo name).
+    - name: configuration_mode
+      type: string
+      required: false
+      default: recommended
+      enum:
+        - recommended
+        - custom
+      description: recommended applies catalog defaults after you pick service, backend, and pack; custom exposes all fields.
+    - name: organization
+      type: string
+      required: true
+      description: Owning organization or business unit slug.
+    - name: team
+      type: string
+      required: true
+      description: Team slug for dashboard tags.
+    - name: description
+      type: string
+      required: true
+      description: What these dashboards cover (shown on the overview panel).
+    - name: backend
+      type: string
+      required: false
+      default: grafana
+      enum:
+        - grafana
+        - datadog
+      description: Dashboard platform (native JSON under grafana/ or datadog/).
+    - name: dashboard_pack_source
+      type: string
+      required: false
+      default: repave-red-starter
+      description: Community dashboard pack from observability/catalog.json (see observability/dashboards/).
+    - name: environment
+      type: string
+      required: false
+      default: prod
+      description: Deployment environment (OTel deployment.environment; env tag/variable).
+    - name: output_mode
+      type: string
+      required: false
+      default: native
+      enum:
+        - native
+      description: native emits backend-native JSON; terraform mode is follow-up.
+    - name: observability_focus
+      type: string
+      required: false
+      default: dashboards
+      enum:
+        - dashboards
+      description: Provenance focus for upgrade plans (dashboards vs alerts paths).
+    - name: datasource_uid
+      type: string
+      required: false
+      default: prometheus
+      description: Grafana datasource UID used in panel queries (Grafana backend only).
+    - name: notification_source
+      type: string
+      required: false
+      default: repave-estate-oncall
+      description: Catalog source for on-call routing documented in README.
+    - name: notification_target
+      type: string
+      required: false
+      default: pagerduty-platform-primary
+      description: Target from the selected notification source.
+    - name: runbook_url
+      type: string
+      required: false
+      default: ""
+      description: Optional HTTPS runbook linked from dashboard text panels.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - grafana-dashboard
+    - datadog-dashboard
+    - secrets
+    - docs-drift
+    - provenance-drift
+  gate_config:
+    grafana-dashboard:
+      dashboards_glob: grafana/dashboards/*.json
+    datadog-dashboard:
+      dashboards_glob: datadog/dashboards/*.json
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "dashboards-{organization}-{service_name}"
+      title_template: "Bootstrap dashboards for {service_name} ({organization})"

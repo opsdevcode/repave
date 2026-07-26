@@ -1,0 +1,11 @@
+# Datadog dashboards
+
+Native JSON under `datadog/dashboards/` follows
+[standards/observability/dashboards-as-code.md](https://github.com/opsdevcode/repave/blob/main/standards/observability/dashboards-as-code.md)
+v1.1.0.
+
+- Use consistent tags (`service`, `team`, `org`, `env`, `managed-by:repave`).
+- Prefer `$env` template variable over hard-coded environment in queries.
+- Extend RED widgets before adding unrelated charts so on-call layouts stay familiar.
+
+Service: **{{ service_name }}** · Team: **{{ team }}** · Environment: **{{ environment }}**

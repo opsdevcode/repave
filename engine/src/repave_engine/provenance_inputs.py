@@ -166,10 +166,14 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             "description": f"Repave upgrade plan for {service_name}",
             "backend": str(obs.get("backend", "prometheus")).strip(),
             "output_mode": str(obs.get("output_mode", "native")).strip(),
+            "environment": str(obs.get("environment", "")).strip(),
             "notification_source": str(obs.get("notification_source", "")).strip(),
             "notification_target": str(obs.get("notification_target", "")).strip(),
             "runbook_url": str(obs.get("runbook_url", "")).strip(),
             "slo_target_percent": str(obs.get("slo_target_percent", "")).strip(),
+            "observability_focus": str(obs.get("focus", "")).strip(),
+            "datasource_uid": str(obs.get("datasource_uid", "")).strip(),
+            "dashboard_pack_source": str(obs.get("dashboard_pack_source", "")).strip(),
         }
         return values
 

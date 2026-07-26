@@ -20,11 +20,16 @@ from repave_engine.blueprint import (
     load_blueprint,
     policy_kind_label,
 )
+from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
-from repave_engine.observability_catalog import load_observability_catalog
+from repave_engine.observability_catalog import (
+    catalog_has_field_options,
+    load_observability_catalog,
+)
 from repave_engine.observability_selection import (
+    blueprint_supports_observability_field_catalog,
     blueprint_supports_observability_notifications,
     observability_input_defaults,
 )
@@ -118,12 +123,26 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         observability_catalog: dict[str, object] | None = None
         observability_defaults: dict[str, str] = {}
-        if blueprint_supports_observability_notifications(blueprint):
+        observability_field_catalog = False
+        obs_catalog_form = (
+            blueprint_supports_observability_notifications(blueprint)
+            or blueprint_supports_dashboard_packs(blueprint)
+            or blueprint_supports_observability_field_catalog(blueprint)
+        )
+        if obs_catalog_form:
             observability_defaults = observability_input_defaults(blueprint, repo_root)
+            for field in blueprint.inputs:
+                if field.name == "backend" and field.default not in (None, ""):
+                    observability_defaults.setdefault("backend", str(field.default))
             obs_cat = load_observability_catalog(repo_root)
+            observability_field_catalog = blueprint_supports_observability_field_catalog(
+                blueprint
+            ) and catalog_has_field_options(obs_cat)
             observability_catalog = observability_catalog_for_api(
                 obs_cat,
                 defaults=observability_defaults,
+                backend=observability_defaults.get("backend", "grafana"),
+                blueprint_name=blueprint.name,
             )
         return templates.TemplateResponse(
             request,
@@ -138,6 +157,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 observability_notifications=blueprint_supports_observability_notifications(
                     blueprint
                 ),
+                observability_dashboard_packs=blueprint_supports_dashboard_packs(blueprint),
+                observability_field_catalog=observability_field_catalog,
                 observability_defaults=observability_defaults,
                 observability_catalog=observability_catalog,
                 nav_active="catalog",
@@ -170,12 +191,23 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/blueprints/{blueprint_name}/observability-catalog")
     async def observability_catalog(blueprint_name: str) -> dict[str, object]:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        if not blueprint_supports_observability_notifications(blueprint):
-            return {"version": "0", "notification_sources": [], "defaults": {}}
+        obs_catalog_api = (
+            blueprint_supports_observability_notifications(blueprint)
+            or blueprint_supports_dashboard_packs(blueprint)
+            or blueprint_supports_observability_field_catalog(blueprint)
+        )
+        if not obs_catalog_api:
+            return {
+                "version": "0",
+                "notification_sources": [],
+                "dashboard_packs": [],
+                "defaults": {},
+            }
         catalog = load_observability_catalog(repo_root)
+        defaults = observability_input_defaults(blueprint, repo_root)
+        backend = defaults.get("backend", "grafana")
         return observability_catalog_for_api(
-            catalog,
-            defaults=observability_input_defaults(blueprint, repo_root),
+            catalog, defaults=defaults, backend=backend, blueprint_name=blueprint.name
         )
 
     @app.get("/blueprints/{blueprint_name}/module-inventory")

@@ -222,14 +222,29 @@ def _build_observability_spec(
             "team": str(values.get("team", "")).strip(),
             "backend": str(values.get("backend", "prometheus")).strip(),
             "output_mode": str(values.get("output_mode", "native")).strip(),
+            "environment": str(values.get("environment", "")).strip(),
             "notification_source": str(values.get("notification_source", "")).strip(),
             "notification_target": str(values.get("notification_target", "")).strip(),
-            "runbook_url": str(values.get("runbook_url", "")).strip(),
         },
     }
+    runbook = str(values.get("runbook_url", "")).strip()
+    if runbook:
+        spec["observability"]["runbook_url"] = runbook
     slo = str(values.get("slo_target_percent", "")).strip()
     if slo:
         spec["observability"]["slo_target_percent"] = slo
+    focus = str(values.get("observability_focus", "")).strip()
+    if focus:
+        spec["observability"]["focus"] = focus
+    datasource_uid = str(values.get("datasource_uid", "")).strip()
+    if datasource_uid:
+        spec["observability"]["datasource_uid"] = datasource_uid
+    pack_source = str(values.get("dashboard_pack_source", "")).strip()
+    if pack_source:
+        spec["observability"]["dashboard_pack_source"] = pack_source
+    config_mode = str(values.get("configuration_mode", "")).strip()
+    if config_mode:
+        spec["observability"]["configuration_mode"] = config_mode
     return spec, service_name
 
 

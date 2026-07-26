@@ -1,0 +1,57 @@
+{
+  "title": "{{ service_name }} overview",
+  "uid": "{{ service_name | replace('-', '_') }}_overview",
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Golden signals (RED)",
+      "type": "dashboard",
+      "url": "/d/{{ service_name | replace('-', '_') }}_golden",
+      "keepTime": true
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "custom",
+        "query": "{{ environment }}",
+        "current": { "text": "{{ environment }}", "value": "{{ environment }}" },
+        "options": [{ "text": "{{ environment }}", "value": "{{ environment }}", "selected": true }]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "text",
+      "title": "About",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "**{{ service_name }}** — {{ description | replace('\"', '') }}\n\n- **Team:** `{{ team }}`\n- **Org:** `{{ organization }}`\n- **Environment:** `$environment`{% if runbook_url %}\n- **Runbook:** [open]({{ runbook_url }}){% endif %}\n\nFollow [dashboards-as-code v1.1.0](https://github.com/opsdevcode/repave/blob/main/standards/observability/dashboards-as-code.md) when extending this repo."
+      }
+    },
+    {
+      "type": "text",
+      "title": "On-call routing",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 5 },
+      "options": {
+        "mode": "markdown",
+        "content": "Notifications: **{{ notification_source }}** → **{{ notification_target }}**"
+      }
+    }
+  ]
+}

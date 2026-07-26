@@ -1,0 +1,36 @@
+{
+  "title": "{{ service_name }} overview",
+  "description": "{{ description | replace('\"', '') }}",
+  "layout_type": "ordered",
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave"
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": ["{{ environment }}"],
+      "default": "{{ environment }}"
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "## {{ service_name }}\n\n{{ description | replace('\"', '') }}\n\n- **Team:** `{{ team }}`\n- **Org:** `{{ organization }}`\n- **Environment:** `$env`\n{% if runbook_url %}- **Runbook:** {{ runbook_url }}\n{% endif %}\n\nNotifications: **{{ notification_source }}** → **{{ notification_target }}**\n\nExtend using [dashboards-as-code v1.1.0](https://github.com/opsdevcode/repave/blob/main/standards/observability/dashboards-as-code.md).",
+        "background_color": "white",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left"
+      },
+      "layout": { "x": 0, "y": 0, "width": 12, "height": 3 }
+    }
+  ]
+}

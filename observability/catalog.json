@@ -1,9 +1,94 @@
 {
-  "version": "1.0.0",
+  "version": "1.3.0",
   "defaults": {
     "notification_source": "repave-estate-oncall",
-    "notification_target": "pagerduty-platform-primary"
+    "notification_target": "pagerduty-platform-primary",
+    "dashboard_pack_source": "repave-red-starter",
+    "organization": "platform",
+    "team": "payments",
+    "service_name": "checkout",
+    "environment": "prod",
+    "datasource_uid": "prometheus",
+    "runbook_url": "https://wiki.example.com/runbooks/checkout",
+    "slo_target_percent": "99.9"
   },
+  "organizations": [
+    { "id": "platform", "label": "Platform engineering" },
+    { "id": "data", "label": "Data platform" },
+    { "id": "retail", "label": "Retail technology" }
+  ],
+  "teams": [
+    { "id": "payments", "label": "Payments", "organization": "platform" },
+    { "id": "identity", "label": "Identity", "organization": "platform" },
+    { "id": "pipelines", "label": "Data pipelines", "organization": "data" },
+    { "id": "storefront", "label": "Storefront", "organization": "retail" }
+  ],
+  "environments": [
+    { "id": "prod", "label": "Production" },
+    { "id": "staging", "label": "Staging" },
+    { "id": "dev", "label": "Development" },
+    { "id": "qa", "label": "QA" }
+  ],
+  "services": [
+    {
+      "id": "checkout",
+      "label": "Checkout API",
+      "organization": "platform",
+      "team": "payments",
+      "description": "Customer checkout and cart API",
+      "runbook_url": "https://wiki.example.com/runbooks/checkout"
+    },
+    {
+      "id": "billing",
+      "label": "Billing worker",
+      "organization": "platform",
+      "team": "payments",
+      "description": "Subscription billing and invoicing",
+      "runbook_url": "https://wiki.example.com/runbooks/billing"
+    },
+    {
+      "id": "auth",
+      "label": "Auth service",
+      "organization": "platform",
+      "team": "identity",
+      "description": "OAuth and session service",
+      "runbook_url": "https://wiki.example.com/runbooks/auth"
+    }
+  ],
+  "grafana_datasources": [
+    { "uid": "prometheus", "label": "Prometheus (default)", "type": "prometheus" },
+    { "uid": "mimir", "label": "Grafana Mimir", "type": "prometheus" },
+    { "uid": "thanos", "label": "Thanos", "type": "prometheus" },
+    { "uid": "grafanacloud-prom", "label": "Grafana Cloud Prometheus", "type": "prometheus" }
+  ],
+  "runbooks": [
+    {
+      "id": "checkout",
+      "label": "Checkout runbook",
+      "url": "https://wiki.example.com/runbooks/checkout"
+    },
+    {
+      "id": "billing",
+      "label": "Billing runbook",
+      "url": "https://wiki.example.com/runbooks/billing"
+    },
+    {
+      "id": "auth",
+      "label": "Auth runbook",
+      "url": "https://wiki.example.com/runbooks/auth"
+    },
+    {
+      "id": "platform-generic",
+      "label": "Platform generic incident",
+      "url": "https://wiki.example.com/runbooks/platform"
+    }
+  ],
+  "slo_targets": [
+    { "id": "none", "label": "No SLO rules", "value": "" },
+    { "id": "99.9", "label": "99.9% availability", "value": "99.9" },
+    { "id": "99.95", "label": "99.95% availability", "value": "99.95" },
+    { "id": "99.99", "label": "99.99% availability", "value": "99.99" }
+  ],
   "notification_sources": [
     {
       "id": "repave-estate-oncall",
@@ -57,6 +142,70 @@
           "id": "email-platform-oncall",
           "label": "platform-oncall@example.com",
           "description": "Platform on-call mailing list."
+        }
+      ]
+    }
+  ],
+  "form_presets": {
+    "dashboards-as-code-generic": {
+      "decision_fields": [
+        "configuration_mode",
+        "service_name",
+        "backend",
+        "dashboard_pack_source"
+      ]
+    },
+    "observability-as-code-generic": {
+      "decision_fields": ["configuration_mode", "service_name", "backend"]
+    }
+  },
+  "dashboard_packs": [
+    {
+      "id": "repave-red-starter",
+      "label": "Repave RED starter only",
+      "backend": "any",
+      "description": "Overview + golden-signals JSON from the blueprint template (no extra community files).",
+      "reference_url": "https://github.com/opsdevcode/repave/tree/main/standards/observability/dashboards-as-code.md",
+      "files": []
+    },
+    {
+      "id": "grafana-red-plus-node-exporter-1860",
+      "label": "RED starter + Node Exporter Full (#1860 fork)",
+      "backend": "grafana",
+      "description": "Repave starters plus a vendored fork of Grafana.com dashboard 1860 (MIT).",
+      "reference_url": "https://grafana.com/grafana/dashboards/1860",
+      "license": "MIT",
+      "files": [
+        {
+          "source": "dashboards/grafana/community/node-exporter-1860.json.jinja",
+          "dest": "grafana/dashboards/community-node-exporter-1860.json"
+        }
+      ]
+    },
+    {
+      "id": "grafana-red-plus-k8s-pods-15760",
+      "label": "RED starter + Kubernetes Pods (#15760 fork)",
+      "backend": "grafana",
+      "description": "Repave starters plus a vendored fork inspired by Grafana.com dashboard 15760.",
+      "reference_url": "https://grafana.com/grafana/dashboards/15760",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "source": "dashboards/grafana/community/k8s-pods-15760.json.jinja",
+          "dest": "grafana/dashboards/community-k8s-pods-15760.json"
+        }
+      ]
+    },
+    {
+      "id": "datadog-red-plus-apm-service",
+      "label": "RED starter + Datadog APM service fork",
+      "backend": "datadog",
+      "description": "Repave starters plus a Datadog APM-style community layout fork.",
+      "reference_url": "https://docs.datadoghq.com/tracing/services/service_page/",
+      "files": [
+        {
+          "source": "dashboards/datadog/community/apm-service.json.jinja",
+          "dest": "datadog/dashboards/community-apm-service.json"
         }
       ]
     }

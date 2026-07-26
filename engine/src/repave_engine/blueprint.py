@@ -320,16 +320,22 @@ def validate_inputs(
     repo_root: Path | None = None,
     gate_overrides: Any = None,
 ) -> dict[str, Any]:
+    merged_values = dict(values)
+    if repo_root is not None and blueprint.artifact_type == "observability":
+        from repave_engine.observability_selection import apply_recommended_configuration
+
+        apply_recommended_configuration(blueprint, merged_values, repo_root)
+
     normalized: dict[str, Any] = {}
     for field in blueprint.inputs:
-        if field.name in values:
-            normalized[field.name] = values[field.name]
+        if field.name in merged_values:
+            normalized[field.name] = merged_values[field.name]
         elif field.default is not None:
             normalized[field.name] = field.default
         elif field.required:
             raise ValueError(f"Missing required input: {field.name}")
 
-    unknown = set(values) - {f.name for f in blueprint.inputs}
+    unknown = set(merged_values) - {f.name for f in blueprint.inputs}
     if unknown:
         raise ValueError(f"Unknown input fields: {', '.join(sorted(unknown))}")
 
@@ -379,6 +385,9 @@ def validate_inputs(
         from repave_engine.observability_selection import normalize_observability_inputs
 
         normalize_observability_inputs(blueprint, normalized, repo_root)
+        from repave_engine.dashboard_pack import normalize_dashboard_pack_inputs
+
+        normalize_dashboard_pack_inputs(blueprint, normalized, repo_root)
 
     return normalized
 
