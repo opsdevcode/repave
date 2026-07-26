@@ -120,7 +120,8 @@
           "properties": {
             "role_name": { "type": "string" },
             "namespace": { "type": "string" },
-            "min_ansible_version": { "type": "string" }
+            "min_ansible_version": { "type": "string" },
+            "target_platforms": { "type": "string" }
           }
         },
         "ansiblePlaybookProject": {

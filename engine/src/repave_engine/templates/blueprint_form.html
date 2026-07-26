@@ -115,6 +115,53 @@
         <p id="pinned-roles-validation" class="form-validation" role="alert" hidden></p>
         <input type="hidden" id="pinned_roles" name="pinned_roles" value="[]" />
       </div>
+      {% elif blueprint.artifact_type == "ansible-role" and field.name == "support_linux" %}
+      <div class="field-block">
+        <label>Target platforms</label>
+        <div class="hint">
+          Linux uses estate defaults (<code>EL:9</code>, <code>Ubuntu:jammy</code>, <code>Debian:bookworm</code>).
+          Use advanced to pick specific Galaxy <code>Name:version</code> pairs.
+        </div>
+        <div class="platform-picker">
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_linux_cb" checked />
+            Linux (default platform set)
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_windows_cb" />
+            Windows Server
+          </label>
+          <div class="field-block platform-picker__windows" id="windows-generation-row" hidden>
+            <label for="windows_server_generation_select">Windows generation</label>
+            <select class="select" id="windows_server_generation_select" aria-label="Windows Server generation">
+              <option value="2022" selected>2022</option>
+              <option value="2019">2019</option>
+            </select>
+          </div>
+          <input type="hidden" id="support_linux" name="support_linux" value="true" />
+          <input type="hidden" id="support_windows" name="support_windows" value="false" />
+          <input type="hidden" id="windows_server_generation" name="windows_server_generation" value="2022" />
+        </div>
+        <details class="platform-advanced" id="platform-advanced-panel">
+          <summary>Advanced Galaxy platforms</summary>
+          <p class="hint">When any option is selected here, Linux/Windows presets above are ignored.</p>
+          <select
+            class="select select--multi"
+            id="target_platforms_advanced"
+            name="target_platforms_advanced"
+            multiple
+            size="8"
+            aria-label="Advanced Galaxy platforms"
+          >
+            {% for platform_field in blueprint.inputs if platform_field.name == "target_platforms_advanced" %}
+            {% for option in platform_field.enum %}
+            <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+            {% endfor %}
+          </select>
+        </details>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-role" and field.name in ("support_windows", "windows_server_generation", "target_platforms_advanced") %}
       {% elif provider_catalog and field.name == "provider_services" %}
       <div class="field-block">
         <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -197,7 +244,40 @@
 {% endblock %}
 
 {% block scripts %}
-{% if blueprint.artifact_type == "ansible-playbook-project" %}
+{% if blueprint.artifact_type == "ansible-role" %}
+<script>
+  const linuxCheckbox = document.getElementById("support_linux_cb");
+  const windowsCheckbox = document.getElementById("support_windows_cb");
+  const linuxInput = document.getElementById("support_linux");
+  const windowsInput = document.getElementById("support_windows");
+  const windowsRow = document.getElementById("windows-generation-row");
+  const windowsSelect = document.getElementById("windows_server_generation_select");
+  const windowsHidden = document.getElementById("windows_server_generation");
+  const advancedSelect = document.getElementById("target_platforms_advanced");
+  const platformForm = document.getElementById("generate-form");
+
+  function syncPlatformInputs() {
+    if (linuxInput && linuxCheckbox) {
+      linuxInput.value = linuxCheckbox.checked ? "true" : "false";
+    }
+    if (windowsInput && windowsCheckbox) {
+      windowsInput.value = windowsCheckbox.checked ? "true" : "false";
+    }
+    if (windowsHidden && windowsSelect) {
+      windowsHidden.value = windowsSelect.value;
+    }
+    if (windowsRow && windowsCheckbox) {
+      windowsRow.hidden = !windowsCheckbox.checked;
+    }
+  }
+
+  linuxCheckbox?.addEventListener("change", syncPlatformInputs);
+  windowsCheckbox?.addEventListener("change", syncPlatformInputs);
+  windowsSelect?.addEventListener("change", syncPlatformInputs);
+  platformForm?.addEventListener("submit", syncPlatformInputs);
+  syncPlatformInputs();
+</script>
+{% elif blueprint.artifact_type == "ansible-playbook-project" %}
 <script>
   const playbookBlueprintName = {{ blueprint.name | tojson }};
   const rolesPanel = document.getElementById("pinned-roles-rows");

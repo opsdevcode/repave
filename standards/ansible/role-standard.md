@@ -47,9 +47,12 @@ Required `galaxy_info` fields:
 - `standalone: true`
 - `role_name`, `namespace`, `author`, `description`, `license`
 - `min_ansible_version` (match blueprint input)
-- `platforms` (from blueprint `target_platforms`; pick supported Galaxy
-  `Name:version` pairs such as `Ubuntu:jammy` or `Windows:2022` — use version
-  codenames for Linux, not Ubuntu release numbers like `22.04`)
+- `platforms` (resolved Galaxy `Name:version` list stored in provenance as
+  `target_platforms`). The portal **simple** picker uses:
+  - **Linux** — estate defaults: `EL:9`, `Ubuntu:jammy`, `Debian:bookworm`
+  - **Windows** — one generation: `Windows:2022` or `Windows:2019`
+  - **Advanced** — explicit multi-select overrides presets (same Galaxy pairs as
+    before). Use version codenames for Linux, not Ubuntu release numbers like `22.04`.
 - `galaxy_tags` (lowercase alphanumeric, max 20 tags)
 
 Do not use placeholder values (`your name`, `your description`). Pin

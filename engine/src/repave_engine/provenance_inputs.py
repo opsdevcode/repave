@@ -122,6 +122,21 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         }
         if role.get("min_ansible_version"):
             values["min_ansible_version"] = str(role["min_ansible_version"]).strip()
+        platforms = role.get("target_platforms")
+        resolved: list[str] = []
+        if isinstance(platforms, str) and platforms.strip():
+            resolved = [part.strip() for part in platforms.split(",") if part.strip()]
+        elif isinstance(platforms, list):
+            resolved = [str(item).strip() for item in platforms if str(item).strip()]
+        if resolved:
+            from repave_engine.ansible_platforms import infer_platform_form_values
+
+            values.update(infer_platform_form_values(resolved))
+        else:
+            values["support_linux"] = "true"
+            values["support_windows"] = "false"
+            values["windows_server_generation"] = "2022"
+            values["target_platforms_advanced"] = ""
         return values
 
     raise ValueError(f"unsupported artifactType {artifact_type!r}")
