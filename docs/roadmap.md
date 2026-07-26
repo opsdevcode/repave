@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.44.0  
-**In progress:** v1.19 operator `preserveLocal` follow-up  
+**In progress:** —  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
@@ -240,6 +240,8 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 - `--open-pr` for GitHub remediation PRs after apply
 - Portal **Update repo** plan preview
 - `--preserve-local` for hand-edited scaffold files
+- Operator `spec.remediation.preserveLocal` passes `--preserve-local` on apply-upgrade;
+  host e2e smoke in `operator/hack/e2e.sh` covers the terraform-minimal fixture
 
 ### v1.18 — Portal UX (theme)
 
@@ -269,10 +271,9 @@ fallback; three routes share one visual system (acceptance in portal-design).
 `--open-pr`, `--preserve-local`). Operator continues to use stable
 `plan-upgrade` / `apply-upgrade` JSON.
 
-**Follow-up:** Operator remediation adopts `--preserve-local` via
+**Follow-up (shipped):** Operator remediation uses `--preserve-local` via
 `spec.remediation.preserveLocal` (engine `repave apply-upgrade --preserve-local`).
-Host e2e smoke exercises the flag on the `terraform-minimal` fixture; validate on
-estate module repos before production remediation.
+Host e2e smoke exercises the flag on the `terraform-minimal` fixture.
 
 ### v1.22.0 — Ansible collection golden path
 
@@ -546,6 +547,10 @@ when drift is detected.
 **Done when:** A successful publish posts a Slack or Teams message with the PR link
 and gate summary.
 
+**Status:** Shipped on `main` (`repave.config.yaml` `notifications`, Slack/Teams/
+generic webhooks, publish and generation events; best-effort delivery from the
+generation pipeline).
+
 ---
 
 ### v1.32 — Backstage software catalog integration
@@ -620,8 +625,9 @@ v1.30 conformance harness.
 **Done when:** A service repo generates for at least one runtime with CI wired and
 gates green.
 
-**Status:** Shipped on `main` (`app-service-generic` v0.2.0, Python runtime,
-`dockerfile-lint` / `python-lint` / `python-test`, engine-written `catalog-info.yaml`).
+**Status:** Shipped on `main` (`app-service-generic` v0.3.0, Python and Go runtimes,
+`dockerfile-lint` / language lint-test gates, portal Backstage catalog fields,
+engine-written `catalog-info.yaml`).
 
 ---
 

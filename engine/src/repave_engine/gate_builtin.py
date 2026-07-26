@@ -12,6 +12,8 @@ from repave_engine.gate_runners import (
     run_datadog_monitor,
     run_dockerfile_lint,
     run_docs_drift,
+    run_go_lint,
+    run_go_test,
     run_grafana_dashboard,
     run_helm_lint,
     run_helm_template,
@@ -172,6 +174,20 @@ register_gate(
     GateSpec(
         name="python-test",
         runner=run_python_test,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="go-lint",
+        runner=run_go_lint,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="go-test",
+        runner=run_go_test,
         artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
     )
 )

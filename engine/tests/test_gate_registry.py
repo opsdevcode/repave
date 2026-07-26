@@ -38,6 +38,8 @@ def test_builtin_gates_are_registered() -> None:
     assert "dockerfile-lint" in names
     assert "python-lint" in names
     assert "python-test" in names
+    assert "go-lint" in names
+    assert "go-test" in names
     assert "amtool" in names
     assert "azure-policy" in names
     assert "opa" in names

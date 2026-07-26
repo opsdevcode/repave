@@ -104,7 +104,9 @@
               "helm-template",
               "dockerfile-lint",
               "python-lint",
-              "python-test"
+              "python-test",
+              "go-lint",
+              "go-test"
             ]
           }
         },
@@ -425,6 +427,16 @@
                   "description": "Directory containing pytest files."
                 }
               }
+            },
+            "go-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
+            },
+            "go-test": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {}
             }
           }
         },

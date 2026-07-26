@@ -55,3 +55,21 @@ def test_dockerfile_lint_passes_when_hadolint_succeeds(tmp_path: Path, monkeypat
 
     assert results[0].passed is True
     assert results[0].skipped is False
+
+
+def test_go_lint_skips_without_go_mod(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "go")
+
+    results = run_gates(tmp_path, ("go-lint",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True
+
+
+def test_go_test_skips_without_go_mod(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "go")
+
+    results = run_gates(tmp_path, ("go-test",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True

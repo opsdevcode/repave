@@ -55,7 +55,7 @@ def test_build_catalog_document_annotations() -> None:
             "system": "commerce",
             "catalog_lifecycle": "production",
             "_repave_blueprint_name": "app-service-generic",
-            "_repave_blueprint_version": "0.2.0",
+            "_repave_blueprint_version": "0.3.0",
             "_repave_standard_source": "standards/app/service-standard.md",
             "_repave_standard_version": "1.0.0",
             "_repave_engine_version": "1.43.0",

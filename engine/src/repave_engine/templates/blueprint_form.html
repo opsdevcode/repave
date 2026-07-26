@@ -402,10 +402,42 @@
       <input type="hidden" name="observability_focus" value="dashboards" />
       {% endif %}
 
+      {% if blueprint.name == "app-service-generic" %}
+      <div class="field-block app-service-catalog" id="app-service-catalog">
+        <h3 class="form-section__subtitle">Backstage catalog</h3>
+        <p class="hint">
+          Generated repos include <code>catalog-info.yaml</code> (component kind). Set owner above;
+          optional system and lifecycle appear in the developer portal.
+        </p>
+        {% for field in blueprint.inputs if field.name == "system" %}
+        <label for="{{ field.name }}">System</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <input
+          class="input"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          type="text"
+          value="{{ field.default or '' }}"
+          placeholder="e.g. platform-checkout"
+        />
+        {% endfor %}
+        {% for field in blueprint.inputs if field.name == "catalog_lifecycle" %}
+        <label for="{{ field.name }}">Catalog lifecycle</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}">
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       {% for field in blueprint.inputs %}
       {% if field.name == "provider_service_scope" %}
       {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules") %}
       {% elif field.name in ("notification_source", "notification_target") %}
+      {% elif blueprint.name == "app-service-generic" and field.name in ("system", "catalog_lifecycle") %}
       {% elif field.name == "dashboard_pack_source" %}
       {% elif field.name == "backend" %}
       {% elif field.name == "configuration_mode" %}

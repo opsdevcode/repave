@@ -1,3 +1,4 @@
+{% if runtime == 'python' -%}
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -33,3 +34,4 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
+{% endif %}

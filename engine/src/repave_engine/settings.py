@@ -21,6 +21,22 @@ class OutputConfig:
     repo_name_template: str = "tf-{module_name}"
 
 
+@dataclass(frozen=True)
+class NotificationsConfig:
+    enabled: bool
+    slack_webhook_url: str | None
+    teams_webhook_url: str | None
+    webhook_url: str | None
+    events: frozenset[str]
+
+    def webhook_urls(self) -> tuple[str, ...]:
+        urls: list[str] = []
+        for candidate in (self.slack_webhook_url, self.teams_webhook_url, self.webhook_url):
+            if candidate:
+                urls.append(candidate)
+        return tuple(urls)
+
+
 def load_output_config(
     repo_root: Path,
     *,
@@ -59,6 +75,63 @@ def load_output_config(
         modules_root=root_path,
         repo_name_template=str(resolved_template),
     )
+
+
+_DEFAULT_NOTIFY_EVENTS = frozenset({"publish_complete", "generation_failed"})
+
+
+def load_notifications_config(repo_root: Path) -> NotificationsConfig | None:
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("notifications")
+    if block is None:
+        return None
+    if not isinstance(block, dict):
+        raise ValueError("notifications must be a mapping in repave.config.yaml")
+
+    enabled_raw = block.get("enabled", True)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("notifications.enabled must be a boolean")
+
+    slack = _resolve_secret(
+        block.get("slack_webhook_url"),
+        os.environ.get("REPAVE_SLACK_WEBHOOK_URL"),
+    )
+    teams = _resolve_secret(
+        block.get("teams_webhook_url"),
+        os.environ.get("REPAVE_TEAMS_WEBHOOK_URL"),
+    )
+    generic = _resolve_secret(
+        block.get("webhook_url"),
+        os.environ.get("REPAVE_NOTIFY_WEBHOOK_URL"),
+    )
+
+    events_raw = block.get("events", list(_DEFAULT_NOTIFY_EVENTS))
+    if not isinstance(events_raw, list):
+        raise ValueError("notifications.events must be a list of event names")
+    events = frozenset(str(item).strip() for item in events_raw if str(item).strip())
+
+    if enabled_raw and not any((slack, teams, generic)):
+        raise ValueError(
+            "notifications.enabled is true but no webhook URL is configured "
+            "(slack_webhook_url, teams_webhook_url, or webhook_url)"
+        )
+
+    return NotificationsConfig(
+        enabled=enabled_raw,
+        slack_webhook_url=slack,
+        teams_webhook_url=teams,
+        webhook_url=generic,
+        events=events or _DEFAULT_NOTIFY_EVENTS,
+    )
+
+
+def _resolve_secret(file_value: object, env_value: str | None) -> str | None:
+    if env_value and env_value.strip():
+        return env_value.strip()
+    if file_value is None:
+        return None
+    text = str(file_value).strip()
+    return text or None
 
 
 def load_gate_overrides(repo_root: Path) -> GateOverrides:
