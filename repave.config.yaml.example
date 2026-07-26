@@ -19,6 +19,13 @@ gates:
       - checkov:CKV2_REPAVE_1
       - opa:destructive_changes
 
+# Optional JSONL audit log for generations (portal and CLI).
+# audit:
+#   enabled: true
+#   file: ../repave-audit/generation.jsonl
+# Override path: REPAVE_AUDIT_FILE
+# Acting user: REPAVE_ACTING_USER (falls back to USER)
+
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.
 # notifications:
