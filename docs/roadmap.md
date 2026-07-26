@@ -4,8 +4,8 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.21.0  
-**In progress:** v1.18 portal UX (visual v2 next; foundation + catalog + form + results)  
+**Current release:** v1.23.0  
+**In progress:** v1.18 portal UX close-out (visual v2 + scope UX landed; history optional)  
 **Planning horizon:** v1.18 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main` and may advance ahead of a
@@ -38,7 +38,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.21.0  today     engine tag on GitHub; portal foundation + catalog landed; form/results next
+v1.23.0  today     portal results dashboard; visual v2 home + scope UX polish
   │
   ├─ v1.17 GA       optional nightly CI for e2e; repoURL inventory still future
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
@@ -252,9 +252,9 @@ optional CI runs e2e on a schedule or before release.
 multi-step scope selection. The portal must present golden paths and run results
 as a cohesive product surface (shared shell and visual system).
 
-**Progress:** Foundation, catalog, and form (governance card + split layout +
-publish toggle) landed. Next: results dashboard. Visual v2 craft polish is
-deferred (see `portal-design.md` Phase 5).
+**Progress:** Foundation, catalog, form, and results dashboard landed. Visual v2
+home hero and scope UX (presets, inline validation, resource filter) landed.
+Optional: generation history, remaining Phase 5 polish (motion/white-label).
 
 **Approach — interaction (functional):**
 
