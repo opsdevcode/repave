@@ -1,0 +1,14 @@
+inputs:
+  chart_name: conformance-api
+  app_name: conformance-api
+  description: Conformance fixture Helm chart
+  image_repository: ghcr.io/example/conformance-api
+  image_tag: "1.0.0"
+  service_type: ClusterIP
+  enable_ingress: "false"
+required_files:
+  - repave.yaml
+  - README.md
+  - Chart.yaml
+  - templates/deployment.yaml
+snapshot: false

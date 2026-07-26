@@ -1,0 +1,11 @@
+inputs:
+  project_name: conformance
+  description: Conformance fixture playbook project
+  min_ansible_version: "2.18"
+  environment: dev
+  pinned_roles: "[]"
+required_files:
+  - repave.yaml
+  - README.md
+  - site.yml
+snapshot: false

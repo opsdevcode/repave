@@ -1,0 +1,10 @@
+inputs:
+  namespace: acme
+  collection_name: conformance
+  description: Conformance fixture Ansible collection
+  min_ansible_version: "2.18"
+required_files:
+  - repave.yaml
+  - README.md
+  - galaxy.yml
+snapshot: false

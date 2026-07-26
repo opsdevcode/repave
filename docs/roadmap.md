@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.43.0  
-**In progress:** v1.29 blueprint conformance harness; v1.19 operator `preserveLocal` follow-up  
+**In progress:** v1.19 operator `preserveLocal` follow-up  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
@@ -498,12 +498,11 @@ unnoticed.
 infrastructure. Recommended to land alongside v1.13–v1.16 since it guards every
 new golden path.
 
-**Done when:** CI fails if any blueprint fails to render or violates its gates,
-and snapshot diffs surface template changes during review.
+**Status:** Shipped on `main` (`blueprint_conformance.py`, per-blueprint
+`conformance.yaml`, pytest matrix, `make blueprint-conformance-update` for optional
+manifest snapshots).
 
 ---
-
-### v1.30 — Generation observability and audit log
 
 **Problem:** There is no durable record of who generated what, when, and with
 which pins, and no metrics for operating repave as a shared service.

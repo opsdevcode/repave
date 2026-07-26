@@ -1,0 +1,10 @@
+inputs:
+  module_name: conformance-example
+  description: Blueprint conformance fixture module
+  cloud_provider: aws
+  provider_services: ec2,s3
+required_files:
+  - repave.yaml
+  - README.md
+  - .github/workflows/terraform-gates.yml
+snapshot: false
