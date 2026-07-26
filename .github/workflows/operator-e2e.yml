@@ -5,15 +5,14 @@ on:
     # Nightly 06:00 UTC — kind + Docker; not run on every PR.
     - cron: "0 6 * * *"
   workflow_dispatch:
+  pull_request:
+    paths:
+      - "operator/**"
+      - ".github/workflows/operator-e2e.yml"
   push:
     branches: [main]
     paths:
       - "operator/**"
-      - "engine/**"
-      - "blueprints/**"
-      - "schemas/**"
-      - "standards/**"
-      - "policy/**"
       - ".github/workflows/operator-e2e.yml"
 
 jobs:
@@ -32,9 +31,7 @@ jobs:
         run: go install sigs.k8s.io/kind@v0.27.0
 
       - name: Add Go bin to PATH
-        run: echo "${{ github.workspace }}/go/bin" >> "$GITHUB_PATH"
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Run operator e2e (kind)
-        env:
-          KIND_BIN: ${{ github.workspace }}/go/bin/kind
         run: make operator-e2e
