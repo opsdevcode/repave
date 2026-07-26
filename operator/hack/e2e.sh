@@ -112,6 +112,27 @@ if [[ -z "${changed}" ]] || [[ "${changed}" -lt 1 ]]; then
 fi
 echo "OK: upgradePlan.changedFileCount=${changed}"
 
+catalog_blueprint_version="$(
+  awk '/^metadata:/{m=1; next} m && /^  version:/{gsub(/"/, "", $2); print $2; exit}' \
+    "${MONOREPO_ROOT}/blueprints/terraform-module-generic/blueprint.yaml"
+)"
+plan_blueprint_name="$(kubectl get goldenpathrepo e2e-drift -o jsonpath='{.status.upgradePlan.blueprintName}' 2>/dev/null || true)"
+plan_blueprint_version="$(kubectl get goldenpathrepo e2e-drift -o jsonpath='{.status.upgradePlan.blueprintVersion}' 2>/dev/null || true)"
+if [[ "${plan_blueprint_name}" != "terraform-module-generic" ]]; then
+  echo "Expected upgradePlan.blueprintName=terraform-module-generic (got ${plan_blueprint_name:-<empty>})" >&2
+  exit 1
+fi
+if [[ -z "${catalog_blueprint_version}" ]]; then
+  echo "Could not read terraform-module-generic catalog version from monorepo" >&2
+  exit 1
+fi
+if [[ "${plan_blueprint_version}" != "${catalog_blueprint_version}" ]]; then
+  echo "Expected upgradePlan.blueprintVersion=${catalog_blueprint_version} (catalog pin; got ${plan_blueprint_version:-<empty>})" >&2
+  kubectl get goldenpathrepo e2e-drift -o yaml || true
+  exit 1
+fi
+echo "OK: upgradePlan targets catalog blueprint terraform-module-generic@${plan_blueprint_version}"
+
 echo "==> preserve-local apply-upgrade smoke (host copy of terraform-minimal)"
 run_preserve_local_smoke() {
   local work staging_a

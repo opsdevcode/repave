@@ -185,7 +185,8 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 - Flow (`operator/hack/e2e.sh`): kind up (`repave-local` + fixture hostPath) →
   `docker build -f Dockerfile.e2e` (bundled `repave` CLI + blueprints) →
   `kind load` → apply CRDs + `config/e2e/` → assert `OutOfDate`,
-  `UpgradePlanned=True`, and non-empty `status.upgradePlan`.
+  `UpgradePlanned=True`, non-empty `status.upgradePlan`, and
+  `status.upgradePlan.blueprintVersion` matches catalog `terraform-module-generic`.
 - No `GITHUB_TOKEN` required (inventory + plan diff; remediation stays dry-run).
 - CI: `.github/workflows/operator-e2e.yml` (nightly, `workflow_dispatch`, main
   path triggers). PR gate remains `operator-test` (envtest).
