@@ -125,6 +125,11 @@ spec:
                     description: Enabled requests a remediation PR when drift is detected
                       and an upgrade plan exists.
                     type: boolean
+                  preserveLocal:
+                    description: |-
+                      PreserveLocal skips overwriting modified scaffold files during apply-upgrade
+                      (same as repave apply-upgrade --preserve-local).
+                    type: boolean
                 type: object
               repoURL:
                 description: RepoURL is the git remote (https or ssh). For local development

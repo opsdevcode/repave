@@ -268,8 +268,10 @@ fallback; three routes share one visual system (acceptance in portal-design).
 `--open-pr`, `--preserve-local`). Operator continues to use stable
 `plan-upgrade` / `apply-upgrade` JSON.
 
-**Follow-up:** Operator remediation may adopt `--preserve-local` when applying
-upgrades; validate end-to-end on customer module repos.
+**Follow-up:** Operator remediation adopts `--preserve-local` via
+`spec.remediation.preserveLocal` (engine `repave apply-upgrade --preserve-local`).
+Host e2e smoke exercises the flag on the `terraform-minimal` fixture; validate on
+estate module repos before production remediation.
 
 ---
 
