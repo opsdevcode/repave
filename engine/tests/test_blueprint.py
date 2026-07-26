@@ -20,7 +20,7 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.artifact_type == "terraform-module"
     assert terraform_blueprint.provenance_file == "repave.yaml"
     assert terraform_blueprint.checkov_policies is not None
-    assert terraform_blueprint.checkov_policies.policies_source == "examples/checkov/policies"
+    assert terraform_blueprint.checkov_policies.policies_source == "policy/checkov/policies"
     assert terraform_blueprint.checkov_policies.policy_version == "1.2.0"
     assert terraform_blueprint.checkov_gate.external_checks_dir == "policy/checkov"
     assert terraform_blueprint.checkov_gate.config_file == ".checkov.yml"
@@ -177,12 +177,12 @@ def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert ansible_blueprint.name == "ansible-role-generic"
     assert ansible_blueprint.version == "0.2.0"
     assert ansible_blueprint.artifact_type == "ansible-role"
-    assert ansible_blueprint.standard_source == "examples/standards/ansible"
+    assert ansible_blueprint.standard_source == "standards/ansible"
     assert ansible_blueprint.standard_version == "1.0.0"
     assert ansible_blueprint.provenance_file == "repave.yaml"
     assert ansible_blueprint.checkov_policies is None
     assert ansible_blueprint.ansible_lint_pack is not None
-    assert ansible_blueprint.ansible_lint_pack.pack_source == "examples/ansible-lint/pack"
+    assert ansible_blueprint.ansible_lint_pack.pack_source == "policy/ansible-lint/pack"
     assert ansible_blueprint.ansible_lint_pack.pack_version == "1.0.0"
     assert "yamllint" in ansible_blueprint.gates
     assert "ansible-lint" in ansible_blueprint.gates
@@ -295,7 +295,7 @@ def test_load_blueprint_rejects_invalid_schema(tmp_path: Path, repo_root: Path) 
                 "  version: 0.0.1",
                 "spec:",
                 "  standard:",
-                "    source: examples/standards",
+                "    source: standards",
                 "    version: 0.4.0",
             ]
         ),

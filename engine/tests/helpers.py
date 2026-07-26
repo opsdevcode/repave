@@ -55,7 +55,7 @@ def make_blueprint(
         version="0.0.1",
         description="Test blueprint",
         artifact_type=artifact_type,
-        standard_source="examples/standards",
+        standard_source="standards",
         standard_version="0.1.0",
         inputs=inputs,
         template_engine=template_engine,

@@ -7,7 +7,7 @@ metadata:
 spec:
   artifactType: ansible-role
   standard:
-    source: examples/standards/ansible
+    source: standards/ansible
     version: 1.0.0
   inputs:
     - name: role_name
@@ -61,7 +61,7 @@ spec:
     - docs-drift
     - provenance-drift
   ansible_lint:
-    pack_source: examples/ansible-lint/pack
+    pack_source: policy/ansible-lint/pack
     pack_version: 1.0.0
   gate_config:
     ansible-lint:

@@ -10,14 +10,8 @@ Pack version is pinned in `blueprints/ansible-role-generic/blueprint.yaml` under
 ## Layout
 
 ```text
-examples/ansible-lint/
-├── pack/                    # Copied to generated role root at render time
-│   ├── .ansible-lint        # profile: production + security enable_list
-│   ├── .yamllint
-│   └── .ansible-lint-ignore
-└── tests/fixtures/
-    ├── role-pass/
-    └── role-fail-short-module/
+policy/ansible-lint/pack/    # Copied to generated role root at render time
+examples/ansible-lint/tests/fixtures/
 ```
 
 ## Profile
@@ -43,7 +37,7 @@ cd engine && python3 -m pytest tests/test_ansible_lint_policies.py -q
 
 ## Adding rules
 
-1. Update `pack/.ansible-lint` or `pack/.yamllint`
+1. Update `policy/ansible-lint/pack/.ansible-lint` or `policy/ansible-lint/pack/.yamllint`
 2. Add pass/fail fixtures under `tests/fixtures/`
 3. Extend `engine/tests/test_ansible_lint_policies.py`
 4. Bump `pack_version` in the ansible-role blueprint

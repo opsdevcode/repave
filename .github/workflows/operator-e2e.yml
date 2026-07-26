@@ -12,7 +12,8 @@ on:
       - "engine/**"
       - "blueprints/**"
       - "schemas/**"
-      - "examples/**"
+      - "standards/**"
+      - "policy/**"
       - ".github/workflows/operator-e2e.yml"
 
 jobs:

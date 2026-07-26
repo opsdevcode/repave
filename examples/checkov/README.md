@@ -6,16 +6,8 @@ on generated and hand-maintained module repositories.
 ## Layout
 
 ```text
-examples/checkov/
-├── policies/                 # Copied into generated modules at policy/checkov/
-│   ├── custom_001_*.yaml     # Terraform version constraints (graph checks)
-│   ├── custom_002_*.yaml
-│   ├── repave_module_layout.py
-│   ├── repave_security.py
-│   └── repave_null_resource_locals.py
-└── tests/
-    ├── fixtures/             # Pass/fail Terraform fixtures
-    └── test_repave_policies.py
+policy/checkov/policies/     # Copied into generated modules at policy/checkov/
+examples/checkov/tests/      # Pass/fail Terraform fixtures (CI only)
 ```
 
 Policy pack version is pinned in `blueprints/terraform-module-generic/blueprint.yaml` under
@@ -56,7 +48,7 @@ resolve module files reliably.
 
 ## Adding org-specific rules
 
-1. Add a Python policy under `examples/checkov/policies/` (or YAML graph check for attribute rules).
+1. Add a Python policy under `policy/checkov/policies/` (or YAML graph check for attribute rules).
 2. Assign a unique ID (`CKV2_REPAVE_*` for upstream repave rules; use your org prefix locally).
 3. Add pass/fail fixtures under `examples/checkov/tests/fixtures/`.
 4. Extend `engine/tests/test_checkov_policies.py` if the rule should guard the golden path.

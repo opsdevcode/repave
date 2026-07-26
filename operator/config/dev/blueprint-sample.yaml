@@ -6,5 +6,5 @@ metadata:
 spec:
   version: "0.1.0"
   standard:
-    source: examples/standards
+    source: standards
     version: "0.4.0"

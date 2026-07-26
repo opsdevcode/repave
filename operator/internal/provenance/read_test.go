@@ -23,7 +23,7 @@ func TestReadPinsFromRepoRoot(t *testing.T) {
 	want := drift.PinSet{
 		BlueprintName:    "terraform-module-generic",
 		BlueprintVersion: "0.1.0",
-		StandardSource:   "examples/standards",
+		StandardSource:   "standards",
 		StandardVersion:  "0.4.0",
 	}
 	if pins != want {
