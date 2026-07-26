@@ -97,6 +97,87 @@ stable REST contract is published as a follow-up.
 Mirror blueprint inputs (module name, cloud provider, owner, `include_backstage_catalog`,
 etc.) as Scaffolder `parameters`, then pass each as `repave generate --input key=value`.
 
+| Scaffolder parameter | repave input | Notes |
+| --- | --- | --- |
+| `moduleName` | `module_name` | Required for Terraform modules |
+| `cloudProvider` | `cloud_provider` | `aws` / `azure` / `gcp` |
+| `providerServices` | `provider_services` | Comma-separated catalog services |
+| `owner` | `owner` | Backstage entity ref, e.g. `group:platform` |
+| `includeBackstageCatalog` | `include_backstage_catalog` | `true` for Terraform/Helm catalog emission |
+| `serviceName` | `service_name` | App-service / Helm chart names |
+
+### Full Software Template sketch
+
+Use a **container** or **run:shell`** step with the repave image from `deploy/local/Dockerfile`
+(or a published `repave-engine` image). Mount `repave.config.yaml`, blueprint packs, and
+`REPAVE_MODULES_ROOT` the same way as local Compose.
+
+```yaml
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: repave-terraform-module
+  title: Terraform module (repave)
+spec:
+  owner: group:platform
+  type: service
+  parameters:
+    - title: Module
+      required:
+        - moduleName
+        - cloudProvider
+        - owner
+      properties:
+        moduleName:
+          type: string
+        cloudProvider:
+          type: string
+          enum: [aws, azure, gcp]
+        owner:
+          type: string
+          default: group:platform
+  steps:
+    - id: generate
+      name: repave generate
+      action: run:shell
+      input:
+        command: |
+          set -euo pipefail
+          repave generate \
+            --blueprint blueprints/terraform-module-generic \
+            --input "module_name=${{ parameters.moduleName }}" \
+            --input "description=Scaffolder bootstrap" \
+            --input "cloud_provider=${{ parameters.cloudProvider }}" \
+            --input "provider_services=s3" \
+            --input "owner=${{ parameters.owner }}" \
+            --input "include_backstage_catalog=true" \
+            --dry-run \
+            --staging-root ./generated
+    - id: publish
+      name: Publish module repository
+      action: run:shell
+      input:
+        command: |
+          repave generate \
+            --blueprint blueprints/terraform-module-generic \
+            ...same inputs... \
+            --no-dry-run
+      # Requires GITHUB_TOKEN and repave.config.yaml output.modules_root in the action environment.
+  output:
+    links:
+      - title: Generated tree
+        url: ./generated
+```
+
+After publish, register a **Location** targeting the new repository’s `catalog-info.yaml`
+(when enabled) or add the repo to your org catalog repo.
+
+### Verification checklist
+
+1. `catalog-info.yaml` validates against [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
+2. Repave annotations include blueprint and standard pins for TechInsights-style checks.
+3. Dry-run gates pass in CI before `--no-dry-run` publish (same gates as the portal).
+
 ## Related docs
 
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) — merge queue and CI on `main`
