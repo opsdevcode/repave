@@ -726,7 +726,8 @@ top failure modes with concrete commands.
 
 ### v1.39 — Policy-as-code gate (OPA/conftest)
 
-**Status:** Shipped on `main` (see [Policy-as-code golden paths](#policy-as-code-golden-paths-opa--conftest--shipped-early-roadmap-v139)). Helm manifest evaluation remains follow-up when v1.31 Helm path lands.
+**Status:** Shipped on `main` (see [Policy-as-code golden paths](#policy-as-code-golden-paths-opa--conftest--shipped-early-roadmap-v139)).
+Helm charts run conftest against `helm template` output via the `opa` gate (`kubernetes_workload.rego` baseline).
 
 ---
 
