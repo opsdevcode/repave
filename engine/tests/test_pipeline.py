@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+import yaml
 
 from repave_engine.blueprint import load_blueprint
 from repave_engine.pipeline import generate_from_blueprint, generate_from_path
@@ -345,6 +346,43 @@ def test_generate_ansible_playbook_project_publishes_repo(
     assert (module_repo.local_path / "inventories" / "dev" / "hosts.yml").exists()
     assert (module_repo.local_path / "requirements.yml").exists()
     assert (module_repo.local_path / "repave.yaml").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_ansible_collection_publishes_repo(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-collection-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "namespace": "acme",
+            "collection_name": "platform",
+            "description": "Platform collection",
+            "min_ansible_version": "2.18",
+        },
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    module_repo = result.module_repository
+    assert module_repo is not None
+    assert module_repo.name == "ansible-collection-acme-platform"
+    assert (module_repo.local_path / "galaxy.yml").exists()
+    assert (module_repo.local_path / "roles" / "sample" / "tasks" / "main.yml").exists()
+    assert (module_repo.local_path / "repave.yaml").exists()
+    spec = yaml.safe_load((module_repo.local_path / "repave.yaml").read_text(encoding="utf-8"))[
+        "spec"
+    ]
+    assert spec["artifactType"] == "ansible-collection"
+    assert spec["ansibleCollection"]["namespace"] == "acme"
     assert all(g.passed or g.skipped for g in result.gates)
 
 
