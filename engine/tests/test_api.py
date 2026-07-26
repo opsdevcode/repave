@@ -274,8 +274,25 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-repave-busy-form" in response.text
     assert "form-actions--sticky" in response.text
     assert "Standard drift" in response.text
-    assert "data-terraform-stepper" in response.text
+    assert "data-form-stepper" in response.text
+    assert 'data-form-stepper-kind="terraform"' in response.text
     assert "form-stepper" in response.text
+
+
+def test_ansible_role_form_stepper(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-role-generic")
+    assert response.status_code == 200
+    assert 'data-form-stepper-kind="standard"' in response.text
+    assert 'data-form-stepper-max="1"' in response.text
+
+
+def test_observability_form_stepper(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/observability-as-code-generic")
+    assert response.status_code == 200
+    assert 'data-form-stepper-kind="observability"' in response.text
+    assert "governance-drift-details" in response.text or "Standard drift" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:

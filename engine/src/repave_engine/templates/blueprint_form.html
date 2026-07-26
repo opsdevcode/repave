@@ -5,6 +5,7 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
+{% set publish_step = 2 if form_stepper in ('terraform', 'observability') else 1 %}
 <p class="breadcrumb"><a href="/">← Golden paths</a></p>
 <header class="form-hero">
   <div>
@@ -39,15 +40,16 @@
     <dl class="governance-card__list">
       <div>
         <dt>Standard</dt>
-        <dd>
-          <code>{{ blueprint.standard_source }}</code>
+        <dd class="governance-card__value">
+          <code class="governance-card__code">{{ blueprint.standard_source }}</code>
           <span class="badge">@ {{ blueprint.standard_version }}</span>
         </dd>
       </div>
       <div>
         <dt>Lineage</dt>
-        <dd>
-          Engine <code>{{ app_version }}</code> · receipt in <code>repave.yaml</code>
+        <dd class="governance-card__value governance-card__value--inline">
+          Engine <code>{{ app_version }}</code>
+          <span class="muted">· receipt in <code>repave.yaml</code></span>
         </dd>
       </div>
       {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
@@ -95,43 +97,28 @@
           {% endfor %}
         </dd>
       </div>
-      <div class="governance-card__section">
+      <div class="governance-card__section governance-card__section--drift">
         <dt class="governance-card__section-title">Standard drift</dt>
         <dd class="governance-card__section-body">
           {% if standards_diff.available %}
             {% if standards_diff.has_changes %}
-            <div class="standards-diff-v2 motion-panel">
-              <p class="hint standards-diff-v2__lead">
-                {{ standards_diff.files|length }} file(s) changed since pin
-                <code>{{ standards_diff.pinned_version }}</code>
-                · baseline <code>{{ standards_diff.baseline_ref }}</code> → HEAD
-              </p>
-              <div class="standards-diff-v2__layout">
-                <nav class="standards-diff-v2__nav" aria-label="Changed standard files">
-                  {% for file in standards_diff.files %}
-                  <a class="standards-diff-v2__nav-link" href="#standards-diff-{{ loop.index }}">
-                    <code>{{ file.path }}</code>
-                  </a>
-                  {% endfor %}
-                </nav>
-                <div class="standards-diff-v2__patches">
-                  {% for file in standards_diff.files %}
-                  <section
-                    id="standards-diff-{{ loop.index }}"
-                    class="standards-diff-v2__file"
-                    aria-labelledby="standards-diff-title-{{ loop.index }}"
-                  >
-                    <h3 class="standards-diff-v2__file-title" id="standards-diff-title-{{ loop.index }}">
-                      <code>{{ file.path }}</code>
-                    </h3>
-                    <pre class="panel-code standards-diff__patch">{{ file.patch }}</pre>
-                  </section>
-                  {% endfor %}
-                </div>
-              </div>
-            </div>
+            <p class="governance-drift-summary">
+              <span class="badge">{{ standards_diff.files|length }} changed</span>
+              since pin <code>{{ standards_diff.pinned_version }}</code>
+            </p>
+            <details class="governance-drift-details">
+              <summary>File list</summary>
+              <ul class="governance-drift-files">
+                {% for file in standards_diff.files %}
+                <li><code class="governance-drift-files__path">{{ file.path }}</code></li>
+                {% endfor %}
+              </ul>
+            </details>
+            <p class="hint governance-drift-hint">
+              Pin table and patches on <a href="/update">Update existing repo</a>.
+            </p>
             {% else %}
-            <p class="muted">Standard tree matches the pin — no drift on HEAD.</p>
+            <p class="muted governance-drift-ok">Matches pin on HEAD.</p>
             {% endif %}
           {% else %}
             <p class="muted">{{ standards_diff.reason }}</p>
@@ -164,22 +151,27 @@
     method="post"
     action="/generate"
     id="generate-form"
-    class="form-panel{% if terraform_stepper %} form-panel--stepper{% endif %}"
+    class="form-panel{% if form_stepper %} form-panel--stepper{% endif %}"
     data-repave-busy-form
     data-repave-form-draft
     data-blueprint-id="{{ blueprint.name }}"
     data-busy-label="Generating…"
     data-busy-stages="Validating…|Rendering…|Running gates…|Finishing…"
-    {% if terraform_stepper %}data-terraform-stepper{% endif %}
+    {% if form_stepper %}
+    data-form-stepper
+    data-form-stepper-kind="{{ form_stepper }}"
+    data-form-stepper-max="{{ publish_step }}"
+    {% endif %}
   >
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
     {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
     {% endif %}
 
-    {% if terraform_stepper %}
+    {% if form_stepper %}
     <nav class="form-stepper" aria-label="Generation steps">
       <ol class="form-stepper__list">
+        {% if form_stepper == 'terraform' %}
         <li class="form-stepper__step is-active" data-stepper-index="0">
           <span class="form-stepper__label">Identity</span>
         </li>
@@ -189,6 +181,24 @@
         <li class="form-stepper__step" data-stepper-index="2">
           <span class="form-stepper__label">Publish</span>
         </li>
+        {% elif form_stepper == 'observability' %}
+        <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__label">Service</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__label">Routing &amp; metadata</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="2">
+          <span class="form-stepper__label">Publish</span>
+        </li>
+        {% else %}
+        <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__label">Configure</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__label">Publish</span>
+        </li>
+        {% endif %}
       </ol>
       <div class="form-stepper__actions">
         <button type="button" class="btn btn--ghost btn--sm" data-stepper-back hidden>Back</button>
@@ -200,11 +210,16 @@
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
 
+      {% if form_stepper == 'standard' %}
+      <div class="form-step-panel" data-form-step="0">
+      {% endif %}
+
       {% if observability_field_catalog and observability_catalog %}
       <div class="field-block observability-field-catalog" id="observability-field-catalog">
         {% set obs_input_names = blueprint.inputs | map(attribute='name') | list %}
-        <h3 class="form-section__subtitle" id="observability-fields-heading">Service and environment</h3>
-        <p class="hint">Options from <code>observability/catalog.json</code>.</p>
+        <div class="form-step-panel" {% if form_stepper == 'observability' %}data-form-step="0"{% endif %}>
+        <h3 class="form-section__subtitle" id="observability-fields-heading">Service and platform</h3>
+        <p class="hint">Choose a service from the estate catalog and inventory; recommended mode applies governance defaults.</p>
         <fieldset class="segmented publish-toggle" id="configuration-mode-toggle">
           <legend class="hint">Configuration mode</legend>
           <label class="segmented__option">
@@ -285,6 +300,16 @@
           <ul class="dashboard-pack-includes" id="dashboard-pack-includes" aria-labelledby="dashboard-pack-includes-label"></ul>
         </div>
         {% endif %}
+        </div>
+        <div
+          class="form-step-panel obs-step-panel obs-step-panel--configure"
+          id="obs-step-configure"
+          {% if form_stepper == 'observability' %}data-form-step="1" hidden{% endif %}
+        >
+        <h3 class="form-section__subtitle">Routing &amp; metadata</h3>
+        <p class="hint" id="obs-step-configure-hint">
+          Adjust notification routing and metadata. In recommended mode, catalog values apply unless you switch to customize all.
+        </p>
         <div id="obs-advanced-fields" class="obs-advanced-fields">
         <label for="organization">Organization *</label>
         <select class="select" id="organization" name="organization" required>
@@ -387,11 +412,51 @@
         <input type="hidden" name="output_mode" value="native" />
         {% endif %}
         </div>
+      {% if observability_notifications and observability_catalog %}
+      <div class="field-block observability-notifications" id="observability-notifications">
+        <h3 class="form-section__subtitle" id="notifications-heading">Notifications</h3>
+        <p class="hint">
+          Choose a notification source; targets list only destinations for that source.
+        </p>
+        <label for="notification_source">Notification source</label>
+        <select class="select" id="notification_source" name="notification_source">
+          {% for source in observability_catalog.notification_sources %}
+          <option
+            value="{{ source['id'] }}"
+            {% if source['id'] == observability_defaults.notification_source %}selected{% endif %}
+            {% if source.get('description') %}title="{{ source['description'] }}"{% endif %}
+          >{{ source.get('label') or source['id'] }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="notification-source-hint"></p>
+        <label for="notification_target">Notification target</label>
+        <select class="select" id="notification_target" name="notification_target">
+          {% set initial_source = observability_defaults.notification_source %}
+          {% for source in observability_catalog.notification_sources %}
+            {% if source['id'] == initial_source %}
+              {% for target in source['targets'] %}
+              <option
+                value="{{ target['id'] }}"
+                {% if target['id'] == observability_defaults.notification_target %}selected{% endif %}
+                {% if target.get('description') %}title="{{ target['description'] }}"{% endif %}
+              >{{ target.get('label') or target['id'] }}</option>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </select>
+        <p class="hint" id="notification-target-hint"></p>
+      </div>
+      {% endif %}
+        </div>
       </div>
       {% endif %}
 
       {% if policy_customization and policy_catalog %}
-      <div class="field-block policy-customization" id="policy-customization">
+      <div
+        class="field-block policy-customization"
+        id="policy-customization"
+        {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
+      >
         <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
         <p class="hint">Choose a pack and profile; required catalog rules stay on. Rule titles match the policy catalog.</p>
         <label for="policy_pack_source">Policy pack source</label>
@@ -450,43 +515,6 @@
           </div>
         </details>
         <input type="hidden" id="policy_rules" name="policy_rules" value="" />
-      </div>
-      {% endif %}
-
-      {% if observability_notifications and observability_catalog %}
-      <div class="field-block observability-notifications obs-advanced-section" id="observability-notifications">
-        <h3 class="form-section__subtitle" id="notifications-heading">Notifications</h3>
-        <p class="hint">
-          Targets come from <code>observability/catalog.json</code>. Choose a notification source;
-          the target list shows only destinations for that source.
-        </p>
-        <label for="notification_source">Notification source</label>
-        <select class="select" id="notification_source" name="notification_source">
-          {% for source in observability_catalog.notification_sources %}
-          <option
-            value="{{ source['id'] }}"
-            {% if source['id'] == observability_defaults.notification_source %}selected{% endif %}
-            {% if source.get('description') %}title="{{ source['description'] }}"{% endif %}
-          >{{ source.get('label') or source['id'] }}</option>
-          {% endfor %}
-        </select>
-        <p class="hint" id="notification-source-hint"></p>
-        <label for="notification_target">Notification target</label>
-        <select class="select" id="notification_target" name="notification_target">
-          {% set initial_source = observability_defaults.notification_source %}
-          {% for source in observability_catalog.notification_sources %}
-            {% if source['id'] == initial_source %}
-              {% for target in source['targets'] %}
-              <option
-                value="{{ target['id'] }}"
-                {% if target['id'] == observability_defaults.notification_target %}selected{% endif %}
-                {% if target.get('description') %}title="{{ target['description'] }}"{% endif %}
-              >{{ target.get('label') or target['id'] }}</option>
-              {% endfor %}
-            {% endif %}
-          {% endfor %}
-        </select>
-        <p class="hint" id="notification-target-hint"></p>
       </div>
       {% endif %}
       {% if blueprint.name == "dashboards-as-code-generic" %}
@@ -631,7 +659,7 @@
       </div>
       {% elif blueprint.artifact_type == "ansible-role" and field.name in ("support_windows", "windows_server_generation", "target_platforms_advanced") %}
       {% elif provider_catalog and field.name == "provider_services" %}
-      <div class="field-block" {% if terraform_stepper %}data-form-step="1" hidden{% endif %}>
+      <div class="field-block" {% if form_stepper == 'terraform' %}data-form-step="1" hidden{% endif %}>
         <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
         {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
         <div class="service-tools">
@@ -647,9 +675,9 @@
       {% else %}
       <div
         class="field-block"
-        {% if terraform_stepper and field.name in ("module_name", "description", "cloud_provider") %}
+        {% if form_stepper == 'terraform' and field.name in ("module_name", "description", "cloud_provider") %}
         data-form-step="0"
-        {% elif terraform_stepper %}
+        {% elif form_stepper == 'terraform' %}
         data-form-step="0"
         {% endif %}
       >
@@ -691,9 +719,16 @@
       </div>
       {% endif %}
       {% endfor %}
+      {% if form_stepper == 'standard' %}
+      </div>
+      {% endif %}
     </section>
 
-    <section class="form-section" aria-labelledby="publish-heading" {% if terraform_stepper %}data-form-step="2" hidden{% endif %}>
+    <section
+      class="form-section"
+      aria-labelledby="publish-heading"
+      {% if form_stepper %}data-form-step="{{ publish_step }}" hidden{% endif %}
+    >
       <h2 class="form-section__title" id="publish-heading">Publish</h2>
       <div class="segmented publish-toggle" role="radiogroup" aria-label="Publish mode">
         <label class="segmented__option">
@@ -2297,6 +2332,11 @@
 
   const generateForm = document.getElementById("generate-form");
   if (generateForm) {
+    generateForm.addEventListener("repave:stepper-will-advance", (event) => {
+      if (event.detail.fromStep === 0) {
+        applyEffectiveDefaultsToForm();
+      }
+    });
     generateForm.addEventListener("submit", () => {
       applyEffectiveDefaultsToForm();
       if (sourceSelect?.value) {
