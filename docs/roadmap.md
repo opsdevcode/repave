@@ -8,6 +8,8 @@ work, writing ADRs, and opening issues.
 **In progress:** —  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
+Operator GA scope: [`operator-ga.md`](operator-ga.md).
+
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
 is complete as of v1.25.0 (see [Shipped — v1.18 portal](#v118--portal-ux-theme)).
 
@@ -214,7 +216,8 @@ protected `main`.
 (kind + bundled `repave` CLI) and asserts `OutOfDate`, `UpgradePlanned`, and a
 non-empty `status.upgradePlan`. CI: `.github/workflows/operator-e2e.yml`
 (nightly, `workflow_dispatch`, and on main when operator/engine/blueprint paths
-change). `spec.repoURL` git inventory remains future work (`localPath` GA).
+change). **`spec.localPath` inventory is GA**; `spec.repoURL` git inventory remains
+future work. See [`operator-ga.md`](operator-ga.md) for the GA checklist and scope.
 
 Docs: [`operator-local-dev.md`](operator-local-dev.md),
 [`operator-standards.md`](operator-standards.md),
