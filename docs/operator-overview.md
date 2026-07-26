@@ -19,7 +19,7 @@ Local development: [operator-local-dev.md](operator-local-dev.md) · GA scope:
 | Catalog pin watch | `Blueprint` + `spec.blueprintRef` | Reconcile GPRs when Blueprint pins change |
 
 `spec.repoURL` (git clone inventory) is not implemented yet; use `localPath` for
-dev and envtest.
+dev and envtest. Planned approach: [ADR 001](../docs/adr/001-goldenpathrepo-repo-url-inventory.md).
 
 ## Engine vs operator
 
