@@ -29,6 +29,13 @@ make install
 make test
 ```
 
+### Blueprint conformance
+
+Every golden path under `blueprints/*/blueprint.yaml` must ship a sibling
+`conformance.yaml` with fixture `inputs` and `required_files`. CI runs
+`tests/test_blueprint_conformance.py` (render, gates, template hygiene). Optional `snapshot: true` enables `conformance.manifest.json`; refresh with
+`make blueprint-conformance-update`.
+
 Or from `engine/`:
 
 ```bash
