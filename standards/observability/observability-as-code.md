@@ -22,7 +22,8 @@ Every alert rule MUST include:
 | `runbook_url` | `annotations` | HTTPS URL to the runbook |
 | `summary` | `annotations` | One-line operator summary |
 
-Grafana dashboards MUST tag `service` and `team` (native JSON under `grafana/dashboards/`).
+Grafana dashboards MUST tag `service`, `team`, `org`, `env`, and `managed-by:repave`
+(native JSON under `grafana/dashboards/`). See `standards/observability/dashboards-as-code.md`.
 
 ## SLOs
 

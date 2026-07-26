@@ -94,7 +94,9 @@
               "provenance-drift",
               "opa",
               "azure-policy",
-              "promtool"
+              "promtool",
+              "grafana-dashboard",
+              "datadog-dashboard"
             ]
           }
         },
@@ -301,6 +303,26 @@
                 "rules_glob": {
                   "type": "string",
                   "description": "Glob of Prometheus rule files relative to the generated repo root."
+                }
+              }
+            },
+            "grafana-dashboard": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dashboards_glob": {
+                  "type": "string",
+                  "description": "Glob of Grafana dashboard JSON files relative to the generated repo root."
+                }
+              }
+            },
+            "datadog-dashboard": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "dashboards_glob": {
+                  "type": "string",
+                  "description": "Glob of Datadog dashboard JSON files relative to the generated repo root."
                 }
               }
             }

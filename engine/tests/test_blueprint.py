@@ -592,6 +592,47 @@ def test_build_provenance_document_observability(repo_root: Path) -> None:
     assert obs["slo_target_percent"] == "99.9"
 
 
+def test_load_dashboards_as_code_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "observability"
+    assert "grafana-dashboard" in blueprint.gates
+    assert "datadog-dashboard" in blueprint.gates
+    assert blueprint.output_repo_name_template.startswith("dashboards-")
+
+
+def test_build_provenance_document_dashboards(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    from repave_engine.provenance import build_provenance_document
+
+    document = build_provenance_document(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout dashboards",
+            "backend": "grafana",
+            "output_mode": "native",
+            "environment": "prod",
+            "observability_focus": "dashboards",
+            "datasource_uid": "prometheus",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+        },
+    )
+    obs = document["spec"]["observability"]
+    assert obs["focus"] == "dashboards"
+    assert obs["environment"] == "prod"
+    assert obs["datasource_uid"] == "prometheus"
+    assert "runbook_url" not in obs
+
+
 def test_load_blueprint_rejects_invalid_schema(tmp_path: Path, repo_root: Path) -> None:
     import jsonschema
 

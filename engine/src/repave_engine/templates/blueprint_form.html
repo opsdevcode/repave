@@ -93,6 +93,195 @@
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
 
+      {% if observability_field_catalog and observability_catalog %}
+      <div class="field-block observability-field-catalog" id="observability-field-catalog">
+        {% set obs_input_names = blueprint.inputs | map(attribute='name') | list %}
+        <h3 class="form-section__subtitle" id="observability-fields-heading">Service and environment</h3>
+        <p class="hint">Options from <code>observability/catalog.json</code>.</p>
+        <fieldset class="segmented publish-toggle" id="configuration-mode-toggle">
+          <legend class="hint">Configuration mode</legend>
+          <label class="segmented__option">
+            <input
+              type="radio"
+              name="configuration_mode"
+              value="recommended"
+              {% if observability_defaults.get('configuration_mode', 'recommended') == 'recommended' %}checked{% endif %}
+            />
+            Recommended defaults
+          </label>
+          <label class="segmented__option">
+            <input
+              type="radio"
+              name="configuration_mode"
+              value="custom"
+              {% if observability_defaults.get('configuration_mode') == 'custom' %}checked{% endif %}
+            />
+            Customize all
+          </label>
+        </fieldset>
+        <p class="hint" id="configuration-mode-hint">
+          Pick service (and backend{% if observability_dashboard_packs %}, dashboard pack{% endif %}); we fill org, team, runbook, notifications, and more from the catalog.
+        </p>
+        <label for="service_name">Service *</label>
+        <select class="select" id="service_name" name="service_name" required>
+          {% for svc in observability_catalog.services %}
+          <option
+            value="{{ svc['id'] }}"
+            {% if svc['id'] == observability_defaults.service_name %}selected{% endif %}
+            {% if svc.get('description') %}title="{{ svc['description'] }}"{% endif %}
+          >{{ svc.get('label') or svc['id'] }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="obs-defaults-summary" aria-live="polite"></p>
+        {% for field in blueprint.inputs %}
+          {% if field.name == "backend" and field.enum %}
+        <div class="obs-decision-fields" id="obs-backend-decision">
+          <label for="backend">
+            {% if blueprint.name == "dashboards-as-code-generic" %}Dashboard platform{% else %}Observability backend{% endif %}
+            {% if field.required %} *{% endif %}
+          </label>
+          <select class="select" id="backend" name="backend" {% if field.required %}required{% endif %}>
+            {% for option in field.enum %}
+            <option
+              value="{{ option }}"
+              {% if observability_defaults.get('backend', field.default) == option %}selected{% endif %}
+            >{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if field.description %}<p class="hint">{{ field.description }}</p>{% endif %}
+        </div>
+          {% endif %}
+        {% endfor %}
+        {% if observability_dashboard_packs and observability_catalog %}
+        {% set initial_dashboard_backend = observability_defaults.get('backend', 'grafana') %}
+        <div class="obs-decision-fields dashboard-pack" id="dashboard-pack">
+          <h4 class="form-section__subtitle form-section__subtitle--sm">Community dashboard pack</h4>
+          <p class="hint">
+            Vendored forks from <code>observability/dashboards/</code> (Grafana.com / Datadog).
+            Every pack includes the Repave RED starter JSON plus any files listed below.
+          </p>
+          <label for="dashboard_pack_source">Pack</label>
+          <select class="select" id="dashboard_pack_source" name="dashboard_pack_source">
+            {% for pack in observability_catalog.dashboard_packs %}
+              {% if pack['backend'] == 'any' or pack['backend'] == initial_dashboard_backend %}
+            <option
+              value="{{ pack['id'] }}"
+              {% if pack['id'] == observability_defaults.dashboard_pack_source %}selected{% endif %}
+              {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+            >{{ pack.get('label') or pack['id'] }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <p class="hint" id="dashboard-pack-hint"></p>
+          <p class="hint dashboard-pack-includes-label" id="dashboard-pack-includes-label">Included dashboards</p>
+          <ul class="dashboard-pack-includes" id="dashboard-pack-includes" aria-labelledby="dashboard-pack-includes-label"></ul>
+        </div>
+        {% endif %}
+        <div id="obs-advanced-fields" class="obs-advanced-fields">
+        <label for="organization">Organization *</label>
+        <select class="select" id="organization" name="organization" required>
+          {% for org in observability_catalog.organizations %}
+          <option
+            value="{{ org['id'] }}"
+            {% if org['id'] == observability_defaults.organization %}selected{% endif %}
+          >{{ org.get('label') or org['id'] }}</option>
+          {% endfor %}
+        </select>
+        <label for="team">Team *</label>
+        <select class="select" id="team" name="team" required>
+          {% set initial_org = observability_defaults.organization %}
+          {% for team in observability_catalog.teams %}
+            {% if team['organization'] == initial_org %}
+          <option
+            value="{{ team['id'] }}"
+            {% if team['id'] == observability_defaults.team %}selected{% endif %}
+          >{{ team.get('label') or team['id'] }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        {% if 'environment' in obs_input_names %}
+        <label for="environment">Environment</label>
+        <select class="select" id="environment" name="environment">
+          {% for env in observability_catalog.environments %}
+          <option
+            value="{{ env['id'] }}"
+            {% if env['id'] == observability_defaults.environment %}selected{% endif %}
+          >{{ env.get('label') or env['id'] }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <label for="description">Description *</label>
+        <textarea
+          class="input"
+          id="description"
+          name="description"
+          rows="3"
+          required
+        >{{ observability_defaults.description or '' }}</textarea>
+        {% if 'datasource_uid' in obs_input_names %}
+        <div id="observability-backend-grafana-fields" class="obs-backend-panel">
+          <label for="datasource_uid">Grafana datasource UID</label>
+          <select class="select" id="datasource_uid" name="datasource_uid">
+            {% for ds in observability_catalog.grafana_datasources %}
+            <option
+              value="{{ ds['uid'] }}"
+              {% if ds['uid'] == observability_defaults.datasource_uid %}selected{% endif %}
+            >{{ ds.get('label') or ds['uid'] }}</option>
+            {% endfor %}
+          </select>
+          <p class="hint">Prometheus-compatible datasource referenced in Grafana panel JSON.</p>
+        </div>
+        <div id="observability-backend-datadog-fields" class="obs-backend-panel" hidden>
+          <p class="hint">
+            Datadog dashboards use native JSON under <code>datadog/dashboards/</code>.
+            Choose a Datadog community pack above; widgets follow Datadog metrics and APM conventions
+            (no Grafana datasource).
+          </p>
+        </div>
+        {% endif %}
+        {% set runbook_required = false %}
+        {% for field in blueprint.inputs %}
+          {% if field.name == 'runbook_url' and field.required %}
+            {% set runbook_required = true %}
+          {% endif %}
+        {% endfor %}
+        {% if 'runbook_url' in obs_input_names %}
+        <label for="runbook_url">Runbook{% if runbook_required %} *{% endif %}</label>
+        <select
+          class="select"
+          id="runbook_url"
+          name="runbook_url"
+          {% if runbook_required %}required{% endif %}
+        >
+          {% if not runbook_required %}
+          <option value="" {% if not observability_defaults.runbook_url %}selected{% endif %}>None</option>
+          {% endif %}
+          {% for rb in observability_catalog.runbooks %}
+          <option
+            value="{{ rb['url'] }}"
+            {% if rb['url'] == observability_defaults.runbook_url %}selected{% endif %}
+          >{{ rb.get('label') or rb['id'] }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        {% if 'slo_target_percent' in obs_input_names %}
+        <label for="slo_target_percent">SLO target</label>
+        <select class="select" id="slo_target_percent" name="slo_target_percent">
+          {% for slo in observability_catalog.slo_targets %}
+          <option
+            value="{{ slo['value'] }}"
+            {% if slo['value'] == observability_defaults.get('slo_target_percent', '') %}selected{% endif %}
+          >{{ slo.get('label') or slo['id'] }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        {% if 'output_mode' in obs_input_names %}
+        <input type="hidden" name="output_mode" value="native" />
+        {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
       {% if policy_customization and policy_catalog %}
       <div class="field-block policy-customization" id="policy-customization">
         <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
@@ -156,11 +345,11 @@
       {% endif %}
 
       {% if observability_notifications and observability_catalog %}
-      <div class="field-block observability-notifications" id="observability-notifications">
+      <div class="field-block observability-notifications obs-advanced-section" id="observability-notifications">
         <h3 class="form-section__subtitle" id="notifications-heading">Notifications</h3>
         <p class="hint">
-          Targets come from <code>observability/catalog.json</code>. Pick a source, then a target
-          documented in the generated README.
+          Targets come from <code>observability/catalog.json</code>. Choose a notification source;
+          the target list shows only destinations for that source.
         </p>
         <label for="notification_source">Notification source</label>
         <select class="select" id="notification_source" name="notification_source">
@@ -191,11 +380,22 @@
         <p class="hint" id="notification-target-hint"></p>
       </div>
       {% endif %}
+      {% if blueprint.name == "dashboards-as-code-generic" %}
+      <input type="hidden" name="observability_focus" value="dashboards" />
+      {% endif %}
 
       {% for field in blueprint.inputs %}
       {% if field.name == "provider_service_scope" %}
       {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules") %}
       {% elif field.name in ("notification_source", "notification_target") %}
+      {% elif field.name == "dashboard_pack_source" %}
+      {% elif field.name == "backend" %}
+      {% elif field.name == "configuration_mode" %}
+      {% elif observability_field_catalog and field.name in (
+        "service_name", "organization", "team", "environment", "datasource_uid",
+        "runbook_url", "slo_target_percent", "description", "output_mode"
+      ) %}
+      {% elif field.name == "observability_focus" %}
       {% elif provider_catalog and field.name == "cloud_provider" %}
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -1530,7 +1730,7 @@
 })();
 </script>
 {% endif %}
-{% if observability_notifications and observability_catalog %}
+{% if observability_catalog and (observability_notifications or observability_dashboard_packs or observability_field_catalog) %}
 <script id="observability-catalog-data" type="application/json">{{ observability_catalog | tojson }}</script>
 <script>
 (function () {
@@ -1539,25 +1739,27 @@
   const targetSelect = document.getElementById("notification_target");
   const sourceHint = document.getElementById("notification-source-hint");
   const targetHint = document.getElementById("notification-target-hint");
-  if (!catalogEl || !sourceSelect || !targetSelect) return;
+  if (!catalogEl) return;
 
   const observabilityDefaults = {{ observability_defaults | tojson }};
   let catalog;
   try {
     catalog = JSON.parse(catalogEl.textContent || "{}");
   } catch (_err) {
-    catalog = { notification_sources: [], defaults: {} };
+    catalog = { notification_sources: [], dashboard_packs: [], defaults: {}, services: [], teams: [] };
   }
 
-  function sources() {
+  const decisionFields = new Set(catalog.form_preset?.decision_fields || []);
+
+  function notificationSources() {
     return catalog.notification_sources || [];
   }
 
-  function sourceById(sourceId) {
-    return sources().find((item) => item.id === sourceId);
+  function notificationSourceById(sourceId) {
+    return notificationSources().find((item) => item.id === sourceId);
   }
 
-  function resolveTargetId(source, preferred) {
+  function resolveNotificationTargetId(source, preferred) {
     const targets = source?.targets || [];
     if (!targets.length) return "";
     if (preferred && targets.some((t) => t.id === preferred)) {
@@ -1570,43 +1772,325 @@
     return targets[0].id;
   }
 
-  function renderTargets(sourceId, preferredTarget) {
-    const source = sourceById(sourceId);
+  function syncNotificationTargets(sourceId, preferredTarget) {
+    if (!sourceSelect || !targetSelect) return;
+    const source = notificationSourceById(sourceId);
     const targets = source?.targets || [];
     targetSelect.innerHTML = "";
+    if (!targets.length) {
+      targetSelect.disabled = true;
+      if (sourceHint) sourceHint.textContent = source?.description || "";
+      if (targetHint) targetHint.textContent = "No targets configured for this source.";
+      return;
+    }
+    targetSelect.disabled = false;
+    const group = document.createElement("optgroup");
+    group.label = source?.label || sourceId || "Targets";
     for (const target of targets) {
       const opt = document.createElement("option");
       opt.value = target.id;
       opt.textContent = target.label || target.id;
       if (target.description) opt.title = target.description;
-      targetSelect.appendChild(opt);
+      group.appendChild(opt);
     }
-    const chosen = resolveTargetId(source, preferredTarget);
+    targetSelect.appendChild(group);
+    const chosen = resolveNotificationTargetId(source, preferredTarget);
     if (chosen) targetSelect.value = chosen;
-    if (sourceHint) {
-      sourceHint.textContent = source?.description || "";
-    }
+    if (sourceHint) sourceHint.textContent = source?.description || "";
     const active = targets.find((t) => t.id === targetSelect.value);
-    if (targetHint) {
-      targetHint.textContent = active?.description || "";
+    if (targetHint) targetHint.textContent = active?.description || "";
+  }
+
+  function wireNotificationTargets() {
+    if (!sourceSelect || !targetSelect) return;
+    sourceSelect.addEventListener("change", () => {
+      syncNotificationTargets(sourceSelect.value, "");
+    });
+    targetSelect.addEventListener("change", () => {
+      const source = notificationSourceById(sourceSelect.value);
+      const active = (source?.targets || []).find((t) => t.id === targetSelect.value);
+      if (targetHint) targetHint.textContent = active?.description || "";
+    });
+    syncNotificationTargets(
+      sourceSelect.value || observabilityDefaults.notification_source,
+      targetSelect.value || observabilityDefaults.notification_target
+    );
+  }
+
+  wireNotificationTargets();
+
+  function isRecommendedMode() {
+    const selected = document.querySelector('input[name="configuration_mode"]:checked');
+    return !selected || selected.value === "recommended";
+  }
+
+  function serviceById(serviceId) {
+    return (catalog.services || []).find((item) => item.id === serviceId);
+  }
+
+  function effectiveDefaultsFromDecisions() {
+    const merged = { ...(catalog.defaults || {}), ...observabilityDefaults };
+    const serviceSelect = document.getElementById("service_name");
+    const backendSelect = document.getElementById("backend");
+    const packSelect = document.getElementById("dashboard_pack_source");
+    if (serviceSelect?.value) merged.service_name = serviceSelect.value;
+    if (backendSelect?.value) merged.backend = backendSelect.value;
+    if (packSelect?.value) merged.dashboard_pack_source = packSelect.value;
+    const service = serviceById(merged.service_name);
+    if (service) {
+      merged.organization = service.organization;
+      merged.team = service.team;
+      merged.description = service.description;
+      if (service.runbook_url) merged.runbook_url = service.runbook_url;
+    }
+    return merged;
+  }
+
+  function setFieldValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el || value === undefined) return;
+    el.value = value;
+  }
+
+  function applyEffectiveDefaultsToForm() {
+    if (!isRecommendedMode()) return;
+    const effective = effectiveDefaultsFromDecisions();
+    setFieldValue("organization", effective.organization);
+    syncTeamsForOrganization(effective.team);
+    setFieldValue("team", effective.team);
+    setFieldValue("environment", effective.environment);
+    setFieldValue("description", effective.description);
+    setFieldValue("datasource_uid", effective.datasource_uid);
+    setFieldValue("runbook_url", effective.runbook_url);
+    setFieldValue("slo_target_percent", effective.slo_target_percent);
+    setFieldValue("notification_source", effective.notification_source);
+    syncNotificationTargets(effective.notification_source, effective.notification_target);
+    updateDefaultsSummary(effective);
+  }
+
+  function updateDefaultsSummary(effective) {
+    const summary = document.getElementById("obs-defaults-summary");
+    if (!summary || !isRecommendedMode()) {
+      if (summary) summary.textContent = "";
+      return;
+    }
+    const parts = [
+      effective.organization && `org: ${effective.organization}`,
+      effective.team && `team: ${effective.team}`,
+      effective.environment && `env: ${effective.environment}`,
+      effective.notification_source && `notify: ${effective.notification_source}`,
+    ].filter(Boolean);
+    summary.textContent = parts.length
+      ? `Using catalog defaults — ${parts.join(" · ")}`
+      : "";
+  }
+
+  function updateConfigurationModeUi() {
+    const recommended = isRecommendedMode();
+    const advanced = document.getElementById("obs-advanced-fields");
+    if (advanced) {
+      advanced.hidden = recommended;
+    }
+    for (const section of document.querySelectorAll(".obs-advanced-section")) {
+      section.hidden = recommended;
+    }
+    const hint = document.getElementById("configuration-mode-hint");
+    if (hint) {
+      hint.hidden = !recommended;
+    }
+    if (recommended) {
+      applyEffectiveDefaultsToForm();
+    } else {
+      updateDefaultsSummary({});
+      syncBackendSpecificFields();
+      if (sourceSelect?.value) {
+        syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
+      }
     }
   }
 
-  sourceSelect.addEventListener("change", () => {
-    renderTargets(sourceSelect.value, "");
-  });
-  targetSelect.addEventListener("change", () => {
-    const source = sourceById(sourceSelect.value);
-    const active = (source?.targets || []).find((t) => t.id === targetSelect.value);
-    if (targetHint) {
-      targetHint.textContent = active?.description || "";
-    }
+  document.querySelectorAll('input[name="configuration_mode"]').forEach((input) => {
+    input.addEventListener("change", updateConfigurationModeUi);
   });
 
-  renderTargets(
-    sourceSelect.value || observabilityDefaults.notification_source,
-    observabilityDefaults.notification_target
-  );
+  function packsForBackend(backend) {
+    return (catalog.dashboard_packs || []).filter(
+      (pack) => pack.backend === "any" || pack.backend === backend
+    );
+  }
+
+  function starterDashboardPaths(backend) {
+    const root = backend === "datadog" ? "datadog/dashboards" : "grafana/dashboards";
+    return [
+      `${root}/service-overview.json`,
+      `${root}/service-golden-signals.json`,
+    ];
+  }
+
+  function updateDashboardPackIncludes() {
+    const list = document.getElementById("dashboard-pack-includes");
+    const packSelect = document.getElementById("dashboard_pack_source");
+    const backendSelect = document.getElementById("backend");
+    if (!list || !packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "grafana";
+    const pack = (catalog.dashboard_packs || []).find((item) => item.id === packSelect.value);
+    list.innerHTML = "";
+    for (const path of starterDashboardPaths(backend)) {
+      const li = document.createElement("li");
+      li.textContent = path;
+      list.appendChild(li);
+    }
+    const files = pack?.files || [];
+    for (const file of files) {
+      const li = document.createElement("li");
+      const dest = file.dest || file.source || "";
+      li.textContent = dest;
+      if (file.source) li.title = `Template: observability/${file.source}`;
+      list.appendChild(li);
+    }
+    if (!files.length && pack && pack.id !== "repave-red-starter") {
+      const li = document.createElement("li");
+      li.textContent = "No extra community files in this pack.";
+      list.appendChild(li);
+    }
+  }
+
+  function syncDashboardPackOptions() {
+    const packSelect = document.getElementById("dashboard_pack_source");
+    const backendSelect = document.getElementById("backend");
+    const packHint = document.getElementById("dashboard-pack-hint");
+    if (!packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "grafana";
+    const packs = packsForBackend(backend);
+    const preferred =
+      packSelect.value ||
+      observabilityDefaults.dashboard_pack_source ||
+      catalog.defaults?.dashboard_pack_source;
+    packSelect.innerHTML = "";
+    for (const pack of packs) {
+      const opt = document.createElement("option");
+      opt.value = pack.id;
+      opt.textContent = pack.label || pack.id;
+      if (pack.description) opt.title = pack.description;
+      packSelect.appendChild(opt);
+    }
+    const chosen =
+      packs.find((pack) => pack.id === preferred)?.id || packs[0]?.id || "";
+    if (chosen) packSelect.value = chosen;
+    const active = packs.find((pack) => pack.id === packSelect.value);
+    if (packHint && active) {
+      const parts = [active.description || ""];
+      if (active.reference_url) {
+        parts.push(`Upstream: ${active.reference_url}`);
+      }
+      if (active.license) {
+        parts.push(`License: ${active.license}`);
+      }
+      packHint.textContent = parts.filter(Boolean).join(" · ");
+    }
+    updateDashboardPackIncludes();
+  }
+
+  const backendSelect = document.getElementById("backend");
+  if (backendSelect) {
+    backendSelect.addEventListener("change", () => {
+      syncDashboardPackOptions();
+      syncBackendSpecificFields();
+      applyEffectiveDefaultsToForm();
+    });
+  }
+  syncDashboardPackOptions();
+  syncBackendSpecificFields();
+
+  function teamsForOrganization(orgId) {
+    return (catalog.teams || []).filter((team) => team.organization === orgId);
+  }
+
+  function syncTeamsForOrganization(preferredTeam) {
+    const orgSelect = document.getElementById("organization");
+    const teamSelect = document.getElementById("team");
+    if (!orgSelect || !teamSelect) return;
+    const orgId = orgSelect.value;
+    const teams = teamsForOrganization(orgId);
+    teamSelect.innerHTML = "";
+    for (const team of teams) {
+      const opt = document.createElement("option");
+      opt.value = team.id;
+      opt.textContent = team.label || team.id;
+      teamSelect.appendChild(opt);
+    }
+    const chosen =
+      teams.find((team) => team.id === preferredTeam)?.id || teams[0]?.id || "";
+    if (chosen) teamSelect.value = chosen;
+  }
+
+  function applyServiceSelection() {
+    const serviceSelect = document.getElementById("service_name");
+    const descInput = document.getElementById("description");
+    const orgSelect = document.getElementById("organization");
+    const teamSelect = document.getElementById("team");
+    const runbookSelect = document.getElementById("runbook_url");
+    if (!serviceSelect) return;
+    const service = (catalog.services || []).find((item) => item.id === serviceSelect.value);
+    if (!service) return;
+    if (orgSelect && service.organization) {
+      orgSelect.value = service.organization;
+      syncTeamsForOrganization(service.team);
+    } else if (teamSelect && service.team) {
+      syncTeamsForOrganization(service.team);
+    }
+    if (descInput && service.description) {
+      descInput.value = service.description;
+    }
+    if (runbookSelect && service.runbook_url) {
+      runbookSelect.value = service.runbook_url;
+    }
+  }
+
+  function syncBackendSpecificFields() {
+    const backendSelect = document.getElementById("backend");
+    const backend = backendSelect?.value || observabilityDefaults.backend || "grafana";
+    const grafanaPanel = document.getElementById("observability-backend-grafana-fields");
+    const datadogPanel = document.getElementById("observability-backend-datadog-fields");
+    if (grafanaPanel) {
+      grafanaPanel.hidden = backend !== "grafana";
+    }
+    if (datadogPanel) {
+      datadogPanel.hidden = backend !== "datadog";
+    }
+  }
+
+  const orgSelect = document.getElementById("organization");
+  if (orgSelect) {
+    orgSelect.addEventListener("change", () => {
+      syncTeamsForOrganization("");
+    });
+  }
+  const serviceSelect = document.getElementById("service_name");
+  if (serviceSelect) {
+    serviceSelect.addEventListener("change", () => {
+      applyServiceSelection();
+      applyEffectiveDefaultsToForm();
+    });
+    applyServiceSelection();
+  } else if (orgSelect) {
+    syncTeamsForOrganization(observabilityDefaults.team || "");
+  }
+  const packSelect = document.getElementById("dashboard_pack_source");
+  if (packSelect) {
+    packSelect.addEventListener("change", applyEffectiveDefaultsToForm);
+  }
+  updateConfigurationModeUi();
+
+  const generateForm = document.getElementById("generate-form");
+  if (generateForm) {
+    generateForm.addEventListener("submit", () => {
+      applyEffectiveDefaultsToForm();
+      if (sourceSelect?.value) {
+        syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
+      }
+    });
+  }
 })();
 </script>
 {% endif %}

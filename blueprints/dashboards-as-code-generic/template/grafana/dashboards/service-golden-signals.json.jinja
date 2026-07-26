@@ -1,0 +1,88 @@
+{
+  "title": "{{ service_name }} golden signals",
+  "uid": "{{ service_name | replace('-', '_') }}_golden",
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave",
+    "repave:golden-signals"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Service overview",
+      "type": "dashboard",
+      "url": "/d/{{ service_name | replace('-', '_') }}_overview",
+      "keepTime": true
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "custom",
+        "query": "{{ environment }}",
+        "current": { "text": "{{ environment }}", "value": "{{ environment }}" },
+        "options": [{ "text": "{{ environment }}", "value": "{{ environment }}", "selected": true }]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "RED — Rate, Errors, Duration",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "Rate (requests/s)",
+      "description": "Traffic — golden signal / RED 'Rate'",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "{{ datasource_uid }}" },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{service=\"{{ service_name }}\",environment=\"$environment\"}[5m]))",
+          "legendFormat": "rps"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors (5xx/s)",
+      "description": "Errors — golden signal / RED 'Errors'",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "{{ datasource_uid }}" },
+      "fieldConfig": { "defaults": { "unit": "reqps" } },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{service=\"{{ service_name }}\",environment=\"$environment\",status=~\"5..\"}[5m]))",
+          "legendFormat": "errors/s"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Duration (p99)",
+      "description": "Latency — golden signal / RED 'Duration'",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "{{ datasource_uid }}" },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{service=\"{{ service_name }}\",environment=\"$environment\"}[5m])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    }
+  ]
+}

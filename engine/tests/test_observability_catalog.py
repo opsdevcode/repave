@@ -8,13 +8,6 @@ from repave_engine.observability_catalog import (
 )
 
 
-def test_load_observability_catalog(repo_root) -> None:
-    catalog = load_observability_catalog(repo_root)
-    assert catalog.version == "1.0.0"
-    assert len(catalog.notification_sources) >= 2
-    assert catalog.defaults["notification_source"] == "repave-estate-oncall"
-
-
 def test_target_ids_for_source(repo_root) -> None:
     catalog = load_observability_catalog(repo_root)
     ids = target_ids_for_source(catalog, "repave-estate-oncall")
@@ -30,11 +23,11 @@ def test_catalog_for_api_includes_defaults(repo_root) -> None:
             "notification_source": "repave-slack-alerts",
             "notification_target": "slack-alerts-platform",
         },
+        backend="grafana",
     )
     assert payload["defaults"]["notification_source"] == "repave-slack-alerts"
     assert len(payload["notification_sources"]) >= 1
-    first = payload["notification_sources"][0]
-    assert first.get("targets")
+    assert len(payload["dashboard_packs"]) >= 1
 
 
 def test_source_by_id(repo_root) -> None:

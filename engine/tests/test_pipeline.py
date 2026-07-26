@@ -450,3 +450,128 @@ def test_generate_observability_as_code_dry_run(
     assert "runbook_url" in text
     assert (output_dir / "repave.yaml").is_file()
     assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_dashboards_as_code_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout service dashboards",
+            "backend": "grafana",
+            "output_mode": "native",
+            "environment": "prod",
+            "observability_focus": "dashboards",
+            "datasource_uid": "prometheus",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    overview = output_dir / "grafana" / "dashboards" / "service-overview.json"
+    golden = output_dir / "grafana" / "dashboards" / "service-golden-signals.json"
+    assert overview.is_file()
+    assert golden.is_file()
+    assert "service:checkout" in overview.read_text(encoding="utf-8")
+    assert "managed-by:repave" in overview.read_text(encoding="utf-8")
+    assert not (output_dir / "datadog").exists()
+    grafana_gate = next(g for g in result.gates if g.name == "grafana-dashboard")
+    assert grafana_gate.passed
+    assert not grafana_gate.skipped
+    dd_gate = next(g for g in result.gates if g.name == "datadog-dashboard")
+    assert dd_gate.skipped
+
+
+def test_generate_dashboards_with_community_pack(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout service dashboards",
+            "backend": "grafana",
+            "environment": "prod",
+            "output_mode": "native",
+            "observability_focus": "dashboards",
+            "dashboard_pack_source": "grafana-red-plus-node-exporter-1860",
+            "datasource_uid": "prometheus",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    community = output_dir / "grafana" / "dashboards" / "community-node-exporter-1860.json"
+    assert community.is_file()
+    assert "grafana-1860" in community.read_text(encoding="utf-8")
+    grafana_gate = next(g for g in result.gates if g.name == "grafana-dashboard")
+    assert grafana_gate.passed
+
+
+def test_generate_dashboards_as_code_datadog_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "dashboards-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout service dashboards",
+            "backend": "datadog",
+            "environment": "prod",
+            "output_mode": "native",
+            "observability_focus": "dashboards",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-platform-primary",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    overview = output_dir / "datadog" / "dashboards" / "service-overview.json"
+    golden = output_dir / "datadog" / "dashboards" / "service-golden-signals.json"
+    assert overview.is_file()
+    assert golden.is_file()
+    assert not (output_dir / "grafana").exists()
+    assert "trace.http.request.hits" in golden.read_text(encoding="utf-8")
+    dd_gate = next(g for g in result.gates if g.name == "datadog-dashboard")
+    assert dd_gate.passed
+    assert not dd_gate.skipped

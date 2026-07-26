@@ -6,7 +6,9 @@ from repave_engine.gate_runners import (
     run_ansible_syntax_check,
     run_azure_policy,
     run_checkov,
+    run_datadog_dashboard,
     run_docs_drift,
+    run_grafana_dashboard,
     run_molecule,
     run_opa,
     run_promtool,
@@ -126,6 +128,20 @@ register_gate(
     GateSpec(
         name="promtool",
         runner=run_promtool,
+        artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="grafana-dashboard",
+        runner=run_grafana_dashboard,
+        artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="datadog-dashboard",
+        runner=run_datadog_dashboard,
         artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
     )
 )

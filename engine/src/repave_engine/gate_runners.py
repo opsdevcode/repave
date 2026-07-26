@@ -322,6 +322,138 @@ def run_promtool(ctx: GateContext) -> GateResult:
     return GateResult("promtool", True, False, f"promtool validated {len(rule_files)} rule file(s)")
 
 
+def _grafana_dashboard_files(output_dir: Path, ctx: GateContext) -> list[Path]:
+    raw = ctx.config("grafana-dashboard")
+    glob_pattern = str(raw.get("dashboards_glob", "grafana/dashboards/*.json"))
+    return sorted(output_dir.glob(glob_pattern))
+
+
+def _validate_dashboard_tags(path: Path, tags: object) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(tags, list):
+        if tags is not None:
+            errors.append(f"{path.name}: tags must be a list")
+        return errors
+    tag_strings = {str(item) for item in tags}
+    for prefix in ("service:", "team:", "org:", "env:", "managed-by:"):
+        if not any(item.startswith(prefix) for item in tag_strings):
+            errors.append(f"{path.name}: tags must include {prefix}{{value}}")
+    return errors
+
+
+def _validate_grafana_dashboard(path: Path, payload: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    for key in ("title", "uid", "tags", "schemaVersion"):
+        if key not in payload:
+            errors.append(f"{path.name}: missing {key!r}")
+    errors.extend(_validate_dashboard_tags(path, payload.get("tags")))
+    return errors
+
+
+def run_grafana_dashboard(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "observability":
+        return GateResult(
+            "grafana-dashboard",
+            True,
+            True,
+            "grafana-dashboard gate not applicable; skipped",
+        )
+
+    dashboard_files = _grafana_dashboard_files(output_dir, ctx)
+    if not dashboard_files:
+        return GateResult(
+            "grafana-dashboard",
+            True,
+            True,
+            "no Grafana dashboard JSON found; skipped",
+        )
+
+    errors: list[str] = []
+    for path in dashboard_files:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.name}: invalid JSON ({exc.msg})")
+            continue
+        if not isinstance(payload, dict):
+            errors.append(f"{path.name}: dashboard root must be a JSON object")
+            continue
+        errors.extend(_validate_grafana_dashboard(path, payload))
+
+    if errors:
+        return GateResult("grafana-dashboard", False, False, "; ".join(errors))
+    return GateResult(
+        "grafana-dashboard",
+        True,
+        False,
+        f"validated {len(dashboard_files)} Grafana dashboard(s)",
+    )
+
+
+def _datadog_dashboard_files(output_dir: Path, ctx: GateContext) -> list[Path]:
+    raw = ctx.config("datadog-dashboard")
+    glob_pattern = str(raw.get("dashboards_glob", "datadog/dashboards/*.json"))
+    return sorted(output_dir.glob(glob_pattern))
+
+
+def _validate_datadog_dashboard(path: Path, payload: dict[str, object]) -> list[str]:
+    errors: list[str] = []
+    for key in ("title", "layout_type", "widgets", "tags"):
+        if key not in payload:
+            errors.append(f"{path.name}: missing {key!r}")
+    if payload.get("layout_type") not in (None, "ordered", "free"):
+        errors.append(f"{path.name}: layout_type must be 'ordered' or 'free'")
+    widgets = payload.get("widgets")
+    if widgets is not None and not isinstance(widgets, list):
+        errors.append(f"{path.name}: widgets must be a list")
+    elif isinstance(widgets, list) and not widgets:
+        errors.append(f"{path.name}: widgets must not be empty")
+    errors.extend(_validate_dashboard_tags(path, payload.get("tags")))
+    return errors
+
+
+def run_datadog_dashboard(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "observability":
+        return GateResult(
+            "datadog-dashboard",
+            True,
+            True,
+            "datadog-dashboard gate not applicable; skipped",
+        )
+
+    dashboard_files = _datadog_dashboard_files(output_dir, ctx)
+    if not dashboard_files:
+        return GateResult(
+            "datadog-dashboard",
+            True,
+            True,
+            "no Datadog dashboard JSON found; skipped",
+        )
+
+    errors: list[str] = []
+    for path in dashboard_files:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            errors.append(f"{path.name}: invalid JSON ({exc.msg})")
+            continue
+        if not isinstance(payload, dict):
+            errors.append(f"{path.name}: dashboard root must be a JSON object")
+            continue
+        errors.extend(_validate_datadog_dashboard(path, payload))
+
+    if errors:
+        return GateResult("datadog-dashboard", False, False, "; ".join(errors))
+    return GateResult(
+        "datadog-dashboard",
+        True,
+        False,
+        f"validated {len(dashboard_files)} Datadog dashboard(s)",
+    )
+
+
 def run_ansible_lint(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not tool_available("ansible-lint"):

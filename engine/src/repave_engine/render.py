@@ -149,6 +149,11 @@ def render_blueprint(
         defaults=True,
         unsafe=True,
     )
+    if blueprint.name == "dashboards-as-code-generic":
+        _prune_dashboard_backend_outputs(output_dir, str(payload.get("backend", "grafana")))
+        from repave_engine.dashboard_pack import materialize_dashboard_pack
+
+        materialize_dashboard_pack(output_dir, _find_repo_root(blueprint.path), payload)
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None
@@ -171,6 +176,19 @@ def render_blueprint(
         )
 
     return RenderResult(output_dir=output_dir, values=payload)
+
+
+def _prune_dashboard_backend_outputs(output_dir: Path, backend: str) -> None:
+    """Keep only the selected dashboard backend directory (Grafana vs Datadog)."""
+    normalized = backend.strip().lower()
+    if normalized == "grafana":
+        target = output_dir / "datadog"
+    elif normalized == "datadog":
+        target = output_dir / "grafana"
+    else:
+        return
+    if target.is_dir():
+        shutil.rmtree(target)
 
 
 def _write_scoped_resource_files(

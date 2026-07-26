@@ -204,10 +204,15 @@
             "team": { "type": "string", "minLength": 1 },
             "backend": { "type": "string" },
             "output_mode": { "type": "string" },
+            "environment": { "type": "string" },
             "notification_source": { "type": "string" },
             "notification_target": { "type": "string" },
             "runbook_url": { "type": "string", "minLength": 1 },
-            "slo_target_percent": { "type": "string" }
+            "slo_target_percent": { "type": "string" },
+            "focus": { "type": "string" },
+            "datasource_uid": { "type": "string" },
+            "dashboard_pack_source": { "type": "string" },
+            "configuration_mode": { "type": "string" }
           }
         },
         "opaPolicy": {

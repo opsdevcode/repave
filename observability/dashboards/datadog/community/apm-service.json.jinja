@@ -1,0 +1,63 @@
+{
+  "title": "APM Service (Datadog integration fork)",
+  "description": "Starter fork aligned with Datadog APM service dashboard patterns for {{ service_name }}.",
+  "layout_type": "ordered",
+  "tags": [
+    "service:{{ service_name }}",
+    "team:{{ team }}",
+    "org:{{ organization }}",
+    "env:{{ environment }}",
+    "managed-by:repave",
+    "community:datadog-apm"
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "available_values": ["{{ environment }}"],
+      "default": "{{ environment }}"
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "**Community:** Datadog [APM service page](https://docs.datadoghq.com/tracing/services/service_page/) layout (metrics + trace summary). Tune queries for your APM service name `{{ service_name }}`.",
+        "background_color": "white",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left"
+      },
+      "layout": { "x": 0, "y": 0, "width": 12, "height": 2 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Hits",
+        "requests": [
+          {
+            "q": "sum:trace.http.request.hits{service:{{ service_name }},env:$env}.as_count()",
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 2, "width": 6, "height": 3 }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Latency p95",
+        "requests": [
+          {
+            "q": "p95:trace.http.request.duration{service:{{ service_name }},env:$env}",
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": { "x": 6, "y": 2, "width": 6, "height": 3 }
+    }
+  ]
+}

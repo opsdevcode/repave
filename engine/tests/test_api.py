@@ -255,6 +255,23 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
     assert 'id="notification_target"' in obs_form.text
     assert 'value="pagerduty-platform-primary"' in obs_form.text
 
+    dash_form = client.get("/blueprints/dashboards-as-code-generic")
+    assert dash_form.status_code == 200
+    assert 'id="obs-backend-decision"' in dash_form.text
+    assert 'id="dashboard_pack_source"' in dash_form.text
+    assert 'value="datadog"' in dash_form.text
+    assert 'value="grafana"' in dash_form.text
+    assert 'id="observability-backend-datadog-fields"' in dash_form.text
+    assert 'id="dashboard-pack-includes"' in dash_form.text
+    assert "grafana-red-plus-node-exporter-1860" in dash_form.text
+    assert (
+        "datadog-red-plus-apm-service"
+        not in dash_form.text.split('id="dashboard_pack_source"', 1)[1].split("</select>", 1)[0]
+    )
+    backend_pos = dash_form.text.index('id="backend"')
+    advanced_pos = dash_form.text.index('id="obs-advanced-fields"')
+    assert backend_pos < advanced_pos
+
     form = client.get("/blueprints/azure-policy-generic")
     assert form.status_code == 200
     assert 'value="repave-azure-samples"' in form.text

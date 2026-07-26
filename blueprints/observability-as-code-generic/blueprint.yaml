@@ -3,7 +3,7 @@ kind: Blueprint
 metadata:
   name: observability-as-code-generic
   version: 0.1.0
-  description: Governed dashboards and alerts for a service (Prometheus native MVP).
+  description: Governed alerts and SLO rules for a service (Prometheus native MVP).
 spec:
   artifactType: observability
   standard:
@@ -14,6 +14,14 @@ spec:
       type: string
       required: true
       description: Logical service name (labels, repo name, scrape job).
+    - name: configuration_mode
+      type: string
+      required: false
+      default: recommended
+      enum:
+        - recommended
+        - custom
+      description: recommended applies catalog defaults after you pick service and backend; custom exposes all fields.
     - name: organization
       type: string
       required: true
