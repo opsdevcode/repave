@@ -1527,6 +1527,32 @@ details.file-panel summary {
   font-size: 0.8125rem;
 }
 
+.platform-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+}
+
+.platform-advanced {
+  margin-top: var(--space-3);
+}
+
+.platform-advanced summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.platform-picker__windows {
+  margin-left: var(--space-4);
+}
+
 .pinned-role-row__controls {
   display: flex;
   flex-wrap: wrap;

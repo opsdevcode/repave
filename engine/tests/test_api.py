@@ -367,9 +367,10 @@ def test_ansible_form_is_single_column(repo_root, output_config) -> None:
     assert "governance-card" in response.text
     assert "form-layout--split" not in response.text
     assert "ansible-lint" in response.text or "ansible_lint" in response.text
-    assert 'name="target_platforms"' in response.text
-    assert "select--multi" in response.text
-    assert "Windows:2022" in response.text
+    assert 'id="support_linux_cb"' in response.text
+    assert 'name="support_linux"' in response.text
+    assert 'id="target_platforms_advanced"' in response.text
+    assert "Advanced Galaxy platforms" in response.text
     assert 'id="min_ansible_version"' in response.text
     assert "2.18" in response.text
     assert 'option value="2.18" selected' in response.text

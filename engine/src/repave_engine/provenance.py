@@ -142,6 +142,13 @@ def _build_ansible_spec(blueprint: Blueprint, values: dict[str, Any]) -> tuple[d
     min_version = values.get("min_ansible_version")
     if min_version not in (None, ""):
         spec["ansibleRole"]["min_ansible_version"] = str(min_version)
+    platforms = values.get("target_platforms")
+    if isinstance(platforms, str) and platforms.strip():
+        spec["ansibleRole"]["target_platforms"] = platforms.strip()
+    elif isinstance(platforms, list) and platforms:
+        spec["ansibleRole"]["target_platforms"] = ",".join(
+            sorted(str(item).strip() for item in platforms if str(item).strip())
+        )
     if blueprint.ansible_lint_pack is not None:
         spec["ansibleLint"] = {
             "pack_source": blueprint.ansible_lint_pack.pack_source,

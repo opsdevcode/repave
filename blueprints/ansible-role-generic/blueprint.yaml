@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: ansible-role-generic
-  version: 0.2.0
+  version: 0.3.0
   description: Galaxy-compatible Ansible role scaffold with production-profile lint pack.
 spec:
   artifactType: ansible-role
@@ -32,12 +32,36 @@ spec:
         - "2.17"
         - "2.16"
         - "2.15"
-    - name: target_platforms
+    - name: support_linux
       type: string
-      required: true
+      required: false
+      description: Include estate Linux Galaxy platforms (EL, Ubuntu LTS, Debian).
+      default: "true"
+      enum:
+        - "true"
+        - "false"
+    - name: support_windows
+      type: string
+      required: false
+      description: Include a Windows Server Galaxy platform.
+      default: "false"
+      enum:
+        - "true"
+        - "false"
+    - name: windows_server_generation
+      type: string
+      required: false
+      description: Windows Server generation when support_windows is true.
+      default: "2022"
+      enum:
+        - "2022"
+        - "2019"
+    - name: target_platforms_advanced
+      type: string
+      required: false
       multi: true
-      description: Galaxy platforms this role supports (Name:version).
-      default: "Ubuntu:jammy"
+      description: Optional advanced Galaxy platform list (overrides Linux/Windows presets).
+      default: ""
       enum:
         - "EL:9"
         - "EL:8"

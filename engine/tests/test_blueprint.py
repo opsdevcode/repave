@@ -345,7 +345,7 @@ def test_validate_environment_stack_pinned_modules(repo_root: Path) -> None:
 
 def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert ansible_blueprint.name == "ansible-role-generic"
-    assert ansible_blueprint.version == "0.2.0"
+    assert ansible_blueprint.version == "0.3.0"
     assert ansible_blueprint.artifact_type == "ansible-role"
     assert ansible_blueprint.standard_source == "standards/ansible"
     assert ansible_blueprint.standard_version == "1.0.0"
@@ -360,12 +360,14 @@ def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert "molecule" in ansible_blueprint.gates
     assert "provenance-drift" in ansible_blueprint.gates
     assert ansible_blueprint.output_repo_name_template == "ansible-role-{role_name}"
-    platforms = next(
-        field for field in ansible_blueprint.inputs if field.name == "target_platforms"
+    advanced = next(
+        field for field in ansible_blueprint.inputs if field.name == "target_platforms_advanced"
     )
-    assert platforms.multi is True
-    assert "Windows:2022" in platforms.enum
-    assert "Ubuntu:jammy" in platforms.enum
+    assert advanced.multi is True
+    assert "Windows:2022" in advanced.enum
+    assert "Ubuntu:jammy" in advanced.enum
+    linux = next(field for field in ansible_blueprint.inputs if field.name == "support_linux")
+    assert linux.default == "true"
     min_ansible = next(
         field for field in ansible_blueprint.inputs if field.name == "min_ansible_version"
     )
@@ -374,7 +376,7 @@ def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert "2.15" in min_ansible.enum
 
 
-def test_validate_ansible_target_platforms_multi_value(ansible_blueprint) -> None:
+def test_validate_ansible_target_platforms_linux_defaults(ansible_blueprint) -> None:
     values = validate_inputs(
         ansible_blueprint,
         {
@@ -382,14 +384,34 @@ def test_validate_ansible_target_platforms_multi_value(ansible_blueprint) -> Non
             "namespace": "acme",
             "description": "Example",
             "min_ansible_version": "2.15",
-            "target_platforms": "Ubuntu:jammy,Windows:2022,EL:9",
+            "support_linux": "true",
+            "support_windows": "false",
+            "windows_server_generation": "2022",
+            "target_platforms_advanced": "",
+        },
+    )
+    assert values["target_platforms"] == "Debian:bookworm,EL:9,Ubuntu:jammy"
+
+
+def test_validate_ansible_target_platforms_advanced_override(ansible_blueprint) -> None:
+    values = validate_inputs(
+        ansible_blueprint,
+        {
+            "role_name": "webserver",
+            "namespace": "acme",
+            "description": "Example",
+            "min_ansible_version": "2.15",
+            "support_linux": "false",
+            "support_windows": "false",
+            "windows_server_generation": "2022",
+            "target_platforms_advanced": "Ubuntu:jammy,Windows:2022,EL:9",
         },
     )
     assert values["target_platforms"] == "EL:9,Ubuntu:jammy,Windows:2022"
 
 
-def test_validate_rejects_unknown_target_platform(ansible_blueprint) -> None:
-    with pytest.raises(ValueError, match="Invalid value"):
+def test_validate_rejects_unknown_target_platform_advanced(ansible_blueprint) -> None:
+    with pytest.raises(ValueError, match="Invalid value\\(s\\) for target_platforms_advanced"):
         validate_inputs(
             ansible_blueprint,
             {
@@ -397,7 +419,10 @@ def test_validate_rejects_unknown_target_platform(ansible_blueprint) -> None:
                 "namespace": "acme",
                 "description": "Example",
                 "min_ansible_version": "2.15",
-                "target_platforms": "Ubuntu:jammy,NotAPlatform:1",
+                "support_linux": "true",
+                "support_windows": "false",
+                "windows_server_generation": "2022",
+                "target_platforms_advanced": "NotAPlatform:1",
             },
         )
 
@@ -406,6 +431,7 @@ def test_validate_ansible_role_inputs(ansible_blueprint, ansible_sample_inputs) 
     values = validate_inputs(ansible_blueprint, ansible_sample_inputs)
     assert values["role_name"] == "webserver"
     assert values["namespace"] == "acme"
+    assert "Debian:bookworm" in values["target_platforms"]
     assert "provider_service_scope" not in values
 
 

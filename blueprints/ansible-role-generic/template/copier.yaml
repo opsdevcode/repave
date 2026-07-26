@@ -23,5 +23,5 @@ min_ansible_version:
 
 target_platforms:
   type: str
-  help: Galaxy platforms as Name:version (select supported targets in the portal)
-  default: "Ubuntu:jammy"
+  help: Resolved Galaxy platforms (computed at generate time)
+  default: "Debian:bookworm,EL:9,Ubuntu:jammy"

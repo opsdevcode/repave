@@ -284,8 +284,31 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
     _validate_provider_scope(blueprint, normalized)
     _validate_pinned_roles(blueprint, normalized)
     _validate_pinned_modules(blueprint, normalized)
+    _validate_ansible_role_platforms(blueprint, normalized)
 
     return normalized
+
+
+def _validate_ansible_role_platforms(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    if blueprint.artifact_type != "ansible-role":
+        return
+    from repave_engine.ansible_platforms import parse_support_flag, resolve_target_platforms
+
+    support_linux = parse_support_flag(normalized.get("support_linux"), default=True)
+    support_windows = parse_support_flag(normalized.get("support_windows"), default=False)
+    generation = str(normalized.get("windows_server_generation", "2022")).strip()
+    advanced = normalized.get("target_platforms_advanced", "")
+
+    resolved = resolve_target_platforms(
+        support_linux=support_linux,
+        support_windows=support_windows,
+        windows_server_generation=generation,
+        target_platforms_advanced=advanced,
+    )
+    normalized["support_linux"] = "true" if support_linux else "false"
+    normalized["support_windows"] = "true" if support_windows else "false"
+    normalized["windows_server_generation"] = generation
+    normalized["target_platforms"] = resolved
 
 
 def _validate_pinned_modules(blueprint: Blueprint, normalized: dict[str, Any]) -> None:

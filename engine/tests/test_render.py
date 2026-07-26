@@ -226,7 +226,10 @@ def test_render_ansible_role_writes_windows_platform(ansible_blueprint, tmp_path
             "namespace": "acme",
             "description": "Example",
             "min_ansible_version": "2.15",
-            "target_platforms": "Ubuntu:jammy,Windows:2022",
+            "support_linux": "true",
+            "support_windows": "true",
+            "windows_server_generation": "2022",
+            "target_platforms_advanced": "",
         },
     )
     output_dir = tmp_path / "role"

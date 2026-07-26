@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from helpers import make_blueprint
-from repave_engine.blueprint import CheckovPolicyPack
+from repave_engine.blueprint import CheckovPolicyPack, validate_inputs
 from repave_engine.provenance import (
     build_provenance_document,
     validate_provenance_file,
@@ -38,13 +38,19 @@ def test_build_provenance_document_includes_ansible_role(
     ansible_blueprint,
     ansible_sample_inputs,
 ) -> None:
-    document = build_provenance_document(ansible_blueprint, ansible_sample_inputs)
+    document = build_provenance_document(
+        ansible_blueprint,
+        validate_inputs(ansible_blueprint, ansible_sample_inputs),
+    )
 
     assert document["spec"]["artifactType"] == "ansible-role"
     assert document["metadata"]["name"] == "acme.webserver"
     assert document["spec"]["ansibleRole"]["role_name"] == "webserver"
     assert document["spec"]["ansibleRole"]["namespace"] == "acme"
     assert document["spec"]["ansibleRole"]["min_ansible_version"] == "2.18"
+    assert document["spec"]["ansibleRole"]["target_platforms"] == (
+        "Debian:bookworm,EL:9,Ubuntu:jammy"
+    )
     assert document["spec"]["ansibleLint"]["pack_version"] == "1.0.0"
     assert "terraformModule" not in document["spec"]
     assert "checkov" not in document["spec"]

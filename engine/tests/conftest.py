@@ -89,5 +89,8 @@ def ansible_sample_inputs() -> dict[str, str]:
         "namespace": "acme",
         "description": "Example webserver role generated in tests",
         "min_ansible_version": "2.18",
-        "target_platforms": "Ubuntu:jammy",
+        "support_linux": "true",
+        "support_windows": "false",
+        "windows_server_generation": "2022",
+        "target_platforms_advanced": "",
     }
