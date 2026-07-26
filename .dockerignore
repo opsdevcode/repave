@@ -9,5 +9,6 @@
 operator/bin
 deploy/local
 docs
+examples
 *.md
 !engine/README.md

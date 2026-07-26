@@ -122,13 +122,13 @@ v1.30.1  today     v1.17 operator GA; v1.19 module updates shipped; v1.20 golden
 
 ### v1.9 — Module standard and `locals.tf`
 
-- In-repo module standard at `examples/standards` (v0.4.0)
+- In-repo module standard at `standards/` (v0.4.0; was `examples/standards` pre-v1.30 layout)
 - Generated `locals.tf` with `common_tags`, `name_prefix`, normalized services
 - Resource scaffolds consume `local.*` for shared context
 
 ### v1.10 — Checkov policy pack
 
-- In-repo custom policies at `examples/checkov/policies`
+- In-repo custom policies at `policy/checkov/policies`
 - Starter YAML policies `CKV2_REPAVE_1`–`CKV2_REPAVE_2` for Terraform version bounds
 - Policies copied into generated modules at `policy/checkov/`
 - Generated `.checkov.yml` and blueprint `gate_config.checkov`
@@ -183,9 +183,9 @@ v1.30.1  today     v1.17 operator GA; v1.19 module updates shipped; v1.20 golden
 
 ### v1.16 — Ansible standards + ansible-lint policy pack
 
-- Multi-file standards under `examples/standards/ansible/` (role, collection,
+- Multi-file standards under `standards/ansible/` (role, collection,
   playbook-project, security appendix) pinned at v1.0.0
-- Production-profile ansible-lint pack at `examples/ansible-lint/pack/` copied
+- Production-profile ansible-lint pack at `policy/ansible-lint/pack/` copied
   into generated roles at render time; pinned via `spec.ansible_lint`
 - Role scaffold upgraded: FQCN, `meta/argument_specs.yml`, single-entry-point
   tasks, Galaxy metadata, production `.ansible-lint` / `.yamllint`
@@ -294,7 +294,7 @@ need more artifact types.
 
 ### v1.21 — Estate standards pack (multi-file)
 
-**Problem:** Module standard lives in a single sample file (`examples/standards/
+**Problem:** Module standard lives in a single sample file (`standards/
 terraform-module-standard.md`). Estate teams want the full Terraform standards
 corpus in-repo (engineering standard + module layout) with blueprint and scaffold
 aligned to a pinned version.
@@ -302,8 +302,8 @@ aligned to a pinned version.
 **Approach:**
 
 - Vendor `terraform-standards.md` and `terraform-module-layout.md` under
-  `examples/standards/terraform-standards/` (no summary files)
-- Pin blueprint at `examples/standards/terraform-standards` v1.1.0
+  `standards/terraform-standards/` (no summary files)
+- Pin blueprint at `standards/terraform-standards` v1.1.0
 - Align scaffold: `variable "name_prefix"` with `coalesce` fallback; `common_tags`
   per layout standard
 - Retire or supersede the monolithic sample standard file
@@ -711,8 +711,8 @@ cross-resource and plan-time rules — as an opt-in gate.
   skip-if-not-installed pattern as the other tool gates
 - Terraform: evaluate against `terraform plan -json` (or a converted plan file);
   Helm/k8s: evaluate against `helm template` output
-- Ship a starter Rego policy pack under `examples/opa/policies/` (parallel to
-  `examples/checkov/policies`), copied into generated repos at `policy/opa/`;
+- Ship a starter Rego policy pack under `policy/opa/policies/` (parallel to
+  `policy/checkov/policies`), copied into generated repos at `policy/opa/`;
   blueprint `gate_config.opa` (policies dir, namespaces, fail severity)
 - Unit-test policies with fixture plan JSON and manifests
 - Opt-in per blueprint (not a default gate); document how to add org Rego rules
@@ -751,7 +751,7 @@ from v1.36, which instruments repave itself.)
   `provenance-drift`, and opt-in `opa` (v1.39) enforcing policy (every alert has
   severity + runbook annotation; dashboards tagged with owner/service);
   skip-if-not-installed as usual
-- Ship an observability standard under `examples/standards/` (naming, required
+- Ship an observability standard under `standards/` (naming, required
   tags/annotations, SLO structure, runbook links) pinned by the blueprint
 
 **Dependencies:** v1.13 gate registry; v1.14 artifact-type provenance; v1.39 OPA

@@ -34,9 +34,10 @@ RUN uv pip install --system --no-cache -e /app/engine
 
 COPY schemas /app/schemas
 COPY blueprints /app/blueprints
-COPY examples /app/examples
-# Root README.md is bind-mounted at /app for local compose; omitted here because
-# .dockerignore excludes *.md from the build context.
+COPY standards /app/standards
+COPY policy /app/policy
+# Root README.md and examples/ test fixtures are bind-mounted at /app for compose;
+# service images ship standards/ and policy/ only (not examples/).
 
 EXPOSE 8088
 

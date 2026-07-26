@@ -32,9 +32,9 @@ repeatable, and automated.
 - **CLI:** `repave generate`, `repave list`, `repave update` (plan/apply blueprint
   upgrades from `repave.yaml`), gate execution, provenance in `repave.yaml`.
 - **Gates (blueprint-configured):** Terraform — `fmt`, `validate`, `tflint`,
-  Checkov (policy packs under `examples/`), secrets scanning; Ansible —
+  Checkov (policy packs under `policy/checkov/`), secrets scanning; Ansible —
   production-profile **ansible-lint** pack and standards corpus under
-  `examples/standards/ansible/`.
+  `standards/ansible/`.
 - **Publish:** Local git bootstrap or GitHub create/push with `GITHUB_TOKEN`;
   modules live under `REPAVE_MODULES_ROOT`, not inside the repave repo.
 
@@ -165,7 +165,9 @@ make operator-run                 # against kind/kubeconfig (see operator README
 schemas/       # frozen contracts: blueprint, golden-path artifact, inputs schemas
 engine/        # core generation engine (Python + Copier) + API/CLI
 blueprints/    # versioned golden paths (reference packs)
-examples/      # sample standards and Checkov / ansible-lint policy packs
+standards/     # governed standards corpus (pinned by blueprints)
+policy/        # Checkov and ansible-lint packs copied into generated repos
+examples/      # pack test fixtures and authoring docs (not in service images)
 deploy/local/  # docker compose + kind quickstart
 operator/      # reconciliation operator (GoldenPathRepo, Blueprint CRDs)
 docs/          # concepts, roadmap, portal design, operator local dev

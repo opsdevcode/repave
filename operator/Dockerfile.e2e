@@ -32,7 +32,8 @@ COPY --from=operator-build /manager /manager
 COPY --from=engine-build /repave/engine /repave/engine
 COPY blueprints /repave/blueprints
 COPY schemas /repave/schemas
-COPY examples /repave/examples
+COPY standards /repave/standards
+COPY policy /repave/policy
 
 ENV REPAVE_REPO_ROOT=/repave
 ENV REPAVE_CLI=/repave/engine/.venv/bin/repave

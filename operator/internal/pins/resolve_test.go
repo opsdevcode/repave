@@ -23,7 +23,7 @@ func TestEffectiveDesiredStaticPins(t *testing.T) {
 			DesiredPins: repavev1alpha1.DesiredPins{
 				BlueprintName:    "terraform-module-generic",
 				BlueprintVersion: "0.8.0",
-				StandardSource:   "examples/standards",
+				StandardSource:   "standards",
 				StandardVersion:  "0.4.0",
 			},
 		},
@@ -43,7 +43,7 @@ func TestEffectiveDesiredFromBlueprintRef(t *testing.T) {
 		Spec: repavev1alpha1.BlueprintSpec{
 			Version: "0.9.0",
 			Standard: repavev1alpha1.BlueprintStandardPins{
-				Source:  "examples/standards",
+				Source:  "standards",
 				Version: "0.5.0",
 			},
 		},

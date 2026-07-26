@@ -12,7 +12,7 @@ func TestPinsDiffer(t *testing.T) {
 		DesiredPins: repavev1alpha1.DesiredPins{
 			BlueprintName:    "terraform-module-generic",
 			BlueprintVersion: "0.1.0",
-			StandardSource:   "examples/standards",
+			StandardSource:   "standards",
 			StandardVersion:  "0.4.0",
 		},
 	})

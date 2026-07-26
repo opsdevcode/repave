@@ -28,10 +28,10 @@ def test_build_provenance_document_includes_terraform_module(terraform_blueprint
     assert document["metadata"]["name"] == "networking-vnet"
     assert document["spec"]["artifactType"] == "terraform-module"
     assert document["spec"]["blueprint"]["name"] == "terraform-module-generic"
-    assert document["spec"]["standard"]["source"] == "examples/standards"
+    assert document["spec"]["standard"]["source"] == "standards"
     assert document["spec"]["terraformModule"]["cloud_provider"] == "aws"
     assert document["spec"]["terraformModule"]["provider_services"] == ["ec2", "s3"]
-    assert document["spec"]["checkov"]["policies_source"] == "examples/checkov/policies"
+    assert document["spec"]["checkov"]["policies_source"] == "policy/checkov/policies"
 
 
 def test_build_provenance_document_includes_ansible_role(
@@ -59,7 +59,7 @@ def test_write_provenance_file_creates_repave_yaml(
         gates=("docs-drift", "provenance-drift"),
         provenance_file="repave.yaml",
         checkov_policies=CheckovPolicyPack(
-            policies_source="examples/checkov/policies",
+            policies_source="policy/checkov/policies",
             policy_version="1.2.0",
         ),
     )

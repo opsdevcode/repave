@@ -36,7 +36,7 @@ ALL_REPAVE_CHECKS = REPAVE_VERSION_CHECKS + REPAVE_LAYOUT_CHECKS + REPAVE_SECURI
 
 @pytest.fixture
 def policy_pack(repo_root: Path) -> Path:
-    return repo_root / "examples" / "checkov" / "policies"
+    return repo_root / "policy" / "checkov" / "policies"
 
 
 @pytest.fixture

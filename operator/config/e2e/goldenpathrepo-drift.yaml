@@ -10,7 +10,7 @@ spec:
     blueprintName: terraform-module-generic
     # Fixture repave.yaml pins 0.1.0 — force OutOfDate.
     blueprintVersion: "9.9.9"
-    standardSource: examples/standards
+    standardSource: standards
     standardVersion: "0.4.0"
   remediation:
     enabled: true

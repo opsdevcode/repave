@@ -278,7 +278,7 @@ def test_provenance_drift_passes_with_valid_repave_yaml(
         create_template=False,
         provenance_file="repave.yaml",
         checkov_policies=CheckovPolicyPack(
-            policies_source="examples/checkov/policies",
+            policies_source="policy/checkov/policies",
             policy_version="1.2.0",
         ),
     )

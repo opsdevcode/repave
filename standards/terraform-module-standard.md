@@ -3,7 +3,7 @@
 Version: 0.4.0
 
 This is the **built-in** Terraform module standard for repave. Blueprints pin
-this document by path (`examples/standards`) and version. In forked deployments,
+this document by path (`standards`) and version. In forked deployments,
 copy or extend this file in your repave repo and point blueprints at your path.
 
 It combines:

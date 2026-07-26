@@ -11,5 +11,5 @@ spec:
   desiredPins:
     blueprintName: terraform-module-generic
     blueprintVersion: "0.1.0"
-    standardSource: examples/standards
+    standardSource: standards
     standardVersion: "0.4.0"

@@ -16,7 +16,7 @@ def _bp(name: str, artifact_type: str) -> Blueprint:
         version="1.0.0",
         description=f"{name} desc",
         artifact_type=artifact_type,
-        standard_source="examples/standards",
+        standard_source="standards",
         standard_version="0.1.0",
         inputs=(),
         template_engine="copier",

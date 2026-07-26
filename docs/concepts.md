@@ -39,9 +39,9 @@ the file against `schemas/golden-path-artifact.schema.json`.
 
 ## Ansible standards and policy pack
 
-Ansible golden paths pin a multi-file standard under `examples/standards/ansible/`
+Ansible golden paths pin a multi-file standard under `standards/ansible/`
 (role, collection, playbook-project, security appendix). The production-profile
-ansible-lint pack at `examples/ansible-lint/pack/` is copied into generated roles
+ansible-lint pack at `policy/ansible-lint/pack/` is copied into generated roles
 at render time (parallel to Checkov policies for Terraform modules).
 
 ## Portal

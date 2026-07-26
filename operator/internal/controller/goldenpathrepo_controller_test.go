@@ -82,7 +82,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.1.0",
-					StandardSource:   "examples/standards",
+					StandardSource:   "standards",
 					StandardVersion:  "0.4.0",
 				},
 			},
@@ -108,7 +108,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
-					StandardSource:   "examples/standards",
+					StandardSource:   "standards",
 					StandardVersion:  "0.4.0",
 				},
 			},
@@ -135,7 +135,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
-					StandardSource:   "examples/standards",
+					StandardSource:   "standards",
 					StandardVersion:  "0.4.0",
 				},
 				Remediation: repavev1alpha1.RemediationSpec{
@@ -164,7 +164,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 			Spec: repavev1alpha1.BlueprintSpec{
 				Version: "0.1.0",
 				Standard: repavev1alpha1.BlueprintStandardPins{
-					Source:  "examples/standards",
+					Source:  "standards",
 					Version: "0.4.0",
 				},
 			},
@@ -216,7 +216,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 				DesiredPins: repavev1alpha1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.1.0",
-					StandardSource:   "examples/standards",
+					StandardSource:   "standards",
 					StandardVersion:  "0.4.0",
 				},
 			},
