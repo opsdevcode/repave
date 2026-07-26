@@ -11,6 +11,11 @@ work, writing ADRs, and opening issues.
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
 is complete as of v1.25.0 (see [Shipped — v1.18 portal](#v118--portal-ux-theme)).
 
+**Doc version pointers:** `README.md`, `docs/roadmap.md` (**Current release** and
+path `today` line), and `docs/portal-design.md` are updated automatically on each
+engine release via `scripts/sync_doc_versions.py` in the Release workflow. Run
+`make sync-doc-versions` locally after bumping `engine` `__version__`.
+
 ---
 
 ## How to use this doc
@@ -38,7 +43,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.25.0  today     portal UX theme complete; Ansible form enums; operator + updates next
+v1.25.0  today     v1.18 portal closed; v1.19 module updates + operator GA next
   │
   ├─ v1.17 GA       optional nightly CI for e2e; repoURL inventory still future
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
