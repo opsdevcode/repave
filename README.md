@@ -1,213 +1,145 @@
 # repave
 
-**Governed, repeatable platform engineering — for many, not just the few.**
+**Governed golden paths for everyone who builds platform automation.**
 
-`repave` lets people who are not platform-engineering experts produce
-production-ready automation (Terraform modules and Ansible roles today, more
-later) by answering a short form. The output is generated **deterministically** from versioned golden
-paths, is forced through **mandatory quality/security gates**, and lands as a
-**governed module repository on GitHub** — so the standards set by your platform
-team are enforced *by construction*, not by after-the-fact review.
+Answer a short form (or call the API) and repave renders a **deterministic** artifact from
+versioned blueprints, runs **mandatory gates**, and publishes a **module repository on
+GitHub** — standards enforced by construction, not review theater.
 
-The name says the intent: a **paved road** is how platform teams let many
-developers move fast safely; `repave` continuously (re)lays that road — governed,
-repeatable, and automated.
+```text
+Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  →  Publish
+```
 
-> **Status (engine [v1.53.0](https://github.com/opsdevcode/repave/releases/tag/v1.53.0)
-> on GitHub).** Generation runs locally or via Docker Compose — no Kubernetes
-> required for the engine. The **reconciliation operator** (alpha; v1.17 slices
-> 0–4 + kind e2e) reconciles `GoldenPathRepo` and `Blueprint` CRDs. **Portal UX**
-> (v1.18 theme) is complete: catalog, forms, results dashboard, and browser
-> last-run snippet. See [`operator/`](operator/) and
-> [`docs/operator-local-dev.md`](docs/operator-local-dev.md).
+> **Engine [v1.53.0](https://github.com/opsdevcode/repave/releases)** · Portal + CLI +
+> optional Kubernetes operator. Run locally with Docker Compose — no cluster required
+> for generation.
+
+**Try it:** [Quickstart](docs/quickstart.md) → http://localhost:8088
+
+---
+
+## Why teams use repave
+
+- **Many builders, one standard** — Product engineers use the portal; platform keeps blueprints, standards, and policy packs.
+- **No bypass** — Every generate runs the blueprint’s gate list before publish.
+- **Repeatable** — Copier templates + pinned standards → the same inputs produce the same repo layout.
+- **Your standards** — Point blueprints at your `standards/` tree and pin versions in `blueprint.yaml`.
+- **Local-first** — Full loop on a laptop: form → dry-run → gates → local git (optional GitHub push).
+
+Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md)
+
+---
+
+## Portal (primary UX)
+
+Night-ops web UI: catalog by artifact family, governance sidebar, stepper forms for
+Terraform, gate dashboard on results, upgrade preview for existing repos.
+
+<p align="center">
+  <img src="docs/images/portal/home-catalog.png" alt="repave home — golden path catalog with quick menu and search" width="920" />
+  <br />
+  <sub>Home — catalog, quick menu, search</sub>
+</p>
+
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/portal/blueprint-form.png" alt="Blueprint form with governance rail and policy pins" />
+      <br />
+      <sub>Blueprint form — governance + stepper</sub>
+    </td>
+    <td width="50%">
+      <img src="docs/images/portal/update-repo.png" alt="Update existing repository flow" />
+      <br />
+      <sub>Update repo — plan upgrades from repave.yaml</sub>
+    </td>
+  </tr>
+</table>
+
+Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md)
+
+---
 
 ## What you can do today
 
-### Generation engine (`engine/`)
+- **Generate** Terraform, Ansible, policy, observability, Helm, and app-service golden paths ([`blueprints/`](blueprints/)).
+- **Portal + API** at `:8088` — forms, `/activity` audit view, [`POST /api/v1/generate`](docs/backstage.md).
+- **CLI** — `repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades).
+- **Publish** — local git under `REPAVE_MODULES_ROOT` or GitHub with `GITHUB_TOKEN` ([module repos](docs/module-repositories.md)).
+- **Operator (alpha)** — drift detection and remediation PRs ([operator overview](docs/operator-overview.md)).
 
-- **Golden paths:** Terraform modules, environment stacks, and Ansible roles,
-  collections, and playbook projects (`blueprints/`), Copier render, frozen JSON schemas (`schemas/`).
-- **Portal + API:** Server-rendered golden-path forms, gate results dashboard, and
-  publish flow at `http://localhost:8088` (Compose) or `repave serve`.
-- **CLI:** `repave generate`, `repave list`, `repave update` (plan/apply blueprint
-  upgrades from `repave.yaml`), gate execution, provenance in `repave.yaml`.
-- **Gates (blueprint-configured):** Terraform — `fmt`, `validate`, `tflint`,
-  Checkov (policy packs under `policy/checkov/`), secrets scanning; Ansible —
-  production-profile **ansible-lint** pack and standards corpus under
-  `standards/ansible/`.
-- **Publish:** Local git bootstrap or GitHub create/push with `GITHUB_TOKEN`;
-  modules live under `REPAVE_MODULES_ROOT`, not inside the repave repo.
+Gates, schemas, and CI detail: [Engine capabilities](docs/engine-capabilities.md)
 
-### Reconciliation operator (`operator/`, v1.17)
+---
 
-Kubernetes controller for **estate drift and upgrades** (local envtest/kind; no
-live GitHub required for default tests):
+## Try it in 60 seconds
 
-| Capability | CRD / API | Notes |
-| --- | --- | --- |
-| Inventory | `GoldenPathRepo` | Read `repave.yaml` from `spec.localPath`; `status.observedPins` |
-| Drift detection | `GoldenPathRepo` status | `OutOfDate` when observed ≠ desired pins |
-| Upgrade diff | `status.upgradePlan` | `repave plan-upgrade` contract (slice 2) |
-| Remediation PR | `spec.remediation` | `repave apply-upgrade` + GitHub client; dry-run without token (slice 3) |
-| Catalog pin watch | `Blueprint` + `spec.blueprintRef` | Reconcile GPRs when Blueprint pins change (slice 4) |
+```bash
+cd deploy/local && docker compose up --build
+# or from repo root: make serve  →  http://127.0.0.1:8088
+```
 
-`spec.repoURL` (git clone inventory) is not implemented yet; use `localPath` for dev and envtest.
+Pick **terraform-module-generic**, leave **Dry-run preview** on, submit — you get gate
+results and a file preview without writing to disk.
 
-### CI on `main`
+Full steps (CLI, publish, operator): **[docs/quickstart.md](docs/quickstart.md)**
 
-- Engine: pytest, Ruff, mypy, Bandit, pip-audit.
-- Operator: Go tests + controller-runtime **envtest** on every PR.
-- **Backstage:** generated repos may include `catalog-info.yaml` with Repave lineage
-  annotations — see [`docs/backstage.md`](docs/backstage.md).
-- **Release:** Conventional commits → semver bump, `engine/CHANGELOG.md`, GitHub
-  Release with wheel (see [Releases](#releases)).
-
-## Why repave
-
-- **Enables many.** A web form maps to a golden path; no one needs to know
-  Terraform/HCL to get a compliant module.
-- **Governed by construction.** Generated artifacts must pass every configured
-  gate before publish. There is no bypass path.
-- **Deterministic + repeatable.** The same inputs always render the same
-  artifact (Copier templates), so output is reviewable and safe.
-- **Bring your own standards.** Point a blueprint at your standards source and
-  pin the version it encodes ("housed in one, rendered in many").
-- **Runs locally first.** `docker compose up` and open a browser — see the whole
-  loop without any cloud account.
+---
 
 ## How it works
 
 ```text
-Web form (inputs)  ->  Engine: render (Copier)  ->  Gates  ->  Module repository  ->  GitHub
-                        \_ blueprint.yaml (input schema, standard ref, gate list) _/
+blueprint.yaml  →  validate inputs  →  Copier render  →  gates  →  module repo  →  GitHub (optional)
 ```
 
-Each generated module is written to **its own git repository** outside the
-repave platform repo — never into `.repave-out/` inside repave.
+Generated modules live in **separate git repos** (`REPAVE_MODULES_ROOT`), never inside
+this monorepo. See [Module repositories](docs/module-repositories.md).
 
-1. A **blueprint** (`blueprints/<name>/blueprint.yaml`) declares its input
-   schema, the standard version it encodes, its Copier template, and the gate
-   list it must pass.
-2. The **engine** validates inputs, renders the template deterministically, runs
-   the gates, and materializes the module in its own local git repository.
-3. When `GITHUB_TOKEN` is set and dry-run is disabled, repave **creates the
-   GitHub repository** (if needed) and **pushes the initial commit** to `main`.
-4. The **portal/API** turns the blueprint's input schema into a form so
-   non-experts can drive it without a command line.
+Optional **operator** loop (estate scale): [Operator overview](docs/operator-overview.md)
 
-Optional **operator** loop (separate from generation):
+---
 
-```text
-GoldenPathRepo CR  ->  observe repave.yaml  ->  compare pins  ->  upgrade plan  ->  remediation PR
-Blueprint CR       ->  watch  ----------------^ (blueprintRef)
-```
+## Documentation
 
-## Module repositories
+| Topic | Doc |
+| --- | --- |
+| **Index** | [docs/README.md](docs/README.md) |
+| Quickstart | [docs/quickstart.md](docs/quickstart.md) |
+| Concepts & provenance | [docs/concepts.md](docs/concepts.md) |
+| Engine & gates | [docs/engine-capabilities.md](docs/engine-capabilities.md) |
+| Portal UX spec | [docs/portal-design.md](docs/portal-design.md) |
+| Roadmap | [docs/roadmap.md](docs/roadmap.md) |
+| Backstage & HTTP API | [docs/backstage.md](docs/backstage.md) |
+| OIDC service mode | [docs/auth-service-mode.md](docs/auth-service-mode.md) |
+| Operator | [docs/operator-overview.md](docs/operator-overview.md) |
+| Operations (metrics, k8s) | [docs/operations/README.md](docs/operations/README.md) |
+| Releases (maintainers) | [docs/releases.md](docs/releases.md) |
+| Engine package | [engine/README.md](engine/README.md) |
 
-Generated modules never live inside the repave repo. Configure a separate output
-root and GitHub organization:
-
-```bash
-cp repave.config.yaml.example repave.config.yaml
-# edit output.github_org and output.modules_root
-```
-
-Or use environment variables:
-
-```bash
-export REPAVE_GITHUB_ORG=your-org
-export REPAVE_MODULES_ROOT=$HOME/repave-modules
-export GITHUB_TOKEN=ghp_...   # repo scope; required for remote publish
-```
-
-Each module becomes `$(modules_root)/tf-<cloud_provider>-<module_name>/` — an
-independent git repository at
-`https://github.com/<org>/tf-<cloud_provider>-<module_name>`.
-
-## Quickstart (local, no Kubernetes)
-
-```bash
-cd deploy/local
-docker compose up --build
-# open http://localhost:8088
-```
-
-Docker Compose mounts a `repave-modules` volume at `/modules` and sets
-`REPAVE_MODULES_ROOT` so generated modules land outside the repave repo.
-
-Fill the form for a bundled blueprint (`terraform-module-generic` or
-`ansible-role-generic`) and submit.
-In dry-run mode (default) you'll see gate results and the planned module
-repository. Enable **Publish module repository locally** to bootstrap a local git
-repo; set `GITHUB_TOKEN` in the server environment to create the GitHub repo and
-push the initial commit.
-
-CLI equivalent (for development/CI, not the primary UX):
-
-```bash
-repave generate \
-  --blueprint blueprints/terraform-module-generic \
-  --input module_name=example \
-  --input description="Example module" \
-  --input cloud_provider=aws \
-  --input provider_services=ec2,s3 \
-  --no-dry-run
-```
-
-Operator (optional):
-
-```bash
-cd operator && make test          # envtest
-make operator-run                 # against kind/kubeconfig (see operator README)
-```
+---
 
 ## Repository layout
 
 ```text
-schemas/       # frozen contracts: blueprint, golden-path artifact, inputs schemas
-engine/        # core generation engine (Python + Copier) + API/CLI
-blueprints/    # versioned golden paths (reference packs)
-standards/     # governed standards corpus (pinned by blueprints)
-policy/        # Checkov and ansible-lint packs copied into generated repos
-examples/      # pack test fixtures and authoring docs (not in service images)
-deploy/local/  # docker compose + kind quickstart
-operator/      # reconciliation operator (GoldenPathRepo, Blueprint CRDs)
-docs/          # concepts, roadmap, portal design, operator local dev
-.cursor/       # Cursor rules/skills for Release CI (contributors using Cursor)
+engine/      Generation engine, portal, CLI, API
+blueprints/  Versioned golden paths
+standards/   Standards corpus (pinned by blueprints)
+policy/      Checkov, OPA, ansible-lint packs
+operator/    Kubernetes reconciliation (alpha)
+deploy/local Docker Compose quickstart
+docs/        Product & engineering documentation
+schemas/     Frozen JSON contracts
 ```
 
-## Roadmap
+---
 
-**Current focus:** v1.19 update flow for existing module repos and v1.17 operator
-GA close-out ([`docs/roadmap.md`](docs/roadmap.md)). Portal planning and acceptance
-criteria live in [`docs/portal-design.md`](docs/portal-design.md) (theme complete).
+## Contributing & releases
 
-High-level release history and planning through **v2.0.0** live in
-[`docs/roadmap.md`](docs/roadmap.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) — conventional commits, `make quality`, `make test`.
 
-## Releases
+Automated semver and GitHub Releases: [docs/releases.md](docs/releases.md)
 
-Versioning and GitHub releases are automated from
-[Conventional Commits](https://www.conventionalcommits.org/) on `main` using
-[python-semantic-release](https://python-semantic-release.readthedocs.io/).
-
-- Merge a PR to `main` with a conventional title (`feat:`, `fix:`, etc.).
-- The **Release** workflow runs engine + operator tests, then bumps semver,
-  updates `engine/CHANGELOG.md`, and opens an admin-merged
-  `chore/release/<version>` PR (protected `main` cannot take direct bot pushes).
-- After merge, the workflow tags the release commit and publishes a **GitHub
-  Release** with `repave-engine` wheel/sdist artifacts via `gh release create`.
-- Authenticates with **`REPAVE_RELEASE_TOKEN`** (maintainer Administrator PAT).
-- Docs-only merges skip the release job; `docs` / `chore` / `ci` commits do not
-  bump version unless they include breaking changes.
-- Release CI unsets `GITHUB_OUTPUT` for python-semantic-release CLI calls (see
-  `psr()` in `.github/workflows/release.yml`); do not remove that when editing
-  the workflow.
-
-Feature PRs must **not** hand-edit `engine/pyproject.toml` version. Preview
-changelog on `main`: `make changelog`.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for commit format and maintainer setup.
+---
 
 ## License
 
