@@ -17,8 +17,10 @@ from repave_engine.provider_catalog import load_provider_catalog
 
 def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
-    assert terraform_blueprint.version == "0.8.0"
+    assert terraform_blueprint.version == "0.9.0"
     assert terraform_blueprint.artifact_type == "terraform-module"
+    assert terraform_blueprint.standard_source == "standards/terraform-standards"
+    assert terraform_blueprint.standard_version == "1.1.0"
     assert terraform_blueprint.provenance_file == "repave.yaml"
     assert terraform_blueprint.checkov_policies is not None
     assert terraform_blueprint.checkov_policies.policies_source == "policy/checkov/policies"
@@ -260,7 +262,9 @@ def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
         repo_root,
     )
     assert blueprint.name == "terraform-module-resource"
-    assert blueprint.version == "0.1.0"
+    assert blueprint.version == "0.2.0"
+    assert blueprint.standard_source == "standards/terraform-standards"
+    assert blueprint.standard_version == "1.1.0"
     assert blueprint.terraform_layout == "single-resource"
     assert blueprint.output_repo_name_template.startswith("tfm-")
     input_names = {field.name for field in blueprint.inputs}

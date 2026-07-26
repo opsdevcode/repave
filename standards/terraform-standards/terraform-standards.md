@@ -1,18 +1,21 @@
-# Generic Terraform Module Standard (sample)
+# Terraform module engineering standard
 
-Version: 0.4.0 (superseded)
+Version: 1.1.0
 
-This monolithic document is **superseded** by the multi-file standards pack at
-`standards/terraform-standards/` (version **1.1.0**):
+Authoritative engineering standard for repave Terraform module golden paths
+(`terraform-module-generic`, `terraform-module-resource`). Blueprints pin this
+document together with [terraform-module-layout.md](terraform-module-layout.md)
+under `standards/terraform-standards` at version **1.1.0**.
 
-- [terraform-standards.md](terraform-standards/terraform-standards.md) — engineering standard
-- [terraform-module-layout.md](terraform-standards/terraform-module-layout.md) — layout and `locals.tf`
+It combines:
 
-Terraform module blueprints pin `spec.standard.source: standards/terraform-standards`
-and `spec.standard.version: 1.1.0`. Forks may delete this file after updating
-custom blueprint pins.
+- [HashiCorp Terraform module practices](https://developer.hashicorp.com/terraform/language/modules/develop)
+- Common conventions from large-scale platform teams
+- Staff platform engineering and Terraform architect patterns for operable,
+  composable modules at organizational scale
 
-The content below is retained temporarily for diff reference and external links.
+Use this as a baseline to adopt or fork — not every rule applies to every module
+tier. Mark exceptions in the module README with rationale.
 
 ---
 
@@ -33,8 +36,8 @@ The content below is retained temporarily for diff reference and external links.
 
 ## Module contract (required)
 
-These are enforced by the `terraform-module-generic` blueprint scaffold and
-expected of every module in the estate.
+These are enforced by repave Terraform module blueprints and expected of every
+module in the estate.
 
 - Pin Terraform and provider versions in `versions.tf` using pessimistic
   constraints (`~>`) on providers and an upper bound on Terraform core.
@@ -42,95 +45,13 @@ expected of every module in the estate.
   is truly required at apply time.
 - Expose explicit outputs for integration points (IDs, ARNs, names, endpoints).
   Do not export entire resource objects unless consumers need them.
-- Place shared module locals in `locals.tf`.
+- Place shared module locals in `locals.tf` (see layout standard).
 - Put each in-scope provider resource in its own `.tf` file (for example
   `s3_bucket.tf`, `eks_cluster.tf`) instead of a monolithic `main.tf`.
 - Include native Terraform tests under `tests/` using `.tftest.hcl`.
 - Include a module README with purpose, usage, inputs, outputs, and upgrade
-  notes.
-
----
-
-## Repository layout
-
-Recommended file layout for root and child modules:
-
-```text
-.
-├── README.md
-├── versions.tf          # terraform + required_providers blocks
-├── variables.tf         # input contract
-├── outputs.tf           # output contract
-├── locals.tf            # shared derived values
-├── {service}_{resource}.tf   # one primary resource (or logical group) per file
-├── data.tf              # optional: shared data sources
-├── providers.tf         # optional: provider aliases / configuration
-└── tests/
-    └── *.tftest.hcl
-```
-
-**File naming**
-
-- Use lowercase with underscores: `s3_bucket.tf`, not `S3Bucket.tf`.
-- Prefix with service when the resource name alone is ambiguous across providers.
-- Keep `variables.tf`, `outputs.tf`, `versions.tf`, and `locals.tf` at repo root
-  for discoverability (HashiCorp module structure convention).
-
-**When to split further**
-
-- Separate `iam.tf` when IAM policies/roles are non-trivial.
-- Separate `data.tf` when data sources are shared across multiple resources.
-- Avoid `main.tf` as a junk drawer; if the file exists, it should contain only
-  wiring with no standalone resources.
-
----
-
-## `locals.tf` conventions
-
-HashiCorp's [standard module structure](https://developer.hashicorp.com/terraform/language/modules/develop#standard-module-structure)
-includes a dedicated `locals.tf` for **derived** values. This matches how
-large module registries (for example terraform-aws-modules) and platform teams
-structure production code.
-
-### What belongs in `locals.tf`
-
-| Use locals for | Example |
-| --- | --- |
-| Normalized inputs | `sort(distinct(var.subnets))` |
-| Merged tags | `merge(var.tags, { managed_by = "terraform" })` |
-| Naming prefixes | `"${var.name}-${var.environment}"` |
-| Parsed or frozen scope maps | Service/resource capability maps |
-| Repeated expressions | Common filters, CIDR calculations, ARN formats |
-
-### What does not belong in `locals.tf`
-
-- **Raw passthrough without purpose.** Avoid `local.foo = var.foo` unless it
-  establishes the module's internal boundary (all resources read `local.*` for
-  shared context so normalization can be added later without touching every
-  resource file).
-- **Provider configuration or resources.** Locals hold values, not infrastructure.
-- **Secrets or credentials.** Pass through variables from secure stores at apply time.
-
-### How resource files should use locals
-
-- `{service}_{resource}.tf` files reference **`local.common_tags`**, **`local.name_prefix`**,
-  and scope maps — not ad hoc `var.tags` or repeated string formats.
-- One-off resource logic stays in that resource's file; anything shared across
-  two or more files moves to `locals.tf`.
-- Outputs may expose `local.*` values when they represent the module's canonical
-  contract (for example merged tags or normalized service lists).
-
-### Repave scaffold defaults
-
-Generated modules ship with:
-
-- `provider_services` — sorted and deduplicated from `var.provider_services`
-- `provider_service_scope` — frozen capability map for selected services
-- `common_tags` — caller tags merged with `module`, `environment`, and `managed_by`
-- `name_prefix` — `"${var.module_name}-${var.environment}"` for globally unique names
-
-Replace scaffold `null_resource` blocks with real provider resources that consume
-these locals.
+  notes. Cite `standards/terraform-standards` and the pinned version from
+  `repave.yaml`.
 
 ---
 
@@ -164,8 +85,6 @@ Align with HashiCorp's module development guidance:
 
 ## Platform engineering conventions
 
-Patterns commonly enforced by staff platform teams operating hundreds of modules.
-
 ### Tagging
 
 - Accept a `tags` map (or structured tagging object) at the module boundary.
@@ -182,8 +101,8 @@ Patterns commonly enforced by staff platform teams operating hundreds of modules
 - Encode environment or scope in resource names only when the cloud API requires
   global uniqueness — not in every label.
 - Use a `{org}-{env}-{service}-{purpose}` pattern where platform naming standards
-  exist; modules should accept a `name_prefix` or `name` input rather than
-  inventing org-specific strings internally.
+  exist; modules should accept a `name_prefix` input rather than inventing
+  org-specific strings internally (see layout standard for `coalesce` defaults).
 - Keep Terraform resource names (`resource "aws_s3_bucket" "logs"`) stable and
   semantic; changing them forces replacement.
 
@@ -362,6 +281,6 @@ Failed gates block publish — there is no bypass path.
 - [Checkov](https://www.checkov.io/)
 - [TFLint](https://github.com/terraform-linters/tflint)
 
-When adopting this sample, replace or extend the references section with your
+When adopting this standard, replace or extend the references section with your
 organization's authoritative runbooks, naming standards, and architecture decision
 records (ADRs).

@@ -20,5 +20,5 @@ locals {
     },
   )
 
-  name_prefix = "${var.module_name}-${var.environment}"
+  name_prefix = coalesce(var.name_prefix, "${var.module_name}-${var.environment}")
 }

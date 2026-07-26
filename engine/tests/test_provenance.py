@@ -28,7 +28,8 @@ def test_build_provenance_document_includes_terraform_module(terraform_blueprint
     assert document["metadata"]["name"] == "networking-vnet"
     assert document["spec"]["artifactType"] == "terraform-module"
     assert document["spec"]["blueprint"]["name"] == "terraform-module-generic"
-    assert document["spec"]["standard"]["source"] == "standards"
+    assert document["spec"]["standard"]["source"] == "standards/terraform-standards"
+    assert document["spec"]["standard"]["version"] == "1.1.0"
     assert document["spec"]["terraformModule"]["cloud_provider"] == "aws"
     assert document["spec"]["terraformModule"]["provider_services"] == ["ec2", "s3"]
     assert document["spec"]["checkov"]["policies_source"] == "policy/checkov/policies"
