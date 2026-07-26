@@ -19,7 +19,7 @@ today and what remains intentionally out of scope.
 
 | Area | Target | Notes |
 | --- | --- | --- |
-| Remote git inventory | Future | `spec.repoURL` clone/fetch for observed pins (use `localPath` today) |
+| Remote git inventory | Future | `spec.repoURL` clone/fetch for observed pins (use `localPath` today). Design: [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md). |
 | Multi-tenant fleet API | v2 | Single-cluster inventory per operator instance |
 | In-cluster notifications | Optional | Webhooks via `REPAVE_OPERATOR_NOTIFY_*` (see operator README) |
 

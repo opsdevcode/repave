@@ -24,6 +24,7 @@ is the front door; use this index when you need depth.
 | [Operator overview](operator-overview.md) | CRDs, drift, remediation PRs |
 | [Operator local dev](operator-local-dev.md) | envtest, kind, running the controller locally |
 | [Operator GA scope](operator-ga.md) | v1.17 GA criteria and slices |
+| [ADR index](adr/README.md) | Architecture decisions (e.g. `repoURL` inventory) |
 | [Operator standards](operator-standards.md) | CRD and controller conventions |
 | [Operations](operations/README.md) | Metrics, audit, k8s starter manifests |
 | [Auth service mode](auth-service-mode.md) | OIDC, roles, session config |
