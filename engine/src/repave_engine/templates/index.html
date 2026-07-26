@@ -2,12 +2,34 @@
 
 {% block title %}repave{% endblock %}
 
-{% block content %}
-<h1 class="page-title">repave</h1>
-<p class="page-lead">
-  Governed, repeatable platform engineering — for many, not just the few.
-</p>
+{% block main_modifiers %} shell__main--home{% endblock %}
 
+{% block content %}
+<section class="home-hero" aria-labelledby="home-hero-title">
+  <p class="home-hero__eyebrow">Night-ops console</p>
+  <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
+  <p class="home-hero__tagline">
+    Governed golden paths — generate compliant modules without the CLI.
+  </p>
+  <div class="home-hero__actions">
+    <a class="btn btn--primary" href="#golden-paths">Browse golden paths</a>
+    {% if catalog_groups %}
+    {% set ns = namespace(starter=none) %}
+    {% for group in catalog_groups %}
+      {% for bp in group.blueprints %}
+        {% if ns.starter is none %}{% set ns.starter = bp %}{% endif %}
+      {% endfor %}
+    {% endfor %}
+    {% if ns.starter %}
+    <a class="btn btn--secondary" href="/blueprints/{{ ns.starter.name }}">
+      Start with {{ ns.starter.name }}
+    </a>
+    {% endif %}
+    {% endif %}
+  </div>
+</section>
+
+<div id="golden-paths" class="home-catalog">
 {% if catalog_groups %}
 {% for group in catalog_groups %}
 <section
@@ -54,4 +76,5 @@
   No blueprints found under <code>blueprints/</code>.
 </div>
 {% endif %}
+</div>
 {% endblock %}

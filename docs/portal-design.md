@@ -8,8 +8,9 @@ labels; this file holds **visual layout**, **component patterns**, and
 **Current UI:** night-ops console — deep charcoal canvas, teal accent, fine grid
 atmosphere, shared `base.html` + `/static/repave.css`, home catalog grouped by
 artifact type, blueprint form with sticky governance card (split on Terraform),
-and a generation **results dashboard** (Phase 4). Visual v2 polish remains
-deferred (Phase 5).
+and a generation **results dashboard** (Phase 4). **Visual v2** home hero and
+scope UX presets landed (Phase 5, partial). Further Phase 5 items (history UI,
+white-label) remain optional.
 
 **Visual v2 (deferred):** a dedicated polish pass for hero-first home composition
 and stronger craft — do not block form/results slices. See come-back plan notes

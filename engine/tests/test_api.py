@@ -26,6 +26,9 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "/static/repave.css" in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
+    assert "home-hero" in response.text
+    assert "home-hero__wordmark" in response.text
+    assert 'id="golden-paths"' in response.text
     assert "catalog-grid" in response.text
     assert "catalog-group__title" in response.text
     assert "Terraform" in response.text
@@ -39,6 +42,7 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "--accent" in response.text
     assert ".shell__wordmark" in response.text
+    assert ".home-hero" in response.text
     assert "color-scheme: dark" in response.text
     assert ".shell__atmosphere" in response.text
 
@@ -185,6 +189,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "Dry-run preview" in response.text
     assert "Publish locally" in response.text
     assert "chip" in response.text
+    assert "service-presets" in response.text
+    assert "form-validation" in response.text
+    assert "scope-resource-filter" in response.text
 
 
 def test_ansible_form_is_single_column(repo_root, output_config) -> None:

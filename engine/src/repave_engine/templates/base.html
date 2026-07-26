@@ -33,7 +33,7 @@
         </div>
       </header>
 
-      <main class="shell__main">
+      <main class="shell__main{% block main_modifiers %}{% endblock %}">
         {% block content %}{% endblock %}
       </main>
 

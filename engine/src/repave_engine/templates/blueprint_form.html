@@ -85,7 +85,9 @@
           <input type="text" class="input" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
           <span id="provider-services-count" class="service-count"></span>
         </div>
+        <div class="service-presets" id="service-presets" aria-label="Service selection presets"></div>
         <div id="provider-services" class="service-grid" aria-live="polite"></div>
+        <p id="form-validation" class="form-validation" role="alert" hidden></p>
         <div id="service-scope-panel" class="scope-panel" aria-live="polite"></div>
         <input type="hidden" id="provider_services" name="provider_services" value="" />
       </div>
@@ -155,6 +157,30 @@
   const form = document.getElementById("generate-form");
   const scopeState = new Map();
   const resourceCache = new Map();
+  const validationBanner = document.getElementById("form-validation");
+  const presetsContainer = document.getElementById("service-presets");
+  const SERVICE_PRESETS = {
+    aws: [
+      { label: "Compute + storage", services: ["ec2", "s3"] },
+      { label: "Network core", services: ["vpc", "elb"] },
+    ],
+    gcp: [{ label: "Core services", services: ["compute", "storage"] }],
+    azure: [{ label: "Core services", services: ["compute", "storage"] }],
+  };
+
+  function clearValidation() {
+    validationBanner.hidden = true;
+    validationBanner.textContent = "";
+    scopePanel.querySelectorAll(".scope-card--invalid").forEach((card) => {
+      card.classList.remove("scope-card--invalid");
+    });
+  }
+
+  function showValidation(message) {
+    validationBanner.textContent = message;
+    validationBanner.hidden = false;
+    validationBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 
   function providerServices(provider) {
     return Object.keys(catalog[provider] || {}).sort();
@@ -224,6 +250,9 @@
     card.dataset.service = service;
     card.innerHTML = `
       <h3>${service}</h3>
+      <div class="scope-card__tools">
+        <input type="search" class="input input--sm scope-resource-filter" placeholder="Filter resources..." aria-label="Filter resources for ${service}" />
+      </div>
       <div class="segmented scope-mode" role="radiogroup" aria-label="Scope mode for ${service}">
         <label class="segmented__option">
           <input type="radio" name="${modeName}" class="include-basic" value="basic" checked />
@@ -249,6 +278,7 @@
     const additionalGrid = card.querySelector(".additional-grid");
     const customTitle = card.querySelector(".custom-title");
     const customGrid = card.querySelector(".custom-grid");
+    const resourceFilter = card.querySelector(".scope-resource-filter");
 
     includeBasicRadio.checked = state.includeBasic;
     customOnlyRadio.checked = !state.includeBasic;
@@ -271,7 +301,21 @@
         label.innerHTML = `<input type="checkbox" value="${resource}" ${checked} /> ${resource}`;
         grid.appendChild(label);
       }
+      applyResourceFilter();
     }
+
+    function applyResourceFilter() {
+      const query = resourceFilter.value.trim().toLowerCase();
+      for (const grid of [additionalGrid, customGrid]) {
+        for (const label of grid.querySelectorAll(".resource-option")) {
+          const match =
+            !query || label.dataset.resource.toLowerCase().includes(query);
+          label.hidden = !match;
+        }
+      }
+    }
+
+    resourceFilter.addEventListener("input", applyResourceFilter);
 
     renderGrid(additionalGrid, additionalResources);
     renderGrid(customGrid, definition.resources || []);
@@ -298,6 +342,7 @@
         status.textContent = selected.length
           ? `Selected resources: ${selected.join(", ")}`
           : "Select at least one resource.";
+        card.classList.toggle("scope-card--invalid", selected.length === 0);
       }
     }
 
@@ -362,6 +407,53 @@
     applyServiceFilter();
   }
 
+  async function setServiceSelection(services, { replace = false } = {}) {
+    const target = new Set(replace ? [] : selectedServices());
+    for (const service of services) {
+      target.add(service);
+    }
+    for (const input of servicesContainer.querySelectorAll('input[type="checkbox"]')) {
+      input.checked = target.has(input.value);
+    }
+    syncServicesInput();
+    await renderScopePanels();
+    clearValidation();
+  }
+
+  function renderServicePresets(provider) {
+    presetsContainer.innerHTML = "";
+    const presets = SERVICE_PRESETS[provider] || [];
+    function addPresetButton(label, onClick) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn--ghost btn--sm preset-chip";
+      button.textContent = label;
+      button.addEventListener("click", onClick);
+      presetsContainer.appendChild(button);
+    }
+
+    addPresetButton("Select visible", () => {
+      const visible = [];
+      for (const label of servicesContainer.querySelectorAll(".service-option")) {
+        if (!label.hidden) {
+          visible.push(label.dataset.service);
+        }
+      }
+      void setServiceSelection(visible, { replace: false });
+    });
+    addPresetButton("Clear all", () => void setServiceSelection([], { replace: true }));
+
+    for (const preset of presets) {
+      const available = preset.services.filter((service) =>
+        providerServices(provider).includes(service)
+      );
+      if (!available.length) {
+        continue;
+      }
+      addPresetButton(preset.label, () => void setServiceSelection(available, { replace: false }));
+    }
+  }
+
   function renderServices(provider) {
     servicesContainer.innerHTML = "";
     scopePanel.innerHTML = "";
@@ -376,6 +468,7 @@
       servicesContainer.appendChild(label);
     }
     applyServiceFilter();
+    renderServicePresets(provider);
     syncServicesInput();
     syncScopeInput();
   }
@@ -410,21 +503,29 @@
   servicesFilter.addEventListener("input", applyServiceFilter);
   servicesContainer.addEventListener("change", async () => {
     syncServicesInput();
+    clearValidation();
     await renderScopePanels();
   });
   form.addEventListener("submit", (event) => {
     syncServicesInput();
     syncScopeInput();
+    clearValidation();
     if (!servicesInput.value.trim()) {
       event.preventDefault();
-      alert("Select at least one provider service.");
+      showValidation("Select at least one provider service before generating.");
       return;
     }
     for (const service of selectedServices()) {
       const state = ensureScopeState(service);
       if (!state.includeBasic && state.resources.size === 0) {
         event.preventDefault();
-        alert(`Select at least one resource for ${service}, or include basic capabilities.`);
+        const card = scopePanel.querySelector(`.scope-card[data-service="${service}"]`);
+        if (card) {
+          card.classList.add("scope-card--invalid");
+        }
+        showValidation(
+          `For ${service}, select at least one resource or switch to Basic + optional.`
+        );
         return;
       }
     }
