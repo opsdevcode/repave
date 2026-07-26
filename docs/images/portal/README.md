@@ -11,6 +11,7 @@ major portal UI changes.
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
 | `update-repo.png` | `/update` | Upgrade / re-render flow |
 | `generate-result.png` | dry-run generate | Lineage, policy rules, gate dashboard |
+| `generate-result-backstage.png` | dry-run + Backstage catalog | Backstage card + `catalog-info.yaml` preview |
 
 ## Refresh
 
