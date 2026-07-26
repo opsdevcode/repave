@@ -54,6 +54,21 @@ def test_group_blueprints_by_artifact_collapses_families() -> None:
     assert isinstance(groups[0], BlueprintCatalogGroup)
 
 
+def test_artifact_family_observability() -> None:
+    assert artifact_family("observability") == "observability"
+
+
+def test_group_blueprints_includes_observability_family() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("obs-a", "observability"),
+            _bp("tf-a", "terraform-module"),
+        ]
+    )
+    assert [g.family for g in groups] == ["terraform", "observability"]
+    assert groups[1].title == "Observability"
+
+
 def test_group_blueprints_unknown_type_appended() -> None:
     groups = group_blueprints_by_artifact([_bp("helm-x", "helm-chart")])
 

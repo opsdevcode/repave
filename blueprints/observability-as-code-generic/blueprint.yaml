@@ -1,0 +1,78 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: observability-as-code-generic
+  version: 0.1.0
+  description: Governed dashboards and alerts for a service (Prometheus native MVP).
+spec:
+  artifactType: observability
+  standard:
+    source: standards/observability/observability-as-code.md
+    version: 1.0.0
+  inputs:
+    - name: service_name
+      type: string
+      required: true
+      description: Logical service name (labels, repo name, scrape job).
+    - name: organization
+      type: string
+      required: true
+      description: Owning organization or business unit slug.
+    - name: team
+      type: string
+      required: true
+      description: Team slug for alert labels and dashboard tags.
+    - name: description
+      type: string
+      required: true
+      description: What this observability repo covers.
+    - name: backend
+      type: string
+      required: false
+      default: prometheus
+      enum:
+        - prometheus
+        - grafana
+        - datadog
+        - otel
+      description: Observability backend (v1 templates focus on prometheus).
+    - name: output_mode
+      type: string
+      required: false
+      default: native
+      enum:
+        - native
+      description: native emits backend-native YAML/JSON; terraform mode is follow-up.
+    - name: notification_target
+      type: string
+      required: false
+      default: oncall-platform
+      description: Route hint (PagerDuty service, Slack channel, etc.) documented in README.
+    - name: runbook_url
+      type: string
+      required: true
+      description: HTTPS runbook base URL used in alert annotations.
+    - name: slo_target_percent
+      type: string
+      required: false
+      default: ""
+      description: Optional availability SLO target (e.g. 99.9) for starter SLO rules.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - yamllint
+    - promtool
+    - secrets
+    - docs-drift
+    - provenance-drift
+  gate_config:
+    promtool:
+      rules_glob: prometheus/rules/*.y*ml
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "observability-{organization}-{service_name}"
+      title_template: "Bootstrap observability for {service_name} ({organization})"

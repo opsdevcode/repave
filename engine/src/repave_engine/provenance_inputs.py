@@ -139,4 +139,22 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             values["target_platforms_advanced"] = ""
         return values
 
+    if artifact_type == "observability":
+        obs = spec.get("observability")
+        if not isinstance(obs, dict):
+            raise ValueError("observability provenance missing spec.observability")
+        service_name = str(obs.get("service_name", artifact_name)).strip()
+        values = {
+            "service_name": service_name,
+            "organization": str(obs.get("organization", "")).strip(),
+            "team": str(obs.get("team", "")).strip(),
+            "description": f"Repave upgrade plan for {service_name}",
+            "backend": str(obs.get("backend", "prometheus")).strip(),
+            "output_mode": str(obs.get("output_mode", "native")).strip(),
+            "notification_target": str(obs.get("notification_target", "")).strip(),
+            "runbook_url": str(obs.get("runbook_url", "")).strip(),
+            "slo_target_percent": str(obs.get("slo_target_percent", "")).strip(),
+        }
+        return values
+
     raise ValueError(f"unsupported artifactType {artifact_type!r}")

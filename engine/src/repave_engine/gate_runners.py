@@ -277,6 +277,42 @@ def run_yamllint(ctx: GateContext) -> GateResult:
     )
 
 
+def _promtool_rule_files(output_dir: Path, ctx: GateContext) -> list[Path]:
+    raw = ctx.config("promtool")
+    glob_pattern = str(raw.get("rules_glob", "prometheus/rules/*.y*ml"))
+    return sorted(output_dir.glob(glob_pattern))
+
+
+def run_promtool(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "observability":
+        return GateResult("promtool", True, True, "promtool gate not applicable; skipped")
+
+    if not tool_available("promtool"):
+        return GateResult("promtool", True, True, "promtool not installed; skipped")
+
+    rule_files = _promtool_rule_files(output_dir, ctx)
+    if not rule_files:
+        return GateResult(
+            "promtool",
+            True,
+            True,
+            "no Prometheus rule files found; skipped",
+        )
+
+    errors: list[str] = []
+    for path in rule_files:
+        result = run_command(
+            ["promtool", "check", "rules", str(path.relative_to(output_dir))], output_dir
+        )
+        if result.returncode != 0:
+            detail = result.stderr.strip() or result.stdout.strip() or "check failed"
+            errors.append(f"{path.name}: {detail}")
+    if errors:
+        return GateResult("promtool", False, False, "; ".join(errors))
+    return GateResult("promtool", True, False, f"promtool validated {len(rule_files)} rule file(s)")
+
+
 def run_ansible_lint(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not tool_available("ansible-lint"):

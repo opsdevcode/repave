@@ -340,6 +340,8 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
         return str(values.get("project_name", blueprint.name))
     if blueprint.artifact_type == "ansible-collection":
         return str(values.get("collection_name", blueprint.name))
+    if blueprint.artifact_type == "observability":
+        return str(values.get("service_name", blueprint.name))
     if blueprint.artifact_type == "ansible-role":
         return str(values.get("role_name", blueprint.name))
     return str(values.get("module_name", blueprint.name))
@@ -448,16 +450,19 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
 _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
     "ansible": ("Ansible", "Roles, collections, and playbook projects"),
+    "observability": ("Observability", "Dashboards, alerts, and SLOs as code"),
 }
-_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible")
-# Sort order of blueprints within each family (unknown types sort last, then by name).
+_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible", "observability")
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
+    "observability": ("observability",),
 }
 
 
 def artifact_family(artifact_type: str) -> str:
+    if artifact_type == "observability":
+        return "observability"
     if artifact_type.startswith("terraform-"):
         return "terraform"
     if artifact_type.startswith("ansible-"):

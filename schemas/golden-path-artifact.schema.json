@@ -33,7 +33,14 @@
       "properties": {
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection"]
+          "enum": [
+            "terraform-module",
+            "terraform-environment-stack",
+            "ansible-role",
+            "ansible-playbook-project",
+            "ansible-collection",
+            "observability"
+          ]
         },
         "blueprint": {
           "type": "object",
@@ -158,6 +165,21 @@
             "min_ansible_version": { "type": "string" }
           }
         },
+        "observability": {
+          "type": "object",
+          "required": ["service_name", "organization", "team", "backend", "output_mode"],
+          "additionalProperties": false,
+          "properties": {
+            "service_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string", "minLength": 1 },
+            "team": { "type": "string", "minLength": 1 },
+            "backend": { "type": "string" },
+            "output_mode": { "type": "string" },
+            "notification_target": { "type": "string" },
+            "runbook_url": { "type": "string", "minLength": 1 },
+            "slo_target_percent": { "type": "string" }
+          }
+        },
         "checkov": {
           "type": "object",
           "required": ["policies_source", "policy_version"],
@@ -231,6 +253,17 @@
           },
           "then": {
             "required": ["ansibleCollection"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "observability" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["observability"]
           }
         }
       ]

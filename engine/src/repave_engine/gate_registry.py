@@ -38,6 +38,7 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
         ".molecule",
         "*.retry",
     ),
+    "observability": (),
 }
 
 
