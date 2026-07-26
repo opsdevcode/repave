@@ -1,0 +1,24 @@
+{
+  "properties": {
+    "displayName": "Repave sample audit missing environment tag",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Audits resources that do not include an environment tag.",
+    "metadata": {
+      "category": "Tags"
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "tags['environment']",
+            "exists": false
+          }
+        ]
+      },
+      "then": {
+        "effect": "audit"
+      }
+    }
+  }
+}

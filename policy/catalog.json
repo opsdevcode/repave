@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "profiles": {
     "estate-default": {
       "label": "Estate default",
@@ -259,6 +259,24 @@
       "artifact_types": ["azure-policy"],
       "required": true,
       "removable": false
+    },
+    {
+      "id": "azure:sample_deny_public_blob_access",
+      "family": "azure",
+      "definition_file": "sample_deny_public_blob_access.json",
+      "title": "Sample deny public blob access on storage accounts",
+      "artifact_types": ["azure-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "azure:sample_audit_environment_tag",
+      "family": "azure",
+      "definition_file": "sample_audit_environment_tag.json",
+      "title": "Sample audit missing environment tag",
+      "artifact_types": ["azure-policy"],
+      "required": false,
+      "removable": true
     }
   ]
 }

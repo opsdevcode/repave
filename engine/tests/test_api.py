@@ -311,6 +311,9 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
     assert pack_ids <= {"repave-azure-samples", "repave-default"}
     assert payload["defaults"]["policy_pack_source"] == "repave-azure-samples"
     assert payload["defaults"]["policy_profile"] == "azure-community"
+    azure_rule_ids = {rule["id"] for rule in payload["rules"]}
+    assert "azure:sample_deny_public_blob_access" in azure_rule_ids
+    assert "azure:sample_audit_environment_tag" in azure_rule_ids
 
     obs_payload = client.get(
         "/blueprints/observability-as-code-generic/observability-catalog"

@@ -64,3 +64,16 @@ def test_azure_policy_passes_valid_definition(tmp_path: Path) -> None:
     result = run_azure_policy(GateContext(output_dir=tmp_path, blueprint=bp))
     assert result.passed
     assert not result.skipped
+
+
+def test_azure_policy_passes_monorepo_sample_definitions(repo_root: Path, tmp_path: Path) -> None:
+    import shutil
+
+    bp = _azure_policy_blueprint(tmp_path)
+    source = repo_root / "policy" / "azure" / "definitions"
+    dest = tmp_path / "policy" / "definitions"
+    dest.mkdir(parents=True)
+    for path in source.glob("*.json"):
+        shutil.copy2(path, dest / path.name)
+    result = run_azure_policy(GateContext(output_dir=tmp_path, blueprint=bp))
+    assert result.passed, result.message
