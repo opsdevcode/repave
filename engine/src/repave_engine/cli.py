@@ -143,6 +143,7 @@ def cmd_apply_upgrade(args: argparse.Namespace) -> int:
         staging_root=staging_root,
         git_branch=args.git_branch,
         commit_message=args.commit_message,
+        preserve_local=getattr(args, "preserve_local", False),
     )
 
     if args.format == "json":
@@ -151,6 +152,10 @@ def cmd_apply_upgrade(args: argparse.Namespace) -> int:
         print(result.summary)
         print(f"Branch: {result.git_branch}")
         print(f"Commit: {result.commit_sha}")
+        if result.preserved_local:
+            print("Preserved local edits (blueprint copies under .repave/upgrade-staging/):")
+            for path in result.preserved_local:
+                print(f"  * {path}")
 
     return 0
 
@@ -233,6 +238,17 @@ def _add_upgrade_github_pr_options(parser: argparse.ArgumentParser) -> None:
         "--github-token",
         default=None,
         help="GitHub token (defaults to GITHUB_TOKEN when using --open-pr)",
+    )
+
+
+def _add_preserve_local_option(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--preserve-local",
+        action="store_true",
+        help=(
+            "Do not overwrite modified files; keep local content and write blueprint "
+            "copies under .repave/upgrade-staging/ for manual merge"
+        ),
     )
 
 
@@ -346,6 +362,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git commit message for the applied upgrade",
     )
     _add_upgrade_github_pr_options(apply_up)
+    _add_preserve_local_option(apply_up)
     apply_up.set_defaults(func=cmd_apply_upgrade)
 
     update = sub.add_parser(
@@ -371,6 +388,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Git commit message when applying",
     )
     _add_upgrade_github_pr_options(update)
+    _add_preserve_local_option(update)
     update.set_defaults(func=cmd_update)
 
     serve = sub.add_parser("serve", help="Run local web UI/API", parents=[common])

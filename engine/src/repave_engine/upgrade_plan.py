@@ -59,11 +59,14 @@ class ApplyUpgradeResult:
     plan: UpgradePlanResult
     git_branch: str = ""
     commit_sha: str = ""
+    preserved_local: tuple[str, ...] = ()
 
     def to_json_dict(self) -> dict[str, Any]:
         payload = self.plan.to_json_dict()
         payload["git_branch"] = self.git_branch
         payload["commit_sha"] = self.commit_sha
+        if self.preserved_local:
+            payload["preserved_local"] = list(self.preserved_local)
         return payload
 
     @property
@@ -214,17 +217,33 @@ def _apply_render_to_target(
     target_repo: Path,
     staging_dir: Path,
     removed: tuple[str, ...],
-) -> None:
+    modified: tuple[str, ...],
+    *,
+    preserve_local: bool,
+) -> tuple[str, ...]:
+    modified_set = set(modified)
+    preserved: list[str] = []
+    staging_hint_root = target_repo / ".repave" / "upgrade-staging"
+
     for rel in removed:
         dest = target_repo / rel
         if dest.is_file():
             dest.unlink()
         elif dest.is_dir():
             shutil.rmtree(dest)
+
     for rel, src in _iter_relative_files(staging_dir).items():
+        if preserve_local and rel in modified_set:
+            preserved.append(rel)
+            hint_dest = staging_hint_root / rel
+            hint_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, hint_dest)
+            continue
         dest = target_repo / rel
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)
+
+    return tuple(sorted(preserved))
 
 
 def _git_branch_commit(repo: Path, branch: str, message: str) -> str:
@@ -321,6 +340,7 @@ def apply_upgrade(
     staging_root: Path | None = None,
     git_branch: str,
     commit_message: str,
+    preserve_local: bool = False,
 ) -> ApplyUpgradeResult:
     result, staging_dir, temp_dir, owns_staging = _render_upgrade_staging(
         target_repo,
@@ -329,12 +349,19 @@ def apply_upgrade(
         staging_root=staging_root,
     )
     try:
-        _apply_render_to_target(target_repo, staging_dir, result.removed)
+        preserved = _apply_render_to_target(
+            target_repo,
+            staging_dir,
+            result.removed,
+            result.modified,
+            preserve_local=preserve_local,
+        )
         commit_sha = _git_branch_commit(target_repo, git_branch, commit_message)
         return ApplyUpgradeResult(
             plan=result,
             git_branch=git_branch,
             commit_sha=commit_sha,
+            preserved_local=preserved,
         )
     finally:
         if owns_staging and temp_dir is not None:
