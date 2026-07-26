@@ -1,0 +1,11 @@
+inputs:
+  stack_name: conformance
+  description: Conformance fixture environment stack
+  cloud_provider: aws
+  environment: dev
+  pinned_modules: '[{"name":"foundation","source":"./modules/_example","repo_name":"_example"}]'
+required_files:
+  - repave.yaml
+  - README.md
+  - main.tf
+snapshot: false

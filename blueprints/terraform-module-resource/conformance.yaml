@@ -1,0 +1,11 @@
+inputs:
+  module_name: conformance-bucket
+  description: Conformance fixture single-resource module
+  cloud_provider: aws
+  provider_service: s3
+  provider_resource: bucket
+required_files:
+  - repave.yaml
+  - README.md
+  - s3_bucket.tf
+snapshot: false

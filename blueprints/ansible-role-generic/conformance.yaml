@@ -1,0 +1,14 @@
+inputs:
+  role_name: webserver
+  namespace: acme
+  description: Conformance fixture Ansible role
+  min_ansible_version: "2.18"
+  support_linux: "true"
+  support_windows: "false"
+  windows_server_generation: "2022"
+  target_platforms_advanced: ""
+required_files:
+  - repave.yaml
+  - README.md
+  - meta/main.yml
+snapshot: false

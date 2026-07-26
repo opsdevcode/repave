@@ -1,0 +1,15 @@
+inputs:
+  service_name: conformance-api
+  description: Conformance fixture application service
+  owner: group:platform
+  system: conformance
+  catalog_lifecycle: experimental
+  port: "8080"
+  runtime: python
+  include_helm_reference: "false"
+required_files:
+  - repave.yaml
+  - README.md
+  - Dockerfile
+  - catalog-info.yaml
+snapshot: false

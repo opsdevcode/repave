@@ -1,0 +1,18 @@
+inputs:
+  service_name: checkout
+  configuration_mode: custom
+  organization: platform
+  team: payments
+  description: Conformance fixture dashboards
+  backend: grafana
+  output_mode: native
+  environment: prod
+  observability_focus: dashboards
+  datasource_uid: prometheus
+  notification_source: repave-estate-oncall
+  notification_target: pagerduty-platform-primary
+required_files:
+  - repave.yaml
+  - README.md
+  - grafana/dashboards/service-overview.json
+snapshot: false
