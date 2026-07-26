@@ -29,8 +29,11 @@
 
 {% if plan.added or plan.modified or plan.removed %}
 <section class="card" aria-labelledby="diff-heading">
-  <div class="card__header">
+  <div class="card__header card__header--toolbar">
     <h2 id="diff-heading">File changes</h2>
+    <span class="badge badge--muted">
+      {{ plan.added|length + plan.modified|length + plan.removed|length }} paths
+    </span>
   </div>
   <div class="card__body upgrade-diff">
     {% if plan.added %}

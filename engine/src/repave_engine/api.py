@@ -138,14 +138,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         finally:
             reset_acting_user(token)
 
-    def portal_recent_activity() -> tuple[AuditHistoryEntry, ...]:
+    def portal_recent_activity(*, limit: int = 8) -> tuple[AuditHistoryEntry, ...]:
         try:
             audit_cfg = load_audit_config(repo_root)
         except ValueError:
             return ()
         if audit_cfg is None or not audit_cfg.enabled:
             return ()
-        return read_recent_audit_entries(audit_cfg.file)
+        return read_recent_audit_entries(audit_cfg.file, limit=limit)
+
+    def audit_portal_enabled() -> bool:
+        try:
+            audit_cfg = load_audit_config(repo_root)
+        except ValueError:
+            return False
+        return audit_cfg is not None and audit_cfg.enabled
 
     def gate_summary(gates: list[GateResult]) -> dict[str, int | str]:
         passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
@@ -177,6 +184,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 catalog_groups=catalog_groups,
                 nav_active="catalog",
                 recent_activity=portal_recent_activity(),
+            ),
+        )
+
+    @app.get("/activity", response_class=HTMLResponse)
+    async def activity_page(request: Request) -> HTMLResponse:
+        activity_limit = 50
+        return templates.TemplateResponse(
+            request,
+            "activity.html",
+            page_context(
+                request,
+                nav_active="activity",
+                recent_activity=portal_recent_activity(limit=activity_limit),
+                audit_enabled=audit_portal_enabled(),
+                activity_limit=activity_limit,
             ),
         )
 

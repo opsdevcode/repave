@@ -77,6 +77,37 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "initBusyForms" in response.text
     assert "initFormStepper" in response.text
     assert "initHomeQuicknav" in response.text
+    assert "initCatalogSearch" in response.text
+    assert "initGateDashboard" in response.text
+    assert "initFormDraft" in response.text
+
+
+def test_activity_page(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/activity")
+
+    assert response.status_code == 200
+    assert "Generation activity" in response.text
+    assert 'href="/activity"' in response.text
+
+
+def test_index_catalog_search(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "data-catalog-search" in response.text
+    assert "data-catalog-card" in response.text
+
+
+def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic")
+
+    assert response.status_code == 200
+    assert "data-repave-form-draft" in response.text
+    assert "Standard drift" in response.text
+    assert "form-actions__preflight" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -125,6 +156,7 @@ def test_generate_form_submission(
     assert "Dry-run" in response.text
     assert "result-hero" in response.text
     assert "gate-table" in response.text
+    assert "data-gate-dashboard" in response.text
     assert "Generated files" in response.text
     assert "ec2_diff.tf" in response.text
     assert "s3_bucket.tf" in response.text
@@ -644,6 +676,7 @@ def test_update_form_page(repo_root, output_config) -> None:
     assert 'name="target_repo"' in response.text
     assert "Update repo" in response.text
     assert "data-repave-busy-form" in response.text
+    assert "data-busy-stages" in response.text
     assert "shell__main--golden-path" in response.text
 
 

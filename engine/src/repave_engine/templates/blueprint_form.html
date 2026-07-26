@@ -100,19 +100,36 @@
         <dd class="governance-card__section-body">
           {% if standards_diff.available %}
             {% if standards_diff.has_changes %}
-            <details class="standards-diff motion-panel">
-              <summary>
+            <div class="standards-diff-v2 motion-panel">
+              <p class="hint standards-diff-v2__lead">
                 {{ standards_diff.files|length }} file(s) changed since pin
                 <code>{{ standards_diff.pinned_version }}</code>
-              </summary>
-              <p class="hint">Baseline git <code>{{ standards_diff.baseline_ref }}</code> → catalog HEAD.</p>
-              {% for file in standards_diff.files %}
-              <details class="standards-diff__file motion-panel">
-                <summary><code>{{ file.path }}</code></summary>
-                <pre class="panel-code standards-diff__patch">{{ file.patch }}</pre>
-              </details>
-              {% endfor %}
-            </details>
+                · baseline <code>{{ standards_diff.baseline_ref }}</code> → HEAD
+              </p>
+              <div class="standards-diff-v2__layout">
+                <nav class="standards-diff-v2__nav" aria-label="Changed standard files">
+                  {% for file in standards_diff.files %}
+                  <a class="standards-diff-v2__nav-link" href="#standards-diff-{{ loop.index }}">
+                    <code>{{ file.path }}</code>
+                  </a>
+                  {% endfor %}
+                </nav>
+                <div class="standards-diff-v2__patches">
+                  {% for file in standards_diff.files %}
+                  <section
+                    id="standards-diff-{{ loop.index }}"
+                    class="standards-diff-v2__file"
+                    aria-labelledby="standards-diff-title-{{ loop.index }}"
+                  >
+                    <h3 class="standards-diff-v2__file-title" id="standards-diff-title-{{ loop.index }}">
+                      <code>{{ file.path }}</code>
+                    </h3>
+                    <pre class="panel-code standards-diff__patch">{{ file.patch }}</pre>
+                  </section>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
             {% else %}
             <p class="muted">Standard tree matches the pin — no drift on HEAD.</p>
             {% endif %}
@@ -149,6 +166,8 @@
     id="generate-form"
     class="form-panel{% if terraform_stepper %} form-panel--stepper{% endif %}"
     data-repave-busy-form
+    data-repave-form-draft
+    data-blueprint-id="{{ blueprint.name }}"
     data-busy-label="Generating…"
     data-busy-stages="Validating…|Rendering…|Running gates…|Finishing…"
     {% if terraform_stepper %}data-terraform-stepper{% endif %}
@@ -691,6 +710,11 @@
     </section>
 
     <div class="form-actions form-actions--sticky">
+      <p class="form-actions__preflight muted">
+        {{ blueprint.gates|length }} gates on generate ·
+        <code>{{ blueprint.standard_source }}</code>@{{ blueprint.standard_version }}
+      </p>
+      <div id="form-draft-banner" class="form-draft-banner" hidden></div>
       <button class="btn btn--primary" type="submit">Generate</button>
     </div>
   </form>

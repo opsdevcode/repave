@@ -15,6 +15,7 @@
       <div class="home-hero__actions">
         <a class="btn btn--primary btn--glow" href="#golden-paths">Browse golden paths</a>
         <a class="btn btn--secondary" href="/update">Update existing repo</a>
+        <span id="home-resume-chip" class="home-resume-chip" hidden></span>
         {% if catalog_groups %}
         {% set ns = namespace(starter=none) %}
         {% for group in catalog_groups %}
@@ -108,7 +109,7 @@
           </summary>
           <ul class="home-quicknav__paths">
             {% for bp in group.blueprints %}
-            <li>
+            <li data-quicknav-path data-search-text="{{ bp.name }} {{ bp.description or '' }}">
               <a class="home-quicknav__path" href="/blueprints/{{ bp.name }}">{{ bp.name }}</a>
             </li>
             {% endfor %}
@@ -119,9 +120,10 @@
     </nav>
     <div class="home-quicknav__extras">
       <a class="home-quicknav__extra" href="/update">Update repo</a>
+      <a class="home-quicknav__extra" href="/activity">All activity</a>
       {% if recent_activity %}
       <a class="home-quicknav__extra" href="#activity-heading" data-quicknav-section="activity-heading">
-        Recent activity
+        Recent on home
       </a>
       {% endif %}
     </div>
@@ -130,34 +132,30 @@
   {% endif %}
 
   <div class="home-layout__main">
+{% if catalog_groups %}
+<div class="catalog-search" data-catalog-search>
+  <label class="catalog-search__label" for="catalog-search-input">Search golden paths</label>
+  <input
+    class="catalog-search__input field__input"
+    type="search"
+    id="catalog-search-input"
+    placeholder="Name, description, or gate…"
+    autocomplete="off"
+    data-catalog-search-input
+  />
+  <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
+</div>
+{% endif %}
 {% if recent_activity %}
 <section class="activity-card card" id="recent-activity" aria-labelledby="activity-heading">
   <div class="card__header">
     <h2 id="activity-heading">Recent generations</h2>
-    <p class="muted card__subtitle">From the audit log when <code>audit.enabled</code> is set.</p>
+    <p class="muted card__subtitle">
+      From the audit log · <a href="/activity">View all activity</a>
+    </p>
   </div>
   <div class="card__body">
-    <ul class="activity-list">
-      {% for row in recent_activity %}
-      <li class="activity-list__item">
-        <div class="activity-list__primary">
-          <a href="/blueprints/{{ row.blueprint_name }}"><code>{{ row.blueprint_name }}</code></a>
-          @ {{ row.blueprint_version }}
-          {% if row.module_name %}
-          <span class="muted">· {{ row.module_name }}</span>
-          {% endif %}
-        </div>
-        <div class="activity-list__meta">
-          <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
-            {{ row.gates_outcome }}
-          </span>
-          <span class="badge badge--skip">{% if row.dry_run %}dry-run{% else %}publish{% endif %}</span>
-          <span class="muted">{{ row.acting_user }}</span>
-          <time class="muted" datetime="{{ row.timestamp }}">{{ row.timestamp[:19] }}</time>
-        </div>
-      </li>
-      {% endfor %}
-    </ul>
+    {% include "partials/activity_list.html" %}
   </div>
 </section>
 {% endif %}
@@ -168,6 +166,7 @@
 <section
   class="catalog-group catalog-group--{{ group.family }}"
   aria-labelledby="catalog-{{ group.family }}"
+  data-catalog-group="{{ group.family }}"
 >
   <header class="catalog-group__header">
     <div>
@@ -180,7 +179,12 @@
   </header>
   <div class="catalog-grid">
     {% for bp in group.blueprints %}
-    <a class="catalog-card catalog-card--{{ bp.artifact_type }}" href="/blueprints/{{ bp.name }}">
+    <a
+      class="catalog-card catalog-card--{{ bp.artifact_type }}"
+      href="/blueprints/{{ bp.name }}"
+      data-catalog-card
+      data-search-text="{{ bp.name }} {{ bp.description or '' }} {{ bp.gates | join(' ') }} {{ bp.standard_source }}"
+    >
       <div class="catalog-card__top">
         <h3 class="catalog-card__name">{{ bp.name }}</h3>
         <span class="badge badge--{{ artifact_family(bp.artifact_type) }}">
@@ -213,10 +217,13 @@
 </section>
 {% endfor %}
 {% else %}
-<div class="alert alert--info">
+<div class="alert alert--info" id="catalog-empty-state">
   No blueprints found under <code>blueprints/</code>.
 </div>
 {% endif %}
+<div class="alert alert--info catalog-search-empty" id="catalog-search-empty" hidden>
+  No golden paths match your search. Clear the filter to see the full catalog.
+</div>
 </div>
   </div>
 </div>
