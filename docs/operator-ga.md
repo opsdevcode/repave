@@ -1,0 +1,36 @@
+# Operator GA scope (v1.17)
+
+This document records what **general availability** means for the repave operator
+today and what remains intentionally out of scope.
+
+## GA capabilities
+
+| Area | Status | Notes |
+| --- | --- | --- |
+| CRDs | GA | `GoldenPathRepo`, `Blueprint` |
+| Inventory / drift | GA | `spec.localPath` reads `repave.yaml` pins vs desired |
+| Upgrade planning | GA | `repave plan-upgrade` JSON on status |
+| Remediation | GA | `repave apply-upgrade`, optional GitHub PR, `preserveLocal` |
+| Blueprint pin watch | GA | `spec.blueprintRef` reconciles when catalog pins change |
+| Local verification | GA | `make operator-test`, `make operator-e2e` (kind, no production GitHub) |
+| CI | GA | `operator-test` on PRs; `operator-e2e` on operator/engine/blueprint changes |
+
+## Out of scope for GA
+
+| Area | Target | Notes |
+| --- | --- | --- |
+| Remote git inventory | Future | `spec.repoURL` clone/fetch for observed pins (use `localPath` today) |
+| Multi-tenant fleet API | v2 | Single-cluster inventory per operator instance |
+| In-cluster notifications | Optional | Webhooks via `REPAVE_OPERATOR_NOTIFY_*` (see operator README) |
+
+## GA checklist (maintainers)
+
+- [ ] `make operator-test` and `make operator-e2e` pass on `main`
+- [ ] Sample manifests under `operator/config/e2e/` match blueprint pins on `main`
+- [ ] `operator/README.md` and [`operator-local-dev.md`](operator-local-dev.md) match controller behavior
+- [ ] Breaking CRD changes follow [`operator-standards.md`](operator-standards.md) and release notes
+
+## Related
+
+- [`operator/README.md`](../operator/README.md)
+- [`roadmap.md`](roadmap.md) — v1.17 reconciliation operator
