@@ -60,6 +60,7 @@ from repave_engine.policy_selection import (
     blueprint_supports_policy_customization,
     policy_input_defaults,
 )
+from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.settings import (
     OutputConfig,
@@ -436,6 +437,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="catalog",
                 gate_summary=gate_summary(result.gates),
                 gates_ok=all_gates_passed(result.gates),
+                result_portal=build_result_portal_context(result, repo_root),
             ),
         )
 
@@ -510,10 +512,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/update", response_class=HTMLResponse)
     async def update_form(request: Request) -> HTMLResponse:
+        demo_path = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
         return templates.TemplateResponse(
             request,
             "update.html",
-            page_context(request, nav_active="update"),
+            page_context(
+                request,
+                nav_active="update",
+                demo_module_path=str(demo_path.resolve()) if demo_path.is_dir() else "",
+            ),
         )
 
     @app.post("/update", response_class=HTMLResponse)
@@ -559,9 +566,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
 
         branch = _suggested_upgrade_branch(plan)
-        cli_apply = (
-            f"repave update --no-dry-run --git-branch {branch} --path {target_repo.resolve()}"
-        )
+        resolved = str(target_repo.resolve())
+        cli_apply = f"repave update --no-dry-run --git-branch {branch} --path {resolved}"
+        cli_open_pr = f"{cli_apply} --open-pr"
         return templates.TemplateResponse(
             request,
             "update_result.html",
@@ -569,8 +576,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="update",
                 plan=plan,
-                target_repo=str(target_repo.resolve()),
+                target_repo=resolved,
                 cli_apply_command=cli_apply,
+                cli_open_pr_command=cli_open_pr,
             ),
         )
 

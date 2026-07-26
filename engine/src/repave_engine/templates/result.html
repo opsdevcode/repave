@@ -57,6 +57,97 @@
   {% endif %}
 </section>
 
+{% if result_portal %}
+<section class="card result-lineage stack-gap" aria-labelledby="lineage-heading">
+  <div class="card__header">
+    <h2 id="lineage-heading">Lineage &amp; receipt</h2>
+    <p class="muted card__subtitle">Pinned golden path, standard, and governance baseline recorded in <code>{{ result_portal.provenance_filename }}</code>.</p>
+  </div>
+  <div class="card__body">
+    <dl class="governance-card__list result-lineage__list">
+      {% for row in result_portal.lineage %}
+      <div>
+        <dt>{{ row.label }}</dt>
+        <dd><code>{{ row.value }}</code></dd>
+      </div>
+      {% endfor %}
+    </dl>
+    {% if result_portal.policy_profile %}
+    <div class="result-lineage__policy">
+      <h3 class="form-section__subtitle">Policy pack</h3>
+      <p class="hint">
+        Profile <strong>{{ result_portal.policy_profile_label or result_portal.policy_profile }}</strong>
+        {% if result_portal.policy_pack_source %}
+        · source <code>{{ result_portal.policy_pack_source }}</code>
+        {% endif %}
+        {% if result_portal.policy_gate_names %}
+        · enforced via {{ result_portal.policy_gate_names | join(", ") }} gate(s)
+        {% endif %}
+      </p>
+      {% if result_portal.policy_rules %}
+      <ul class="result-lineage__rules" aria-label="Catalog rules in this generation">
+        {% for rule in result_portal.policy_rules %}
+        <li>
+          <span class="badge badge--muted">{{ rule.enforced_by }}</span>
+          {{ rule.title }}
+          <code class="muted">{{ rule.rule_id }}</code>
+        </li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if result_portal.repave_yaml_excerpt %}
+    <details class="motion-panel result-lineage__provenance" open>
+      <summary><code>{{ result_portal.provenance_filename }}</code> preview</summary>
+      <pre class="panel-code">{{ result_portal.repave_yaml_excerpt }}</pre>
+    </details>
+    {% endif %}
+  </div>
+</section>
+
+{% if result_portal.backstage %}
+<section class="card stack-gap result-backstage" aria-labelledby="backstage-heading" data-backstage-highlight>
+  <div class="card__header">
+    <h2 id="backstage-heading">Backstage catalog entity</h2>
+    <p class="muted card__subtitle">Developer portal registration ships with the module — lineage in <code>metadata.annotations</code>.</p>
+  </div>
+  <div class="card__body">
+    <dl class="governance-card__list">
+      <div>
+        <dt>File</dt>
+        <dd><code>{{ result_portal.backstage.path }}</code></dd>
+      </div>
+      {% if result_portal.backstage.name %}
+      <div>
+        <dt>Component</dt>
+        <dd><code>{{ result_portal.backstage.name }}</code></dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.owner %}
+      <div>
+        <dt>Owner</dt>
+        <dd><code>{{ result_portal.backstage.owner }}</code></dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% if result_portal.backstage.repave_annotations %}
+    <ul class="result-lineage__rules">
+      {% for key, val in result_portal.backstage.repave_annotations %}
+      <li><code>{{ key }}</code> = {{ val }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="hint">Open <code>catalog-info.yaml</code> in the file preview below for the full document.</p>
+  </div>
+</section>
+{% elif result_portal.backstage_expected and not result_portal.backstage %}
+<p class="alert alert--info stack-gap">
+  Enable <strong>Include Backstage catalog</strong> on the form (and set owner) to generate <code>catalog-info.yaml</code>.
+</p>
+{% endif %}
+{% endif %}
+
 {% if result.module_repository and gates_ok and not result.dry_run %}
 <section class="card repo-card" aria-labelledby="repo-heading">
   <div class="card__header">
@@ -177,10 +268,11 @@
         <li role="presentation">
           <button
             type="button"
-            class="file-explorer__tab{% if loop.first %} is-active{% endif %}"
+            class="file-explorer__tab{% if loop.first %} is-active{% endif %}{% if file.path == 'catalog-info.yaml' %} file-explorer__tab--backstage{% endif %}"
             role="tab"
             aria-selected="{{ 'true' if loop.first else 'false' }}"
             data-file-index="{{ loop.index0 }}"
+            {% if file.path == 'catalog-info.yaml' %}data-backstage-file{% endif %}
           >
             {{ file.path }}
             {% if file.truncated %}

@@ -97,3 +97,33 @@ def test_opa_evaluates_helm_rendered_manifests(tmp_path: Path, monkeypatch) -> N
     assert result.passed is True
     assert captured["cmd"][0] == "conftest"
     assert "helm-rendered.yaml" in captured["cmd"][2]
+
+
+def test_format_opa_failure_adds_publish_blocked_message() -> None:
+    from repave_engine.gate_runners import _format_opa_failure
+
+    detail = "destructive delete without replacement: aws_s3_bucket.legacy"
+    formatted = _format_opa_failure(detail)
+    assert "Publish blocked" in formatted
+    assert detail in formatted
+
+
+def test_conftest_rejects_destructive_plan_fixture(repo_root: Path) -> None:
+    import shutil
+    import subprocess
+
+    if shutil.which("conftest") is None:
+        import pytest
+
+        pytest.skip("conftest not installed")
+    plan = repo_root / "examples" / "policy" / "plan-destructive-delete.json"
+    policies = repo_root / "policy" / "opa" / "policies"
+    completed = subprocess.run(
+        ["conftest", "test", str(plan), "-p", str(policies)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    combined = f"{completed.stdout}\n{completed.stderr}".lower()
+    assert "destructive" in combined

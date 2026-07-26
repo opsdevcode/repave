@@ -10,10 +10,11 @@ major portal UI changes.
 | `home-catalog.png` | `/` | Catalog, quick menu, search, hero |
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
 | `update-repo.png` | `/update` | Upgrade / re-render flow |
+| `generate-result.png` | `/generate` (dry-run) | Lineage, policy rules, gate dashboard |
 
-Optional fourth capture for results (dry-run gate dashboard):
+Optional fourth capture for results (dry-run gate dashboard + lineage):
 
-- Generate from the form with **Dry-run preview**, then save as `generate-result.png`.
+- Generate from **terraform-module-generic** with **Dry-run preview**, then save as `generate-result.png`.
 
 ## Refresh locally
 

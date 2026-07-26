@@ -16,6 +16,22 @@
       {{ plan.summary }}
     </p>
   </div>
+  {% if plan.added or plan.modified or plan.removed %}
+  <dl class="result-hero__counts" aria-label="Change summary">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Added</dt>
+      <dd>{{ plan.added|length }}</dd>
+    </div>
+    <div class="result-hero__count">
+      <dt>Modified</dt>
+      <dd>{{ plan.modified|length }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Removed</dt>
+      <dd>{{ plan.removed|length }}</dd>
+    </div>
+  </dl>
+  {% endif %}
 </section>
 
 <section class="card" aria-labelledby="path-heading">
@@ -26,6 +42,21 @@
     <code>{{ target_repo }}</code>
   </div>
 </section>
+
+{% if plan.policy_changes %}
+<section class="card" aria-labelledby="policy-heading">
+  <div class="card__header">
+    <h2 id="policy-heading">Policy pin changes</h2>
+  </div>
+  <div class="card__body">
+    <ul class="result-lineage__rules">
+      {% for line in plan.policy_changes %}
+      <li>{{ line }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
 
 {% if plan.added or plan.modified or plan.removed %}
 <section class="card" aria-labelledby="diff-heading">
@@ -84,6 +115,14 @@
         Copy
       </button>
     </div>
+    <div class="copy-row">
+      <span class="copy-row__label muted">Open remediation PR</span>
+      <code class="copy-row__value" id="upgrade-cli-open-pr">{{ cli_open_pr_command }}</code>
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-target="#upgrade-cli-open-pr">
+        Copy
+      </button>
+    </div>
+    <p class="hint muted">Requires <code>GITHUB_TOKEN</code> with repo scope for <code>--open-pr</code>.</p>
   </div>
 </section>
 {% endblock %}

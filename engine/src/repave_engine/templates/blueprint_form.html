@@ -414,6 +414,7 @@
           >{{ profile.get('label') or profile_id }}</option>
           {% endfor %}
         </select>
+        <p class="policy-profile-summary hint" id="policy-profile-summary" aria-live="polite"></p>
         <details id="policy-rules-advanced" class="policy-rules-advanced" open>
           <summary>Individual rules</summary>
           <p class="hint policy-rules-hint" id="policy-rules-hint">
@@ -1698,6 +1699,17 @@
     return enabled;
   }
 
+  const profileSummary = document.getElementById("policy-profile-summary");
+
+  function updateProfileSummary() {
+    if (!profileSummary) return;
+    const profile = profileSelect.value;
+    const meta = (catalog.profiles || {})[profile] || {};
+    const enabled = rulesForProfile(profile, profile === "custom" ? customSeedProfile : null);
+    const desc = meta.description || meta.label || profile;
+    profileSummary.textContent = `${desc} — ${enabled.size} catalog rule(s) active for this profile.`;
+  }
+
   function syncHiddenRules() {
     if (profileSelect.value !== "custom") {
       rulesHidden.value = "";
@@ -1747,6 +1759,7 @@
       rulesList.appendChild(empty);
     }
     syncHiddenRules();
+    updateProfileSummary();
   }
 
   function updatePackHint() {
@@ -1787,6 +1800,7 @@
     }
     renderRules();
     updatePackHint();
+    updateProfileSummary();
   }
 
   profileSelect.addEventListener("change", () => {

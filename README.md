@@ -56,7 +56,7 @@ Terraform, gate dashboard on results, upgrade preview for existing repos.
   </tr>
 </table>
 
-Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md)
+Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md) (include `generate-result.png` after a dry-run generate for the lineage + gates view).
 
 ---
 

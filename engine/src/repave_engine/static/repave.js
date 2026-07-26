@@ -117,6 +117,10 @@
         });
       });
     });
+    var backstageTab = explorer.querySelector("[data-backstage-file]");
+    if (backstageTab && document.querySelector("[data-backstage-highlight]")) {
+      backstageTab.click();
+    }
   }
 
   function initBusyForms() {
