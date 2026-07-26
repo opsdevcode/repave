@@ -18,6 +18,7 @@ from repave_engine.provenance_inputs import (
 )
 from repave_engine.render import render_blueprint
 from repave_engine.settings import load_gate_overrides
+from repave_engine.standards_diff import PinChange, diff_observed_vs_catalog_pins
 from repave_engine.target_repo import _git_executable, _run_git, resolve_module_repository_from_git
 
 _SKIP_DIR_NAMES = frozenset({".git", "__pycache__", ".terraform", ".pytest_cache", ".ruff_cache"})
@@ -31,6 +32,7 @@ class UpgradePlanResult:
     blueprint_name: str
     blueprint_version: str
     policy_changes: tuple[str, ...] = ()
+    pin_changes: tuple[PinChange, ...] = ()
 
     @property
     def changed_file_count(self) -> int:
@@ -57,6 +59,7 @@ class UpgradePlanResult:
             "modified": list(self.modified),
             "removed": list(self.removed),
             "policy_changes": list(self.policy_changes),
+            "pin_changes": [row.to_dict() for row in self.pin_changes],
             "summary": self.summary,
         }
 
@@ -336,6 +339,7 @@ def _render_upgrade_staging(
         old_policy if isinstance(old_policy, dict) else None,
         new_policy,
     )
+    pin_changes = diff_observed_vs_catalog_pins(doc, blueprint)
     result = UpgradePlanResult(
         added=tuple(added),
         modified=tuple(modified),
@@ -343,6 +347,7 @@ def _render_upgrade_staging(
         blueprint_name=blueprint.name,
         blueprint_version=blueprint.version,
         policy_changes=policy_changes,
+        pin_changes=pin_changes,
     )
     return result, staging_dir, temp_dir, owns_staging
 

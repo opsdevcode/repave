@@ -43,6 +43,35 @@
   </div>
 </section>
 
+{% if plan.pin_changes %}
+<section class="card" aria-labelledby="pins-heading">
+  <div class="card__header">
+    <h2 id="pins-heading">Standards &amp; pin changes</h2>
+  </div>
+  <div class="card__body">
+    <p class="hint muted">Observed values in <code>repave.yaml</code> vs target blueprint pins.</p>
+    <table class="pin-diff-table">
+      <thead>
+        <tr>
+          <th scope="col">Field</th>
+          <th scope="col">Current</th>
+          <th scope="col">After upgrade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in plan.pin_changes %}
+        <tr>
+          <th scope="row">{{ row.field }}</th>
+          <td><code>{{ row.before }}</code></td>
+          <td><code>{{ row.after }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
 {% if plan.policy_changes %}
 <section class="card" aria-labelledby="policy-heading">
   <div class="card__header">

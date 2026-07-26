@@ -2636,6 +2636,30 @@ details.file-panel summary {
   font-weight: 650;
 }
 
+.pin-diff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.pin-diff-table th,
+.pin-diff-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.pin-diff-table th[scope="row"] {
+  font-weight: 600;
+  color: var(--text-muted);
+  width: 38%;
+}
+
+.pin-diff-table code {
+  font-size: 0.8125rem;
+}
+
 .upgrade-diff__group + .upgrade-diff__group {
   margin-top: var(--space-4);
 }
