@@ -292,9 +292,7 @@ def test_policy_catalog_endpoint(repo_root, output_config) -> None:
     assert payload["defaults"]["policy_profile"] == "estate-default"
 
 
-def test_terraform_module_form_policy_defaults_and_rule_titles(
-    repo_root, output_config
-) -> None:
+def test_terraform_module_form_policy_defaults_and_rule_titles(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     form = client.get("/blueprints/terraform-module-generic")
     assert form.status_code == 200
