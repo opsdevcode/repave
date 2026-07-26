@@ -23,11 +23,13 @@ Apply when editing `.github/workflows/release.yml`, `engine/pyproject.toml`
 ## Design (protected `main`)
 
 1. **No direct push to `main`** from semantic-release — branch rules require PRs.
-2. Flow: `semantic-release version --no-push --no-tag` → push `chore/release/*` →
+2. **Feature PRs** use the merge queue (**Merge when ready**) once enabled; **release
+   PRs** use `gh pr merge --admin` (Administrator bypass, not the queue).
+3. Flow: `semantic-release version --no-push --no-tag` → push `chore/release/*` →
    `gh pr merge --admin` → tag release commit → `gh release create` with wheels.
-3. **`REPAVE_RELEASE_TOKEN`**: maintainer **Administrator** PAT; checkout uses it;
+4. **`REPAVE_RELEASE_TOKEN`**: maintainer **Administrator** PAT; checkout uses it;
    `persist-credentials: false`; `git remote set-url` with token for push.
-4. **`permissions`**: `contents: write`, `pull-requests: write`.
+5. **`permissions`**: `contents: write`, `pull-requests: write`.
 
 ## CRITICAL: PSR + GitHub Actions outputs
 
