@@ -4,12 +4,12 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.23.0  
-**In progress:** v1.18 portal UX close-out (visual v2 + scope UX landed; history optional)  
-**Planning horizon:** v1.18 → v2.0.0 (platform maturity — governed estate at scale)
+**Current release:** v1.25.0  
+**In progress:** v1.19 module repository updates; v1.17 operator GA close-out  
+**Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
-Package tags follow conventional commits on `main` and may advance ahead of a
-roadmap *theme* (portal UX theme v1.18 continues while package tags are past it).
+Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
+is complete as of v1.25.0 (see [Shipped — v1.18 portal](#v118--portal-ux-theme)).
 
 ---
 
@@ -38,7 +38,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.23.0  today     portal results dashboard; visual v2 home + scope UX polish
+v1.25.0  today     portal UX theme complete; Ansible form enums; operator + updates next
   │
   ├─ v1.17 GA       optional nightly CI for e2e; repoURL inventory still future
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
@@ -224,6 +224,24 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   stale pin (no `GITHUB_TOKEN`)
 - Roadmap/status docs aligned after the v1.18.0 cut
 
+### v1.18 — Portal UX (theme)
+
+Night-ops web portal across home, blueprint form, and generation result (engine
+tags **v1.21.0–v1.25.0**). Detail: [`portal-design.md`](portal-design.md).
+
+- **Foundation:** `base.html`, `/static/repave.css`, design tokens, app shell
+- **Catalog:** artifact-type groups, blueprint cards (version, gates, standard pins)
+- **Form:** governance card (standard + Checkov/ansible-lint pins); Terraform split
+  layout with scope filter, presets, inline validation; Ansible multi-select
+  platforms (including Windows) and min Ansible version enum
+- **Results:** status hero, gate table with expandable failure output, repo card,
+  file tree + preview, collapsible publish plan
+- **Polish:** visual v2 home hero; browser **last-run** snippet (`repave.js` +
+  sessionStorage); fleet-wide history deferred to v1.30 audit
+
+**Done when:** Non-expert users complete common Terraform/Ansible paths without CLI
+fallback; three routes share one visual system (acceptance in portal-design).
+
 ---
 
 ## Planned
@@ -243,45 +261,6 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 **Done when:** Acceptance criteria in `operator-local-dev.md` remain green;
 optional CI runs e2e on a schedule or before release.
-
----
-
-### v1.18 — Portal and UX hardening
-
-**Problem:** Form UX is functional but minimal for large provider catalogs and
-multi-step scope selection. The portal must present golden paths and run results
-as a cohesive product surface (shared shell and visual system).
-
-**Progress:** Foundation, catalog, form, and results dashboard landed. Visual v2
-home hero and scope UX (presets, inline validation, resource filter) landed.
-Optional: generation history, remaining Phase 5 polish (motion/white-label).
-
-**Approach — interaction (functional):**
-
-- Improved scope UX (search, presets, validation feedback)
-- Generation history / last-run summary in the portal
-- Clearer gate failure surfacing (which gate, stderr excerpt)
-- Group the blueprint catalog by artifact type (Terraform, Ansible)
-
-**Approach — visual design:**
-
-Detailed phases (foundation, catalog cards, form layout, results dashboard,
-optional polish) live in [`docs/portal-design.md`](portal-design.md). Summary:
-
-| Slice | Outcome |
-| --- | --- |
-| **Foundation** | `base.html`, shared `static/repave.css`, design tokens, app shell, buttons/cards/badges |
-| **Catalog** | Home grouped by artifact type; blueprint cards with version, gates, standard pins |
-| **Form** | Governance card (feeds v1.22 pin visibility); Terraform stepper or two-column layout; scope segmented controls |
-| **Results** | Status hero, gate table with expandable stderr, repo card, file tree + preview |
-| **Polish (optional)** | Dark mode, motion, white-label accents, history UI when audit exists |
-
-Deliver as sequential PRs (`v1.18-foundation` → catalog → form → results) or one
-release if scope stays CSS/template-only.
-
-**Done when:** Non-expert users can complete a multi-service module without CLI
-fallback for common paths, and the three portal routes share one visual system
-per acceptance signals in [`portal-design.md`](portal-design.md).
 
 ---
 
@@ -345,8 +324,9 @@ docs reference one authoritative in-repo standards directory.
 
 ### v1.22 — Generation provenance and version visibility
 
-**Problem:** Generated modules do not record which blueprint, standard, and policy
-pack versions produced them; the portal does not surface pins before generate.
+**Problem:** Operators need generated modules and the portal to show which blueprint,
+standard, and policy pack versions apply. Provenance in `repave.yaml` shipped in
+v1.14; the portal **governance card** surfaces pins before generate (v1.18).
 
 **Approach:**
 

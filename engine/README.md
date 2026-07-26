@@ -64,5 +64,6 @@ export GITHUB_TOKEN=ghp_...
 repave serve --repo-root .. --host 0.0.0.0 --port 8088
 ```
 
-Open http://localhost:8088 for the bundled web form. Set `GITHUB_TOKEN` in the
-server environment to enable remote publish when dry-run is disabled in the form.
+Open http://localhost:8088 for the bundled web portal (catalog, blueprint forms,
+results dashboard). Set `GITHUB_TOKEN` in the server environment to enable remote
+publish when dry-run is disabled in the form.
