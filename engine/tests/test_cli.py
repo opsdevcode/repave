@@ -326,3 +326,21 @@ def test_cmd_update_apply_requires_git_branch(repo_root) -> None:
     )
     with pytest.raises(SystemExit, match="git-branch"):
         cmd_update(args)
+
+
+def test_cmd_update_open_pr_requires_token(repo_root) -> None:
+    args = argparse.Namespace(
+        repo_root=str(repo_root),
+        target_repo="/tmp/module",
+        blueprint=None,
+        staging_root=None,
+        format="text",
+        dry_run=False,
+        git_branch="repave/upgrade",
+        commit_message="chore(repave): apply blueprint upgrade",
+        open_pr=True,
+        base_branch="main",
+        github_token=None,
+    )
+    with pytest.raises(SystemExit, match="GITHUB_TOKEN"):
+        cmd_update(args)

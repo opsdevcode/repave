@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -37,6 +38,35 @@ def resolve_module_repository(
         local_path=local_path,
         clone_url=f"https://github.com/{config.github_org}/{repo_name}.git",
         web_url=f"https://github.com/{config.github_org}/{repo_name}",
+    )
+
+
+_GITHUB_REMOTE = re.compile(r"github\.com[/:](?P<owner>[^/]+)/(?P<name>[^/.]+(?:\.git)?)")
+
+
+def resolve_module_repository_from_git(repo_dir: Path) -> ModuleRepository:
+    repo_dir = repo_dir.resolve()
+    result = subprocess.run(
+        [_git_executable(), "remote", "get-url", "origin"],
+        cwd=repo_dir,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    url = result.stdout.strip()
+    match = _GITHUB_REMOTE.search(url)
+    if not match:
+        raise RuntimeError(f"cannot parse GitHub owner/repo from origin URL: {url}")
+    owner = match.group("owner")
+    name = match.group("name")
+    if name.endswith(".git"):
+        name = name[:-4]
+    return ModuleRepository(
+        name=name,
+        owner=owner,
+        local_path=repo_dir,
+        clone_url=f"https://github.com/{owner}/{name}.git",
+        web_url=f"https://github.com/{owner}/{name}",
     )
 
 

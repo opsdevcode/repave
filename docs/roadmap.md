@@ -276,11 +276,12 @@ requires manual merge or re-generation.
 
 **Progress:** `repave update` wraps `plan-upgrade` / `apply-upgrade` for local
 workflows (`--path`, dry-run by default, `--no-dry-run --git-branch` to commit).
-Operator still calls `plan-upgrade` / `apply-upgrade` JSON contracts.
+`--open-pr` pushes the upgrade branch and opens a GitHub pull request when
+`GITHUB_TOKEN` (or `--github-token`) is set. Operator still calls
+`plan-upgrade` / `apply-upgrade` JSON contracts.
 
 **Approach (remaining):**
 
-- GitHub PR creation from applied upgrade branch (optional `GITHUB_TOKEN`)
 - Three-way aware merge for edits outside scaffold
 - Portal entry for update flow
 

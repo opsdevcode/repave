@@ -10,7 +10,7 @@ from typing import cast
 from repave_engine.blueprint import _find_repo_root, list_blueprints
 from repave_engine.pipeline import generate_from_path
 from repave_engine.settings import OutputConfig, load_output_config
-from repave_engine.upgrade_plan import apply_upgrade, plan_upgrade
+from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
 
 
 def _parse_inputs(raw_inputs: list[str]) -> dict[str, str]:
@@ -126,6 +126,9 @@ def cmd_plan_upgrade(args: argparse.Namespace) -> int:
 
 
 def cmd_apply_upgrade(args: argparse.Namespace) -> int:
+    if getattr(args, "open_pr", False):
+        return _cmd_open_upgrade_pull_request(args)
+
     repo_root = Path(args.repo_root).resolve()
     target_repo = Path(args.target_repo).resolve()
     staging_root = Path(args.staging_root).resolve() if args.staging_root else None
@@ -148,6 +151,43 @@ def cmd_apply_upgrade(args: argparse.Namespace) -> int:
         print(result.summary)
         print(f"Branch: {result.git_branch}")
         print(f"Commit: {result.commit_sha}")
+
+    return 0
+
+
+def _github_token_from_args(args: argparse.Namespace) -> str:
+    token = getattr(args, "github_token", None) or os.environ.get("GITHUB_TOKEN")
+    if not token:
+        raise SystemExit("--open-pr requires GITHUB_TOKEN or --github-token")
+    return token
+
+
+def _cmd_open_upgrade_pull_request(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    target_repo = Path(args.target_repo).resolve()
+    staging_root = Path(args.staging_root).resolve() if args.staging_root else None
+
+    if not args.git_branch:
+        raise SystemExit("--git-branch is required when opening a pull request")
+
+    result = open_upgrade_pull_request(
+        target_repo,
+        repo_root,
+        github_token=_github_token_from_args(args),
+        blueprint_name=args.blueprint,
+        staging_root=staging_root,
+        git_branch=args.git_branch,
+        base_branch=getattr(args, "base_branch", "main") or "main",
+        commit_message=args.commit_message,
+    )
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(result.summary)
+        print(f"Branch: {result.apply.git_branch}")
+        print(f"Commit: {result.apply.commit_sha}")
+        print(f"Pull request: {result.pull_request_url}")
 
     return 0
 
@@ -178,11 +218,31 @@ def _add_upgrade_target_options(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_upgrade_github_pr_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--open-pr",
+        action="store_true",
+        help="Push the upgrade branch and open a GitHub pull request (requires token)",
+    )
+    parser.add_argument(
+        "--base-branch",
+        default="main",
+        help="Base branch for the pull request (default: main)",
+    )
+    parser.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token (defaults to GITHUB_TOKEN when using --open-pr)",
+    )
+
+
 def cmd_update(args: argparse.Namespace) -> int:
     if args.dry_run:
         return cmd_plan_upgrade(args)
     if not args.git_branch:
         raise SystemExit("--git-branch is required when applying an upgrade (--no-dry-run)")
+    if getattr(args, "open_pr", False):
+        return _cmd_open_upgrade_pull_request(args)
     return cmd_apply_upgrade(args)
 
 
@@ -285,6 +345,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="chore(repave): apply blueprint upgrade",
         help="Git commit message for the applied upgrade",
     )
+    _add_upgrade_github_pr_options(apply_up)
     apply_up.set_defaults(func=cmd_apply_upgrade)
 
     update = sub.add_parser(
@@ -309,6 +370,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="chore(repave): apply blueprint upgrade",
         help="Git commit message when applying",
     )
+    _add_upgrade_github_pr_options(update)
     update.set_defaults(func=cmd_update)
 
     serve = sub.add_parser("serve", help="Run local web UI/API", parents=[common])

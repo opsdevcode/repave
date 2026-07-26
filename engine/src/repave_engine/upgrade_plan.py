@@ -9,13 +9,14 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.blueprint import load_blueprint, validate_inputs
+from repave_engine.github import create_github_pull_request, push_git_branch
 from repave_engine.provenance_inputs import (
     blueprint_name_from_provenance,
     inputs_from_provenance,
     load_provenance_document,
 )
 from repave_engine.render import render_blueprint
-from repave_engine.target_repo import _git_executable, _run_git
+from repave_engine.target_repo import _git_executable, _run_git, resolve_module_repository_from_git
 
 _SKIP_DIR_NAMES = frozenset({".git", "__pycache__", ".terraform", ".pytest_cache", ".ruff_cache"})
 
@@ -68,6 +69,108 @@ class ApplyUpgradeResult:
     @property
     def summary(self) -> str:
         return self.plan.summary
+
+
+@dataclass(frozen=True)
+class UpgradePublishResult:
+    apply: ApplyUpgradeResult
+    pull_request_url: str
+    pull_request_number: int
+
+    def to_json_dict(self) -> dict[str, Any]:
+        payload = self.apply.to_json_dict()
+        payload["pull_request_url"] = self.pull_request_url
+        payload["pull_request_number"] = self.pull_request_number
+        return payload
+
+    @property
+    def summary(self) -> str:
+        return self.apply.summary
+
+
+def build_upgrade_pull_request_title(blueprint_name: str, blueprint_version: str) -> str:
+    return f"chore(repave): upgrade {blueprint_name} to {blueprint_version}"
+
+
+def build_upgrade_pull_request_body(plan: UpgradePlanResult) -> str:
+    lines = [
+        "## Summary",
+        (
+            f"Blueprint upgrade for `{plan.blueprint_name}` "
+            f"v{plan.blueprint_version} (via `repave update`)."
+        ),
+        "",
+        plan.summary,
+        "",
+        "### File changes",
+    ]
+    if plan.added:
+        lines.append("")
+        lines.append("Added:")
+        lines.extend(f"- `{path}`" for path in plan.added)
+    if plan.modified:
+        lines.append("")
+        lines.append("Modified:")
+        lines.extend(f"- `{path}`" for path in plan.modified)
+    if plan.removed:
+        lines.append("")
+        lines.append("Removed:")
+        lines.extend(f"- `{path}`" for path in plan.removed)
+    lines.extend(
+        [
+            "",
+            "Review the diff before merging; close this PR to abandon the upgrade branch.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def open_upgrade_pull_request(
+    target_repo: Path,
+    repo_root: Path,
+    *,
+    github_token: str,
+    blueprint_name: str | None = None,
+    staging_root: Path | None = None,
+    git_branch: str,
+    base_branch: str = "main",
+    commit_message: str,
+) -> UpgradePublishResult:
+    apply_result = apply_upgrade(
+        target_repo,
+        repo_root,
+        blueprint_name=blueprint_name,
+        staging_root=staging_root,
+        git_branch=git_branch,
+        commit_message=commit_message,
+    )
+    repository = resolve_module_repository_from_git(target_repo)
+    push_git_branch(
+        target_repo,
+        owner=repository.owner,
+        name=repository.name,
+        token=github_token,
+        branch=git_branch,
+    )
+    title = build_upgrade_pull_request_title(
+        apply_result.plan.blueprint_name,
+        apply_result.plan.blueprint_version,
+    )
+    body = build_upgrade_pull_request_body(apply_result.plan)
+    pr = create_github_pull_request(
+        repository.owner,
+        repository.name,
+        title=title,
+        body=body,
+        head=git_branch,
+        base=base_branch,
+        token=github_token,
+    )
+    return UpgradePublishResult(
+        apply=apply_result,
+        pull_request_url=str(pr.get("html_url", "")),
+        pull_request_number=int(pr.get("number", 0)),
+    )
 
 
 def _iter_relative_files(root: Path) -> dict[str, Path]:
