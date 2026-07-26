@@ -214,3 +214,23 @@ def test_render_ansible_role_writes_role_layout(
     readme = (output_dir / "README.md").read_text(encoding="utf-8")
     assert "## Usage" in readme
     assert "acme.webserver" in readme
+
+
+def test_render_ansible_role_writes_windows_platform(ansible_blueprint, tmp_path: Path) -> None:
+    from repave_engine.blueprint import validate_inputs
+
+    values = validate_inputs(
+        ansible_blueprint,
+        {
+            "role_name": "webserver",
+            "namespace": "acme",
+            "description": "Example",
+            "min_ansible_version": "2.15",
+            "target_platforms": "Ubuntu:jammy,Windows:2022",
+        },
+    )
+    output_dir = tmp_path / "role"
+    render_blueprint(ansible_blueprint, values, output_dir)
+    meta = (output_dir / "meta" / "main.yml").read_text(encoding="utf-8")
+    assert "name: Windows" in meta
+    assert '"2022"' in meta

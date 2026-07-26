@@ -120,6 +120,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 values[field.name] = str(form.get(field.name, ""))
                 continue
 
+            if field.enum and field.multi:
+                selected = [str(item) for item in form.getlist(field.name) if str(item).strip()]
+                values[field.name] = ",".join(selected)
+                continue
+
             values[field.name] = str(form.get(field.name, ""))
 
         github_token = None

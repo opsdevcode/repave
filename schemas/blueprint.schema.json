@@ -275,6 +275,10 @@
           },
           "minItems": 1,
           "uniqueItems": true
+        },
+        "multi": {
+          "type": "boolean",
+          "description": "When true with enum, value is a comma-separated list of enum items."
         }
       }
     }

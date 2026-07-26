@@ -24,6 +24,7 @@ class InputField:
     description: str = ""
     default: Any = None
     enum: tuple[str, ...] = ()
+    multi: bool = False
 
 
 @dataclass(frozen=True)
@@ -150,6 +151,7 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
             description=item.get("description", ""),
             default=item.get("default"),
             enum=tuple(item.get("enum", [])),
+            multi=bool(item.get("multi", False)),
         )
         for item in spec["inputs"]
     )
@@ -252,6 +254,19 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
         if field.name not in normalized or field.enum == ():
             continue
         value = str(normalized[field.name])
+        if field.multi:
+            parts = [part.strip() for part in value.split(",") if part.strip()]
+            if field.required and not parts:
+                raise ValueError(f"Missing required input: {field.name}")
+            invalid = [part for part in parts if part not in field.enum]
+            if invalid:
+                allowed = ", ".join(field.enum)
+                bad = ", ".join(invalid)
+                raise ValueError(
+                    f"Invalid value(s) for {field.name}: {bad!r}. Allowed values: {allowed}"
+                )
+            normalized[field.name] = ",".join(sorted(set(parts)))
+            continue
         if value not in field.enum:
             allowed = ", ".join(field.enum)
             raise ValueError(

@@ -53,6 +53,6 @@ def ansible_sample_inputs() -> dict[str, str]:
         "role_name": "webserver",
         "namespace": "acme",
         "description": "Example webserver role generated in tests",
-        "min_ansible_version": "2.15",
+        "min_ansible_version": "2.18",
         "target_platforms": "Ubuntu:jammy",
     }
