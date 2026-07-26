@@ -289,6 +289,19 @@ def test_policy_catalog_endpoint(repo_root, output_config) -> None:
     assert len(payload["pack_sources"]) >= 2
     assert payload["pack_sources"][0].get("default_profile")
     assert payload["defaults"]["policy_pack_source"] == "repave-default"
+    assert payload["defaults"]["policy_profile"] == "estate-default"
+
+
+def test_terraform_module_form_policy_defaults_and_rule_titles(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    form = client.get("/blueprints/terraform-module-generic")
+    assert form.status_code == 200
+    assert 'value="estate-default"' in form.text
+    estate_block = form.text.split('value="estate-default"', 1)[1][:120]
+    assert "selected" in estate_block
+    assert "Terraform required_version must be declared" in form.text
+    rules_region = form.text.split('id="policy-rules-list"', 1)[1].split("</details>", 1)[0]
+    assert "(checkov:CKV2_REPAVE_1)" not in rules_region
 
 
 def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:

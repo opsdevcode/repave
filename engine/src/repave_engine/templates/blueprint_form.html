@@ -392,7 +392,7 @@
       {% if policy_customization and policy_catalog %}
       <div class="field-block policy-customization" id="policy-customization">
         <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
-        <p class="hint">Pack source, profile, and every catalog rule for this golden path. Required rules stay on.</p>
+        <p class="hint">Choose a pack and profile; required catalog rules stay on. Rule titles match the policy catalog.</p>
         <label for="policy_pack_source">Policy pack source</label>
         <select class="select" id="policy_pack_source" name="policy_pack_source">
           {% for pack in policy_catalog.pack_sources %}
@@ -436,14 +436,14 @@
           <div id="policy-rules-list" class="policy-rules-list">
             {% set initial_profile = policy_defaults.policy_profile %}
             {% for rule in policy_catalog.rules %}
-            <label class="checkbox-row" data-rule-id="{{ rule['id'] }}">
+            <label class="checkbox-row" data-rule-id="{{ rule['id'] }}" title="{{ rule['id'] }}">
               <input
                 type="checkbox"
                 value="{{ rule['id'] }}"
                 {% if initial_profile != 'custom' or rule['required'] %}disabled{% endif %}
                 {% if rule['id'] in policy_enabled_rule_ids %}checked{% endif %}
               />
-              {{ rule['title'] }} ({{ rule['id'] }})
+              {{ rule['title'] }}
             </label>
             {% endfor %}
           </div>
@@ -1734,13 +1734,15 @@
       visible += 1;
       const label = document.createElement("label");
       label.className = "checkbox-row";
+      label.title = rule.id;
+      label.dataset.ruleId = rule.id;
       const input = document.createElement("input");
       input.type = "checkbox";
       input.value = rule.id;
       input.disabled = !custom || rule.required;
       input.checked = enabled.has(rule.id);
       label.appendChild(input);
-      label.appendChild(document.createTextNode(`${rule.title} (${rule.id})`));
+      label.appendChild(document.createTextNode(rule.title));
       rulesList.appendChild(label);
     }
     if (rulesHint) {
@@ -1869,6 +1871,7 @@
       }
       if (data.profiles && profileSelect) {
         const selectedProfile = profileSelect.value;
+        const packId = packSelect?.value || "";
         profileSelect.innerHTML = "";
         for (const [id, meta] of Object.entries(data.profiles)) {
           const opt = document.createElement("option");
@@ -1877,9 +1880,11 @@
           if (meta.description) opt.title = meta.description;
           profileSelect.appendChild(opt);
         }
-        profileSelect.value = data.profiles[selectedProfile]
-          ? selectedProfile
-          : resolveInitialProfileId(packs, packSelect?.value || "");
+        const resolved = resolveInitialProfileId(packs, packId);
+        profileSelect.value = data.profiles[selectedProfile] ? selectedProfile : resolved;
+        if (!profileSelect.value) {
+          profileSelect.value = resolved;
+        }
       }
       lastPresetProfile = profileSelect.value;
       customSeedProfile = lastPresetProfile;
