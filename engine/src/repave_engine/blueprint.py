@@ -290,6 +290,8 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
     """Local module repo directory name for publish and PR planning."""
     if blueprint.artifact_type == "terraform-environment-stack":
         return str(values.get("stack_name", blueprint.name))
+    if blueprint.artifact_type == "ansible-playbook-project":
+        return str(values.get("project_name", blueprint.name))
     if blueprint.artifact_type == "ansible-role":
         return str(values.get("role_name", blueprint.name))
     return str(values.get("module_name", blueprint.name))
@@ -399,11 +401,13 @@ _ARTIFACT_GROUP_META: dict[str, tuple[str, str]] = {
     "terraform-module": ("Terraform", "Modules and infrastructure scaffolds"),
     "terraform-environment-stack": ("Terraform", "Environment composition stacks"),
     "ansible-role": ("Ansible", "Galaxy-compatible roles"),
+    "ansible-playbook-project": ("Ansible", "Playbook projects"),
 }
 _ARTIFACT_GROUP_ORDER: tuple[str, ...] = (
     "terraform-module",
     "terraform-environment-stack",
     "ansible-role",
+    "ansible-playbook-project",
 )
 
 

@@ -51,7 +51,32 @@ def test_ansible_syntax_check_skips_without_playbook(tmp_path: Path, monkeypatch
 
     assert results[0].passed is True
     assert results[0].skipped is True
-    assert "no molecule converge playbook" in results[0].message
+    assert "no playbook found" in results[0].message
+
+
+def test_ansible_syntax_check_runs_against_site_yml(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    playbook = tmp_path / "site.yml"
+    playbook.write_text("---\n- hosts: all\n  tasks: []\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "repave_engine.gate_runners.tool_available",
+        lambda name: name == "ansible-playbook",
+    )
+    captured: dict[str, list[str]] = {}
+
+    def fake_run(cmd, cwd, *, extra_env=None):
+        captured["cmd"] = cmd
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run)
+
+    results = run_gates(tmp_path, ("ansible-syntax-check",))
+
+    assert results[0].passed is True
+    assert "site.yml" in captured["cmd"][-1]
 
 
 def test_ansible_syntax_check_runs_against_converge_playbook(

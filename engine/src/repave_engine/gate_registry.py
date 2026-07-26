@@ -33,6 +33,11 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
         ".molecule",
         "*.retry",
     ),
+    "ansible-playbook-project": (
+        ".ansible",
+        ".molecule",
+        "*.retry",
+    ),
 }
 
 

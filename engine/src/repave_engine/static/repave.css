@@ -1166,6 +1166,10 @@ details.file-panel summary {
   border-left: 3px solid var(--accent);
 }
 
+.catalog-group--ansible-playbook-project .catalog-group__header {
+  border-left-color: #9ed4c8;
+}
+
 .catalog-group--ansible-role .catalog-group__header {
   border-left-color: #7dd3c0;
 }
@@ -1220,6 +1224,10 @@ details.file-panel summary {
 
 .catalog-card--terraform-environment-stack {
   border-top-color: #6b8fd4;
+}
+
+.catalog-card--ansible-playbook-project {
+  border-top-color: #9ed4c8;
 }
 
 .catalog-card--ansible-role {
@@ -1299,6 +1307,12 @@ details.file-panel summary {
   background: color-mix(in srgb, #6b8fd4 18%, transparent);
   color: #b0c4ef;
   border-color: color-mix(in srgb, #6b8fd4 40%, transparent);
+}
+
+.badge--ansible-playbook-project {
+  background: color-mix(in srgb, #9ed4c8 18%, transparent);
+  color: #c8f0e8;
+  border-color: color-mix(in srgb, #9ed4c8 40%, transparent);
 }
 
 .badge--ansible-role {

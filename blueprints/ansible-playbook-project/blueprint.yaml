@@ -1,0 +1,62 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: ansible-playbook-project
+  version: 0.1.0
+  description: Ansible playbook project with inventory layout and pinned requirements.
+spec:
+  artifactType: ansible-playbook-project
+  standard:
+    source: standards/ansible/playbook-project-standard.md
+    version: 1.0.0
+  inputs:
+    - name: project_name
+      type: string
+      required: true
+      description: Short project name (used in repo name and play labels).
+    - name: description
+      type: string
+      required: true
+      description: What this playbook project automates.
+    - name: min_ansible_version
+      type: string
+      required: true
+      description: Minimum supported Ansible core version.
+      default: "2.18"
+      enum:
+        - "2.18"
+        - "2.17"
+        - "2.16"
+        - "2.15"
+    - name: environment
+      type: string
+      required: true
+      description: Primary inventory environment scaffolded under inventories/.
+      enum:
+        - dev
+        - staging
+        - prod
+      default: dev
+  template:
+    engine: copier
+    path: template
+  gates:
+    - yamllint
+    - ansible-lint
+    - ansible-syntax-check
+    - secrets
+    - docs-drift
+    - provenance-drift
+  ansible_lint:
+    pack_source: policy/ansible-lint/pack
+    pack_version: 1.0.0
+  gate_config:
+    ansible-lint:
+      config_file: .ansible-lint
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "ansible-playbook-{project_name}"
+      title_template: "Bootstrap Ansible playbook project {project_name}"

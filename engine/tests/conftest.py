@@ -62,6 +62,16 @@ def env_stack_inputs() -> dict[str, str]:
 
 
 @pytest.fixture
+def ansible_playbook_sample_inputs() -> dict[str, str]:
+    return {
+        "project_name": "baseline",
+        "description": "Example playbook project",
+        "min_ansible_version": "2.18",
+        "environment": "dev",
+    }
+
+
+@pytest.fixture
 def sample_inputs() -> dict[str, str]:
     return {
         "module_name": "example",

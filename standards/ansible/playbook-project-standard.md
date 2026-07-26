@@ -2,8 +2,7 @@
 
 Version: 1.0.0
 
-Contract for playbook projects (future `ansible-playbook-project-generic` golden
-path). Synthesizes Ansible project layout guidance and production-profile lint
+Contract for playbook projects (`ansible-playbook-project` golden path). Synthesizes Ansible project layout guidance and production-profile lint
 expectations.
 
 ## Recommended layout

@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
+from repave_engine.blueprint import load_blueprint
 from repave_engine.pipeline import generate_from_blueprint, generate_from_path
 from repave_engine.target_repo import resolve_module_repository
 
@@ -316,6 +317,35 @@ def test_generate_applies_gate_overrides_from_config(
     overrides = captured["gate_overrides"]
     assert overrides is not None
     assert overrides.checkov_skip_checks == ("CKV_TEST",)
+
+
+def test_generate_ansible_playbook_project_publishes_repo(
+    repo_root: Path,
+    ansible_playbook_sample_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        ansible_playbook_sample_inputs,
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    module_repo = result.module_repository
+    assert module_repo is not None
+    assert module_repo.name == "ansible-playbook-baseline"
+    assert (module_repo.local_path / "site.yml").exists()
+    assert (module_repo.local_path / "inventories" / "dev" / "hosts.yml").exists()
+    assert (module_repo.local_path / "requirements.yml").exists()
+    assert (module_repo.local_path / "repave.yaml").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
 
 
 def test_generate_ansible_role_generic_publishes_role_repo(

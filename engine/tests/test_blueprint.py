@@ -174,6 +174,37 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "terraform-module-resource" in names
     assert "terraform-environment-stack" in names
     assert "ansible-role-generic" in names
+    assert "ansible-playbook-project" in names
+
+
+def test_load_ansible_playbook_project_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    assert blueprint.name == "ansible-playbook-project"
+    assert blueprint.artifact_type == "ansible-playbook-project"
+    assert blueprint.output_repo_name_template.startswith("ansible-playbook-")
+
+
+def test_build_provenance_document_ansible_playbook_project(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    from repave_engine.provenance import build_provenance_document
+
+    document = build_provenance_document(
+        blueprint,
+        {
+            "project_name": "baseline",
+            "description": "Core playbooks",
+            "min_ansible_version": "2.18",
+            "environment": "dev",
+        },
+    )
+    assert document["spec"]["artifactType"] == "ansible-playbook-project"
+    assert document["spec"]["ansiblePlaybookProject"]["project_name"] == "baseline"
 
 
 def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
