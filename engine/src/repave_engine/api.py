@@ -14,6 +14,7 @@ from repave_engine.ansible_role_inventory import (
     inventory_role_versions_json,
     inventory_roles_json,
 )
+from repave_engine.audit_history import AuditHistoryEntry, read_recent_audit_entries
 from repave_engine.blueprint import (
     artifact_family,
     group_blueprints_by_artifact,
@@ -45,7 +46,8 @@ from repave_engine.policy_selection import (
     policy_input_defaults,
 )
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
-from repave_engine.settings import OutputConfig, load_output_config
+from repave_engine.settings import OutputConfig, load_audit_config, load_output_config
+from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 
 
@@ -70,6 +72,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "env_badge": os.environ.get("REPAVE_ENV"),
             **extra,
         }
+
+    def portal_recent_activity() -> tuple[AuditHistoryEntry, ...]:
+        try:
+            audit_cfg = load_audit_config(repo_root)
+        except ValueError:
+            return ()
+        if audit_cfg is None or not audit_cfg.enabled:
+            return ()
+        return read_recent_audit_entries(audit_cfg.file)
 
     def gate_summary(gates: list[GateResult]) -> dict[str, int | str]:
         passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
@@ -99,6 +110,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 blueprints=blueprints,
                 catalog_groups=catalog_groups,
                 nav_active="catalog",
+                recent_activity=portal_recent_activity(),
             ),
         )
 
@@ -145,12 +157,23 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 backend=observability_defaults.get("backend", "grafana"),
                 blueprint_name=blueprint.name,
             )
+        provider_catalog = load_provider_catalog(blueprint.path)
+        terraform_stepper = (
+            provider_catalog is not None and blueprint.terraform_layout != "single-resource"
+        )
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
             page_context(
                 blueprint=blueprint,
-                provider_catalog=load_provider_catalog(blueprint.path),
+                provider_catalog=provider_catalog,
+                terraform_stepper=terraform_stepper,
+                standards_diff=standards_diff_for_pin(
+                    repo_root,
+                    standard_source=blueprint.standard_source,
+                    pinned_version=blueprint.standard_version,
+                ),
+                recent_activity=portal_recent_activity(),
                 policy_customization=blueprint_supports_policy_customization(blueprint),
                 policy_defaults=policy_defaults,
                 policy_catalog=policy_catalog,

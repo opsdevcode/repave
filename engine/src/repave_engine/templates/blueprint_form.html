@@ -95,10 +95,51 @@
           {% endfor %}
         </dd>
       </div>
+      <div class="governance-card__section">
+        <dt class="governance-card__section-title">Standard drift</dt>
+        <dd class="governance-card__section-body">
+          {% if standards_diff.available %}
+            {% if standards_diff.has_changes %}
+            <details class="standards-diff motion-panel">
+              <summary>
+                {{ standards_diff.files|length }} file(s) changed since pin
+                <code>{{ standards_diff.pinned_version }}</code>
+              </summary>
+              <p class="hint">Baseline git <code>{{ standards_diff.baseline_ref }}</code> → catalog HEAD.</p>
+              {% for file in standards_diff.files %}
+              <details class="standards-diff__file motion-panel">
+                <summary><code>{{ file.path }}</code></summary>
+                <pre class="panel-code standards-diff__patch">{{ file.patch }}</pre>
+              </details>
+              {% endfor %}
+            </details>
+            {% else %}
+            <p class="muted">Standard tree matches the pin — no drift on HEAD.</p>
+            {% endif %}
+          {% else %}
+            <p class="muted">{{ standards_diff.reason }}</p>
+          {% endif %}
+        </dd>
+      </div>
     </dl>
+    {% if recent_activity %}
+    <div class="governance-card__activity" aria-labelledby="governance-activity-heading">
+      <h3 class="governance-card__activity-title" id="governance-activity-heading">Recent on this service</h3>
+      <ul class="activity-list activity-list--compact">
+        {% for row in recent_activity[:5] %}
+        <li class="activity-list__item">
+          <a href="/blueprints/{{ row.blueprint_name }}"><code>{{ row.blueprint_name }}</code></a>
+          <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
+            {{ row.gates_outcome }}
+          </span>
+          <span class="muted">{{ row.acting_user }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
     <p class="governance-card__footnote muted">
-      Pins shown are encoded on generate. Last-run summary is per browser session
-      until server-side audit (v1.30).
+      Pins shown are encoded on generate. Enable <code>audit</code> in config for fleet-wide recent activity.
     </p>
   </aside>
 
@@ -106,13 +147,35 @@
     method="post"
     action="/generate"
     id="generate-form"
-    class="form-panel"
+    class="form-panel{% if terraform_stepper %} form-panel--stepper{% endif %}"
     data-repave-busy-form
     data-busy-label="Generating…"
+    data-busy-stages="Validating…|Rendering…|Running gates…|Finishing…"
+    {% if terraform_stepper %}data-terraform-stepper{% endif %}
   >
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
     {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
+    {% endif %}
+
+    {% if terraform_stepper %}
+    <nav class="form-stepper" aria-label="Generation steps">
+      <ol class="form-stepper__list">
+        <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__label">Identity</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__label">Services &amp; scope</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="2">
+          <span class="form-stepper__label">Publish</span>
+        </li>
+      </ol>
+      <div class="form-stepper__actions">
+        <button type="button" class="btn btn--ghost btn--sm" data-stepper-back hidden>Back</button>
+        <button type="button" class="btn btn--secondary btn--sm" data-stepper-next>Next</button>
+      </div>
+    </nav>
     {% endif %}
 
     <section class="form-section" aria-labelledby="inputs-heading">
@@ -547,7 +610,7 @@
       </div>
       {% elif blueprint.artifact_type == "ansible-role" and field.name in ("support_windows", "windows_server_generation", "target_platforms_advanced") %}
       {% elif provider_catalog and field.name == "provider_services" %}
-      <div class="field-block">
+      <div class="field-block" {% if terraform_stepper %}data-form-step="1" hidden{% endif %}>
         <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
         {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
         <div class="service-tools">
@@ -561,7 +624,14 @@
         <input type="hidden" id="provider_services" name="provider_services" value="" />
       </div>
       {% else %}
-      <div class="field-block">
+      <div
+        class="field-block"
+        {% if terraform_stepper and field.name in ("module_name", "description", "cloud_provider") %}
+        data-form-step="0"
+        {% elif terraform_stepper %}
+        data-form-step="0"
+        {% endif %}
+      >
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
         {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
         {% if field.enum and field.multi %}
@@ -602,7 +672,7 @@
       {% endfor %}
     </section>
 
-    <section class="form-section" aria-labelledby="publish-heading">
+    <section class="form-section" aria-labelledby="publish-heading" {% if terraform_stepper %}data-form-step="2" hidden{% endif %}>
       <h2 class="form-section__title" id="publish-heading">Publish</h2>
       <div class="segmented publish-toggle" role="radiogroup" aria-label="Publish mode">
         <label class="segmented__option">
@@ -1218,7 +1288,7 @@
     const state = ensureScopeState(service);
     const modeName = `scope-mode-${service}`;
     const card = document.createElement("div");
-    card.className = "scope-card";
+    card.className = "scope-card motion-panel";
     card.dataset.service = service;
     card.innerHTML = `
       <h3>${service}</h3>
