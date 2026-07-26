@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.26.0  
+**Current release:** v1.27.0  
 **In progress:** v1.19 module repository updates; v1.17 operator GA close-out  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
@@ -43,7 +43,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.26.0  today     v1.18 portal closed; v1.19 module updates + operator GA next
+v1.27.0  today     v1.18 portal closed; v1.19 module updates + operator GA next
   │
   ├─ v1.17 GA       optional nightly CI for e2e; repoURL inventory still future
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
