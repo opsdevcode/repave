@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
 from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
+from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import ModuleRepository
 
 
@@ -219,6 +222,53 @@ def test_resource_blueprint_form_renders_catalog_dropdowns(repo_root, output_con
     assert "provider-services" not in response.text
     assert "service-presets" not in response.text
     assert "form-layout--split" in response.text
+
+
+def test_env_stack_form_renders_module_inventory_picker(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-environment-stack")
+
+    assert response.status_code == 200
+    assert 'id="stack-module-select"' in response.text
+    assert 'id="stack-module-version-select"' in response.text
+    assert "module-inventory" in response.text
+    assert 'name="module_source"' in response.text
+
+
+def test_module_inventory_api_scans_modules_root(
+    repo_root,
+    output_config,
+    tmp_path: Path,
+) -> None:
+    import yaml
+
+    modules_root = tmp_path / "modules"
+    repo_dir = modules_root / "tf-aws-demo"
+    repo_dir.mkdir(parents=True)
+    (repo_dir / "repave.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "spec": {
+                    "artifactType": "terraform-module",
+                    "terraformModule": {
+                        "module_name": "demo",
+                        "cloud_provider": "aws",
+                    },
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    config = OutputConfig(github_org="acme", modules_root=modules_root)
+    client = TestClient(create_app(repo_root=repo_root, output_config=config))
+    response = client.get(
+        "/blueprints/terraform-environment-stack/module-inventory?cloud_provider=aws"
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    names = {item["repo_name"] for item in payload["modules"]}
+    assert "tf-aws-demo" in names
 
 
 def test_generate_resource_module_from_form(repo_root, output_config, monkeypatch) -> None:

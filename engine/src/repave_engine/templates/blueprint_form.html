@@ -14,7 +14,7 @@
   </div>
 </header>
 
-<div class="form-layout{% if provider_catalog %} form-layout--split{% endif %}">
+<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' %} form-layout--split{% endif %}">
   <aside class="governance-card" aria-labelledby="governance-heading">
     <h2 class="governance-card__title" id="governance-heading">Governance</h2>
     <dl class="governance-card__list">
@@ -96,6 +96,26 @@
         </select>
         <p id="single-resource-validation" class="form-validation" role="alert" hidden></p>
       </div>
+      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name == "module_name" %}
+      <div class="field-block">
+        <label for="stack-module-select">Module{% if field.required %} *{% endif %}</label>
+        <div class="hint">Published modules under <code>REPAVE_MODULES_ROOT</code> (tf-* / tfm-*) plus local example stub.</div>
+        <select class="select" id="stack-module-select" aria-label="Terraform module repository" required>
+          <option value="" disabled selected>Loading modules…</option>
+        </select>
+      </div>
+      <div class="field-block">
+        <label for="stack-module-version-select">Version{% if field.required %} *{% endif %}</label>
+        <div class="hint">Git tag from the module repo, or blueprint pin when no tags exist.</div>
+        <select class="select" id="stack-module-version-select" aria-label="Module version or tag" required disabled>
+          <option value="" disabled selected>Select a module first…</option>
+        </select>
+        <p id="stack-module-validation" class="form-validation" role="alert" hidden></p>
+        <input type="hidden" id="module_name" name="module_name" value="{{ field.default }}" />
+        <input type="hidden" id="module_source" name="module_source" value="./modules/_example" />
+        <input type="hidden" id="module_version" name="module_version" value="" />
+      </div>
+      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name in ("module_source", "module_version") %}
       {% elif provider_catalog and field.name == "provider_services" %}
       <div class="field-block">
         <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -178,7 +198,166 @@
 {% endblock %}
 
 {% block scripts %}
-{% if provider_catalog %}
+{% if blueprint.artifact_type == "terraform-environment-stack" %}
+<script>
+  const stackBlueprintName = {{ blueprint.name | tojson }};
+  const providerSelect = document.getElementById("cloud_provider");
+  const moduleSelect = document.getElementById("stack-module-select");
+  const versionSelect = document.getElementById("stack-module-version-select");
+  const moduleNameInput = document.getElementById("module_name");
+  const moduleSourceInput = document.getElementById("module_source");
+  const moduleVersionInput = document.getElementById("module_version");
+  const form = document.getElementById("generate-form");
+  const validationBanner = document.getElementById("stack-module-validation");
+  let inventoryModules = [];
+
+  function clearStackValidation() {
+    if (!validationBanner) return;
+    validationBanner.hidden = true;
+    validationBanner.textContent = "";
+  }
+
+  function showStackValidation(message) {
+    if (!validationBanner) return;
+    validationBanner.textContent = message;
+    validationBanner.hidden = false;
+    validationBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function fillSelect(select, options, placeholder, valueKey, labelFn) {
+    select.innerHTML = "";
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+    for (const option of options) {
+      const el = document.createElement("option");
+      el.value = option[valueKey];
+      el.textContent = labelFn(option);
+      el.dataset.payload = JSON.stringify(option);
+      select.appendChild(el);
+    }
+  }
+
+  function selectedModule() {
+    const option = moduleSelect.selectedOptions[0];
+    if (!option || !option.dataset.payload) return null;
+    return JSON.parse(option.dataset.payload);
+  }
+
+  function syncHiddenFromSelection(module, version) {
+    if (!module) {
+      moduleNameInput.value = "";
+      moduleSourceInput.value = "";
+      moduleVersionInput.value = "";
+      return;
+    }
+    moduleNameInput.value = module.module_name || "foundation";
+    if (module.source_kind === "local") {
+      moduleSourceInput.value = module.local_source || "./modules/_example";
+      moduleVersionInput.value = "";
+      return;
+    }
+    const ref = version || "main";
+    const gitUrl = (module.git_url || "").replace(/\.git$/, "") + ".git";
+    moduleSourceInput.value = `git::${gitUrl}?ref=${ref}`;
+    moduleVersionInput.value = "";
+  }
+
+  async function loadModules() {
+    const provider = providerSelect ? providerSelect.value : "";
+    const url = `/blueprints/${stackBlueprintName}/module-inventory?cloud_provider=${encodeURIComponent(provider)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    inventoryModules = data.modules || [];
+    fillSelect(
+      moduleSelect,
+      inventoryModules,
+      "Select a module…",
+      "repo_name",
+      (m) =>
+        m.repo_name === "_example"
+          ? "Local example stub"
+          : `${m.repo_name} (${m.module_name})`,
+    );
+    versionSelect.disabled = true;
+    fillSelect(versionSelect, [], "Select a module first…", "repo_name", (v) => v);
+    clearStackValidation();
+  }
+
+  async function loadVersions(repoName) {
+    if (!repoName) {
+      versionSelect.disabled = true;
+      fillSelect(versionSelect, [], "Select a module first…", "repo_name", (v) => v);
+      return;
+    }
+    if (repoName === "_example") {
+      fillSelect(
+        versionSelect,
+        [{ repo_name: "_example", version: "local" }],
+        "Select version…",
+        "version",
+        (v) => v.version,
+      );
+      versionSelect.disabled = false;
+      versionSelect.selectedIndex = 1;
+      syncHiddenFromSelection(selectedModule(), "local");
+      return;
+    }
+    versionSelect.disabled = true;
+    fillSelect(versionSelect, [], "Loading versions…", "version", (v) => v.version);
+    const response = await fetch(
+      `/blueprints/${stackBlueprintName}/module-inventory/${encodeURIComponent(repoName)}/versions`,
+    );
+    const data = await response.json();
+    const versions = (data.versions || []).map((tag) => ({ version: tag }));
+    fillSelect(versionSelect, versions, "Select a version…", "version", (v) => v.version);
+    versionSelect.disabled = versions.length === 0;
+    if (versions.length === 1) {
+      versionSelect.selectedIndex = 1;
+      syncHiddenFromSelection(selectedModule(), versions[0].version);
+    }
+    clearStackValidation();
+  }
+
+  moduleSelect.addEventListener("change", () => {
+    const module = selectedModule();
+    void loadVersions(module ? module.repo_name : "");
+    syncHiddenFromSelection(module, "");
+  });
+
+  versionSelect.addEventListener("change", () => {
+    const module = selectedModule();
+    const version = versionSelect.value;
+    syncHiddenFromSelection(module, version);
+    clearStackValidation();
+  });
+
+  if (providerSelect) {
+    providerSelect.addEventListener("change", () => void loadModules());
+  }
+
+  form.addEventListener("submit", (event) => {
+    clearStackValidation();
+    const module = selectedModule();
+    if (!module) {
+      event.preventDefault();
+      showStackValidation("Select a module from inventory before generating.");
+      return;
+    }
+    if (module.repo_name !== "_example" && !versionSelect.value) {
+      event.preventDefault();
+      showStackValidation("Select a module version (git tag) before generating.");
+      return;
+    }
+    syncHiddenFromSelection(module, versionSelect.value);
+  });
+
+  void loadModules();
+</script>
+{% elif provider_catalog %}
 <script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>
 {% if blueprint.terraform_layout == "single-resource" %}
 <script>
