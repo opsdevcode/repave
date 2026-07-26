@@ -66,9 +66,14 @@ the diff touches only:
 - `**/*.md`
 - `LICENSE`
 - `.github/pull_request_template.md`
+- `.github/actions/ci-paths/**` (docs-only skip detection itself)
+- `scripts/capture_portal_screenshots.sh`, `scripts/sync_doc_versions.py`
+- Root `Makefile` (local dev entrypoints such as `make serve` for the portal
+  quickstart)
 
 Detection lives in `.github/actions/ci-paths/` (same path list). Mixed PRs (for
-example `docs/` plus `engine/`) run the full gate.
+example `docs/` plus `engine/`) run the full gate. If you change root `Makefile`
+test or quality targets, run `make quality && make test` locally even when CI skips.
 
 The `release` workflow keeps workflow-level `paths-ignore` for docs-only merges to
 `main` (no release job for markdown-only commits).

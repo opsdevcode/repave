@@ -1,0 +1,39 @@
+# Engine capabilities
+
+Reference for what the generation engine (`engine/`) supports today. Product
+overview: [README](../README.md).
+
+## Golden paths
+
+Terraform modules, environment stacks, Ansible roles, collections, playbook
+projects, policy packs, observability bundles, Helm charts, and app-service
+scaffolds under [`blueprints/`](../blueprints/). Rendering uses Copier; contracts
+live in [`schemas/`](../schemas/).
+
+## Portal and API
+
+- Server-rendered forms, gate results dashboard, publish and update flows at
+  `:8088` (`make serve` or [Docker Compose](quickstart.md)).
+- HTTP generate API and Backstage lineage: [backstage.md](backstage.md).
+- UX spec: [portal-design.md](portal-design.md).
+
+## CLI
+
+`repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades
+from `repave.yaml`), gate execution, provenance in `repave.yaml`.
+
+## Gates (blueprint-configured)
+
+**Terraform:** `fmt`, `validate`, `tflint`, Checkov (packs under
+[`policy/checkov/`](../policy/checkov/)), secrets scanning.
+
+**Ansible:** production-profile **ansible-lint** pack and standards under
+[`standards/ansible/`](../standards/ansible/).
+
+**Policy:** OPA and Azure Policy gates where blueprints declare them — see
+[`policy/`](../policy/) and [`standards/policy/`](../standards/policy/).
+
+## CI on `main`
+
+- Engine: pytest, Ruff, mypy, Bandit, pip-audit.
+- Operator: Go tests + controller-runtime **envtest** on every PR.
