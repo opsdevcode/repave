@@ -150,7 +150,7 @@ def test_rendered_scaffold_passes_repave_checks(
     from repave_engine.blueprint import validate_inputs
     from repave_engine.render import render_blueprint
 
-    values = validate_inputs(terraform_blueprint, sample_inputs)
+    values = validate_inputs(terraform_blueprint, sample_inputs, repo_root=repo_root)
     output_dir = tmp_path / "module"
     render_blueprint(terraform_blueprint, values, output_dir)
 

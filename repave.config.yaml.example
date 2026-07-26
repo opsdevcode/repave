@@ -13,3 +13,8 @@ gates:
   checkov:
     skip_checks: []
     # Example: skip_checks: ["CKV_AWS_20"]
+  policy:
+    # Rule IDs that must remain enabled for every generation (platform floor).
+    required_rules:
+      - checkov:CKV2_REPAVE_1
+      - opa:destructive_changes

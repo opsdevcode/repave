@@ -1,4 +1,4 @@
-/* repave portal — night-ops console (v1.18 foundation) */
+/* repave portal (v1.18 foundation) */
 
 :root {
   --bg: #0b0f0e;
@@ -1101,15 +1101,6 @@ details.file-panel summary {
     color-mix(in srgb, var(--surface) 88%, transparent);
 }
 
-.home-hero__eyebrow {
-  margin: 0 0 var(--space-3);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
 .home-hero__wordmark {
   margin: 0;
   font-family: var(--font-display);
@@ -1174,6 +1165,10 @@ details.file-panel summary {
   border-left-color: #7dd3c0;
 }
 
+.catalog-group--policy .catalog-group__header {
+  border-left-color: #c4a8e8;
+}
+
 .catalog-group__title {
   margin: 0;
   font-family: var(--font-display);
@@ -1224,6 +1219,12 @@ details.file-panel summary {
 
 .catalog-card--ansible-role {
   border-top-color: #7dd3c0;
+}
+
+.catalog-card--checkov-policy,
+.catalog-card--opa-policy,
+.catalog-card--azure-policy {
+  border-top-color: #c4a8e8;
 }
 
 .catalog-card:hover {
@@ -1299,6 +1300,15 @@ details.file-panel summary {
   background: color-mix(in srgb, #7dd3c0 22%, transparent);
   color: #a8e6d9;
   border-color: color-mix(in srgb, #7dd3c0 45%, transparent);
+}
+
+.badge--policy,
+.badge--checkov-policy,
+.badge--opa-policy,
+.badge--azure-policy {
+  background: color-mix(in srgb, #c4a8e8 22%, transparent);
+  color: #e2d4f5;
+  border-color: color-mix(in srgb, #c4a8e8 45%, transparent);
 }
 
 .badge--muted {
@@ -1408,9 +1418,80 @@ details.file-panel summary {
   gap: var(--space-2);
 }
 
+.governance-card__section {
+  margin: 0;
+}
+
+.governance-card__section-title {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.governance-card__section-body {
+  margin: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.governance-card__pin {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.governance-card__pin-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
 .governance-card__footnote {
   margin: var(--space-4) 0 0;
   font-size: 0.85rem;
+}
+
+.policy-customization {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 70%, transparent);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.policy-customization .form-section__subtitle {
+  margin: 0;
+}
+
+.policy-rules-advanced {
+  margin-top: var(--space-2);
+}
+
+.policy-rules-advanced summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.policy-rules-list {
+  display: grid;
+  gap: var(--space-2);
+  max-height: 14rem;
+  overflow-y: auto;
+  margin-top: var(--space-3);
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.policy-rules-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
 }
 
 .form-panel {

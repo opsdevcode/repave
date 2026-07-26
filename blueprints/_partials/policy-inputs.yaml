@@ -1,0 +1,13 @@
+# Recommended defaults per policy golden path (reference for blueprint inputs):
+#
+# checkov-policy-generic:
+#   policy_pack_source: repave-checkov-pack
+#   policy_profile: checkov-full
+# opa-policy-generic:
+#   policy_pack_source: repave-opa-pack
+#   policy_profile: opa-focused
+# azure-policy-generic:
+#   policy_pack_source: repave-azure-samples
+#   policy_profile: azure-community
+#
+# Terraform modules/stacks typically use repave-default + estate-default.

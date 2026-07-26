@@ -6,7 +6,6 @@
 
 {% block content %}
 <section class="home-hero" aria-labelledby="home-hero-title">
-  <p class="home-hero__eyebrow">Night-ops console</p>
   <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
   <p class="home-hero__tagline">
     Governed golden paths — generate compliant modules without the CLI.
@@ -51,13 +50,18 @@
     <a class="catalog-card catalog-card--{{ bp.artifact_type }}" href="/blueprints/{{ bp.name }}">
       <div class="catalog-card__top">
         <h3 class="catalog-card__name">{{ bp.name }}</h3>
-        <span class="badge badge--{{ bp.artifact_type }}">{{ bp.artifact_type }}</span>
+        <span class="badge badge--{{ artifact_family(bp.artifact_type) }}">
+          {% if artifact_family(bp.artifact_type) == 'policy' %}Policy{% else %}{{ artifact_family(bp.artifact_type) | title }}{% endif %}
+        </span>
       </div>
       {% if bp.description %}
       <p class="catalog-card__desc">{{ bp.description }}</p>
       {% endif %}
       <div class="catalog-card__meta">
         <span class="badge badge--muted">v{{ bp.version }}</span>
+        {% if artifact_family(bp.artifact_type) == 'policy' %}
+        <span class="badge badge--policy">{{ policy_kind_label(bp.artifact_type) or bp.artifact_type }}</span>
+        {% endif %}
       </div>
       <div class="catalog-card__chips" aria-label="Gates">
         {% for gate in bp.gates[:4] %}

@@ -5,7 +5,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.blueprint import Blueprint, load_blueprint, primary_publish_name, validate_inputs
+from repave_engine.blueprint import (
+    Blueprint,
+    _find_repo_root,
+    load_blueprint,
+    primary_publish_name,
+    validate_inputs,
+)
 from repave_engine.gates import GateResult, all_gates_passed, clean_gate_artifacts, run_gates
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
 from repave_engine.render import (
@@ -44,7 +50,15 @@ def generate_from_blueprint(
     staging_root: Path | None = None,
     repo_root: Path | None = None,
 ) -> GenerationResult:
-    normalized = validate_inputs(blueprint, values)
+    pack_root = repo_root if repo_root is not None else _find_repo_root(blueprint.path)
+    gate_overrides = load_gate_overrides(pack_root)
+    catalog_root = _find_repo_root(blueprint.path)
+    normalized = validate_inputs(
+        blueprint,
+        values,
+        repo_root=catalog_root,
+        gate_overrides=gate_overrides,
+    )
     module_name = primary_publish_name(blueprint, normalized)
     module_repository = resolve_module_repository(
         module_name=module_name,
@@ -65,12 +79,12 @@ def generate_from_blueprint(
 
     try:
         render_result = render_blueprint(blueprint, normalized, staging_dir)
-        gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
+        run_gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
         gate_results = run_gates(
             render_result.output_dir,
             blueprint.gates,
             blueprint=blueprint,
-            gate_overrides=gate_overrides,
+            gate_overrides=run_gate_overrides,
         )
         clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)
 

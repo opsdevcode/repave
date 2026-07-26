@@ -34,6 +34,19 @@ def _join_provider_services(raw: object) -> str:
     return ""
 
 
+def _apply_policy_from_spec(spec: dict[str, Any], values: dict[str, Any]) -> None:
+    policy = spec.get("policy")
+    if not isinstance(policy, dict):
+        values.setdefault("policy_profile", "estate-default")
+        values.setdefault("policy_pack_source", "repave-default")
+        return
+    values["policy_profile"] = str(policy.get("profile", "estate-default"))
+    values["policy_pack_source"] = str(policy.get("pack_source", "repave-default"))
+    rules = policy.get("enabled_rules")
+    if isinstance(rules, list) and rules:
+        values["policy_rules"] = ",".join(str(item).strip() for item in rules if str(item).strip())
+
+
 def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
     """Build blueprint render inputs from an on-disk GoldenPathArtifact document."""
     spec = doc.get("spec")
@@ -61,6 +74,7 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             terraform_values["provider_service"] = str(module["provider_service"]).strip()
         if module.get("provider_resource"):
             terraform_values["provider_resource"] = str(module["provider_resource"]).strip()
+        _apply_policy_from_spec(spec, terraform_values)
         return terraform_values
 
     if artifact_type == "terraform-environment-stack":
@@ -85,6 +99,7 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             "environment": str(stack.get("environment", "dev")).strip(),
             "pinned_modules": json.dumps(pinned),
         }
+        _apply_policy_from_spec(spec, stack_values)
         return stack_values
 
     if artifact_type == "ansible-playbook-project":
@@ -138,5 +153,44 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             values["windows_server_generation"] = "2022"
             values["target_platforms_advanced"] = ""
         return values
+
+    if artifact_type == "opa-policy":
+        opa = spec.get("opaPolicy")
+        if not isinstance(opa, dict):
+            raise ValueError("opa-policy provenance missing spec.opaPolicy")
+        policy_name = str(opa.get("policy_name", artifact_name)).strip()
+        opa_values: dict[str, Any] = {
+            "policy_name": policy_name,
+            "organization": str(opa.get("organization", "")).strip(),
+            "description": f"Repave upgrade plan for {policy_name}",
+        }
+        _apply_policy_from_spec(spec, opa_values)
+        return opa_values
+
+    if artifact_type == "azure-policy":
+        azure = spec.get("azurePolicy")
+        if not isinstance(azure, dict):
+            raise ValueError("azure-policy provenance missing spec.azurePolicy")
+        policy_name = str(azure.get("policy_name", artifact_name)).strip()
+        azure_values: dict[str, Any] = {
+            "policy_name": policy_name,
+            "organization": str(azure.get("organization", "")).strip(),
+            "description": f"Repave upgrade plan for {policy_name}",
+        }
+        _apply_policy_from_spec(spec, azure_values)
+        return azure_values
+
+    if artifact_type == "checkov-policy":
+        checkov_policy = spec.get("checkovPolicy")
+        if not isinstance(checkov_policy, dict):
+            raise ValueError("checkov-policy provenance missing spec.checkovPolicy")
+        policy_name = str(checkov_policy.get("policy_name", artifact_name)).strip()
+        checkov_values: dict[str, Any] = {
+            "policy_name": policy_name,
+            "organization": str(checkov_policy.get("organization", "")).strip(),
+            "description": f"Repave upgrade plan for {policy_name}",
+        }
+        _apply_policy_from_spec(spec, checkov_values)
+        return checkov_values
 
     raise ValueError(f"unsupported artifactType {artifact_type!r}")

@@ -1,0 +1,20 @@
+{
+  "properties": {
+    "displayName": "Sample audit storage account policy",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Starter definition from the repave azure-policy golden path.",
+    "metadata": {
+      "category": "Storage"
+    },
+    "policyRule": {
+      "if": {
+        "field": "type",
+        "equals": "Microsoft.Storage/storageAccounts"
+      },
+      "then": {
+        "effect": "audit"
+      }
+    }
+  }
+}

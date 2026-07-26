@@ -17,10 +17,12 @@ from repave_engine.provider_catalog import load_provider_catalog
 
 def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
-    assert terraform_blueprint.version == "0.9.0"
+    assert terraform_blueprint.version == "0.11.0"
     assert terraform_blueprint.artifact_type == "terraform-module"
     assert terraform_blueprint.standard_source == "standards/terraform-standards"
     assert terraform_blueprint.standard_version == "1.1.0"
+    assert terraform_blueprint.opa_policies is not None
+    assert terraform_blueprint.opa_policies.policy_version == "1.0.0"
     assert terraform_blueprint.provenance_file == "repave.yaml"
     assert terraform_blueprint.checkov_policies is not None
     assert terraform_blueprint.checkov_policies.policies_source == "policy/checkov/policies"
@@ -178,6 +180,41 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "ansible-role-generic" in names
     assert "ansible-playbook-project" in names
     assert "ansible-collection-generic" in names
+    assert "opa-policy-generic" in names
+    assert "azure-policy-generic" in names
+    assert "checkov-policy-generic" in names
+
+
+def test_load_checkov_policy_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "checkov-policy-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "checkov-policy"
+    assert "checkov" in blueprint.gates
+    assert blueprint.checkov_policies is not None
+    assert blueprint.checkov_gate.scan_dir == "tests/fixtures/pass"
+
+
+def test_load_opa_policy_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "opa-policy-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "opa-policy"
+    assert "opa" in blueprint.gates
+    assert "secrets" in blueprint.gates
+    assert blueprint.opa_gate.policies_dir == "policy"
+
+
+def test_load_azure_policy_generic_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "azure-policy-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "azure-policy"
+    assert "azure-policy" in blueprint.gates
+    assert blueprint.azure_policy_pack is not None
 
 
 def test_load_ansible_collection_generic_blueprint(repo_root: Path) -> None:
@@ -295,7 +332,7 @@ def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
         repo_root,
     )
     assert blueprint.name == "terraform-module-resource"
-    assert blueprint.version == "0.2.0"
+    assert blueprint.version == "0.4.0"
     assert blueprint.standard_source == "standards/terraform-standards"
     assert blueprint.standard_version == "1.1.0"
     assert blueprint.terraform_layout == "single-resource"
@@ -318,6 +355,7 @@ def test_validate_single_resource_inputs(repo_root: Path) -> None:
             "provider_service": "s3",
             "provider_resource": "bucket",
         },
+        repo_root=repo_root,
     )
     assert normalized["provider_services"] == "s3"
     scope = json.loads(normalized["provider_service_scope"])

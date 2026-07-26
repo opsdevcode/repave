@@ -9,7 +9,14 @@
     <h1 class="page-title">{{ blueprint.name }}</h1>
     <p class="page-lead">
       Blueprint v{{ blueprint.version }}
-      <span class="badge badge--{{ blueprint.artifact_type }}">{{ blueprint.artifact_type }}</span>
+      {% set bp_family = artifact_family(blueprint.artifact_type) %}
+      <span class="badge badge--{{ bp_family }}">
+        {% if bp_family == 'policy' %}
+          Policy · {{ policy_kind_label(blueprint.artifact_type) or blueprint.artifact_type }}
+        {% else %}
+          {{ blueprint.artifact_type }}
+        {% endif %}
+      </span>
     </p>
   </div>
 </header>
@@ -25,12 +32,31 @@
           <span class="badge">@ {{ blueprint.standard_version }}</span>
         </dd>
       </div>
-      {% if blueprint.checkov_policies %}
-      <div>
-        <dt>Checkov pack</dt>
-        <dd>
-          <code>{{ blueprint.checkov_policies.policies_source }}</code>
-          <span class="badge">@ {{ blueprint.checkov_policies.policy_version }}</span>
+      {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
+      <div class="governance-card__section">
+        <dt class="governance-card__section-title">Policy</dt>
+        <dd class="governance-card__section-body">
+          {% if blueprint.checkov_policies %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">Checkov</span>
+            <code>{{ blueprint.checkov_policies.policies_source }}</code>
+            <span class="badge">@ {{ blueprint.checkov_policies.policy_version }}</span>
+          </div>
+          {% endif %}
+          {% if blueprint.opa_policies %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">OPA</span>
+            <code>{{ blueprint.opa_policies.policies_source }}</code>
+            <span class="badge">@ {{ blueprint.opa_policies.policy_version }}</span>
+          </div>
+          {% endif %}
+          {% if blueprint.azure_policy_pack %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">Azure Policy</span>
+            <code>{{ blueprint.azure_policy_pack.definitions_source }}</code>
+            <span class="badge">@ {{ blueprint.azure_policy_pack.policy_version }}</span>
+          </div>
+          {% endif %}
         </dd>
       </div>
       {% endif %}
@@ -67,8 +93,71 @@
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
 
+      {% if policy_customization and policy_catalog %}
+      <div class="field-block policy-customization" id="policy-customization">
+        <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
+        <p class="hint">Pack source, profile, and every catalog rule for this golden path. Required rules stay on.</p>
+        <label for="policy_pack_source">Policy pack source</label>
+        <select class="select" id="policy_pack_source" name="policy_pack_source">
+          {% for pack in policy_catalog.pack_sources %}
+          <option
+            value="{{ pack['id'] }}"
+            {% if pack['id'] == policy_defaults.policy_pack_source %}selected{% endif %}
+            {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+          >{{ pack.get('label') or pack['id'] }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="policy-pack-hint"></p>
+        <label for="policy_profile">Policy profile</label>
+        <select class="select" id="policy_profile" name="policy_profile">
+          {% for profile_id, profile in policy_catalog.profiles.items() %}
+          <option
+            value="{{ profile_id }}"
+            {% if profile_id == policy_defaults.policy_profile %}selected{% endif %}
+            {% if profile.get('description') %}title="{{ profile['description'] }}"{% endif %}
+          >{{ profile.get('label') or profile_id }}</option>
+          {% endfor %}
+        </select>
+        <details id="policy-rules-advanced" class="policy-rules-advanced" open>
+          <summary>Individual rules</summary>
+          <p class="hint policy-rules-hint" id="policy-rules-hint">
+            {% if policy_defaults.policy_profile == 'custom' %}
+            Toggle optional rules; required rules stay enabled.
+            {% else %}
+            Rules included in this profile (switch to Custom to change optional rules).
+            {% endif %}
+          </p>
+          <div class="policy-rules-actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="policy-rules-enable-optional">
+              Enable all optional
+            </button>
+            <button type="button" class="btn btn--ghost btn--sm" id="policy-rules-use-profile">
+              Match current profile
+            </button>
+          </div>
+          <input type="search" class="input" id="policy-rules-filter" placeholder="Filter rules…" />
+          <div id="policy-rules-list" class="policy-rules-list">
+            {% set initial_profile = policy_defaults.policy_profile %}
+            {% for rule in policy_catalog.rules %}
+            <label class="checkbox-row" data-rule-id="{{ rule['id'] }}">
+              <input
+                type="checkbox"
+                value="{{ rule['id'] }}"
+                {% if initial_profile != 'custom' or rule['required'] %}disabled{% endif %}
+                {% if rule['id'] in policy_enabled_rule_ids %}checked{% endif %}
+              />
+              {{ rule['title'] }} ({{ rule['id'] }})
+            </label>
+            {% endfor %}
+          </div>
+        </details>
+        <input type="hidden" id="policy_rules" name="policy_rules" value="" />
+      </div>
+      {% endif %}
+
       {% for field in blueprint.inputs %}
       {% if field.name == "provider_service_scope" %}
+      {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules") %}
       {% elif provider_catalog and field.name == "cloud_provider" %}
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -1122,5 +1211,285 @@
   renderServices(providerSelect.value);
 </script>
 {% endif %}
+{% endif %}
+{% if policy_customization and policy_catalog %}
+<script id="policy-catalog-data" type="application/json">{{ policy_catalog | tojson }}</script>
+<script>
+(function () {
+  const catalogEl = document.getElementById("policy-catalog-data");
+  const root = document.getElementById("policy-customization");
+  const profileSelect = document.getElementById("policy_profile");
+  const packSelect = document.getElementById("policy_pack_source");
+  const rulesHidden = document.getElementById("policy_rules");
+  const advanced = document.getElementById("policy-rules-advanced");
+  const rulesList = document.getElementById("policy-rules-list");
+  const filterInput = document.getElementById("policy-rules-filter");
+  const rulesHint = document.getElementById("policy-rules-hint");
+  const packHint = document.getElementById("policy-pack-hint");
+  const enableOptionalBtn = document.getElementById("policy-rules-enable-optional");
+  const useProfileBtn = document.getElementById("policy-rules-use-profile");
+  if (!root || !profileSelect || !rulesHidden || !rulesList || !catalogEl) return;
+
+  const blueprintName = {{ blueprint.name | tojson }};
+  const policyDefaults = {{ policy_defaults | tojson }};
+  let catalog;
+  try {
+    catalog = JSON.parse(catalogEl.textContent || "{}");
+  } catch (_err) {
+    catalog = { rules: [], profiles: {}, pack_sources: [], defaults: {} };
+  }
+  let lastPresetProfile = profileSelect.value || policyDefaults.policy_profile || "estate-default";
+  let customSeedProfile = lastPresetProfile;
+
+  function resolveInitialPackId(packs) {
+    const preferred = policyDefaults.policy_pack_source;
+    if (preferred && packs.some((pack) => pack.id === preferred)) {
+      return preferred;
+    }
+    if (catalog.defaults?.policy_pack_source) {
+      const fromApi = catalog.defaults.policy_pack_source;
+      if (packs.some((pack) => pack.id === fromApi)) {
+        return fromApi;
+      }
+    }
+    return packs[0]?.id || "";
+  }
+
+  function resolveInitialProfileId(packs, packId) {
+    const preferred = policyDefaults.policy_profile;
+    if (preferred && catalog.profiles?.[preferred]) {
+      return preferred;
+    }
+    if (catalog.defaults?.policy_profile && catalog.profiles?.[catalog.defaults.policy_profile]) {
+      return catalog.defaults.policy_profile;
+    }
+    const pack = packs.find((item) => item.id === packId);
+    if (pack?.default_profile && catalog.profiles?.[pack.default_profile]) {
+      return pack.default_profile;
+    }
+    return catalog.profiles?.["estate-default"] ? "estate-default" : Object.keys(catalog.profiles || {})[0];
+  }
+
+  function matchInclude(pattern, ruleId) {
+    if (pattern === ruleId) return true;
+    if (pattern.endsWith(":*")) {
+      const prefix = pattern.slice(0, -1);
+      return ruleId.startsWith(prefix);
+    }
+    return false;
+  }
+
+  function rulesForProfile(profile, seedFrom) {
+    const rules = catalog.rules || [];
+    const enabled = new Set();
+    const seed = seedFrom || profile;
+    if (profile === "custom") {
+      const includes = catalog.profiles?.[seed]?.includes || [];
+      for (const rule of rules) {
+        for (const pattern of includes) {
+          if (matchInclude(pattern, rule.id)) {
+            enabled.add(rule.id);
+            break;
+          }
+        }
+        if (rule.required) enabled.add(rule.id);
+      }
+      return enabled;
+    }
+    const includes = catalog.profiles?.[profile]?.includes || [];
+    for (const rule of rules) {
+      for (const pattern of includes) {
+        if (matchInclude(pattern, rule.id)) {
+          enabled.add(rule.id);
+          break;
+        }
+      }
+      if (rule.required) enabled.add(rule.id);
+    }
+    return enabled;
+  }
+
+  function syncHiddenRules() {
+    if (profileSelect.value !== "custom") {
+      rulesHidden.value = "";
+      return;
+    }
+    const checked = [...rulesList.querySelectorAll('input[type="checkbox"]:checked')]
+      .map((el) => el.value);
+    rulesHidden.value = checked.join(",");
+  }
+
+  function renderRules() {
+    const filter = (filterInput?.value || "").toLowerCase();
+    const profile = profileSelect.value;
+    const custom = profile === "custom";
+    const enabled = rulesForProfile(profile, customSeedProfile);
+    rulesList.innerHTML = "";
+    let visible = 0;
+    for (const rule of catalog.rules || []) {
+      if (filter && !rule.title.toLowerCase().includes(filter) && !rule.id.toLowerCase().includes(filter)) {
+        continue;
+      }
+      visible += 1;
+      const label = document.createElement("label");
+      label.className = "checkbox-row";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = rule.id;
+      input.disabled = !custom || rule.required;
+      input.checked = enabled.has(rule.id);
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(`${rule.title} (${rule.id})`));
+      rulesList.appendChild(label);
+    }
+    if (rulesHint) {
+      if (!(catalog.rules || []).length) {
+        rulesHint.textContent = "No rules in the catalog for this golden path.";
+      } else if (custom) {
+        rulesHint.textContent = "Toggle optional rules; required rules stay enabled.";
+      } else {
+        rulesHint.textContent = "Rules included in this profile (switch to Custom to change optional rules).";
+      }
+    }
+    if (visible === 0 && (catalog.rules || []).length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No rules match the filter.";
+      rulesList.appendChild(empty);
+    }
+    syncHiddenRules();
+  }
+
+  function updatePackHint() {
+    if (!packHint || !packSelect) return;
+    const pack = (catalog.pack_sources || []).find((p) => p.id === packSelect.value);
+    if (!pack) {
+      packHint.textContent = "";
+      return;
+    }
+    const parts = [pack.description || ""];
+    if (pack.reference_url) {
+      parts.push(`Reference: ${pack.reference_url}`);
+    }
+    packHint.textContent = parts.filter(Boolean).join(" ");
+  }
+
+  function populateProfileSelect(selectedId) {
+    profileSelect.innerHTML = "";
+    const profiles = catalog.profiles || {};
+    for (const [id, meta] of Object.entries(profiles)) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = meta.label || id;
+      if (meta.description) opt.title = meta.description;
+      profileSelect.appendChild(opt);
+    }
+    if (selectedId && profiles[selectedId]) {
+      profileSelect.value = selectedId;
+    } else if (profiles.estate-default) {
+      profileSelect.value = "estate-default";
+    }
+  }
+
+  function updateProfileUi() {
+    const custom = profileSelect.value === "custom";
+    if (advanced && custom) {
+      advanced.open = true;
+    }
+    renderRules();
+    updatePackHint();
+  }
+
+  profileSelect.addEventListener("change", () => {
+    const val = profileSelect.value;
+    if (val !== "custom") {
+      lastPresetProfile = val;
+      customSeedProfile = val;
+    } else {
+      customSeedProfile = lastPresetProfile;
+    }
+    updateProfileUi();
+  });
+
+  packSelect?.addEventListener("change", () => {
+    const pack = (catalog.pack_sources || []).find((p) => p.id === packSelect.value);
+    if (pack?.default_profile && catalog.profiles?.[pack.default_profile]) {
+      profileSelect.value = pack.default_profile;
+      lastPresetProfile = pack.default_profile;
+      customSeedProfile = pack.default_profile;
+    }
+    updateProfileUi();
+  });
+
+  enableOptionalBtn?.addEventListener("click", () => {
+    profileSelect.value = "custom";
+    customSeedProfile = lastPresetProfile;
+    renderRules();
+    for (const rule of catalog.rules || []) {
+      const input = rulesList.querySelector(`input[value="${CSS.escape(rule.id)}"]`);
+      if (input && !rule.required) input.checked = true;
+    }
+    syncHiddenRules();
+  });
+
+  useProfileBtn?.addEventListener("click", () => {
+    customSeedProfile = lastPresetProfile;
+    renderRules();
+  });
+  filterInput?.addEventListener("input", renderRules);
+  rulesList.addEventListener("change", syncHiddenRules);
+
+  updatePackHint();
+  updateProfileUi();
+
+  fetch(`/blueprints/${encodeURIComponent(blueprintName)}/policy-catalog`)
+    .then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    })
+    .then((data) => {
+      catalog = data;
+      const packs = data.pack_sources || [];
+      if (packSelect && packs.length) {
+        const selected = packSelect.value;
+        packSelect.innerHTML = "";
+        for (const pack of packs) {
+          const opt = document.createElement("option");
+          opt.value = pack.id;
+          opt.textContent = pack.label || pack.id;
+          if (pack.description) opt.title = pack.description;
+          packSelect.appendChild(opt);
+        }
+        packSelect.value = packs.some((p) => p.id === selected)
+          ? selected
+          : resolveInitialPackId(packs);
+      }
+      if (data.profiles && profileSelect) {
+        const selectedProfile = profileSelect.value;
+        profileSelect.innerHTML = "";
+        for (const [id, meta] of Object.entries(data.profiles)) {
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = meta.label || id;
+          if (meta.description) opt.title = meta.description;
+          profileSelect.appendChild(opt);
+        }
+        profileSelect.value = data.profiles[selectedProfile]
+          ? selectedProfile
+          : resolveInitialProfileId(packs, packSelect?.value || "");
+      }
+      lastPresetProfile = profileSelect.value;
+      customSeedProfile = lastPresetProfile;
+      updateProfileUi();
+    })
+    .catch(() => {
+      if (rulesHint) {
+        rulesHint.textContent =
+          "Could not refresh the policy catalog; using server defaults. Submit still works.";
+      }
+      updateProfileUi();
+    });
+})();
+</script>
 {% endif %}
 {% endblock %}

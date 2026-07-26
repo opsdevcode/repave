@@ -60,7 +60,7 @@ v1.37.0  today     v1.22 Ansible collection shipped; v1.31 Helm chart next (acce
 
 | Theme | Releases | Outcome |
 | --- | --- | --- |
-| **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and opt-in OPA policy-as-code enforce the module contract, not just document it |
+| **Governance depth** | v1.11, v1.12, v1.14, v1.21, v1.39 | Standards, Checkov, secrets scan, provenance, and OPA/conftest plan-time policy |
 | **Multi-artifact golden paths** | v1.13–v1.16, v1.20, v1.22, v1.31–v1.32, v1.40 | Engine decoupled from Terraform; Ansible role/collection/playbook, Helm, app-service, observability paths |
 | **Self-healing** | v1.17, v1.19, v1.24 | Drift detection and blueprint/standard upgrades via PR; local envtest/kind required |
 | **Usability** | v1.18, v1.23 | Portal visual system and CLI usable by non-experts; visible pinned versions |
@@ -281,6 +281,13 @@ estate module repos before production remediation.
 - Scaffold: `galaxy.yml`, `meta/runtime.yml`, `roles/sample/`, changelog, ansible-lint pack
 - Gates: `yamllint`, `ansible-lint`, `secrets`, `docs-drift`, `provenance-drift`
 - `GoldenPathArtifact.spec.ansibleCollection` provenance; portal Ansible family ordering
+
+### Policy golden paths (OPA and Azure Policy) — shipped early (roadmap v1.39)
+
+- Policy family under `standards/policy/` with governance baseline for every artifact
+- `opa-policy` and `azure-policy` artifacts; `opa-policy-generic` and `azure-policy-generic`
+- `opa` gate (Conftest / Rego); `azure-policy` gate for definition JSON
+- Terraform blueprints vend `policy/opa/policies` for plan-time Rego
 
 ### v1.21.0 — Estate Terraform standards pack (multi-file)
 
@@ -698,28 +705,7 @@ top failure modes with concrete commands.
 
 ### v1.39 — Policy-as-code gate (OPA/conftest)
 
-**Problem:** Governance today is Checkov static scanning of Terraform source files.
-Teams want custom policy-as-code (Rego) evaluated against Terraform **plan JSON**
-and rendered Helm/Kubernetes manifests — richer than static config scanning for
-cross-resource and plan-time rules — as an opt-in gate.
-
-**Approach:**
-
-- Add an `opa` (conftest) gate via the v1.13 gate registry, using the same
-  skip-if-not-installed pattern as the other tool gates
-- Terraform: evaluate against `terraform plan -json` (or a converted plan file);
-  Helm/k8s: evaluate against `helm template` output
-- Ship a starter Rego policy pack under `policy/opa/policies/` (parallel to
-  `policy/checkov/policies`), copied into generated repos at `policy/opa/`;
-  blueprint `gate_config.opa` (policies dir, namespaces, fail severity)
-- Unit-test policies with fixture plan JSON and manifests
-- Opt-in per blueprint (not a default gate); document how to add org Rego rules
-
-**Dependencies:** v1.13 gate registry; v1.14 artifact-type provenance (Helm plan/
-template); Checkov pack pattern (v1.10–v1.12).
-
-**Done when:** A blueprint declaring the `opa` gate fails generation when a Rego
-policy denies the plan/manifest, and skips cleanly when conftest/opa is absent.
+**Status:** Shipped on `main` (see [Policy-as-code golden paths](#policy-as-code-golden-paths-opa--conftest--shipped-early-roadmap-v139)). Helm manifest evaluation remains follow-up when v1.31 Helm path lands.
 
 ---
 

@@ -28,12 +28,12 @@
     },
     "spec": {
       "type": "object",
-      "required": ["artifactType", "blueprint", "standard", "generation"],
+      "required": ["artifactType", "blueprint", "standard", "generation", "governance"],
       "additionalProperties": false,
       "properties": {
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection"]
+          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project", "ansible-collection", "checkov-policy", "opa-policy", "azure-policy"]
         },
         "blueprint": {
           "type": "object",
@@ -62,6 +62,32 @@
             "generated_at": {
               "type": "string",
               "format": "date-time"
+            }
+          }
+        },
+        "governance": {
+          "type": "object",
+          "required": ["baseline_source", "baseline_version"],
+          "additionalProperties": false,
+          "properties": {
+            "baseline_source": { "type": "string" },
+            "baseline_version": { "type": "string" }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "required": ["profile", "pack_source", "enabled_rules"],
+          "additionalProperties": false,
+          "properties": {
+            "profile": { "type": "string" },
+            "pack_source": { "type": "string" },
+            "enabled_rules": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "pack_versions": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
             }
           }
         },
@@ -158,7 +184,52 @@
             "min_ansible_version": { "type": "string" }
           }
         },
+        "opaPolicy": {
+          "type": "object",
+          "required": ["policy_name"],
+          "additionalProperties": false,
+          "properties": {
+            "policy_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string" }
+          }
+        },
+        "checkovPolicy": {
+          "type": "object",
+          "required": ["policy_name"],
+          "additionalProperties": false,
+          "properties": {
+            "policy_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string" }
+          }
+        },
+        "azurePolicy": {
+          "type": "object",
+          "required": ["policy_name"],
+          "additionalProperties": false,
+          "properties": {
+            "policy_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string" }
+          }
+        },
+        "azurePolicyDefinitions": {
+          "type": "object",
+          "required": ["definitions_source", "policy_version"],
+          "additionalProperties": false,
+          "properties": {
+            "definitions_source": { "type": "string" },
+            "policy_version": { "type": "string" }
+          }
+        },
         "checkov": {
+          "type": "object",
+          "required": ["policies_source", "policy_version"],
+          "additionalProperties": false,
+          "properties": {
+            "policies_source": { "type": "string" },
+            "policy_version": { "type": "string" }
+          }
+        },
+        "opa": {
           "type": "object",
           "required": ["policies_source", "policy_version"],
           "additionalProperties": false,
@@ -231,6 +302,39 @@
           },
           "then": {
             "required": ["ansibleCollection"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "opa-policy" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["opaPolicy"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "checkov-policy" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["checkovPolicy"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "azure-policy" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["azurePolicy"]
           }
         }
       ]
