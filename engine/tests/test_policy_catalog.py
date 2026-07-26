@@ -60,6 +60,19 @@ def test_strict_enables_all_terraform_rules(repo_root: Path) -> None:
     assert "checkov:CKV2_REPAVE_2" in enabled
 
 
+def test_azure_community_profile_includes_all_catalog_azure_rules(repo_root: Path) -> None:
+    catalog = load_policy_catalog(repo_root)
+    enabled = resolve_profile_rule_ids(
+        catalog,
+        profile="azure-community",
+        artifact_type="azure-policy",
+    )
+    assert "azure:sample_audit_storage" in enabled
+    assert "azure:sample_require_https_storage" in enabled
+    assert "azure:sample_deny_public_blob_access" in enabled
+    assert "azure:sample_audit_environment_tag" in enabled
+
+
 def test_custom_adds_required_rules_when_no_optional_selected(repo_root: Path) -> None:
     catalog = load_policy_catalog(repo_root)
     enabled = resolve_profile_rule_ids(

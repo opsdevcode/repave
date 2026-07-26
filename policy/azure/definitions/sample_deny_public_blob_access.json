@@ -1,0 +1,28 @@
+{
+  "properties": {
+    "displayName": "Repave sample deny public blob access",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "Denies storage accounts that allow anonymous public blob access.",
+    "metadata": {
+      "category": "Storage"
+    },
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Storage/storageAccounts"
+          },
+          {
+            "field": "Microsoft.Storage/storageAccounts/allowBlobPublicAccess",
+            "equals": true
+          }
+        ]
+      },
+      "then": {
+        "effect": "deny"
+      }
+    }
+  }
+}

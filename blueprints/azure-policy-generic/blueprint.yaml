@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: azure-policy-generic
-  version: 0.2.0
+  version: 0.3.0
   description: Azure Policy definition repository with JSON validation gate.
 spec:
   artifactType: azure-policy
@@ -48,7 +48,7 @@ spec:
     - provenance-drift
   azure_policy:
     definitions_source: policy/azure/definitions
-    policy_version: 1.0.0
+    policy_version: 1.1.0
   gate_config:
     azure-policy:
       definitions_dir: policy/definitions
