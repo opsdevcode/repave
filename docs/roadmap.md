@@ -278,8 +278,8 @@ upgrades; validate end-to-end on customer module repos.
 **Problem:** Beyond the Terraform module and Ansible role paths, platform teams
 need more artifact types.
 
-**Progress:** `terraform-module-resource` (v0.1.0) and `terraform-environment-stack`
-(v0.1.0) ship with gates, standards pins, and `env-*` / `tfm-*` repo naming.
+**Progress:** `terraform-module-resource`, `terraform-environment-stack`, and
+`ansible-playbook-project` (v0.1.0) ship with gates, standards pins, and repo naming.
 
 **Candidates (remaining):**
 
@@ -287,7 +287,7 @@ need more artifact types.
 | --- | --- | --- |
 | Cloud resource module (single resource) | Thin `tfm-*` wrapper | **Shipped:** `terraform-module-resource` |
 | Environment stack bootstrap | `env-*` composition repo | **Shipped:** `terraform-environment-stack` |
-| Ansible collection / playbook project | Collection or project repo | Builds on the v1.15 role path (see parking lot) |
+| Ansible collection / playbook project | Collection or project repo | **Shipped:** `ansible-playbook-project` (playbook artifact) |
 
 **Dependencies:** v1.13 gate registry; v1.14 artifact-type provenance.
 

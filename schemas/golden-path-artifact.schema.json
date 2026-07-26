@@ -33,7 +33,7 @@
       "properties": {
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role"]
+          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role", "ansible-playbook-project"]
         },
         "blueprint": {
           "type": "object",
@@ -122,6 +122,16 @@
             "min_ansible_version": { "type": "string" }
           }
         },
+        "ansiblePlaybookProject": {
+          "type": "object",
+          "required": ["project_name", "environment"],
+          "additionalProperties": false,
+          "properties": {
+            "project_name": { "type": "string", "minLength": 1 },
+            "environment": { "type": "string" },
+            "min_ansible_version": { "type": "string" }
+          }
+        },
         "checkov": {
           "type": "object",
           "required": ["policies_source", "policy_version"],
@@ -162,6 +172,17 @@
           },
           "then": {
             "required": ["terraformEnvironmentStack"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "ansible-playbook-project" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["ansiblePlaybookProject"]
           }
         },
         {

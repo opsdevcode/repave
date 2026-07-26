@@ -295,6 +295,8 @@ def run_ansible_lint(ctx: GateContext) -> GateResult:
 
 def _syntax_check_playbook(output_dir: Path) -> Path | None:
     candidates = (
+        output_dir / "site.yml",
+        output_dir / "playbooks" / "site.yml",
         output_dir / "molecule" / "default" / "converge.yml",
         output_dir / "molecule" / "default" / "playbook.yml",
     )
@@ -320,7 +322,7 @@ def run_ansible_syntax_check(ctx: GateContext) -> GateResult:
             "ansible-syntax-check",
             True,
             True,
-            "no molecule converge playbook; skipped",
+            "no playbook found for syntax check; skipped",
         )
 
     result = run_command(

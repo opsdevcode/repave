@@ -1,0 +1,9 @@
+[defaults]
+inventory = inventories/{{ environment }}/hosts.yml
+roles_path = roles
+collections_path = collections
+host_key_checking = False
+stdout_callback = yaml
+
+[inventory]
+enable_plugins = ansible.builtin.host_list, ansible.builtin.yaml, ansible.builtin.auto

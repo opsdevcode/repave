@@ -87,6 +87,22 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         }
         return stack_values
 
+    if artifact_type == "ansible-playbook-project":
+        project = spec.get("ansiblePlaybookProject")
+        if not isinstance(project, dict):
+            raise ValueError(
+                "ansible-playbook-project provenance missing spec.ansiblePlaybookProject"
+            )
+        project_name = str(project.get("project_name", artifact_name)).strip()
+        playbook_values: dict[str, Any] = {
+            "project_name": project_name,
+            "description": f"Repave upgrade plan for {project_name}",
+            "environment": str(project.get("environment", "dev")).strip(),
+        }
+        if project.get("min_ansible_version"):
+            playbook_values["min_ansible_version"] = str(project["min_ansible_version"]).strip()
+        return playbook_values
+
     if artifact_type == "ansible-role":
         role = spec.get("ansibleRole")
         if not isinstance(role, dict):

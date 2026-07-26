@@ -1,0 +1,4 @@
+.ansible/
+*.retry
+.molecule/
+__pycache__/
