@@ -274,11 +274,15 @@ optional CI runs e2e on a schedule or before release.
 **Problem:** Today repave bootstraps **new** repos; upgrading an existing module
 requires manual merge or re-generation.
 
-**Approach:**
+**Progress:** `repave update` wraps `plan-upgrade` / `apply-upgrade` for local
+workflows (`--path`, dry-run by default, `--no-dry-run --git-branch` to commit).
+Operator still calls `plan-upgrade` / `apply-upgrade` JSON contracts.
 
-- `repave update` (or blueprint flag) targeting an existing module repo path
-- Three-way aware merge or PR-only flow that preserves user edits outside scaffold
-- Operator integration for fleet-wide upgrades (ties to v1.17)
+**Approach (remaining):**
+
+- GitHub PR creation from applied upgrade branch (optional `GITHUB_TOKEN`)
+- Three-way aware merge for edits outside scaffold
+- Portal entry for update flow
 
 **Done when:** A module repo created by repave can receive a blueprint version
 bump via PR without full manual copy.

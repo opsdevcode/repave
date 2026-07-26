@@ -42,6 +42,24 @@ repave generate \
 `GITHUB_TOKEN` needs permission to create repositories in the configured org (or
 your user account when `github_org` is a username).
 
+## Upgrade an existing module repository
+
+Re-render from `repave.yaml` provenance and diff against a checkout (default dry-run):
+
+```bash
+repave update --path /path/to/tf-aws-example --repo-root ..
+```
+
+Apply files and commit on a branch (local PR prep):
+
+```bash
+repave update --path /path/to/tf-aws-example --repo-root .. \
+  --no-dry-run --git-branch repave/blueprint-upgrade
+```
+
+Operator integration continues to use `plan-upgrade` and `apply-upgrade` with the
+same JSON `--format` output.
+
 ## Quality and security (local)
 
 ```bash

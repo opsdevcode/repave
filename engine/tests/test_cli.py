@@ -5,7 +5,15 @@ import json
 
 import pytest
 
-from repave_engine.cli import _parse_inputs, build_parser, cmd_generate, cmd_list, cmd_serve, main
+from repave_engine.cli import (
+    _parse_inputs,
+    build_parser,
+    cmd_generate,
+    cmd_list,
+    cmd_serve,
+    cmd_update,
+    main,
+)
 from repave_engine.gates import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
@@ -271,3 +279,50 @@ def test_cmd_serve_builds_app_and_starts_uvicorn(
     assert captured["app"] == "app"
     assert captured["host"] == "0.0.0.0"
     assert captured["port"] == 9000
+
+
+def test_build_parser_includes_update_subcommand() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        ["update", "--path", "/tmp/module", "--repo-root", ".", "--format", "json"]
+    )
+    assert args.command == "update"
+    assert args.target_repo == "/tmp/module"
+    assert args.dry_run is True
+
+
+def test_cmd_update_dry_run_delegates_to_plan(repo_root, tmp_path, capsys) -> None:
+    fixture = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
+    if not fixture.is_dir():
+        pytest.skip("operator fixture not present")
+
+    args = argparse.Namespace(
+        repo_root=str(repo_root),
+        target_repo=str(fixture),
+        blueprint=None,
+        staging_root=str(tmp_path / "staging"),
+        format="json",
+        dry_run=True,
+        git_branch=None,
+        commit_message="chore(repave): apply blueprint upgrade",
+    )
+    code = cmd_update(args)
+    output = json.loads(capsys.readouterr().out)
+
+    assert code == 0
+    assert output["changed_file_count"] >= 1
+
+
+def test_cmd_update_apply_requires_git_branch(repo_root) -> None:
+    args = argparse.Namespace(
+        repo_root=str(repo_root),
+        target_repo="/tmp/module",
+        blueprint=None,
+        staging_root=None,
+        format="text",
+        dry_run=False,
+        git_branch=None,
+        commit_message="chore(repave): apply blueprint upgrade",
+    )
+    with pytest.raises(SystemExit, match="git-branch"):
+        cmd_update(args)

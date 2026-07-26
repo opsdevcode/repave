@@ -1,0 +1,23 @@
+---
+description: Pull request titles and bodies for opsdevcode/repave
+alwaysApply: true
+---
+
+# Pull requests
+
+When opening PRs for this repository (including via `gh pr create`):
+
+## Titles
+
+- Use **conventional commits** style: `type(scope): short description` (same spirit as merge commits).
+- Do **not** put **roadmap theme labels** or **unreleased product milestone numbers** in the title
+  (for example avoid `v1.19`, `v1.18 portal`, `v1.25` as the feature name).
+  Roadmap versions describe planning themes; GitHub **engine tags** (for example `v1.25.0`) come from
+  semantic-release and may not match roadmap numbering.
+- OK in titles: semver when it is the **actual artifact** being changed (for example
+  `chore(release): 1.26.0` on Release automation PRs).
+
+## Bodies
+
+- Summarize user-visible behavior and link operator/portal/docs impacts when relevant.
+- Test plan checklist; note if operator JSON contracts (`plan-upgrade`, `apply-upgrade`) are unchanged.
