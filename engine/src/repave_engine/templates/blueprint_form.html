@@ -95,7 +95,24 @@
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
         {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
-        {% if field.enum %}
+        {% if field.enum and field.multi %}
+        <select
+          class="select select--multi"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          multiple
+          size="{{ [field.enum|length, 10]|min }}"
+          {% if field.required %}required{% endif %}
+          aria-describedby="{{ field.name }}-hint"
+        >
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if option == field.default %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="{{ field.name }}-hint">
+          Select one or more Galaxy platforms. On macOS hold Cmd; on Windows/Linux hold Ctrl to pick multiple.
+        </p>
+        {% elif field.enum %}
         <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
           {% for option in field.enum %}
           <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>

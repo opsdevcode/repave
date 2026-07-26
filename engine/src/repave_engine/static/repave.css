@@ -454,6 +454,21 @@ pre {
   border-color: var(--accent);
 }
 
+.select--multi {
+  min-height: 11rem;
+  padding: var(--space-2);
+}
+
+.select--multi option {
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+}
+
+.select--multi option:checked {
+  background: color-mix(in srgb, var(--accent) 35%, #222c29);
+  color: var(--text);
+}
+
 .checkbox-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

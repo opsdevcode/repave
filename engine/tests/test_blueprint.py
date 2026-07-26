@@ -190,6 +190,40 @@ def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert "molecule" in ansible_blueprint.gates
     assert "provenance-drift" in ansible_blueprint.gates
     assert ansible_blueprint.output_repo_name_template == "ansible-role-{role_name}"
+    platforms = next(
+        field for field in ansible_blueprint.inputs if field.name == "target_platforms"
+    )
+    assert platforms.multi is True
+    assert "Windows:2022" in platforms.enum
+    assert "Ubuntu:jammy" in platforms.enum
+
+
+def test_validate_ansible_target_platforms_multi_value(ansible_blueprint) -> None:
+    values = validate_inputs(
+        ansible_blueprint,
+        {
+            "role_name": "webserver",
+            "namespace": "acme",
+            "description": "Example",
+            "min_ansible_version": "2.15",
+            "target_platforms": "Ubuntu:jammy,Windows:2022,EL:9",
+        },
+    )
+    assert values["target_platforms"] == "EL:9,Ubuntu:jammy,Windows:2022"
+
+
+def test_validate_rejects_unknown_target_platform(ansible_blueprint) -> None:
+    with pytest.raises(ValueError, match="Invalid value"):
+        validate_inputs(
+            ansible_blueprint,
+            {
+                "role_name": "webserver",
+                "namespace": "acme",
+                "description": "Example",
+                "min_ansible_version": "2.15",
+                "target_platforms": "Ubuntu:jammy,NotAPlatform:1",
+            },
+        )
 
 
 def test_validate_ansible_role_inputs(ansible_blueprint, ansible_sample_inputs) -> None:

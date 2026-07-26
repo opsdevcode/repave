@@ -23,5 +23,5 @@ min_ansible_version:
 
 target_platforms:
   type: str
-  help: Comma-separated target platforms as Name:version
+  help: Galaxy platforms as Name:version (select supported targets in the portal)
   default: "Ubuntu:jammy"

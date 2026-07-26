@@ -30,10 +30,20 @@ spec:
     - name: target_platforms
       type: string
       required: true
-      description: >-
-        Comma-separated Galaxy platforms as Name:version (e.g. EL:9,Ubuntu:jammy).
-        Use Ansible Galaxy version codenames, not OS release numbers.
+      multi: true
+      description: Galaxy platforms this role supports (Name:version).
       default: "Ubuntu:jammy"
+      enum:
+        - "EL:9"
+        - "EL:8"
+        - "Ubuntu:noble"
+        - "Ubuntu:jammy"
+        - "Ubuntu:focal"
+        - "Debian:bookworm"
+        - "Debian:bullseye"
+        - "Windows:2022"
+        - "Windows:2019"
+        - "Windows:2016"
   template:
     engine: copier
     path: template
