@@ -6,7 +6,7 @@
 
 {% block content %}
 <p class="breadcrumb">
-  <a href="/">← Golden paths</a>
+  <a href="/">← Catalog</a>
   ·
   <a href="/blueprints/{{ result.blueprint.name }}">← {{ result.blueprint.name }}</a>
 </p>
@@ -21,18 +21,18 @@
       {% if gate_summary.outcome == "failed" %}
       Generation failed
       {% elif gate_summary.outcome == "passed" %}
-      {% if result.dry_run %}Preview ready{% else %}Published locally{% endif %}
+      {% if result.dry_run %}Plan complete{% else %}Applied locally{% endif %}
       {% else %}
       Generation result
       {% endif %}
     </h1>
     <p class="result-hero__banner">
       {% if result.dry_run %}
-      <span class="badge badge--skip">Dry-run</span>
+      <span class="badge badge--skip">Plan only</span>
       Files rendered in memory; nothing was written to the module repository.
       {% elif gates_ok and result.module_repository %}
-      <span class="badge badge--pass">Published</span>
-      Output written to the local module repository.
+      <span class="badge badge--pass">Applied</span>
+      Output written under the configured modules root.
       {% else %}
       <span class="badge badge--fail">Not published</span>
       Gates did not pass; the repository was not updated.
@@ -61,7 +61,7 @@
 <section class="card result-lineage stack-gap" aria-labelledby="lineage-heading">
   <div class="card__header">
     <h2 id="lineage-heading">Lineage &amp; receipt</h2>
-    <p class="muted card__subtitle">Pinned golden path, standard, and governance baseline recorded in <code>{{ result_portal.provenance_filename }}</code>.</p>
+    <p class="muted card__subtitle">Platform template, domain standard, and controls baseline recorded in <code>{{ result_portal.provenance_filename }}</code>.</p>
   </div>
   <div class="card__body">
     <dl class="governance-card__list result-lineage__list">

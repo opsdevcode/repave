@@ -6,7 +6,7 @@
 
 {% block content %}
 {% set publish_step = 2 if form_stepper in ('terraform', 'observability') else 1 %}
-<p class="breadcrumb"><a href="/">← Golden paths</a></p>
+<p class="breadcrumb"><a href="/">← Catalog</a></p>
 <header class="form-hero">
   <div>
     <h1 class="page-title">{{ blueprint.name }}</h1>
@@ -36,10 +36,10 @@
 
 <div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'app') %} form-layout--split{% endif %}">
   <aside class="governance-card governance-card--{{ bp_family }}" aria-labelledby="governance-heading">
-    <h2 class="governance-card__title" id="governance-heading">Governance</h2>
+    <h2 class="governance-card__title" id="governance-heading">Controls &amp; lineage</h2>
     <dl class="governance-card__list">
       <div>
-        <dt>Standard</dt>
+        <dt>Domain standard</dt>
         <dd class="governance-card__value">
           <code class="governance-card__code">{{ blueprint.standard_source }}</code>
           <span class="badge">@ {{ blueprint.standard_version }}</span>
@@ -90,7 +90,7 @@
       </div>
       {% endif %}
       <div>
-        <dt>Gates</dt>
+        <dt>Quality gates</dt>
         <dd class="governance-card__gates">
           {% for gate in blueprint.gates %}
           <span class="chip">{{ gate }}</span>
@@ -98,7 +98,7 @@
         </dd>
       </div>
       <div class="governance-card__section governance-card__section--drift">
-        <dt class="governance-card__section-title">Standard drift</dt>
+        <dt class="governance-card__section-title">Standard pin drift</dt>
         <dd class="governance-card__section-body">
           {% if standards_diff.available %}
             {% if standards_diff.has_changes %}
@@ -115,10 +115,10 @@
               </ul>
             </details>
             <p class="hint governance-drift-hint">
-              Pin table and patches on <a href="/update">Update existing repo</a>.
+              Full pin comparison on <a href="/update">Upgrade existing repo</a>.
             </p>
             {% else %}
-            <p class="muted governance-drift-ok">Matches pin on HEAD.</p>
+            <p class="muted governance-drift-ok">Pinned standard matches platform repo HEAD.</p>
             {% endif %}
           {% else %}
             <p class="muted">{{ standards_diff.reason }}</p>
@@ -143,7 +143,7 @@
     </div>
     {% endif %}
     <p class="governance-card__footnote muted">
-      Pins shown are encoded on generate. Enable <code>audit</code> in config for fleet-wide recent activity.
+      Pins are frozen on scaffold. Enable <code>audit</code> in config for fleet-wide activity.
     </p>
   </aside>
 
@@ -155,8 +155,8 @@
     data-repave-busy-form
     data-repave-form-draft
     data-blueprint-id="{{ blueprint.name }}"
-    data-busy-label="Generating…"
-    data-busy-stages="Validating…|Rendering…|Running gates…|Finishing…"
+    data-busy-label="Scaffolding…"
+    data-busy-stages="Validating inputs…|Rendering template…|Running quality gates…|Finishing…"
     {% if form_stepper %}
     data-form-stepper
     data-form-stepper-kind="{{ form_stepper }}"
@@ -179,24 +179,24 @@
           <span class="form-stepper__label">Services &amp; scope</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="2">
-          <span class="form-stepper__label">Publish</span>
+          <span class="form-stepper__label">Delivery</span>
         </li>
         {% elif form_stepper == 'observability' %}
         <li class="form-stepper__step is-active" data-stepper-index="0">
-          <span class="form-stepper__label">Service</span>
+          <span class="form-stepper__label">Service context</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="1">
-          <span class="form-stepper__label">Routing &amp; metadata</span>
+          <span class="form-stepper__label">Alert routing</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="2">
-          <span class="form-stepper__label">Publish</span>
+          <span class="form-stepper__label">Delivery</span>
         </li>
         {% else %}
         <li class="form-stepper__step is-active" data-stepper-index="0">
-          <span class="form-stepper__label">Configure</span>
+          <span class="form-stepper__label">Parameters</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="1">
-          <span class="form-stepper__label">Publish</span>
+          <span class="form-stepper__label">Delivery</span>
         </li>
         {% endif %}
       </ol>
@@ -208,7 +208,7 @@
     {% endif %}
 
     <section class="form-section" aria-labelledby="inputs-heading">
-      <h2 class="form-section__title" id="inputs-heading">Inputs</h2>
+      <h2 class="form-section__title" id="inputs-heading">Parameters</h2>
 
       {% if form_stepper == 'standard' %}
       <div class="form-step-panel" data-form-step="0">
@@ -218,10 +218,10 @@
       <div class="field-block observability-field-catalog" id="observability-field-catalog">
         {% set obs_input_names = blueprint.inputs | map(attribute='name') | list %}
         <div class="form-step-panel" {% if form_stepper == 'observability' %}data-form-step="0"{% endif %}>
-        <h3 class="form-section__subtitle" id="observability-fields-heading">Service and platform</h3>
-        <p class="hint">Choose a service from the estate catalog and inventory; recommended mode applies governance defaults.</p>
+        <h3 class="form-section__subtitle" id="observability-fields-heading">Service context</h3>
+        <p class="hint">Pick a registered service from the platform catalog and live inventory. Recommended mode applies estate defaults.</p>
         <fieldset class="segmented publish-toggle" id="configuration-mode-toggle">
-          <legend class="hint">Configuration mode</legend>
+          <legend class="hint">Configuration depth</legend>
           <label class="segmented__option">
             <input
               type="radio"
@@ -229,7 +229,7 @@
               value="recommended"
               {% if observability_defaults.get('configuration_mode', 'recommended') == 'recommended' %}checked{% endif %}
             />
-            Recommended defaults
+            Platform defaults
           </label>
           <label class="segmented__option">
             <input
@@ -238,11 +238,11 @@
               value="custom"
               {% if observability_defaults.get('configuration_mode') == 'custom' %}checked{% endif %}
             />
-            Customize all
+            Full parameter set
           </label>
         </fieldset>
         <p class="hint" id="configuration-mode-hint">
-          Pick service (and backend{% if observability_dashboard_packs %}, dashboard pack{% endif %}); we fill org, team, runbook, notifications, and more from the catalog and service inventory.
+          Choose service{% if observability_dashboard_packs %}, dashboard platform, and pack{% else %} and observability backend{% endif %}; platform defaults fill org, team, runbooks, and routing.
         </p>
         <label for="service_name">Service *</label>
         <select class="select" id="service_name" name="service_name" required>
@@ -278,10 +278,10 @@
         {% if observability_dashboard_packs and observability_catalog %}
         {% set initial_dashboard_backend = observability_defaults.get('backend', 'grafana') %}
         <div class="obs-decision-fields dashboard-pack" id="dashboard-pack">
-          <h4 class="form-section__subtitle form-section__subtitle--sm">Community dashboard pack</h4>
+          <h4 class="form-section__subtitle form-section__subtitle--sm">Dashboard pack</h4>
           <p class="hint">
-            Vendored forks from <code>observability/dashboards/</code> (Grafana.com / Datadog).
-            Every pack includes the Repave RED starter JSON plus any files listed below.
+            Curated forks from <code>observability/dashboards/</code> (Grafana.com / Datadog).
+            Every pack includes the platform baseline (overview + golden signals) plus bundled community layouts below.
           </p>
           <label for="dashboard_pack_source">Pack</label>
           <select class="select" id="dashboard_pack_source" name="dashboard_pack_source">
@@ -306,9 +306,9 @@
           id="obs-step-configure"
           {% if form_stepper == 'observability' %}data-form-step="1" hidden{% endif %}
         >
-        <h3 class="form-section__subtitle">Routing &amp; metadata</h3>
+        <h3 class="form-section__subtitle">Alert routing &amp; metadata</h3>
         <p class="hint" id="obs-step-configure-hint">
-          Adjust notification routing and metadata. In recommended mode, catalog values apply unless you switch to customize all.
+          Tune on-call routing and service metadata. With platform defaults, catalog values apply unless you choose the full parameter set.
         </p>
         <div id="obs-advanced-fields" class="obs-advanced-fields">
         <label for="organization">Organization *</label>
@@ -458,7 +458,7 @@
         {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
       >
         <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
-        <p class="hint">Choose a pack and profile; required catalog rules stay on. Rule titles match the policy catalog.</p>
+        <p class="hint">Choose a pack and profile; required catalog rules stay enforced. Titles match the policy catalog.</p>
         <label for="policy_pack_source">Policy pack source</label>
         <select class="select" id="policy_pack_source" name="policy_pack_source">
           {% for pack in policy_catalog.pack_sources %}
@@ -729,30 +729,30 @@
       aria-labelledby="publish-heading"
       {% if form_stepper %}data-form-step="{{ publish_step }}" hidden{% endif %}
     >
-      <h2 class="form-section__title" id="publish-heading">Publish</h2>
-      <div class="segmented publish-toggle" role="radiogroup" aria-label="Publish mode">
+      <h2 class="form-section__title" id="publish-heading">Delivery</h2>
+      <div class="segmented publish-toggle" role="radiogroup" aria-label="Delivery mode">
         <label class="segmented__option">
           <input type="radio" name="dry_run" value="true" checked />
-          Dry-run preview
+          Plan (validate only)
         </label>
         <label class="segmented__option">
           <input type="radio" name="dry_run" value="false" />
-          Publish locally
+          Apply to modules root
         </label>
       </div>
       <p class="hint">
-        Publish creates the module repository under <code>REPAVE_MODULES_ROOT</code>.
-        Set <code>GITHUB_TOKEN</code> on the server to also create and push the GitHub repo.
+        Apply writes the repository under <code>REPAVE_MODULES_ROOT</code>.
+        Set <code>GITHUB_TOKEN</code> on the server to create and push the remote GitHub repo.
       </p>
     </section>
 
     <div class="form-actions form-actions--sticky">
       <p class="form-actions__preflight muted">
-        {{ blueprint.gates|length }} gates on generate ·
+        {{ blueprint.gates|length }} quality gates on scaffold ·
         <code>{{ blueprint.standard_source }}</code>@{{ blueprint.standard_version }}
       </p>
       <div id="form-draft-banner" class="form-draft-banner" hidden></div>
-      <button class="btn btn--primary" type="submit">Generate</button>
+      <button class="btn btn--primary" type="submit">Scaffold repository</button>
     </div>
   </form>
 </div>
@@ -2088,7 +2088,7 @@
       effective.notification_source && `notify: ${effective.notification_source}`,
     ].filter(Boolean);
     summary.textContent = parts.length
-      ? `Using catalog defaults — ${parts.join(" · ")}`
+      ? `Platform defaults — ${parts.join(" · ")}`
       : "";
   }
 
@@ -2306,7 +2306,7 @@
         ).length;
         if (hint) {
           hint.textContent = discovered
-            ? `${discovered} service(s) from modules_root inventory (see standards/observability/service-registry.md).`
+            ? `${discovered} service(s) from modules_root inventory.`
             : "";
         }
       } catch (_err) {

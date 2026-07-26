@@ -12,7 +12,7 @@ see [References](#references) for links):
 
 | Practice | What we enforce in generated repos |
 | --- | --- |
-| **Four golden signals** (latency, traffic, errors, saturation) | Starter **RED** dashboard: request rate, error rate, latency (p99) |
+| **Four golden signals** (latency, traffic, errors, saturation) | Baseline dashboard: request rate, error rate, latency (p99) |
 | **RED method** (Rate, Errors, Duration) for services | `service-golden-signals` layout and panel titles |
 | **USE method** (Utilization, Saturation, Errors) for infra | Documented as follow-up rows; not auto-generated in v1 |
 | **Grafana dashboard best practices** | UIDs, tags, templated `environment`, rows, shared crosshair, sane time range |
@@ -28,7 +28,7 @@ see [References](#references) for links):
 - Dashboard UIDs (Grafana): `{service_name}_overview`, `{service_name}_golden`
   (hyphens in `service_name` become underscores in UID).
 - One **overview** dashboard (context, links, ownership) and one **golden signals**
-  dashboard (RED starter).
+  dashboard (platform baseline: rate, errors, duration).
 
 ## Required metadata
 
@@ -44,7 +44,7 @@ Every dashboard MUST include tags (Grafana `tags`, Datadog `tags`):
 | `env:{environment}` | `env:prod` | Deployment environment (OTel `deployment.environment`) |
 | `managed-by:repave` | fixed | Provenance for golden-path generation |
 
-Optional: `repave:golden-signals` on the RED dashboard.
+Optional: `repave:golden-signals` on the golden-signals dashboard.
 
 ### Grafana-specific
 
@@ -115,8 +115,8 @@ generate time from `observability/dashboards/`. Each pack entry MUST include:
   `environment`, …).
 - **`community:*` tag** on forked dashboards (for example `community:grafana-1860`).
 
-The **Repave RED starter** pack ships only template-generated overview + golden-signals JSON.
-Other packs **add** vendored community forks alongside starters (for example Node Exporter
+The **platform baseline** pack ships only template-generated overview + golden-signals JSON.
+Other packs **add** vendored community forks alongside the baseline (for example Node Exporter
 [Grafana.com #1860](https://grafana.com/grafana/dashboards/1860), Kubernetes pods
 [#15760](https://grafana.com/grafana/dashboards/15760), Datadog APM layouts).
 

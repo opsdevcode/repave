@@ -26,10 +26,10 @@
         </a>
         <nav class="shell__nav" aria-label="Primary">
           <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>
-            Golden paths
+            Catalog
           </a>
           <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>
-            Update repo
+            Upgrade repo
           </a>
           <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
             Activity
@@ -67,7 +67,7 @@
         <div class="busy-overlay__card">
           <div class="busy-overlay__ring" aria-hidden="true"></div>
           <p class="busy-overlay__label" id="repave-busy-label">Working…</p>
-          <p class="busy-overlay__hint muted">Rendering templates and running governance gates</p>
+          <p class="busy-overlay__hint muted">Rendering templates and running policy gates</p>
         </div>
       </div>
 

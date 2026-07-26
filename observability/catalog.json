@@ -1,5 +1,5 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "defaults": {
     "notification_source": "repave-estate-oncall",
     "notification_target": "pagerduty-platform-primary",
@@ -162,17 +162,17 @@
   "dashboard_packs": [
     {
       "id": "repave-red-starter",
-      "label": "Repave RED starter only",
+      "label": "Platform baseline only",
       "backend": "any",
-      "description": "Overview + golden-signals JSON from the blueprint template (no extra community files).",
+      "description": "Service overview and golden signals (rate, errors, duration) from the template—no extra community dashboards.",
       "reference_url": "https://github.com/opsdevcode/repave/tree/main/standards/observability/dashboards-as-code.md",
       "files": []
     },
     {
       "id": "grafana-red-plus-node-exporter-1860",
-      "label": "RED starter + Node Exporter Full (#1860 fork)",
+      "label": "Baseline + Node Exporter Full (Grafana #1860)",
       "backend": "grafana",
-      "description": "Repave starters plus a vendored fork of Grafana.com dashboard 1860 (MIT).",
+      "description": "Platform baseline dashboards plus a vendored fork of Grafana.com dashboard 1860 (MIT).",
       "reference_url": "https://grafana.com/grafana/dashboards/1860",
       "license": "MIT",
       "files": [
@@ -184,9 +184,9 @@
     },
     {
       "id": "grafana-red-plus-k8s-pods-15760",
-      "label": "RED starter + Kubernetes Pods (#15760 fork)",
+      "label": "Baseline + Kubernetes pods (Grafana #15760)",
       "backend": "grafana",
-      "description": "Repave starters plus a vendored fork inspired by Grafana.com dashboard 15760.",
+      "description": "Platform baseline dashboards plus a vendored fork inspired by Grafana.com dashboard 15760.",
       "reference_url": "https://grafana.com/grafana/dashboards/15760",
       "license": "Apache-2.0",
       "files": [
@@ -198,9 +198,9 @@
     },
     {
       "id": "datadog-red-plus-apm-service",
-      "label": "RED starter + Datadog APM service fork",
+      "label": "Baseline + Datadog APM service layout",
       "backend": "datadog",
-      "description": "Repave starters plus a Datadog APM-style community layout fork.",
+      "description": "Platform baseline dashboards plus a Datadog APM-style community layout fork.",
       "reference_url": "https://docs.datadoghq.com/tracing/services/service_page/",
       "files": [
         {

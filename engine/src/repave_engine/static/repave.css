@@ -2593,7 +2593,7 @@ details.file-panel summary {
 }
 
 .form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final)::after {
-  content: "Use Next above to continue";
+  content: "Continue with Next above";
   display: block;
   width: 100%;
   font-size: 0.82rem;

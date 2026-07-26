@@ -28,13 +28,13 @@ This repository follows [dashboards-as-code v1.1.0](https://github.com/opsdevcod
 
 {% if backend == 'grafana' %}
 - `grafana/dashboards/service-overview.json` — context, links, ownership
-- `grafana/dashboards/service-golden-signals.json` — RED starter panels
+- `grafana/dashboards/service-golden-signals.json` — golden signals baseline (rate, errors, duration)
 {% if dashboard_pack_source != 'repave-red-starter' %}
 - Additional JSON from community pack **{{ dashboard_pack_source }}** (see `observability/catalog.json`)
 {% endif %}
 {% elif backend == 'datadog' %}
 - `datadog/dashboards/service-overview.json` — context note widget
-- `datadog/dashboards/service-golden-signals.json` — RED APM starter widgets
+- `datadog/dashboards/service-golden-signals.json` — golden signals baseline widgets
 {% endif %}
 
 ## Usage
