@@ -38,6 +38,8 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "catalog-group__title" in response.text
     assert "Terraform" in response.text
     assert "Ansible" in response.text
+    assert 'class="catalog-group catalog-group--terraform"' in response.text
+    assert 'class="catalog-group catalog-group--ansible"' in response.text
 
 
 def test_static_repave_js_served(repo_root, output_config) -> None:

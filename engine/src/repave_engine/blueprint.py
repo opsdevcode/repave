@@ -419,62 +419,80 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
     return results
 
 
-# Portal catalog grouping (v1.18). Order is display order; unknown types follow.
-_ARTIFACT_GROUP_META: dict[str, tuple[str, str]] = {
-    "terraform-module": ("Terraform", "Modules and infrastructure scaffolds"),
-    "terraform-environment-stack": ("Terraform", "Environment composition stacks"),
-    "ansible-role": ("Ansible", "Galaxy-compatible roles"),
-    "ansible-playbook-project": ("Ansible", "Playbook projects"),
+# Portal catalog grouping (v1.18). Families collapse artifact types in the home UI.
+_ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
+    "terraform": ("Terraform", "Modules, resource wrappers, and environment stacks"),
+    "ansible": ("Ansible", "Roles and playbook projects"),
 }
-_ARTIFACT_GROUP_ORDER: tuple[str, ...] = (
-    "terraform-module",
-    "terraform-environment-stack",
-    "ansible-role",
-    "ansible-playbook-project",
-)
+_ARTIFACT_FAMILY_ORDER: tuple[str, ...] = ("terraform", "ansible")
+# Sort order of blueprints within each family (unknown types sort last, then by name).
+_FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
+    "terraform": ("terraform-module", "terraform-environment-stack"),
+    "ansible": ("ansible-role", "ansible-playbook-project"),
+}
+
+
+def artifact_family(artifact_type: str) -> str:
+    if artifact_type.startswith("terraform-"):
+        return "terraform"
+    if artifact_type.startswith("ansible-"):
+        return "ansible"
+    return artifact_type
 
 
 @dataclass(frozen=True)
 class BlueprintCatalogGroup:
-    artifact_type: str
+    family: str
     title: str
     subtitle: str
     blueprints: tuple[Blueprint, ...]
 
 
+def _sort_blueprints_in_family(family: str, items: list[Blueprint]) -> list[Blueprint]:
+    order = _FAMILY_ARTIFACT_ORDER.get(family, ())
+    rank = {artifact_type: index for index, artifact_type in enumerate(order)}
+
+    def sort_key(blueprint: Blueprint) -> tuple[int, str]:
+        return (rank.get(blueprint.artifact_type, len(order)), blueprint.name)
+
+    return sorted(items, key=sort_key)
+
+
 def group_blueprints_by_artifact(blueprints: list[Blueprint]) -> list[BlueprintCatalogGroup]:
-    """Group blueprints for the portal home catalog by artifact type."""
+    """Group blueprints for the portal home catalog by Terraform / Ansible family."""
     buckets: dict[str, list[Blueprint]] = {}
     for blueprint in blueprints:
-        buckets.setdefault(blueprint.artifact_type, []).append(blueprint)
+        family = artifact_family(blueprint.artifact_type)
+        buckets.setdefault(family, []).append(blueprint)
 
     groups: list[BlueprintCatalogGroup] = []
     seen: set[str] = set()
-    for artifact_type in _ARTIFACT_GROUP_ORDER:
-        items = buckets.get(artifact_type)
+    for family in _ARTIFACT_FAMILY_ORDER:
+        items = buckets.get(family)
         if not items:
             continue
-        title, subtitle = _ARTIFACT_GROUP_META[artifact_type]
+        title, subtitle = _ARTIFACT_FAMILY_META[family]
+        sorted_items = _sort_blueprints_in_family(family, items)
         groups.append(
             BlueprintCatalogGroup(
-                artifact_type=artifact_type,
+                family=family,
                 title=title,
                 subtitle=subtitle,
-                blueprints=tuple(items),
+                blueprints=tuple(sorted_items),
             )
         )
-        seen.add(artifact_type)
+        seen.add(family)
 
-    for artifact_type in sorted(buckets):
-        if artifact_type in seen:
+    for family in sorted(buckets):
+        if family in seen:
             continue
-        label = artifact_type.replace("-", " ").title()
+        label = family.replace("-", " ").title()
         groups.append(
             BlueprintCatalogGroup(
-                artifact_type=artifact_type,
+                family=family,
                 title=label,
                 subtitle="Additional golden paths",
-                blueprints=tuple(buckets[artifact_type]),
+                blueprints=tuple(sorted(buckets[family], key=lambda bp: bp.name)),
             )
         )
     return groups

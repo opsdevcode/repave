@@ -1166,20 +1166,12 @@ details.file-panel summary {
   border-left: 3px solid var(--accent);
 }
 
-.catalog-group--ansible-playbook-project .catalog-group__header {
-  border-left-color: #9ed4c8;
-}
-
-.catalog-group--ansible-role .catalog-group__header {
-  border-left-color: #7dd3c0;
-}
-
-.catalog-group--terraform-module .catalog-group__header {
+.catalog-group--terraform .catalog-group__header {
   border-left-color: #5b9fd4;
 }
 
-.catalog-group--terraform-environment-stack .catalog-group__header {
-  border-left-color: #6b8fd4;
+.catalog-group--ansible .catalog-group__header {
+  border-left-color: #7dd3c0;
 }
 
 .catalog-group__title {
@@ -1295,6 +1287,30 @@ details.file-panel summary {
   border-top: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 0.78rem;
+}
+
+.badge--terraform {
+  background: color-mix(in srgb, #5b9fd4 22%, transparent);
+  color: #9ec9ef;
+  border-color: color-mix(in srgb, #5b9fd4 45%, transparent);
+}
+
+.badge--ansible {
+  background: color-mix(in srgb, #7dd3c0 22%, transparent);
+  color: #a8e6d9;
+  border-color: color-mix(in srgb, #7dd3c0 45%, transparent);
+}
+
+.badge--muted {
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.catalog-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 .badge--terraform-module {
