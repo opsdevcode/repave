@@ -10,6 +10,7 @@ from repave_engine.gate_runners import (
     run_datadog_api_validate,
     run_datadog_dashboard,
     run_datadog_monitor,
+    run_dockerfile_lint,
     run_docs_drift,
     run_grafana_dashboard,
     run_helm_lint,
@@ -18,6 +19,8 @@ from repave_engine.gate_runners import (
     run_opa,
     run_promtool,
     run_provenance_drift,
+    run_python_lint,
+    run_python_test,
     run_secrets,
     run_terraform_fmt,
     run_terraform_test,
@@ -34,6 +37,7 @@ _ANSIBLE_ARTIFACT_TYPES = frozenset(
 )
 _OBSERVABILITY_ARTIFACT_TYPES = frozenset({"observability"})
 _HELM_ARTIFACT_TYPES = frozenset({"helm-chart"})
+_APP_SERVICE_ARTIFACT_TYPES = frozenset({"app-service"})
 _SHARED_ARTIFACT_TYPES = frozenset(
     {
         "terraform-module",
@@ -43,6 +47,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "ansible-collection",
         "observability",
         "helm-chart",
+        "app-service",
         "opa-policy",
         "azure-policy",
         "checkov-policy",
@@ -147,6 +152,27 @@ register_gate(
         name="helm-template",
         runner=run_helm_template,
         artifact_types=_HELM_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="dockerfile-lint",
+        runner=run_dockerfile_lint,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="python-lint",
+        runner=run_python_lint,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="python-test",
+        runner=run_python_test,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
     )
 )
 register_gate(

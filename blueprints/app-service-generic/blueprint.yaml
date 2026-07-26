@@ -1,0 +1,73 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: app-service-generic
+  version: 0.1.0
+  description: Governed application service repo (Python) with Dockerfile, tests, and Backstage catalog metadata.
+spec:
+  artifactType: app-service
+  standard:
+    source: standards/app/service-standard.md
+    version: 1.0.0
+  inputs:
+    - name: service_name
+      type: string
+      required: true
+      description: Service name (repository app-{service_name}, Backstage component id).
+    - name: description
+      type: string
+      required: true
+      description: Short description for README and catalog-info.yaml.
+    - name: owner
+      type: string
+      required: true
+      description: Owning team or group (Backstage `spec.owner`, e.g. team:platform).
+    - name: port
+      type: string
+      required: false
+      default: "8080"
+      description: Container listen port exposed in the Dockerfile and health checks.
+    - name: runtime
+      type: string
+      required: false
+      default: python
+      enum:
+        - python
+      description: Application runtime (additional runtimes are follow-ons).
+    - name: include_helm_reference
+      type: string
+      required: false
+      default: "false"
+      enum:
+        - "true"
+        - "false"
+      description: When true, README documents deploying via a sibling helm-{service_name} chart.
+    - name: helm_chart_repo
+      type: string
+      required: false
+      default: ""
+      description: Optional Git URL for the Helm chart repo (required when include_helm_reference is true).
+  template:
+    engine: copier
+    path: template
+  gates:
+    - dockerfile-lint
+    - python-lint
+    - python-test
+    - secrets
+    - docs-drift
+    - provenance-drift
+  gate_config:
+    dockerfile-lint:
+      dockerfile: Dockerfile
+    python-lint:
+      config_file: pyproject.toml
+    python-test:
+      test_directory: tests
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "app-{service_name}"
+      title_template: "Bootstrap application service {service_name}"

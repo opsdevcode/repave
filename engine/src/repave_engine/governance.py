@@ -62,6 +62,12 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         "helm-template",
         *_BASELINE_GATES,
     ),
+    "app-service": (
+        "dockerfile-lint",
+        "python-lint",
+        "python-test",
+        *_BASELINE_GATES,
+    ),
 }
 
 

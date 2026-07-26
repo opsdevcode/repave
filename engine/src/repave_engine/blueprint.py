@@ -396,8 +396,18 @@ def validate_inputs(
         normalize_dashboard_pack_inputs(blueprint, normalized, repo_root)
 
     _validate_helm_chart_inputs(blueprint, normalized)
+    _validate_app_service_inputs(blueprint, normalized)
 
     return normalized
+
+
+def _validate_app_service_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    if blueprint.name != "app-service-generic":
+        return
+    if str(normalized.get("include_helm_reference", "false")).strip() == "true":
+        repo = str(normalized.get("helm_chart_repo", "")).strip()
+        if not repo:
+            raise ValueError("helm_chart_repo is required when include_helm_reference is true")
 
 
 def _validate_helm_chart_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
@@ -579,11 +589,13 @@ _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "policy": ("Policy", "Checkov, OPA (Conftest), and Azure Policy golden paths"),
     "observability": ("Observability", "Dashboards, alerts, and SLOs as code"),
     "helm": ("Kubernetes / Helm", "Charts for workloads on Kubernetes"),
+    "app": ("Application services", "Containerized services with Dockerfile and CI"),
 }
 _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
     "terraform",
     "ansible",
     "helm",
+    "app",
     "policy",
     "observability",
 )
@@ -591,6 +603,7 @@ _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
     "helm": ("helm-chart",),
+    "app": ("app-service",),
     "policy": ("checkov-policy", "opa-policy", "azure-policy"),
     "observability": ("observability",),
 }
@@ -607,6 +620,8 @@ def artifact_family(artifact_type: str) -> str:
         return "ansible"
     if artifact_type == "helm-chart":
         return "helm"
+    if artifact_type == "app-service":
+        return "app"
     return artifact_type
 
 

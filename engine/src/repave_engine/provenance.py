@@ -330,6 +330,27 @@ def _build_helm_chart_spec(
     return spec, chart_name
 
 
+def _build_app_service_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    service_name = str(values.get("service_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "app-service",
+        "appService": {
+            "service_name": service_name,
+            "owner": str(values.get("owner", "")).strip(),
+            "port": str(values.get("port", "8080")).strip(),
+            "runtime": str(values.get("runtime", "python")).strip(),
+            "include_helm_reference": str(values.get("include_helm_reference", "false")).strip(),
+        },
+    }
+    chart_repo = str(values.get("helm_chart_repo", "")).strip()
+    if chart_repo:
+        spec["appService"]["helm_chart_repo"] = chart_repo
+    return spec, service_name
+
+
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
@@ -349,6 +370,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_observability_spec(blueprint, values)
     elif blueprint.artifact_type == "helm-chart":
         artifact_spec, metadata_name = _build_helm_chart_spec(blueprint, values)
+    elif blueprint.artifact_type == "app-service":
+        artifact_spec, metadata_name = _build_app_service_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

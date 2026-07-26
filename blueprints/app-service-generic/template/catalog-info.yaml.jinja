@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ service_name }}
+  description: {{ description }}
+  annotations:
+    repave.dev/blueprint: app-service-generic
+spec:
+  type: service
+  lifecycle: experimental
+  owner: {{ owner }}

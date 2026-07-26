@@ -28,6 +28,8 @@
   --family-observability-text: #ffe8c8;
   --family-helm: #326ce5;
   --family-helm-text: #c8d8ff;
+  --family-app: #34a853;
+  --family-app-text: #c8f0d4;
   --radius: 8px;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -1195,11 +1197,17 @@ details.file-panel summary {
   --group-title: var(--family-helm-text);
 }
 
+.catalog-group--app {
+  --group-accent: var(--family-app);
+  --group-title: var(--family-app-text);
+}
+
 .catalog-group--terraform,
 .catalog-group--ansible,
 .catalog-group--policy,
 .catalog-group--observability,
-.catalog-group--helm {
+.catalog-group--helm,
+.catalog-group--app {
   padding: var(--space-4);
   border-radius: calc(var(--radius) + 4px);
   background: color-mix(in srgb, var(--group-accent) 6%, var(--surface));
@@ -1220,7 +1228,8 @@ details.file-panel summary {
 .catalog-group--ansible .catalog-group__header,
 .catalog-group--policy .catalog-group__header,
 .catalog-group--observability .catalog-group__header,
-.catalog-group--helm .catalog-group__header {
+.catalog-group--helm .catalog-group__header,
+.catalog-group--app .catalog-group__header {
   margin-bottom: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border-left: 4px solid var(--group-accent);
@@ -1232,7 +1241,8 @@ details.file-panel summary {
 .catalog-group--ansible .catalog-group__title,
 .catalog-group--policy .catalog-group__title,
 .catalog-group--observability .catalog-group__title,
-.catalog-group--helm .catalog-group__title {
+.catalog-group--helm .catalog-group__title,
+.catalog-group--app .catalog-group__title {
   color: color-mix(in srgb, var(--group-title) 88%, var(--text));
 }
 
@@ -1441,6 +1451,12 @@ details.file-panel summary {
   background: color-mix(in srgb, var(--family-helm) 22%, transparent);
   color: var(--family-helm-text);
   border-color: color-mix(in srgb, var(--family-helm) 45%, transparent);
+}
+
+.badge--app {
+  background: color-mix(in srgb, var(--family-app) 22%, transparent);
+  color: var(--family-app-text);
+  border-color: color-mix(in srgb, var(--family-app) 45%, transparent);
 }
 
 /* —— Blueprint form (Phase 3) —— */
@@ -1655,6 +1671,11 @@ details.file-panel summary {
 .governance-card--helm {
   border-top-color: var(--family-helm);
   border-left: 3px solid var(--family-helm);
+}
+
+.governance-card--app {
+  border-top-color: var(--family-app);
+  border-left: 3px solid var(--family-app);
 }
 
 #configuration-mode-toggle.segmented {
