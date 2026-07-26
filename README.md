@@ -13,7 +13,7 @@ The name says the intent: a **paved road** is how platform teams let many
 developers move fast safely; `repave` continuously (re)lays that road — governed,
 repeatable, and automated.
 
-> **Status (engine [v1.42.0](https://github.com/opsdevcode/repave/releases/tag/v1.42.0)
+> **Status (engine [v1.43.0](https://github.com/opsdevcode/repave/releases/tag/v1.43.0)
 > on GitHub).** Generation runs locally or via Docker Compose — no Kubernetes
 > required for the engine. The **reconciliation operator** (alpha; v1.17 slices
 > 0–4 + kind e2e) reconciles `GoldenPathRepo` and `Blueprint` CRDs. **Portal UX**
