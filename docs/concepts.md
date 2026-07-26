@@ -51,6 +51,13 @@ standard + module layout). The monolithic `standards/terraform-module-standard.m
 file is superseded but retained for diff reference. Generated module READMEs cite
 the pack version recorded in `repave.yaml`.
 
+## Backstage Software Catalog
+
+Optional or required `catalog-info.yaml` in generated repos registers components in
+[Backstage](https://backstage.io/) with Repave lineage annotations (`repave.dev/*`).
+See [`docs/backstage.md`](backstage.md) and
+[`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
+
 ## Portal
 
 The bundled web UI maps blueprint inputs to generation and shows gate results on

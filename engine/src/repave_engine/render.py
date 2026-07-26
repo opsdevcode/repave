@@ -10,6 +10,8 @@ import yaml
 from copier import run_copy
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from repave_engine import __version__
+from repave_engine.backstage_catalog import write_backstage_catalog_if_enabled
 from repave_engine.blueprint import Blueprint, _find_repo_root
 from repave_engine.gates import is_gate_artifact_path
 from repave_engine.policy_selection import (
@@ -139,6 +141,7 @@ def render_blueprint(
         "_repave_blueprint_version": blueprint.version,
         "_repave_standard_source": blueprint.standard_source,
         "_repave_standard_version": blueprint.standard_version,
+        "_repave_engine_version": __version__,
     }
 
     run_copy(
@@ -149,6 +152,7 @@ def render_blueprint(
         defaults=True,
         unsafe=True,
     )
+    write_backstage_catalog_if_enabled(output_dir, blueprint, payload)
     if blueprint.name == "dashboards-as-code-generic":
         backend = str(payload.get("backend", "grafana"))
         output_mode = str(payload.get("output_mode", "native"))

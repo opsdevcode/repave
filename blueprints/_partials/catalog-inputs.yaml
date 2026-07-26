@@ -1,0 +1,30 @@
+# Optional Backstage catalog inputs (copy into blueprint spec.inputs when needed).
+#
+# app-service-generic: always emits catalog-info.yaml; include owner, system,
+# catalog_lifecycle (and description) — no include_backstage_catalog flag.
+#
+# terraform-module-generic / helm-chart-generic: set include_backstage_catalog
+# to "true" and supply owner (required when catalog is enabled).
+#
+# - name: include_backstage_catalog
+#   type: string
+#   required: false
+#   default: "false"
+#   enum: ["true", "false"]
+#   description: Emit catalog-info.yaml for Backstage Software Catalog import.
+# - name: owner
+#   type: string
+#   required: false
+#   default: ""
+#   description: Backstage spec.owner (e.g. group:platform or team:payments).
+# - name: system
+#   type: string
+#   required: false
+#   default: ""
+#   description: Backstage spec.system (e.g. checkout-platform).
+# - name: catalog_lifecycle
+#   type: string
+#   required: false
+#   default: experimental
+#   enum: [experimental, production, deprecated]
+#   description: Backstage spec.lifecycle for the generated component.

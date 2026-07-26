@@ -60,6 +60,8 @@ live GitHub required for default tests):
 - **Merge queue:** feature PRs land on `main` via GitHub’s merge queue (squash); required
   checks run on `pull_request` and `merge_group`. See
   [CONTRIBUTING.md](CONTRIBUTING.md) and [`.github/rulesets/README.md`](.github/rulesets/README.md).
+- **Backstage:** generated repos may include `catalog-info.yaml` with Repave lineage
+  annotations — see [`docs/backstage.md`](docs/backstage.md).
 - **Release:** Conventional commits → semver bump, `engine/CHANGELOG.md`, GitHub
   Release with wheel (see [Releases](#releases)).
 

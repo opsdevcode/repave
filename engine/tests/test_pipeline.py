@@ -488,6 +488,10 @@ def test_generate_app_service_dry_run(
     output_dir = result.render.output_dir
     assert (output_dir / "Dockerfile").is_file()
     assert (output_dir / "catalog-info.yaml").is_file()
+    catalog = yaml.safe_load((output_dir / "catalog-info.yaml").read_text(encoding="utf-8"))
+    assert catalog["metadata"]["name"] == "checkout-api"
+    assert catalog["spec"]["owner"] == "team:payments"
+    assert catalog["metadata"]["annotations"]["repave.dev/blueprint"] == "app-service-generic"
     assert (output_dir / "src" / "app" / "main.py").is_file()
     assert (output_dir / ".github" / "workflows" / "repave-gates.yml").is_file()
     readme = (output_dir / "README.md").read_text(encoding="utf-8")

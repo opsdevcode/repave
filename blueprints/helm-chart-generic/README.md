@@ -17,3 +17,6 @@ uv run repave generate ../blueprints/helm-chart-generic \
 ```
 
 Requires `helm` on PATH for `helm-lint` and `helm-template` gates.
+
+Optional Backstage catalog: `--input include_backstage_catalog=true --input owner=group:platform`
+(see [`docs/backstage.md`](../../docs/backstage.md)).
