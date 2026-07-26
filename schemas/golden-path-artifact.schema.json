@@ -33,7 +33,7 @@
       "properties": {
         "artifactType": {
           "type": "string",
-          "enum": ["terraform-module", "ansible-role"]
+          "enum": ["terraform-module", "terraform-environment-stack", "ansible-role"]
         },
         "blueprint": {
           "type": "object",
@@ -88,6 +88,30 @@
             }
           }
         },
+        "terraformEnvironmentStack": {
+          "type": "object",
+          "required": ["stack_name", "cloud_provider", "environment", "pinned_modules"],
+          "additionalProperties": false,
+          "properties": {
+            "stack_name": { "type": "string", "minLength": 1 },
+            "cloud_provider": { "type": "string" },
+            "environment": { "type": "string" },
+            "pinned_modules": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["name", "source"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string", "minLength": 1 },
+                  "source": { "type": "string", "minLength": 1 },
+                  "version": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
         "ansibleRole": {
           "type": "object",
           "required": ["role_name", "namespace"],
@@ -127,6 +151,17 @@
           },
           "then": {
             "required": ["terraformModule"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "terraform-environment-stack" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["terraformEnvironmentStack"]
           }
         },
         {

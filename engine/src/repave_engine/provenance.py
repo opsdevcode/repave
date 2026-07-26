@@ -54,6 +54,37 @@ def _build_terraform_spec(
     return spec, module_name
 
 
+def _build_environment_stack_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    stack_name = str(values.get("stack_name", blueprint.name))
+    module_name = str(values.get("module_name", "foundation")).strip()
+    module_source = str(values.get("module_source", "")).strip()
+    module_version = str(values.get("module_version", "")).strip()
+    pinned: dict[str, Any] = {
+        "name": module_name,
+        "source": module_source,
+    }
+    if module_version:
+        pinned["version"] = module_version
+    spec: dict[str, Any] = {
+        "artifactType": "terraform-environment-stack",
+        "terraformEnvironmentStack": {
+            "stack_name": stack_name,
+            "cloud_provider": str(values.get("cloud_provider", "")),
+            "environment": str(values.get("environment", "dev")),
+            "pinned_modules": [pinned],
+        },
+    }
+    if blueprint.checkov_policies is not None:
+        spec["checkov"] = {
+            "policies_source": blueprint.checkov_policies.policies_source,
+            "policy_version": blueprint.checkov_policies.policy_version,
+        }
+    return spec, stack_name
+
+
 def _build_ansible_spec(blueprint: Blueprint, values: dict[str, Any]) -> tuple[dict[str, Any], str]:
     role_name = str(values.get("role_name", blueprint.name))
     namespace = str(values.get("namespace", ""))
@@ -79,6 +110,8 @@ def _build_ansible_spec(blueprint: Blueprint, values: dict[str, Any]) -> tuple[d
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
+    elif blueprint.artifact_type == "terraform-environment-stack":
+        artifact_spec, metadata_name = _build_environment_stack_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

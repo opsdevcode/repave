@@ -286,6 +286,15 @@ def validate_inputs(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, A
     return normalized
 
 
+def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
+    """Local module repo directory name for publish and PR planning."""
+    if blueprint.artifact_type == "terraform-environment-stack":
+        return str(values.get("stack_name", blueprint.name))
+    if blueprint.artifact_type == "ansible-role":
+        return str(values.get("role_name", blueprint.name))
+    return str(values.get("module_name", blueprint.name))
+
+
 def _validate_provider_scope(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
     if blueprint.artifact_type != "terraform-module":
         return
@@ -388,9 +397,14 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
 # Portal catalog grouping (v1.18). Order is display order; unknown types follow.
 _ARTIFACT_GROUP_META: dict[str, tuple[str, str]] = {
     "terraform-module": ("Terraform", "Modules and infrastructure scaffolds"),
+    "terraform-environment-stack": ("Terraform", "Environment composition stacks"),
     "ansible-role": ("Ansible", "Galaxy-compatible roles"),
 }
-_ARTIFACT_GROUP_ORDER: tuple[str, ...] = ("terraform-module", "ansible-role")
+_ARTIFACT_GROUP_ORDER: tuple[str, ...] = (
+    "terraform-module",
+    "terraform-environment-stack",
+    "ansible-role",
+)
 
 
 @dataclass(frozen=True)

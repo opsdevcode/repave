@@ -49,6 +49,19 @@ def resource_module_inputs() -> dict[str, str]:
 
 
 @pytest.fixture
+def env_stack_inputs() -> dict[str, str]:
+    return {
+        "stack_name": "platform",
+        "description": "Example environment stack",
+        "cloud_provider": "aws",
+        "environment": "dev",
+        "module_name": "foundation",
+        "module_source": "./modules/_example",
+        "module_version": "",
+    }
+
+
+@pytest.fixture
 def sample_inputs() -> dict[str, str]:
     return {
         "module_name": "example",

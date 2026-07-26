@@ -1,0 +1,78 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: terraform-environment-stack
+  version: 0.1.0
+  description: Environment composition stack with pinned module sources (env-* repos).
+spec:
+  artifactType: terraform-environment-stack
+  standard:
+    source: standards/terraform-environment-stack-standard.md
+    version: 0.1.0
+  inputs:
+    - name: stack_name
+      type: string
+      required: true
+      description: Short name for this stack (for example platform, networking).
+    - name: description
+      type: string
+      required: true
+      description: What this environment stack deploys.
+    - name: cloud_provider
+      type: string
+      required: true
+      description: Cloud provider for this stack.
+      enum:
+        - aws
+        - azure
+        - gcp
+      default: aws
+    - name: environment
+      type: string
+      required: true
+      description: Deployment environment tier.
+      enum:
+        - dev
+        - staging
+        - prod
+      default: dev
+    - name: module_name
+      type: string
+      required: true
+      description: Logical name for the primary module block in main.tf.
+      default: foundation
+    - name: module_source
+      type: string
+      required: true
+      description: Terraform module source (local path, registry, or git URL without ref).
+      default: "./modules/_example"
+    - name: module_version
+      type: string
+      required: false
+      description: Registry module version constraint (omit for local/git sources with ref in URL).
+      default: ""
+  template:
+    engine: copier
+    path: template
+  gates:
+    - terraform-fmt
+    - terraform-validate
+    - tflint
+    - checkov
+    - secrets
+    - docs-drift
+    - provenance-drift
+  checkov:
+    policies_source: policy/checkov/policies
+    policy_version: 1.2.0
+  gate_config:
+    checkov:
+      external_checks_dir: policy/checkov
+      config_file: .checkov.yml
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "env-{cloud_provider}-{stack_name}"
+      title_template: "Bootstrap {environment} stack {stack_name} on {cloud_provider}"

@@ -172,6 +172,7 @@ def test_list_blueprints(repo_root: Path) -> None:
     names = [bp.name for bp in blueprints]
     assert "terraform-module-generic" in names
     assert "terraform-module-resource" in names
+    assert "terraform-environment-stack" in names
     assert "ansible-role-generic" in names
 
 
@@ -206,6 +207,41 @@ def test_validate_single_resource_inputs(repo_root: Path) -> None:
     assert normalized["provider_services"] == "s3"
     scope = json.loads(normalized["provider_service_scope"])
     assert scope["s3"]["resources"] == ["bucket"]
+
+
+def test_load_terraform_environment_stack_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-environment-stack",
+        repo_root,
+    )
+    assert blueprint.name == "terraform-environment-stack"
+    assert blueprint.artifact_type == "terraform-environment-stack"
+    assert blueprint.output_repo_name_template.startswith("env-")
+
+
+def test_build_provenance_document_environment_stack(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "terraform-environment-stack",
+        repo_root,
+    )
+    from repave_engine.provenance import build_provenance_document
+
+    document = build_provenance_document(
+        blueprint,
+        {
+            "stack_name": "platform",
+            "description": "Core platform stack",
+            "cloud_provider": "aws",
+            "environment": "dev",
+            "module_name": "foundation",
+            "module_source": "./modules/_example",
+            "module_version": "",
+        },
+    )
+    assert document["spec"]["artifactType"] == "terraform-environment-stack"
+    stack = document["spec"]["terraformEnvironmentStack"]
+    assert stack["stack_name"] == "platform"
+    assert stack["pinned_modules"][0]["source"] == "./modules/_example"
 
 
 def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
