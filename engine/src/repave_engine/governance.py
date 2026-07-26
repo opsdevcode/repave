@@ -13,6 +13,7 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
     "terraform-module": (
         "terraform-fmt",
         "terraform-validate",
+        "terraform-test",
         "tflint",
         "checkov",
         *_BASELINE_GATES,
@@ -20,6 +21,7 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
     "terraform-environment-stack": (
         "terraform-fmt",
         "terraform-validate",
+        "terraform-test",
         "tflint",
         "checkov",
         *_BASELINE_GATES,
@@ -52,6 +54,12 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
     ),
     "checkov-policy": (
         "checkov",
+        *_BASELINE_GATES,
+    ),
+    "helm-chart": (
+        "yamllint",
+        "helm-lint",
+        "helm-template",
         *_BASELINE_GATES,
     ),
 }

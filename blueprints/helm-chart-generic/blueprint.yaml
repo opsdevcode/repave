@@ -1,0 +1,87 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: helm-chart-generic
+  version: 0.1.0
+  description: Governed Helm chart for Kubernetes workloads (Deployment, Service, optional Ingress).
+spec:
+  artifactType: helm-chart
+  standard:
+    source: standards/helm/chart-standard.md
+    version: 1.0.0
+  inputs:
+    - name: chart_name
+      type: string
+      required: true
+      description: Helm chart name (Chart.yaml name; repo helm-{chart_name}).
+    - name: app_name
+      type: string
+      required: true
+      description: Application label and container name.
+    - name: description
+      type: string
+      required: true
+      description: Chart description (Chart.yaml and README).
+    - name: image_repository
+      type: string
+      required: true
+      description: Container image repository (without tag).
+    - name: image_tag
+      type: string
+      required: false
+      default: "1.0.0"
+      description: Container image tag.
+    - name: service_type
+      type: string
+      required: false
+      default: ClusterIP
+      enum:
+        - ClusterIP
+        - NodePort
+        - LoadBalancer
+      description: Kubernetes Service type.
+    - name: service_port
+      type: string
+      required: false
+      default: "8080"
+      description: Service port exposed by the chart.
+    - name: enable_ingress
+      type: string
+      required: false
+      default: "false"
+      enum:
+        - "true"
+        - "false"
+      description: Emit an Ingress template when true.
+    - name: ingress_host
+      type: string
+      required: false
+      default: ""
+      description: Ingress hostname (required when enable_ingress is true).
+  template:
+    engine: copier
+    path: template
+  gates:
+    - yamllint
+    - helm-lint
+    - helm-template
+    - secrets
+    - docs-drift
+    - provenance-drift
+  gate_config:
+    yamllint:
+      paths:
+        - Chart.yaml
+        - values.yaml
+    helm-lint:
+      chart_path: "."
+    helm-template:
+      chart_path: "."
+      release_name: repave-test
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "helm-{chart_name}"
+      title_template: "Bootstrap Helm chart {chart_name}"

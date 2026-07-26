@@ -1,0 +1,22 @@
+replicaCount: 1
+
+image:
+  repository: {{ image_repository }}
+  tag: "{{ image_tag }}"
+  pullPolicy: IfNotPresent
+
+service:
+  type: {{ service_type }}
+  port: {{ service_port }}
+
+{% if enable_ingress == 'true' %}
+ingress:
+  enabled: true
+  host: {{ ingress_host }}
+{% else %}
+ingress:
+  enabled: false
+  host: ""
+{% endif %}
+
+resources: {}

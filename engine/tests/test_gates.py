@@ -39,7 +39,10 @@ def _seed_mini_repo(tmp_path: Path, repo_root: Path) -> Path:
 
 def test_docs_drift_passes_with_rendered_readme(tmp_path: Path) -> None:
     readme = tmp_path / "README.md"
-    readme.write_text("# example\n\n## Usage\n\nUse this module.\n", encoding="utf-8")
+    readme.write_text(
+        "# example\n\n## Usage\n\nUse this module.\n\n## Provenance\n\nSee `repave.yaml`.\n",
+        encoding="utf-8",
+    )
 
     results = run_gates(tmp_path, ("docs-drift",))
 
@@ -73,6 +76,16 @@ def test_docs_drift_fails_without_usage_section(tmp_path: Path) -> None:
 
     assert results[0].passed is False
     assert "missing Usage section" in results[0].message
+
+
+def test_docs_drift_fails_without_provenance_section(tmp_path: Path) -> None:
+    readme = tmp_path / "README.md"
+    readme.write_text("# example\n\n## Usage\n\nExample.\n", encoding="utf-8")
+
+    results = run_gates(tmp_path, ("docs-drift",))
+
+    assert results[0].passed is False
+    assert "missing Provenance section" in results[0].message
 
 
 def test_unknown_gate_fails(tmp_path: Path) -> None:

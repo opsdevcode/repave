@@ -63,6 +63,7 @@ spec:
   gates:
     - terraform-fmt
     - terraform-validate
+    - terraform-test
     - tflint
     - checkov
     - secrets

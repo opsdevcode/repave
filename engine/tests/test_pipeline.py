@@ -37,6 +37,9 @@ def test_generate_terraform_module_generic_publishes_module_repo(
     assert "example" in (module_repo.local_path / "README.md").read_text(encoding="utf-8")
     assert not (module_repo.local_path / ".terraform").exists()
     assert (module_repo.local_path / ".git").exists()
+    workflow = module_repo.local_path / ".github" / "workflows" / "terraform-gates.yml"
+    assert workflow.is_file()
+    assert "repave gates --path ." in workflow.read_text(encoding="utf-8")
     assert result.pr_plan is not None
     assert result.pr_plan.repository.web_url.endswith("/tf-aws-example")
     assert all(g.passed or g.skipped for g in result.gates)
@@ -410,6 +413,50 @@ def test_generate_ansible_role_generic_publishes_role_repo(
     assert not (role_repo.local_path / ".molecule").exists()
     assert (role_repo.local_path / ".git").exists()
     assert result.pr_plan is not None
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_helm_chart_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "helm-chart-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "chart_name": "api",
+            "app_name": "api",
+            "description": "HTTP API",
+            "image_repository": "ghcr.io/acme/api",
+            "image_tag": "1.2.3",
+            "service_type": "ClusterIP",
+            "enable_ingress": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    assert (output_dir / "Chart.yaml").is_file()
+    assert (output_dir / "values.yaml").is_file()
+    assert (output_dir / "templates" / "deployment.yaml").is_file()
+    assert (output_dir / "repave.yaml").is_file()
+    readme = (output_dir / "README.md").read_text(encoding="utf-8")
+    assert "## Provenance" in readme
+    assert "helm-chart-generic" in readme
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["artifactType"] == "helm-chart"
+    assert spec["helmChart"]["chart_name"] == "api"
+    lint = next(g for g in result.gates if g.name == "helm-lint")
+    template = next(g for g in result.gates if g.name == "helm-template")
+    assert lint.passed or lint.skipped
+    assert template.passed or template.skipped
     assert all(g.passed or g.skipped for g in result.gates)
 
 

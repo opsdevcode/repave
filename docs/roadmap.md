@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.42.0  
-**In progress:** v1.23 generation provenance visibility; **v1.31** Helm chart golden path (accelerated)  
+**In progress:** v1.32 application service golden path  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
@@ -341,6 +341,9 @@ artifact-type-aware provenance (v1.14).
 **Done when:** A module repo clearly states its golden-path lineage without reading
 repave source.
 
+**Status:** Shipped on `main` (README `## Provenance` sync on generate, `docs-drift`
+requires Provenance + `repave.yaml`, portal governance **Lineage** row with engine version).
+
 ---
 
 ### v1.24 — Generated module CI template
@@ -360,6 +363,10 @@ shared gate-list contract.
 
 **Done when:** A freshly published module runs fmt, validate, tflint, checkov, and
 `terraform test` on push without manual workflow authoring.
+
+**Status:** Shipped on `main` (`.github/workflows/terraform-gates.yml` / `repave-gates.yml`
+from blueprint gates, `spec.ci` in `repave.yaml`, `repave gates` CLI, toolchain pins
+aligned with `deploy/local/Dockerfile`).
 
 ---
 
@@ -583,6 +590,9 @@ conformance harness.
 
 **Done when:** A chart generates and passes helm lint/template where helm is
 present, and skips cleanly where it is absent.
+
+**Status:** Shipped on `main` (`helm-chart-generic`, `helm-lint` / `helm-template`
+gates, `standards/helm/chart-standard.md`).
 
 ---
 

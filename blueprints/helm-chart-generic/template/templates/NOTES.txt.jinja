@@ -1,0 +1,8 @@
+Thank you for installing {{ chart_name }}.
+
+Your release is named {% raw %}{{ .Release.Name }}{% endraw %}.
+
+To learn more about the release, try:
+
+  helm status {% raw %}{{ .Release.Name }}{% endraw %}
+  helm get all {% raw %}{{ .Release.Name }}{% endraw %}

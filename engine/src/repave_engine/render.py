@@ -206,8 +206,28 @@ def render_blueprint(
             payload,
             filename=blueprint.provenance_file,
         )
+        from repave_engine.provenance_readme import sync_readme_provenance_section
+
+        sync_readme_provenance_section(output_dir, blueprint, payload)
+
+        from repave_engine.ci_workflow import write_ci_workflow
+
+        write_ci_workflow(output_dir, blueprint)
+        _append_yamllint_workflow_ignore(output_dir)
 
     return RenderResult(output_dir=output_dir, values=payload)
+
+
+def _append_yamllint_workflow_ignore(output_dir: Path) -> None:
+    """GitHub Actions workflow YAML is validated in CI, not repo yamllint."""
+    config = output_dir / ".yamllint"
+    if not config.is_file():
+        return
+    text = config.read_text(encoding="utf-8")
+    if ".github/workflows" in text:
+        return
+    block = "\nignore: |\n  .github/workflows/\n"
+    config.write_text(text.rstrip() + block, encoding="utf-8")
 
 
 def _prune_dashboard_backend_outputs(output_dir: Path, backend: str) -> None:

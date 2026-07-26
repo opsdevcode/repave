@@ -1,0 +1,37 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+  - "{% if enable_ingress != 'true' %}templates/ingress.yaml{% endif %}"
+
+chart_name:
+  type: str
+
+app_name:
+  type: str
+
+description:
+  type: str
+
+image_repository:
+  type: str
+
+image_tag:
+  type: str
+  default: "1.0.0"
+
+service_type:
+  type: str
+  default: ClusterIP
+
+service_port:
+  type: str
+  default: "8080"
+
+enable_ingress:
+  type: str
+  default: "false"
+
+ingress_host:
+  type: str
+  default: ""

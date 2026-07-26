@@ -99,7 +99,9 @@
               "grafana-dashboard",
               "datadog-dashboard",
               "datadog-monitor",
-              "datadog-api-validate"
+              "datadog-api-validate",
+              "helm-lint",
+              "helm-template"
             ]
           }
         },
@@ -114,7 +116,8 @@
             "checkov-policy",
             "opa-policy",
             "azure-policy",
-            "observability"
+            "observability",
+            "helm-chart"
           ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
@@ -261,6 +264,17 @@
                 }
               }
             },
+            "yamllint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "paths": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Files or directories to lint relative to repo root (Helm charts omit templates/)."
+                }
+              }
+            },
             "opa": {
               "type": "object",
               "additionalProperties": false,
@@ -351,6 +365,30 @@
                 "monitors_glob": {
                   "type": "string",
                   "description": "Glob of Datadog monitor JSON files relative to the generated repo root."
+                }
+              }
+            },
+            "helm-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "chart_path": {
+                  "type": "string",
+                  "description": "Chart directory relative to the generated repo root."
+                }
+              }
+            },
+            "helm-template": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "chart_path": {
+                  "type": "string",
+                  "description": "Chart directory relative to the generated repo root."
+                },
+                "release_name": {
+                  "type": "string",
+                  "description": "Release name passed to helm template during generate gates."
                 }
               }
             }

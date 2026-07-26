@@ -10,6 +10,7 @@ import yaml
 
 from repave_engine import __version__
 from repave_engine.blueprint import Blueprint
+from repave_engine.ci_workflow import build_ci_provenance_block
 from repave_engine.governance import governance_provenance_block
 from repave_engine.policy_selection import PolicySelection, policy_provenance_block
 
@@ -32,8 +33,11 @@ def _azure_policy_provenance_block(blueprint: Blueprint) -> dict[str, str] | Non
     }
 
 
-def load_artifact_schema(repo_root: Path) -> dict[str, Any]:
-    schema_path = repo_root / "schemas" / "golden-path-artifact.schema.json"
+def load_artifact_schema(repo_root: Path | None = None) -> dict[str, Any]:
+    if repo_root is not None:
+        schema_path = repo_root / "schemas" / "golden-path-artifact.schema.json"
+    else:
+        schema_path = Path(__file__).resolve().parent / "data" / "golden-path-artifact.schema.json"
     return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
 
 
@@ -304,6 +308,28 @@ def _build_checkov_policy_spec(
     return spec, policy_name
 
 
+def _build_helm_chart_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    chart_name = str(values.get("chart_name", blueprint.name))
+    spec: dict[str, Any] = {
+        "artifactType": "helm-chart",
+        "helmChart": {
+            "chart_name": chart_name,
+            "app_name": str(values.get("app_name", "")).strip(),
+            "image_repository": str(values.get("image_repository", "")).strip(),
+            "image_tag": str(values.get("image_tag", "")).strip(),
+            "service_type": str(values.get("service_type", "ClusterIP")).strip(),
+            "enable_ingress": str(values.get("enable_ingress", "false")).strip(),
+        },
+    }
+    host = str(values.get("ingress_host", "")).strip()
+    if host:
+        spec["helmChart"]["ingress_host"] = host
+    return spec, chart_name
+
+
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
@@ -321,6 +347,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_environment_stack_spec(blueprint, values)
     elif blueprint.artifact_type == "observability":
         artifact_spec, metadata_name = _build_observability_spec(blueprint, values)
+    elif blueprint.artifact_type == "helm-chart":
+        artifact_spec, metadata_name = _build_helm_chart_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 
@@ -347,6 +375,7 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
     }
     if policy_block is not None:
         spec_body["policy"] = policy_block
+    spec_body["ci"] = build_ci_provenance_block(blueprint)
 
     return {
         "apiVersion": "repave.dev/v1beta1",
@@ -365,12 +394,24 @@ def write_provenance_file(
 ) -> Path:
     path = output_dir / filename
     document = build_provenance_document(blueprint, values)
-    body = yaml.safe_dump(document, sort_keys=False, default_flow_style=False)
+
+    class _ProvenanceDumper(yaml.SafeDumper):
+        def increase_indent(self, flow: bool = False, indentless: bool = False) -> Any:
+            return super().increase_indent(flow, False)
+
+    body = yaml.dump(
+        document,
+        Dumper=_ProvenanceDumper,
+        sort_keys=False,
+        default_flow_style=False,
+        indent=2,
+        width=4096,
+    )
     path.write_text(f"---\n{body}", encoding="utf-8")
     return path
 
 
-def validate_provenance_file(path: Path, repo_root: Path) -> None:
+def validate_provenance_file(path: Path, repo_root: Path | None = None) -> None:
     if not path.is_file():
         raise FileNotFoundError(f"Provenance file missing: {path}")
 

@@ -237,6 +237,12 @@ def run_docs_drift(ctx: GateContext) -> GateResult:
     if "## Usage" not in content:
         return GateResult("docs-drift", False, False, "README missing Usage section")
 
+    if "## Provenance" not in content:
+        return GateResult("docs-drift", False, False, "README missing Provenance section")
+
+    if "repave.yaml" not in content:
+        return GateResult("docs-drift", False, False, "README must reference repave.yaml")
+
     return GateResult("docs-drift", True, False, "README present and rendered")
 
 
@@ -247,7 +253,10 @@ def run_provenance_drift(ctx: GateContext) -> GateResult:
 
     provenance_path = ctx.output_dir / blueprint.provenance_file
     try:
-        repo_root = _find_repo_root(blueprint.path)
+        try:
+            repo_root = _find_repo_root(blueprint.path)
+        except FileNotFoundError:
+            repo_root = None
         validate_provenance_file(provenance_path, repo_root)
     except FileNotFoundError as exc:
         return GateResult("provenance-drift", False, False, str(exc))
@@ -271,13 +280,24 @@ def _yamllint_config_args(output_dir: Path) -> list[str]:
     return []
 
 
+def _yamllint_paths(ctx: GateContext) -> list[str]:
+    raw = ctx.config("yamllint")
+    paths = raw.get("paths")
+    if isinstance(paths, list) and paths:
+        return [str(path).strip() for path in paths if str(path).strip()]
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type == "helm-chart":
+        return ["Chart.yaml", "values.yaml"]
+    return ["."]
+
+
 def run_yamllint(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not tool_available("yamllint"):
         return GateResult("yamllint", True, True, "yamllint not installed; skipped")
 
     config_args = _yamllint_config_args(output_dir)
-    result = run_command(["yamllint", *config_args, "."], output_dir)
+    targets = _yamllint_paths(ctx)
+    result = run_command(["yamllint", *config_args, *targets], output_dir)
     if result.returncode == 0:
         return GateResult("yamllint", True, False, "yamllint passed")
     return GateResult(
@@ -676,6 +696,61 @@ def run_datadog_api_validate(ctx: GateContext) -> GateResult:
         False,
         f"Datadog API validated {validated} artifact(s)",
     )
+
+
+def _helm_chart_dir(output_dir: Path, ctx: GateContext, gate: str) -> Path:
+    raw = ctx.config(gate)
+    rel = str(raw.get("chart_path", ".")).strip() or "."
+    return (output_dir / rel).resolve()
+
+
+def run_helm_lint(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "helm-chart":
+        return GateResult("helm-lint", True, True, "helm-lint gate not applicable; skipped")
+
+    if not tool_available("helm"):
+        return GateResult("helm-lint", True, True, "helm not installed; skipped")
+
+    chart_dir = _helm_chart_dir(output_dir, ctx, "helm-lint")
+    chart_yaml = chart_dir / "Chart.yaml"
+    if not chart_yaml.is_file():
+        return GateResult("helm-lint", True, True, "no Chart.yaml found; skipped")
+
+    result = run_command(["helm", "lint", str(chart_dir.relative_to(output_dir))], output_dir)
+    if result.returncode == 0:
+        return GateResult("helm-lint", True, False, "helm lint passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "helm lint failed"
+    return GateResult("helm-lint", False, False, detail)
+
+
+def run_helm_template(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "helm-chart":
+        return GateResult("helm-template", True, True, "helm-template gate not applicable; skipped")
+
+    if not tool_available("helm"):
+        return GateResult("helm-template", True, True, "helm not installed; skipped")
+
+    chart_dir = _helm_chart_dir(output_dir, ctx, "helm-template")
+    if not (chart_dir / "Chart.yaml").is_file():
+        return GateResult("helm-template", True, True, "no Chart.yaml found; skipped")
+
+    cfg = ctx.config("helm-template")
+    release = str(cfg.get("release_name", "repave-test"))
+    result = run_command(
+        [
+            "helm",
+            "template",
+            release,
+            str(chart_dir.relative_to(output_dir)),
+        ],
+        output_dir,
+    )
+    if result.returncode == 0:
+        return GateResult("helm-template", True, False, "helm template passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "helm template failed"
+    return GateResult("helm-template", False, False, detail)
 
 
 def _opa_native_globs(ctx: GateContext) -> list[str]:

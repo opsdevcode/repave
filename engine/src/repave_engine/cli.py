@@ -93,6 +93,22 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_gates(args: argparse.Namespace) -> int:
+    from repave_engine.artifact_blueprint import blueprint_from_repave_file
+    from repave_engine.gates import all_gates_passed, run_gates
+
+    repo_path = Path(args.path).resolve()
+    repave_file = repo_path / "repave.yaml"
+    blueprint = blueprint_from_repave_file(repave_file)
+
+    results = run_gates(repo_path, blueprint.gates, blueprint=blueprint)
+    for gate in results:
+        status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
+        print(f"[{status}] {gate.name}: {gate.message}")
+
+    return 0 if all_gates_passed(results) else 1
+
+
 def cmd_plan_upgrade(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo_root).resolve()
     target_repo = Path(args.target_repo).resolve()
@@ -336,6 +352,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     listing = sub.add_parser("list", help="List available blueprints", parents=[common])
     listing.set_defaults(func=cmd_list)
+
+    gates_cmd = sub.add_parser(
+        "gates",
+        help="Run golden-path gates from repave.yaml in a generated repository",
+    )
+    gates_cmd.add_argument(
+        "--path",
+        default=".",
+        help="Repository root containing repave.yaml (default: current directory)",
+    )
+    gates_cmd.set_defaults(func=cmd_gates)
 
     plan = sub.add_parser(
         "plan-upgrade",

@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {% raw %}{{ include "repave.fullname" . }}{% endraw %}
+  labels:
+    {% raw %}{{- include "repave.labels" . | nindent 4 }}{% endraw %}
+spec:
+  rules:
+    - host: {% raw %}{{ .Values.ingress.host }}{% endraw %}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {% raw %}{{ include "repave.fullname" . }}{% endraw %}
+                port:
+                  number: {% raw %}{{ .Values.service.port }}{% endraw %}

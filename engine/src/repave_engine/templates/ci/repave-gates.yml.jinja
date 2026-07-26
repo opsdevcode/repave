@@ -1,0 +1,72 @@
+name: repave gates
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "{{ python_version }}"
+      - name: Install repave-engine
+        run: pip install "repave-engine=={{ engine_version }}"
+{% if needs_terraform %}
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "{{ terraform_version }}"
+{% endif %}{% if needs_tflint %}
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: "{{ tflint_version }}"
+{% endif %}{% if needs_checkov %}
+      - name: Install Checkov
+        run: pip install "{{ checkov_spec }}"
+{% endif %}{% if needs_yamllint %}
+      - name: Install yamllint
+        run: pip install yamllint
+{% endif %}{% if needs_helm %}
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "{{ helm_version }}"
+{% endif %}{% if needs_ansible %}
+      - name: Install Ansible tooling
+        run: pip install ansible ansible-lint
+{% endif %}{% if needs_conftest %}
+      - name: Install Conftest
+        run: |
+          curl -sSL "https://github.com/open-policy-agent/conftest/releases/download/v{{ conftest_version }}/conftest_{{ conftest_version }}_Linux_x86_64.tar.gz" \
+            | tar xz -C /usr/local/bin conftest
+{% endif %}{% if needs_promtool %}
+      - name: Install Promtool
+        run: |
+          curl -sSL "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin prometheus-{{ prometheus_version }}.linux-amd64/promtool
+{% endif %}{% if needs_amtool %}
+      - name: Install amtool
+        run: |
+          curl -sSL "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin alertmanager-{{ alertmanager_version }}.linux-amd64/amtool
+{% endif %}{% if needs_molecule %}
+      - name: Molecule (Docker)
+        run: pip install molecule molecule-plugins[docker] docker
+{% endif %}
+      - name: Run golden path gates
+        run: repave gates --path .
+{% if needs_datadog_api %}
+        env:
+{% raw %}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+{% endraw %}
+{% endif %}
