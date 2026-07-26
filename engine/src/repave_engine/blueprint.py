@@ -11,6 +11,7 @@ import jsonschema
 import yaml
 
 from repave_engine.provider_catalog import (
+    get_service_definition,
     load_provider_catalog,
     normalize_provider_service_scope,
 )
@@ -97,6 +98,7 @@ class Blueprint:
     terraform_test_gate: TerraformTestGateConfig = dataclass_field(
         default_factory=TerraformTestGateConfig
     )
+    terraform_layout: str = "generic"
 
     @property
     def template_dir(self) -> Path:
@@ -210,6 +212,11 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         config_file=str(ansible_lint_gate_raw.get("config_file", ".ansible-lint")),
     )
 
+    terraform_module_spec = spec.get("terraformModule")
+    terraform_layout = "generic"
+    if isinstance(terraform_module_spec, dict):
+        terraform_layout = str(terraform_module_spec.get("layout", "generic"))
+
     return Blueprint(
         path=blueprint_file.parent,
         name=metadata["name"],
@@ -233,6 +240,7 @@ def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Bluep
         tflint_gate=tflint_gate,
         terraform_validate_gate=terraform_validate_gate,
         terraform_test_gate=terraform_test_gate,
+        terraform_layout=terraform_layout,
     )
 
 
@@ -286,6 +294,10 @@ def _validate_provider_scope(blueprint: Blueprint, normalized: dict[str, Any]) -
     if not catalog:
         return
 
+    if blueprint.terraform_layout == "single-resource":
+        _validate_single_resource_scope(blueprint, normalized, catalog)
+        return
+
     if "cloud_provider" not in normalized or "provider_services" not in normalized:
         return
 
@@ -303,6 +315,44 @@ def _validate_provider_scope(blueprint: Blueprint, normalized: dict[str, Any]) -
         services=services,
         scope_raw=scope_raw,
     )
+    normalized["provider_service_scope_summary"] = _format_scope_summary(
+        normalized["provider_service_scope"]
+    )
+
+
+def _validate_single_resource_scope(
+    blueprint: Blueprint,
+    normalized: dict[str, Any],
+    catalog: dict[str, Any],
+) -> None:
+    if "cloud_provider" not in normalized:
+        return
+    provider = str(normalized["cloud_provider"])
+    service = str(normalized.get("provider_service", "")).strip()
+    resource = str(normalized.get("provider_resource", "")).strip()
+    if not service or not resource:
+        raise ValueError("provider_service and provider_resource are required")
+
+    definition = get_service_definition(catalog, provider, service)
+    if definition is None:
+        raise ValueError(f"Unknown provider service {provider}/{service!r}")
+    allowed = definition.get("resources", [])
+    if resource not in allowed:
+        allowed_text = ", ".join(allowed[:12])
+        suffix = "..." if len(allowed) > 12 else ""
+        raise ValueError(
+            f"Invalid provider_resource {resource!r} for {service!r}. "
+            f"Allowed: {allowed_text}{suffix}"
+        )
+
+    normalized["provider_services"] = service
+    scope = {
+        service: {
+            "mode": "custom",
+            "resources": [resource],
+        }
+    }
+    normalized["provider_service_scope"] = json.dumps(scope)
     normalized["provider_service_scope_summary"] = _format_scope_summary(
         normalized["provider_service_scope"]
     )

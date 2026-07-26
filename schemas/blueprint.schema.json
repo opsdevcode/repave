@@ -101,6 +101,18 @@
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
         },
+        "terraformModule": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "layout": {
+              "type": "string",
+              "enum": ["generic", "single-resource"],
+              "default": "generic",
+              "description": "generic: multi-service scope; single-resource: one provider resource file."
+            }
+          }
+        },
         "checkov": {
           "type": "object",
           "required": ["policies_source"],

@@ -1,0 +1,6 @@
+# Checkov configuration for generated module repositories.
+# Custom policies are copied to policy/checkov at render time from the repave policy pack.
+external-checks-dir:
+  - policy/checkov
+framework:
+  - terraform

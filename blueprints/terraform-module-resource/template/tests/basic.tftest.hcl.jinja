@@ -1,0 +1,25 @@
+run "plan_default" {
+  command = plan
+
+  assert {
+    condition     = length(output.resource_ids) > 0
+    error_message = "Expected at least one resource id output in default plan"
+  }
+}
+
+run "plan_with_overrides" {
+  command = plan
+
+  variables {
+    environment = "dev"
+    tags = {
+      owner = "platform-engineering"
+      app   = "example"
+    }
+  }
+
+  assert {
+    condition     = output.environment == "dev"
+    error_message = "Expected environment output to match the test input"
+  }
+}

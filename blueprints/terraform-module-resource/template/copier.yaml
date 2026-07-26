@@ -1,0 +1,42 @@
+# Copier template metadata for terraform-module-generic
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+module_name:
+  type: str
+  help: Name of the Terraform module
+
+description:
+  type: str
+  help: Short module description
+
+cloud_provider:
+  type: str
+  help: Cloud provider this module targets (aws, azure, gcp)
+
+provider_services:
+  type: str
+  help: Comma-separated provider services in scope (single-service for this blueprint)
+
+provider_service:
+  type: str
+  help: Provider service in scope
+
+provider_resource:
+  type: str
+  help: Single resource type to scaffold
+
+provider_service_scope:
+  type: str
+  help: JSON map of service resource scope (basic or custom)
+
+provider_service_scope_summary:
+  type: str
+  help: Human-readable provider service scope summary
+
+scoped_resources:
+  type: yaml
+  default: []
+  help: Flat list of in-scope provider resources for template rendering
