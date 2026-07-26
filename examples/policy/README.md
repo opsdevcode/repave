@@ -24,3 +24,19 @@ spec:
     baseline_source: standards/policy/governance-baseline.md
     baseline_version: "1.0.0"
 ```
+
+## Plan-time OPA demo (destructive delete)
+
+The shared Rego rule `destructive_changes.rego` blocks Terraform plans that delete
+resources without replacement. Try it locally:
+
+```bash
+conftest test examples/policy/plan-destructive-delete.json -p policy/opa/policies
+```
+
+Expect a non-zero exit and a message containing `destructive delete`. In the portal,
+failed **opa** gates show a plain-language **Publish blocked** preamble when this rule
+fires during module generation.
+
+Create-only fixture (passes): `blueprints/opa-policy-generic/template/tests/fixtures/plan-create-only.json`.
+

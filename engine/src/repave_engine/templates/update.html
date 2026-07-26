@@ -41,6 +41,12 @@
     />
     <p class="field__hint muted">
       Local checkout of a module or role repo that contains <code>repave.yaml</code>.
+      {% if demo_module_path %}
+      Try the bundled fixture:
+      <button type="button" class="btn btn--ghost btn--sm" data-fill-demo-path="{{ demo_module_path }}">
+        Use terraform-minimal
+      </button>
+      {% endif %}
     </p>
   </div>
 
@@ -61,6 +67,33 @@
     <button class="btn btn--primary" type="submit">Preview upgrade</button>
   </div>
 </form>
+
+{% if demo_module_path %}
+<script>
+  (function () {
+    var btn = document.querySelector("[data-fill-demo-path]");
+    var input = document.getElementById("target_repo");
+    if (!btn || !input) return;
+    btn.addEventListener("click", function () {
+      input.value = btn.getAttribute("data-fill-demo-path") || "";
+      input.focus();
+    });
+  })();
+</script>
+{% endif %}
+
+<section class="card update-howto" aria-labelledby="howto-heading">
+  <div class="card__header">
+    <h2 id="howto-heading">Repave the estate</h2>
+  </div>
+  <div class="card__body">
+    <ol class="update-howto__steps">
+      <li>Preview file diffs when blueprint or standard pins move forward.</li>
+      <li>Apply on a branch locally, or open a remediation PR for reviewers.</li>
+      <li>Operator mode (optional) watches the same pins across many repos.</li>
+    </ol>
+  </div>
+</section>
 
 <section class="card" aria-labelledby="cli-heading">
   <div class="card__header">

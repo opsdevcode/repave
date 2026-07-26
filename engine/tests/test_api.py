@@ -667,6 +667,50 @@ def test_result_dashboard_published_repo_card(
     assert "repo-local-path" in response.text
 
 
+def test_result_includes_lineage_and_policy_block(
+    repo_root,
+    output_config,
+    sample_inputs,
+    monkeypatch,
+) -> None:
+    from repave_engine.policy_selection import PolicySelection
+
+    monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
+    monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
+    selection = PolicySelection(
+        profile="estate-default",
+        pack_source="repave-default",
+        enabled_rules=("checkov:CKV2_REPAVE_1",),
+        checkov_skip_checks=(),
+        opa_rego_files=("destructive_changes.rego",),
+        azure_definition_files=(),
+        pack_versions={"checkov": "1.0.0", "opa": "1.0.0"},
+    )
+
+    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+        merged = {**values, "_policy_selection": selection}
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=repo_root / ".tmp", values=merged),
+            gates=[GateResult("checkov", True, False, "ok")],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="PR body",
+            dry_run=True,
+        )
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", fake_generate)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **sample_inputs},
+    )
+    assert response.status_code == 200
+    assert "Lineage" in response.text
+    assert "Policy pack" in response.text
+    assert "estate-default" in response.text
+
+
 def test_update_form_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/update")
@@ -678,6 +722,7 @@ def test_update_form_page(repo_root, output_config) -> None:
     assert "data-repave-busy-form" in response.text
     assert "data-busy-stages" in response.text
     assert "shell__main--golden-path" in response.text
+    assert "terraform-minimal" in response.text or "Use terraform-minimal" in response.text
 
 
 def test_update_plan_preview(repo_root, output_config) -> None:

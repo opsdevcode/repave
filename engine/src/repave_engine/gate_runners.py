@@ -1191,7 +1191,20 @@ def run_opa(ctx: GateContext) -> GateResult:
     if result.returncode == 0:
         return GateResult("opa", True, False, "conftest passed")
     detail = result.stderr.strip() or result.stdout.strip() or "conftest failed"
+    detail = _format_opa_failure(detail)
     return GateResult("opa", False, False, detail)
+
+
+def _format_opa_failure(detail: str) -> str:
+    lowered = detail.lower()
+    if "destructive delete" in lowered:
+        return (
+            "Publish blocked: plan-time OPA rejected a destructive change "
+            "(resource delete without replacement). Adjust the plan or use a profile "
+            "that allows the change only after platform review.\n\n"
+            f"{detail}"
+        )
+    return detail
 
 
 _AZURE_POLICY_REQUIRED_PROPERTIES = frozenset(

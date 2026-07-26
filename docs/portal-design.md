@@ -13,7 +13,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | --- | --- | --- |
 | Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
 | Blueprint form | `blueprint_form.html` | Governance card (standard + policy pins + gates); Terraform split layout with scope filter, presets, validation; Ansible enum dropdowns for platforms and min Ansible version |
-| Generation result | `result.html` | Status hero, gate table with expandable failure output, repo card, file tree + preview, collapsible publish plan |
+| Generation result | `result.html` | Status hero, lineage/receipt + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
 and the shell shows a “Last run in this browser” snippet on home and form routes.
@@ -254,6 +254,21 @@ Further craft (illustration, stepper) is optional.
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
 | **Conversational UI (v2)** | Chat entry in same shell; results reuse Phase 4 dashboard |
+
+---
+
+## Copy and voice
+
+Portal strings are **product copy**, not engine documentation.
+
+- **Show:** pinned standard, policy profile, gate names, `repave.yaml` as the
+  generation receipt, Backstage `catalog-info.yaml` and `repave.dev/*` lineage.
+- **Hide:** README section titles (`## Provenance`), “synced on generate”, render
+  pipeline steps, and other implementation details that belong in `docs/` or code
+  comments only.
+
+Governance rail **Lineage** row: engine version + receipt file name — same terms
+as the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
 
 ---
 

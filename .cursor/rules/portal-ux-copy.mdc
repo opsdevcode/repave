@@ -1,0 +1,49 @@
+---
+description: Portal UI copy — builder-facing language, not engine internals
+globs:
+  - engine/src/repave_engine/templates/**
+  - engine/src/repave_engine/static/repave.js
+  - engine/src/repave_engine/static/repave.css
+  - docs/portal-design.md
+alwaysApply: false
+---
+
+# Portal UX copy
+
+The portal is for **builders and demo audiences**, not engine contributors reading
+source. Labels, hints, and governance rails should explain **what they get**, not
+**how the engine implements it**.
+
+## Do not surface in the UI
+
+- README mechanics (for example `## Provenance`, “synced on generate”, Jinja
+  section names, or `provenance_readme.py` behavior).
+- Internal module or function names, gate runner steps, or Copier/render pipeline
+  jargon unless the user must run a CLI command.
+- Roadmap theme labels, semver planning names, or “shipped in v1.x” in product
+  chrome (OK in `docs/`, not in templates).
+
+## Prefer instead
+
+- **Lineage / receipt:** blueprint@version, pinned standard, governance baseline,
+  engine version, artifact receipt in `repave.yaml` (filename is fine — it is the
+  user-visible contract).
+- **Policy:** profile label, pack source, catalog rule titles — not raw skip-check
+  wiring unless troubleshooting.
+- **Gates:** gate id and pass/fail/skip; failures get human lead-ins (for example
+  “Publish blocked”) then tool output in expandable excerpts.
+- **Backstage:** `catalog-info.yaml`, owner, `repave.dev/*` annotations — product
+  integration language from `docs/backstage.md`.
+
+## When adding governance or result panels
+
+- Match wording across `blueprint_form.html` (governance rail) and `result.html`
+  (lineage block): same terms for standard, policy, and provenance file.
+- If copy would only make sense to someone who read `engine/src/repave_engine/`,
+  rewrite it or move it to `docs/` / code comments.
+
+## Review checklist (portal PRs)
+
+- [ ] No README section headers or “sync on generate” phrasing in templates/JS.
+- [ ] Hints explain user action or outcome, not internal sync/render steps.
+- [ ] New strings are consistent with `docs/portal-design.md` (Copy and voice).
