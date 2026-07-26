@@ -40,3 +40,21 @@ fires during module generation.
 
 Create-only fixture (passes): `blueprints/opa-policy-generic/template/tests/fixtures/plan-create-only.json`.
 
+### Portal demo (destructive delete)
+
+1. Open **opa-policy-generic** in the portal.
+2. Set **plan demo** to `destructive_delete` and run a **dry-run** generate.
+3. The **opa** gate fails with **Publish blocked** and the destructive plan detail.
+
+CLI:
+
+```bash
+cd engine
+uv run repave generate --repo-root .. \
+  --blueprint blueprints/opa-policy-generic \
+  --input policy_name=demo \
+  --input organization=platform \
+  --input description="Demo destructive plan" \
+  --input plan_demo=destructive_delete
+```
+
