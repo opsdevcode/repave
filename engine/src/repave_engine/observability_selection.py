@@ -123,10 +123,30 @@ def normalize_observability_inputs(
             )
         normalized["output_mode"] = output_mode
         backend = str(normalized.get("backend", "prometheus")).strip()
-        if output_mode == "terraform" and backend != "datadog":
+        if output_mode == "terraform" and backend not in (
+            "datadog",
+            "grafana",
+            "prometheus",
+            "otel",
+        ):
             raise ValueError(
-                "Terraform output_mode for observability-as-code requires backend: datadog"
+                "Terraform output_mode for observability-as-code requires backend: "
+                "datadog, grafana, prometheus, or otel"
             )
+    if blueprint.name == "dashboards-as-code-generic":
+        output_mode = str(normalized.get("output_mode", "native")).strip()
+        if output_mode not in ("native", "terraform"):
+            raise ValueError(
+                f"Invalid output_mode: {output_mode!r}. Allowed values: native, terraform"
+            )
+        normalized["output_mode"] = output_mode
+        if output_mode == "terraform":
+            backend = str(normalized.get("backend", "grafana")).strip()
+            if backend not in ("grafana", "datadog"):
+                raise ValueError(
+                    "Terraform output_mode for dashboards-as-code requires backend: "
+                    "grafana or datadog"
+                )
 
 
 def _normalize_notification_inputs(
@@ -157,6 +177,20 @@ def _normalize_notification_inputs(
             f"Allowed values: {allowed}"
         )
     normalized["notification_target"] = target_id
+    _enrich_notification_metadata(catalog, normalized)
+
+
+def _enrich_notification_metadata(catalog: Any, normalized: dict[str, Any]) -> None:
+    source_id = str(normalized.get("notification_source", "")).strip()
+    source = source_by_id(catalog, source_id)
+    if source is None:
+        return
+    target_id = str(normalized.get("notification_target", "")).strip()
+    target = next((item for item in source.targets if item.id == target_id), None)
+    if target is None:
+        return
+    normalized["notification_provider"] = source.provider
+    normalized["notification_target_label"] = target.label
 
 
 def _normalize_catalog_field_inputs(

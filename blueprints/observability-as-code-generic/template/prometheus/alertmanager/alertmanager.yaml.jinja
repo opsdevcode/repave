@@ -1,14 +1,30 @@
-# Alertmanager routing stub for {{ service_name }}
-# Wire receivers to notification_target: {{ notification_target }}
+# Alertmanager routing for {{ service_name }} → {{ notification_target }}
 route:
-  receiver: default
+  receiver: {{ notification_target }}
   group_by: [alertname, service]
   routes:
     - matchers:
         - service="{{ service_name }}"
-      receiver: default
+      receiver: {{ notification_target }}
       continue: false
 
 receivers:
-  - name: default
-    # Example: PagerDuty, Slack, or email — map to {{ notification_target }} in your deploy pipeline.
+{% if notification_provider == 'pagerduty' %}
+  - name: {{ notification_target }}
+    pagerduty_configs:
+      - routing_key: ${PAGERDUTY_ROUTING_KEY}
+        description: "{{ service_name }} alert ({{ notification_target_label }})"
+{% elif notification_provider == 'slack' %}
+  - name: {{ notification_target }}
+    slack_configs:
+      - channel: "{{ notification_target_label }}"
+        send_resolved: true
+{% elif notification_provider == 'email' %}
+  - name: {{ notification_target }}
+    email_configs:
+      - to: "{{ notification_target_label }}"
+        send_resolved: true
+{% else %}
+  - name: {{ notification_target }}
+    # Provider {{ notification_provider }} — map {{ notification_target }} in your deploy pipeline.
+{% endif %}

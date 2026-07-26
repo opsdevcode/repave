@@ -3,7 +3,7 @@
     "name": "{{ service_name }} target down",
     "type": "metric alert",
     "query": "avg(last_5m):max:up{service:{{ service_name }}} < 1",
-    "message": "{{ service_name }} appears unavailable.\n\nRunbook: {{ runbook_url }}\nNotification target: {{ notification_target }}",
+    "message": "{{ service_name }} appears unavailable.\n\nRunbook: {{ runbook_url }}\nNotification: {{ notification_target_label }} ({{ notification_target }})\nNotify: @{{ notification_target }}",
     "tags": [
       "service:{{ service_name }}",
       "team:{{ team }}",

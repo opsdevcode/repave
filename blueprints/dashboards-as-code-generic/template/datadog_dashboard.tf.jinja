@@ -1,0 +1,21 @@
+resource "datadog_dashboard_json" "{{ service_name | replace('-', '_') }}_overview" {
+  dashboard = jsonencode({
+    title       = "${var.service_name} overview"
+    description = var.description
+    tags = [
+      "service:${var.service_name}",
+      "team:${var.team}",
+      "org:${var.organization}",
+      "env:${var.environment}",
+      "managed-by:repave",
+    ]
+    widgets = [
+      {
+        definition = {
+          type = "note"
+          content = var.description
+        }
+      },
+    ]
+  })
+}

@@ -746,11 +746,9 @@ harness for CI coverage.
 least one backend in both native and terraform modes, passing validation gates
 where tools are present and skipping cleanly otherwise.
 
-**Status:** Shipped on `main` (MVP): `observability-as-code-generic` v0.2 (Prometheus,
-Grafana, Datadog, OTel native + Datadog Terraform), `dashboards-as-code-generic`,
-`observability/catalog.json` portal UX, and `datadog-monitor` / dashboard gates.
-Follow-ups: Grafana Terraform mode, `amtool` / Datadog API validate gates, OPA on
-observability artifacts, wiring notification targets into provider resources.
+**Status:** Shipped on `main` (v1.40 complete): native and Terraform modes for Datadog,
+Grafana, Prometheus, and OTel observability; dashboards native + Terraform with community
+packs; `amtool`, `datadog-api-validate`, and native/Terraform `opa` gates.
 
 ---
 

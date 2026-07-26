@@ -150,10 +150,36 @@ def render_blueprint(
         unsafe=True,
     )
     if blueprint.name == "dashboards-as-code-generic":
-        _prune_dashboard_backend_outputs(output_dir, str(payload.get("backend", "grafana")))
-        from repave_engine.dashboard_pack import materialize_dashboard_pack
+        backend = str(payload.get("backend", "grafana"))
+        output_mode = str(payload.get("output_mode", "native"))
+        _prune_dashboard_backend_outputs(output_dir, backend)
+        from repave_engine.dashboard_pack import (
+            materialize_dashboard_pack,
+            write_dashboard_pack_terraform,
+        )
 
         materialize_dashboard_pack(output_dir, _find_repo_root(blueprint.path), payload)
+        mode = output_mode.strip().lower()
+        if mode == "terraform":
+            from repave_engine.observability_catalog import (
+                dashboard_pack_by_id,
+                load_observability_catalog,
+            )
+
+            pack_id = str(payload.get("dashboard_pack_source", "")).strip()
+            catalog = load_observability_catalog(_find_repo_root(blueprint.path))
+            pack = dashboard_pack_by_id(catalog, pack_id)
+            if pack is not None and pack.files:
+                for tf_name in ("dashboard.tf", "datadog_dashboard.tf"):
+                    tf_path = output_dir / tf_name
+                    if tf_path.is_file():
+                        tf_path.unlink()
+                write_dashboard_pack_terraform(output_dir, backend=backend)
+            else:
+                _prune_dashboard_terraform_starter_files(output_dir, backend=backend)
+                pack_tf = output_dir / "dashboard_packs.tf"
+                if pack_tf.is_file():
+                    pack_tf.unlink()
     if blueprint.name == "observability-as-code-generic":
         _prune_observability_backend_outputs(
             output_dir,
@@ -197,6 +223,30 @@ def _prune_dashboard_backend_outputs(output_dir: Path, backend: str) -> None:
         shutil.rmtree(target)
 
 
+_OBSERVABILITY_TF_BY_BACKEND: dict[str, frozenset[str]] = {
+    "datadog": frozenset({"monitors.tf"}),
+    "grafana": frozenset({"dashboard.tf"}),
+    "prometheus": frozenset({"prometheus_rules.tf", "alertmanager.tf"}),
+    "otel": frozenset({"otel_collector.tf"}),
+}
+_OBSERVABILITY_TF_ROOT = frozenset(
+    {"versions.tf", "variables.tf", "providers.tf", "dashboard_packs.tf"}
+)
+_ALL_OBSERVABILITY_TF = (
+    frozenset(
+        {
+            "monitors.tf",
+            "dashboard.tf",
+            "prometheus_rules.tf",
+            "alertmanager.tf",
+            "otel_collector.tf",
+            "dashboard_packs.tf",
+        }
+    )
+    | _OBSERVABILITY_TF_ROOT
+)
+
+
 def _prune_observability_backend_outputs(
     output_dir: Path,
     *,
@@ -212,9 +262,16 @@ def _prune_observability_backend_outputs(
             path = output_dir / name
             if path.is_dir():
                 shutil.rmtree(path)
+        keep = _OBSERVABILITY_TF_BY_BACKEND.get(selected, frozenset()) | _OBSERVABILITY_TF_ROOT
+        for tf_name in _ALL_OBSERVABILITY_TF:
+            if tf_name in keep:
+                continue
+            tf_path = output_dir / tf_name
+            if tf_path.is_file():
+                tf_path.unlink()
         return
 
-    for tf_name in ("versions.tf", "variables.tf", "monitors.tf", "providers.tf"):
+    for tf_name in _ALL_OBSERVABILITY_TF:
         tf_path = output_dir / tf_name
         if tf_path.is_file():
             tf_path.unlink()
@@ -226,6 +283,21 @@ def _prune_observability_backend_outputs(
         path = output_dir / name
         if path.is_dir():
             shutil.rmtree(path)
+
+
+def _prune_dashboard_terraform_starter_files(output_dir: Path, *, backend: str) -> None:
+    """Drop copier starter TF when pack Terraform will be generated."""
+    normalized = backend.strip().lower()
+    if normalized == "grafana":
+        for tf_name in ("datadog_dashboard.tf",):
+            tf_path = output_dir / tf_name
+            if tf_path.is_file():
+                tf_path.unlink()
+    elif normalized == "datadog":
+        for tf_name in ("dashboard.tf",):
+            tf_path = output_dir / tf_name
+            if tf_path.is_file():
+                tf_path.unlink()
 
 
 def _write_scoped_resource_files(

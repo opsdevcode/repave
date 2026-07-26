@@ -1,4 +1,19 @@
+{% if backend == 'datadog' %}
 provider "datadog" {
   # Credentials are read from DD_API_KEY and DD_APP_KEY in the environment.
   # See README.md for setup.
 }
+{% elif backend == 'grafana' %}
+provider "grafana" {
+  # Set GRAFANA_AUTH or url/auth via environment; see README.md.
+  url = var.grafana_url
+}
+{% elif backend == 'prometheus' %}
+provider "prometheus" {
+  # PROMETHEUS_URL and auth via environment; see README.md.
+}
+{% elif backend == 'otel' %}
+provider "helm" {
+  # Kubeconfig from environment; see README.md.
+}
+{% endif %}
