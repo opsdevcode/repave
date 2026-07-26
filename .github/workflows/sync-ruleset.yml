@@ -1,6 +1,7 @@
 name: Sync main branch ruleset
 
-# Keeps GitHub rules in sync with .github/rulesets/main-branch.json (bypass for release, etc.).
+# Keeps GitHub rules in sync with .github/rulesets/main-branch.json (bypass for release,
+# merge queue, required checks, etc.).
 on:
   push:
     branches: [main]

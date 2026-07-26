@@ -56,7 +56,10 @@ live GitHub required for default tests):
 ### CI on `main`
 
 - Engine: pytest, Ruff, mypy, Bandit, pip-audit.
-- Operator: Go tests + controller-runtime **envtest** on every PR.
+- Operator: Go tests + controller-runtime **envtest** on every PR and **merge queue** run.
+- **Merge queue:** feature PRs land on `main` via GitHub’s merge queue (squash); required
+  checks run on `pull_request` and `merge_group`. See
+  [CONTRIBUTING.md](CONTRIBUTING.md) and [`.github/rulesets/README.md`](.github/rulesets/README.md).
 - **Release:** Conventional commits → semver bump, `engine/CHANGELOG.md`, GitHub
   Release with wheel (see [Releases](#releases)).
 
@@ -189,7 +192,8 @@ Versioning and GitHub releases are automated from
 [Conventional Commits](https://www.conventionalcommits.org/) on `main` using
 [python-semantic-release](https://python-semantic-release.readthedocs.io/).
 
-- Merge a PR to `main` with a conventional title (`feat:`, `fix:`, etc.).
+- Merge a PR to `main` with a conventional title (`feat:`, `fix:`, etc.) using
+  **Merge when ready** (merge queue) once the queue is enabled on the repository.
 - The **Release** workflow runs engine + operator tests, then bumps semver,
   updates `engine/CHANGELOG.md`, and opens an admin-merged
   `chore/release/<version>` PR (protected `main` cannot take direct bot pushes).

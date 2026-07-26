@@ -52,6 +52,7 @@
 ## Checklist
 
 - [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/)
+- [ ] Required checks green; merge via **Merge when ready** when merge queue is enabled
 - [ ] No cloud-specific logic added to `engine/` (cloud code stays in `blueprints/`)
 - [ ] Deterministic generation preserved (same inputs → same output)
 - [ ] If `schemas/` changed: breaking change called out and version/discussion handled
