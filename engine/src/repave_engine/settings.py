@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -290,7 +291,7 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
     if not service_enabled:
         return AuthConfig(
             service_enabled=False,
-            session_secret=session_secret or "dev-only-not-for-service-mode",
+            session_secret=session_secret or secrets.token_hex(32),
             oidc_issuer=issuer,
             oidc_client_id=client_id,
             oidc_client_secret=client_secret,

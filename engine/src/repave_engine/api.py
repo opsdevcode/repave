@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import secrets
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -89,7 +90,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     if auth_config is not None and auth_config.service_enabled:
         session_secret = auth_config.session_secret
     elif not session_secret:
-        session_secret = "dev-insecure-session-secret"
+        session_secret = secrets.token_hex(32)
     app.add_middleware(
         SessionMiddleware,
         secret_key=session_secret,
