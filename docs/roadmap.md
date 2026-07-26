@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.29.0  
-**In progress:** v1.19 module repository updates; v1.17 operator GA close-out  
+**In progress:** v1.20 additional golden paths; operator `spec.repoURL` inventory (post-GA)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Package tags follow conventional commits on `main`. The v1.18 **portal UX theme**
@@ -43,9 +43,9 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.29.0  today     v1.18 portal closed; v1.19 module updates + operator GA next
+v1.29.0  today     v1.17 operator GA; v1.19 module updates shipped; v1.20 golden paths next
   │
-  ├─ v1.17 GA       optional nightly CI for e2e; repoURL inventory still future
+  ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
   ├─ v1.18–v1.20    operate + extend  portal UX + visual design; module updates; more golden paths
   ├─ v1.21–v1.25    estate-ready      standards pack; provenance; module CI; operator beta; k8s deploy
   ├─ v1.26–v1.27    service + SSO     authenticated single-tenant service via OIDC
@@ -209,9 +209,11 @@ Also shipped with this line: Release CI hardening (`upload_to_vcs_release = fals
 `psr()` / unset `GITHUB_OUTPUT`) so automated versioning stays reliable on
 protected `main`.
 
-**GA path:** `make operator-e2e` (kind + image + OutOfDate fixture) is implemented;
-`spec.repoURL` git inventory is still not implemented (`localPath` only). See
-[§ Next — v1.17 GA](#next--v117-ga-operator-e2e).
+**GA path:** `make operator-e2e` (`operator/hack/e2e.sh`) uses `Dockerfile.e2e`
+(kind + bundled `repave` CLI) and asserts `OutOfDate`, `UpgradePlanned`, and a
+non-empty `status.upgradePlan`. CI: `.github/workflows/operator-e2e.yml`
+(nightly, `workflow_dispatch`, and on main when operator/engine/blueprint paths
+change). `spec.repoURL` git inventory remains future work (`localPath` GA).
 
 Docs: [`operator-local-dev.md`](operator-local-dev.md),
 [`operator-standards.md`](operator-standards.md),
@@ -227,7 +229,16 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 - `make operator-e2e` kind harness asserting `GoldenPathRepo` `OutOfDate` for a
   stale pin (no `GITHUB_TOKEN`)
+- GA close-out: `Dockerfile.e2e` bundles `repave plan-upgrade`; e2e asserts
+  `UpgradePlanned` and `status.upgradePlan`; CI via `operator-e2e` workflow
 - Roadmap/status docs aligned after the v1.18.0 cut
+
+### v1.19 — Module repository updates (engine + portal)
+
+- `repave update` UX over `plan-upgrade` / `apply-upgrade`
+- `--open-pr` for GitHub remediation PRs after apply
+- Portal **Update repo** plan preview
+- `--preserve-local` for hand-edited scaffold files
 
 ### v1.18 — Portal UX (theme)
 
@@ -251,43 +262,14 @@ fallback; three routes share one visual system (acceptance in portal-design).
 
 ## Planned
 
-### Next — v1.17 GA (operator e2e)
-
-**Landed:** `make operator-e2e` (`operator/hack/e2e.sh`) creates kind cluster
-`repave-local`, loads `repave-operator:dev`, applies a stale-pin
-`GoldenPathRepo`, and asserts `status.phase=OutOfDate` (no `GITHUB_TOKEN`).
-
-**Still open for GA close-out:**
-
-- Optional nightly / workflow_dispatch CI job for `operator-e2e`
-- Bundle or mock `repave plan-upgrade` in-cluster so e2e also asserts
-  `UpgradePlanned` (today inventory drift is sufficient for the GA bar)
-- `spec.repoURL` remote inventory (explicitly out of scope for localPath GA)
-
-**Done when:** Acceptance criteria in `operator-local-dev.md` remain green;
-optional CI runs e2e on a schedule or before release.
-
----
-
 ### v1.19 — Update existing module repositories
 
-**Problem:** Today repave bootstraps **new** repos; upgrading an existing module
-requires manual merge or re-generation.
+**Status:** Shipped on `main` (engine `repave update`, portal update flow,
+`--open-pr`, `--preserve-local`). Operator continues to use stable
+`plan-upgrade` / `apply-upgrade` JSON.
 
-**Progress:** `repave update` wraps `plan-upgrade` / `apply-upgrade` for local
-workflows (`--path`, dry-run by default, `--no-dry-run --git-branch` to commit).
-`--open-pr` pushes the upgrade branch and opens a GitHub pull request when
-`GITHUB_TOKEN` (or `--github-token`) is set. Portal **Update repo** runs the
-same plan preview against a local path. `--preserve-local` skips overwriting
-locally modified files and writes blueprint copies under
-`.repave/upgrade-staging/` for manual merge. Operator still calls
-`plan-upgrade` / `apply-upgrade` JSON contracts.
-
-**Approach (remaining):** Validate end-to-end on a real module repo; operator
-remediation may adopt `--preserve-local` when applying upgrades.
-
-**Done when:** A module repo created by repave can receive a blueprint version
-bump via PR without full manual copy.
+**Follow-up:** Operator remediation may adopt `--preserve-local` when applying
+upgrades; validate end-to-end on customer module repos.
 
 ---
 
