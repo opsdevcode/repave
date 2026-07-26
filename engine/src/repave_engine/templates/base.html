@@ -21,6 +21,7 @@
       <div class="shell__atmosphere" aria-hidden="true"></div>
       <header class="shell__bar">
         <a class="shell__brand" href="/" aria-label="repave home">
+          <span class="shell__mark" aria-hidden="true"></span>
           <span class="shell__wordmark">repave</span>
         </a>
         <nav class="shell__nav" aria-label="Primary">
@@ -51,6 +52,21 @@
       <main id="main-content" class="shell__main{% block main_modifiers %}{% endblock %}">
         {% block content %}{% endblock %}
       </main>
+
+      <div
+        id="repave-busy-overlay"
+        class="busy-overlay"
+        hidden
+        aria-live="polite"
+        aria-busy="true"
+        aria-label="Generation in progress"
+      >
+        <div class="busy-overlay__card">
+          <div class="busy-overlay__ring" aria-hidden="true"></div>
+          <p class="busy-overlay__label" id="repave-busy-label">Working…</p>
+          <p class="busy-overlay__hint muted">Rendering templates and running governance gates</p>
+        </div>
+      </div>
 
       <div id="repave-toast" class="toast" role="status" aria-live="polite" hidden></div>
 

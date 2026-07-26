@@ -40,12 +40,29 @@
     }
     toast.textContent = message;
     toast.hidden = false;
+    toast.classList.remove("toast--show");
+    void toast.offsetWidth;
+    toast.classList.add("toast--show");
     if (showToast._timer) {
       clearTimeout(showToast._timer);
     }
     showToast._timer = setTimeout(function () {
+      toast.classList.remove("toast--show");
       toast.hidden = true;
     }, 2400);
+  }
+
+  function setBusyOverlay(active, label) {
+    var overlay = document.getElementById("repave-busy-overlay");
+    var labelNode = document.getElementById("repave-busy-label");
+    if (!overlay) {
+      return;
+    }
+    if (labelNode && label) {
+      labelNode.textContent = label;
+    }
+    overlay.hidden = !active;
+    document.body.classList.toggle("repave-busy", active);
   }
 
   function initCopyButtons() {
@@ -120,6 +137,8 @@
             return s.trim();
           })
           .filter(Boolean);
+        var stageLabel = stages.length ? stages[0] : busyLabel;
+        setBusyOverlay(true, stageLabel);
         if (stages.length > 1) {
           var stageIndex = 0;
           btn.textContent = stages[0];
@@ -129,6 +148,7 @@
           form._repaveStageTimer = setInterval(function () {
             stageIndex = (stageIndex + 1) % stages.length;
             btn.textContent = stages[stageIndex];
+            setBusyOverlay(true, stages[stageIndex]);
           }, 2200);
         }
       });
@@ -249,6 +269,159 @@
     applyStep();
   }
 
+  function initHomeQuicknav() {
+    var layout = document.querySelector("[data-home-layout]");
+    var quicknav = document.querySelector("[data-home-quicknav]");
+    if (!layout || !quicknav) {
+      return;
+    }
+
+    var toggle = quicknav.querySelector("[data-quicknav-toggle]");
+    var toggleText = toggle ? toggle.querySelector(".home-quicknav__toggle-text") : null;
+    var COLLAPSE_KEY = "repave:quicknavCollapsed";
+
+    function setCollapsed(collapsed) {
+      layout.classList.toggle("home-layout--quicknav-collapsed", collapsed);
+      if (toggle) {
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        toggle.setAttribute(
+          "aria-label",
+          collapsed ? "Expand quick menu" : "Collapse quick menu"
+        );
+      }
+      if (toggleText) {
+        toggleText.textContent = collapsed ? "Expand" : "Collapse";
+      }
+      try {
+        localStorage.setItem(COLLAPSE_KEY, collapsed ? "1" : "0");
+      } catch (_err) {
+        /* ignore */
+      }
+    }
+
+    if (toggle) {
+      var stored = null;
+      try {
+        stored = localStorage.getItem(COLLAPSE_KEY);
+      } catch (_err) {
+        /* ignore */
+      }
+      if (stored === "1") {
+        setCollapsed(true);
+      }
+      toggle.addEventListener("click", function () {
+        setCollapsed(!layout.classList.contains("home-layout--quicknav-collapsed"));
+      });
+    }
+
+    quicknav.querySelectorAll(".home-quicknav__family").forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        event.stopPropagation();
+      });
+    });
+
+    var GROUPS_KEY = "repave:quicknavGroupsOpen";
+    var groupDetails = quicknav.querySelectorAll("[data-quicknav-group]");
+    if (groupDetails.length) {
+      try {
+        var storedGroups = localStorage.getItem(GROUPS_KEY);
+        if (storedGroups) {
+          var openGroups = JSON.parse(storedGroups);
+          groupDetails.forEach(function (node) {
+            var id = node.getAttribute("data-quicknav-group");
+            if (id && openGroups[id]) {
+              node.setAttribute("open", "");
+            }
+          });
+        }
+      } catch (_err) {
+        /* ignore */
+      }
+      groupDetails.forEach(function (node) {
+        node.addEventListener("toggle", function () {
+          var state = {};
+          groupDetails.forEach(function (other) {
+            var id = other.getAttribute("data-quicknav-group");
+            if (id && other.open) {
+              state[id] = true;
+            }
+          });
+          try {
+            localStorage.setItem(GROUPS_KEY, JSON.stringify(state));
+          } catch (_err2) {
+            /* ignore */
+          }
+        });
+      });
+    }
+
+    var sectionLinks = quicknav.querySelectorAll("[data-quicknav-section]");
+    if (!sectionLinks.length) {
+      return;
+    }
+    var sectionIds = [];
+    sectionLinks.forEach(function (link) {
+      var id = link.getAttribute("data-quicknav-section");
+      if (id && sectionIds.indexOf(id) === -1) {
+        sectionIds.push(id);
+      }
+    });
+    var sections = sectionIds
+      .map(function (id) {
+        return document.getElementById(id);
+      })
+      .filter(Boolean);
+    if (!sections.length) {
+      return;
+    }
+
+    function setActive(id) {
+      sectionLinks.forEach(function (link) {
+        var match = link.getAttribute("data-quicknav-section") === id;
+        link.classList.toggle("is-active", match);
+      });
+    }
+
+    if ("IntersectionObserver" in window) {
+      var visible = new Map();
+      var observer = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            visible.set(entry.target.id, entry.intersectionRatio);
+          });
+          var bestId = null;
+          var bestRatio = 0;
+          visible.forEach(function (ratio, targetId) {
+            if (ratio >= bestRatio) {
+              bestRatio = ratio;
+              bestId = targetId;
+            }
+          });
+          if (bestId) {
+            setActive(bestId);
+          }
+        },
+        {
+          root: null,
+          rootMargin: "-20% 0px -55% 0px",
+          threshold: [0, 0.1, 0.25, 0.5],
+        }
+      );
+      sections.forEach(function (section) {
+        observer.observe(section);
+      });
+    }
+
+    sectionLinks.forEach(function (link) {
+      link.addEventListener("click", function () {
+        var id = link.getAttribute("data-quicknav-section");
+        if (id) {
+          setActive(id);
+        }
+      });
+    });
+  }
+
   window.repavePortal = {
     saveLastRun: function (payload) {
       try {
@@ -273,5 +446,6 @@
     initFileExplorer();
     initBusyForms();
     initFormStepper();
+    initHomeQuicknav();
   });
 })();

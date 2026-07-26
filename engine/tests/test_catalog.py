@@ -79,8 +79,8 @@ def test_group_blueprints_policy_family_groups_opa_and_azure() -> None:
         ]
     )
 
-    assert [group.family for group in groups] == ["terraform", "policy"]
-    policy = groups[1]
+    assert [group.family for group in groups] == ["policy", "terraform"]
+    policy = groups[0]
     assert policy.title == "Policy"
     assert [bp.name for bp in policy.blueprints] == [
         "checkov-policy-generic",
@@ -123,6 +123,23 @@ def test_group_blueprints_includes_helm_family() -> None:
     )
     assert [g.family for g in groups] == ["terraform", "helm"]
     assert groups[1].title == "Kubernetes / Helm"
+
+
+def test_group_blueprints_sorted_by_blueprint_count_descending() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("obs-a", "observability"),
+            _bp("opa-policy-generic", "opa-policy"),
+            _bp("azure-policy-generic", "azure-policy"),
+            _bp("checkov-policy-generic", "checkov-policy"),
+            _bp("tf-a", "terraform-module"),
+            _bp("tf-b", "terraform-module"),
+            _bp("role-a", "ansible-role"),
+        ]
+    )
+
+    assert [g.family for g in groups] == ["policy", "terraform", "ansible", "observability"]
+    assert [len(g.blueprints) for g in groups] == [3, 2, 1, 1]
 
 
 def test_group_blueprints_unknown_type_appended() -> None:

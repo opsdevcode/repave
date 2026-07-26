@@ -6,33 +6,132 @@
 
 {% block content %}
 <section class="home-hero" aria-labelledby="home-hero-title">
-  <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
-  <p class="home-hero__tagline">
-    Governed golden paths — generate compliant modules without the CLI.
-  </p>
-  <div class="home-hero__actions">
-    <a class="btn btn--primary" href="#golden-paths">Browse golden paths</a>
-    <a class="btn btn--secondary" href="/update">Update existing repo</a>
+  <div class="home-hero__layout">
+    <div class="home-hero__primary">
+      <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
+      <p class="home-hero__tagline">
+        Governed golden paths — generate compliant modules without the CLI.
+      </p>
+      <div class="home-hero__actions">
+        <a class="btn btn--primary btn--glow" href="#golden-paths">Browse golden paths</a>
+        <a class="btn btn--secondary" href="/update">Update existing repo</a>
+        {% if catalog_groups %}
+        {% set ns = namespace(starter=none) %}
+        {% for group in catalog_groups %}
+          {% for bp in group.blueprints %}
+            {% if ns.starter is none %}{% set ns.starter = bp %}{% endif %}
+          {% endfor %}
+        {% endfor %}
+        {% if ns.starter %}
+        <a class="btn btn--secondary" href="/blueprints/{{ ns.starter.name }}">
+          Start with {{ ns.starter.name }}
+        </a>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
     {% if catalog_groups %}
-    {% set ns = namespace(starter=none) %}
+    {% set stats = namespace(paths=0) %}
     {% for group in catalog_groups %}
-      {% for bp in group.blueprints %}
-        {% if ns.starter is none %}{% set ns.starter = bp %}{% endif %}
-      {% endfor %}
+      {% set stats.paths = stats.paths + group.blueprints|length %}
     {% endfor %}
-    {% if ns.starter %}
-    <a class="btn btn--secondary" href="/blueprints/{{ ns.starter.name }}">
-      Start with {{ ns.starter.name }}
-    </a>
-    {% endif %}
+    <ul class="home-hero__metrics" aria-label="Catalog summary">
+      <li>
+        <span class="home-hero__metric-value">{{ stats.paths }}</span>
+        <span class="home-hero__metric-label">golden paths</span>
+      </li>
+      <li>
+        <span class="home-hero__metric-value">{{ catalog_groups|length }}</span>
+        <span class="home-hero__metric-label">artifact families</span>
+      </li>
+      <li class="home-hero__metric-note">
+        Gates on every generate
+      </li>
+    </ul>
     {% endif %}
   </div>
 </section>
 
-</section>
+<nav class="demo-pipeline" aria-label="How repave works">
+  <ol class="demo-pipeline__steps">
+    <li class="demo-pipeline__step">
+      <span class="demo-pipeline__index">1</span>
+      <span><strong>Pick</strong> a path from the catalog</span>
+    </li>
+    <li class="demo-pipeline__step">
+      <span class="demo-pipeline__index">2</span>
+      <span><strong>Configure</strong> scope and governance pins</span>
+    </li>
+    <li class="demo-pipeline__step">
+      <span class="demo-pipeline__index">3</span>
+      <span><strong>Generate</strong> — render, gates, publish</span>
+    </li>
+  </ol>
+</nav>
 
+<div class="home-layout" data-home-layout>
+  {% if catalog_groups %}
+  <aside class="home-quicknav" aria-label="Catalog quick menu" data-home-quicknav>
+    <div class="home-quicknav__head">
+      <p class="home-quicknav__label" id="home-quicknav-label">Quick menu</p>
+      <button
+        type="button"
+        class="home-quicknav__toggle"
+        data-quicknav-toggle
+        aria-expanded="true"
+        aria-controls="home-quicknav-panel"
+        aria-labelledby="home-quicknav-label"
+      >
+        <span class="home-quicknav__toggle-icon" aria-hidden="true"></span>
+        <span class="home-quicknav__toggle-text">Collapse</span>
+      </button>
+    </div>
+    <div id="home-quicknav-panel" class="home-quicknav__panel">
+    <nav class="home-quicknav__nav">
+      <div class="home-quicknav__groups">
+        {% for group in catalog_groups %}
+        <details
+          class="home-quicknav__group home-quicknav__group--{{ group.family }}"
+          data-quicknav-group="{{ group.family }}"
+        >
+          <summary class="home-quicknav__summary">
+            <span class="home-quicknav__chevron" aria-hidden="true"></span>
+            <a
+              class="home-quicknav__family"
+              href="#catalog-{{ group.family }}"
+              data-quicknav-section="catalog-{{ group.family }}"
+            >
+              <span class="home-quicknav__family-dot" aria-hidden="true"></span>
+              <span class="home-quicknav__family-text">{{ group.title }}</span>
+              <span class="home-quicknav__count">{{ group.blueprints|length }}</span>
+            </a>
+          </summary>
+          <ul class="home-quicknav__paths">
+            {% for bp in group.blueprints %}
+            <li>
+              <a class="home-quicknav__path" href="/blueprints/{{ bp.name }}">{{ bp.name }}</a>
+            </li>
+            {% endfor %}
+          </ul>
+        </details>
+        {% endfor %}
+      </div>
+    </nav>
+    <div class="home-quicknav__extras">
+      <a class="home-quicknav__extra" href="/update">Update repo</a>
+      {% if recent_activity %}
+      <a class="home-quicknav__extra" href="#activity-heading" data-quicknav-section="activity-heading">
+        Recent activity
+      </a>
+      {% endif %}
+    </div>
+    </div>
+  </aside>
+  {% endif %}
+
+  <div class="home-layout__main">
 {% if recent_activity %}
-<section class="activity-card card" aria-labelledby="activity-heading">
+<section class="activity-card card" id="recent-activity" aria-labelledby="activity-heading">
   <div class="card__header">
     <h2 id="activity-heading">Recent generations</h2>
     <p class="muted card__subtitle">From the audit log when <code>audit.enabled</code> is set.</p>
@@ -118,5 +217,7 @@
   No blueprints found under <code>blueprints/</code>.
 </div>
 {% endif %}
+</div>
+  </div>
 </div>
 {% endblock %}

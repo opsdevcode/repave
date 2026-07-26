@@ -44,6 +44,11 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "shell__atmosphere" in response.text
     assert "home-hero" in response.text
     assert "home-hero__wordmark" in response.text
+    assert "home-quicknav" in response.text
+    assert "data-home-quicknav" in response.text
+    assert "data-quicknav-toggle" in response.text
+    assert "<details" in response.text
+    assert "home-quicknav__summary" in response.text
     assert 'id="golden-paths"' in response.text
     assert "catalog-grid" in response.text
     assert "catalog-group__title" in response.text
@@ -71,6 +76,7 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "initCopyButtons" in response.text
     assert "initBusyForms" in response.text
     assert "initFormStepper" in response.text
+    assert "initHomeQuicknav" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
