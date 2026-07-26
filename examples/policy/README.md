@@ -9,8 +9,10 @@ in the portal catalog):
 | `opa-policy-generic` | OPA | `opa-policy` | Conftest / Rego (`opa` gate) |
 | `azure-policy-generic` | Azure Policy | `azure-policy` | Definition JSON validation (`azure-policy` gate) |
 
-Terraform module and stack blueprints still vend `policy/checkov/` and `policy/opa/policies` for
-module-time scanning and plan-time Rego via the shared gates.
+Terraform module and stack blueprints vend `policy/checkov/`, `policy/opa/policies`, and
+`policy/opa/fixtures/plan-create-only.json`. Generated repos run `repave gates` in CI;
+when a live `terraform plan` is unavailable (no cloud credentials), the **opa** gate
+evaluates the vendored create-only plan JSON with Conftest.
 
 Every golden path (Terraform, Ansible, and policy) must satisfy
 `standards/policy/governance-baseline.md`: `secrets`, `docs-drift`, and

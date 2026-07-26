@@ -17,7 +17,7 @@ from repave_engine.provider_catalog import load_provider_catalog
 
 def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.name == "terraform-module-generic"
-    assert terraform_blueprint.version == "0.11.0"
+    assert terraform_blueprint.version == "0.12.0"
     assert terraform_blueprint.artifact_type == "terraform-module"
     assert terraform_blueprint.standard_source == "standards/terraform-standards"
     assert terraform_blueprint.standard_version == "1.1.0"
@@ -396,7 +396,7 @@ def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
         repo_root,
     )
     assert blueprint.name == "terraform-module-resource"
-    assert blueprint.version == "0.4.0"
+    assert blueprint.version == "0.5.0"
     assert blueprint.standard_source == "standards/terraform-standards"
     assert blueprint.standard_version == "1.1.0"
     assert blueprint.terraform_layout == "single-resource"

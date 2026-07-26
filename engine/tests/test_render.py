@@ -122,6 +122,7 @@ def test_render_writes_scoped_resource_files(
     assert (output_dir / ".checkov.yml").exists()
     assert (output_dir / "policy/checkov/custom_001_terraform_version_exists.yaml").exists()
     assert (output_dir / "policy/opa/policies/destructive_changes.rego").exists()
+    assert (output_dir / "policy/opa/fixtures/plan-create-only.json").exists()
 
 
 def test_collect_rendered_files_returns_text_files(tmp_path: Path) -> None:

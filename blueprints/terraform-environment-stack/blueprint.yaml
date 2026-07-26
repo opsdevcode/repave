@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: terraform-environment-stack
-  version: 0.3.0
+  version: 0.4.0
   description: Environment composition stack with pinned module sources (env-* repos).
 spec:
   artifactType: terraform-environment-stack
@@ -82,6 +82,7 @@ spec:
       config_file: .checkov.yml
     opa:
       policies_dir: policy/opa/policies
+      fixtures_dir: policy/opa/fixtures
   output:
     type: pull_request
     provenance:

@@ -38,7 +38,7 @@ Last verified on **`main`**: 2026-07-26 (engine **v1.55.0**).
 | --- | --- |
 | `operator/testdata/modules/terraform-minimal/repave.yaml` | **Observed** pins: blueprint `terraform-module-generic@0.9.0`, standard `standards/terraform-standards@1.1.0` (fixture stays behind catalog on purpose). |
 | `operator/config/e2e/goldenpathrepo-drift.yaml` | **Desired** blueprint `9.9.9` forces `OutOfDate`; standard fields match the fixture. |
-| Catalog `blueprints/terraform-module-generic/blueprint.yaml` | **Current** blueprint version (for example `0.11.0`) is what `repave plan-upgrade` targets in `status.upgradePlan`. |
+| Catalog `blueprints/terraform-module-generic/blueprint.yaml` | **Current** blueprint version (for example `0.12.0`) is what `repave plan-upgrade` targets in `status.upgradePlan`. |
 
 When bumping the terraform-module-generic blueprint or standard pins, update the fixture README and any envtest assertions; keep e2e **desired** blueprint ahead of **observed** (see [`operator/README.md`](../operator/README.md#baseline-from-generation-v114)).
 
