@@ -39,6 +39,10 @@ SKIP_DIR_NAMES = {".git", ".terraform", ".molecule", "__pycache__", ".repave"}
 # Copier/Jinja leftovers vs Helm template syntax in rendered charts.
 _JINJA_BLOCK = re.compile(r"\{%")
 _Copier_VAR = re.compile(r"\{\{(?!\s*[\.\-$]|\s*include)")
+_ENGINE_PIP_PIN = re.compile(r"repave-engine==[\d.]+(?:\.\w+)?")
+_ENGINE_VERSION_YAML = re.compile(r"(?m)^(\s*engine_version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$")
+_README_ENGINE_LINE = re.compile(r"(?m)^(- \*\*Engine:\*\* `)[\d.]+(?:\.\w+)?(`)")
+_MANIFEST_ENGINE_NEUTRAL = b"SNAPSHOT"
 
 
 @dataclass(frozen=True)
@@ -132,14 +136,38 @@ def find_unresolved_placeholders(output_dir: Path) -> list[str]:
     return hits
 
 
+def _normalize_manifest_bytes(rel: str, data: bytes) -> bytes:
+    """Drop engine-version pins from hashes so release bumps do not rewrite manifests."""
+    if not _is_text_artifact(Path(rel)):
+        return data
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data
+    if rel.startswith(".github/workflows/") and rel.endswith(".yml"):
+        text = _ENGINE_PIP_PIN.sub("repave-engine==SNAPSHOT", text)
+    elif rel == "repave.yaml":
+        text = _ENGINE_VERSION_YAML.sub(
+            rf"\1\2{_MANIFEST_ENGINE_NEUTRAL.decode()}\2",
+            text,
+        )
+    elif rel == "README.md":
+        text = _README_ENGINE_LINE.sub(rf"\1{_MANIFEST_ENGINE_NEUTRAL.decode()}\2", text)
+    return text.encode("utf-8")
+
+
+def _file_manifest_digest(rel: str, data: bytes) -> str:
+    normalized = _normalize_manifest_bytes(rel, data)
+    return hashlib.sha256(normalized).hexdigest()
+
+
 def build_file_manifest(output_dir: Path) -> dict[str, str]:
     manifest: dict[str, str] = {}
     for path in sorted(output_dir.rglob("*")):
         if not path.is_file() or _should_skip_path(path):
             continue
         rel = path.relative_to(output_dir).as_posix()
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
-        manifest[rel] = digest
+        manifest[rel] = _file_manifest_digest(rel, path.read_bytes())
     return manifest
 
 
