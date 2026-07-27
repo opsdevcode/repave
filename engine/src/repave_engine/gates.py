@@ -50,6 +50,34 @@ _gate_terraform_fmt = run_terraform_fmt
 _gate_checkov = run_checkov
 _gate_secrets = run_secrets
 
+# When require_run is set (generate dry-run preview), these skip reasons become failures.
+_REQUIRE_RUN_FAIL_HINTS = (
+    "not installed",
+    "not available",
+    "not configured",
+    "no opa policies selected",
+)
+
+
+def _apply_require_run_policy(context: GateContext, result: GateResult) -> GateResult:
+    if not context.require_run or not result.skipped:
+        return result
+    lowered = result.message.lower()
+    if not any(hint in lowered for hint in _REQUIRE_RUN_FAIL_HINTS):
+        return result
+    detail = result.message.replace("; skipped", "").strip()
+    if not detail.endswith("."):
+        detail = f"{detail}."
+    return GateResult(
+        result.name,
+        False,
+        False,
+        (
+            f"{detail} Dry-run preview runs all blueprint gates; install the tool "
+            "(see deploy/local) or use Docker compose for a full toolchain."
+        ),
+    )
+
 
 def run_gates(
     output_dir: Path,
@@ -57,12 +85,14 @@ def run_gates(
     *,
     blueprint: Blueprint | None = None,
     gate_overrides: GateOverrides | None = None,
+    require_run: bool = False,
 ) -> list[GateResult]:
     ensure_gates_loaded()
     context = GateContext(
         output_dir=output_dir,
         blueprint=blueprint,
         gate_overrides=gate_overrides,
+        require_run=require_run,
     )
     results: list[GateResult] = []
     for gate_name in gate_names:
@@ -70,7 +100,7 @@ def run_gates(
         if spec is None:
             results.append(GateResult(gate_name, False, False, f"Unknown gate: {gate_name}"))
             continue
-        results.append(spec.runner(context))
+        results.append(_apply_require_run_policy(context, spec.runner(context)))
     return results
 
 

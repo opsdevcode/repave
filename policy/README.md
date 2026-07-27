@@ -3,6 +3,8 @@
 Shared policy content vendored into generated repositories. Artifact-specific standards
 live under [`standards/policy/`](../standards/policy/README.md).
 
+**What packs are, pack sources, profiles, and blueprint defaults:** see **[PACKS.md](PACKS.md)**.
+
 | Path | Used by |
 | ---- | ------- |
 | [`checkov/`](checkov/policies/) | Terraform modules, environment stacks, and `checkov-policy` artifacts |

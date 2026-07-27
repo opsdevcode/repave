@@ -1,0 +1,12 @@
+name: Gate toolchain
+description: Pinned CLIs for engine dry-run gate tests (aligned with deploy/local)
+
+runs:
+  using: composite
+  steps:
+    - name: Install gate toolchain
+      shell: bash
+      run: |
+        set -euo pipefail
+        chmod +x deploy/local/install-gate-toolchain.sh
+        PIP="pip install" deploy/local/install-gate-toolchain.sh

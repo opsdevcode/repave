@@ -32,12 +32,22 @@ On branch with the latest portal stepper fixes, after `docker compose up --build
    (or **Next** to Delivery, leave **Plan (validate only)**, **Scaffold repository**).
 4. Result should show **Plan only** and **Generated files**.
 
-The container includes **terraform** (1.9.8), **tflint** (0.55.1), **checkov** (≥3.2.0),
-and **conftest** (0.56.0 for OPA gates), so blueprint gates run for real instead of
-skipping. Policy demos ([policy golden paths](../../docs/policy-golden-paths-demo.md))
-need compose for **destructive_delete** OPA blocks. The same toolchain versions are
-pinned in generated repositories’ GitHub Actions workflows (`spec.ci.toolchain`
-in `repave.yaml`). CI runs `repave gates --path .` from the gate list in `spec.ci.gates`.
+The container installs the **gate toolchain** via [`install-gate-toolchain.sh`](install-gate-toolchain.sh):
+
+| Tool | Golden paths | Notes |
+| ---- | ------------- | ----- |
+| **terraform** 1.9.8 | Terraform module / stack | fmt, validate, test, plan for OPA |
+| **tflint** 0.55.1 | Terraform | |
+| **checkov** ≥3.2 | Terraform, Checkov policy | `secrets` gate too |
+| **conftest** 0.56.0 | Terraform, OPA policy | plan-time Rego |
+| **ansible-lint**, **yamllint**, **ansible-playbook** | Ansible role / playbook | `molecule` not in image (optional gate) |
+| **helm** 3.14.4 | Helm chart | lint + template gates |
+
+Dry-run preview **fails** (does not skip) when a blueprint gate’s CLI is missing. Use compose for demos; on the host install the same tools or expect FAIL rows for missing binaries.
+
+**Native `make serve` on macOS** often has Terraform/tflint but not **checkov** or **conftest** — install with `pip install "checkov>=3.2.0"` and [Conftest](https://www.conftest.dev/install/) 0.56.0, or use Docker.
+
+Not shipped in the local image (gates may still **skip** when N/A): **promtool**, **amtool**, **hadolint**, **go**, **molecule**, **ruff** / **pytest** (app-service / observability extras).
 Generated modules are written to the `repave-modules`
 Docker volume (`/modules` inside the container).
 

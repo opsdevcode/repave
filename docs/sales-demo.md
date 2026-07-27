@@ -89,7 +89,7 @@ Scope: [Operator GA](operator-ga.md) · [Operator overview](operator-overview.md
 | --- | --- |
 | Portal blank / no CSS | Hard refresh; for native `make serve`, ensure you hit the URL from the Makefile (8088). |
 | Gate fails unexpectedly | Dry-run still shows failures — use it to explain “blocked by design.” |
-| OPA step skipped | Conftest must be on `PATH` for real gate execution; demo still shows UI block when gate runs in CI/engine env. |
+| OPA step skipped | Dry-run no longer skips missing Conftest — install it or use `deploy/local` compose. With tooling, a destructive plan demo shows **FAIL** on the `opa` gate. |
 | Compose slow first time | Pre-build before the meeting; keep the stack running. |
 
 After major portal UI changes, refresh README PNGs: [images/README.md](images/README.md).
