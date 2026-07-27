@@ -8,6 +8,7 @@ is the front door; use this index when you need depth.
 | Doc | Audience | Contents |
 | --- | --- | --- |
 | [Quickstart](quickstart.md) | New users | Docker Compose, `make serve`, first generate, CLI |
+| [Seven-minute demo (acts 1–6)](seven-minute-demo.md) | Live demos | Full portal arc for stakeholder meetings |
 | [Sales demo runbook](sales-demo.md) | Field / leadership demos | Narrative, talking points, operator boundaries |
 | [Demo verification](demo-verification.md) | Maintainers / pre-release | Portal smoke checklist, screenshots, operator e2e |
 | [Concepts](concepts.md) | Everyone | Golden paths, blueprints, governance-by-construction, provenance |

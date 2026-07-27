@@ -1,22 +1,27 @@
 # Demo verification checklist
 
 Use before a release, a customer demo, or after portal/policy UX changes. Pair with
-the [Five-minute demo](quickstart.md#five-minute-demo-portal) steps and the
-[Sales demo runbook](sales-demo.md).
+the [Seven-minute demo (acts 1–6)](seven-minute-demo.md), [Five-minute demo](quickstart.md#five-minute-demo-portal),
+and the [Sales demo runbook](sales-demo.md).
 
 **Last verified on `main`:** 2026-07-27 (engine v1.62.4, terraform-module-generic v0.12.0).
 
 ---
 
-## Portal smoke (≈5 minutes)
+## Portal smoke (acts 1–6)
+
+Run automated checks: `cd engine && uv run pytest tests/test_demo_acts.py -v`
+
+Manual pass (≈7 minutes) — detail in [seven-minute-demo.md](seven-minute-demo.md):
 
 1. Start: `make serve` or [Docker Compose](../deploy/local/README.md) → http://localhost:8088
-2. **Home:** catalog loads; search finds `terraform-module-generic`.
-3. **Generate (dry-run):** module `demo`, AWS, **ec2 + s3** → **Dry run preview** → confirm **Lineage & receipt**, policy rules (catalog **titles**), gate dashboard, **Generated files**.
-4. **Policy (optional):** on Terraform form, confirm profile **Estate default** and pack **repave-default** without changing rules.
-5. **OPA block (optional):** `opa-policy-generic`, plan demo `destructive_delete` → **opa** fails with publish blocked ([examples/policy](../examples/policy/README.md)).
-6. **Update repo:** **Use terraform-minimal** → **Preview upgrade** returns a plan.
-7. **Backstage (optional):** Include catalog + owner → `catalog-info.yaml` in file preview.
+2. **Act 1 — Home:** catalog loads; open **terraform-module-generic**.
+3. **Acts 2–3 — Generate:** module `demo`, AWS, **ec2 + s3** → **Dry run preview** → **Plan only**, lineage, gates, **Generated files**.
+4. **Act 4 — Update repo:** **Use terraform-minimal** → **Preview upgrade**.
+5. **Act 5 — OPA block:** **opa-policy-generic**, **plan demo** `destructive_delete` → dry-run → publish blocked.
+6. **Act 6 — Backstage:** Terraform form, **Include Backstage catalog** `true`, **owner** `group:platform` → dry-run → **`catalog-info.yaml`** in preview.
+
+Optional: on Terraform form, confirm profile **Estate default** and pack **repave-default** without changing rules.
 
 Record blockers in an issue; fix or note in the sales runbook troubleshooting table.
 

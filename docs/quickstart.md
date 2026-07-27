@@ -5,8 +5,9 @@ Run the full generate → gates → preview loop without Kubernetes.
 ## Five-minute demo (portal)
 
 Use this script when showing repave to someone new. Everything is dry-run unless
-noted. For live calls and stakeholder-specific talking points, see
-[Sales demo runbook](sales-demo.md).
+noted. For the **full six-act live demo** (catalog → Terraform → upgrade → OPA →
+Backstage), see **[Seven-minute demo (acts 1–6)](seven-minute-demo.md)**. For live
+calls and stakeholder-specific talking points, see [Sales demo runbook](sales-demo.md).
 
 1. **Start:** `make serve` or [Docker Compose](#docker-compose-recommended) →
    http://localhost:8088
