@@ -1,5 +1,5 @@
 # Native observability artifacts (JSON/YAML) — not Terraform plan input.
-package observability
+package main
 
 _has_managed_by_tag(tags) {
     tags[_] == "managed-by:repave"

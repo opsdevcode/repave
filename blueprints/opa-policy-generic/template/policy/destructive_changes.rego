@@ -1,5 +1,5 @@
 # Terraform plan policy: block destructive deletes without replacement.
-package terraform.plan
+package main
 
 create_in_actions(actions) {
     actions[_] == "create"

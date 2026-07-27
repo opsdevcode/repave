@@ -1,5 +1,5 @@
 # Prometheus alerting rules YAML (native mode).
-package observability.prometheus
+package main
 
 deny[msg] {
     group := input.groups[_]

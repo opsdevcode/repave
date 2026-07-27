@@ -1,5 +1,5 @@
 # Terraform plan policy: observability repos must tag managed-by:repave on monitors/dashboards.
-package terraform.plan
+package main
 
 _managed_by_tag(tags) {
     tags[_] == "managed-by:repave"

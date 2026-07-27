@@ -2,9 +2,9 @@
 # Pinned module — update source/version via requirements or portal inventory.
 module "{{ mod.name }}" {
   source = "{{ mod.source }}"
-{% if mod.version %}
+{%- if mod.version %}
   version = "{{ mod.version }}"
-{% endif %}
+{%- endif %}
 
   stack_name   = var.stack_name
   environment  = var.environment

@@ -126,7 +126,7 @@ def test_opa_terraform_falls_back_to_vendored_plan_fixture(
     )
     policies = tmp_path / "policy" / "opa" / "policies"
     policies.mkdir(parents=True)
-    (policies / "allow.rego").write_text("package terraform.plan\n", encoding="utf-8")
+    (policies / "allow.rego").write_text("package main\n", encoding="utf-8")
     fixtures = tmp_path / "policy" / "opa" / "fixtures"
     fixtures.mkdir(parents=True)
     (fixtures / "plan-create-only.json").write_text('{"resource_changes": []}\n', encoding="utf-8")
