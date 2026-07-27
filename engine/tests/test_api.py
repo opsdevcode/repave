@@ -277,6 +277,25 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-form-stepper" in response.text
     assert 'data-form-stepper-kind="terraform"' in response.text
     assert "form-stepper" in response.text
+    assert "data-stepper-run-plan" in response.text
+    assert "data-stepper-plan-dry-run" in response.text
+    assert "novalidate" in response.text
+
+
+def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sample_inputs) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            **sample_inputs,
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "result-hero" in response.text
 
 
 def test_ansible_role_form_stepper(repo_root, output_config) -> None:
@@ -285,6 +304,31 @@ def test_ansible_role_form_stepper(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert 'data-form-stepper-kind="standard"' in response.text
     assert 'data-form-stepper-max="1"' in response.text
+    assert "data-stepper-run-plan" in response.text
+    assert "data-stepper-plan-dry-run" in response.text
+    assert "novalidate" in response.text
+
+
+def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "ansible-role-generic",
+            "dry_run": "true",
+            "role_name": "webserver",
+            "namespace": "acme",
+            "description": "Example role for portal dry-run test",
+            "min_ansible_version": "2.18",
+            "support_linux": "true",
+            "support_windows": "false",
+            "windows_server_generation": "2022",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "result-hero" in response.text
 
 
 def test_observability_form_stepper(repo_root, output_config) -> None:

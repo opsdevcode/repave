@@ -223,7 +223,10 @@
     var navSteps = form.querySelectorAll("[data-stepper-index]");
     var backBtn = form.querySelector("[data-stepper-back]");
     var nextBtn = form.querySelector("[data-stepper-next]");
-    var submitBtn = form.querySelector('button[type="submit"]');
+    var submitBtn = form.querySelector("[data-stepper-submit]");
+    var planBtn = form.querySelector("[data-stepper-run-plan]");
+    var planSubmitBtn = form.querySelector("[data-stepper-plan-submit]");
+    var planDryRunField = form.querySelector("[data-stepper-plan-dry-run]");
     var current = 0;
     var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
     if (Number.isNaN(maxStep)) {
@@ -247,7 +250,7 @@
       return true;
     }
 
-    function validateStep(stepIndex) {
+    function validateStep(stepIndex, includeHidden) {
       if (typeof form.reportValidity !== "function") {
         return true;
       }
@@ -259,12 +262,77 @@
         });
       });
       for (var i = 0; i < fields.length; i += 1) {
-        if (isFieldVisible(fields[i]) && !fields[i].checkValidity()) {
+        if (!includeHidden && !isFieldVisible(fields[i])) {
+          continue;
+        }
+        if (fields[i].disabled) {
+          continue;
+        }
+        if (fields[i].type === "hidden") {
+          continue;
+        }
+        if (!fields[i].checkValidity()) {
           fields[i].reportValidity();
           return false;
         }
       }
       return true;
+    }
+
+    function validateStepsThroughDelivery() {
+      var step;
+      for (step = 0; step < maxStep; step += 1) {
+        if (!validateStep(step, true)) {
+          current = step;
+          applyStep();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function dispatchPreSubmit() {
+      form.dispatchEvent(
+        new CustomEvent("repave:stepper-pre-submit", {
+          bubbles: true,
+          cancelable: false,
+        })
+      );
+    }
+
+    function setPlanSubmitMode(planMode) {
+      if (planDryRunField) {
+        planDryRunField.disabled = !planMode;
+      }
+      form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+        radio.disabled = planMode;
+      });
+    }
+
+    function deliveryWantsPlan() {
+      var planRadio = form.querySelector('input[name="dry_run"][type="radio"][value="true"]');
+      return !planRadio || planRadio.checked;
+    }
+
+    function submitViaPlanControl() {
+      var submitter = planSubmitBtn || submitBtn;
+      if (!submitter) {
+        return;
+      }
+      if (typeof form.requestSubmit === "function") {
+        form.requestSubmit(submitter);
+      } else {
+        submitter.click();
+      }
+    }
+
+    function runPlanFromStepper() {
+      dispatchPreSubmit();
+      if (!validateStepsThroughDelivery()) {
+        return;
+      }
+      setPlanSubmitMode(true);
+      submitViaPlanControl();
     }
 
     function applyStep() {
@@ -298,6 +366,27 @@
       form.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
+    if (planBtn) {
+      planBtn.addEventListener("click", runPlanFromStepper);
+    }
+    form.addEventListener("submit", function (event) {
+      dispatchPreSubmit();
+      if (!validateStepsThroughDelivery()) {
+        event.preventDefault();
+        return;
+      }
+      var submitter = event.submitter;
+      var viaPlanControl =
+        submitter &&
+        (submitter === planSubmitBtn ||
+          submitter.getAttribute("data-stepper-plan-submit") !== null ||
+          submitter.getAttribute("data-stepper-run-plan") !== null);
+      if (viaPlanControl || current !== maxStep) {
+        setPlanSubmitMode(true);
+      } else {
+        setPlanSubmitMode(deliveryWantsPlan());
+      }
+    });
     if (backBtn) {
       backBtn.addEventListener("click", function () {
         current = Math.max(0, current - 1);

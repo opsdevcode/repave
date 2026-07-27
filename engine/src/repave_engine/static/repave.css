@@ -2588,12 +2588,28 @@ details.file-panel summary {
   border-top-color: transparent;
 }
 
-.form-actions--sticky:not(.form-actions--stepper-final) .btn--primary {
+.form-actions--sticky:not(.form-actions--stepper-final) .btn--primary[data-stepper-submit] {
   display: none;
 }
 
+.stepper-plan-submit {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.form-actions--sticky:not(.form-actions--stepper-final) [data-stepper-run-plan] {
+  order: -1;
+}
+
 .form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final)::after {
-  content: "Continue with Next above";
+  content: "Use Next for delivery options, or Run plan to preview gates and files.";
   display: block;
   width: 100%;
   font-size: 0.82rem;

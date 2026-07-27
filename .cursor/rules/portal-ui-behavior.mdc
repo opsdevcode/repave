@@ -1,0 +1,52 @@
+---
+description: Portal UI changes must preserve generate/plan flows and add tests
+globs:
+  - engine/src/repave_engine/templates/**
+  - engine/src/repave_engine/static/repave.js
+  - engine/src/repave_engine/static/repave.css
+  - engine/tests/test_api.py
+alwaysApply: false
+---
+
+# Portal UI behavior (no regressions)
+
+Copy and layout changes **must not break** core portal flows. Treat templates,
+`repave.js`, and `repave.css` as one product surface with shared contracts.
+
+## Required flows (every golden path)
+
+1. **Plan (dry-run)** — POST `/generate` with `dry_run=true` returns **200** and
+   the result page shows gate summary and **Generated files** (file tree / preview).
+2. **Stepper forms** — When `data-form-stepper` is present:
+   - **Run plan** (`data-stepper-run-plan`) must work from early steps without
+     requiring the user to reach Delivery first.
+   - **Scaffold repository** submit on the Delivery step must respect plan vs apply
+     radios.
+   - Hidden-step `required` fields must not block submit (use `novalidate` + JS
+     validation in `initFormStepper`, or equivalent).
+3. **Apply (optional)** — `dry_run=false` path unchanged unless explicitly scoped;
+   document in PR test plan.
+
+## Before merging portal UX PRs
+
+1. Run `make format && make quality && make test` from repo root.
+2. Extend `engine/tests/test_api.py` when behavior changes (form markers, POST
+   dry-run smoke for at least **terraform-module-generic** and one **standard**
+   stepper blueprint such as `ansible-role-generic`).
+3. Manually spot-check in browser: open blueprint → **Run plan** → result shows
+   files (when time permits; tests are the gate).
+
+## Consistency
+
+- Keep labels aligned with `portal-ux-copy.mdc` and `docs/portal-design.md`.
+- If renaming actions (Generate → Scaffold, Dry-run → Plan), update **templates,
+  JS user strings, CSS hints, and tests** in the same PR — not copy-only follow-ups.
+- Do not hide the only submit control without providing an equivalent **Run plan**
+  path that hits the same `/generate` contract.
+
+## Review checklist
+
+- [ ] Dry-run POST still returns rendered files in HTML result.
+- [ ] Stepper: `Run plan` present where submit is step-gated; `novalidate` + validation wired.
+- [ ] Tests updated for new strings or form attributes.
+- [ ] No orphaned `terraform_stepper` / dead selectors in JS.
