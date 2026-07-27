@@ -1,4 +1,6 @@
 # Native observability artifacts (JSON/YAML) — not Terraform plan input.
+import future.keywords.in
+
 package observability
 
 _has_managed_by_tag(tags) if {

@@ -1,4 +1,6 @@
 # Terraform plan policy: observability repos must tag managed-by:repave on monitors/dashboards.
+import future.keywords.in
+
 package terraform.plan
 
 _managed_by_tag(tags) if {
