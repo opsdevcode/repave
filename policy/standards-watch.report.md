@@ -1,9 +1,10 @@
 # Policy standards watch report
 
-Checked at: 2026-07-26T13:44:39.003633+00:00
+Checked at: 2026-07-27T16:52:07.229570+00:00
 
 ## Changed sources
 
+- `checkov-latest-release`
 - `conftest-latest-release`
 
 Review upstream guidance and update `policy/catalog.json`, packs, and blueprint pins as needed.
@@ -13,12 +14,12 @@ Review upstream guidance and update `policy/catalog.json`, packs, and blueprint 
 ### `checkov-latest-release`
 - URL: https://api.github.com/repos/bridgecrewio/checkov/releases/latest
 - Extracted: `3.3.8`
-- SHA-256: `3dd35701c000726817fdd75ae4405196cc0656e570165ef194730bced18d526c`
+- SHA-256: `bdfc6e58b2dbc92f97dd850320dde955cd97b3d21338cd65f4bb10b57fb730cf`
 
 ### `conftest-latest-release`
 - URL: https://api.github.com/repos/open-policy-agent/conftest/releases/latest
 - Extracted: `v0.68.2`
-- SHA-256: `4a705fe2c783a11bdf66de2d780ede3a59fb1406b7e53468bedbaa8afe96dcd0`
+- SHA-256: `683b532df8ed89d3f17b03c2e60972011d62ce9e10a612f167e83f9ba3290aad`
 
 ### `terraform-latest-release`
 - URL: https://api.github.com/repos/hashicorp/terraform/releases/latest
