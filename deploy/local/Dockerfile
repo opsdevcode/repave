@@ -3,12 +3,13 @@ FROM python:3.12-slim
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Gate toolchain: see deploy/local/install-gate-toolchain.sh (keep versions in ci_toolchain.py)
+COPY ansible/requirements-gate-collections.yml /app/ansible/requirements-gate-collections.yml
 COPY deploy/local/install-gate-toolchain.sh /tmp/install-gate-toolchain.sh
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl unzip git \
     && rm -rf /var/lib/apt/lists/* \
     && chmod +x /tmp/install-gate-toolchain.sh \
-    && USE_UV_PIP=1 /tmp/install-gate-toolchain.sh \
+    && REPO_ROOT=/app USE_UV_PIP=1 /tmp/install-gate-toolchain.sh \
     && rm /tmp/install-gate-toolchain.sh \
     && git config --global user.email "repave@local.dev" \
     && git config --global user.name "repave"

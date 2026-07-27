@@ -1183,6 +1183,13 @@ def run_opa(ctx: GateContext) -> GateResult:
             fixtures = output_dir / cfg.fixtures_dir
             if fixtures.is_dir() and any(fixtures.glob("*.json")):
                 target = str(fixtures)
+            elif not terraform_usable(output_dir):
+                return GateResult(
+                    "opa",
+                    True,
+                    True,
+                    "terraform not available; skipped",
+                )
             else:
                 return GateResult(
                     "opa",

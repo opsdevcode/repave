@@ -358,7 +358,23 @@ without failing CI.
 
 **Status:** Shipped on `main` (catalog, patterns, portal, standards v1.1.0, gate collections).
 
-**Follow-ups:** Collection sample role wired from the same catalog; richer playbook patterns.
+**Follow-ups:** Collection sample role wired from the same catalog; richer playbook patterns
+(pinned Galaxy rollout shipped in v1.70).
+
+---
+
+### v1.70 — Pinned Galaxy roles playbook pattern
+
+**Problem:** Playbook projects could pin roles in `requirements.yml` but **`site.yml`** only
+exercised pins via the Copier placeholder loop (ping tasks), not a serial production rollout play.
+
+**Approach:**
+
+- **`pinned-roles-rollout`** in **`ansible/catalog.json`** with ping + `roles:` play
+- Validate at least one **`pinned_roles`** entry when the pattern is selected
+- **`group_vars/all/vars.yml`** exposes `playbook_rollout_serial` tuning
+
+**Status:** In progress.
 
 ---
 

@@ -57,6 +57,15 @@
   {% endif %}
 </section>
 
+{% if gate_toolchain_callout %}
+<section class="card result-toolchain-callout" aria-labelledby="toolchain-heading">
+  <div class="card__body">
+    <h2 id="toolchain-heading" class="form-section__subtitle">Gate toolchain</h2>
+    <p class="hint">{{ gate_toolchain_callout }}</p>
+  </div>
+</section>
+{% endif %}
+
 {% if result_portal %}
 <section class="card result-lineage stack-gap" aria-labelledby="lineage-heading">
   <div class="card__header">

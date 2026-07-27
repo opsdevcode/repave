@@ -158,6 +158,13 @@ def normalize_playbook_pattern_inputs(
         collections_key="_playbook_pattern_requires_collections",
         omit_docker_key=None,
     )
+    pattern_id = str(normalized.get("playbook_pattern_source", "")).strip()
+    if pattern_id == "pinned-roles-rollout":
+        pinned = normalized.get("pinned_roles")
+        if not isinstance(pinned, list) or not pinned:
+            raise ValueError(
+                "Playbook pattern 'pinned-roles-rollout' requires at least one pinned Galaxy role"
+            )
 
 
 def _materialize_pattern(
