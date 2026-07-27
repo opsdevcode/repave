@@ -211,7 +211,7 @@ def render_blueprint(
     if policy_selection is not None:
         _apply_checkov_skip_config(output_dir, blueprint, policy_selection.checkov_skip_checks)
     _copy_opa_policies(output_dir, blueprint, policy_selection)
-    _copy_opa_plan_fixtures(output_dir, blueprint)
+    _copy_opa_plan_fixtures(output_dir, blueprint, policy_selection)
     _apply_opa_plan_demo_fixture(output_dir, blueprint, payload)
     _copy_azure_policy_definitions(output_dir, blueprint, policy_selection)
     _copy_ansible_lint_pack(output_dir, blueprint)
@@ -474,6 +474,11 @@ def _copy_opa_policies(
     destination = output_dir / blueprint.opa_gate.policies_dir
     if destination.exists():
         shutil.rmtree(destination)
+    if selection is None:
+        from repave_engine.policy_selection import blueprint_policy_optional
+
+        if blueprint_policy_optional(blueprint):
+            return
     if selection is not None and selection.opa_rego_files:
         _copy_named_files(source_dir, destination, selection.opa_rego_files)
         return
@@ -481,7 +486,11 @@ def _copy_opa_policies(
     shutil.copytree(source_dir, destination)
 
 
-def _copy_opa_plan_fixtures(output_dir: Path, blueprint: Blueprint) -> None:
+def _copy_opa_plan_fixtures(
+    output_dir: Path,
+    blueprint: Blueprint,
+    selection: PolicySelection | None,
+) -> None:
     """Vend plan JSON fixtures so module CI can run conftest without cloud credentials."""
     if blueprint.opa_policies is None:
         return
@@ -490,6 +499,11 @@ def _copy_opa_plan_fixtures(output_dir: Path, blueprint: Blueprint) -> None:
         "terraform-environment-stack",
         "observability",
     ):
+        return
+
+    from repave_engine.policy_selection import blueprint_policy_optional
+
+    if blueprint_policy_optional(blueprint) and selection is None:
         return
 
     repo_root = _find_repo_root(blueprint.path)

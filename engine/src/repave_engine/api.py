@@ -58,6 +58,7 @@ from repave_engine.policy_catalog import (
     load_policy_catalog,
 )
 from repave_engine.policy_selection import (
+    blueprint_supports_optional_policy,
     blueprint_supports_policy_customization,
     policy_input_defaults,
 )
@@ -228,7 +229,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         policy_catalog: dict[str, object] | None = None
         policy_defaults: dict[str, str] = {}
         policy_enabled_rule_ids: set[str] = set()
-        if blueprint_supports_policy_customization(blueprint):
+        if blueprint_supports_policy_customization(blueprint) or blueprint_supports_optional_policy(
+            blueprint
+        ):
             policy_defaults = policy_input_defaults(blueprint)
             catalog = load_policy_catalog(repo_root)
             policy_catalog = catalog_for_api(
@@ -295,6 +298,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 ),
                 recent_activity=portal_recent_activity(),
                 policy_customization=blueprint_supports_policy_customization(blueprint),
+                policy_customization_optional=blueprint_supports_optional_policy(blueprint),
                 policy_defaults=policy_defaults,
                 policy_catalog=policy_catalog,
                 policy_enabled_rule_ids=policy_enabled_rule_ids,
@@ -324,7 +328,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/blueprints/{blueprint_name}/policy-catalog")
     async def policy_catalog(blueprint_name: str) -> dict[str, object]:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        if not blueprint_supports_policy_customization(blueprint):
+        if not blueprint_supports_policy_customization(
+            blueprint
+        ) and not blueprint_supports_optional_policy(blueprint):
             return {"version": "0", "profiles": {}, "pack_sources": [], "rules": []}
         catalog = load_policy_catalog(repo_root)
         return catalog_for_api(

@@ -429,6 +429,10 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
 
     mon_form = client.get("/blueprints/monitors-as-code-generic")
     assert mon_form.status_code == 200
+    assert 'id="enable_policy_toggle"' in mon_form.text
+    assert 'id="policy-customization"' in mon_form.text
+    policy_region = mon_form.text.split('id="policy-customization"', 1)[1][:120]
+    assert "hidden" in policy_region
     assert 'id="monitor_pack_source"' in mon_form.text
     assert 'id="monitor-pack-includes"' in mon_form.text
     assert "prometheus-red-plus-host-cpu" in mon_form.text

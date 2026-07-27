@@ -40,7 +40,23 @@ class PolicySelection:
 
 
 def blueprint_supports_policy_customization(blueprint: Blueprint) -> bool:
+    if blueprint_policy_optional(blueprint):
+        return False
     return any(field.name == "policy_profile" for field in blueprint.inputs)
+
+
+def blueprint_policy_optional(blueprint: Blueprint) -> bool:
+    return any(field.name == "enable_policy" for field in blueprint.inputs)
+
+
+def blueprint_supports_optional_policy(blueprint: Blueprint) -> bool:
+    return blueprint_policy_optional(blueprint) and any(
+        field.name == "policy_profile" for field in blueprint.inputs
+    )
+
+
+def policy_pack_enabled(values: dict[str, Any]) -> bool:
+    return str(values.get("enable_policy", "false")).strip().lower() == "true"
 
 
 def policy_input_defaults(blueprint: Blueprint) -> dict[str, str]:
@@ -73,8 +89,18 @@ def normalize_policy_inputs(
     *,
     gate_overrides: GateOverrides | None = None,
 ) -> PolicySelection | None:
-    if not blueprint_supports_policy_customization(blueprint):
+    if not blueprint_supports_policy_customization(
+        blueprint
+    ) and not blueprint_supports_optional_policy(blueprint):
         return None
+
+    if blueprint_policy_optional(blueprint) and not policy_pack_enabled(normalized):
+        normalized["enable_policy"] = "false"
+        normalized.pop("_policy_selection", None)
+        return None
+
+    if blueprint_policy_optional(blueprint):
+        normalized["enable_policy"] = "true"
 
     catalog = load_policy_catalog(repo_root)
     profile = str(normalized.get("policy_profile", "estate-default")).strip()

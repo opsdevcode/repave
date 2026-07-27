@@ -1147,6 +1147,10 @@ def run_opa(ctx: GateContext) -> GateResult:
     cfg = ctx.blueprint.opa_gate
     policies_dir = output_dir / cfg.policies_dir
     selection = load_policy_selection_file(output_dir)
+    from repave_engine.policy_selection import blueprint_policy_optional
+
+    if selection is None and ctx.blueprint is not None and blueprint_policy_optional(ctx.blueprint):
+        return GateResult("opa", True, True, "policy pack not enabled; skipped")
     if selection is not None and not selection.opa_rego_files:
         return GateResult("opa", True, True, "no OPA policies selected; skipped")
 
