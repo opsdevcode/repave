@@ -3174,7 +3174,10 @@ body.repave-busy {
   border-radius: var(--radius);
   border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--border));
   background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
-  order: unset;
+}
+
+.form-draft-banner[hidden] {
+  display: none !important;
 }
 
 .card__header--toolbar {

@@ -837,6 +837,7 @@
       var raw = localStorage.getItem(storageKey);
       if (raw && banner) {
         banner.hidden = false;
+        banner.setAttribute("aria-label", "Saved blueprint draft");
         banner.innerHTML =
           '<span class="muted">Saved draft for this blueprint.</span> ' +
           '<button type="button" class="btn btn--ghost btn--sm" data-draft-restore>Restore</button> ' +
@@ -857,10 +858,15 @@
           }
           banner.hidden = true;
           banner.innerHTML = "";
+          banner.removeAttribute("aria-label");
         });
       }
     } catch (_err4) {
       /* ignore */
+    }
+
+    if (banner && banner.hidden) {
+      banner.innerHTML = "";
     }
 
     form.addEventListener("input", scheduleSave);
