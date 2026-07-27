@@ -130,7 +130,7 @@
           return;
         }
         var btn =
-          form.querySelector("[data-stepper-run-plan]:not([hidden])") ||
+          form.querySelector("[data-dry-run-run]:not([hidden])") ||
           form.querySelector("[data-stepper-submit]:not([hidden])") ||
           form.querySelector('button[type="submit"]');
         if (!btn || btn.disabled) {
@@ -235,9 +235,9 @@
     var backBtn = form.querySelector("[data-stepper-back]");
     var nextBtn = form.querySelector("[data-stepper-next]");
     var submitBtn = form.querySelector("[data-stepper-submit]");
-    var planBtn = form.querySelector("[data-stepper-run-plan]");
-    var planSubmitBtn = form.querySelector("[data-stepper-plan-submit]");
-    var planDryRunField = form.querySelector("[data-stepper-plan-dry-run]");
+    var dryRunBtn = form.querySelector("[data-dry-run-run]");
+    var drySubmitBtn = form.querySelector("[data-dry-run-submit]");
+    var dryRunForceField = form.querySelector("[data-dry-run-force]");
     var current = 0;
     var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
     if (Number.isNaN(maxStep)) {
@@ -312,8 +312,8 @@
     }
 
     function setPlanSubmitMode(planMode) {
-      if (planDryRunField) {
-        planDryRunField.disabled = !planMode;
+      if (dryRunForceField) {
+        dryRunForceField.disabled = !planMode;
       }
       form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
         radio.disabled = planMode;
@@ -325,8 +325,8 @@
       return !planRadio || planRadio.checked;
     }
 
-    function submitViaPlanControl() {
-      var submitter = planSubmitBtn || submitBtn;
+    function submitViaDryRunControl() {
+      var submitter = drySubmitBtn || submitBtn;
       if (!submitter) {
         return;
       }
@@ -367,12 +367,12 @@
       setPlanSubmitMode(true);
     }
 
-    function runPlanFromStepper() {
+    function runDryRunFromForm() {
       if (!runStepperSubmitPipeline(null)) {
         return;
       }
       forcePlanDryRun();
-      submitViaPlanControl();
+      submitViaDryRunControl();
     }
 
     function applyStep() {
@@ -406,8 +406,8 @@
       form.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
-    if (planBtn) {
-      planBtn.addEventListener("click", runPlanFromStepper);
+    if (dryRunBtn) {
+      dryRunBtn.addEventListener("click", runDryRunFromForm);
     }
     form.addEventListener(
       "submit",
@@ -416,12 +416,12 @@
           return;
         }
         var submitter = event.submitter;
-        var viaPlanControl =
+        var viaDryRunControl =
           submitter &&
-          (submitter === planSubmitBtn ||
-            submitter.getAttribute("data-stepper-plan-submit") !== null ||
-            submitter.getAttribute("data-stepper-run-plan") !== null);
-        if (viaPlanControl || current !== maxStep) {
+          (submitter === drySubmitBtn ||
+            submitter.getAttribute("data-dry-run-submit") !== null ||
+            submitter.getAttribute("data-dry-run-run") !== null);
+        if (viaDryRunControl || current !== maxStep) {
           setPlanSubmitMode(true);
         } else {
           setPlanSubmitMode(deliveryWantsPlan());
@@ -773,6 +773,48 @@
     }
   }
 
+  function initFormDryRun() {
+    document.querySelectorAll("[data-repave-busy-form]").forEach(function (form) {
+      if (form.hasAttribute("data-form-stepper")) {
+        return;
+      }
+      var dryRunBtn = form.querySelector("[data-dry-run-run]");
+      var drySubmit = form.querySelector("[data-dry-run-submit]");
+      var dryForce = form.querySelector("[data-dry-run-force]");
+      if (!dryRunBtn || !drySubmit) {
+        return;
+      }
+
+      dryRunBtn.addEventListener("click", function () {
+        form.dispatchEvent(
+          new CustomEvent("repave:stepper-pre-submit", { bubbles: true, cancelable: false })
+        );
+        var allowed = form.dispatchEvent(
+          new CustomEvent("repave:stepper-will-submit", { bubbles: true, cancelable: true })
+        );
+        if (!allowed) {
+          return;
+        }
+        form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+          if (radio.value === "true") {
+            radio.checked = true;
+          }
+        });
+        if (dryForce) {
+          dryForce.disabled = false;
+        }
+        form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+          radio.disabled = true;
+        });
+        if (typeof form.requestSubmit === "function") {
+          form.requestSubmit(drySubmit);
+        } else {
+          drySubmit.click();
+        }
+      });
+    });
+  }
+
   function initFormDraft() {
     var form = document.querySelector("[data-repave-form-draft]");
     if (!form) {
@@ -909,6 +951,7 @@
     initFileExplorer();
     initBusyForms();
     initFormStepper();
+    initFormDryRun();
     initHomeQuicknav();
     initCatalogSearch();
     initGateDashboard();

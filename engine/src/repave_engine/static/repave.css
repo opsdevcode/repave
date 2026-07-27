@@ -2626,7 +2626,8 @@ details.file-panel summary {
   display: none;
 }
 
-.stepper-plan-submit {
+.stepper-plan-submit,
+.dry-run-submit {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -2644,7 +2645,7 @@ details.file-panel summary {
   margin-bottom: 0;
 }
 
-.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) [data-stepper-run-plan] {
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) [data-dry-run-run] {
   order: unset;
 }
 

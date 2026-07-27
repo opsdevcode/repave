@@ -165,9 +165,7 @@
     {% endif %}
   >
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
-    {% if form_stepper %}
-    <input type="hidden" name="dry_run" value="true" data-stepper-plan-dry-run disabled />
-    {% endif %}
+    <input type="hidden" name="dry_run" value="true" data-dry-run-force disabled />
     {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
     {% endif %}
@@ -776,28 +774,40 @@
           </label>
         </div>
         <p class="hint form-actions__delivery-hint">
-          <strong>Run plan</strong> previews gates and files without writing. <strong>Scaffold repository</strong>
-          uses the mode above on the Delivery step.
+          <strong>Dry run preview</strong> shows gates and generated files without writing.
+          <strong>Scaffold repository</strong> uses the delivery mode above on the last step.
         </p>
       </div>
       <div class="form-actions__buttons">
         <button
           type="submit"
-          class="stepper-plan-submit"
-          data-stepper-plan-submit
+          class="dry-run-submit"
+          data-dry-run-submit
           tabindex="-1"
           aria-hidden="true"
         >
-          Run plan
+          Dry run preview
         </button>
-        <button type="button" class="btn btn--primary" data-stepper-run-plan>
-          Run plan
+        <button type="button" class="btn btn--primary" data-dry-run-run>
+          Dry run preview
         </button>
         <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
       </div>
       {% else %}
       <div class="form-actions__buttons">
-        <button class="btn btn--primary" type="submit">Scaffold repository</button>
+        <button
+          type="submit"
+          class="dry-run-submit"
+          data-dry-run-submit
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          Dry run preview
+        </button>
+        <button type="button" class="btn btn--primary" data-dry-run-run>
+          Dry run preview
+        </button>
+        <button class="btn btn--secondary" type="submit">Scaffold repository</button>
       </div>
       {% endif %}
     </div>
