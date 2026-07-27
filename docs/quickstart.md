@@ -10,9 +10,9 @@ noted. For live calls and stakeholder-specific talking points, see
 
 1. **Start:** `make serve` or [Docker Compose](#docker-compose-recommended) →
    http://localhost:8088
-2. **Generate:** **terraform-module-generic** → module `demo`, AWS, scope **ec2 +
-   s3** → **Dry-run preview** on → **Generate**. Scroll to **Lineage & receipt**,
-   policy rules, and the gate dashboard.
+2. **Plan:** **terraform-module-generic** → module `demo`, description, AWS → **Next** →
+   scope **ec2 + s3** → **Run plan** (sticky footer; or **Next** → **Plan (validate only)** →
+   **Scaffold repository**). Confirm **Plan only**, gate dashboard, and **Generated files**.
 3. **OPA block (optional):** **opa-policy-generic** → set **plan demo** to
    `destructive_delete` → dry-run → **opa** fails with **Publish blocked** (see
    [examples/policy](../examples/policy/README.md)).

@@ -2521,8 +2521,13 @@ details.file-panel summary {
 .form-actions--sticky {
   position: sticky;
   bottom: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: var(--space-3);
   margin-top: var(--space-5);
   padding: var(--space-4) 0;
+  border-top: 1px solid var(--border);
   background: linear-gradient(
     180deg,
     transparent 0%,
@@ -2531,6 +2536,35 @@ details.file-panel summary {
   );
   backdrop-filter: blur(6px);
   z-index: 3;
+}
+
+.form-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.form-actions__delivery-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.form-actions__delivery-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.form-actions__delivery-hint {
+  margin: 0;
+  font-size: 0.82rem;
 }
 
 .form-stepper {
@@ -2588,7 +2622,7 @@ details.file-panel summary {
   border-top-color: transparent;
 }
 
-.form-actions--sticky:not(.form-actions--stepper-final) .btn--primary[data-stepper-submit] {
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) .btn[data-stepper-submit] {
   display: none;
 }
 
@@ -2604,17 +2638,18 @@ details.file-panel summary {
   border: 0;
 }
 
-.form-actions--sticky:not(.form-actions--stepper-final) [data-stepper-run-plan] {
-  order: -1;
+.form-actions--stepper .form-actions__delivery {
+  width: 100%;
+  max-width: 36rem;
+  margin-bottom: 0;
 }
 
-.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final)::after {
-  content: "Use Next for delivery options, or Run plan to preview gates and files.";
-  display: block;
-  width: 100%;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  margin-top: var(--space-2);
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) [data-stepper-run-plan] {
+  order: unset;
+}
+
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) .form-actions__delivery-hint {
+  display: none;
 }
 
 .activity-card {
@@ -3134,11 +3169,15 @@ body.repave-busy {
   align-items: center;
   gap: var(--space-2);
   width: 100%;
-  margin-bottom: var(--space-2);
+  margin: 0;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius);
   border: 1px dashed color-mix(in srgb, var(--accent) 35%, var(--border));
   background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+}
+
+.form-draft-banner[hidden] {
+  display: none !important;
 }
 
 .card__header--toolbar {

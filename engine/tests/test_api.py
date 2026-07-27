@@ -289,6 +289,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "form-stepper" in response.text
     assert "data-stepper-run-plan" in response.text
     assert "data-stepper-plan-dry-run" in response.text
+    assert "form-actions__delivery" in response.text
     assert "novalidate" in response.text
 
 
@@ -316,6 +317,7 @@ def test_ansible_role_form_stepper(repo_root, output_config) -> None:
     assert 'data-form-stepper-max="1"' in response.text
     assert "data-stepper-run-plan" in response.text
     assert "data-stepper-plan-dry-run" in response.text
+    assert "form-actions__delivery" in response.text
     assert "novalidate" in response.text
 
 
@@ -611,6 +613,9 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert response.status_code == 200
     assert 'id="app-service-catalog"' in response.text
     assert "Backstage catalog" in response.text
+    assert 'data-form-stepper-kind="standard"' in response.text
+    assert "form-actions__delivery" in response.text
+    assert "data-stepper-run-plan" in response.text
     assert 'id="catalog_lifecycle"' in response.text
     assert 'id="runtime"' in response.text
     assert ">go</option>" in response.text

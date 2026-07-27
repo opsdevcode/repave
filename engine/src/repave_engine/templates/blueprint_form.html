@@ -734,6 +734,7 @@
       {% if form_stepper %}data-form-step="{{ publish_step }}" hidden{% endif %}
     >
       <h2 class="form-section__title" id="publish-heading">Delivery</h2>
+      {% if not form_stepper %}
       <div class="segmented publish-toggle" role="radiogroup" aria-label="Delivery mode">
         <label class="segmented__option">
           <input type="radio" name="dry_run" value="true" checked />
@@ -744,33 +745,61 @@
           Apply to modules root
         </label>
       </div>
+      {% else %}
+      <p class="hint">
+        Choose <strong>Plan</strong> or <strong>Apply</strong> in the sticky actions below before you scaffold.
+      </p>
+      {% endif %}
       <p class="hint">
         Apply writes the repository under <code>REPAVE_MODULES_ROOT</code>.
         Set <code>GITHUB_TOKEN</code> on the server to create and push the remote GitHub repo.
       </p>
     </section>
 
-    <div class="form-actions form-actions--sticky">
+    <div class="form-actions form-actions--sticky{% if form_stepper %} form-actions--stepper{% if publish_step == 0 %} form-actions--stepper-final{% endif %}{% endif %}">
       <p class="form-actions__preflight muted">
         {{ blueprint.gates|length }} quality gates on scaffold ·
         <code>{{ blueprint.standard_source }}</code>@{{ blueprint.standard_version }}
       </p>
-      <div id="form-draft-banner" class="form-draft-banner" hidden></div>
+      <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
       {% if form_stepper %}
-      <button
-        type="submit"
-        class="stepper-plan-submit"
-        data-stepper-plan-submit
-        tabindex="-1"
-        aria-hidden="true"
-      >
-        Run plan
-      </button>
-      <button type="button" class="btn btn--primary" data-stepper-run-plan>
-        Run plan
-      </button>
+      <div class="form-actions__delivery-block">
+        <span class="form-actions__delivery-label">Delivery</span>
+        <div class="segmented publish-toggle form-actions__delivery" role="radiogroup" aria-label="Delivery mode">
+          <label class="segmented__option">
+            <input type="radio" name="dry_run" value="true" checked />
+            Plan (validate only)
+          </label>
+          <label class="segmented__option">
+            <input type="radio" name="dry_run" value="false" />
+            Apply to modules root
+          </label>
+        </div>
+        <p class="hint form-actions__delivery-hint">
+          <strong>Run plan</strong> previews gates and files without writing. <strong>Scaffold repository</strong>
+          uses the mode above on the Delivery step.
+        </p>
+      </div>
+      <div class="form-actions__buttons">
+        <button
+          type="submit"
+          class="stepper-plan-submit"
+          data-stepper-plan-submit
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          Run plan
+        </button>
+        <button type="button" class="btn btn--primary" data-stepper-run-plan>
+          Run plan
+        </button>
+        <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
+      </div>
+      {% else %}
+      <div class="form-actions__buttons">
+        <button class="btn btn--primary" type="submit">Scaffold repository</button>
+      </div>
       {% endif %}
-      <button class="btn btn--primary" type="submit" data-stepper-submit>Scaffold repository</button>
     </div>
   </form>
 </div>
