@@ -1,0 +1,17 @@
+terraform {
+  required_version = ">= 1.8.0, < 2.0.0"
+
+  required_providers {
+{% if backend == 'datadog' %}
+    datadog = {
+      source  = "DataDog/datadog"
+      version = "~> 3.0"
+    }
+{% elif backend == 'prometheus' %}
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
+{% endif %}
+  }
+}

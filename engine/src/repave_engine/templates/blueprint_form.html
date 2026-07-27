@@ -262,7 +262,7 @@
           {% if field.name == "backend" and field.enum %}
         <div class="obs-decision-fields" id="obs-backend-decision">
           <label for="backend">
-            {% if blueprint.name == "dashboards-as-code-generic" %}Dashboard platform{% else %}Observability backend{% endif %}
+            {% if blueprint.name == "dashboards-as-code-generic" %}Dashboard platform{% elif blueprint.name == "monitors-as-code-generic" %}Monitor platform{% else %}Observability backend{% endif %}
             {% if field.required %} *{% endif %}
           </label>
           <select class="select" id="backend" name="backend" {% if field.required %}required{% endif %}>
@@ -521,6 +521,9 @@
       {% endif %}
       {% if blueprint.name == "dashboards-as-code-generic" %}
       <input type="hidden" name="observability_focus" value="dashboards" />
+      {% endif %}
+      {% if blueprint.name == "monitors-as-code-generic" %}
+      <input type="hidden" name="observability_focus" value="monitors" />
       {% endif %}
 
       {% if blueprint.name == "app-service-generic" %}

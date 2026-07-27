@@ -1,0 +1,17 @@
+inputs:
+  service_name: checkout
+  configuration_mode: custom
+  organization: platform
+  team: payments
+  description: Conformance fixture monitors pack
+  backend: prometheus
+  output_mode: native
+  notification_source: repave-estate-oncall
+  notification_target: pagerduty-payments
+  runbook_url: https://wiki.example.com/runbooks/checkout
+  slo_target_percent: "99.9"
+required_files:
+  - repave.yaml
+  - README.md
+  - prometheus/rules/service-alerts.yaml
+snapshot: false

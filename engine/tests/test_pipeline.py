@@ -798,6 +798,42 @@ def test_generate_dashboards_terraform_grafana_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_monitors_native_prometheus_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout alerts",
+            "backend": "prometheus",
+            "output_mode": "native",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            "slo_target_percent": "99.9",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "prometheus" / "rules" / "service-alerts.yaml").is_file()
+    assert not (output_dir / "datadog").exists()
+    assert not (output_dir / "grafana").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
 def test_generate_observability_terraform_prometheus_dry_run(
     repo_root: Path,
     output_config,

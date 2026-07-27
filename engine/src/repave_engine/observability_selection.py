@@ -133,6 +133,22 @@ def normalize_observability_inputs(
                 "Terraform output_mode for observability-as-code requires backend: "
                 "datadog, grafana, prometheus, or otel"
             )
+    if blueprint.name == "monitors-as-code-generic":
+        output_mode = str(normalized.get("output_mode", "native")).strip()
+        if output_mode not in ("native", "terraform"):
+            raise ValueError(
+                f"Invalid output_mode: {output_mode!r}. Allowed values: native, terraform"
+            )
+        normalized["output_mode"] = output_mode
+        backend = str(normalized.get("backend", "datadog")).strip()
+        if backend not in ("datadog", "prometheus"):
+            raise ValueError(
+                "Invalid backend for monitors-as-code. Allowed values: datadog, prometheus"
+            )
+        if output_mode == "terraform" and backend not in ("datadog", "prometheus"):
+            raise ValueError(
+                "Terraform output_mode for monitors-as-code requires backend: datadog or prometheus"
+            )
     if blueprint.name == "dashboards-as-code-generic":
         output_mode = str(normalized.get("output_mode", "native")).strip()
         if output_mode not in ("native", "terraform"):
