@@ -1,21 +1,18 @@
 # Native observability artifacts (JSON/YAML) — not Terraform plan input.
 package observability
 
-import future.keywords.in
-
-_has_managed_by_tag(tags) if {
-    some tag in tags
-    tag == "managed-by:repave"
+_has_managed_by_tag(tags) {
+    tags[_] == "managed-by:repave"
 }
 
-deny contains msg if {
+deny[msg] {
     input.name
     input.type
     not input.message
     msg := "datadog monitor must include message"
 }
 
-deny contains msg if {
+deny[msg] {
     input.name
     input.type
     tags := input.tags
@@ -23,7 +20,7 @@ deny contains msg if {
     msg := sprintf("datadog monitor %s missing managed-by:repave tag", [input.name])
 }
 
-deny contains msg if {
+deny[msg] {
     input.title
     input.uid
     tags := input.tags
@@ -31,7 +28,7 @@ deny contains msg if {
     msg := sprintf("grafana dashboard %s missing managed-by:repave tag", [input.title])
 }
 
-deny contains msg if {
+deny[msg] {
     input.title
     input.layout_type
     tags := input.tags
