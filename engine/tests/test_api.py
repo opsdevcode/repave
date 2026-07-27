@@ -122,6 +122,9 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert ".home-hero" in response.text
     assert "color-scheme: dark" in response.text
     assert ".shell__atmosphere" in response.text
+    assert ".alert--fail" in response.text
+    assert ".gate-table-wrap" in response.text
+    assert ".gate-list" not in response.text
 
 
 def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> None:

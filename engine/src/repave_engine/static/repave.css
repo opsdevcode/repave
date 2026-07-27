@@ -171,8 +171,9 @@ pre {
   z-index: 1;
   margin: 0;
   padding: var(--space-2) var(--space-5);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border));
+  background: color-mix(in srgb, var(--warning) 10%, var(--surface));
+  color: var(--text);
 }
 
 .shell__bar::after {
@@ -242,6 +243,18 @@ pre {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 0.2em;
+}
+
+.shell__nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.shell__footer-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .shell__meta {
@@ -569,6 +582,17 @@ pre {
 .alert--info {
   background: var(--accent-soft);
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.alert--fail {
+  background: color-mix(in srgb, var(--error) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--error) 40%, transparent);
+  color: var(--text);
+}
+
+.alert--warn {
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 35%, transparent);
 }
 
 /* —— Forms —— */
@@ -1000,6 +1024,20 @@ pre {
 
 .gate-table-wrap {
   overflow-x: auto;
+  max-height: min(70vh, 36rem);
+  overflow-y: auto;
+}
+
+.result-toolchain-callout {
+  margin-bottom: var(--space-4);
+}
+
+.result-toolchain-callout .form-section__subtitle {
+  margin-top: 0;
+}
+
+.result-toolchain-callout .hint {
+  margin-bottom: 0;
 }
 
 .gate-table {
@@ -1017,6 +1055,10 @@ pre {
 }
 
 .gate-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1174,71 +1216,10 @@ pre {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gate-list li {
+  .gate-detail.motion-panel[open] .panel-code,
+  details.file-panel.motion-panel[open] .panel-code {
     animation: none;
   }
-}
-
-.gate-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.gate-list li {
-  margin: 0.45rem 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface) 80%, transparent);
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  animation: gate-settle 320ms ease-out both;
-}
-
-.gate-list li:nth-child(1) {
-  animation-delay: 40ms;
-}
-.gate-list li:nth-child(2) {
-  animation-delay: 80ms;
-}
-.gate-list li:nth-child(3) {
-  animation-delay: 120ms;
-}
-.gate-list li:nth-child(4) {
-  animation-delay: 160ms;
-}
-.gate-list li:nth-child(5) {
-  animation-delay: 200ms;
-}
-.gate-list li:nth-child(n + 6) {
-  animation-delay: 240ms;
-}
-
-.gate-list li.pass {
-  border-left-color: var(--success);
-  color: var(--text);
-}
-
-.gate-list li.fail {
-  border-left-color: var(--error);
-  color: var(--text);
-}
-
-.gate-list li.skip {
-  border-left-color: var(--skip);
-  color: var(--text);
-}
-
-.pass {
-  color: var(--success);
-}
-
-.fail {
-  color: var(--error);
-}
-
-.skip {
-  color: var(--skip);
 }
 
 pre,
