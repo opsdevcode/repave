@@ -629,6 +629,8 @@ def test_load_observability_blueprint(repo_root: Path) -> None:
     assert "opa" in blueprint.gates
     assert "yamllint" in blueprint.gates
     assert blueprint.output_repo_name_template.startswith("observability-")
+    enable = next(field for field in blueprint.inputs if field.name == "enable_policy")
+    assert enable.default == "false"
 
 
 def test_build_provenance_document_observability(repo_root: Path) -> None:

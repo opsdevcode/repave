@@ -349,6 +349,8 @@ def test_observability_form_stepper(repo_root, output_config) -> None:
     response = client.get("/blueprints/observability-as-code-generic")
     assert response.status_code == 200
     assert 'data-form-stepper-kind="observability"' in response.text
+    assert "Legacy umbrella path" in response.text
+    assert 'id="enable_policy_toggle"' in response.text
     assert "governance-drift-details" in response.text or "Standard pin drift" in response.text
 
 

@@ -34,6 +34,7 @@ def test_observability_policy_input_defaults(repo_root: Path) -> None:
     defaults = policy_input_defaults(blueprint)
     assert defaults["policy_pack_source"] == "repave-observability-pack"
     assert defaults["policy_profile"] == "observability-default"
+    assert defaults["enable_policy"] == "false"
 
 
 def test_observability_pack_source_filtered(repo_root: Path) -> None:

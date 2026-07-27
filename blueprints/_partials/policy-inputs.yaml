@@ -14,10 +14,10 @@
 #   policy_pack_source: repave-default
 #   policy_profile: estate-default
 #
-# observability-as-code-generic:
+# observability-as-code-generic (enable_policy default false; opt in for OPA):
 #   policy_pack_source: repave-observability-pack
 #   policy_profile: observability-default
 #
-# monitors-as-code-generic:
+# monitors-as-code-generic (enable_policy default false):
 #   policy_pack_source: repave-observability-pack
 #   policy_profile: observability-default

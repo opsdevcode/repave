@@ -64,6 +64,7 @@ def policy_input_defaults(blueprint: Blueprint) -> dict[str, str]:
     defaults = {
         "policy_pack_source": "repave-default",
         "policy_profile": "estate-default",
+        "enable_policy": "false",
     }
     for field in blueprint.inputs:
         if field.name in defaults and field.default not in (None, ""):

@@ -674,6 +674,7 @@ def test_observability_generate_vends_selected_opa_policies_only(
             "backend": "datadog",
             "environment": "prod",
             "output_mode": "native",
+            "enable_policy": "true",
             "notification_source": "repave-estate-oncall",
             "notification_target": "pagerduty-payments",
             "runbook_url": "https://wiki.example.com/runbooks/checkout",
@@ -832,6 +833,43 @@ def test_generate_monitors_native_prometheus_dry_run(
     assert not (output_dir / "datadog").exists()
     assert not (output_dir / "grafana").exists()
     assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_observability_policy_disabled_skips_opa_and_selection(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout alerts",
+            "backend": "prometheus",
+            "output_mode": "native",
+            "enable_policy": "false",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            "slo_target_percent": "99.9",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert not (output_dir / ".repave" / "policy-selection.json").is_file()
+    assert not (output_dir / "policy" / "opa" / "policies").is_dir()
+    opa = next(g for g in result.gates if g.name == "opa")
+    assert opa.skipped or opa.passed
 
 
 def test_generate_monitors_policy_disabled_skips_opa_and_selection(
