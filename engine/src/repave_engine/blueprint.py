@@ -394,6 +394,9 @@ def validate_inputs(
         from repave_engine.dashboard_pack import normalize_dashboard_pack_inputs
 
         normalize_dashboard_pack_inputs(blueprint, normalized, repo_root)
+        from repave_engine.monitor_pack import normalize_monitor_pack_inputs
+
+        normalize_monitor_pack_inputs(blueprint, normalized, repo_root)
 
     _validate_helm_chart_inputs(blueprint, normalized)
     _validate_app_service_inputs(blueprint, normalized)

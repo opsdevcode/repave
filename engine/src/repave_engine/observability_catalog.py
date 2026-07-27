@@ -106,6 +106,7 @@ class ObservabilityCatalog:
     slo_targets: tuple[SloTargetOption, ...]
     notification_sources: tuple[NotificationSource, ...]
     dashboard_packs: tuple[DashboardPack, ...]
+    monitor_packs: tuple[DashboardPack, ...]
     form_presets: dict[str, FormPreset]
 
 
@@ -173,6 +174,33 @@ def load_observability_catalog(repo_root: Path) -> ObservabilityCatalog:
                 )
             )
         packs.append(
+            DashboardPack(
+                id=str(raw["id"]),
+                label=str(raw.get("label", raw["id"])),
+                description=str(raw.get("description", "")),
+                backend=str(raw.get("backend", "any")),
+                files=tuple(files),
+                reference_url=str(raw["reference_url"]) if raw.get("reference_url") else None,
+                license=str(raw["license"]) if raw.get("license") else None,
+            )
+        )
+    monitor_packs: list[DashboardPack] = []
+    for raw in data.get("monitor_packs", []):
+        if not isinstance(raw, dict) or "id" not in raw:
+            continue
+        files = []
+        for item in raw.get("files", []):
+            if not isinstance(item, dict):
+                continue
+            if "source" not in item or "dest" not in item:
+                continue
+            files.append(
+                DashboardPackFile(
+                    source=str(item["source"]),
+                    dest=str(item["dest"]),
+                )
+            )
+        monitor_packs.append(
             DashboardPack(
                 id=str(raw["id"]),
                 label=str(raw.get("label", raw["id"])),
@@ -272,6 +300,7 @@ def load_observability_catalog(repo_root: Path) -> ObservabilityCatalog:
         slo_targets=tuple(slo_options),
         notification_sources=tuple(sources),
         dashboard_packs=tuple(packs),
+        monitor_packs=tuple(monitor_packs),
         form_presets=form_presets,
     )
 
@@ -331,6 +360,24 @@ def dashboard_packs_for_backend(
 ) -> tuple[DashboardPack, ...]:
     selected: list[DashboardPack] = []
     for pack in catalog.dashboard_packs:
+        if pack.backend in ("any", backend):
+            selected.append(pack)
+    return tuple(selected)
+
+
+def monitor_pack_by_id(catalog: ObservabilityCatalog, pack_id: str) -> DashboardPack | None:
+    for pack in catalog.monitor_packs:
+        if pack.id == pack_id:
+            return pack
+    return None
+
+
+def monitor_packs_for_backend(
+    catalog: ObservabilityCatalog,
+    backend: str,
+) -> tuple[DashboardPack, ...]:
+    selected: list[DashboardPack] = []
+    for pack in catalog.monitor_packs:
         if pack.backend in ("any", backend):
             selected.append(pack)
     return tuple(selected)
@@ -436,4 +483,5 @@ def catalog_for_api(
             for source in catalog.notification_sources
         ],
         "dashboard_packs": [_dashboard_pack_payload(pack) for pack in catalog.dashboard_packs],
+        "monitor_packs": [_dashboard_pack_payload(pack) for pack in catalog.monitor_packs],
     }

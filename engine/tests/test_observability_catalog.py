@@ -28,6 +28,7 @@ def test_catalog_for_api_includes_defaults(repo_root) -> None:
     assert payload["defaults"]["notification_source"] == "repave-slack-alerts"
     assert len(payload["notification_sources"]) >= 1
     assert len(payload["dashboard_packs"]) >= 1
+    assert len(payload["monitor_packs"]) >= 1
 
 
 def test_source_by_id(repo_root) -> None:

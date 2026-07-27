@@ -16,10 +16,12 @@ from repave_engine.observability_catalog import (
 
 def test_load_observability_catalog(repo_root) -> None:
     catalog = load_observability_catalog(repo_root)
-    assert catalog.version == "1.4.0"
+    assert catalog.version == "1.5.0"
     assert len(catalog.notification_sources) >= 2
     assert catalog.defaults["dashboard_pack_source"] == "repave-red-starter"
+    assert catalog.defaults["monitor_pack_source"] == "repave-red-starter"
     assert len(catalog.dashboard_packs) >= 3
+    assert len(catalog.monitor_packs) >= 2
 
 
 def test_dashboard_packs_for_backend(repo_root) -> None:

@@ -40,6 +40,7 @@ from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.generate_api import run_generate_api
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
+from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
 from repave_engine.observability_catalog import (
     catalog_has_field_options,
@@ -301,6 +302,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     blueprint
                 ),
                 observability_dashboard_packs=blueprint_supports_dashboard_packs(blueprint),
+                observability_monitor_packs=blueprint_supports_monitor_packs(blueprint),
                 observability_field_catalog=observability_field_catalog,
                 observability_defaults=observability_defaults,
                 observability_catalog=observability_catalog,
@@ -337,6 +339,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         obs_catalog_api = (
             blueprint_supports_observability_notifications(blueprint)
             or blueprint_supports_dashboard_packs(blueprint)
+            or blueprint_supports_monitor_packs(blueprint)
             or blueprint_supports_observability_field_catalog(blueprint)
         )
         if not obs_catalog_api:
@@ -344,6 +347,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "version": "0",
                 "notification_sources": [],
                 "dashboard_packs": [],
+                "monitor_packs": [],
                 "defaults": {},
             }
         obs_cat, obs_catalog_service_ids = load_merged_observability_catalog(

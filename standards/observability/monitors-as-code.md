@@ -39,6 +39,12 @@ and include a provider-appropriate stub (`pagerduty_configs`, `slack_configs`, o
 When `slo_target_percent` is set on generate, the repo includes a starter SLO recording
 rule and burn-rate alert under `prometheus/rules/` (Prometheus native mode).
 
+## Monitor packs
+
+`monitor_pack_source` selects curated layouts from `observability/catalog.json`
+(`monitor_packs`). Every pack includes the template baseline; non-starter packs add
+files under `observability/monitors/` (see `observability/monitors/README.md`).
+
 ## Backends and output modes
 
 | Backend | Native layout | Terraform mode |

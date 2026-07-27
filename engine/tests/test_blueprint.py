@@ -734,11 +734,13 @@ def test_build_provenance_document_monitors(repo_root: Path) -> None:
             "notification_target": "pagerduty-payments",
             "runbook_url": "https://wiki.example.com/runbooks/checkout",
             "observability_focus": "monitors",
+            "monitor_pack_source": "repave-red-starter",
         },
     )
     obs = document["spec"]["observability"]
     assert obs["focus"] == "monitors"
     assert obs["backend"] == "datadog"
+    assert obs["monitor_pack_source"] == "repave-red-starter"
 
 
 def test_load_blueprint_rejects_invalid_schema(tmp_path: Path, repo_root: Path) -> None:

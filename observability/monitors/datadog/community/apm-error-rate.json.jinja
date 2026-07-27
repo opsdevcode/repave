@@ -1,0 +1,21 @@
+[
+  {
+    "name": "{{ service_name }} APM error rate",
+    "type": "query alert",
+    "query": "sum(last_5m):sum:trace.http.request.errors{service:{{ service_name }}}.as_count() / sum:trace.http.request.hits{service:{{ service_name }}}.as_count() > 0.05",
+    "message": "APM error rate above 5% for {{ service_name }}.\n\nRunbook: {{ runbook_url }}\nNotify: @{{ notification_target }}",
+    "tags": [
+      "service:{{ service_name }}",
+      "team:{{ team }}",
+      "org:{{ organization }}",
+      "env:{{ environment }}",
+      "managed-by:repave",
+      "pack:apm-errors"
+    ],
+    "options": {
+      "notify_no_data": false,
+      "require_full_window": false,
+      "include_tags": true
+    }
+  }
+]

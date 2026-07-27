@@ -247,6 +247,9 @@ def _build_observability_spec(
     pack_source = str(values.get("dashboard_pack_source", "")).strip()
     if pack_source:
         spec["observability"]["dashboard_pack_source"] = pack_source
+    monitor_pack = str(values.get("monitor_pack_source", "")).strip()
+    if monitor_pack:
+        spec["observability"]["monitor_pack_source"] = monitor_pack
     config_mode = str(values.get("configuration_mode", "")).strip()
     if config_mode:
         spec["observability"]["configuration_mode"] = config_mode

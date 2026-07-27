@@ -244,6 +244,7 @@
             "focus": { "type": "string" },
             "datasource_uid": { "type": "string" },
             "dashboard_pack_source": { "type": "string" },
+            "monitor_pack_source": { "type": "string" },
             "configuration_mode": { "type": "string" }
           }
         },
