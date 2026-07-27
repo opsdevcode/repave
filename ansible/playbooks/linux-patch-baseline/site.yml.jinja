@@ -1,0 +1,19 @@
+---
+- name: Linux patch baseline for {{ project_name }}
+  hosts: linux
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Apply security-related package updates (RedHat family)
+      ansible.builtin.dnf:
+        name: "*"
+        security: true
+        state: present
+        update_only: true
+      when: ansible_facts["os_family"] == "RedHat"
+
+    - name: Apply safe upgrades (Debian family)
+      ansible.builtin.apt:
+        upgrade: safe
+        update_cache: true
+      when: ansible_facts["os_family"] == "Debian"

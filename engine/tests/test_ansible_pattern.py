@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from repave_engine.ansible_pattern import (
+    normalize_playbook_pattern_inputs,
     normalize_role_pattern_inputs,
+    resolve_default_playbook_pattern,
     resolve_default_role_pattern,
 )
 from repave_engine.blueprint import load_blueprint
@@ -53,3 +55,25 @@ def test_normalize_rejects_linux_pattern_on_windows_only(repo_root: Path) -> Non
     }
     with pytest.raises(ValueError, match="not valid for selected platforms"):
         normalize_role_pattern_inputs(blueprint, normalized, repo_root)
+
+
+def test_resolve_default_playbook_pattern_windows_only() -> None:
+    assert (
+        resolve_default_playbook_pattern(support_linux=False, support_windows=True)
+        == "windows-update-baseline"
+    )
+
+
+def test_normalize_playbook_pattern_default(repo_root: Path) -> None:
+    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-playbook-project", repo_root)
+    normalized: dict[str, str] = {
+        "project_name": "patch",
+        "description": "Patch playbooks",
+        "min_ansible_version": "2.18",
+        "environment": "dev",
+        "pinned_roles": "[]",
+        "support_linux": "true",
+        "support_windows": "false",
+    }
+    normalize_playbook_pattern_inputs(blueprint, normalized, repo_root)
+    assert normalized["playbook_pattern_source"] == "linux-patch-baseline"

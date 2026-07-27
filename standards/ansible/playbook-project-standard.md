@@ -1,9 +1,20 @@
 # Ansible playbook / project standard
 
-Version: 1.0.0
+Version: 1.1.0
 
 Contract for playbook projects (`ansible-playbook-project` golden path). Synthesizes Ansible project layout guidance and production-profile lint
 expectations.
+
+## Playbook patterns
+
+`ansible-playbook-project` accepts **`playbook_pattern_source`** from the community
+**playbook_patterns** registry (`ansible/playbooks/<pattern>/` Jinja fragments). When unset,
+the engine picks **`linux-patch-baseline`** for Linux (or mixed) targets and
+**`windows-update-baseline`** for Windows-only projects. Opt-in **`repave-baseline`** keeps
+the Copier placeholder `site.yml` (connectivity ping only).
+
+Provenance records `ansiblePlaybookProject.playbook_pattern_source` and
+`required_collections` when a pattern needs Galaxy collections (merged into `requirements.yml`).
 
 ## Recommended layout
 

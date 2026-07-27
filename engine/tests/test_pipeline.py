@@ -353,6 +353,36 @@ def test_generate_ansible_playbook_project_publishes_repo(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_ansible_playbook_linux_patch_pattern_dry_run(
+    repo_root: Path,
+    ansible_playbook_sample_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    import yaml
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        ansible_playbook_sample_inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+    output_dir = result.render.output_dir
+    site = (output_dir / "site.yml").read_text(encoding="utf-8")
+    assert "hosts: linux" in site
+    assert "ansible.builtin.dnf" in site
+    hosts = output_dir / "inventories" / "dev" / "hosts.yml"
+    assert hosts.is_file()
+    assert "linux:" in hosts.read_text(encoding="utf-8")
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["ansiblePlaybookProject"]["playbook_pattern_source"] == "linux-patch-baseline"
+
+
 def test_generate_ansible_collection_publishes_repo(
     repo_root: Path,
     output_config,
