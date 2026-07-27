@@ -592,7 +592,10 @@ _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "policy": ("Policy", "Guardrails as code—Checkov, OPA, and Azure Policy packs"),
     "observability": (
         "Observability",
-        "Dashboards, alerts, and SLOs aligned to platform standards",
+        (
+            "Dashboards and monitors (recommended); legacy multi-backend umbrella "
+            "for OTel and mixed layouts"
+        ),
     ),
     "helm": ("Kubernetes / Helm", "Workload charts for cluster delivery teams"),
     "app": ("Application services", "Service repos with Dockerfile, CI, and catalog metadata"),
@@ -648,7 +651,21 @@ class BlueprintCatalogGroup:
     blueprints: tuple[Blueprint, ...]
 
 
+_OBSERVABILITY_BLUEPRINT_ORDER: tuple[str, ...] = (
+    "dashboards-as-code-generic",
+    "monitors-as-code-generic",
+    "observability-as-code-generic",
+)
+
+
 def _sort_blueprints_in_family(family: str, items: list[Blueprint]) -> list[Blueprint]:
+    if family == "observability":
+        rank = {name: index for index, name in enumerate(_OBSERVABILITY_BLUEPRINT_ORDER)}
+
+        def obs_sort_key(blueprint: Blueprint) -> tuple[int, str]:
+            return (rank.get(blueprint.name, len(rank)), blueprint.name)
+
+        return sorted(items, key=obs_sort_key)
     order = _FAMILY_ARTIFACT_ORDER.get(family, ())
     rank = {artifact_type: index for index, artifact_type in enumerate(order)}
 

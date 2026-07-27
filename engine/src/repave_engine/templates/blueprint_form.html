@@ -217,6 +217,14 @@
       {% endif %}
 
       {% if observability_field_catalog and observability_catalog %}
+      {% if blueprint.name == "observability-as-code-generic" %}
+      <div class="alert alert--info observability-umbrella-callout" role="note">
+        <strong>Legacy umbrella path.</strong> For new repositories, use
+        <a href="/blueprints/dashboards-as-code-generic">dashboards-as-code-generic</a> or
+        <a href="/blueprints/monitors-as-code-generic">monitors-as-code-generic</a>.
+        Keep this blueprint when you need OTel scaffolding or multiple backends in one repo.
+      </div>
+      {% endif %}
       <div class="field-block observability-field-catalog" id="observability-field-catalog">
         {% set obs_input_names = blueprint.inputs | map(attribute='name') | list %}
         <div class="form-step-panel" {% if form_stepper == 'observability' %}data-form-step="0"{% endif %}>
@@ -566,6 +574,9 @@
       {% endif %}
       {% if blueprint.name == "monitors-as-code-generic" %}
       <input type="hidden" name="observability_focus" value="monitors" />
+      {% endif %}
+      {% if blueprint.name == "observability-as-code-generic" %}
+      <input type="hidden" name="observability_focus" value="multi" />
       {% endif %}
 
       {% if blueprint.name == "app-service-generic" %}

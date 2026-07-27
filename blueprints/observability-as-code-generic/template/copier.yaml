@@ -15,6 +15,13 @@ _exclude:
   - "{% if output_mode == 'terraform' %}prometheus/rules/service-alerts.yaml{% endif %}"
   - "{% if output_mode == 'terraform' %}prometheus/alertmanager/alertmanager.yaml{% endif %}"
   - "{% if output_mode == 'terraform' %}otel/collector-config.yaml{% endif %}"
+  - "{% if backend != 'prometheus' %}prometheus/rules/service-alerts.yaml{% endif %}"
+  - "{% if backend != 'prometheus' %}prometheus/alertmanager/alertmanager.yaml{% endif %}"
+  - "{% if backend != 'grafana' %}grafana/dashboards/service-overview.json{% endif %}"
+  - "{% if backend != 'datadog' %}datadog/monitors/service-alerts.json{% endif %}"
+  - "{% if backend != 'datadog' %}datadog/README.md{% endif %}"
+  - "{% if backend != 'otel' %}otel/collector-config.yaml{% endif %}"
+  - "{% if backend != 'otel' %}otel/README.md{% endif %}"
 
 service_name:
   type: str
@@ -62,3 +69,11 @@ runbook_url:
 slo_target_percent:
   type: str
   default: ""
+
+enable_policy:
+  type: str
+  default: "false"
+
+observability_focus:
+  type: str
+  default: multi

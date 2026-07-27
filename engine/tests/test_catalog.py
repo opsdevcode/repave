@@ -142,6 +142,22 @@ def test_group_blueprints_sorted_by_blueprint_count_descending() -> None:
     assert [len(g.blueprints) for g in groups] == [3, 2, 1, 1]
 
 
+def test_group_blueprints_observability_lists_split_paths_first() -> None:
+    groups = group_blueprints_by_artifact(
+        [
+            _bp("observability-as-code-generic", "observability"),
+            _bp("monitors-as-code-generic", "observability"),
+            _bp("dashboards-as-code-generic", "observability"),
+        ]
+    )
+    obs = next(g for g in groups if g.family == "observability")
+    assert [bp.name for bp in obs.blueprints] == [
+        "dashboards-as-code-generic",
+        "monitors-as-code-generic",
+        "observability-as-code-generic",
+    ]
+
+
 def test_group_blueprints_unknown_type_appended() -> None:
     groups = group_blueprints_by_artifact([_bp("custom-x", "custom-artifact")])
 
