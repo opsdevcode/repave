@@ -14,9 +14,7 @@ Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  → 
 > optional Kubernetes **operator (GA)**. Run locally with Docker Compose — no cluster required
 > for generation.
 
-**Try it:** [Quickstart](docs/quickstart.md) · **[Seven-minute demo (acts 1–6)](docs/seven-minute-demo.md)** ·
-**[5-minute demo](docs/quickstart.md#five-minute-demo-portal)** ·
-[Sales demo runbook](docs/sales-demo.md) → http://localhost:8088
+**Try it:** [Quickstart](docs/quickstart.md) → http://localhost:8088
 
 ---
 
@@ -28,8 +26,7 @@ Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  → 
 - **Your standards** — Point blueprints at your `standards/` tree and pin versions in `blueprint.yaml`.
 - **Local-first** — Full loop on a laptop: form → dry-run → gates → local git (optional GitHub push).
 
-Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) ·
-**[5-minute demo](docs/quickstart.md#five-minute-demo-portal)**
+Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) · [Quickstart](docs/quickstart.md)
 
 ---
 
@@ -149,7 +146,6 @@ Optional **operator** loop (estate scale): [Operator overview](docs/operator-ove
 | --- | --- |
 | **Index** | [docs/README.md](docs/README.md) |
 | Quickstart | [docs/quickstart.md](docs/quickstart.md) |
-| Sales demo (live calls) | [docs/sales-demo.md](docs/sales-demo.md) |
 | Concepts & provenance | [docs/concepts.md](docs/concepts.md) |
 | Engine & gates | [docs/engine-capabilities.md](docs/engine-capabilities.md) |
 | Portal UX spec | [docs/portal-design.md](docs/portal-design.md) |
