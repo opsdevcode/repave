@@ -12,7 +12,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Route | Template | Highlights |
 | --- | --- | --- |
 | Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
-| Blueprint form | `blueprint_form.html` | Governance card (standard + policy pins + gates); Terraform split layout with scope filter, presets, validation; Ansible enum dropdowns for platforms and min Ansible version |
+| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Dry run preview** + Delivery plan/apply; scope filter, presets, validation |
 | Generation result | `result.html` | Status hero, lineage/receipt + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
@@ -33,7 +33,7 @@ static assets, CSS tokens, and a base layout template.
 | Roadmap item | Visual / UX home |
 | --- | --- |
 | v1.18 Portal and UX hardening | **Complete** — Phases 1–4 + visual v2 + scope UX (see [Shipped](roadmap.md#shipped)) |
-| v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns |
+| v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns, **Dry run preview** on all forms |
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | Replace browser last-run with server-side history |
 | Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |

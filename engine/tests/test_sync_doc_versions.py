@@ -33,18 +33,53 @@ def test_sync_updates_doc_pointers(repo_root: Path, tmp_path: Path) -> None:
         encoding="utf-8",
     )
     portal.write_text("(engine tags through **v1.0.0**).\n", encoding="utf-8")
+    demo = tmp_path / "docs" / "demo-verification.md"
+    demo.write_text("(engine v1.0.0, blueprint\n", encoding="utf-8")
+    op_ga = tmp_path / "docs" / "operator-ga.md"
+    op_ga.write_text("(engine **v1.0.0**).\n", encoding="utf-8")
 
     original_root = sync.REPO_ROOT
     try:
         sync.REPO_ROOT = tmp_path
         changed = sync.apply_sync("2.5.0")
-        assert len(changed) == 3
+        assert len(changed) == 5
         assert "**Current release:** v2.5.0" in roadmap.read_text(encoding="utf-8")
         assert "v2.5.0  today" in roadmap.read_text(encoding="utf-8")
         assert "[v2.5.0](https://github.com/opsdevcode/repave/releases/tag/v2.5.0)" in (
             readme.read_text(encoding="utf-8")
         )
         assert "(engine tags through **v2.5.0**)" in portal.read_text(encoding="utf-8")
+    finally:
+        sync.REPO_ROOT = original_root
+
+
+def test_sync_updates_generic_releases_link(repo_root: Path, tmp_path: Path) -> None:
+    sync = _load_sync_module(repo_root)
+    readme = tmp_path / "README.md"
+    readme.write_text(
+        "[v1.0.0](https://github.com/opsdevcode/repave/releases)\n",
+        encoding="utf-8",
+    )
+    roadmap = tmp_path / "docs" / "roadmap.md"
+    roadmap.parent.mkdir(parents=True, exist_ok=True)
+    roadmap.write_text("**Current release:** v1.0.0\n", encoding="utf-8")
+    portal = tmp_path / "docs" / "portal-design.md"
+    portal.write_text("(engine tags through **v1.0.0**).\n", encoding="utf-8")
+    demo = tmp_path / "docs" / "demo-verification.md"
+    demo.write_text("Last (engine v1.0.0, blueprint\n", encoding="utf-8")
+    op_ga = tmp_path / "docs" / "operator-ga.md"
+    op_ga.write_text("(engine **v1.0.0**).\n", encoding="utf-8")
+
+    original_root = sync.REPO_ROOT
+    try:
+        sync.REPO_ROOT = tmp_path
+        changed = sync.apply_sync("2.5.0")
+        assert len(changed) == 5
+        assert "[v2.5.0](https://github.com/opsdevcode/repave/releases/tag/v2.5.0)" in (
+            readme.read_text(encoding="utf-8")
+        )
+        assert "engine v2.5.0," in demo.read_text(encoding="utf-8")
+        assert "engine **v2.5.0**" in op_ga.read_text(encoding="utf-8")
     finally:
         sync.REPO_ROOT = original_root
 
@@ -62,6 +97,10 @@ def test_sync_check_fails_when_stale(repo_root: Path, tmp_path: Path) -> None:
         encoding="utf-8",
     )
     portal.write_text("(engine tags through **v1.0.0**).\n", encoding="utf-8")
+    demo = tmp_path / "docs" / "demo-verification.md"
+    demo.write_text("(engine v1.0.0, blueprint\n", encoding="utf-8")
+    op_ga = tmp_path / "docs" / "operator-ga.md"
+    op_ga.write_text("(engine **v1.0.0**).\n", encoding="utf-8")
 
     original_root = sync.REPO_ROOT
     try:

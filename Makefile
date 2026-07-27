@@ -1,4 +1,4 @@
-.PHONY: install lock test lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update
+.PHONY: install lock test lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -13,6 +13,9 @@ lock:
 
 changelog:
 	cd engine && uv run semantic-release changelog
+
+sync-doc-versions:
+	python3 scripts/sync_doc_versions.py
 
 policy-standards-watch:
 	python3 scripts/sync_policy_standards.py --update

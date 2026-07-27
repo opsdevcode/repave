@@ -32,7 +32,9 @@ DOC_TARGETS: tuple[tuple[str, tuple[tuple[re.Pattern[str], str], ...]], ...] = (
         (
             (
                 re.compile(
-                    r"\[v[\d.]+\]\(https://github\.com/opsdevcode/repave/releases/tag/v[\d.]+\)"
+                    r"\[v[\d.]+\]\("
+                    r"https://github\.com/opsdevcode/repave/releases"
+                    r"(?:/tag/v[\d.]+)?\)"
                 ),
                 r"[v{version}]({release_url})",
             ),
@@ -44,6 +46,24 @@ DOC_TARGETS: tuple[tuple[str, tuple[tuple[re.Pattern[str], str], ...]], ...] = (
             (
                 re.compile(r"(engine tags through \*\*)v[\d.]+(\*\*)"),
                 r"\g<1>v{version}\g<2>",
+            ),
+        ),
+    ),
+    (
+        "docs/demo-verification.md",
+        (
+            (
+                re.compile(r"\(engine v[\d.]+\,"),
+                r"(engine v{version},",
+            ),
+        ),
+    ),
+    (
+        "docs/operator-ga.md",
+        (
+            (
+                re.compile(r"\(engine \*\*v[\d.]+\*\*\)"),
+                r"(engine **v{version}**)",
             ),
         ),
     ),
