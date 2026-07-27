@@ -32,9 +32,11 @@ On branch with the latest portal stepper fixes, after `docker compose up --build
    (or **Next** to Delivery, leave **Plan (validate only)**, **Scaffold repository**).
 4. Result should show **Plan only** and **Generated files**.
 
-The container includes **terraform** (1.9.8), **tflint** (0.55.1), and **checkov** (≥3.2.0)
-(policy + secrets scan), so blueprint gates run for real instead of skipping. The same
-versions are pinned in generated repositories’ GitHub Actions workflows (`spec.ci.toolchain`
+The container includes **terraform** (1.9.8), **tflint** (0.55.1), **checkov** (≥3.2.0),
+and **conftest** (0.56.0 for OPA gates), so blueprint gates run for real instead of
+skipping. Policy demos ([policy golden paths](../../docs/policy-golden-paths-demo.md))
+need compose for **destructive_delete** OPA blocks. The same toolchain versions are
+pinned in generated repositories’ GitHub Actions workflows (`spec.ci.toolchain`
 in `repave.yaml`). CI runs `repave gates --path .` from the gate list in `spec.ci.gates`.
 Generated modules are written to the `repave-modules`
 Docker volume (`/modules` inside the container).

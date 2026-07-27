@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, cast
@@ -351,6 +352,13 @@ def _build_app_service_spec(
     return spec, service_name
 
 
+def _provenance_generated_at() -> str:
+    fixed = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT", "").strip()
+    if fixed:
+        return fixed
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
 def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     if blueprint.artifact_type == "ansible-role":
         artifact_spec, metadata_name = _build_ansible_spec(blueprint, values)
@@ -393,7 +401,7 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         },
         "generation": {
             "engine_version": __version__,
-            "generated_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "generated_at": _provenance_generated_at(),
         },
     }
     if policy_block is not None:

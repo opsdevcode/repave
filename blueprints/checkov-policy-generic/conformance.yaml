@@ -6,4 +6,6 @@ required_files:
   - repave.yaml
   - README.md
   - .checkov.yml
-snapshot: false
+  - policy/checkov/repave_module_layout.py
+  - tests/fixtures/pass/locals.tf
+snapshot: true

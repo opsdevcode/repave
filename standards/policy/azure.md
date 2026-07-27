@@ -25,8 +25,12 @@ Each file must be a valid Azure Policy **definition** document:
 - Required properties: `displayName`, `policyType`, `mode`, `description`, `policyRule`
 - `policyType` is typically `Custom` for estate-owned definitions
 - `mode` must be one of: `All`, `Indexed`, `Microsoft.Kubernetes.Data`
+- `policyType` must be `Custom` or `Static` for generated definitions
+- `policyRule` must include `if` and `then`; `then` must include `effect`
+- Optional `parameters` and `metadata` must be JSON objects when present
 
-## Versioning
+The **`azure-policy` gate** enforces the above at generate time (structural validation,
+not Azure Resource Manager deployment).
 
 - Pin starter pack version in blueprint `spec.azure_policy.policy_version` when vendoring
   shared definitions from the repave monorepo (`policy/azure/definitions/` — storage HTTPS,

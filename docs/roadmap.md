@@ -294,9 +294,12 @@ Host e2e smoke exercises the flag on the `terraform-minimal` fixture.
 ### Policy golden paths (OPA and Azure Policy) — shipped early (roadmap v1.39)
 
 - Policy family under `standards/policy/` with governance baseline for every artifact
-- `opa-policy` and `azure-policy` artifacts; `opa-policy-generic` and `azure-policy-generic`
-- `opa` gate (Conftest / Rego); `azure-policy` gate for definition JSON
+- `checkov-policy`, `opa-policy`, and `azure-policy` artifacts with matching `-generic` blueprints
+- `opa` gate (Conftest / Rego); `azure-policy` gate for definition JSON; Checkov pack gate
 - Terraform blueprints vend `policy/opa/policies` for plan-time Rego
+- Portal customization via `policy/catalog.json`; demo [policy-golden-paths-demo.md](policy-golden-paths-demo.md)
+- Conformance snapshots for policy blueprints; Docker Compose ships **conftest** for OPA demos
+- Operator estate notes: [operator-policy-estate.md](operator-policy-estate.md)
 
 ### v1.21.0 — Estate Terraform standards pack (multi-file)
 
