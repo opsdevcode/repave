@@ -21,7 +21,7 @@ Manual pass (≈7 minutes) — detail in [seven-minute-demo.md](seven-minute-dem
 5. **Act 5 — OPA block:** **opa-policy-generic**, **plan demo** `destructive_delete` → dry-run → publish blocked.
 6. **Act 6 — Backstage:** Terraform form, **Include Backstage catalog** `true`, **owner** `group:platform` → dry-run → **`catalog-info.yaml`** in preview.
 
-Optional: on Terraform form, confirm profile **Estate default** and pack **repave-default** without changing rules.
+**Policy family (optional add-on):** [policy-golden-paths-demo.md](policy-golden-paths-demo.md) — Checkov, OPA (`destructive_delete`), Azure samples; `pytest tests/test_policy_golden_paths.py`.
 
 Record blockers in an issue; fix or note in the sales runbook troubleshooting table.
 

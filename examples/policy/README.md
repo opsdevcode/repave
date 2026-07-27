@@ -5,6 +5,7 @@ in the portal catalog):
 
 Customization (profiles, portal, upgrades): [standards/policy/customization.md](../../standards/policy/customization.md).
 
+**Portal walkthrough:** [docs/policy-golden-paths-demo.md](../../docs/policy-golden-paths-demo.md)
 | Blueprint | Kind | Artifact type | Enforcement |
 | --------- | ---- | ------------- | ----------- |
 | `checkov-policy-generic` | Checkov | `checkov-policy` | Custom Checkov pack + fixtures (`checkov` gate) |

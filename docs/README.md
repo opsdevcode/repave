@@ -9,6 +9,7 @@ is the front door; use this index when you need depth.
 | --- | --- | --- |
 | [Quickstart](quickstart.md) | New users | Docker Compose, `make serve`, first generate, CLI |
 | [Seven-minute demo (acts 1–6)](seven-minute-demo.md) | Live demos | Full portal arc for stakeholder meetings |
+| [Policy golden paths demo](policy-golden-paths-demo.md) | Security / platform | Checkov, OPA, Azure Policy standalone paths |
 | [Sales demo runbook](sales-demo.md) | Field / leadership demos | Narrative, talking points, operator boundaries |
 | [Demo verification](demo-verification.md) | Maintainers / pre-release | Portal smoke checklist, screenshots, operator e2e |
 | [Concepts](concepts.md) | Everyone | Golden paths, blueprints, governance-by-construction, provenance |

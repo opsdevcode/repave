@@ -14,6 +14,8 @@ def test_act1_home_catalog(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "terraform-module-generic" in response.text
     assert "opa-policy-generic" in response.text
+    assert "azure-policy-generic" in response.text
+    assert "checkov-policy-generic" in response.text
 
 
 def test_act2_and_3_terraform_dry_run_preview(repo_root, output_config, sample_inputs) -> None:
@@ -63,6 +65,24 @@ def test_act5_opa_destructive_delete_blocks(repo_root, output_config) -> None:
         or "alert--fail" in text
         or ("opa" in text.lower() and "fail" in text.lower())
     )
+
+
+def test_act5b_azure_policy_dry_run_preview(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "azure-policy-generic",
+            "dry_run": "true",
+            "policy_name": "demo",
+            "organization": "platform",
+            "description": "Demo Azure Policy definitions",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "policy/definitions" in response.text or "sample_audit_storage" in response.text
 
 
 def test_act6_backstage_catalog_in_terraform_preview(
