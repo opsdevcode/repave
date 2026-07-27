@@ -1,7 +1,7 @@
 {
   ".checkov.yml": "59f4935a02b4f2c0361fdc90b049108cf20459dada6fa5bde28eeee0e6169c9f",
-  ".github/workflows/repave-gates.yml": "aa47aff36b212eec96a99c1457a401b7207eca353ef6917cf8ed19dcffc5f39d",
-  "README.md": "2f9d83deb99679fcccf2c9733975ef46e4d1dcfe19a8d1b3e29969054c1a2eab",
+  ".github/workflows/repave-gates.yml": "b1927f7f3045e9115de9ff7c0cde658da7a68fb565213e48cdcbb6d6875a82c3",
+  "README.md": "be4f2f3534f4624710c6eeb4ec5dc54bccc3e0a91397c3c900e6a99634fab2a6",
   "policy/checkov/__init__.py": "1cc68695ade2d4b5aad8c720b858d861b54693edfbac30008b2647d4f1129bba",
   "policy/checkov/custom_001_terraform_version_exists.yaml": "4f09be591e8091637b38441b33e307ccf7eb92b9cd1a8b3e3061ac02353d25d7",
   "policy/checkov/custom_002_terraform_version_capped.yaml": "ea088493b2cc70eb63dc0cbbf14a18f9d40a76dc3212086cc2c0a3b94caefb22",
@@ -9,7 +9,7 @@
   "policy/checkov/repave_null_resource_locals.py": "7074ae07b8d6fb66ed8baf281cb0dacdbcd85f3e61c8ecfe17ca816270f28e89",
   "policy/checkov/repave_policy_utils.py": "c86a20c0286aefb3241450fc43a3b5dab3c73b55996ca26f300dcaa3cea6b660",
   "policy/checkov/repave_security.py": "77ca7f36408a7e64c51f88e952b034739e9b66fbd2fd218e30fb96259b3f7be4",
-  "repave.yaml": "390138d684eb1b22ef3a6e80c1ef4f8f5fc1ba5cfd650f3f1d332c9bc43d7c48",
+  "repave.yaml": "18d88f2eca434165537874703324e50820e491975b5093444efa25b7208aa657",
   "tests/fixtures/pass/example.tf": "df0dd3c90d7cf9f66a1650b2fc683e33e601dafbd85971451cdf187dc6fc9912",
   "tests/fixtures/pass/locals.tf": "2c0d82694713ce9e2943dfd76e019b0d8ede62a48137a3635f4174a642da854f",
   "tests/fixtures/pass/variables.tf": "3802e2f3de5e5b97a186d6b3c7362547d6801a32b68b08869487e75b05028375",
