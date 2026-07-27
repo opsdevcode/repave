@@ -76,7 +76,7 @@ def build_ci_provenance_block(blueprint: Blueprint) -> dict[str, object]:
     }
 
 
-def _gate_needs(gates: tuple[str, ...]) -> dict[str, bool]:
+def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str, bool]:
     gate_set = set(gates)
     return {
         "needs_terraform": bool(
@@ -91,6 +91,8 @@ def _gate_needs(gates: tuple[str, ...]) -> dict[str, bool]:
         "needs_promtool": "promtool" in gate_set,
         "needs_amtool": "amtool" in gate_set,
         "needs_molecule": "molecule" in gate_set,
+        "needs_ansible_collections": artifact_type
+        in ("ansible-role", "ansible-collection", "ansible-playbook-project"),
         "needs_datadog_api": "datadog-api-validate" in gate_set,
         "needs_hadolint": "dockerfile-lint" in gate_set,
         "needs_python": bool(gate_set & {"python-lint", "python-test"}),
@@ -107,7 +109,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         lstrip_blocks=True,
     )
     template = env.get_template("repave-gates.yml.jinja")
-    needs = _gate_needs(blueprint.gates)
+    needs = _gate_needs(blueprint.gates, artifact_type=blueprint.artifact_type)
     return template.render(
         engine_version=__version__,
         python_version=PYTHON_VERSION,

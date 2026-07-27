@@ -670,6 +670,21 @@
         <p id="pinned-roles-validation" class="form-validation" role="alert" hidden></p>
         <input type="hidden" id="pinned_roles" name="pinned_roles" value="[]" />
       </div>
+      {% elif blueprint.artifact_type == "ansible-role" and ansible_role_patterns and ansible_catalog and field.name == "role_pattern_source" %}
+      <div class="field-block" id="ansible-role-pattern-block">
+        <label for="role_pattern_source">Role pattern</label>
+        <p class="hint">Community patterns from <code>ansible/catalog.json</code>; filtered by Linux/Windows selection below.</p>
+        <select class="select" id="role_pattern_source" name="role_pattern_source">
+          {% for pattern in ansible_catalog.role_patterns %}
+          <option
+            value="{{ pattern['id'] }}"
+            {% if pattern['id'] == ansible_catalog.defaults.get('role_pattern_source', 'linux-service') %}selected{% endif %}
+          >
+            {{ pattern['label'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
       {% elif blueprint.artifact_type == "ansible-role" and field.name == "support_linux" %}
       <div class="field-block">
         <label>Target platforms</label>
@@ -874,6 +889,7 @@
 
 {% block scripts %}
 {% if blueprint.artifact_type == "ansible-role" %}
+<script id="ansible-catalog-data" type="application/json">{% if ansible_catalog %}{{ ansible_catalog | tojson }}{% else %}{}{% endif %}</script>
 <script>
   const linuxCheckbox = document.getElementById("support_linux_cb");
   const windowsCheckbox = document.getElementById("support_windows_cb");
@@ -884,6 +900,55 @@
   const windowsHidden = document.getElementById("windows_server_generation");
   const advancedSelect = document.getElementById("target_platforms_advanced");
   const platformForm = document.getElementById("generate-form");
+  const blueprintName = {{ blueprint.name | tojson }};
+  const patternSelect = document.getElementById("role_pattern_source");
+  let ansibleCatalog = {};
+  try {
+    ansibleCatalog = JSON.parse(document.getElementById("ansible-catalog-data")?.textContent || "{}");
+  } catch (_err) {
+    ansibleCatalog = {};
+  }
+
+  function defaultPatternForPlatforms(linux, windows) {
+    if (windows && !linux) return "windows-service";
+    if (linux) return "linux-service";
+    return "repave-baseline";
+  }
+
+  async function refreshRolePatterns() {
+    if (!patternSelect) return;
+    const linux = linuxInput?.value === "true";
+    const windows = windowsInput?.value === "true";
+    const previous = patternSelect.value;
+    let catalog = ansibleCatalog;
+    try {
+      const params = new URLSearchParams({
+        support_linux: linux ? "true" : "false",
+        support_windows: windows ? "true" : "false",
+      });
+      const resp = await fetch(`/blueprints/${encodeURIComponent(blueprintName)}/ansible-catalog?${params}`);
+      if (resp.ok) catalog = await resp.json();
+    } catch (_err) {
+      /* keep embedded catalog */
+    }
+    const patterns = catalog.role_patterns || [];
+    patternSelect.innerHTML = "";
+    for (const pattern of patterns) {
+      const opt = document.createElement("option");
+      opt.value = pattern.id;
+      opt.textContent = pattern.label;
+      patternSelect.appendChild(opt);
+    }
+    const ids = patterns.map((p) => p.id);
+    const fallback = defaultPatternForPlatforms(linux, windows);
+    if (ids.includes(previous)) {
+      patternSelect.value = previous;
+    } else if (ids.includes(fallback)) {
+      patternSelect.value = fallback;
+    } else if (ids.length) {
+      patternSelect.value = ids[0];
+    }
+  }
 
   function syncPlatformInputs() {
     if (linuxInput && linuxCheckbox) {
@@ -898,6 +963,7 @@
     if (windowsRow && windowsCheckbox) {
       windowsRow.hidden = !windowsCheckbox.checked;
     }
+    refreshRolePatterns();
   }
 
   linuxCheckbox?.addEventListener("change", syncPlatformInputs);

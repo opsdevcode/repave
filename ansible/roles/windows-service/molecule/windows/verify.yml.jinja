@@ -1,0 +1,15 @@
+---
+- name: Verify
+  hosts: windows
+  tasks:
+    - name: Assert {{ windows_service_name }} service is running
+      ansible.windows.win_service_info:
+        name: "{{ windows_service_name }}"
+      register: windows_service_info
+      failed_when: windows_service_info.services[0].state | default('stopped') != 'running'
+
+    - name: Assert config file exists
+      ansible.windows.win_stat:
+        path: "{{ windows_service_config_path }}"
+      register: windows_service_config_stat
+      failed_when: not windows_service_config_stat.stat.exists

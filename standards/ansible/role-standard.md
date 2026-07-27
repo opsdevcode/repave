@@ -1,6 +1,6 @@
 # Ansible role standard
 
-Version: 1.0.0
+Version: 1.1.0
 
 Authoritative role contract for the `ansible-role-generic` golden path. Combines
 [Ansible role structure](https://docs.ansible.com/projects/ansible/latest/playbook_guide/playbooks_reuse_roles.html),
@@ -16,6 +16,30 @@ and repave security appendix rules.
    scatter entry points across the role tree.
 4. **Secure defaults.** No secrets in git; sensitive tasks use `no_log`.
 5. **Testable.** Molecule scenario under `molecule/default/` with converge and verify.
+
+## Role patterns (`ansible/catalog.json`)
+
+`ansible-role-generic` accepts **`role_pattern_source`** from the community
+**role_patterns** registry (`ansible/roles/<pattern>/` Jinja fragments). When unset at
+generate time, repave picks a **platform-aware default**:
+
+- Linux only (or mixed Linux + Windows) → `linux-service`
+- Windows only → `windows-service`
+
+| Pattern | Platform | Behavior |
+| --- | --- | --- |
+| `repave-baseline` | any | Placeholder tasks (structure-only) |
+| `linux-service` | linux | Package, templated config, systemd service + handlers |
+| `windows-service` | windows | `ansible.windows.*` service + `win_template` config |
+
+Generated repos include **`requirements.yml`** when a pattern needs collections
+(for example `ansible.windows`). CI runs **ansible-lint** and **ansible-syntax-check**
+with collections installed. **Windows** patterns omit Docker `molecule/default` (gate
+skips); optional **`molecule/windows/`** delegated scenario documents live WinRM testing.
+
+Provenance records `ansibleRole.role_pattern_source` and `required_collections`.
+Mixed platform selections with a Linux-only pattern should document Windows Galaxy
+metadata separately in the role README until a cross-platform pattern is selected.
 
 ## Required layout
 

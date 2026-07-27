@@ -1,0 +1,5 @@
+---
+# Collections installed for repave gate-toolchain / CI (Windows role lint + syntax-check).
+collections:
+  - name: ansible.windows
+    version: ">=2.0.0"

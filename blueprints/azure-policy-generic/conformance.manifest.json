@@ -1,9 +1,9 @@
 {
-  ".github/workflows/repave-gates.yml": "d8cf8b6acc23c0472c1fa742b279d3553e76dace6ef8ec074169c7901cdec469",
-  "README.md": "e7c4b2e4c5394e778eef254f291893c2c002f5d729d0558e227d121d877c8275",
+  ".github/workflows/repave-gates.yml": "6807cb0ac420bc635ad08acea26038b51a57af3a72c8e6da168c0351fd2c4814",
+  "README.md": "e95d1745e063412c9f819e0a4dce1317ec2eef0e953405e83c440e892182dfbb",
   "policy/definitions/sample_audit_environment_tag.json": "29e6841695d9d40526fb58ae2034efbe53569b663d529065a80bb898522f8406",
   "policy/definitions/sample_audit_storage.json": "08d3acdb78c9511ed0e5e51df7b8297f2b7993602a4a12f6127f0b7dd3f7caaf",
   "policy/definitions/sample_deny_public_blob_access.json": "8f34aefec581b2227398420d374887f0afa6358bfe8261b5ddcc71d74cd94c19",
   "policy/definitions/sample_require_https_storage.json": "e6a59331fdaaa854f1ccc3890055afbb97eafb0bfacd61f95f32ac74df16d4e9",
-  "repave.yaml": "46ceb5055c8e378045ce710efd9807aa95552fc8192b49edd7b1a3ccb9e5e502"
+  "repave.yaml": "7abb686697716a9ec12d093371437c1af898c0eb99a54f3c5522008cbb2b634a"
 }

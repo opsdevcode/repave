@@ -1,0 +1,18 @@
+---
+- name: Validate {{ role_name }} role is enabled
+  ansible.builtin.assert:
+    that:
+      - role_enabled | default(true)
+    quiet: true
+
+- name: Deploy {{ role_name }} Windows configuration
+  ansible.windows.win_template:
+    src: "{{ role_name }}.ini.jinja"
+    dest: "{{ windows_service_config_path }}"
+  notify: Restart windows service
+
+- name: Ensure {{ role_name }} Windows service is running
+  ansible.windows.win_service:
+    name: "{{ windows_service_name }}"
+    state: started
+    start_mode: auto

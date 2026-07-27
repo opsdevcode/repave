@@ -1,0 +1,19 @@
+---
+- name: Verify
+  hosts: all
+  tasks:
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: auto
+
+    - name: Assert {{ linux_service_package }} is installed
+      ansible.builtin.assert:
+        that:
+          - linux_service_package in ansible_facts.packages
+        quiet: true
+
+    - name: Assert {{ linux_service_service_name }} service is active
+      ansible.builtin.service:
+        name: "{{ linux_service_service_name }}"
+      register: linux_service_status
+      failed_when: linux_service_status.status.ActiveState | default('inactive') != 'active'

@@ -189,7 +189,12 @@
             "role_name": { "type": "string" },
             "namespace": { "type": "string" },
             "min_ansible_version": { "type": "string" },
-            "target_platforms": { "type": "string" }
+            "target_platforms": { "type": "string" },
+            "role_pattern_source": { "type": "string" },
+            "required_collections": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
           }
         },
         "ansiblePlaybookProject": {

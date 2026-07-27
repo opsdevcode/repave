@@ -12,6 +12,10 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.middleware.sessions import SessionMiddleware
 
 from repave_engine import __version__
+from repave_engine.ansible_catalog import catalog_for_api as ansible_catalog_for_api
+from repave_engine.ansible_catalog import load_ansible_catalog
+from repave_engine.ansible_pattern import blueprint_supports_role_patterns
+from repave_engine.ansible_platforms import parse_support_flag
 from repave_engine.ansible_role_inventory import (
     inventory_role_versions_json,
     inventory_roles_json,
@@ -272,6 +276,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 blueprint_name=blueprint.name,
                 catalog_service_ids=obs_catalog_service_ids,
             )
+        ansible_catalog: dict[str, object] | None = None
+        ansible_role_patterns = blueprint_supports_role_patterns(blueprint)
+        if ansible_role_patterns:
+            ansible_cat = load_ansible_catalog(repo_root)
+            ansible_catalog = ansible_catalog_for_api(
+                ansible_cat,
+                defaults=dict(ansible_cat.defaults),
+                support_linux=True,
+                support_windows=False,
+                blueprint_name=blueprint.name,
+            )
         provider_catalog = load_provider_catalog(blueprint.path)
         if (
             artifact_family(blueprint.artifact_type) == "terraform"
@@ -310,8 +325,30 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 observability_field_catalog=observability_field_catalog,
                 observability_defaults=observability_defaults,
                 observability_catalog=observability_catalog,
+                ansible_role_patterns=ansible_role_patterns,
+                ansible_catalog=ansible_catalog,
                 nav_active="catalog",
             ),
+        )
+
+    @app.get("/blueprints/{blueprint_name}/ansible-catalog")
+    async def ansible_catalog_endpoint(
+        blueprint_name: str,
+        support_linux: str = "true",
+        support_windows: str = "false",
+    ) -> dict[str, object]:
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        if not blueprint_supports_role_patterns(blueprint):
+            return {"version": "0", "role_patterns": [], "defaults": {}}
+        catalog = load_ansible_catalog(repo_root)
+        linux = parse_support_flag(support_linux, default=True)
+        windows = parse_support_flag(support_windows, default=False)
+        return ansible_catalog_for_api(
+            catalog,
+            defaults=dict(catalog.defaults),
+            support_linux=linux,
+            support_windows=windows,
+            blueprint_name=blueprint.name,
         )
 
     @app.get("/blueprints/{blueprint_name}/provider-services/{cloud_provider}/{service}")

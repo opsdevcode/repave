@@ -1,0 +1,5 @@
+---
+# Defaults for windows-service pattern ({{ role_name }}).
+role_enabled: true
+windows_service_name: Spooler
+windows_service_config_path: "C:\\ProgramData\\{{ role_name }}\\config.ini"
