@@ -11,6 +11,7 @@ from repave_engine.gates import run_gates
 from repave_engine.render import render_blueprint
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     "plan_demo,expect_opa_pass",
     [("pass", True), ("destructive_delete", False)],

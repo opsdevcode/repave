@@ -10,6 +10,8 @@ from repave_engine.blueprint import load_blueprint
 from repave_engine.pipeline import generate_from_blueprint, generate_from_path
 from repave_engine.target_repo import resolve_module_repository
 
+pytestmark = pytest.mark.slow
+
 
 def test_generate_terraform_module_generic_publishes_module_repo(
     terraform_blueprint,

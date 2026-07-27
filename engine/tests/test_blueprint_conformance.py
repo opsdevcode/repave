@@ -22,6 +22,7 @@ def _blueprint_ids(repo_root: Path) -> list[str]:
     return [path.name for path in blueprint_dirs(repo_root)]
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("blueprint_name", _blueprint_ids(Path(__file__).resolve().parents[2]))
 def test_blueprint_conformance_harness(
     repo_root: Path,

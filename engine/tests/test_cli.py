@@ -53,6 +53,7 @@ def test_cmd_list_prints_blueprints(repo_root, capsys) -> None:
     assert any(item["name"] == "terraform-module-generic" for item in output)
 
 
+@pytest.mark.slow
 def test_cmd_generate_exit_code_success(
     repo_root,
     sample_inputs,
@@ -72,6 +73,7 @@ def test_cmd_generate_exit_code_success(
     assert "s3_bucket.tf" in output
 
 
+@pytest.mark.slow
 def test_cmd_generate_uses_github_token_from_env_when_not_dry_run(
     repo_root,
     sample_inputs,
@@ -109,6 +111,7 @@ def test_cmd_generate_uses_github_token_from_env_when_not_dry_run(
     assert captured["github_token"] == "ghp_from_env"
 
 
+@pytest.mark.slow
 def test_cmd_generate_clears_github_token_on_dry_run(
     repo_root,
     sample_inputs,
@@ -146,6 +149,7 @@ def test_cmd_generate_clears_github_token_on_dry_run(
     assert captured["github_token"] is None
 
 
+@pytest.mark.slow
 def test_cmd_generate_prefers_cli_token_over_env(
     repo_root,
     sample_inputs,
@@ -190,6 +194,7 @@ def test_cmd_generate_prefers_cli_token_over_env(
     assert captured["github_token"] == "ghp_cli"
 
 
+@pytest.mark.slow
 def test_cmd_generate_exit_code_on_gate_failure(
     repo_root,
     sample_inputs,
