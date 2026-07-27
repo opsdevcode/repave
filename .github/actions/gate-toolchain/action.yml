@@ -9,4 +9,4 @@ runs:
       run: |
         set -euo pipefail
         chmod +x deploy/local/install-gate-toolchain.sh
-        PIP="pip install" deploy/local/install-gate-toolchain.sh
+        deploy/local/install-gate-toolchain.sh

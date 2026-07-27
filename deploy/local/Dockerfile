@@ -8,7 +8,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl unzip git \
     && rm -rf /var/lib/apt/lists/* \
     && chmod +x /tmp/install-gate-toolchain.sh \
-    && PIP="uv pip install --system --no-cache" /tmp/install-gate-toolchain.sh \
+    && USE_UV_PIP=1 /tmp/install-gate-toolchain.sh \
     && rm /tmp/install-gate-toolchain.sh \
     && git config --global user.email "repave@local.dev" \
     && git config --global user.name "repave"

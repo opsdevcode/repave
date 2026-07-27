@@ -12,7 +12,14 @@ INSTALL_TERRAFORM="${INSTALL_TERRAFORM:-1}"
 INSTALL_ANSIBLE="${INSTALL_ANSIBLE:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
 DEST="${DEST:-/usr/local/bin}"
-PIP="${PIP:-pip}"
+
+pip_install() {
+  if [[ "${USE_UV_PIP:-0}" == "1" ]]; then
+    uv pip install --system --no-cache "$@"
+  else
+    python -m pip install "$@"
+  fi
+}
 
 arch="$(uname -m)"
 case "$arch" in
@@ -62,11 +69,11 @@ if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
     | tar xz -C "$tmp" conftest
   install_bin "$tmp/conftest"
   rm -rf "$tmp"
-  "$PIP" install "$CHECKOV_PIP_SPEC"
+  pip_install "$CHECKOV_PIP_SPEC"
 fi
 
 if [[ "$INSTALL_ANSIBLE" == "1" ]]; then
-  "$PIP" install "ansible-lint>=24.0" "yamllint>=1.35" "ansible-core>=2.16"
+  pip_install "ansible-lint>=24.0" "yamllint>=1.35" "ansible-core>=2.16"
 fi
 
 if [[ "$INSTALL_HELM" == "1" ]]; then
