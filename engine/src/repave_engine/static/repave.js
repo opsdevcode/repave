@@ -360,11 +360,18 @@
       return true;
     }
 
+    function forcePlanDryRun() {
+      form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+        radio.checked = radio.value === "true";
+      });
+      setPlanSubmitMode(true);
+    }
+
     function runPlanFromStepper() {
       if (!runStepperSubmitPipeline(null)) {
         return;
       }
-      setPlanSubmitMode(true);
+      forcePlanDryRun();
       submitViaPlanControl();
     }
 

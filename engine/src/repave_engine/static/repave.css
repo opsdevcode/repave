@@ -2588,7 +2588,7 @@ details.file-panel summary {
   border-top-color: transparent;
 }
 
-.form-actions--sticky:not(.form-actions--stepper-final) .btn--primary[data-stepper-submit] {
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) .btn--primary[data-stepper-submit] {
   display: none;
 }
 
@@ -2604,7 +2604,12 @@ details.file-panel summary {
   border: 0;
 }
 
-.form-actions--sticky:not(.form-actions--stepper-final) [data-stepper-run-plan] {
+.form-actions--stepper .form-actions__delivery {
+  width: 100%;
+  margin-bottom: var(--space-2);
+}
+
+.form-panel--stepper .form-actions--sticky:not(.form-actions--stepper-final) [data-stepper-run-plan] {
   order: -1;
 }
 
