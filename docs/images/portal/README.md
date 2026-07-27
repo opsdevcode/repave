@@ -13,7 +13,9 @@ major portal UI changes (see [Demo verification](../demo-verification.md)).
 | `generate-result.png` | dry-run generate | Lineage, policy rules, gate dashboard |
 | `generate-result-backstage.png` | dry-run + Backstage catalog | Backstage card + `catalog-info.yaml` preview |
 
-## Refresh
+See [../README.md](../README.md) for the combined refresh command (`capture_portal_screenshots.sh`).
+
+## Refresh (portal routes only)
 
 From repo root (portal on `:8088` for static pages; generate capture uses TestClient):
 
@@ -22,6 +24,9 @@ export REPAVE_GITHUB_ORG=your-org
 export REPAVE_MODULES_ROOT=$HOME/repave-modules
 ./scripts/capture_portal_screenshots.sh
 ```
+
+The script at repo root also writes [../cli/generate-dry-run.png](../cli/generate-dry-run.png).
+For CLI-only refresh, see [../cli/README.md](../cli/README.md).
 
 - Static routes use Playwright CLI (`npx playwright screenshot …`).
 - `generate-result.png` uses `scripts/capture_generate_result.py` (`cd engine &&

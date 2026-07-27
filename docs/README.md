@@ -42,12 +42,10 @@ is the front door; use this index when you need depth.
 | [Releases](releases.md) | semantic-release, Release workflow, maintainer tokens |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Commits, quality gate, local dev |
 
-## Portal screenshots
+## Portal and CLI screenshots
 
-Marketing captures for the root README: [images/portal/README.md](images/portal/README.md)
+Marketing captures for the root README:
 
-Refresh with a running portal on `:8088`:
-
-```bash
-./scripts/capture_portal_screenshots.sh
-```
+- Index and one-command refresh: [images/README.md](images/README.md)
+- Portal UI: [images/portal/README.md](images/portal/README.md)
+- CLI dry-run: [images/cli/README.md](images/cli/README.md)

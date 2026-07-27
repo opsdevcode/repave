@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from repave_engine.api import create_app
+from repave_engine.api import _dry_run_from_form, create_app
 from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
@@ -241,6 +241,16 @@ def test_generate_dry_run_ignores_github_token(
     assert response.status_code == 200
     assert captured["dry_run"] is True
     assert captured["github_token"] is None
+
+
+def test_dry_run_from_form_prefers_plan_when_both_flags_sent() -> None:
+    class _Form:
+        def getlist(self, key: str) -> list[str]:
+            if key == "dry_run":
+                return ["false", "true"]
+            return []
+
+    assert _dry_run_from_form(_Form()) is True
 
 
 def test_provider_service_detail(repo_root, output_config) -> None:

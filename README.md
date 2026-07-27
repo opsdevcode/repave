@@ -34,13 +34,15 @@ Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) ·
 
 ## Portal (primary UX)
 
-Night-ops web UI: catalog by artifact family, governance sidebar, stepper forms for
-Terraform, gate dashboard on results, upgrade preview for existing repos.
+Night-ops web UI at **http://localhost:8088** (`make serve` or Docker Compose): catalog by
+artifact family, governance sidebar, stepper forms, **Run plan** on early steps, gate dashboard
+on results, upgrade preview for existing repos. Screenshots below are captured from a running
+portal (not mockups).
 
 <p align="center">
   <img src="docs/images/portal/home-catalog.png" alt="repave home — golden path catalog with quick menu and search" width="920" />
   <br />
-  <sub>Home — catalog, quick menu, search</sub>
+  <sub>Home — live portal catalog, quick menu, search</sub>
 </p>
 
 <table>
@@ -48,7 +50,7 @@ Terraform, gate dashboard on results, upgrade preview for existing repos.
     <td width="50%">
       <img src="docs/images/portal/blueprint-form.png" alt="Blueprint form with governance rail and policy pins" />
       <br />
-      <sub>Blueprint form — governance + stepper</sub>
+      <sub>Blueprint form — governance rail + delivery stepper</sub>
     </td>
     <td width="50%">
       <img src="docs/images/portal/update-repo.png" alt="Update existing repository flow" />
@@ -59,9 +61,9 @@ Terraform, gate dashboard on results, upgrade preview for existing repos.
 </table>
 
 <p align="center">
-  <img src="docs/images/portal/generate-result.png" alt="Dry-run generate result — lineage, policy rules, and gate dashboard" width="920" />
+  <img src="docs/images/portal/generate-result.png" alt="Plan result — lineage, policy rules, and gate dashboard" width="920" />
   <br />
-  <sub>Generate result — lineage, policy pack, gates (dry-run)</sub>
+  <sub>Plan result — lineage, policy pack, gates (dry-run)</sub>
 </p>
 
 <p align="center">
@@ -70,7 +72,34 @@ Terraform, gate dashboard on results, upgrade preview for existing repos.
   <sub>Backstage — <code>catalog-info.yaml</code> + <code>repave.dev/*</code> lineage (optional on form)</sub>
 </p>
 
-Refresh captures: [docs/images/portal/README.md](docs/images/portal/README.md)
+<p align="center">
+  <sub>
+    Maintainers — update portal and CLI PNGs:
+    <code>./scripts/capture_portal_screenshots.sh</code>
+    (<a href="docs/images/README.md">docs/images</a>)
+  </sub>
+</p>
+
+### CLI (same engine)
+
+Use the portal for discovery; use **`repave generate`** in CI, scripts, and operator
+workflows. Dry-run prints the same gate summary and file list without writing a module repo.
+
+<p align="center">
+  <img src="docs/images/cli/generate-dry-run.png" alt="repave generate dry-run in a terminal — gates and generated file paths" width="920" />
+  <br />
+  <sub><code>repave generate --dry-run</code> — gates + generated paths (see <a href="engine/README.md">engine/README.md</a>)</sub>
+</p>
+
+Example:
+
+```bash
+cd engine && uv sync --extra dev
+export REPAVE_GITHUB_ORG=your-org REPAVE_MODULES_ROOT=$HOME/repave-modules
+repave generate --repo-root .. --blueprint blueprints/terraform-module-generic --dry-run \
+  --input module_name=example --input description="Example module" \
+  --input cloud_provider=aws --input provider_services=ec2,s3
+```
 
 ---
 
@@ -93,8 +122,8 @@ cd deploy/local && docker compose up --build
 # or from repo root: make serve  →  http://127.0.0.1:8088
 ```
 
-Pick **terraform-module-generic**, leave **Dry-run preview** on, submit — you get gate
-results and a file preview without writing to disk.
+Pick **terraform-module-generic**, use **Run plan** (or leave plan-only on Delivery), submit —
+you get gate results and a file preview without writing to disk.
 
 Full steps (CLI, publish, operator): **[docs/quickstart.md](docs/quickstart.md)**
 

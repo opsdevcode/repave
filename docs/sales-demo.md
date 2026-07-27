@@ -91,4 +91,4 @@ Scope: [Operator GA](operator-ga.md) · [Operator overview](operator-overview.md
 | OPA step skipped | Conftest must be on `PATH` for real gate execution; demo still shows UI block when gate runs in CI/engine env. |
 | Compose slow first time | Pre-build before the meeting; keep the stack running. |
 
-Refresh marketing screenshots: [images/portal/README.md](images/portal/README.md)
+After major portal UI changes, refresh README PNGs: [images/README.md](images/README.md).
