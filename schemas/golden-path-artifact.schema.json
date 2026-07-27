@@ -218,6 +218,11 @@
                   "repo_name": { "type": "string" }
                 }
               }
+            },
+            "playbook_pattern_source": { "type": "string" },
+            "required_collections": {
+              "type": "array",
+              "items": { "type": "string" }
             }
           }
         },

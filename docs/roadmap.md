@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.67.0  
-**In progress:** v1.67 Ansible role patterns (Linux + Windows); docs/observability/policy catalog alignment (post–dry-run gates)  
+**In progress:** v1.68 Ansible playbook patterns; docs/observability/policy catalog alignment (post–dry-run gates)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -356,10 +356,26 @@ Host e2e smoke exercises the flag on the `terraform-minimal` fixture.
 verify asserts package/service state on Linux; Windows-only roles skip Docker Molecule
 without failing CI.
 
-**Status:** In progress (engine catalog, patterns, portal, standards v1.1.0, gate collections).
+**Status:** Shipped on `main` (catalog, patterns, portal, standards v1.1.0, gate collections).
 
-**Follow-ups:** Cross-platform patterns, playbook-project patterns, collection sample
-role wired from the same catalog.
+**Follow-ups:** Cross-platform role patterns, collection sample role wired from the same catalog.
+
+---
+
+### v1.68 — Ansible playbook patterns
+
+**Problem:** `ansible-playbook-project` scaffolded inventory and a ping-only `site.yml` without
+operational play content for Linux or Windows fleets.
+
+**Approach:**
+
+- Extend **`ansible/catalog.json`** with **`playbook_patterns`**
+- Materialize **`site.yml`** and environment **`hosts.yml`** from `ansible/playbooks/`
+- Patterns: **`linux-patch-baseline`**, **`windows-update-baseline`**, opt-in **`repave-baseline`**
+- Portal pattern picker + Linux/Windows toggles; provenance `playbook_pattern_source`
+- Merge pattern **`required_collections`** into Copier-generated **`requirements.yml`**
+
+**Status:** In progress (catalog, engine, portal, standards v1.1.0).
 
 ---
 

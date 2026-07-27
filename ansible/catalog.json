@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "defaults": {
-    "role_pattern_source": "linux-service"
+    "role_pattern_source": "linux-service",
+    "playbook_pattern_source": "linux-patch-baseline"
   },
   "form_presets": {
     "ansible-role-generic": {
@@ -11,6 +12,16 @@
         "role_pattern_source",
         "support_linux",
         "support_windows"
+      ]
+    },
+    "ansible-playbook-project": {
+      "decision_fields": [
+        "project_name",
+        "playbook_pattern_source",
+        "support_linux",
+        "support_windows",
+        "environment",
+        "pinned_roles"
       ]
     }
   },
@@ -92,6 +103,50 @@
         {
           "source": "roles/windows-service/README-molecule-windows.md.jinja",
           "dest": "molecule/windows/README.md"
+        }
+      ]
+    }
+  ],
+  "playbook_patterns": [
+    {
+      "id": "repave-baseline",
+      "label": "Connectivity check (placeholder play)",
+      "platform": "any",
+      "description": "Inventory layout and ansible.builtin.ping only in site.yml.",
+      "requires_collections": [],
+      "files": []
+    },
+    {
+      "id": "linux-patch-baseline",
+      "label": "Linux patch baseline",
+      "platform": "linux",
+      "description": "Security-oriented package updates on a linux inventory group.",
+      "requires_collections": [],
+      "files": [
+        {
+          "source": "playbooks/linux-patch-baseline/site.yml.jinja",
+          "dest": "site.yml"
+        },
+        {
+          "source": "playbooks/linux-patch-baseline/inventories/hosts.yml.jinja",
+          "dest": "inventories/{{ environment }}/hosts.yml"
+        }
+      ]
+    },
+    {
+      "id": "windows-update-baseline",
+      "label": "Windows update scan",
+      "platform": "windows",
+      "description": "Search for pending security updates on a windows inventory group.",
+      "requires_collections": ["ansible.windows"],
+      "files": [
+        {
+          "source": "playbooks/windows-update-baseline/site.yml.jinja",
+          "dest": "site.yml"
+        },
+        {
+          "source": "playbooks/windows-update-baseline/inventories/hosts.yml.jinja",
+          "dest": "inventories/{{ environment }}/hosts.yml"
         }
       ]
     }

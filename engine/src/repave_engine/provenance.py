@@ -152,6 +152,14 @@ def _build_ansible_playbook_project_spec(
             for item in pinned
             if isinstance(item, dict)
         ]
+    pattern = str(values.get("playbook_pattern_source", "")).strip()
+    if pattern:
+        spec["ansiblePlaybookProject"]["playbook_pattern_source"] = pattern
+    collections = values.get("_playbook_pattern_requires_collections")
+    if isinstance(collections, list):
+        names = sorted({str(item).strip() for item in collections if str(item).strip()})
+        if names:
+            spec["ansiblePlaybookProject"]["required_collections"] = names
     if blueprint.ansible_lint_pack is not None:
         spec["ansibleLint"] = {
             "pack_source": blueprint.ansible_lint_pack.pack_source,

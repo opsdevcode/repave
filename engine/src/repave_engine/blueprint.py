@@ -398,12 +398,16 @@ def validate_inputs(
 
         normalize_monitor_pack_inputs(blueprint, normalized, repo_root)
         from repave_engine.ansible_pattern import (
+            blueprint_supports_playbook_patterns,
             blueprint_supports_role_patterns,
+            normalize_playbook_pattern_inputs,
             normalize_role_pattern_inputs,
         )
 
         if blueprint_supports_role_patterns(blueprint):
             normalize_role_pattern_inputs(blueprint, normalized, repo_root)
+        if blueprint_supports_playbook_patterns(blueprint):
+            normalize_playbook_pattern_inputs(blueprint, normalized, repo_root)
 
     _validate_helm_chart_inputs(blueprint, normalized)
     _validate_app_service_inputs(blueprint, normalized)
