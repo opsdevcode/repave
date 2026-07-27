@@ -88,7 +88,7 @@ from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 
 
 def _dry_run_from_form(form: object) -> bool:
-    """Parse dry_run from multipart form; treat plan submits as dry-run when ambiguous."""
+    """Parse dry_run from multipart form; last value wins when multiple are sent."""
     getlist = getattr(form, "getlist", None)
     if getlist is None:
         get = getattr(form, "get", lambda _k, _d=None: "true")
@@ -96,9 +96,12 @@ def _dry_run_from_form(form: object) -> bool:
     raw = [str(item).lower() for item in getlist("dry_run") if str(item).strip()]
     if not raw:
         return True
-    if "true" in raw:
-        return True
     return raw[-1] != "false"
+
+
+def _plan_preview_from_form(form: object) -> bool:
+    get = getattr(form, "get", lambda _k, _d=None: "")
+    return str(get("plan_preview", "")).strip() in ("1", "true", "yes")
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
@@ -133,11 +136,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     )
 
     def page_context(request: Request | None = None, **extra: object) -> dict[str, object]:
+        from repave_engine.gate_toolchain import portal_runtime_info
+
         auth_user = session_user(request) if request is not None else None
         return {
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
             "local_toolchain_warning": local_portal_toolchain_warning(),
+            "portal_runtime": portal_runtime_info(),
             "portal_density": portal_config.density,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
@@ -223,16 +229,27 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     def local_portal_toolchain_warning() -> str | None:
         if os.environ.get("REPAVE_ENV") != "local":
             return None
-        from repave_engine.gate_runners import tool_available
+        from repave_engine.gate_toolchain import gate_tool_status, portal_runtime_info
 
-        missing = [name for name in ("terraform", "conftest", "tflint") if not tool_available(name)]
-        if not missing:
+        runtime = portal_runtime_info()
+        if runtime.get("in_container"):
             return None
+        status = gate_tool_status()
+        missing = [name for name, ok in status.items() if not ok]
+        if not missing:
+            return (
+                "This portal is running on the host (not Docker). For the full gate toolchain on "
+                "macOS, Linux, or Windows, use deploy/local Docker Compose at "
+                "http://localhost:8088 — no local Terraform/Checkov install required."
+            )
         tools = ", ".join(missing)
         return (
-            f"This server is missing gate tools ({tools}). Terraform plan previews will not pass "
-            f"until you install them (see deploy/local/README.md) or run "
-            f"deploy/local Docker Compose. Engine v{__version__}."
+            "Host server is missing gate tools "
+            f"({tools}). You do not need to install them locally: "
+            "run deploy/local Docker Compose and open http://localhost:8088 "
+            "(works on Windows with Docker Desktop). Optional native dev: "
+            "deploy/local/install-gate-toolchain.sh inside Linux or WSL only. "
+            f"Engine v{__version__}."
         )
 
     @app.get("/", response_class=HTMLResponse)
@@ -539,6 +556,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         form = await request.form()
         blueprint_name = str(form.get("blueprint_name", ""))
         dry_run = _dry_run_from_form(form)
+        require_run = dry_run or _plan_preview_from_form(form)
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
         values: dict[str, str] = {}
         for field in blueprint.inputs:
@@ -575,6 +593,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             values,
             output_config=resolved_output,
             dry_run=dry_run,
+            require_run=require_run,
             github_token=github_token,
             repo_root=repo_root,
         )
@@ -605,13 +624,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
     @app.get("/readyz")
-    async def readyz() -> dict[str, str | bool]:
+    async def readyz() -> dict[str, object]:
         token_ok = bool(os.environ.get("GITHUB_TOKEN", "").strip())
-        return {
+        payload: dict[str, object] = {
             "status": "ready",
             "config_loaded": True,
             "github_token_configured": token_ok,
         }
+        if os.environ.get("REPAVE_ENV") == "local":
+            from repave_engine.gate_toolchain import gate_tool_status, portal_runtime_info
+
+            payload["gate_tools"] = gate_tool_status()
+            payload["runtime"] = portal_runtime_info()
+        return payload
 
     @app.get("/auth/login")
     async def auth_login(request: Request) -> RedirectResponse:

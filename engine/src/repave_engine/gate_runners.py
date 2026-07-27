@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
@@ -12,12 +11,14 @@ import jsonschema
 
 from repave_engine.blueprint import CheckovGateConfig, TflintGateConfig, _find_repo_root
 from repave_engine.gate_registry import GateContext, GateResult
+from repave_engine.gate_toolchain import (
+    checkov_argv,
+    ensure_gate_path,
+    resolve_tool,
+    tool_available,
+)
 from repave_engine.policy_selection import load_policy_selection_file
 from repave_engine.provenance import validate_provenance_file
-
-
-def tool_available(name: str) -> bool:
-    return shutil.which(name) is not None
 
 
 def run_command(
@@ -26,15 +27,18 @@ def run_command(
     *,
     extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    env = None
+    ensure_gate_path()
+    if cmd:
+        resolved = resolve_tool(cmd[0])
+        if resolved:
+            cmd = [resolved, *cmd[1:]]
+    env = os.environ.copy()
     if extra_env is not None:
-        import os
-
-        env = os.environ.copy()
         env.update(extra_env)
+    run_cwd = cwd if cwd.is_dir() else Path("/tmp")
     return subprocess.run(
         cmd,
-        cwd=cwd,
+        cwd=run_cwd,
         capture_output=True,
         text=True,
         check=False,
@@ -43,10 +47,55 @@ def run_command(
 
 
 def terraform_usable(output_dir: Path) -> bool:
-    if not tool_available("terraform"):
+    from repave_engine.gate_toolchain import terraform_cli_ready
+
+    if not terraform_cli_ready():
         return False
-    result = run_command(["terraform", "version"], output_dir)
+    run_cwd = output_dir if output_dir.is_dir() else Path("/tmp")
+    terraform_bin = resolve_tool("terraform")
+    if not terraform_bin:
+        return False
+    result = subprocess.run(
+        [terraform_bin, "version"],
+        cwd=run_cwd,
+        capture_output=True,
+        text=True,
+        check=False,
+        env=os.environ.copy(),
+    )
     return result.returncode == 0
+
+
+_DRY_RUN_TOOLCHAIN_HINT = (
+    " Dry-run preview runs all blueprint gates; install the tool "
+    "(see deploy/local) or use Docker compose for a full toolchain."
+)
+
+
+def _toolchain_skip(
+    ctx: GateContext,
+    gate_name: str,
+    reason: str,
+    *,
+    benign: bool = False,
+) -> GateResult:
+    """SKIP when apply mode tolerates missing tools; FAIL on dry-run (require_run)."""
+    if ctx.require_run and not benign:
+        detail = reason.replace("; skipped", "").strip()
+        if not detail.endswith("."):
+            detail = f"{detail}."
+        return GateResult(gate_name, False, False, f"{detail}{_DRY_RUN_TOOLCHAIN_HINT}")
+    message = reason if reason.endswith("; skipped") else f"{reason}; skipped"
+    return GateResult(gate_name, True, True, message)
+
+
+def _checkov_command(cmd: list[str]) -> list[str]:
+    prefix = checkov_argv()
+    if prefix is None or not cmd or cmd[0] != "checkov":
+        return cmd
+    if len(prefix) == 1:
+        return [prefix[0], *cmd[1:]]
+    return [*prefix, *cmd[1:]]
 
 
 def tflint_config_args(output_dir: Path, config: TflintGateConfig) -> list[str]:
@@ -59,7 +108,7 @@ def tflint_config_args(output_dir: Path, config: TflintGateConfig) -> list[str]:
 def run_terraform_fmt(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not terraform_usable(output_dir):
-        return GateResult("terraform-fmt", True, True, "terraform not available; skipped")
+        return _toolchain_skip(ctx, "terraform-fmt", "terraform not available")
 
     result = run_command(["terraform", "fmt", "-check", "-recursive"], output_dir)
     if result.returncode == 0:
@@ -75,7 +124,7 @@ def run_terraform_fmt(ctx: GateContext) -> GateResult:
 def run_terraform_validate(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not terraform_usable(output_dir):
-        return GateResult("terraform-validate", True, True, "terraform not available; skipped")
+        return _toolchain_skip(ctx, "terraform-validate", "terraform not available")
 
     init = run_command(["terraform", "init", "-backend=false"], output_dir)
     if init.returncode != 0:
@@ -100,13 +149,13 @@ def run_terraform_validate(ctx: GateContext) -> GateResult:
 def run_terraform_test(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not terraform_usable(output_dir):
-        return GateResult("terraform-test", True, True, "terraform not available; skipped")
+        return _toolchain_skip(ctx, "terraform-test", "terraform not available")
 
     raw = ctx.config("terraform-test")
     test_directory = str(raw.get("test_directory", "tests"))
     test_dir = output_dir / test_directory
     if not test_dir.is_dir() or not any(test_dir.rglob("*.tftest.hcl")):
-        return GateResult("terraform-test", True, True, "no terraform tests; skipped")
+        return _toolchain_skip(ctx, "terraform-test", "no terraform tests", benign=True)
 
     init = run_command(["terraform", "init", "-backend=false"], output_dir)
     if init.returncode != 0:
@@ -131,7 +180,7 @@ def run_terraform_test(ctx: GateContext) -> GateResult:
 def run_tflint(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
     if not tool_available("tflint"):
-        return GateResult("tflint", True, True, "tflint not installed; skipped")
+        return _toolchain_skip(ctx, "tflint", "tflint not installed")
 
     config = ctx.blueprint.tflint_gate if ctx.blueprint is not None else TflintGateConfig()
     config_args = tflint_config_args(output_dir, config)
@@ -184,10 +233,10 @@ def build_secrets_scan_command(output_dir: Path) -> list[str]:
 
 def run_secrets(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
-    if not tool_available("checkov"):
-        return GateResult("secrets", True, True, "checkov not installed; skipped")
+    if checkov_argv() is None:
+        return _toolchain_skip(ctx, "secrets", "checkov not installed")
 
-    cmd = build_secrets_scan_command(output_dir)
+    cmd = _checkov_command(build_secrets_scan_command(output_dir))
     result = run_command(cmd, output_dir)
     if result.returncode == 0:
         return GateResult("secrets", True, False, "secrets scan passed")
@@ -196,8 +245,8 @@ def run_secrets(ctx: GateContext) -> GateResult:
 
 def run_checkov(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
-    if not tool_available("checkov"):
-        return GateResult("checkov", True, True, "checkov not installed; skipped")
+    if checkov_argv() is None:
+        return _toolchain_skip(ctx, "checkov", "checkov not installed")
 
     config = ctx.blueprint.checkov_gate if ctx.blueprint is not None else CheckovGateConfig()
     extra_skip: tuple[str, ...] = ()
@@ -206,7 +255,7 @@ def run_checkov(ctx: GateContext) -> GateResult:
     selection = load_policy_selection_file(output_dir)
     if selection is not None:
         extra_skip = (*extra_skip, *selection.checkov_skip_checks)
-    cmd = build_checkov_command(output_dir, config, extra_skip_checks=extra_skip)
+    cmd = _checkov_command(build_checkov_command(output_dir, config, extra_skip_checks=extra_skip))
     scan_root = output_dir / config.scan_dir if config.scan_dir else output_dir
     result = run_command(
         cmd,
@@ -1142,7 +1191,7 @@ def run_opa(ctx: GateContext) -> GateResult:
         return GateResult("opa", True, True, "opa policy pack not configured; skipped")
 
     if not tool_available("conftest"):
-        return GateResult("opa", True, True, "conftest not installed; skipped")
+        return _toolchain_skip(ctx, "opa", "conftest not installed")
 
     cfg = ctx.blueprint.opa_gate
     policies_dir = output_dir / cfg.policies_dir
@@ -1184,18 +1233,17 @@ def run_opa(ctx: GateContext) -> GateResult:
             if fixtures.is_dir() and any(fixtures.glob("*.json")):
                 target = str(fixtures)
             elif not terraform_usable(output_dir):
-                return GateResult(
-                    "opa",
-                    True,
-                    True,
-                    "terraform not available; skipped",
-                )
+                return _toolchain_skip(ctx, "opa", "terraform not available")
             else:
                 return GateResult(
                     "opa",
                     False,
                     False,
-                    "terraform plan JSON could not be produced for opa evaluation",
+                    (
+                        "terraform plan JSON could not be produced for opa evaluation "
+                        "(terraform init/plan failed). Fix the module or run the full "
+                        "toolchain via deploy/local Docker Compose."
+                    ),
                 )
     elif artifact == "helm-chart":
         return _run_opa_helm_chart(ctx, policies_dir, output_dir)

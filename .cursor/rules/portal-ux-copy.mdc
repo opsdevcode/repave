@@ -25,9 +25,10 @@ source. Labels, hints, and governance rails should explain **what they get**, no
 
 ## Prefer instead
 
-- **Lineage / receipt:** blueprint@version, pinned standard, governance baseline,
-  engine version, artifact receipt in `repave.yaml` (filename is fine — it is the
-  user-visible contract).
+- **Lineage:** blueprint@version, pinned standard, governance baseline, engine version.
+  Provenance is written to `repave.yaml` in the artifact — do not use the word
+  “receipt” in templates or show a full-file YAML dump on the result page (lineage
+  rows are enough; file tree still lists `repave.yaml`).
 - **Policy:** profile label, pack source, catalog rule titles — not raw skip-check
   wiring unless troubleshooting.
 - **Gates:** gate id and pass/fail/skip; failures get human lead-ins (for example

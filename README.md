@@ -32,7 +32,9 @@ Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) · [Quicks
 
 ## Portal (primary UX)
 
-Night-ops web UI at **http://localhost:8088** (`make serve` or Docker Compose): catalog by
+Night-ops web UI at **http://localhost:8088** ([Docker Compose](deploy/local/README.md) — gate
+tools in the image; works on Windows with Docker Desktop). Optional **`make serve`** on
+`:8089` is for engine/template dev without a full local toolchain.
 artifact family, governance sidebar, stepper forms, **Dry run preview** on early steps, gate dashboard
 on results, upgrade preview for existing repos. Screenshots below are captured from a running
 portal (not mockups).

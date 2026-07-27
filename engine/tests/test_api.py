@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from repave_engine.api import _dry_run_from_form, create_app
+from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, create_app
 from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
@@ -198,7 +198,16 @@ def test_generate_publish_passes_github_token_from_env(
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
     captured: dict[str, object] = {}
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         captured["dry_run"] = dry_run
         captured["github_token"] = github_token
         return GenerationResult(
@@ -238,7 +247,16 @@ def test_generate_dry_run_ignores_github_token(
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_from_env")
     captured: dict[str, object] = {}
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         captured["dry_run"] = dry_run
         captured["github_token"] = github_token
         return GenerationResult(
@@ -266,7 +284,7 @@ def test_generate_dry_run_ignores_github_token(
     assert captured["github_token"] is None
 
 
-def test_dry_run_from_form_prefers_plan_when_both_flags_sent() -> None:
+def test_dry_run_from_form_last_value_wins_plan() -> None:
     class _Form:
         def getlist(self, key: str) -> list[str]:
             if key == "dry_run":
@@ -274,6 +292,30 @@ def test_dry_run_from_form_prefers_plan_when_both_flags_sent() -> None:
             return []
 
     assert _dry_run_from_form(_Form()) is True
+
+
+def test_dry_run_from_form_last_value_wins_apply() -> None:
+    class _Form:
+        def getlist(self, key: str) -> list[str]:
+            if key == "dry_run":
+                return ["true", "false"]
+            return []
+
+    assert _dry_run_from_form(_Form()) is False
+
+
+def test_plan_preview_from_form() -> None:
+    class _Form:
+        def __init__(self, value: str) -> None:
+            self._value = value
+
+        def get(self, key: str, default: object = None) -> object:
+            if key == "plan_preview":
+                return self._value
+            return default
+
+    assert _plan_preview_from_form(_Form("1")) is True
+    assert _plan_preview_from_form(_Form("")) is False
 
 
 def test_provider_service_detail(repo_root, output_config) -> None:
@@ -315,8 +357,36 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "form-actions__delivery" in response.text
     assert "data-stepper-progress" in response.text
     assert "governance-card__gates-details" in response.text
+    assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
     assert "novalidate" in response.text
+
+
+def test_generate_form_includes_plan_preview_flag(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic")
+    assert response.status_code == 200
+    assert "data-plan-preview-flag" in response.text
+
+
+def test_generate_dry_run_promotes_missing_terraform_to_fail(
+    repo_root, output_config, sample_inputs, monkeypatch
+) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: False)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            "plan_preview": "1",
+            **sample_inputs,
+        },
+    )
+    assert response.status_code == 200
+    assert "badge--fail" in response.text
+    assert "Dry-run preview runs all blueprint gates" in response.text
+    assert "terraform-fmt" in response.text
 
 
 @pytest.mark.slow
@@ -597,7 +667,16 @@ def test_generate_resource_module_from_form(repo_root, output_config, monkeypatc
     monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
     captured: dict[str, object] = {}
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         captured["values"] = values
         return GenerationResult(
             blueprint=blueprint,
@@ -682,7 +761,16 @@ def test_generate_uses_provider_service_option_fallback(
     monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
     captured: dict[str, object] = {}
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         captured["values"] = values
         return GenerationResult(
             blueprint=blueprint,
@@ -723,7 +811,16 @@ def test_result_dashboard_failed_gate_excerpt(
     monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
     monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         return GenerationResult(
             blueprint=blueprint,
             render=RenderResult(output_dir=output_config.modules_root, values=values),
@@ -767,7 +864,16 @@ def test_result_dashboard_published_repo_card(
     monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
     local_path = output_config.modules_root / "tf-aws-example"
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         repo = ModuleRepository(
             name="tf-aws-example",
             owner=output_config.github_org,
@@ -825,7 +931,16 @@ def test_result_includes_lineage_and_policy_block(
         pack_versions={"checkov": "1.0.0", "opa": "1.0.0"},
     )
 
-    def fake_generate(blueprint, values, *, output_config, dry_run, github_token, repo_root=None):
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
         merged = {**values, "_policy_selection": selection}
         return GenerationResult(
             blueprint=blueprint,
@@ -846,7 +961,7 @@ def test_result_includes_lineage_and_policy_block(
     assert response.status_code == 200
     assert "Lineage" in response.text
     assert "Policy pack" in response.text
-    assert "estate-default" in response.text
+    assert "Estate default" in response.text
 
 
 def test_update_form_page(repo_root, output_config) -> None:

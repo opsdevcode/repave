@@ -97,6 +97,7 @@ def generate_from_blueprint(
     *,
     output_config: OutputConfig,
     dry_run: bool = True,
+    require_run: bool | None = None,
     github_token: str | None = None,
     staging_root: Path | None = None,
     repo_root: Path | None = None,
@@ -135,12 +136,15 @@ def generate_from_blueprint(
             render_result = render_blueprint(blueprint, normalized, staging_dir)
         run_gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
         with pipeline_span("repave.gates"):
+            gate_require_run = dry_run if require_run is None else require_run
+            if dry_run:
+                gate_require_run = True
             gate_results = run_gates(
                 render_result.output_dir,
                 blueprint.gates,
                 blueprint=blueprint,
                 gate_overrides=run_gate_overrides,
-                require_run=dry_run,
+                require_run=gate_require_run,
             )
         clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)
 

@@ -52,7 +52,7 @@ quality: lint typecheck
 
 serve:
 	mkdir -p $(MODULES_ROOT)
-	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" $(REPAVE_ENV) uv run repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8088
+	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" $(REPAVE_ENV) REPAVE_ENV=local uv run repave serve --repo-root $(REPO_ROOT) --host 127.0.0.1 --port 8089
 
 list:
 	cd engine && uv run repave list --repo-root $(REPO_ROOT)

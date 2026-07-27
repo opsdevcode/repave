@@ -312,9 +312,15 @@
       );
     }
 
+    var planPreviewFlag = form.querySelector("[data-plan-preview-flag]");
+
     function setPlanSubmitMode(planMode) {
       if (dryRunForceField) {
         dryRunForceField.disabled = !planMode;
+      }
+      if (planPreviewFlag) {
+        planPreviewFlag.disabled = !planMode;
+        planPreviewFlag.value = planMode ? "1" : "";
       }
       form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
         radio.disabled = planMode;
@@ -809,6 +815,7 @@
       var dryRunBtn = form.querySelector("[data-dry-run-run]");
       var drySubmit = form.querySelector("[data-dry-run-submit]");
       var dryForce = form.querySelector("[data-dry-run-force]");
+      var planPreviewFlag = form.querySelector("[data-plan-preview-flag]");
       if (!dryRunBtn || !drySubmit) {
         return;
       }
@@ -831,6 +838,10 @@
         if (dryForce) {
           dryForce.disabled = false;
         }
+        if (planPreviewFlag) {
+          planPreviewFlag.disabled = false;
+          planPreviewFlag.value = "1";
+        }
         form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
           radio.disabled = true;
         });
@@ -840,6 +851,40 @@
           drySubmit.click();
         }
       });
+
+      form.addEventListener(
+        "submit",
+        function (event) {
+          var submitter = event.submitter;
+          var viaDryRunControl =
+            submitter &&
+            (submitter === drySubmit || submitter.getAttribute("data-dry-run-submit") !== null);
+          if (viaDryRunControl) {
+            if (dryForce) {
+              dryForce.disabled = false;
+            }
+            if (planPreviewFlag) {
+              planPreviewFlag.disabled = false;
+              planPreviewFlag.value = "1";
+            }
+            form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+              radio.disabled = true;
+            });
+          } else {
+            if (dryForce) {
+              dryForce.disabled = true;
+            }
+            if (planPreviewFlag) {
+              planPreviewFlag.disabled = true;
+              planPreviewFlag.value = "";
+            }
+            form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+              radio.disabled = false;
+            });
+          }
+        },
+        true
+      );
     });
   }
 

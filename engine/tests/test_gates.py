@@ -122,6 +122,20 @@ def test_require_run_promotes_missing_tool_skip_to_failure(tmp_path: Path, monke
     assert "Dry-run preview" in strict[0].message
 
 
+def test_require_run_missing_checkov_fails_at_runner(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.checkov_argv", lambda: None)
+    from repave_engine.gate_registry import GateContext
+    from repave_engine.gate_runners import run_checkov
+
+    skip = run_checkov(GateContext(output_dir=tmp_path, require_run=False))
+    assert skip.skipped is True
+
+    fail = run_checkov(GateContext(output_dir=tmp_path, require_run=True))
+    assert fail.skipped is False
+    assert fail.passed is False
+    assert "checkov not installed" in fail.message
+
+
 def test_is_gate_artifact_path() -> None:
     assert is_gate_artifact_path(".terraform/providers/foo/LICENSE.txt") is True
     assert is_gate_artifact_path(".terraform.lock.hcl") is True
@@ -192,7 +206,7 @@ def test_build_checkov_command_adds_soft_fail(tmp_path: Path) -> None:
 
 
 def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "checkov")
+    monkeypatch.setattr("repave_engine.gate_runners.checkov_argv", lambda: ["/usr/bin/checkov"])
     captured: dict[str, list[str]] = {}
 
     def fake_run(cmd, cwd, *, extra_env=None):
@@ -221,7 +235,7 @@ def test_build_secrets_scan_command(tmp_path: Path) -> None:
 
 
 def test_run_gates_secrets_invokes_checkov(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "checkov")
+    monkeypatch.setattr("repave_engine.gate_runners.checkov_argv", lambda: ["/usr/bin/checkov"])
     captured: dict[str, list[str]] = {}
 
     def fake_run(cmd, cwd, *, extra_env=None):
