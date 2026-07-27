@@ -77,6 +77,20 @@ from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 
 
+def _dry_run_from_form(form: object) -> bool:
+    """Parse dry_run from multipart form; treat plan submits as dry-run when ambiguous."""
+    getlist = getattr(form, "getlist", None)
+    if getlist is None:
+        get = getattr(form, "get", lambda _k, _d=None: "true")
+        return str(get("dry_run", "true")).lower() != "false"
+    raw = [str(item).lower() for item in getlist("dry_run") if str(item).strip()]
+    if not raw:
+        return True
+    if "true" in raw:
+        return True
+    return raw[-1] != "false"
+
+
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
     package_dir = Path(__file__).parent
     templates = Jinja2Templates(directory=str(package_dir / "templates"))
@@ -421,7 +435,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         form = await request.form()
         blueprint_name = str(form.get("blueprint_name", ""))
-        dry_run = str(form.get("dry_run", "true")).lower() != "false"
+        dry_run = _dry_run_from_form(form)
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
         values: dict[str, str] = {}
         for field in blueprint.inputs:

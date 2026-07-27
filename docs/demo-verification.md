@@ -53,4 +53,4 @@ Expect `OutOfDate`, `UpgradePlanned`, and `upgradePlan.blueprintVersion` matchin
 ## After verification
 
 - Bump **Last verified** date and engine/blueprint versions in this file.
-- Link fresh screenshots in the root [README](../README.md#portal-primary-ux) if updated.
+- Link fresh screenshots in the root [README](../README.md#portal-primary-ux) (portal + CLI) if updated.

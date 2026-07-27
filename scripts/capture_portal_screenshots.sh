@@ -28,4 +28,9 @@ cd "$ROOT/engine" && REPAVE_GITHUB_ORG="${REPAVE_GITHUB_ORG:-opsdevcode}" \
   REPAVE_MODULES_ROOT="${REPAVE_MODULES_ROOT:-$HOME/repave-modules}" \
   uv run --with playwright python ../scripts/capture_generate_result.py
 
-echo "Wrote PNGs under $OUT"
+echo "Capturing CLI dry-run screenshot…"
+cd "$ROOT/engine" && REPAVE_GITHUB_ORG="${REPAVE_GITHUB_ORG:-opsdevcode}" \
+  REPAVE_MODULES_ROOT="${REPAVE_MODULES_ROOT:-$HOME/repave-modules}" \
+  uv run --with playwright python ../scripts/capture_cli_screenshot.py
+
+echo "Wrote PNGs under $OUT and docs/images/cli/"

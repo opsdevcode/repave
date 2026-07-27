@@ -125,16 +125,18 @@
 
   function initBusyForms() {
     document.querySelectorAll("[data-repave-busy-form]").forEach(function (form) {
-      form.addEventListener("submit", function () {
-        var btn = form.querySelector('button[type="submit"]');
+      form.addEventListener("submit", function (event) {
+        if (event.defaultPrevented) {
+          return;
+        }
+        var btn =
+          form.querySelector("[data-stepper-run-plan]:not([hidden])") ||
+          form.querySelector("[data-stepper-submit]:not([hidden])") ||
+          form.querySelector('button[type="submit"]');
         if (!btn || btn.disabled) {
           return;
         }
-        btn.disabled = true;
-        btn.classList.add("btn--busy");
         var busyLabel = form.getAttribute("data-busy-label") || "Working…";
-        btn.dataset.repaveOriginalLabel = btn.textContent;
-        btn.textContent = busyLabel;
         var stages = (form.getAttribute("data-busy-stages") || "")
           .split("|")
           .map(function (s) {
@@ -142,19 +144,28 @@
           })
           .filter(Boolean);
         var stageLabel = stages.length ? stages[0] : busyLabel;
-        setBusyOverlay(true, stageLabel);
-        if (stages.length > 1) {
-          var stageIndex = 0;
-          btn.textContent = stages[0];
-          if (form._repaveStageTimer) {
-            clearInterval(form._repaveStageTimer);
+        var originalLabel = btn.textContent;
+        window.setTimeout(function () {
+          if (event.defaultPrevented) {
+            return;
           }
-          form._repaveStageTimer = setInterval(function () {
-            stageIndex = (stageIndex + 1) % stages.length;
-            btn.textContent = stages[stageIndex];
-            setBusyOverlay(true, stages[stageIndex]);
-          }, 2200);
-        }
+          btn.disabled = true;
+          btn.classList.add("btn--busy");
+          btn.dataset.repaveOriginalLabel = originalLabel;
+          btn.textContent = stages.length ? stages[0] : busyLabel;
+          setBusyOverlay(true, stageLabel);
+          if (stages.length > 1) {
+            var stageIndex = 0;
+            if (form._repaveStageTimer) {
+              clearInterval(form._repaveStageTimer);
+            }
+            form._repaveStageTimer = setInterval(function () {
+              stageIndex = (stageIndex + 1) % stages.length;
+              btn.textContent = stages[stageIndex];
+              setBusyOverlay(true, stages[stageIndex]);
+            }, 2200);
+          }
+        }, 0);
       });
     });
   }
@@ -326,9 +337,31 @@
       }
     }
 
-    function runPlanFromStepper() {
+    function runStepperSubmitPipeline(formEvent) {
       dispatchPreSubmit();
+      var allowed = form.dispatchEvent(
+        new CustomEvent("repave:stepper-will-submit", {
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      if (!allowed) {
+        if (formEvent) {
+          formEvent.preventDefault();
+        }
+        return false;
+      }
       if (!validateStepsThroughDelivery()) {
+        if (formEvent) {
+          formEvent.preventDefault();
+        }
+        return false;
+      }
+      return true;
+    }
+
+    function runPlanFromStepper() {
+      if (!runStepperSubmitPipeline(null)) {
         return;
       }
       setPlanSubmitMode(true);
@@ -369,24 +402,26 @@
     if (planBtn) {
       planBtn.addEventListener("click", runPlanFromStepper);
     }
-    form.addEventListener("submit", function (event) {
-      dispatchPreSubmit();
-      if (!validateStepsThroughDelivery()) {
-        event.preventDefault();
-        return;
-      }
-      var submitter = event.submitter;
-      var viaPlanControl =
-        submitter &&
-        (submitter === planSubmitBtn ||
-          submitter.getAttribute("data-stepper-plan-submit") !== null ||
-          submitter.getAttribute("data-stepper-run-plan") !== null);
-      if (viaPlanControl || current !== maxStep) {
-        setPlanSubmitMode(true);
-      } else {
-        setPlanSubmitMode(deliveryWantsPlan());
-      }
-    });
+    form.addEventListener(
+      "submit",
+      function (event) {
+        if (!runStepperSubmitPipeline(event)) {
+          return;
+        }
+        var submitter = event.submitter;
+        var viaPlanControl =
+          submitter &&
+          (submitter === planSubmitBtn ||
+            submitter.getAttribute("data-stepper-plan-submit") !== null ||
+            submitter.getAttribute("data-stepper-run-plan") !== null);
+        if (viaPlanControl || current !== maxStep) {
+          setPlanSubmitMode(true);
+        } else {
+          setPlanSubmitMode(deliveryWantsPlan());
+        }
+      },
+      true
+    );
     if (backBtn) {
       backBtn.addEventListener("click", function () {
         current = Math.max(0, current - 1);

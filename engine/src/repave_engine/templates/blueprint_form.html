@@ -1127,7 +1127,7 @@
     providerSelect.addEventListener("change", () => void loadModules());
   }
 
-  form.addEventListener("submit", (event) => {
+  function validatePinnedModulesBeforeGenerate(event) {
     syncPinnedModulesInput();
     clearStackValidation();
     let parsed = [];
@@ -1137,9 +1137,11 @@
       parsed = [];
     }
     if (!parsed.length) {
-      event.preventDefault();
+      if (event) {
+        event.preventDefault();
+      }
       showStackValidation("Add at least one module with a version before generating.");
-      return;
+      return false;
     }
     for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
       const moduleSelect = row.querySelector(".pinned-module-select");
@@ -1150,11 +1152,23 @@
       }
       const module = JSON.parse(option.dataset.payload);
       if (module.repo_name !== "_example" && !versionSelect.value) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         showStackValidation("Select a module version (git tag) for each pinned module.");
-        return;
+        return false;
       }
     }
+    return true;
+  }
+
+  form.addEventListener("repave:stepper-will-submit", (event) => {
+    if (!validatePinnedModulesBeforeGenerate(event)) {
+      event.preventDefault();
+    }
+  });
+  form.addEventListener("submit", (event) => {
+    validatePinnedModulesBeforeGenerate(event);
   });
 
   async function initModuleInventory() {
@@ -1252,6 +1266,18 @@
   });
   form.addEventListener("repave:stepper-pre-submit", () => {
     clearValidation();
+  });
+  form.addEventListener("repave:stepper-will-submit", (event) => {
+    clearValidation();
+    if (!serviceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider service before generating.");
+      return;
+    }
+    if (!resourceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider resource before generating.");
+    }
   });
   form.addEventListener("submit", (event) => {
     clearValidation();
@@ -1631,23 +1657,23 @@
     clearValidation();
     await renderScopePanels();
   });
-  form.addEventListener("repave:stepper-pre-submit", () => {
-    syncServicesInput();
-    syncScopeInput();
-  });
-  form.addEventListener("submit", (event) => {
+  function validateProviderServicesBeforeGenerate(event) {
     syncServicesInput();
     syncScopeInput();
     clearValidation();
     if (!servicesInput.value.trim()) {
-      event.preventDefault();
+      if (event) {
+        event.preventDefault();
+      }
       showValidation("Select at least one provider service before generating.");
-      return;
+      return false;
     }
     for (const service of selectedServices()) {
       const state = ensureScopeState(service);
       if (!state.includeBasic && state.resources.size === 0) {
-        event.preventDefault();
+        if (event) {
+          event.preventDefault();
+        }
         const card = scopePanel.querySelector(`.scope-card[data-service="${service}"]`);
         if (card) {
           card.classList.add("scope-card--invalid");
@@ -1655,9 +1681,19 @@
         showValidation(
           `For ${service}, select at least one resource or switch to Basic + optional.`
         );
-        return;
+        return false;
       }
     }
+    return true;
+  }
+
+  form.addEventListener("repave:stepper-will-submit", (event) => {
+    if (!validateProviderServicesBeforeGenerate(event)) {
+      event.preventDefault();
+    }
+  });
+  form.addEventListener("submit", (event) => {
+    validateProviderServicesBeforeGenerate(event);
   });
 
   renderServices(providerSelect.value);
