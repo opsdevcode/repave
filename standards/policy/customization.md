@@ -1,6 +1,6 @@
 # Policy customization
 
-Version: 1.1.0
+Version: 1.2.0
 
 How teams choose **pack source**, **profile**, and **individual rules** at generate time, and how those choices flow into generated repos, gates, and upgrades.
 
@@ -34,9 +34,12 @@ Profiles are shared across artifact families; only rules whose `artifact_types` 
 | `opa-focused` | Plan-time Rego only. |
 | `azure-community` | All shipped Azure Policy sample definitions. |
 | `checkov-full` | All repave Checkov custom policies. |
+| `observability-default` | Observability OPA (native JSON/YAML + Terraform plan Rego). |
 | `custom` | Pick optional rules; required rules stay enabled. |
 
-Pack-specific defaults: for example `repave-azure-samples` defaults to **`azure-community`**; `repave-checkov-pack` to **`checkov-full`**.
+Pack-specific defaults: for example `repave-azure-samples` defaults to **`azure-community`**;
+`repave-checkov-pack` to **`checkov-full`**; **`repave-observability-pack`** to
+**`observability-default`** on `observability-as-code-generic`.
 
 ---
 
@@ -47,6 +50,7 @@ Pack-specific defaults: for example `repave-azure-samples` defaults to **`azure-
 - **`repave-default`** — Checkov, OPA, and Azure samples for supported artifact types.
 - **`repave-azure-samples`** — Azure Policy golden path only (`azure-policy-generic`).
 - **`repave-checkov-pack`** / **`repave-opa-pack`** / Terraform-focused packs — narrow defaults for module repos.
+- **`repave-observability-pack`** — OPA for `observability-as-code-generic` (native and Terraform modes).
 
 Future org registries add rows without changing generated repo layouts.
 

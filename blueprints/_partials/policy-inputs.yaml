@@ -10,4 +10,10 @@
 #   policy_pack_source: repave-azure-samples
 #   policy_profile: azure-community
 #
-# Terraform modules/stacks typically use repave-default + estate-default.
+# terraform-module-generic:
+#   policy_pack_source: repave-default
+#   policy_profile: estate-default
+#
+# observability-as-code-generic:
+#   policy_pack_source: repave-observability-pack
+#   policy_profile: observability-default

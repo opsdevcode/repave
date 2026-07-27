@@ -142,10 +142,25 @@ def clean_gate_artifacts(output_dir: Path, *, artifact_type: str = "terraform-mo
                     path.unlink()
             continue
         path = output_dir / name
+        if name == ".repave" and path.is_dir():
+            _clean_repave_gate_scratch(path)
+            continue
         if path.is_dir():
             shutil.rmtree(path)
         elif path.is_file():
             path.unlink()
+
+
+def _clean_repave_gate_scratch(repave_dir: Path) -> None:
+    """Remove OPA plan scratch; keep policy-selection.json for published repos."""
+    keep = frozenset({"policy-selection.json"})
+    for child in list(repave_dir.iterdir()):
+        if child.name in keep:
+            continue
+        if child.is_dir():
+            shutil.rmtree(child)
+        else:
+            child.unlink()
 
 
 def is_gate_artifact_path(relative_path: str, *, artifact_type: str = "terraform-module") -> bool:

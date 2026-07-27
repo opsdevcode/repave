@@ -14,7 +14,9 @@ Customization (profiles, portal, upgrades): [standards/policy/customization.md](
 | `azure-policy-generic` | Azure Policy | `azure-policy` | Definition JSON validation (`azure-policy` gate) |
 
 Terraform module and stack blueprints vend `policy/checkov/`, `policy/opa/policies`, and
-`policy/opa/fixtures/plan-create-only.json`. Generated repos run `repave gates` in CI;
+`policy/opa/fixtures/plan-create-only.json`. **Observability** repos use
+`repave-observability-pack` (catalog profile `observability-default`) so gates copy only
+observability Rego — not the full physical pack. Generated repos run `repave gates` in CI;
 when a live `terraform plan` is unavailable (no cloud credentials), the **opa** gate
 evaluates the vendored create-only plan JSON with Conftest.
 

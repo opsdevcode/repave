@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.64.0  
-**In progress:** —  
+**In progress:** docs/observability/policy catalog alignment (post–dry-run gates)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -46,7 +46,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.64.0  today     conformance harness + Backstage catalog; portal dry-run preview UX
+v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA pack (catalog v1.3.0)
   │
   ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
   ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
@@ -300,6 +300,8 @@ Host e2e smoke exercises the flag on the `terraform-minimal` fixture.
 - Portal customization via `policy/catalog.json`; demo [policy-golden-paths-demo.md](policy-golden-paths-demo.md)
 - Conformance snapshots for policy blueprints; Docker Compose ships **conftest** for OPA demos
 - Operator estate notes: [operator-policy-estate.md](operator-policy-estate.md)
+- `policy/PACKS.md` catalog narrative; portal dry-run **`require_run`** (gates fail when CLIs missing); CI/local gate toolchain via `deploy/local/install-gate-toolchain.sh`
+- Observability blueprint: `repave-observability-pack`, profile `observability-default`, selective OPA vendoring (catalog v1.3.0)
 
 ### v1.21.0 — Estate Terraform standards pack (multi-file)
 
