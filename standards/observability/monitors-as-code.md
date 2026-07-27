@@ -1,4 +1,4 @@
-# Monitors-as-code standard v1.0.0
+# Monitors-as-code standard v1.1.0
 
 Governed **alerts and monitors** for the `monitors-as-code-generic` golden path:
 Datadog monitors and Prometheus alerting rules (plus Alertmanager routing stubs). Dashboard
@@ -49,8 +49,15 @@ files under `observability/monitors/` (see `observability/monitors/README.md`).
 
 | Backend | Native layout | Terraform mode |
 | --- | --- | --- |
-| `datadog` | `datadog/monitors/*.json` | Datadog provider (`monitors.tf` at repo root) |
-| `prometheus` | `prometheus/rules/*.yaml`, `prometheus/alertmanager/alertmanager.yaml` | `prometheus_rules.tf`, `alertmanager.tf` (`null_resource` payloads for GitOps) |
+| `datadog` | `datadog/monitors/*.json` | Datadog provider (`monitors.tf` at repo root); provider `validate = false` allows `terraform plan` in CI without API keys |
+| `prometheus` | `prometheus/rules/*.yaml`, `prometheus/alertmanager/alertmanager.yaml` | `prometheus_rules.tf`, `alertmanager.tf` — `null_resource` payloads (rule group + Alertmanager YAML) for GitOps; map triggers to your ruler (Mimir, AMP, Prometheus Operator, Thanos Ruler, etc.) |
+
+`output_mode=terraform` emits `versions.tf`, `providers.tf`, `variables.tf`, and backend-specific
+resources. Community **monitor packs** (`monitor_pack_source`) materialize under native paths only;
+Terraform repos use the template baseline in `.tf` until pack Terraform is added in a later release.
+
+Generated repos vend `policy/opa/policies/` from the selected pack and `tests/fixtures/plan-create-only.json`
+for Conftest when live plan JSON is unavailable.
 
 ## Policy packs
 
@@ -60,10 +67,10 @@ Default generate inputs: `policy_pack_source=repave-observability-pack`,
 
 ## Validation
 
-Generated repos run `yamllint`, `promtool check rules`, `amtool check-config` (Prometheus
-native), `datadog-monitor`, optional `datadog-api-validate` (when API keys are set),
-`terraform-fmt` / `terraform-validate` (Terraform mode), `opa`, `secrets`, `docs-drift`,
-and `provenance-drift`.
+Generated repos run `yamllint`, `promtool check rules`, `amtool check-config` (Prometheus native),
+`datadog-monitor`, `datadog-api-validate` (when `DD_API_KEY` and `DD_APP_KEY` are set),
+`terraform-fmt` / `terraform-validate` (when `.tf` files exist), `opa` (Terraform plan or native
+JSON/YAML via conftest), `secrets`, `docs-drift`, and `provenance-drift` gates.
 
-Portal dry-run uses **`require_run`**: install the gate toolchain locally or via
-`deploy/local` Docker Compose so missing CLIs fail instead of skip.
+Dry-run and CI **require** gate CLIs when configured on the blueprint; install the repave local
+toolchain or use Docker Compose for parity with publish pipelines.

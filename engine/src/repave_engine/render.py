@@ -191,14 +191,17 @@ def render_blueprint(
             output_mode=str(payload.get("output_mode", "native")),
         )
     if blueprint.name == "monitors-as-code-generic":
+        backend = str(payload.get("backend", "datadog"))
+        output_mode = str(payload.get("output_mode", "native"))
         _prune_monitors_backend_outputs(
             output_dir,
-            backend=str(payload.get("backend", "datadog")),
-            output_mode=str(payload.get("output_mode", "native")),
+            backend=backend,
+            output_mode=output_mode,
         )
         from repave_engine.monitor_pack import materialize_monitor_pack
 
-        materialize_monitor_pack(output_dir, _find_repo_root(blueprint.path), payload)
+        if output_mode.strip().lower() == "native":
+            materialize_monitor_pack(output_dir, _find_repo_root(blueprint.path), payload)
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None

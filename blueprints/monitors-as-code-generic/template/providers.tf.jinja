@@ -1,6 +1,6 @@
 {% if backend == 'datadog' %}
 provider "datadog" {
-  # Credentials are read from DD_API_KEY and DD_APP_KEY in the environment.
+  # validate = false allows terraform plan in CI and portal dry-run without keys.
   validate = false
 }
 {% elif backend == 'prometheus' %}
