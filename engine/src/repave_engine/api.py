@@ -15,6 +15,7 @@ from repave_engine import __version__
 from repave_engine.ansible_catalog import catalog_for_api as ansible_catalog_for_api
 from repave_engine.ansible_catalog import load_ansible_catalog
 from repave_engine.ansible_pattern import (
+    blueprint_supports_collection_sample_patterns,
     blueprint_supports_playbook_patterns,
     blueprint_supports_role_patterns,
 )
@@ -282,7 +283,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         ansible_catalog: dict[str, object] | None = None
         ansible_role_patterns = blueprint_supports_role_patterns(blueprint)
         ansible_playbook_patterns = blueprint_supports_playbook_patterns(blueprint)
-        if ansible_role_patterns or ansible_playbook_patterns:
+        ansible_collection_sample_patterns = blueprint_supports_collection_sample_patterns(
+            blueprint
+        )
+        if ansible_role_patterns or ansible_playbook_patterns or ansible_collection_sample_patterns:
             ansible_cat = load_ansible_catalog(repo_root)
             ansible_catalog = ansible_catalog_for_api(
                 ansible_cat,
@@ -331,6 +335,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 observability_catalog=observability_catalog,
                 ansible_role_patterns=ansible_role_patterns,
                 ansible_playbook_patterns=ansible_playbook_patterns,
+                ansible_collection_sample_patterns=ansible_collection_sample_patterns,
                 ansible_catalog=ansible_catalog,
                 nav_active="catalog",
             ),
@@ -343,11 +348,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         support_windows: str = "false",
     ) -> dict[str, object]:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        supports_catalog = blueprint_supports_role_patterns(
-            blueprint
-        ) or blueprint_supports_playbook_patterns(blueprint)
+        supports_catalog = (
+            blueprint_supports_role_patterns(blueprint)
+            or blueprint_supports_playbook_patterns(blueprint)
+            or blueprint_supports_collection_sample_patterns(blueprint)
+        )
         if not supports_catalog:
-            return {"version": "0", "role_patterns": [], "playbook_patterns": [], "defaults": {}}
+            return {
+                "version": "0",
+                "role_patterns": [],
+                "playbook_patterns": [],
+                "collection_sample_patterns": [],
+                "defaults": {},
+            }
         catalog = load_ansible_catalog(repo_root)
         linux = parse_support_flag(support_linux, default=True)
         windows = parse_support_flag(support_windows, default=False)

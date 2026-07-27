@@ -1,0 +1,26 @@
+---
+- name: Validate {{ role_name }} role is enabled
+  ansible.builtin.assert:
+    that:
+      - {{ role_name }}_role_enabled | default(true)
+    quiet: true
+
+- name: Install package for {{ role_name }}
+  ansible.builtin.package:
+    name: "{{ role_name }}_service_package"
+    state: present
+
+- name: Deploy {{ role_name }} configuration
+  ansible.builtin.template:
+    src: "{{ role_name }}.conf.jinja"
+    dest: "{{ role_name }}_service_config_path"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart {{ role_name }} linux service
+
+- name: Enable and start {{ role_name }} service
+  ansible.builtin.service:
+    name: "{{ role_name }}_service_service_name"
+    state: started
+    enabled: true
