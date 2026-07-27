@@ -348,16 +348,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 blueprint_name=blueprint.name,
             )
         provider_catalog = load_provider_catalog(blueprint.path)
-        if (
-            artifact_family(blueprint.artifact_type) == "terraform"
-            and provider_catalog
-            and blueprint.terraform_layout != "single-resource"
-        ):
-            form_stepper = "terraform"
-        elif observability_field_catalog:
-            form_stepper = "observability"
-        else:
-            form_stepper = "standard"
+        # Golden-path forms use a single scrollable page (no Back/Next stepper).
+        form_stepper = None
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",

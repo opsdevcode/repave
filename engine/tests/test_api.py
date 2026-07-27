@@ -183,6 +183,8 @@ def test_generate_form_submission(
     assert "Generated files" in response.text
     assert "ec2_diff.tf" in response.text
     assert "s3_bucket.tf" in response.text
+    assert 'data-copy-target="#file-fallback-content-0"' in response.text
+    assert 'data-copy-target="#file-explorer-content-0"' in response.text
     assert "publish-plan" in response.text
     assert "repavePortal.saveLastRun" in response.text
 
@@ -349,17 +351,14 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-repave-busy-form" in response.text
     assert "form-actions--sticky" in response.text
     assert "Standard pin drift" in response.text
-    assert "data-form-stepper" in response.text
-    assert 'data-form-stepper-kind="terraform"' in response.text
-    assert "form-stepper" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "form-actions__delivery" in response.text
-    assert "data-stepper-progress" in response.text
+    assert "form-actions__delivery" not in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
-    assert "novalidate" in response.text
 
 
 def test_generate_form_includes_plan_preview_flag(repo_root, output_config) -> None:
@@ -406,19 +405,18 @@ def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sampl
     assert "result-hero" in response.text
 
 
-def test_ansible_role_form_stepper(repo_root, output_config) -> None:
+def test_ansible_role_form_single_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/ansible-role-generic")
     assert response.status_code == 200
     assert 'id="role_pattern_source"' in response.text
-    assert 'data-form-stepper-kind="standard"' in response.text
-    assert 'data-form-stepper-max="1"' in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "form-actions__delivery" in response.text
-    assert "data-stepper-progress" in response.text
+    assert "Apply to modules root" in response.text
+    assert "form-actions__delivery" not in response.text
     assert "governance-card__gates-details" not in response.text
-    assert "novalidate" in response.text
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
         "/generate",
@@ -440,11 +438,12 @@ def test_ansible_role_form_stepper(repo_root, output_config) -> None:
     assert "result-hero" in response.text
 
 
-def test_observability_form_stepper(repo_root, output_config) -> None:
+def test_observability_form_single_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/observability-as-code-generic")
     assert response.status_code == 200
-    assert 'data-form-stepper-kind="observability"' in response.text
+    assert "data-form-stepper" not in response.text
+    assert "Alert routing" in response.text
     assert "Legacy umbrella path" in response.text
     assert 'id="enable_policy_toggle"' in response.text
     assert "governance-drift-details" in response.text or "Standard pin drift" in response.text
@@ -734,8 +733,8 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert response.status_code == 200
     assert 'id="app-service-catalog"' in response.text
     assert "Backstage catalog" in response.text
-    assert 'data-form-stepper-kind="standard"' in response.text
-    assert "form-actions__delivery" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "Plan (validate only)" in response.text
     assert "data-dry-run-run" in response.text
     assert 'id="catalog_lifecycle"' in response.text
     assert 'id="runtime"' in response.text
