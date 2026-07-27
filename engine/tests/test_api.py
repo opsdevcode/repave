@@ -133,6 +133,23 @@ def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> N
     assert ">local<" in response.text
 
 
+def test_local_toolchain_warning_when_terraform_missing(
+    repo_root, output_config, monkeypatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ENV", "local")
+    monkeypatch.setattr(
+        "repave_engine.gate_runners.tool_available",
+        lambda name: name != "terraform",
+    )
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "shell__toolchain-warning" in response.text
+    assert "terraform" in response.text.lower()
+    assert "Docker Compose" in response.text
+
+
 def test_generate_form_submission(
     repo_root,
     output_config,

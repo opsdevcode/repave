@@ -50,6 +50,10 @@
         </div>
       </header>
 
+      {% if local_toolchain_warning %}
+      <p class="shell__toolchain-warning hint" role="status">{{ local_toolchain_warning }}</p>
+      {% endif %}
+
       <div id="last-run-snippet" class="last-run-snippet shell__last-run" hidden></div>
 
       <main id="main-content" class="shell__main{% block main_modifiers %}{% endblock %}">

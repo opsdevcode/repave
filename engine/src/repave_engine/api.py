@@ -137,6 +137,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return {
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
+            "local_toolchain_warning": local_portal_toolchain_warning(),
             "portal_density": portal_config.density,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
@@ -218,6 +219,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     "tools as CI via deploy/local/install-gate-toolchain.sh."
                 )
         return None
+
+    def local_portal_toolchain_warning() -> str | None:
+        if os.environ.get("REPAVE_ENV") != "local":
+            return None
+        from repave_engine.gate_runners import tool_available
+
+        missing = [name for name in ("terraform", "conftest", "tflint") if not tool_available(name)]
+        if not missing:
+            return None
+        tools = ", ".join(missing)
+        return (
+            f"This server is missing gate tools ({tools}). Terraform plan previews will not pass "
+            f"until you install them (see deploy/local/README.md) or run "
+            f"deploy/local Docker Compose. Engine v{__version__}."
+        )
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:

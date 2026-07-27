@@ -166,6 +166,15 @@ pre {
   backdrop-filter: blur(12px);
 }
 
+.shell__toolchain-warning {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-elevated) 90%, transparent);
+}
+
 .shell__bar::after {
   content: "";
   position: absolute;
