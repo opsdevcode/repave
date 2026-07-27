@@ -702,6 +702,45 @@ def test_build_provenance_document_dashboards(repo_root: Path) -> None:
     assert "runbook_url" not in obs
 
 
+def test_load_monitors_as_code_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    assert blueprint.artifact_type == "observability"
+    assert "promtool" in blueprint.gates
+    assert "datadog-monitor" in blueprint.gates
+    assert "grafana-dashboard" not in blueprint.gates
+    assert blueprint.output_repo_name_template.startswith("monitors-")
+
+
+def test_build_provenance_document_monitors(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    from repave_engine.provenance import build_provenance_document
+
+    document = build_provenance_document(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout monitors",
+            "backend": "datadog",
+            "output_mode": "native",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            "observability_focus": "monitors",
+        },
+    )
+    obs = document["spec"]["observability"]
+    assert obs["focus"] == "monitors"
+    assert obs["backend"] == "datadog"
+
+
 def test_load_blueprint_rejects_invalid_schema(tmp_path: Path, repo_root: Path) -> None:
     import jsonschema
 

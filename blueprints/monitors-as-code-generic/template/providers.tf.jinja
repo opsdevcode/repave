@@ -1,0 +1,8 @@
+{% if backend == 'datadog' %}
+provider "datadog" {
+  # Credentials are read from DD_API_KEY and DD_APP_KEY in the environment.
+  validate = false
+}
+{% elif backend == 'prometheus' %}
+# Prometheus Terraform mode uses null_resource payloads; wire them to your ruler in CI/CD.
+{% endif %}

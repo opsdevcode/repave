@@ -157,6 +157,9 @@
     },
     "observability-as-code-generic": {
       "decision_fields": ["configuration_mode", "service_name", "backend"]
+    },
+    "monitors-as-code-generic": {
+      "decision_fields": ["configuration_mode", "service_name", "backend"]
     }
   },
   "dashboard_packs": [

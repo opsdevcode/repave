@@ -73,6 +73,7 @@ Recommended **`policy_pack_source`** / **`policy_profile`** pairs (see also
 | `opa-policy-generic` | `repave-opa-pack` | `opa-focused` |
 | `azure-policy-generic` | `repave-azure-samples` | `azure-community` |
 | `observability-as-code-generic` | `repave-observability-pack` | `observability-default` |
+| `monitors-as-code-generic` | `repave-observability-pack` | `observability-default` |
 
 Teams can override pack source, profile, or (with profile **`custom`**) individual rules in the
 portal **Policy** section or via generate API fields documented in

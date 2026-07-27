@@ -17,3 +17,7 @@
 # observability-as-code-generic:
 #   policy_pack_source: repave-observability-pack
 #   policy_profile: observability-default
+#
+# monitors-as-code-generic:
+#   policy_pack_source: repave-observability-pack
+#   policy_profile: observability-default

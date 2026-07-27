@@ -13,6 +13,7 @@ artifacts with pinned standards and validation gates.
 | `otel` | Collector config YAML | — |
 
 Companion **dashboards-only** repos: `dashboards-as-code-generic`.
+**Monitors-only** repos: `monitors-as-code-generic`.
 
 ## Local try
 

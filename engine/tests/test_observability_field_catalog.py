@@ -64,3 +64,22 @@ def test_recommended_mode_applies_catalog_defaults(repo_root: Path) -> None:
     assert normalized["team"] == "identity"
     assert normalized["description"]
     assert normalized["notification_source"] == "repave-estate-oncall"
+
+
+def test_recommended_mode_monitors_catalog_defaults(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    normalized = validate_inputs(
+        blueprint,
+        {
+            "configuration_mode": "recommended",
+            "service_name": "checkout",
+            "backend": "datadog",
+        },
+        repo_root=repo_root,
+    )
+    assert normalized["organization"] == "platform"
+    assert normalized["team"] == "payments"
+    assert normalized["runbook_url"]

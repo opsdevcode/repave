@@ -190,6 +190,12 @@ def render_blueprint(
             backend=str(payload.get("backend", "prometheus")),
             output_mode=str(payload.get("output_mode", "native")),
         )
+    if blueprint.name == "monitors-as-code-generic":
+        _prune_monitors_backend_outputs(
+            output_dir,
+            backend=str(payload.get("backend", "datadog")),
+            output_mode=str(payload.get("output_mode", "native")),
+        )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None
@@ -304,6 +310,52 @@ def _prune_observability_backend_outputs(
 
     backend_dirs = ("prometheus", "grafana", "datadog", "otel")
     for name in backend_dirs:
+        if name == selected:
+            continue
+        path = output_dir / name
+        if path.is_dir():
+            shutil.rmtree(path)
+
+
+_MONITORS_TF_BY_BACKEND: dict[str, frozenset[str]] = {
+    "datadog": frozenset({"monitors.tf"}),
+    "prometheus": frozenset({"prometheus_rules.tf", "alertmanager.tf"}),
+}
+_MONITORS_TF_ROOT = frozenset({"versions.tf", "variables.tf", "providers.tf"})
+_ALL_MONITORS_TF = (
+    frozenset({"monitors.tf", "prometheus_rules.tf", "alertmanager.tf"}) | _MONITORS_TF_ROOT
+)
+
+
+def _prune_monitors_backend_outputs(
+    output_dir: Path,
+    *,
+    backend: str,
+    output_mode: str,
+) -> None:
+    mode = output_mode.strip().lower()
+    selected = backend.strip().lower()
+
+    if mode == "terraform":
+        for name in ("prometheus", "datadog"):
+            path = output_dir / name
+            if path.is_dir():
+                shutil.rmtree(path)
+        keep = _MONITORS_TF_BY_BACKEND.get(selected, frozenset()) | _MONITORS_TF_ROOT
+        for tf_name in _ALL_MONITORS_TF:
+            if tf_name in keep:
+                continue
+            tf_path = output_dir / tf_name
+            if tf_path.is_file():
+                tf_path.unlink()
+        return
+
+    for tf_name in _ALL_MONITORS_TF:
+        tf_path = output_dir / tf_name
+        if tf_path.is_file():
+            tf_path.unlink()
+
+    for name in ("prometheus", "datadog"):
         if name == selected:
             continue
         path = output_dir / name

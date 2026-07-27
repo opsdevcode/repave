@@ -61,6 +61,7 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'id="catalog-observability"' in response.text
     assert "Observability" in response.text
     assert "dashboards-as-code-generic" in response.text
+    assert "monitors-as-code-generic" in response.text
     assert 'id="catalog-policy"' in response.text
     assert "opa-policy-generic" in response.text
     assert "azure-policy-generic" in response.text
