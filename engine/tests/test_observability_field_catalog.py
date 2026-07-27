@@ -13,7 +13,7 @@ from repave_engine.observability_catalog import (
 
 def test_catalog_has_field_options(repo_root) -> None:
     catalog = load_observability_catalog(repo_root)
-    assert catalog.version == "1.4.0"
+    assert catalog.version == "1.5.0"
     assert catalog_has_field_options(catalog)
     assert len(catalog.services) >= 2
 
@@ -83,3 +83,29 @@ def test_recommended_mode_monitors_catalog_defaults(repo_root: Path) -> None:
     assert normalized["organization"] == "platform"
     assert normalized["team"] == "payments"
     assert normalized["runbook_url"]
+    assert normalized["monitor_pack_source"] == "repave-red-starter"
+
+
+def test_monitor_pack_backend_mismatch_raises(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    with pytest.raises(ValueError, match="not valid for backend"):
+        validate_inputs(
+            blueprint,
+            {
+                "configuration_mode": "custom",
+                "service_name": "checkout",
+                "organization": "platform",
+                "team": "payments",
+                "description": "Checkout monitors",
+                "backend": "prometheus",
+                "output_mode": "native",
+                "monitor_pack_source": "datadog-red-plus-apm-errors",
+                "notification_source": "repave-estate-oncall",
+                "notification_target": "pagerduty-payments",
+                "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            },
+            repo_root=repo_root,
+        )

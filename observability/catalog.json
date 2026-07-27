@@ -1,9 +1,10 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "defaults": {
     "notification_source": "repave-estate-oncall",
     "notification_target": "pagerduty-platform-primary",
     "dashboard_pack_source": "repave-red-starter",
+    "monitor_pack_source": "repave-red-starter",
     "organization": "platform",
     "team": "payments",
     "service_name": "checkout",
@@ -159,7 +160,12 @@
       "decision_fields": ["configuration_mode", "service_name", "backend"]
     },
     "monitors-as-code-generic": {
-      "decision_fields": ["configuration_mode", "service_name", "backend"]
+      "decision_fields": [
+        "configuration_mode",
+        "service_name",
+        "backend",
+        "monitor_pack_source"
+      ]
     }
   },
   "dashboard_packs": [
@@ -209,6 +215,42 @@
         {
           "source": "dashboards/datadog/community/apm-service.json.jinja",
           "dest": "datadog/dashboards/community-apm-service.json"
+        }
+      ]
+    }
+  ],
+  "monitor_packs": [
+    {
+      "id": "repave-red-starter",
+      "label": "Platform baseline only",
+      "backend": "any",
+      "description": "Service down and optional SLO burn rules from the template—no extra community monitors.",
+      "reference_url": "https://github.com/opsdevcode/repave/tree/main/standards/observability/monitors-as-code.md",
+      "files": []
+    },
+    {
+      "id": "prometheus-red-plus-host-cpu",
+      "label": "Baseline + host CPU saturation",
+      "backend": "prometheus",
+      "description": "Platform baseline alerts plus a vendored host CPU warning rule (node_exporter).",
+      "reference_url": "https://github.com/opsdevcode/repave/tree/main/observability/monitors",
+      "files": [
+        {
+          "source": "monitors/prometheus/community/host-cpu.yaml.jinja",
+          "dest": "prometheus/rules/community-host-cpu.yaml"
+        }
+      ]
+    },
+    {
+      "id": "datadog-red-plus-apm-errors",
+      "label": "Baseline + APM error-rate monitor",
+      "backend": "datadog",
+      "description": "Platform baseline monitors plus a Datadog APM-style error-rate layout fork.",
+      "reference_url": "https://docs.datadoghq.com/tracing/services/service_page/",
+      "files": [
+        {
+          "source": "monitors/datadog/community/apm-error-rate.json.jinja",
+          "dest": "datadog/monitors/community-apm-error-rate.json"
         }
       ]
     }

@@ -244,7 +244,7 @@
           </label>
         </fieldset>
         <p class="hint" id="configuration-mode-hint">
-          Choose service{% if observability_dashboard_packs %}, dashboard platform, and pack{% else %} and observability backend{% endif %}; platform defaults fill org, team, runbooks, and routing.
+          Choose service{% if observability_dashboard_packs %}, dashboard platform, and pack{% elif observability_monitor_packs %}, monitor platform, and pack{% else %} and observability backend{% endif %}; platform defaults fill org, team, runbooks, and routing.
         </p>
         <label for="service_name">Service *</label>
         <select class="select" id="service_name" name="service_name" required>
@@ -300,6 +300,30 @@
           <p class="hint" id="dashboard-pack-hint"></p>
           <p class="hint dashboard-pack-includes-label" id="dashboard-pack-includes-label">Included dashboards</p>
           <ul class="dashboard-pack-includes" id="dashboard-pack-includes" aria-labelledby="dashboard-pack-includes-label"></ul>
+        </div>
+        {% elif observability_monitor_packs and observability_catalog %}
+        {% set initial_monitor_backend = observability_defaults.get('backend', 'datadog') %}
+        <div class="obs-decision-fields monitor-pack" id="monitor-pack">
+          <h4 class="form-section__subtitle form-section__subtitle--sm">Monitor pack</h4>
+          <p class="hint">
+            Curated forks from <code>observability/monitors/</code>.
+            Every pack includes the platform baseline (target down + optional SLO) plus bundled community layouts below.
+          </p>
+          <label for="monitor_pack_source">Pack</label>
+          <select class="select" id="monitor_pack_source" name="monitor_pack_source">
+            {% for pack in observability_catalog.monitor_packs %}
+              {% if pack['backend'] == 'any' or pack['backend'] == initial_monitor_backend %}
+            <option
+              value="{{ pack['id'] }}"
+              {% if pack['id'] == observability_defaults.monitor_pack_source %}selected{% endif %}
+              {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+            >{{ pack.get('label') or pack['id'] }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <p class="hint" id="monitor-pack-hint"></p>
+          <p class="hint monitor-pack-includes-label" id="monitor-pack-includes-label">Included monitors</p>
+          <ul class="monitor-pack-includes" id="monitor-pack-includes" aria-labelledby="monitor-pack-includes-label"></ul>
         </div>
         {% endif %}
         </div>
@@ -563,6 +587,7 @@
       {% elif field.name in ("notification_source", "notification_target") %}
       {% elif blueprint.name == "app-service-generic" and field.name in ("system", "catalog_lifecycle") %}
       {% elif field.name == "dashboard_pack_source" %}
+      {% elif field.name == "monitor_pack_source" %}
       {% elif field.name == "backend" %}
       {% elif field.name == "configuration_mode" %}
       {% elif observability_field_catalog and field.name in (
@@ -2041,7 +2066,7 @@
 })();
 </script>
 {% endif %}
-{% if observability_catalog and (observability_notifications or observability_dashboard_packs or observability_field_catalog) %}
+{% if observability_catalog and (observability_notifications or observability_dashboard_packs or observability_monitor_packs or observability_field_catalog) %}
 <script id="observability-catalog-data" type="application/json">{{ observability_catalog | tojson }}</script>
 <script>
 (function () {
@@ -2058,7 +2083,7 @@
   try {
     catalog = JSON.parse(catalogEl.textContent || "{}");
   } catch (_err) {
-    catalog = { notification_sources: [], dashboard_packs: [], defaults: {}, services: [], teams: [] };
+    catalog = { notification_sources: [], dashboard_packs: [], monitor_packs: [], defaults: {}, services: [], teams: [] };
   }
 
   const decisionFields = new Set(catalog.form_preset?.decision_fields || []);
@@ -2145,9 +2170,11 @@
     const serviceSelect = document.getElementById("service_name");
     const backendSelect = document.getElementById("backend");
     const packSelect = document.getElementById("dashboard_pack_source");
+    const monitorPackSelect = document.getElementById("monitor_pack_source");
     if (serviceSelect?.value) merged.service_name = serviceSelect.value;
     if (backendSelect?.value) merged.backend = backendSelect.value;
     if (packSelect?.value) merged.dashboard_pack_source = packSelect.value;
+    if (monitorPackSelect?.value) merged.monitor_pack_source = monitorPackSelect.value;
     const service = serviceById(merged.service_name);
     if (service) {
       merged.organization = service.organization;
@@ -2303,15 +2330,92 @@
     updateDashboardPackIncludes();
   }
 
+  function monitorPacksForBackend(backend) {
+    return (catalog.monitor_packs || []).filter(
+      (pack) => pack.backend === "any" || pack.backend === backend
+    );
+  }
+
+  function starterMonitorPaths(backend) {
+    if (backend === "datadog") {
+      return ["datadog/monitors/service-alerts.json"];
+    }
+    return [
+      "prometheus/rules/service-alerts.yaml",
+      "prometheus/alertmanager/alertmanager.yaml",
+    ];
+  }
+
+  function updateMonitorPackIncludes() {
+    const list = document.getElementById("monitor-pack-includes");
+    const packSelect = document.getElementById("monitor_pack_source");
+    const backendSelect = document.getElementById("backend");
+    if (!list || !packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "datadog";
+    const pack = (catalog.monitor_packs || []).find((item) => item.id === packSelect.value);
+    list.innerHTML = "";
+    for (const path of starterMonitorPaths(backend)) {
+      const li = document.createElement("li");
+      li.textContent = path;
+      list.appendChild(li);
+    }
+    const files = pack?.files || [];
+    for (const file of files) {
+      const li = document.createElement("li");
+      const dest = file.dest || file.source || "";
+      li.textContent = dest;
+      if (file.source) li.title = `Template: observability/${file.source}`;
+      list.appendChild(li);
+    }
+  }
+
+  function syncMonitorPackOptions() {
+    const packSelect = document.getElementById("monitor_pack_source");
+    const backendSelect = document.getElementById("backend");
+    const packHint = document.getElementById("monitor-pack-hint");
+    if (!packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "datadog";
+    const packs = monitorPacksForBackend(backend);
+    const preferred =
+      packSelect.value ||
+      observabilityDefaults.monitor_pack_source ||
+      catalog.defaults?.monitor_pack_source;
+    packSelect.innerHTML = "";
+    for (const pack of packs) {
+      const opt = document.createElement("option");
+      opt.value = pack.id;
+      opt.textContent = pack.label || pack.id;
+      if (pack.description) opt.title = pack.description;
+      packSelect.appendChild(opt);
+    }
+    const chosen =
+      packs.find((pack) => pack.id === preferred)?.id || packs[0]?.id || "";
+    if (chosen) packSelect.value = chosen;
+    const active = packs.find((pack) => pack.id === packSelect.value);
+    if (packHint && active) {
+      const parts = [active.description || ""];
+      if (active.reference_url) {
+        parts.push(`Upstream: ${active.reference_url}`);
+      }
+      if (active.license) {
+        parts.push(`License: ${active.license}`);
+      }
+      packHint.textContent = parts.filter(Boolean).join(" · ");
+    }
+    updateMonitorPackIncludes();
+  }
+
   const backendSelect = document.getElementById("backend");
   if (backendSelect) {
     backendSelect.addEventListener("change", () => {
       syncDashboardPackOptions();
+      syncMonitorPackOptions();
       syncBackendSpecificFields();
       applyEffectiveDefaultsToForm();
     });
   }
   syncDashboardPackOptions();
+  syncMonitorPackOptions();
   syncBackendSpecificFields();
 
   function teamsForOrganization(orgId) {
@@ -2432,6 +2536,10 @@
   const packSelect = document.getElementById("dashboard_pack_source");
   if (packSelect) {
     packSelect.addEventListener("change", applyEffectiveDefaultsToForm);
+  }
+  const monitorPackSelect = document.getElementById("monitor_pack_source");
+  if (monitorPackSelect) {
+    monitorPackSelect.addEventListener("change", applyEffectiveDefaultsToForm);
   }
   updateConfigurationModeUi();
 

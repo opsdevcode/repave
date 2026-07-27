@@ -196,6 +196,9 @@ def render_blueprint(
             backend=str(payload.get("backend", "datadog")),
             output_mode=str(payload.get("output_mode", "native")),
         )
+        from repave_engine.monitor_pack import materialize_monitor_pack
+
+        materialize_monitor_pack(output_dir, _find_repo_root(blueprint.path), payload)
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None

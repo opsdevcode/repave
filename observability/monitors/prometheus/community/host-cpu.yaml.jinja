@@ -1,0 +1,18 @@
+# Host CPU saturation (community pack)
+groups:
+  - name: {{ service_name }}-host-cpu
+    rules:
+      - alert: {{ service_name | replace('-', '_') }}_host_cpu_high
+        expr: |
+          100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle",service="{{ service_name }}"}[5m])) * 100)
+          > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: {{ service_name }}
+          team: {{ team }}
+        annotations:
+          summary: "High CPU on {{ service_name }} hosts"
+          description: >
+            Average CPU utilization exceeded 85% for 10 minutes.
+          runbook_url: "{{ runbook_url }}"

@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: monitors-as-code-generic
-  version: 0.1.0
+  version: 0.2.0
   description: Governed Datadog monitors and Prometheus alerting (native or Terraform).
 spec:
   artifactType: observability
@@ -42,6 +42,11 @@ spec:
         - datadog
         - prometheus
       description: Monitor platform (Datadog JSON or Prometheus rules + Alertmanager stub).
+    - name: monitor_pack_source
+      type: string
+      required: false
+      default: repave-red-starter
+      description: Community monitor pack from observability/catalog.json (see observability/monitors/).
     - name: output_mode
       type: string
       required: false

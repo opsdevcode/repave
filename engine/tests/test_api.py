@@ -427,6 +427,14 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
     advanced_pos = dash_form.text.index('id="obs-advanced-fields"')
     assert backend_pos < advanced_pos
 
+    mon_form = client.get("/blueprints/monitors-as-code-generic")
+    assert mon_form.status_code == 200
+    assert 'id="monitor_pack_source"' in mon_form.text
+    assert 'id="monitor-pack-includes"' in mon_form.text
+    assert "prometheus-red-plus-host-cpu" in mon_form.text
+    mon_obs = client.get("/blueprints/monitors-as-code-generic/observability-catalog").json()
+    assert len(mon_obs.get("monitor_packs", [])) >= 2
+
     form = client.get("/blueprints/azure-policy-generic")
     assert form.status_code == 200
     assert 'value="repave-azure-samples"' in form.text
