@@ -310,7 +310,16 @@
           data-file-pane="{{ loop.index0 }}"
           {% if not loop.first %}hidden{% endif %}
         >
-          <pre class="panel-code">{{ file.content }}</pre>
+          <div class="file-preview__toolbar">
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              data-copy-target="#file-explorer-content-{{ loop.index0 }}"
+            >
+              Copy
+            </button>
+          </div>
+          <pre class="panel-code" id="file-explorer-content-{{ loop.index0 }}">{{ file.content }}</pre>
         </div>
         {% endfor %}
       </div>
@@ -324,7 +333,18 @@
           <span class="badge badge--skip">truncated</span>
           {% endif %}
         </summary>
-        <pre class="panel-code">{{ file.content }}</pre>
+        <div class="file-preview__body">
+          <div class="file-preview__toolbar">
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              data-copy-target="#file-fallback-content-{{ loop.index0 }}"
+            >
+              Copy
+            </button>
+          </div>
+          <pre class="panel-code" id="file-fallback-content-{{ loop.index0 }}">{{ file.content }}</pre>
+        </div>
       </details>
       {% endfor %}
     </div>
