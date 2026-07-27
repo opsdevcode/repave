@@ -2,15 +2,50 @@
 
 Run the full generate → gates → preview loop without Kubernetes.
 
+**Gate tools (Terraform, Checkov, Conftest, tflint, Helm, Ansible linters) ship in the
+[Docker Compose](#docker-compose-recommended) image.** You do not install them on the host.
+That is the supported path on **macOS, Linux, and Windows** (Docker Desktop).
+
+## Docker Compose (recommended)
+
+From the repo root:
+
+```bash
+make compose-up
+# or: cd deploy/local && docker compose up --build
+```
+
+Open **http://localhost:8088** (use this URL — not `127.0.0.1:8088` while debugging port
+conflicts with native serve on macOS).
+
+Compose mounts a `repave-modules` volume at `/modules` and sets `REPAVE_MODULES_ROOT`
+so generated modules land outside the repave repo.
+
+### Windows
+
+1. Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
+2. Clone the repo (Git for Windows or WSL is fine).
+3. In PowerShell or Git Bash from the repo root:
+
+   ```powershell
+   cd deploy\local
+   docker compose up --build
+   ```
+
+4. Open **http://localhost:8088** in the browser.
+
+No WSL toolchain install is required for portal dry-run — gates run **inside** the Linux
+container. Use WSL or native Linux only if you are hacking on the engine with `make serve`
+without Docker.
+
 ## Five-minute demo (portal)
 
 Use this script when showing repave to someone new. Everything is dry-run unless
-noted. For the **full six-act live demo** (catalog → Terraform → upgrade → OPA →
+noted. Start with **Docker Compose** above so gates run in-container. For the **full six-act live demo** (catalog → Terraform → upgrade → OPA →
 Backstage), see **[Seven-minute demo (acts 1–6)](seven-minute-demo.md)**. For live
 calls and stakeholder-specific talking points, see [Sales demo runbook](sales-demo.md).
 
-1. **Start:** `make serve` or [Docker Compose](#docker-compose-recommended) →
-   http://localhost:8088
+1. **Start:** [Docker Compose](#docker-compose-recommended) → http://localhost:8088
 2. **Plan:** **terraform-module-generic** → module `demo`, description, AWS → **Next** →
    scope **ec2 + s3** → **Dry run preview** (sticky footer; or **Next** → **Plan (validate only)** →
    **Scaffold repository**). Confirm **Plan only**, gate dashboard, and **Generated files**.
@@ -25,24 +60,16 @@ calls and stakeholder-specific talking points, see [Sales demo runbook](sales-de
 
 Maintainers: [Demo verification checklist](demo-verification.md) before releases or screenshot updates.
 
-## Docker Compose (recommended)
+## Native `make serve` (engine dev only)
 
-```bash
-cd deploy/local
-docker compose up --build
-# open http://localhost:8088
-```
-
-Compose mounts a `repave-modules` volume at `/modules` and sets `REPAVE_MODULES_ROOT`
-so generated modules land outside the repave repo.
-
-## Native `make serve`
+Optional: edit Python/templates without rebuilding the image. **Does not guarantee the full
+gate toolchain on your laptop** — use Compose for Plan/dry-run demos.
 
 From the repo root (requires [uv](https://docs.astral.sh/uv/) in `engine/`):
 
 ```bash
 make serve
-# http://127.0.0.1:8088
+# http://127.0.0.1:8089  (8089 avoids clashing with Compose on 8088)
 ```
 
 `make serve` sets `REPAVE_GITHUB_ORG` (default `opsdevcode`) and

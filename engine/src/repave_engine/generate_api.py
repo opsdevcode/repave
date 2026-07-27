@@ -36,6 +36,7 @@ def run_generate_api(
         values,
         output_config=output_config,
         dry_run=dry_run,
+        require_run=dry_run,
         github_token=github_token,
         repo_root=repo_root,
     )

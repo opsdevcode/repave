@@ -7,7 +7,35 @@ cd deploy/local
 docker compose up --build
 ```
 
-Open http://localhost:8088
+Open **http://localhost:8088**
+
+Gate CLIs (Terraform, tflint, Checkov, Conftest, Helm, Ansible lint) are **installed in
+this image** during `docker compose build` via [`install-gate-toolchain.sh`](install-gate-toolchain.sh).
+You do **not** install them on macOS, Linux, or **Windows** — only [Docker Desktop](https://docs.docker.com/desktop/) (or another Docker engine) on the host.
+
+**Do not run `make serve` at the same time on macOS.** Compose binds `0.0.0.0:8088` while
+`make serve` uses **http://127.0.0.1:8089** so the two do not fight for the same port.
+If you open **http://127.0.0.1:8088** while Compose is up, you may hit a different process
+than **http://localhost:8088** and see macOS staging paths (`/var/folders/...`) with missing
+gate tools. For demos, use **http://localhost:8088** only and stop native `make serve`.
+
+### Windows laptops
+
+From PowerShell or Git Bash (repo cloned anywhere Docker can access):
+
+```powershell
+cd deploy\local
+docker compose up --build
+```
+
+Then **http://localhost:8088**. Verify tools inside the container:
+
+```powershell
+docker compose exec repave sh -c "terraform version; checkov --version"
+curl http://localhost:8088/readyz
+```
+
+Expect `"runtime": { "in_container": true, ... }` and `"gate_tools"` all `true`.
 
 The engine is installed **editable** from `/app/engine`, and compose bind-mounts
 the repo at `/app`. The service runs `repave serve --reload`, so Python changes
@@ -43,12 +71,14 @@ The container installs the **gate toolchain** via [`install-gate-toolchain.sh`](
 | **ansible-lint**, **yamllint**, **ansible-playbook** | Ansible role / playbook | `molecule` not in image (optional gate) |
 | **helm** 3.14.4 | Helm chart | lint + template gates |
 
-Dry-run preview **fails** (does not skip) when a blueprint gate’s CLI is missing. Use compose for demos; on the host install the same tools or expect FAIL rows for missing binaries.
+Dry-run preview **fails** (does not skip) when a blueprint gate’s CLI is missing **inside the
+process serving the portal**. In Compose, all tools below are in the image; on the host,
+use Compose instead of installing tools locally.
 
-**Native `make serve` on macOS** often has Terraform/tflint but not **checkov**, **conftest**, or **helm** — install with `pip install "checkov>=3.2.0"`, [Conftest](https://www.conftest.dev/install/) 0.56.0, and either `brew install helm` or from repo root:
+**Native `make serve` on macOS** often has Terraform/tflint but not **checkov**, **conftest**, or **helm** — use Compose on Windows/macOS/Linux rather than:
 
 ```bash
-bash scripts/install-gate-tools-macos.sh
+bash scripts/install-gate-tools-macos.sh   # optional; prefer Docker Compose
 ```
 
 `make test` prepends `.gate-tools/bin` to `PATH` when present. Helm chart conformance tests need **helm** on the host (or run tests inside compose).

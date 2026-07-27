@@ -64,10 +64,21 @@
 </section>
 {% endif %}
 
+{% if portal_runtime and not portal_runtime.in_container and result.dry_run and '/var/folders/' in (result.render.output_dir | string) %}
+<section class="alert alert--warn stack-gap" role="status">
+  <p class="hint">
+    This plan ran on the <strong>host</strong> <code>make serve</code> process (macOS temp staging above),
+    not the Docker Compose portal. Compose with the full gate toolchain is at
+    <a href="http://localhost:8088/">http://localhost:8088</a>.
+    Stop native serve on port 8089 if you only want Docker on 8088.
+  </p>
+</section>
+{% endif %}
+
 {% if result_portal %}
 <section class="card result-lineage stack-gap" aria-labelledby="lineage-heading">
   <div class="card__header">
-    <h2 id="lineage-heading">Lineage &amp; receipt</h2>
+    <h2 id="lineage-heading">Lineage</h2>
     <p class="muted card__subtitle">Platform template, domain standard, and controls baseline recorded in <code>{{ result_portal.provenance_filename }}</code>.</p>
   </div>
   <div class="card__body">
@@ -103,12 +114,6 @@
       </ul>
       {% endif %}
     </div>
-    {% endif %}
-    {% if result_portal.repave_yaml_excerpt %}
-    <details class="motion-panel result-lineage__provenance" open>
-      <summary><code>{{ result_portal.provenance_filename }}</code> preview</summary>
-      <pre class="panel-code">{{ result_portal.repave_yaml_excerpt }}</pre>
-    </details>
     {% endif %}
   </div>
 </section>

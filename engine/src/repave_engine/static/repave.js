@@ -238,6 +238,7 @@
     var dryRunBtn = form.querySelector("[data-dry-run-run]");
     var drySubmitBtn = form.querySelector("[data-dry-run-submit]");
     var dryRunForceField = form.querySelector("[data-dry-run-force]");
+    var progressEl = form.querySelector("[data-stepper-progress]");
     var current = 0;
     var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
     if (Number.isNaN(maxStep)) {
@@ -311,9 +312,15 @@
       );
     }
 
+    var planPreviewFlag = form.querySelector("[data-plan-preview-flag]");
+
     function setPlanSubmitMode(planMode) {
       if (dryRunForceField) {
         dryRunForceField.disabled = !planMode;
+      }
+      if (planPreviewFlag) {
+        planPreviewFlag.disabled = !planMode;
+        planPreviewFlag.value = planMode ? "1" : "";
       }
       form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
         radio.disabled = planMode;
@@ -397,6 +404,17 @@
       var stickyActions = form.querySelector(".form-actions--sticky");
       if (stickyActions) {
         stickyActions.classList.toggle("form-actions--stepper-final", current === maxStep);
+      }
+      if (progressEl) {
+        var activeStep = form.querySelector('.form-stepper__step[data-stepper-index="' + current + '"]');
+        var labelNode = activeStep ? activeStep.querySelector(".form-stepper__label") : null;
+        var label = labelNode ? labelNode.textContent.trim() : "";
+        progressEl.textContent =
+          "Step " +
+          (current + 1) +
+          " of " +
+          (maxStep + 1) +
+          (label ? " · " + label : "");
       }
       form.dispatchEvent(
         new CustomEvent("repave:stepper-change", {
@@ -797,6 +815,7 @@
       var dryRunBtn = form.querySelector("[data-dry-run-run]");
       var drySubmit = form.querySelector("[data-dry-run-submit]");
       var dryForce = form.querySelector("[data-dry-run-force]");
+      var planPreviewFlag = form.querySelector("[data-plan-preview-flag]");
       if (!dryRunBtn || !drySubmit) {
         return;
       }
@@ -819,6 +838,10 @@
         if (dryForce) {
           dryForce.disabled = false;
         }
+        if (planPreviewFlag) {
+          planPreviewFlag.disabled = false;
+          planPreviewFlag.value = "1";
+        }
         form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
           radio.disabled = true;
         });
@@ -828,6 +851,40 @@
           drySubmit.click();
         }
       });
+
+      form.addEventListener(
+        "submit",
+        function (event) {
+          var submitter = event.submitter;
+          var viaDryRunControl =
+            submitter &&
+            (submitter === drySubmit || submitter.getAttribute("data-dry-run-submit") !== null);
+          if (viaDryRunControl) {
+            if (dryForce) {
+              dryForce.disabled = false;
+            }
+            if (planPreviewFlag) {
+              planPreviewFlag.disabled = false;
+              planPreviewFlag.value = "1";
+            }
+            form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+              radio.disabled = true;
+            });
+          } else {
+            if (dryForce) {
+              dryForce.disabled = true;
+            }
+            if (planPreviewFlag) {
+              planPreviewFlag.disabled = true;
+              planPreviewFlag.value = "";
+            }
+            form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+              radio.disabled = false;
+            });
+          }
+        },
+        true
+      );
     });
   }
 

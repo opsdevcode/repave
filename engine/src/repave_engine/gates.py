@@ -25,6 +25,7 @@ from repave_engine.gate_runners import (
     run_terraform_validate,
     run_tflint,
 )
+from repave_engine.gate_toolchain import ensure_gate_path
 from repave_engine.settings import GateOverrides
 
 __all__ = [
@@ -50,12 +51,22 @@ _gate_terraform_fmt = run_terraform_fmt
 _gate_checkov = run_checkov
 _gate_secrets = run_secrets
 
-# When require_run is set (generate dry-run preview), these skip reasons become failures.
-_REQUIRE_RUN_FAIL_HINTS = (
-    "not installed",
-    "not available",
-    "not configured",
+# require_run (dry-run preview): benign skips stay skipped; others become failures.
+_DRY_RUN_SKIP_ALLOWED_FRAGMENTS = (
+    "no terraform tests",
+    "not applicable",
+    "policy pack not enabled",
     "no opa policies selected",
+    "opa policy pack not configured",
+    "no molecule scenario",
+    "no chart.yaml found",
+    "no dockerfile found",
+    "no pyproject.toml found",
+    "no go.mod found",
+    "no python tests",
+    "no go tests",
+    "provenance not configured",
+    "no helm chart found",
 )
 
 # Gates the local Docker / CI toolchain installs; optional observability/app gates may still skip.
@@ -80,13 +91,17 @@ _STRICT_DRY_RUN_GATES = frozenset(
 )
 
 
+def _dry_run_skip_allowed(message: str) -> bool:
+    lowered = message.lower()
+    return any(fragment in lowered for fragment in _DRY_RUN_SKIP_ALLOWED_FRAGMENTS)
+
+
 def _apply_require_run_policy(context: GateContext, result: GateResult) -> GateResult:
     if not context.require_run or not result.skipped:
         return result
     if result.name not in _STRICT_DRY_RUN_GATES:
         return result
-    lowered = result.message.lower()
-    if not any(hint in lowered for hint in _REQUIRE_RUN_FAIL_HINTS):
+    if _dry_run_skip_allowed(result.message):
         return result
     detail = result.message.replace("; skipped", "").strip()
     if not detail.endswith("."):
@@ -110,6 +125,7 @@ def run_gates(
     gate_overrides: GateOverrides | None = None,
     require_run: bool = False,
 ) -> list[GateResult]:
+    ensure_gate_path()
     ensure_gates_loaded()
     context = GateContext(
         output_dir=output_dir,

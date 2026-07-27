@@ -10,6 +10,7 @@ services:
       REPAVE_GITHUB_ORG: opsdevcode
       REPAVE_MODULES_ROOT: /modules
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      PATH: /usr/local/bin:/usr/local/sbin:/usr/bin:/bin
     volumes:
       - ../..:/app
       - repave-modules:/modules

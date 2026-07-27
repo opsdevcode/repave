@@ -249,6 +249,7 @@ Further craft (illustration, stepper) is optional.
 | **Dark mode** | Night-ops is default; light theme / toggle only if needed later |
 | **Motion** | Expand/collapse on scope and gate rows; honor `prefers-reduced-motion` |
 | **Gate table** | Sticky header, scrollable body, expandable long skip/fail messages; toolchain alert on result |
+| **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
 | **White-label** | Deferred to **v2** — optional logo URL and accent override (not v1.18 scope) |

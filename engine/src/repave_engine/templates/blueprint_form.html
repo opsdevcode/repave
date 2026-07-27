@@ -49,7 +49,6 @@
         <dt>Lineage</dt>
         <dd class="governance-card__value governance-card__value--inline">
           Engine <code>{{ app_version }}</code>
-          <span class="muted">· receipt in <code>repave.yaml</code></span>
         </dd>
       </div>
       {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
@@ -92,9 +91,20 @@
       <div>
         <dt>Quality gates</dt>
         <dd class="governance-card__gates">
+          {% if blueprint.gates|length > 8 %}
+          <details class="governance-card__gates-details">
+            <summary>{{ blueprint.gates|length }} gates on scaffold</summary>
+            <div class="governance-card__gates-grid">
+              {% for gate in blueprint.gates %}
+              <span class="chip">{{ gate }}</span>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
           {% for gate in blueprint.gates %}
           <span class="chip">{{ gate }}</span>
           {% endfor %}
+          {% endif %}
         </dd>
       </div>
       <div class="governance-card__section governance-card__section--drift">
@@ -166,6 +176,7 @@
   >
     <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
     <input type="hidden" name="dry_run" value="true" data-dry-run-force disabled />
+    <input type="hidden" name="plan_preview" value="" data-plan-preview-flag disabled />
     {% if blueprint.terraform_layout != "single-resource" %}
     <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
     {% endif %}
@@ -202,6 +213,7 @@
         </li>
         {% endif %}
       </ol>
+      <p class="form-stepper__progress muted" data-stepper-progress aria-live="polite"></p>
       <div class="form-stepper__actions">
         <button type="button" class="btn btn--ghost btn--sm" data-stepper-back hidden>Back</button>
         <button type="button" class="btn btn--secondary btn--sm" data-stepper-next>Next</button>
@@ -911,12 +923,16 @@
             Apply to modules root
           </label>
         </div>
-        <p class="hint form-actions__delivery-hint">
+        <p class="hint form-actions__delivery-hint form-actions__delivery-hint--full">
           <strong>Dry run preview</strong> runs every blueprint gate (missing tools fail, not skip) and shows generated files without writing to the modules root. Use <code>deploy/local</code> Docker compose for the full toolchain.
           <strong>Scaffold repository</strong> uses the delivery mode above on the last step.
         </p>
+        <p class="hint form-actions__delivery-hint form-actions__delivery-hint--short">
+          <strong>Plan</strong> validates in memory; <strong>Apply</strong> writes under
+          <code>REPAVE_MODULES_ROOT</code>.
+        </p>
       </div>
-      <div class="form-actions__buttons">
+      <div class="form-actions__buttons form-actions__buttons--stack">
         <button
           type="submit"
           class="dry-run-submit"
@@ -932,7 +948,7 @@
         <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
       </div>
       {% else %}
-      <div class="form-actions__buttons">
+      <div class="form-actions__buttons form-actions__buttons--stack">
         <button
           type="submit"
           class="dry-run-submit"
