@@ -44,6 +44,25 @@ def test_azure_policy_fails_on_invalid_definition(tmp_path: Path) -> None:
     assert "missing required fields" in result.message
 
 
+def test_azure_policy_fails_on_invalid_policy_rule(tmp_path: Path) -> None:
+    bp = _azure_policy_blueprint(tmp_path)
+    definitions = tmp_path / "policy" / "definitions"
+    definitions.mkdir(parents=True)
+    sample = {
+        "properties": {
+            "displayName": "Test",
+            "policyType": "Custom",
+            "mode": "All",
+            "description": "Test policy",
+            "policyRule": {"if": {"field": "type", "equals": "Microsoft.Storage/storageAccounts"}},
+        }
+    }
+    (definitions / "bad.json").write_text(json.dumps(sample), encoding="utf-8")
+    result = run_azure_policy(GateContext(output_dir=tmp_path, blueprint=bp))
+    assert not result.passed
+    assert "then" in result.message
+
+
 def test_azure_policy_passes_valid_definition(tmp_path: Path) -> None:
     bp = _azure_policy_blueprint(tmp_path)
     definitions = tmp_path / "policy" / "definitions"

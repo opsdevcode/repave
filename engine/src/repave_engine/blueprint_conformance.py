@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -176,6 +177,9 @@ def write_manifest_snapshot(blueprint_dir: Path, output_dir: Path) -> None:
     path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+_CONFORMANCE_GENERATED_AT = "1970-01-01T00:00:00+00:00"
+
+
 def run_blueprint_conformance(
     blueprint_dir: Path,
     *,
@@ -191,14 +195,24 @@ def run_blueprint_conformance(
     blueprint = load_blueprint(blueprint_dir, repo_root)
     values = {k: str(v) for k, v in spec.inputs.items()}
 
-    result = generate_from_blueprint(
-        blueprint,
-        values,
-        output_config=output_config,
-        dry_run=True,
-        staging_root=staging_root / blueprint.name,
-        repo_root=repo_root,
-    )
+    prev_generated_at = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT")
+    if spec.snapshot:
+        os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = _CONFORMANCE_GENERATED_AT
+    try:
+        result = generate_from_blueprint(
+            blueprint,
+            values,
+            output_config=output_config,
+            dry_run=True,
+            staging_root=staging_root / blueprint.name,
+            repo_root=repo_root,
+        )
+    finally:
+        if spec.snapshot:
+            if prev_generated_at is None:
+                os.environ.pop("REPAVE_PROVENANCE_GENERATED_AT", None)
+            else:
+                os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = prev_generated_at
     output_dir = result.render.output_dir
 
     gate_failures = tuple(

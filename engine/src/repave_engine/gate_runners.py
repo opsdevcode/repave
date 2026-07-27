@@ -1216,6 +1216,7 @@ _AZURE_POLICY_REQUIRED_PROPERTIES = frozenset(
     {"displayName", "policyType", "mode", "description", "policyRule"}
 )
 _AZURE_POLICY_MODES = frozenset({"All", "Indexed", "Microsoft.Kubernetes.Data"})
+_AZURE_POLICY_TYPES = frozenset({"Custom", "Static"})
 
 
 def _validate_azure_policy_definition(path: Path) -> str | None:
@@ -1235,8 +1236,27 @@ def _validate_azure_policy_definition(path: Path) -> str | None:
     mode = properties.get("mode")
     if mode not in _AZURE_POLICY_MODES:
         return f"{path.name}: invalid mode {mode!r}"
-    if not isinstance(properties.get("policyRule"), dict):
+    policy_type = properties.get("policyType")
+    if policy_type not in _AZURE_POLICY_TYPES:
+        return f"{path.name}: policyType must be Custom or Static, got {policy_type!r}"
+    for label, key in (("displayName", "displayName"), ("description", "description")):
+        value = properties.get(key)
+        if not isinstance(value, str) or not value.strip():
+            return f"{path.name}: {label} must be a non-empty string"
+    parameters = properties.get("parameters")
+    if parameters is not None and not isinstance(parameters, dict):
+        return f"{path.name}: parameters must be an object when present"
+    metadata = properties.get("metadata")
+    if metadata is not None and not isinstance(metadata, dict):
+        return f"{path.name}: metadata must be an object when present"
+    policy_rule = properties.get("policyRule")
+    if not isinstance(policy_rule, dict):
         return f"{path.name}: policyRule must be an object"
+    if "if" not in policy_rule or "then" not in policy_rule:
+        return f"{path.name}: policyRule must include if and then"
+    then = policy_rule.get("then")
+    if not isinstance(then, dict) or "effect" not in then:
+        return f"{path.name}: policyRule.then must include effect"
     return None
 
 
