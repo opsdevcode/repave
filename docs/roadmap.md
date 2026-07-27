@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.62.1  
+**Current release:** v1.62.2  
 **In progress:** —  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
@@ -45,7 +45,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.62.1  today     conformance harness + Backstage catalog; merge queue removed
+v1.62.2  today     conformance harness + Backstage catalog; merge queue removed
   │
   ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
   ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
