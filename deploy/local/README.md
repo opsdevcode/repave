@@ -45,7 +45,13 @@ The container installs the **gate toolchain** via [`install-gate-toolchain.sh`](
 
 Dry-run preview **fails** (does not skip) when a blueprint gate’s CLI is missing. Use compose for demos; on the host install the same tools or expect FAIL rows for missing binaries.
 
-**Native `make serve` on macOS** often has Terraform/tflint but not **checkov** or **conftest** — install with `pip install "checkov>=3.2.0"` and [Conftest](https://www.conftest.dev/install/) 0.56.0, or use Docker.
+**Native `make serve` on macOS** often has Terraform/tflint but not **checkov**, **conftest**, or **helm** — install with `pip install "checkov>=3.2.0"`, [Conftest](https://www.conftest.dev/install/) 0.56.0, and either `brew install helm` or from repo root:
+
+```bash
+bash scripts/install-gate-tools-macos.sh
+```
+
+`make test` prepends `.gate-tools/bin` to `PATH` when present. Helm chart conformance tests need **helm** on the host (or run tests inside compose).
 
 Not shipped in the local image (gates may still **skip** when N/A): **promtool**, **amtool**, **hadolint**, **go**, **molecule**, **ruff** / **pytest** (app-service / observability extras).
 Generated modules are written to the `repave-modules`

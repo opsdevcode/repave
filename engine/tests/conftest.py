@@ -8,6 +8,13 @@ from repave_engine.blueprint import Blueprint, load_blueprint
 from repave_engine.settings import OutputConfig
 
 
+@pytest.fixture(autouse=True)
+def _clear_repave_output_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Keep tests independent of developer shell REPAVE_* exports (see settings precedence)."""
+    monkeypatch.delenv("REPAVE_GITHUB_ORG", raising=False)
+    monkeypatch.delenv("REPAVE_MODULES_ROOT", raising=False)
+
+
 @pytest.fixture
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[2]

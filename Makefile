@@ -22,7 +22,7 @@ policy-standards-watch:
 
 
 test:
-	cd engine && uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
+	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
 
 blueprint-conformance-update:
 	cd engine && uv run python -c "from pathlib import Path; from repave_engine.blueprint_conformance import update_all_manifests; root=Path('..').resolve(); staging=root/'.conformance-staging'; staging.mkdir(exist_ok=True); mods=root/'.conformance-modules'; mods.mkdir(exist_ok=True); names=update_all_manifests(root, modules_root=mods, staging_root=staging); print('Updated manifests:', ', '.join(names) or '(none with snapshot: true)')"
