@@ -4,7 +4,7 @@ Use before a release, a customer demo, or after portal/policy UX changes. Pair w
 the [Five-minute demo](quickstart.md#five-minute-demo-portal) steps and the
 [Sales demo runbook](sales-demo.md).
 
-**Last verified on `main`:** 2026-07-26 (engine v1.55.0, terraform-module-generic v0.12.0).
+**Last verified on `main`:** 2026-07-27 (engine v1.62.3, terraform-module-generic v0.12.0).
 
 ---
 
@@ -12,7 +12,7 @@ the [Five-minute demo](quickstart.md#five-minute-demo-portal) steps and the
 
 1. Start: `make serve` or [Docker Compose](../deploy/local/README.md) → http://localhost:8088
 2. **Home:** catalog loads; search finds `terraform-module-generic`.
-3. **Generate (dry-run):** module `demo`, AWS, **ec2 + s3** → confirm **Lineage & receipt**, policy rules (catalog **titles**), gate dashboard.
+3. **Generate (dry-run):** module `demo`, AWS, **ec2 + s3** → **Dry run preview** → confirm **Lineage & receipt**, policy rules (catalog **titles**), gate dashboard, **Generated files**.
 4. **Policy (optional):** on Terraform form, confirm profile **Estate default** and pack **repave-default** without changing rules.
 5. **OPA block (optional):** `opa-policy-generic`, plan demo `destructive_delete` → **opa** fails with publish blocked ([examples/policy](../examples/policy/README.md)).
 6. **Update repo:** **Use terraform-minimal** → **Preview upgrade** returns a plan.

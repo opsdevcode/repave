@@ -14,9 +14,10 @@ Package tags follow conventional commits on `main`. The v1.18 **portal UX theme*
 is complete as of v1.25.0 (see [Shipped — v1.18 portal](#v118--portal-ux-theme)).
 
 **Doc version pointers:** `README.md`, `docs/roadmap.md` (**Current release** and
-path `today` line), and `docs/portal-design.md` are updated automatically on each
-engine release via `scripts/sync_doc_versions.py` in the Release workflow. Run
-`make sync-doc-versions` locally after bumping `engine` `__version__`.
+path `today` line), `docs/portal-design.md`, `docs/demo-verification.md`, and
+`docs/operator-ga.md` are updated automatically on each engine release via
+`scripts/sync_doc_versions.py` in the Release workflow. Run `make sync-doc-versions`
+locally after bumping `engine` `__version__`.
 
 ---
 
@@ -45,7 +46,7 @@ repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
 ```text
-v1.62.3  today     conformance harness + Backstage catalog; merge queue removed
+v1.62.3  today     conformance harness + Backstage catalog; portal dry-run preview UX
   │
   ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
   ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
@@ -260,6 +261,10 @@ tags **v1.21.0–v1.25.0**). Detail: [`portal-design.md`](portal-design.md).
   file tree + preview, collapsible publish plan
 - **Polish:** visual v2 home hero; browser **last-run** snippet (`repave.js` +
   sessionStorage); fleet-wide history deferred to v1.30 audit
+- **Follow-on (v1.25–v1.62):** platform engineering copy (Scaffold repository, Plan vs
+  Apply); multi-step forms with sticky **Dry run preview** from any step; generation
+  results dashboard; update-repo and standards pin diff; portal UI contract tests in
+  `engine/tests/test_api.py` (see `.cursor/rules/portal-ui-behavior.mdc`)
 
 **Done when:** Non-expert users complete common Terraform/Ansible paths without CLI
 fallback; three routes share one visual system (acceptance in portal-design).

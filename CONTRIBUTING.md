@@ -126,8 +126,9 @@ history and `CHANGELOG.md` diverge (run `make changelog` on `main` locally to
 preview).
 
 After each semver bump, Release runs `scripts/sync_doc_versions.py` so
-`README.md`, `docs/roadmap.md` (**Current release** and path `today` line), and
-`docs/portal-design.md` match the new engine tag. Locally: `make sync-doc-versions`
+`README.md`, `docs/roadmap.md` (**Current release** and path `today` line),
+`docs/portal-design.md`, `docs/demo-verification.md`, and `docs/operator-ga.md`
+match the new engine tag. Locally: `make sync-doc-versions`
 (or `python3 scripts/sync_doc_versions.py --check` to verify).
 
 ## Commit messages (Conventional Commits)
