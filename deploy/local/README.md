@@ -24,11 +24,11 @@ Dockerfile changes. For template/CSS/JS-only work: `docker compose restart repav
 
 On branch with the latest portal stepper fixes, after `docker compose up --build`:
 
-1. Open **terraform-module-generic** — page source should include `Run plan` and
-   `data-form-stepper` (if you only see a hidden **Scaffold** button, the browser
-   or container is still on old static JS — hard refresh or restart the service).
+1. Open **terraform-module-generic** — page source should include `Dry run preview` and
+   `data-dry-run-run` (and `data-form-stepper`). If you only see a hidden **Scaffold** button,
+   the browser or container is still on old static JS — hard refresh or restart the service).
 2. **Identity:** module name + description → **Next**.
-3. **Services:** pick at least one service (e.g. **Compute + storage**) → **Run plan**
+3. **Services:** pick at least one service (e.g. **Compute + storage**) → **Dry run preview**
    (or **Next** to Delivery, leave **Plan (validate only)**, **Scaffold repository**).
 4. Result should show **Plan only** and **Generated files**.
 

@@ -35,7 +35,7 @@ Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) ·
 ## Portal (primary UX)
 
 Night-ops web UI at **http://localhost:8088** (`make serve` or Docker Compose): catalog by
-artifact family, governance sidebar, stepper forms, **Run plan** on early steps, gate dashboard
+artifact family, governance sidebar, stepper forms, **Dry run preview** on early steps, gate dashboard
 on results, upgrade preview for existing repos. Screenshots below are captured from a running
 portal (not mockups).
 
@@ -122,7 +122,7 @@ cd deploy/local && docker compose up --build
 # or from repo root: make serve  →  http://127.0.0.1:8088
 ```
 
-Pick **terraform-module-generic**, use **Run plan** (or leave plan-only on Delivery), submit —
+Pick **terraform-module-generic**, use **Dry run preview** (or leave plan-only on Delivery), submit —
 you get gate results and a file preview without writing to disk.
 
 Full steps (CLI, publish, operator): **[docs/quickstart.md](docs/quickstart.md)**

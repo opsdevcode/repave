@@ -18,7 +18,7 @@ Copy and layout changes **must not break** core portal flows. Treat templates,
 1. **Plan (dry-run)** — POST `/generate` with `dry_run=true` returns **200** and
    the result page shows gate summary and **Generated files** (file tree / preview).
 2. **Stepper forms** — When `data-form-stepper` is present:
-   - **Run plan** (`data-stepper-run-plan`) must work from early steps without
+   - **Dry run preview** (`data-dry-run-run`) must work from early steps without
      requiring the user to reach Delivery first.
    - **Scaffold repository** submit on the Delivery step must respect plan vs apply
      radios.
@@ -33,7 +33,7 @@ Copy and layout changes **must not break** core portal flows. Treat templates,
 2. Extend `engine/tests/test_api.py` when behavior changes (form markers, POST
    dry-run smoke for at least **terraform-module-generic** and one **standard**
    stepper blueprint such as `ansible-role-generic`).
-3. Manually spot-check in browser: open blueprint → **Run plan** → result shows
+3. Manually spot-check in browser: open blueprint → **Dry run preview** → result shows
    files (when time permits; tests are the gate).
 
 ## Consistency
@@ -41,12 +41,12 @@ Copy and layout changes **must not break** core portal flows. Treat templates,
 - Keep labels aligned with `portal-ux-copy.mdc` and `docs/portal-design.md`.
 - If renaming actions (Generate → Scaffold, Dry-run → Plan), update **templates,
   JS user strings, CSS hints, and tests** in the same PR — not copy-only follow-ups.
-- Do not hide the only submit control without providing an equivalent **Run plan**
+- Do not hide the only submit control without providing an equivalent **Dry run preview**
   path that hits the same `/generate` contract.
 
 ## Review checklist
 
 - [ ] Dry-run POST still returns rendered files in HTML result.
-- [ ] Stepper: `Run plan` present where submit is step-gated; `novalidate` + validation wired.
+- [ ] Stepper: **Dry run preview** present where submit is step-gated; `novalidate` + validation wired.
 - [ ] Tests updated for new strings or form attributes.
 - [ ] No orphaned `terraform_stepper` / dead selectors in JS.
