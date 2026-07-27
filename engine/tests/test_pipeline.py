@@ -870,6 +870,78 @@ def test_generate_monitors_prometheus_pack_materializes_community_rules(
     assert "host_cpu_high" in community.read_text(encoding="utf-8")
 
 
+def test_generate_monitors_terraform_datadog_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout TF monitors",
+            "backend": "datadog",
+            "output_mode": "terraform",
+            "monitor_pack_source": "repave-red-starter",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "monitors.tf").is_file()
+    assert not (output_dir / "datadog").exists()
+    providers = (output_dir / "providers.tf").read_text(encoding="utf-8")
+    assert "validate = false" in providers
+
+
+def test_generate_monitors_terraform_prometheus_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout TF alerts",
+            "backend": "prometheus",
+            "output_mode": "terraform",
+            "monitor_pack_source": "repave-red-starter",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+            "slo_target_percent": "99.9",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "prometheus_rules.tf").is_file()
+    assert (output_dir / "alertmanager.tf").is_file()
+    assert not (output_dir / "prometheus").exists()
+
+
 def test_generate_observability_terraform_prometheus_dry_run(
     repo_root: Path,
     output_config,
