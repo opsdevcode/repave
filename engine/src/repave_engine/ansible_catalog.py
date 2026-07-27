@@ -139,6 +139,9 @@ def patterns_for_platforms(
             continue
         if pattern.platform == "windows" and support_windows:
             items.append(pattern)
+            continue
+        if pattern.platform == "cross" and support_linux and support_windows:
+            items.append(pattern)
     return tuple(items)
 
 

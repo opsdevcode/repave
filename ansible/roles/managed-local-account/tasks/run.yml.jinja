@@ -1,0 +1,21 @@
+---
+- name: Validate {{ role_name }} role is enabled
+  ansible.builtin.assert:
+    that:
+      - role_enabled | default(true)
+    quiet: true
+
+- name: Ensure local account on Linux hosts
+  ansible.builtin.user:
+    name: "{{ managed_local_account_name }}"
+    comment: "{{ managed_local_account_comment }}"
+    state: present
+    create_home: false
+  when: ansible_facts["os_family"] != "Windows"
+
+- name: Ensure local account on Windows hosts
+  ansible.windows.win_user:
+    name: "{{ managed_local_account_name }}"
+    fullname: "{{ managed_local_account_comment }}"
+    state: present
+  when: ansible_facts["os_family"] == "Windows"
