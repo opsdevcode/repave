@@ -8,5 +8,6 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
+        cd "${GITHUB_WORKSPACE}"
         chmod +x deploy/local/install-gate-toolchain.sh
         deploy/local/install-gate-toolchain.sh
