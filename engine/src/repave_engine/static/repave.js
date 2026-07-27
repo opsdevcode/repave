@@ -757,6 +757,22 @@
       });
     }
 
+    var jumpSkipBtn = dashboard.querySelector("[data-gate-jump-skip]");
+    if (jumpSkipBtn) {
+      jumpSkipBtn.addEventListener("click", function () {
+        var target = dashboard.querySelector('[data-gate-status="skip"]');
+        if (!target) {
+          return;
+        }
+        applyGateFilter("skip");
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        var details = target.querySelector("details");
+        if (details) {
+          details.open = true;
+        }
+      });
+    }
+
     if (copyBtn) {
       copyBtn.addEventListener("click", function () {
         var node = document.getElementById("result-summary-json");

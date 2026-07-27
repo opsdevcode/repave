@@ -58,11 +58,9 @@
 </section>
 
 {% if gate_toolchain_callout %}
-<section class="card result-toolchain-callout" aria-labelledby="toolchain-heading">
-  <div class="card__body">
-    <h2 id="toolchain-heading" class="form-section__subtitle">Gate toolchain</h2>
-    <p class="hint">{{ gate_toolchain_callout }}</p>
-  </div>
+<section class="alert alert--warn result-toolchain-callout" aria-labelledby="toolchain-heading" role="status">
+  <h2 id="toolchain-heading" class="form-section__subtitle">Gate toolchain</h2>
+  <p class="hint">{{ gate_toolchain_callout }}</p>
 </section>
 {% endif %}
 
@@ -206,6 +204,8 @@
       <button type="button" class="chip gate-filter" data-gate-filter-value="skip">Skipped</button>
       {% if gate_summary.failed %}
       <button type="button" class="btn btn--ghost btn--sm" data-gate-jump-fail>Jump to first failure</button>
+      {% elif gate_summary.skipped and gate_toolchain_callout %}
+      <button type="button" class="btn btn--ghost btn--sm" data-gate-jump-skip>Jump to skipped gates</button>
       {% endif %}
       <button type="button" class="btn btn--ghost btn--sm" data-copy-result-summary>Copy summary</button>
     </div>
@@ -221,6 +221,7 @@
           </tr>
         </thead>
         <tbody>
+          {% set gate_detail_ns = namespace(open_fail=false) %}
           {% for gate in result.gates %}
           <tr
             class="gate-table__row gate-table__row--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}"
@@ -235,8 +236,13 @@
               </span>
             </td>
             <td>
-              {% if not gate.passed and not gate.skipped %}
-              <details class="gate-detail motion-panel">
+              {% set show_gate_detail = (not gate.passed and not gate.skipped) or (gate.message | length > 96) %}
+              {% set open_detail = show_gate_detail and not gate.passed and not gate.skipped and not gate_detail_ns.open_fail %}
+              {% if open_detail %}
+              {% set gate_detail_ns.open_fail = true %}
+              {% endif %}
+              {% if show_gate_detail %}
+              <details class="gate-detail motion-panel"{% if open_detail %} open{% endif %}>
                 <summary>{{ gate.message | truncate(120, True, "…") }}</summary>
                 <div class="gate-detail__panel">
                   <div class="gate-detail__toolbar">
