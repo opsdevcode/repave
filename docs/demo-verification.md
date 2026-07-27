@@ -4,7 +4,7 @@ Use before a release, a customer demo, or after portal/policy UX changes. Pair w
 the [Five-minute demo](quickstart.md#five-minute-demo-portal) steps and the
 [Sales demo runbook](sales-demo.md).
 
-**Last verified on `main`:** 2026-07-27 (engine v1.62.3, terraform-module-generic v0.12.0).
+**Last verified on `main`:** 2026-07-27 (engine v1.62.4, terraform-module-generic v0.12.0).
 
 ---
 

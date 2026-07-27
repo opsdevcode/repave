@@ -10,7 +10,7 @@ GitHub** — standards enforced by construction, not review theater.
 Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  →  Publish
 ```
 
-> **Engine [v1.62.3](https://github.com/opsdevcode/repave/releases/tag/v1.62.3)** · Portal + CLI +
+> **Engine [v1.62.4](https://github.com/opsdevcode/repave/releases/tag/v1.62.4)** · Portal + CLI +
 > optional Kubernetes **operator (GA)**. Run locally with Docker Compose — no cluster required
 > for generation.
 
