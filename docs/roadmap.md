@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.64.0  
+**Current release:** v1.65.0  
 **In progress:** docs/observability/policy catalog alignment (post–dry-run gates)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
