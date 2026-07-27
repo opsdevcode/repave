@@ -1,7 +1,8 @@
 {% if backend == 'datadog' %}
 provider "datadog" {
   # Credentials are read from DD_API_KEY and DD_APP_KEY in the environment.
-  # See README.md for setup.
+  # validate = false allows terraform plan in CI and portal dry-run without keys.
+  validate = false
 }
 {% elif backend == 'grafana' %}
 provider "grafana" {
@@ -9,9 +10,7 @@ provider "grafana" {
   url = var.grafana_url
 }
 {% elif backend == 'prometheus' %}
-provider "prometheus" {
-  # PROMETHEUS_URL and auth via environment; see README.md.
-}
+# Prometheus Terraform mode uses null_resource payloads; wire them to your ruler in CI/CD.
 {% elif backend == 'otel' %}
 provider "helm" {
   # Kubeconfig from environment; see README.md.

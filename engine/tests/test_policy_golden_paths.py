@@ -6,9 +6,6 @@ from pathlib import Path
 
 import yaml
 
-from repave_engine.blueprint import load_blueprint
-from repave_engine.gate_registry import GateContext
-from repave_engine.gate_runners import run_azure_policy, run_opa
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig
 
@@ -19,6 +16,8 @@ def _generate_policy(
     blueprint_name: str,
     inputs: dict[str, str],
 ):
+    from repave_engine.blueprint import load_blueprint
+
     blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
     staging = tmp_path / "staging"
     output_config = OutputConfig(
@@ -61,10 +60,9 @@ def test_opa_policy_golden_path_dry_run(repo_root: Path, tmp_path: Path) -> None
     assert provenance["spec"]["artifactType"] == "opa-policy"
     assert provenance["spec"]["governance"]["baseline_source"]
 
-    gate = run_opa(GateContext(output_dir=out, blueprint=result.blueprint))
-    if gate.skipped and "conftest" in gate.message.lower():
-        return
-    assert gate.passed, gate.message
+    opa_gate = next(g for g in result.gates if g.name == "opa")
+    assert not opa_gate.skipped, opa_gate.message
+    assert opa_gate.passed, opa_gate.message
 
 
 def test_azure_policy_golden_path_dry_run(repo_root: Path, tmp_path: Path) -> None:
@@ -87,8 +85,9 @@ def test_azure_policy_golden_path_dry_run(repo_root: Path, tmp_path: Path) -> No
     provenance = yaml.safe_load((out / "repave.yaml").read_text(encoding="utf-8"))
     assert provenance["spec"]["artifactType"] == "azure-policy"
 
-    gate = run_azure_policy(GateContext(output_dir=out, blueprint=result.blueprint))
-    assert gate.passed, gate.message
+    azure_gate = next(g for g in result.gates if g.name == "azure-policy")
+    assert not azure_gate.skipped, azure_gate.message
+    assert azure_gate.passed, azure_gate.message
 
 
 def test_checkov_policy_golden_path_dry_run(repo_root: Path, tmp_path: Path) -> None:
@@ -108,3 +107,6 @@ def test_checkov_policy_golden_path_dry_run(repo_root: Path, tmp_path: Path) -> 
     assert any(policies_dir.glob("*.py")) or any(policies_dir.glob("*.yaml"))
     provenance = yaml.safe_load((out / "repave.yaml").read_text(encoding="utf-8"))
     assert provenance["spec"]["artifactType"] == "checkov-policy"
+    checkov_gate = next(g for g in result.gates if g.name == "checkov")
+    assert not checkov_gate.skipped, checkov_gate.message
+    assert checkov_gate.passed, checkov_gate.message

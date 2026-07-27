@@ -35,9 +35,9 @@ jobs:
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv sync --extra dev --frozen
 
-      - name: Install Ansible lint tooling
+      - name: Install gate toolchain
         if: steps.paths.outputs.ci_needed == 'true'
-        run: pip install ansible-lint yamllint
+        uses: ./.github/actions/gate-toolchain
 
       - name: Run tests
         if: steps.paths.outputs.ci_needed == 'true'

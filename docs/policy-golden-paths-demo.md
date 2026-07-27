@@ -3,6 +3,7 @@
 Three standalone **Policy** family blueprints share the portal customization model
 (profiles, pack sources, rule catalog) documented in
 [standards/policy/customization.md](../standards/policy/customization.md).
+**Pack definitions:** [policy/PACKS.md](../policy/PACKS.md).
 
 | Blueprint | Gate | Demo outcome |
 | --------- | ---- | -------------- |

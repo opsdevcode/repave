@@ -140,6 +140,7 @@ def generate_from_blueprint(
                 blueprint.gates,
                 blueprint=blueprint,
                 gate_overrides=run_gate_overrides,
+                require_run=dry_run,
             )
         clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)
 
@@ -173,6 +174,16 @@ def generate_from_blueprint(
                 pr_message = f"{publish_message}\n\n{pr_body}"
         else:
             published_repository = None
+            if dry_run:
+                publish_message = publish_to_module_repository(
+                    render_result.output_dir,
+                    module_repository,
+                    dry_run=dry_run,
+                    artifact_type=blueprint.artifact_type,
+                )
+                pr_message = f"{publish_message}\n\nGates failed; fix gate errors before publish."
+
+        result_repository = module_repository if dry_run else published_repository
 
         rendered_files = (
             collect_rendered_files(
@@ -218,7 +229,7 @@ def generate_from_blueprint(
             blueprint=blueprint,
             render=display_render,
             gates=gate_results,
-            module_repository=published_repository,
+            module_repository=result_repository,
             pr_plan=pr_plan,
             pr_message=pr_message,
             rendered_files=rendered_files,

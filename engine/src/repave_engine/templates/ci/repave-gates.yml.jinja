@@ -45,18 +45,22 @@ jobs:
 {% endif %}{% if needs_conftest %}
       - name: Install Conftest
         run: |
-          curl -sSL "https://github.com/open-policy-agent/conftest/releases/download/v{{ conftest_version }}/conftest_{{ conftest_version }}_Linux_x86_64.tar.gz" \
-            | tar xz -C /usr/local/bin conftest
+          CONFTEST_URL="https://github.com/open-policy-agent/conftest/releases/download/v{{ conftest_version }}/conftest_{{ conftest_version }}_Linux_x86_64.tar.gz"
+          curl -sSL "$CONFTEST_URL" | tar xz -C /usr/local/bin conftest
 {% endif %}{% if needs_promtool %}
       - name: Install Promtool
         run: |
-          curl -sSL "https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz" \
-            | tar xz --strip-components=1 -C /usr/local/bin prometheus-{{ prometheus_version }}.linux-amd64/promtool
+          PROM_URL="https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz"
+          curl -sSL "$PROM_URL" \
+            | tar xz --strip-components=1 -C /usr/local/bin \
+              prometheus-{{ prometheus_version }}.linux-amd64/promtool
 {% endif %}{% if needs_amtool %}
       - name: Install amtool
         run: |
-          curl -sSL "https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz" \
-            | tar xz --strip-components=1 -C /usr/local/bin alertmanager-{{ alertmanager_version }}.linux-amd64/amtool
+          AM_URL="https://github.com/prometheus/alertmanager/releases/download/v{{ alertmanager_version }}/alertmanager-{{ alertmanager_version }}.linux-amd64.tar.gz"
+          curl -sSL "$AM_URL" \
+            | tar xz --strip-components=1 -C /usr/local/bin \
+              alertmanager-{{ alertmanager_version }}.linux-amd64/amtool
 {% endif %}{% if needs_molecule %}
       - name: Molecule (Docker)
         run: pip install molecule molecule-plugins[docker] docker

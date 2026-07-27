@@ -58,8 +58,7 @@ def test_act5_opa_destructive_delete_blocks(repo_root, output_config) -> None:
     )
     assert response.status_code == 200
     text = response.text
-    if "conftest" in text.lower() and "skip" in text.lower():
-        pytest.skip("conftest not available in this environment")
+    assert "conftest not installed" not in text.lower() or "fail" in text.lower()
     assert (
         "Publish blocked" in text
         or "alert--fail" in text

@@ -3,6 +3,7 @@
 Repave ships three first-class **policy** artifacts under `standards/policy/` (grouped as **Policy**
 in the portal catalog):
 
+Pack definitions and catalog pack sources: [policy/PACKS.md](../../policy/PACKS.md).
 Customization (profiles, portal, upgrades): [standards/policy/customization.md](../../standards/policy/customization.md).
 
 **Portal walkthrough:** [docs/policy-golden-paths-demo.md](../../docs/policy-golden-paths-demo.md)

@@ -110,6 +110,18 @@ def test_all_gates_passed_fails_on_failed_gate() -> None:
     assert all_gates_passed(results) is False
 
 
+def test_require_run_promotes_missing_tool_skip_to_failure(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: False)
+
+    relaxed = run_gates(tmp_path, ("terraform-fmt",))
+    assert relaxed[0].skipped is True
+
+    strict = run_gates(tmp_path, ("terraform-fmt",), require_run=True)
+    assert strict[0].skipped is False
+    assert strict[0].passed is False
+    assert "Dry-run preview" in strict[0].message
+
+
 def test_is_gate_artifact_path() -> None:
     assert is_gate_artifact_path(".terraform/providers/foo/LICENSE.txt") is True
     assert is_gate_artifact_path(".terraform.lock.hcl") is True

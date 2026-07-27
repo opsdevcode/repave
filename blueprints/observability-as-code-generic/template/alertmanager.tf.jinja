@@ -1,32 +1,35 @@
-resource "prometheus_alertmanager_config" "{{ service_name | replace('-', '_') }}_routing" {
-  config_yaml = <<-EOT
-    route:
-      receiver: {{ notification_target }}
-      group_by: [alertname, service]
-      routes:
-        - matchers:
-            - service="{{ service_name }}"
-          receiver: {{ notification_target }}
-          continue: false
-    receivers:
+# Alertmanager routing stub — map receivers in your deploy pipeline.
+resource "null_resource" "{{ service_name | replace('-', '_') }}_routing" {
+  triggers = {
+    config_yaml = <<-EOT
+      route:
+        receiver: {{ notification_target }}
+        group_by: [alertname, service]
+        routes:
+          - matchers:
+              - service="{{ service_name }}"
+            receiver: {{ notification_target }}
+            continue: false
+      receivers:
 {% if notification_provider == 'pagerduty' %}
-      - name: {{ notification_target }}
-        pagerduty_configs:
-          - routing_key: ${PAGERDUTY_ROUTING_KEY}
-            description: "{{ service_name }} alert ({{ notification_target_label }})"
+        - name: {{ notification_target }}
+          pagerduty_configs:
+            - routing_key: $${PAGERDUTY_ROUTING_KEY}
+              description: "{{ service_name }} alert ({{ notification_target_label }})"
 {% elif notification_provider == 'slack' %}
-      - name: {{ notification_target }}
-        slack_configs:
-          - channel: "{{ notification_target_label }}"
-            send_resolved: true
+        - name: {{ notification_target }}
+          slack_configs:
+            - channel: "{{ notification_target_label }}"
+              send_resolved: true
 {% elif notification_provider == 'email' %}
-      - name: {{ notification_target }}
-        email_configs:
-          - to: "{{ notification_target_label }}"
-            send_resolved: true
+        - name: {{ notification_target }}
+          email_configs:
+            - to: "{{ notification_target_label }}"
+              send_resolved: true
 {% else %}
-      - name: {{ notification_target }}
-        # map {{ notification_target }} in your deploy pipeline
+        - name: {{ notification_target }}
+          # map {{ notification_target }} in your deploy pipeline
 {% endif %}
-  EOT
+    EOT
+  }
 }

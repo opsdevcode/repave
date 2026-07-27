@@ -60,6 +60,8 @@ class GateContext:
     output_dir: Path
     blueprint: Blueprint | None = None
     gate_overrides: GateOverrides | None = None
+    # Dry-run / plan preview: blueprint gates must execute (missing tools → fail, not skip).
+    require_run: bool = False
 
     def config(self, gate_name: str) -> Mapping[str, Any]:
         if self.blueprint is None:

@@ -4,7 +4,7 @@ Version: 1.1.0
 
 How teams choose **pack source**, **profile**, and **individual rules** at generate time, and how those choices flow into generated repos, gates, and upgrades.
 
-Related: [`policy/catalog.json`](../../policy/catalog.json) · [Portal policy UX](../../docs/portal-design.md) · [Demo verification — policy step](../../docs/demo-verification.md)
+Related: [What policy packs are](../../policy/PACKS.md) · [`policy/catalog.json`](../../policy/catalog.json) · [Portal policy UX](../../docs/portal-design.md) · [Demo verification — policy step](../../docs/demo-verification.md)
 
 ---
 

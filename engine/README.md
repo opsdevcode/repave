@@ -26,6 +26,10 @@ repave generate \
   --dry-run
 ```
 
+Dry-run runs every blueprint gate. Missing tools (Terraform, Checkov, Conftest, …) **fail**
+instead of skipping. Use [`deploy/local`](../deploy/local/README.md) Docker compose for the
+pinned toolchain, or install the same CLIs locally.
+
 Publish locally and push to GitHub:
 
 ```bash
