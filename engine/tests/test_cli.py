@@ -271,6 +271,7 @@ def test_cmd_serve_builds_app_and_starts_uvicorn(
         modules_root=str(output_config.modules_root),
         host="0.0.0.0",
         port=9000,
+        reload=False,
     )
 
     code = cmd_serve(args)

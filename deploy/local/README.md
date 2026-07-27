@@ -10,9 +10,27 @@ docker compose up --build
 Open http://localhost:8088
 
 The engine is installed **editable** from `/app/engine`, and compose bind-mounts
-the repo at `/app`, so portal CSS/templates update when you refresh (hard-refresh
-if the browser cached `/static/repave.css`). Rebuild when `pyproject.toml` or the
-Dockerfile changes; a plain restart is enough for template/CSS edits.
+the repo at `/app`. The service runs `repave serve --reload`, so Python changes
+under `engine/src/` apply after a few seconds without rebuilding the image.
+Templates and `/static/repave.*` are read from the mount; URLs are cache-busted
+with the engine version query string — a normal refresh is usually enough after
+portal edits.
+
+**Rebuild the image** only when `engine/pyproject.toml`, `uv.lock`, or the
+Dockerfile changes. For template/CSS/JS-only work: `docker compose restart repave`
+(or save a `.py` file and wait for reload).
+
+### Plan (dry-run) smoke test
+
+On branch with the latest portal stepper fixes, after `docker compose up --build`:
+
+1. Open **terraform-module-generic** — page source should include `Run plan` and
+   `data-form-stepper` (if you only see a hidden **Scaffold** button, the browser
+   or container is still on old static JS — hard refresh or restart the service).
+2. **Identity:** module name + description → **Next**.
+3. **Services:** pick at least one service (e.g. **Compute + storage**) → **Run plan**
+   (or **Next** to Delivery, leave **Plan (validate only)**, **Scaffold repository**).
+4. Result should show **Plan only** and **Generated files**.
 
 The container includes **terraform** (1.9.8), **tflint** (0.55.1), and **checkov** (≥3.2.0)
 (policy + secrets scan), so blueprint gates run for real instead of skipping. The same

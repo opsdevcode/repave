@@ -633,6 +633,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     return app
 
 
+def create_app_for_serve() -> FastAPI:
+    """Factory entrypoint for `repave serve --reload` (local Docker / dev)."""
+    repo_root = Path(os.environ.get("REPAVE_SERVE_REPO_ROOT", ".")).resolve()
+    return create_app(repo_root=repo_root, output_config=load_output_config(repo_root))
+
+
 def _suggested_upgrade_branch(plan: UpgradePlanResult) -> str:
     safe_name = plan.blueprint_name.replace("/", "-")
     safe_version = plan.blueprint_version.replace("/", "-")

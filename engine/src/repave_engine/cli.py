@@ -284,9 +284,21 @@ def cmd_serve(args: argparse.Namespace) -> int:
     from repave_engine.api import create_app
 
     repo_root = Path(args.repo_root).resolve()
-    output_config = _load_output_config_from_args(args)
-    app = create_app(repo_root=repo_root, output_config=output_config)
-    uvicorn.run(app, host=args.host, port=args.port)
+    if args.reload:
+        os.environ["REPAVE_SERVE_REPO_ROOT"] = str(repo_root)
+        reload_dir = repo_root / "engine" / "src"
+        uvicorn.run(
+            "repave_engine.api:create_app_for_serve",
+            factory=True,
+            host=args.host,
+            port=args.port,
+            reload=True,
+            reload_dirs=[str(reload_dir)] if reload_dir.is_dir() else None,
+        )
+    else:
+        output_config = _load_output_config_from_args(args)
+        app = create_app(repo_root=repo_root, output_config=output_config)
+        uvicorn.run(app, host=args.host, port=args.port)
     return 0
 
 
@@ -422,6 +434,11 @@ def build_parser() -> argparse.ArgumentParser:
     _add_output_options(serve)
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8088)
+    serve.add_argument(
+        "--reload",
+        action="store_true",
+        help="Reload Python when engine sources change (local dev)",
+    )
     serve.set_defaults(func=cmd_serve)
 
     return parser
