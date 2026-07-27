@@ -55,6 +55,7 @@ These are the values for blueprint input **`policy_pack_source`**. Each row sets
 | `repave-opa-pack` | Repave OPA / Conftest pack | `opa-focused` | `opa-policy`, `terraform-module`, `terraform-environment-stack` | Plan-time Rego; default profile is OPA-only (no optional Checkov toggles via profile). |
 | `repave-azure-samples` | Repave Azure Policy samples | `azure-community` | `azure-policy` | All sample Azure definition JSON files under `policy/azure/definitions/`. |
 | `repave-checkov-pack` | Repave Checkov policy pack | `checkov-full` | `checkov-policy`, `terraform-module`, `terraform-environment-stack` | Full repave Checkov custom policy pack for dedicated Checkov repos or strict module CI. |
+| `repave-observability-pack` | Repave observability OPA pack | `observability-default` | `observability` | Native and Terraform observability Rego (tags, Prometheus shape, plan-time managed-by, destructive delete guard). |
 
 Reference URLs and longer descriptions for each row live in `catalog.json` → `pack_sources`.
 
@@ -71,6 +72,7 @@ Recommended **`policy_pack_source`** / **`policy_profile`** pairs (see also
 | `checkov-policy-generic` | `repave-checkov-pack` | `checkov-full` |
 | `opa-policy-generic` | `repave-opa-pack` | `opa-focused` |
 | `azure-policy-generic` | `repave-azure-samples` | `azure-community` |
+| `observability-as-code-generic` | `repave-observability-pack` | `observability-default` |
 
 Teams can override pack source, profile, or (with profile **`custom`**) individual rules in the
 portal **Policy** section or via generate API fields documented in
@@ -92,16 +94,17 @@ Full rule membership is in `catalog.json` → `profiles`. Short guide:
 | `opa-focused` | Rego / Conftest only. |
 | `azure-community` | All shipped Azure sample definitions. |
 | `checkov-full` | All repave Checkov custom policies. |
+| `observability-default` | Observability native + Terraform OPA (tags, Prometheus rules, managed-by, destructive delete). |
 | `custom` | Explicit per-rule toggles; **required** catalog rules stay on. |
 
 ---
 
 ## Rules (families)
 
-| Prefix | Count (catalog v1.2.0) | Required examples |
+| Prefix | Count (catalog v1.3.0) | Required examples |
 | ------ | ---------------------- | ----------------- |
 | `checkov:` | 12 (`CKV2_REPAVE_1` … `12`) | `CKV2_REPAVE_1` (required_version declared) |
-| `opa:` | 1 in default estate pack | `destructive_changes` (plan-time deny destructive deletes) |
+| `opa:` | 4 observability + 1 plan guard (catalog v1.3.0) | `destructive_changes` (plan-time deny destructive deletes) |
 | `azure:` | 4 samples | `sample_audit_storage` |
 
 Additional Rego under `policy/opa/policies/` (observability, Kubernetes) may ship in the physical pack

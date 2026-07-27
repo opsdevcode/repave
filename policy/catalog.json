@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "profiles": {
     "estate-default": {
       "label": "Estate default",
@@ -58,6 +58,16 @@
       "label": "Custom",
       "description": "Pick individual rules (required rules always on).",
       "includes": []
+    },
+    "observability-default": {
+      "label": "Observability default",
+      "description": "Native and Terraform observability Rego: metadata tags, Prometheus rule shape, plan-time managed-by, and destructive delete guard.",
+      "includes": [
+        "opa:observability_native",
+        "opa:observability_prometheus",
+        "opa:observability_managed_by",
+        "opa:destructive_changes"
+      ]
     }
   },
   "pack_sources": [
@@ -122,6 +132,14 @@
       "default_profile": "checkov-full",
       "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/policy/checkov.md",
       "artifact_types": ["checkov-policy", "terraform-module", "terraform-environment-stack"]
+    },
+    {
+      "id": "repave-observability-pack",
+      "label": "Repave observability OPA pack",
+      "description": "Conftest Rego for observability-as-code (native JSON/YAML and Terraform plan).",
+      "default_profile": "observability-default",
+      "reference_url": "https://github.com/opsdevcode/repave/blob/main/standards/observability/observability-as-code.md",
+      "artifact_types": ["observability"]
     }
   ],
   "rules": [
@@ -238,9 +256,41 @@
       "family": "opa",
       "rego_file": "destructive_changes.rego",
       "title": "Deny destructive Terraform plan changes without replacement",
-      "artifact_types": ["terraform-module", "terraform-environment-stack", "opa-policy"],
+      "artifact_types": [
+        "terraform-module",
+        "terraform-environment-stack",
+        "opa-policy",
+        "observability"
+      ],
       "required": true,
       "removable": false
+    },
+    {
+      "id": "opa:observability_native",
+      "family": "opa",
+      "rego_file": "observability_native.rego",
+      "title": "Native Datadog/Grafana JSON must include managed-by and required fields",
+      "artifact_types": ["observability"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "opa:observability_prometheus",
+      "family": "opa",
+      "rego_file": "observability_prometheus.rego",
+      "title": "Prometheus alerting rules must include severity and runbook_url",
+      "artifact_types": ["observability"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "opa:observability_managed_by",
+      "family": "opa",
+      "rego_file": "observability_managed_by.rego",
+      "title": "Terraform observability resources must tag managed-by:repave",
+      "artifact_types": ["observability"],
+      "required": false,
+      "removable": true
     },
     {
       "id": "azure:sample_require_https_storage",

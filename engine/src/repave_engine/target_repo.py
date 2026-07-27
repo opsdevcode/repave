@@ -107,6 +107,13 @@ def _copy_tree_contents(
     artifact_type: str = "terraform-module",
 ) -> None:
     for item in source_dir.iterdir():
+        if item.name == ".repave":
+            selection = item / "policy-selection.json"
+            if selection.is_file():
+                dest_repave = destination_dir / ".repave"
+                dest_repave.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(selection, dest_repave / "policy-selection.json")
+            continue
         if is_gate_artifact_path(item.name, artifact_type=artifact_type):
             continue
         target = destination_dir / item.name

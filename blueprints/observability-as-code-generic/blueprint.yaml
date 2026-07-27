@@ -2,13 +2,13 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: observability-as-code-generic
-  version: 0.4.0
+  version: 0.5.0
   description: Governed alerts and monitors across Prometheus, Grafana, Datadog, OTel, and Terraform.
 spec:
   artifactType: observability
   standard:
     source: standards/observability/observability-as-code.md
-    version: 1.2.0
+    version: 1.3.0
   inputs:
     - name: service_name
       type: string
@@ -76,6 +76,22 @@ spec:
       required: false
       default: ""
       description: Optional availability SLO target (e.g. 99.9) for starter SLO rules.
+    - name: policy_pack_source
+      type: string
+      required: false
+      default: repave-observability-pack
+      description: Pack registry entry from policy/catalog.json pack_sources.
+    - name: policy_profile
+      type: string
+      required: false
+      default: observability-default
+      description: Profile from policy/catalog.json (use custom with policy_rules).
+    - name: policy_rules
+      type: string
+      required: false
+      multi: true
+      default: ""
+      description: Rule IDs from policy/catalog.json when policy_profile is custom.
   template:
     engine: copier
     path: template

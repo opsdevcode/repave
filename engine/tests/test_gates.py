@@ -148,6 +148,18 @@ def test_clean_gate_artifacts_removes_terraform_and_lock(tmp_path: Path) -> None
     assert (tmp_path / "main.tf").read_text(encoding="utf-8") == "# keep\n"
 
 
+def test_clean_gate_artifacts_preserves_policy_selection(tmp_path: Path) -> None:
+    repave = tmp_path / ".repave"
+    repave.mkdir()
+    (repave / "policy-selection.json").write_text("{}\n", encoding="utf-8")
+    (repave / "tfplan.json").write_text("{}\n", encoding="utf-8")
+
+    clean_gate_artifacts(tmp_path, artifact_type="observability")
+
+    assert (repave / "policy-selection.json").is_file()
+    assert not (repave / "tfplan.json").exists()
+
+
 def test_build_checkov_command_uses_config_and_external_checks(tmp_path: Path) -> None:
     (tmp_path / ".checkov.yml").write_text("framework:\n  - terraform\n", encoding="utf-8")
     policies = tmp_path / "policy/checkov"

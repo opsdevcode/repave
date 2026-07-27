@@ -26,6 +26,36 @@ def test_policy_input_defaults_from_blueprint(repo_root: Path) -> None:
     assert defaults["policy_profile"] == "checkov-full"
 
 
+def test_observability_policy_input_defaults(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    defaults = policy_input_defaults(blueprint)
+    assert defaults["policy_pack_source"] == "repave-observability-pack"
+    assert defaults["policy_profile"] == "observability-default"
+
+
+def test_observability_pack_source_filtered(repo_root: Path) -> None:
+    catalog = load_policy_catalog(repo_root)
+    packs = pack_sources_for_artifact(catalog, "observability")
+    ids = {pack["id"] for pack in packs}
+    assert "repave-observability-pack" in ids
+    assert "repave-checkov-pack" not in ids
+
+
+def test_observability_default_profile_rules(repo_root: Path) -> None:
+    catalog = load_policy_catalog(repo_root)
+    enabled = resolve_profile_rule_ids(
+        catalog,
+        profile="observability-default",
+        artifact_type="observability",
+    )
+    assert "opa:destructive_changes" in enabled
+    assert "opa:observability_native" in enabled
+    assert "checkov:CKV2_REPAVE_1" not in enabled
+
+
 def test_resolve_estate_default_includes_required(repo_root: Path) -> None:
     catalog = load_policy_catalog(repo_root)
     enabled = resolve_profile_rule_ids(

@@ -654,6 +654,46 @@ def test_generate_observability_grafana_native_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_observability_generate_vends_selected_opa_policies_only(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "observability-as-code-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "configuration_mode": "custom",
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout monitors",
+            "backend": "datadog",
+            "environment": "prod",
+            "output_mode": "native",
+            "notification_source": "repave-estate-oncall",
+            "notification_target": "pagerduty-payments",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=False,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    selection_path = output_dir / ".repave" / "policy-selection.json"
+    assert selection_path.is_file()
+    policies_dir = output_dir / "policy" / "opa" / "policies"
+    rego_names = {path.name for path in policies_dir.glob("*.rego")}
+    assert "kubernetes_workload.rego" not in rego_names
+    assert "destructive_changes.rego" in rego_names
+    assert "observability_native.rego" in rego_names
+    assert (output_dir / "tests" / "fixtures" / "plan-create-only.json").is_file()
+
+
 def test_generate_observability_terraform_datadog_dry_run(
     repo_root: Path,
     output_config,
