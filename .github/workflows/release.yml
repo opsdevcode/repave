@@ -58,6 +58,9 @@ jobs:
           uv sync --extra dev --frozen
           uv pip install "python-semantic-release~=10.0"
 
+      - name: Install gate toolchain
+        uses: ./.github/actions/gate-toolchain
+
       - name: Run engine tests
         working-directory: engine
         run: uv run pytest
