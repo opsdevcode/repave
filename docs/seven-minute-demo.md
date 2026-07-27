@@ -72,6 +72,9 @@ Expect **opa** gate failure and **Publish blocked** (or equivalent block messagi
 
 Details: [examples/policy](../examples/policy/README.md).
 
+**Azure Policy (pass path):** [Policy golden paths demo — §3](policy-golden-paths-demo.md#3--azure-policy-definitions-2-min).
+Full policy family walkthrough: [policy-golden-paths-demo.md](policy-golden-paths-demo.md).
+
 ---
 
 ## Act 6 — Developer portal (~1 min)
