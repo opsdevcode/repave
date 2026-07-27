@@ -1,6 +1,8 @@
 # Terraform plan policy: block destructive deletes without replacement.
 package terraform.plan
 
+import future.keywords.in
+
 deny contains msg if {
     some change in input.resource_changes
     "delete" in change.change.actions

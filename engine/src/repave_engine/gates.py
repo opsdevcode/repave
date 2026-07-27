@@ -58,9 +58,32 @@ _REQUIRE_RUN_FAIL_HINTS = (
     "no opa policies selected",
 )
 
+# Gates the local Docker / CI toolchain installs; optional observability/app gates may still skip.
+_STRICT_DRY_RUN_GATES = frozenset(
+    {
+        "terraform-fmt",
+        "terraform-validate",
+        "terraform-test",
+        "tflint",
+        "checkov",
+        "secrets",
+        "opa",
+        "azure-policy",
+        "docs-drift",
+        "provenance-drift",
+        "yamllint",
+        "ansible-lint",
+        "ansible-syntax-check",
+        "helm-lint",
+        "helm-template",
+    }
+)
+
 
 def _apply_require_run_policy(context: GateContext, result: GateResult) -> GateResult:
     if not context.require_run or not result.skipped:
+        return result
+    if result.name not in _STRICT_DRY_RUN_GATES:
         return result
     lowered = result.message.lower()
     if not any(hint in lowered for hint in _REQUIRE_RUN_FAIL_HINTS):

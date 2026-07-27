@@ -301,6 +301,7 @@ def test_generate_applies_gate_overrides_from_config(
         *,
         blueprint=None,
         gate_overrides=None,
+        require_run=False,
     ):
         captured["gate_overrides"] = gate_overrides
         from repave_engine.gates import GateResult
