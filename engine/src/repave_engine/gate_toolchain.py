@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 # Typical install locations when PATH is trimmed (e.g. uvicorn reload workers).
@@ -74,13 +75,19 @@ def _checkov_importable() -> bool:
     return importlib.util.find_spec("checkov") is not None
 
 
+def subprocess_cwd(preferred: Path) -> Path:
+    """Working directory for gate subprocesses when preferred path is missing."""
+    if preferred.is_dir():
+        return preferred
+    return Path(tempfile.gettempdir())
+
+
 def terraform_cli_ready() -> bool:
     """True when terraform is on PATH and `terraform version` succeeds."""
     terraform_bin = resolve_tool("terraform")
     if not terraform_bin:
         return False
-    run_cwd = Path("/tmp")
-    run_cwd.mkdir(exist_ok=True)
+    run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
     result = subprocess.run(
         [terraform_bin, "version"],
         cwd=run_cwd,

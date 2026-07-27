@@ -15,6 +15,7 @@ from repave_engine.gate_toolchain import (
     checkov_argv,
     ensure_gate_path,
     resolve_tool,
+    subprocess_cwd,
     tool_available,
 )
 from repave_engine.policy_selection import load_policy_selection_file
@@ -35,7 +36,7 @@ def run_command(
     env = os.environ.copy()
     if extra_env is not None:
         env.update(extra_env)
-    run_cwd = cwd if cwd.is_dir() else Path("/tmp")
+    run_cwd = subprocess_cwd(cwd)
     return subprocess.run(
         cmd,
         cwd=run_cwd,
@@ -51,7 +52,7 @@ def terraform_usable(output_dir: Path) -> bool:
 
     if not terraform_cli_ready():
         return False
-    run_cwd = output_dir if output_dir.is_dir() else Path("/tmp")
+    run_cwd = subprocess_cwd(output_dir)
     terraform_bin = resolve_tool("terraform")
     if not terraform_bin:
         return False
