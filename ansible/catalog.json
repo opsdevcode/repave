@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "defaults": {
     "role_pattern_source": "linux-service",
     "playbook_pattern_source": "linux-patch-baseline",
@@ -180,6 +180,23 @@
         {
           "source": "playbooks/windows-update-baseline/inventories/hosts.yml.jinja",
           "dest": "inventories/{{ environment }}/hosts.yml"
+        }
+      ]
+    },
+    {
+      "id": "pinned-roles-rollout",
+      "label": "Pinned Galaxy roles rollout",
+      "platform": "any",
+      "description": "Ping then apply portal-pinned Galaxy roles in order (requires at least one pinned role).",
+      "requires_collections": [],
+      "files": [
+        {
+          "source": "playbooks/pinned-roles-rollout/site.yml.jinja",
+          "dest": "site.yml"
+        },
+        {
+          "source": "playbooks/pinned-roles-rollout/group_vars/all/vars.yml.jinja",
+          "dest": "group_vars/all/vars.yml"
         }
       ]
     }

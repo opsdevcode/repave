@@ -72,12 +72,25 @@ if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   pip_install "$CHECKOV_PIP_SPEC"
 fi
 
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+if [[ -z "${REPO_ROOT:-}" ]]; then
+  script_dir="$(cd "$(dirname "$0")" && pwd)"
+  if [[ -f "${script_dir}/../../ansible/requirements-gate-collections.yml" ]]; then
+    REPO_ROOT="$(cd "${script_dir}/../.." && pwd)"
+  else
+    echo "Set REPO_ROOT to the repave repository root (ansible gate collections file missing)." >&2
+    exit 1
+  fi
+fi
+GATE_COLLECTIONS="${REPO_ROOT}/ansible/requirements-gate-collections.yml"
 
 if [[ "$INSTALL_ANSIBLE" == "1" ]]; then
   pip_install "ansible-lint>=24.0" "yamllint>=1.35" "ansible-core>=2.16"
   if command -v ansible-galaxy >/dev/null 2>&1; then
-    ansible-galaxy collection install -r "${REPO_ROOT}/ansible/requirements-gate-collections.yml"
+    if [[ ! -f "$GATE_COLLECTIONS" ]]; then
+      echo "The requirements file '${GATE_COLLECTIONS}' does not exist." >&2
+      exit 1
+    fi
+    ansible-galaxy collection install -r "$GATE_COLLECTIONS"
   fi
 fi
 

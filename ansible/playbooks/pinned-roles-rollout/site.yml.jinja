@@ -1,0 +1,17 @@
+---
+- name: Verify connectivity before Galaxy role rollout for {{ project_name }}
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Ping hosts
+      ansible.builtin.ping:
+
+- name: Apply pinned Galaxy roles for {{ project_name }}
+  hosts: all
+  become: true
+  gather_facts: true
+  serial: "{{ playbook_rollout_serial | default(1) }}"
+  roles:
+{% for role in pinned_roles %}
+    - role: {{ role.galaxy_name }}
+{% endfor %}

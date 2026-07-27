@@ -383,6 +383,44 @@ def test_generate_ansible_playbook_linux_patch_pattern_dry_run(
     assert spec["ansiblePlaybookProject"]["playbook_pattern_source"] == "linux-patch-baseline"
 
 
+def test_generate_ansible_playbook_pinned_roles_rollout_dry_run(
+    repo_root: Path,
+    ansible_playbook_sample_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    import yaml
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project",
+        repo_root,
+    )
+    inputs = {
+        **ansible_playbook_sample_inputs,
+        "playbook_pattern_source": "pinned-roles-rollout",
+        "pinned_roles": (
+            '[{"galaxy_name":"acme.web","version":"1.0.0",'
+            '"src":"https://github.com/acme/ansible-role-web",'
+            '"repo_name":"ansible-role-web"}]'
+        ),
+    }
+    result = generate_from_blueprint(
+        blueprint,
+        inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+    output_dir = result.render.output_dir
+    site = (output_dir / "site.yml").read_text(encoding="utf-8")
+    assert "role: acme.web" in site
+    assert 'serial: "1"' in site or "serial: 1" in site
+    vars_text = (output_dir / "group_vars" / "all" / "vars.yml").read_text(encoding="utf-8")
+    assert "playbook_rollout_serial: 1" in vars_text
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["ansiblePlaybookProject"]["playbook_pattern_source"] == "pinned-roles-rollout"
+
+
 def test_generate_ansible_collection_publishes_repo(
     repo_root: Path,
     output_config,

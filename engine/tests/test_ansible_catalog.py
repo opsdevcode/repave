@@ -14,7 +14,7 @@ from repave_engine.ansible_catalog import (
 def test_load_ansible_catalog_has_patterns(repo_root: Path) -> None:
     catalog = load_ansible_catalog(repo_root)
     assert len(catalog.role_patterns) >= 4
-    assert len(catalog.playbook_patterns) >= 3
+    assert len(catalog.playbook_patterns) >= 4
     assert len(catalog.collection_sample_patterns) >= 3
     assert catalog.defaults.get("sample_role_pattern_source") == "linux-service"
     assert catalog.defaults.get("role_pattern_source") == "linux-service"
@@ -81,6 +81,7 @@ def test_catalog_for_api_playbook_patterns(repo_root: Path) -> None:
     )
     ids = {item["id"] for item in payload["playbook_patterns"]}
     assert "linux-patch-baseline" in ids
+    assert "pinned-roles-rollout" in ids
     assert payload["form_preset"]["decision_fields"][1] == "playbook_pattern_source"
     win = playbook_pattern_by_id(catalog, "windows-update-baseline")
     assert win is not None

@@ -200,6 +200,25 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "outcome": outcome,
         }
 
+    def gate_toolchain_callout(gates: list[GateResult], *, dry_run: bool) -> str | None:
+        if not dry_run or not gates:
+            return None
+        markers = (
+            "not available",
+            "not installed",
+            "Dry-run preview runs all blueprint gates",
+            "plan JSON could not be produced",
+        )
+        for gate in gates:
+            if any(marker in gate.message for marker in markers):
+                return (
+                    "Plan mode runs the full gate toolchain on this server. Missing CLIs show as "
+                    "skipped or failed rows above. For a complete local demo, use "
+                    "deploy/local Docker Compose (see deploy/local/README.md) or install the same "
+                    "tools as CI via deploy/local/install-gate-toolchain.sh."
+                )
+        return None
+
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
         blueprints = list_blueprints(repo_root / "blueprints")
@@ -553,6 +572,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="catalog",
                 gate_summary=gate_summary(result.gates),
                 gates_ok=all_gates_passed(result.gates),
+                gate_toolchain_callout=gate_toolchain_callout(
+                    result.gates,
+                    dry_run=result.dry_run,
+                ),
                 result_portal=build_result_portal_context(result, repo_root),
             ),
         )

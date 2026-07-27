@@ -80,6 +80,22 @@ def test_normalize_playbook_pattern_default(repo_root: Path) -> None:
     assert normalized["playbook_pattern_source"] == "linux-patch-baseline"
 
 
+def test_normalize_playbook_pinned_rollout_requires_roles(repo_root: Path) -> None:
+    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-playbook-project", repo_root)
+    normalized: dict[str, str | list[dict[str, str]]] = {
+        "project_name": "rollout",
+        "description": "Role rollout",
+        "min_ansible_version": "2.18",
+        "environment": "dev",
+        "pinned_roles": [],
+        "support_linux": "true",
+        "support_windows": "false",
+        "playbook_pattern_source": "pinned-roles-rollout",
+    }
+    with pytest.raises(ValueError, match="requires at least one pinned Galaxy role"):
+        normalize_playbook_pattern_inputs(blueprint, normalized, repo_root)
+
+
 def test_normalize_collection_sample_pattern_default(repo_root: Path) -> None:
     blueprint = load_blueprint(repo_root / "blueprints" / "ansible-collection-generic", repo_root)
     normalized: dict[str, str] = {

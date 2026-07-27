@@ -1,6 +1,6 @@
 # Ansible playbook / project standard
 
-Version: 1.1.0
+Version: 1.2.0
 
 Contract for playbook projects (`ansible-playbook-project` golden path). Synthesizes Ansible project layout guidance and production-profile lint
 expectations.
@@ -11,7 +11,15 @@ expectations.
 **playbook_patterns** registry (`ansible/playbooks/<pattern>/` Jinja fragments). When unset,
 the engine picks **`linux-patch-baseline`** for Linux (or mixed) targets and
 **`windows-update-baseline`** for Windows-only projects. Opt-in **`repave-baseline`** keeps
-the Copier placeholder `site.yml` (connectivity ping only).
+the Copier placeholder `site.yml` (connectivity ping only). **`pinned-roles-rollout`** applies
+portal-pinned Galaxy roles in order (requires at least one pinned role in the form).
+
+| Pattern | Platform | Behavior |
+| --- | --- | --- |
+| `repave-baseline` | any | Ping-only placeholder play |
+| `linux-patch-baseline` | linux | Security-oriented package updates |
+| `windows-update-baseline` | windows | Windows update scan |
+| `pinned-roles-rollout` | any | Ping + serial `roles:` list from pinned inventory |
 
 Provenance records `ansiblePlaybookProject.playbook_pattern_source` and
 `required_collections` when a pattern needs Galaxy collections (merged into `requirements.yml`).

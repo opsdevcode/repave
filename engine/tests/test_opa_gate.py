@@ -149,6 +149,30 @@ def test_opa_terraform_falls_back_to_vendored_plan_fixture(
     assert captured["cmd"][:3] == ["conftest", "test", str(fixtures)]
 
 
+def test_opa_skips_when_terraform_missing_and_no_fixtures(tmp_path: Path, monkeypatch) -> None:
+    bp = make_blueprint(tmp_path, gates=("opa",), artifact_type="terraform-module")
+    bp = replace(
+        bp,
+        opa_policies=OpaPolicyPack(
+            policies_source="policy/opa/policies",
+            policy_version="1.0.0",
+        ),
+        opa_gate=OpaGateConfig(policies_dir="policy", fixtures_dir="tests/fixtures"),
+    )
+    (tmp_path / "policy").mkdir()
+    (tmp_path / "policy" / "sample.rego").write_text("package x\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        "repave_engine.gate_runners.tool_available",
+        lambda name: name == "conftest",
+    )
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: False)
+
+    result = run_opa(GateContext(output_dir=tmp_path, blueprint=bp))
+    assert result.skipped is True
+    assert "terraform not available" in result.message
+
+
 def test_conftest_rejects_destructive_plan_fixture(repo_root: Path) -> None:
     import shutil
     import subprocess
