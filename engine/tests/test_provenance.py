@@ -109,3 +109,19 @@ def test_write_provenance_file_creates_repave_yaml(
 def test_validate_provenance_file_rejects_missing_file(tmp_path: Path, repo_root: Path) -> None:
     with pytest.raises(FileNotFoundError, match="Provenance file missing"):
         validate_provenance_file(tmp_path / "repave.yaml", repo_root)
+
+
+def test_build_provenance_document_honors_fixed_generated_at(
+    terraform_blueprint, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_PROVENANCE_GENERATED_AT", "1970-01-01T00:00:00+00:00")
+    document = build_provenance_document(
+        terraform_blueprint,
+        {
+            "module_name": "example",
+            "description": "Example",
+            "cloud_provider": "aws",
+            "provider_services": "s3",
+        },
+    )
+    assert document["spec"]["generation"]["generated_at"] == "1970-01-01T00:00:00+00:00"

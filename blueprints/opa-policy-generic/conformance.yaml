@@ -2,8 +2,10 @@ inputs:
   policy_name: conformance
   organization: platform
   description: Conformance fixture OPA policy pack
+  plan_demo: pass
 required_files:
   - repave.yaml
   - README.md
   - policy/destructive_changes.rego
-snapshot: false
+  - tests/fixtures/plan-create-only.json
+snapshot: true

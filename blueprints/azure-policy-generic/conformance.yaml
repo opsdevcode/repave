@@ -5,4 +5,5 @@ inputs:
 required_files:
   - repave.yaml
   - README.md
-snapshot: false
+  - policy/definitions/sample_audit_storage.json
+snapshot: true

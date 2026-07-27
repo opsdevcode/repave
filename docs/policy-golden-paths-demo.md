@@ -90,4 +90,5 @@ is unavailable.
 | Azure gate fails on samples | Regenerate from current `main`; samples live under `policy/azure/definitions/`. |
 | Policy rules show raw IDs on form | Hard refresh; catalog titles come from `policy/catalog.json`. |
 
-Related: [Demo verification](demo-verification.md) · [Engine capabilities — policy](engine-capabilities.md)
+Related: [Demo verification](demo-verification.md) · [Operator policy estate](operator-policy-estate.md) ·
+[Engine capabilities — policy](engine-capabilities.md)
