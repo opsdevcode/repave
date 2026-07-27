@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
 
+pytestmark = pytest.mark.slow
+
 
 def test_act1_home_catalog(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))

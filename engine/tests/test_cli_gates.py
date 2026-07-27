@@ -2,10 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from repave_engine.artifact_blueprint import blueprint_from_repave_file
 from repave_engine.blueprint import validate_inputs
 from repave_engine.gates import run_gates
 from repave_engine.render import render_blueprint
+
+pytestmark = pytest.mark.slow
 
 
 def test_repave_gates_runs_from_provenance_ci_block(

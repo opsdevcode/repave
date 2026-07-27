@@ -1,4 +1,4 @@
-.PHONY: install lock test lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -23,6 +23,14 @@ policy-standards-watch:
 
 test:
 	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
+
+# Daily dev loop: skip slow integration/conformance tests and coverage (run `make test` before push).
+test-fast:
+	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest -m "not slow" --no-cov -q
+
+# Full suite with parallel workers (requires pytest-xdist; gate tools on PATH).
+test-parallel:
+	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest -n auto --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
 
 blueprint-conformance-update:
 	cd engine && uv run python -c "from pathlib import Path; from repave_engine.blueprint_conformance import update_all_manifests; root=Path('..').resolve(); staging=root/'.conformance-staging'; staging.mkdir(exist_ok=True); mods=root/'.conformance-modules'; mods.mkdir(exist_ok=True); names=update_all_manifests(root, modules_root=mods, staging_root=staging); print('Updated manifests:', ', '.join(names) or '(none with snapshot: true)')"

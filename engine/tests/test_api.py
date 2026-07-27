@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from repave_engine.api import _dry_run_from_form, create_app
@@ -150,6 +151,7 @@ def test_local_toolchain_warning_when_terraform_missing(
     assert "Docker Compose" in response.text
 
 
+@pytest.mark.slow
 def test_generate_form_submission(
     repo_root,
     output_config,
@@ -311,6 +313,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "novalidate" in response.text
 
 
+@pytest.mark.slow
 def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sample_inputs) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
@@ -340,6 +343,7 @@ def test_ansible_role_form_stepper(repo_root, output_config) -> None:
     assert "novalidate" in response.text
 
 
+@pytest.mark.slow
 def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
@@ -583,6 +587,7 @@ def test_module_inventory_api_scans_modules_root(
     assert "tf-aws-demo" in names
 
 
+@pytest.mark.slow
 def test_generate_resource_module_from_form(repo_root, output_config, monkeypatch) -> None:
     monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
     monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))
@@ -902,6 +907,7 @@ def test_readyz(repo_root, output_config) -> None:
     assert payload["config_loaded"] is True
 
 
+@pytest.mark.slow
 def test_api_v1_generate_dry_run(repo_root, output_config, monkeypatch) -> None:
     monkeypatch.setenv("REPAVE_GITHUB_ORG", output_config.github_org)
     monkeypatch.setenv("REPAVE_MODULES_ROOT", str(output_config.modules_root))

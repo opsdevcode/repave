@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 import yaml
 
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig
+
+pytestmark = pytest.mark.slow
 
 
 def _generate_policy(

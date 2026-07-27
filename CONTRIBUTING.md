@@ -29,6 +29,12 @@ make install
 make test
 ```
 
+For day-to-day edits, **`make test-fast`** runs pytest with `-m "not slow"` and no
+coverage (skips blueprint conformance and full generate + gate toolchain tests).
+Run **`make test`** before you push; CI always runs the full suite. Optional
+**`make test-parallel`** runs the full suite with `pytest-xdist` (`-n auto`) when
+you want shorter wall time locally.
+
 ### Blueprint conformance
 
 Every golden path under `blueprints/*/blueprint.yaml` must ship a sibling
