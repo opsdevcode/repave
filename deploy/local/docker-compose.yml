@@ -11,6 +11,7 @@ services:
       REPAVE_MODULES_ROOT: /modules
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       PATH: /usr/local/bin:/usr/local/sbin:/usr/bin:/bin
+      # Unset REPAVE_RELAX_GATES so portal runs full gates (missing tools → FAIL, not SKIP).
     volumes:
       - ../..:/app
       - repave-modules:/modules

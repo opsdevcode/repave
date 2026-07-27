@@ -104,6 +104,14 @@ def _plan_preview_from_form(form: object) -> bool:
     return str(get("plan_preview", "")).strip() in ("1", "true", "yes")
 
 
+def _portal_gates_require_run(*, dry_run: bool, plan_preview: bool) -> bool:
+    """Portal runs blueprint toolchain gates unless REPAVE_RELAX_GATES is set."""
+    relax = os.environ.get("REPAVE_RELAX_GATES", "").strip().lower()
+    if relax in ("1", "true", "yes"):
+        return dry_run or plan_preview
+    return True
+
+
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
     package_dir = Path(__file__).parent
     templates = Jinja2Templates(directory=str(package_dir / "templates"))
@@ -556,7 +564,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         form = await request.form()
         blueprint_name = str(form.get("blueprint_name", ""))
         dry_run = _dry_run_from_form(form)
-        require_run = dry_run or _plan_preview_from_form(form)
+        plan_preview = _plan_preview_from_form(form)
+        require_run = _portal_gates_require_run(dry_run=dry_run, plan_preview=plan_preview)
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
         values: dict[str, str] = {}
         for field in blueprint.inputs:

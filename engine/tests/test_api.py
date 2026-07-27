@@ -387,6 +387,45 @@ def test_generate_dry_run_promotes_missing_terraform_to_fail(
     assert "badge--fail" in response.text
     assert "Dry-run preview runs all blueprint gates" in response.text
     assert "terraform-fmt" in response.text
+    assert "terraform not available; skipped" not in response.text
+
+
+def test_generate_apply_strict_when_portal_gates_not_relaxed(
+    repo_root, output_config, sample_inputs, monkeypatch
+) -> None:
+    monkeypatch.delenv("REPAVE_RELAX_GATES", raising=False)
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: False)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "false",
+            **sample_inputs,
+        },
+    )
+    assert response.status_code == 200
+    assert "badge--fail" in response.text
+    assert "Dry-run preview runs all blueprint gates" in response.text
+
+
+def test_generate_apply_relaxes_gates_when_env_set(
+    repo_root, output_config, sample_inputs, monkeypatch
+) -> None:
+    monkeypatch.setenv("REPAVE_RELAX_GATES", "1")
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: False)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "false",
+            **sample_inputs,
+        },
+    )
+    assert response.status_code == 200
+    assert "badge--skip" in response.text
+    assert "terraform not available; skipped" in response.text
 
 
 @pytest.mark.slow

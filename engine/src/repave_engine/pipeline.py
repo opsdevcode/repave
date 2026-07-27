@@ -137,7 +137,7 @@ def generate_from_blueprint(
         run_gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
         with pipeline_span("repave.gates"):
             gate_require_run = dry_run if require_run is None else require_run
-            if dry_run:
+            if dry_run or require_run:
                 gate_require_run = True
             gate_results = run_gates(
                 render_result.output_dir,
