@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.69.0  
-**In progress:** v1.68 Ansible playbook patterns; docs/observability/policy catalog alignment (post–dry-run gates)  
+**In progress:** v1.69 cross-platform role pattern; docs/observability/policy catalog alignment (post–dry-run gates)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -358,7 +358,22 @@ without failing CI.
 
 **Status:** Shipped on `main` (catalog, patterns, portal, standards v1.1.0, gate collections).
 
-**Follow-ups:** Cross-platform role patterns, collection sample role wired from the same catalog.
+**Follow-ups:** Collection sample role wired from the same catalog; richer playbook patterns.
+
+---
+
+### v1.69 — Cross-platform Ansible role pattern
+
+**Problem:** Mixed Linux + Windows roles defaulted to **linux-service**, which ignores
+Windows automation unless operators hand-author tasks.
+
+**Approach:**
+
+- **`managed-local-account`** pattern with **`platform: cross`** in `ansible/catalog.json`
+- Portal/API expose the pattern only when **both** Linux and Windows are selected
+- Linux `user` + Windows `win_user` tasks with shared defaults; Molecule verify on Linux
+
+**Status:** In progress.
 
 ---
 
@@ -375,7 +390,7 @@ operational play content for Linux or Windows fleets.
 - Portal pattern picker + Linux/Windows toggles; provenance `playbook_pattern_source`
 - Merge pattern **`required_collections`** into Copier-generated **`requirements.yml`**
 
-**Status:** In progress (catalog, engine, portal, standards v1.1.0).
+**Status:** Shipped on `main` (catalog, engine, portal, standards v1.1.0).
 
 ---
 

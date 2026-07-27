@@ -1,0 +1,8 @@
+---
+- name: Verify Linux local account exists
+  ansible.builtin.command:
+    cmd: "getent passwd {{ managed_local_account_name }}"
+  register: passwd_lookup
+  changed_when: false
+  failed_when: passwd_lookup.rc != 0
+  when: ansible_facts["os_family"] != "Windows"

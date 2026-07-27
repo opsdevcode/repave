@@ -25,12 +25,14 @@ generate time, repave picks a **platform-aware default**:
 
 - Linux only (or mixed Linux + Windows) → `linux-service`
 - Windows only → `windows-service`
+- Mixed Linux + Windows with **`managed-local-account`** → cross-platform local user tasks
 
 | Pattern | Platform | Behavior |
 | --- | --- | --- |
 | `repave-baseline` | any | Placeholder tasks (structure-only) |
 | `linux-service` | linux | Package, templated config, systemd service + handlers |
 | `windows-service` | windows | `ansible.windows.*` service + `win_template` config |
+| `managed-local-account` | cross | Local account on Linux (`user`) and Windows (`win_user`) |
 
 Generated repos include **`requirements.yml`** when a pattern needs collections
 (for example `ansible.windows`). CI runs **ansible-lint** and **ansible-syntax-check**
@@ -38,8 +40,9 @@ with collections installed. **Windows** patterns omit Docker `molecule/default` 
 skips); optional **`molecule/windows/`** delegated scenario documents live WinRM testing.
 
 Provenance records `ansibleRole.role_pattern_source` and `required_collections`.
-Mixed platform selections with a Linux-only pattern should document Windows Galaxy
-metadata separately in the role README until a cross-platform pattern is selected.
+For **mixed** Linux + Windows targets, prefer **`managed-local-account`** or split
+patterns per OS; Linux-only patterns apply Linux tasks only—document Windows Galaxy
+metadata in README when both OS families are declared.
 
 ## Required layout
 

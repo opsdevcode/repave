@@ -511,6 +511,37 @@ def test_generate_ansible_role_windows_service_pattern_dry_run(
     assert "ansible.windows" in spec["ansibleRole"]["required_collections"]
 
 
+def test_generate_ansible_role_managed_local_account_dry_run(
+    ansible_blueprint,
+    output_config,
+    staging_root,
+) -> None:
+    inputs = {
+        "role_name": "svcacct",
+        "namespace": "acme",
+        "description": "Cross-platform service account role",
+        "min_ansible_version": "2.18",
+        "support_linux": "true",
+        "support_windows": "true",
+        "windows_server_generation": "2022",
+        "target_platforms_advanced": "",
+        "role_pattern_source": "managed-local-account",
+    }
+    result = generate_from_blueprint(
+        ansible_blueprint,
+        inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+    output_dir = result.render.output_dir
+    run_yml = (output_dir / "tasks" / "run.yml").read_text(encoding="utf-8")
+    assert "ansible.builtin.user" in run_yml
+    assert "ansible.windows.win_user" in run_yml
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["ansibleRole"]["role_pattern_source"] == "managed-local-account"
+
+
 def test_generate_ansible_role_generic_publishes_role_repo(
     ansible_blueprint,
     ansible_sample_inputs,

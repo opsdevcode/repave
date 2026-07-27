@@ -116,6 +116,28 @@
           "dest": "molecule/windows/README.md"
         }
       ]
+    },
+    {
+      "id": "managed-local-account",
+      "label": "Managed local account (Linux + Windows)",
+      "platform": "cross",
+      "description": "Create a local service account on Linux (user) and Windows (win_user); for mixed estates.",
+      "omit_docker_molecule": false,
+      "requires_collections": ["ansible.windows"],
+      "files": [
+        {
+          "source": "roles/managed-local-account/tasks/run.yml.jinja",
+          "dest": "tasks/run.yml"
+        },
+        {
+          "source": "roles/managed-local-account/defaults/main.yml.jinja",
+          "dest": "defaults/main.yml"
+        },
+        {
+          "source": "roles/managed-local-account/molecule/default/verify.yml.jinja",
+          "dest": "molecule/default/verify.yml"
+        }
+      ]
     }
   ],
   "playbook_patterns": [
