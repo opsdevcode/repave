@@ -9,6 +9,7 @@ from jinja2 import Environment, select_autoescape
 
 from repave_engine.ansible_catalog import (
     AnsiblePattern,
+    collection_sample_pattern_by_id,
     load_ansible_catalog,
     pattern_by_id,
     patterns_for_platforms,
@@ -27,6 +28,10 @@ def blueprint_supports_role_patterns(blueprint: Blueprint) -> bool:
 
 def blueprint_supports_playbook_patterns(blueprint: Blueprint) -> bool:
     return any(field.name == "playbook_pattern_source" for field in blueprint.inputs)
+
+
+def blueprint_supports_collection_sample_patterns(blueprint: Blueprint) -> bool:
+    return any(field.name == "sample_role_pattern_source" for field in blueprint.inputs)
 
 
 def _platform_flags(normalized: dict[str, Any]) -> tuple[bool, bool]:
@@ -250,3 +255,79 @@ def finalize_role_pattern_layout(output_dir: Path, values: dict[str, Any]) -> No
         docker_molecule = output_dir / "molecule" / "default" / "molecule.yml"
         if docker_molecule.is_file():
             docker_molecule.unlink()
+
+
+def _sample_role_name(values: dict[str, Any]) -> str:
+    name = str(values.get("sample_role_name", "sample")).strip()
+    return name or "sample"
+
+
+def normalize_collection_sample_pattern_inputs(
+    blueprint: Blueprint,
+    normalized: dict[str, Any],
+    repo_root: Path,
+) -> None:
+    if not blueprint_supports_collection_sample_patterns(blueprint):
+        return
+
+    sample_name = _sample_role_name(normalized)
+    normalized["sample_role_name"] = sample_name
+    normalized["role_name"] = sample_name
+
+    catalog = load_ansible_catalog(repo_root)
+    support_linux, support_windows = _platform_flags(normalized)
+    _normalize_pattern_source(
+        field_name="sample_role_pattern_source",
+        patterns=catalog.collection_sample_patterns,
+        default_resolver=resolve_default_role_pattern,
+        support_linux=support_linux,
+        support_windows=support_windows,
+        normalized=normalized,
+        collections_key="_collection_sample_requires_collections",
+        omit_docker_key=None,
+    )
+
+
+def materialize_collection_sample_pattern(
+    output_dir: Path,
+    repo_root: Path,
+    values: dict[str, Any],
+) -> None:
+    pattern_id = str(values.get("sample_role_pattern_source", "linux-service")).strip()
+    catalog = load_ansible_catalog(repo_root)
+    pattern = collection_sample_pattern_by_id(catalog, pattern_id)
+    render_values = dict(values)
+    render_values["role_name"] = _sample_role_name(values)
+    render_values["sample_role_name"] = render_values["role_name"]
+    _materialize_pattern(output_dir, repo_root, render_values, pattern)
+
+
+def merge_collection_galaxy_dependencies(output_dir: Path, values: dict[str, Any]) -> None:
+    raw = values.get("_collection_sample_requires_collections", [])
+    collections: list[str] = []
+    if isinstance(raw, list):
+        collections = sorted({str(item).strip() for item in raw if str(item).strip()})
+    if not collections:
+        return
+    path = output_dir / "galaxy.yml"
+    if not path.is_file():
+        return
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        data = {}
+    deps_raw = data.get("dependencies")
+    deps: dict[str, str] = dict(deps_raw) if isinstance(deps_raw, dict) else {}
+    for name in collections:
+        deps.setdefault(name, ">=1.0.0")
+    data["dependencies"] = deps
+    path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+
+def finalize_collection_sample_role_layout(output_dir: Path, values: dict[str, Any]) -> None:
+    import shutil
+
+    sample = _sample_role_name(values)
+    placeholder = output_dir / "roles" / "sample"
+    target = output_dir / "roles" / sample
+    if sample != "sample" and placeholder.is_dir() and placeholder != target:
+        shutil.rmtree(placeholder)

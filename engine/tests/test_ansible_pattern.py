@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from repave_engine.ansible_pattern import (
+    normalize_collection_sample_pattern_inputs,
     normalize_playbook_pattern_inputs,
     normalize_role_pattern_inputs,
     resolve_default_playbook_pattern,
@@ -77,3 +78,19 @@ def test_normalize_playbook_pattern_default(repo_root: Path) -> None:
     }
     normalize_playbook_pattern_inputs(blueprint, normalized, repo_root)
     assert normalized["playbook_pattern_source"] == "linux-patch-baseline"
+
+
+def test_normalize_collection_sample_pattern_default(repo_root: Path) -> None:
+    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-collection-generic", repo_root)
+    normalized: dict[str, str] = {
+        "namespace": "acme",
+        "collection_name": "platform",
+        "description": "Platform collection",
+        "sample_role_name": "sample",
+        "min_ansible_version": "2.18",
+        "support_linux": "true",
+        "support_windows": "false",
+    }
+    normalize_collection_sample_pattern_inputs(blueprint, normalized, repo_root)
+    assert normalized["sample_role_pattern_source"] == "linux-service"
+    assert normalized["role_name"] == "sample"

@@ -5,7 +5,7 @@ Versioned Ansible configuration-management standards for repave golden paths.
 | Document | Version | Scope |
 | --- | --- | --- |
 | [role-standard.md](role-standard.md) | 1.1.0 | Galaxy-compatible roles + role patterns catalog |
-| [collection-standard.md](collection-standard.md) | 1.0.0 | Ansible collections |
+| [collection-standard.md](collection-standard.md) | 1.1.0 | Collections + catalog sample role patterns |
 | [playbook-project-standard.md](playbook-project-standard.md) | 1.1.0 | Playbook / inventory projects + playbook patterns |
 | [security-appendix.md](security-appendix.md) | 1.0.0 | Cross-cutting security rules |
 

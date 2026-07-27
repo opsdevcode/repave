@@ -221,6 +221,17 @@ def _build_ansible_collection_spec(
     min_version = values.get("min_ansible_version")
     if min_version not in (None, ""):
         spec["ansibleCollection"]["min_ansible_version"] = str(min_version)
+    sample_role = str(values.get("sample_role_name", "sample")).strip()
+    if sample_role:
+        spec["ansibleCollection"]["sample_role_name"] = sample_role
+    pattern = str(values.get("sample_role_pattern_source", "")).strip()
+    if pattern:
+        spec["ansibleCollection"]["sample_role_pattern_source"] = pattern
+    collections = values.get("_collection_sample_requires_collections")
+    if isinstance(collections, list):
+        names = sorted({str(item).strip() for item in collections if str(item).strip()})
+        if names:
+            spec["ansibleCollection"]["required_collections"] = names
     if blueprint.ansible_lint_pack is not None:
         spec["ansibleLint"] = {
             "pack_source": blueprint.ansible_lint_pack.pack_source,
