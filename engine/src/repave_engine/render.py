@@ -427,7 +427,11 @@ def _copy_opa_plan_fixtures(output_dir: Path, blueprint: Blueprint) -> None:
     """Vend plan JSON fixtures so module CI can run conftest without cloud credentials."""
     if blueprint.opa_policies is None:
         return
-    if not blueprint.artifact_type.startswith("terraform-"):
+    if blueprint.artifact_type not in (
+        "terraform-module",
+        "terraform-environment-stack",
+        "observability",
+    ):
         return
 
     repo_root = _find_repo_root(blueprint.path)

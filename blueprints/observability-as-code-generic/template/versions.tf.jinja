@@ -13,9 +13,9 @@ terraform {
       version = "~> 3.0"
     }
 {% elif backend == 'prometheus' %}
-    prometheus = {
-      source  = "prometheus-community/prometheus"
-      version = "~> 1.0"
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.2"
     }
 {% elif backend == 'otel' %}
     helm = {

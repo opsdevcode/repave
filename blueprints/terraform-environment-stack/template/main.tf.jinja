@@ -6,9 +6,9 @@ module "{{ mod.name }}" {
   version = "{{ mod.version }}"
 {%- endif %}
 
-  stack_name   = var.stack_name
-  environment  = var.environment
-  name_prefix  = local.name_prefix
-  tags         = local.common_tags
+  stack_name  = var.stack_name
+  environment = var.environment
+  name_prefix = local.name_prefix
+  tags        = local.common_tags
 }
 {% endfor %}
