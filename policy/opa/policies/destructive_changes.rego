@@ -1,7 +1,7 @@
 # Terraform plan policy: block destructive deletes without replacement.
-import future.keywords.in
-
 package terraform.plan
+
+import future.keywords.in
 
 deny contains msg if {
     some change in input.resource_changes

@@ -1,7 +1,7 @@
 # Prometheus alerting rules YAML (native mode).
-import future.keywords.in
-
 package observability.prometheus
+
+import future.keywords.in
 
 deny contains msg if {
     some group in input.groups
