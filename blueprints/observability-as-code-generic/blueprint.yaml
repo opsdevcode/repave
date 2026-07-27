@@ -2,8 +2,8 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: observability-as-code-generic
-  version: 0.5.0
-  description: Governed alerts and monitors across Prometheus, Grafana, Datadog, OTel, and Terraform.
+  version: 0.6.0
+  description: Umbrella observability (multi-backend + OTel); prefer dashboards-as-code or monitors-as-code for new repos.
 spec:
   artifactType: observability
   standard:
