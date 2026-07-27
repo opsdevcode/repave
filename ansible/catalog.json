@@ -2,7 +2,8 @@
   "version": "1.2.0",
   "defaults": {
     "role_pattern_source": "linux-service",
-    "playbook_pattern_source": "linux-patch-baseline"
+    "playbook_pattern_source": "linux-patch-baseline",
+    "sample_role_pattern_source": "linux-service"
   },
   "form_presets": {
     "ansible-role-generic": {
@@ -22,6 +23,16 @@
         "support_windows",
         "environment",
         "pinned_roles"
+      ]
+    },
+    "ansible-collection-generic": {
+      "decision_fields": [
+        "namespace",
+        "collection_name",
+        "sample_role_name",
+        "sample_role_pattern_source",
+        "support_linux",
+        "support_windows"
       ]
     }
   },
@@ -169,6 +180,66 @@
         {
           "source": "playbooks/windows-update-baseline/inventories/hosts.yml.jinja",
           "dest": "inventories/{{ environment }}/hosts.yml"
+        }
+      ]
+    }
+  ],
+  "collection_sample_patterns": [
+    {
+      "id": "repave-baseline",
+      "label": "Structure only (placeholder tasks)",
+      "platform": "any",
+      "description": "Galaxy layout with debug placeholder in roles/sample/tasks/main.yml.",
+      "requires_collections": [],
+      "files": []
+    },
+    {
+      "id": "linux-service",
+      "label": "Linux package, config, and service",
+      "platform": "linux",
+      "description": "Sample role: package, templated config, and systemd unit.",
+      "requires_collections": [],
+      "files": [
+        {
+          "source": "roles/linux-service/tasks/collection-main.yml.jinja",
+          "dest": "roles/{{ sample_role_name }}/tasks/main.yml"
+        },
+        {
+          "source": "roles/linux-service/defaults/collection-main.yml.jinja",
+          "dest": "roles/{{ sample_role_name }}/defaults/main.yml"
+        },
+        {
+          "source": "roles/linux-service/handlers/collection-main.yml.jinja",
+          "dest": "roles/{{ sample_role_name }}/handlers/main.yml"
+        },
+        {
+          "source": "roles/linux-service/templates/app.conf.jinja",
+          "dest": "roles/{{ sample_role_name }}/templates/{{ role_name }}.conf.jinja"
+        }
+      ]
+    },
+    {
+      "id": "windows-service",
+      "label": "Windows service and config file",
+      "platform": "windows",
+      "description": "Sample role: win_template config and Windows service.",
+      "requires_collections": ["ansible.windows"],
+      "files": [
+        {
+          "source": "roles/windows-service/tasks/run.yml.jinja",
+          "dest": "roles/{{ sample_role_name }}/tasks/main.yml"
+        },
+        {
+          "source": "roles/windows-service/defaults/main.yml.jinja",
+          "dest": "roles/{{ sample_role_name }}/defaults/main.yml"
+        },
+        {
+          "source": "roles/windows-service/handlers/main.yml.jinja",
+          "dest": "roles/{{ sample_role_name }}/handlers/main.yml"
+        },
+        {
+          "source": "roles/windows-service/templates/app.ini.jinja",
+          "dest": "roles/{{ sample_role_name }}/templates/{{ role_name }}.ini.jinja"
         }
       ]
     }

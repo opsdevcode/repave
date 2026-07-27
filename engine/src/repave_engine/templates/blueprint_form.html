@@ -694,6 +694,39 @@
         </div>
       </div>
       {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "support_windows" %}
+      {% elif blueprint.artifact_type == "ansible-collection" and ansible_collection_sample_patterns and ansible_catalog and field.name == "sample_role_pattern_source" %}
+      <div class="field-block" id="ansible-collection-sample-pattern-block">
+        <label for="sample_role_pattern_source">Sample role pattern</label>
+        <p class="hint">Same pattern catalog as standalone roles; materialized under <code>roles/&lt;sample_role_name&gt;/</code>.</p>
+        <select class="select" id="sample_role_pattern_source" name="sample_role_pattern_source">
+          {% for pattern in ansible_catalog.collection_sample_patterns %}
+          <option
+            value="{{ pattern['id'] }}"
+            {% if pattern['id'] == ansible_catalog.defaults.get('sample_role_pattern_source', 'linux-service') %}selected{% endif %}
+          >
+            {{ pattern['label'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-collection" and ansible_collection_sample_patterns and field.name == "support_linux" %}
+      <div class="field-block">
+        <label>Sample role platforms</label>
+        <div class="hint">Patterns filtered by Linux and/or Windows selection.</div>
+        <div class="platform-picker">
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_linux_cb" checked />
+            Linux
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_windows_cb" />
+            Windows
+          </label>
+          <input type="hidden" id="support_linux" name="support_linux" value="true" />
+          <input type="hidden" id="support_windows" name="support_windows" value="false" />
+        </div>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-collection" and field.name == "support_windows" %}
       {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "pinned_roles" %}
       <div class="field-block">
         <label>Galaxy roles</label>
@@ -1212,6 +1245,82 @@
   }
 
   void initRoleInventory();
+</script>
+{% elif blueprint.artifact_type == "ansible-collection" %}
+<script id="ansible-catalog-data" type="application/json">{% if ansible_catalog %}{{ ansible_catalog | tojson }}{% else %}{}{% endif %}</script>
+<script>
+  const collectionBlueprintName = {{ blueprint.name | tojson }};
+  const linuxCheckbox = document.getElementById("support_linux_cb");
+  const windowsCheckbox = document.getElementById("support_windows_cb");
+  const linuxInput = document.getElementById("support_linux");
+  const windowsInput = document.getElementById("support_windows");
+  const platformForm = document.getElementById("generate-form");
+  const samplePatternSelect = document.getElementById("sample_role_pattern_source");
+  let ansibleCatalog = {};
+  try {
+    ansibleCatalog = JSON.parse(document.getElementById("ansible-catalog-data")?.textContent || "{}");
+  } catch (_err) {
+    ansibleCatalog = {};
+  }
+
+  function defaultCollectionSamplePattern(linux, windows) {
+    if (windows && !linux) return "windows-service";
+    if (linux) return "linux-service";
+    return "repave-baseline";
+  }
+
+  async function refreshCollectionSamplePatterns() {
+    if (!samplePatternSelect) return;
+    const linux = linuxInput?.value === "true";
+    const windows = windowsInput?.value === "true";
+    const previous = samplePatternSelect.value;
+    let catalog = ansibleCatalog;
+    try {
+      const params = new URLSearchParams({
+        support_linux: linux ? "true" : "false",
+        support_windows: windows ? "true" : "false",
+      });
+      const resp = await fetch(
+        `/blueprints/${encodeURIComponent(collectionBlueprintName)}/ansible-catalog?${params}`
+      );
+      if (resp.ok) catalog = await resp.json();
+    } catch (_err) {
+      /* keep embedded catalog */
+    }
+    const patterns = catalog.collection_sample_patterns || [];
+    samplePatternSelect.innerHTML = "";
+    for (const pattern of patterns) {
+      const opt = document.createElement("option");
+      opt.value = pattern.id;
+      opt.textContent = pattern.label;
+      samplePatternSelect.appendChild(opt);
+    }
+    const ids = patterns.map((p) => p.id);
+    const fallback = defaultCollectionSamplePattern(linux, windows);
+    if (ids.includes(previous)) {
+      samplePatternSelect.value = previous;
+    } else if (ids.includes(fallback)) {
+      samplePatternSelect.value = fallback;
+    } else if (ids.length) {
+      samplePatternSelect.value = ids[0];
+    }
+  }
+
+  function syncCollectionPlatformInputs() {
+    if (linuxInput && linuxCheckbox) {
+      linuxInput.value = linuxCheckbox.checked ? "true" : "false";
+    }
+    if (windowsInput && windowsCheckbox) {
+      windowsInput.value = windowsCheckbox.checked ? "true" : "false";
+    }
+    refreshCollectionSamplePatterns();
+  }
+
+  linuxCheckbox?.addEventListener("change", syncCollectionPlatformInputs);
+  windowsCheckbox?.addEventListener("change", syncCollectionPlatformInputs);
+  platformForm?.addEventListener("submit", syncCollectionPlatformInputs);
+  platformForm?.addEventListener("repave:stepper-pre-submit", syncCollectionPlatformInputs);
+  syncCollectionPlatformInputs();
 </script>
 {% elif blueprint.artifact_type == "terraform-environment-stack" %}
 <script>

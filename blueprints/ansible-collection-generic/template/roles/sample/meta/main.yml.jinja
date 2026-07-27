@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  role_name: sample
+  role_name: {{ sample_role_name | default('sample') }}
   author: platform-engineering
   description: Starter role for {{ namespace }}.{{ collection_name }}.
   license: Apache-2.0

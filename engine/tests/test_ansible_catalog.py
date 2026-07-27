@@ -15,6 +15,8 @@ def test_load_ansible_catalog_has_patterns(repo_root: Path) -> None:
     catalog = load_ansible_catalog(repo_root)
     assert len(catalog.role_patterns) >= 4
     assert len(catalog.playbook_patterns) >= 3
+    assert len(catalog.collection_sample_patterns) >= 3
+    assert catalog.defaults.get("sample_role_pattern_source") == "linux-service"
     assert catalog.defaults.get("role_pattern_source") == "linux-service"
     assert catalog.defaults.get("playbook_pattern_source") == "linux-patch-baseline"
     linux = role_pattern_by_id(catalog, "linux-service")
@@ -83,3 +85,16 @@ def test_catalog_for_api_playbook_patterns(repo_root: Path) -> None:
     win = playbook_pattern_by_id(catalog, "windows-update-baseline")
     assert win is not None
     assert "ansible.windows" in win.requires_collections
+
+
+def test_catalog_for_api_collection_sample_patterns(repo_root: Path) -> None:
+    catalog = load_ansible_catalog(repo_root)
+    payload = catalog_for_api(
+        catalog,
+        support_linux=True,
+        support_windows=False,
+        blueprint_name="ansible-collection-generic",
+    )
+    ids = {item["id"] for item in payload["collection_sample_patterns"]}
+    assert "linux-service" in ids
+    assert payload["form_preset"]["decision_fields"][3] == "sample_role_pattern_source"

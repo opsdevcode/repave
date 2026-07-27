@@ -420,6 +420,39 @@ def test_generate_ansible_collection_publishes_repo(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_ansible_collection_linux_service_sample_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    import yaml
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-collection-generic",
+        repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "namespace": "acme",
+            "collection_name": "platform",
+            "description": "Platform collection",
+            "sample_role_name": "sample",
+            "min_ansible_version": "2.18",
+            "support_linux": "true",
+            "support_windows": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+    output_dir = result.render.output_dir
+    main_yml = (output_dir / "roles" / "sample" / "tasks" / "main.yml").read_text(encoding="utf-8")
+    assert "ansible.builtin.package" in main_yml
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["ansibleCollection"]["sample_role_pattern_source"] == "linux-service"
+
+
 def test_generate_ansible_role_linux_service_pattern_dry_run(
     ansible_blueprint,
     ansible_sample_inputs,

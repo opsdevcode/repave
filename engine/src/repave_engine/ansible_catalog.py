@@ -41,6 +41,7 @@ class AnsibleCatalog:
     defaults: dict[str, str]
     role_patterns: tuple[AnsiblePattern, ...]
     playbook_patterns: tuple[AnsiblePattern, ...]
+    collection_sample_patterns: tuple[AnsiblePattern, ...]
     form_presets: dict[str, FormPreset]
 
 
@@ -104,6 +105,7 @@ def load_ansible_catalog(repo_root: Path) -> AnsibleCatalog:
         defaults=defaults,
         role_patterns=_parse_pattern_list(data.get("role_patterns", [])),
         playbook_patterns=_parse_pattern_list(data.get("playbook_patterns", [])),
+        collection_sample_patterns=_parse_pattern_list(data.get("collection_sample_patterns", [])),
         form_presets=form_presets,
     )
 
@@ -171,6 +173,26 @@ def playbook_patterns_for_platforms(
     )
 
 
+def collection_sample_patterns_for_platforms(
+    catalog: AnsibleCatalog,
+    *,
+    support_linux: bool,
+    support_windows: bool,
+) -> tuple[AnsiblePattern, ...]:
+    return patterns_for_platforms(
+        catalog.collection_sample_patterns,
+        support_linux=support_linux,
+        support_windows=support_windows,
+    )
+
+
+def collection_sample_pattern_by_id(
+    catalog: AnsibleCatalog,
+    pattern_id: str,
+) -> AnsiblePattern | None:
+    return pattern_by_id(catalog.collection_sample_patterns, pattern_id)
+
+
 def form_preset_for_blueprint(catalog: AnsibleCatalog, blueprint_name: str) -> FormPreset | None:
     return catalog.form_presets.get(blueprint_name)
 
@@ -202,6 +224,7 @@ def catalog_for_api(
         ),
         "role_patterns": [],
         "playbook_patterns": [],
+        "collection_sample_patterns": [],
     }
     if blueprint_name == "ansible-role-generic":
         role_items = role_patterns_for_platforms(
@@ -217,6 +240,13 @@ def catalog_for_api(
             support_windows=support_windows,
         )
         payload["playbook_patterns"] = [_pattern_payload(item) for item in playbook_items]
+    elif blueprint_name == "ansible-collection-generic":
+        sample_items = collection_sample_patterns_for_platforms(
+            catalog,
+            support_linux=support_linux,
+            support_windows=support_windows,
+        )
+        payload["collection_sample_patterns"] = [_pattern_payload(item) for item in sample_items]
     return payload
 
 

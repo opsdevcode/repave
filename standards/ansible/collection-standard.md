@@ -1,6 +1,6 @@
 # Ansible collection standard
 
-Version: 1.0.0
+Version: 1.1.0
 
 Contract for Ansible collections (`ansible-collection-generic` golden path).
 References [Ansible collection documentation](https://docs.ansible.com/projects/ansible/latest/collections_guide/index.html)
@@ -42,6 +42,11 @@ Match the estate minimum Ansible version.
 
 Each role under `roles/` must satisfy [role-standard.md](role-standard.md).
 Collection-level ansible-lint runs from the collection root.
+
+The starter role in `ansible-collection-generic` is materialized from
+**`collection_sample_patterns`** in `ansible/catalog.json` (same task fragments as
+standalone role patterns). Provenance records `sample_role_pattern_source` and
+`required_collections` on `galaxy.yml` when needed.
 
 ## Security
 

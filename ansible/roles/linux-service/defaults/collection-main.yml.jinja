@@ -1,0 +1,6 @@
+---
+# Collection role defaults for linux-service ({{ role_name }}).
+{{ role_name }}_role_enabled: true
+{{ role_name }}_service_package: rsyslog
+{{ role_name }}_service_service_name: rsyslog
+{{ role_name }}_service_config_path: "/etc/rsyslog.d/99-{{ role_name }}.conf"

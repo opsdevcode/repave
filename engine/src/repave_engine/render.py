@@ -260,6 +260,16 @@ def render_blueprint(
 
         materialize_playbook_pattern(output_dir, _find_repo_root(blueprint.path), payload)
         merge_playbook_requirements_collections(output_dir, payload)
+    if blueprint.name == "ansible-collection-generic":
+        from repave_engine.ansible_pattern import (
+            finalize_collection_sample_role_layout,
+            materialize_collection_sample_pattern,
+            merge_collection_galaxy_dependencies,
+        )
+
+        materialize_collection_sample_pattern(output_dir, _find_repo_root(blueprint.path), payload)
+        merge_collection_galaxy_dependencies(output_dir, payload)
+        finalize_collection_sample_role_layout(output_dir, payload)
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None
