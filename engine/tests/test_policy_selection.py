@@ -69,3 +69,50 @@ def test_policy_selection_file_roundtrip(tmp_path: Path) -> None:
     assert loaded is not None
     assert loaded.profile == "estate-default"
     assert loaded.checkov_skip_checks == ("CKV2_REPAVE_2",)
+
+
+def _monitors_custom_inputs(*, enable_policy: str = "false") -> dict[str, str]:
+    return {
+        "configuration_mode": "custom",
+        "service_name": "checkout",
+        "organization": "platform",
+        "team": "payments",
+        "description": "Checkout alerts",
+        "backend": "prometheus",
+        "output_mode": "native",
+        "enable_policy": enable_policy,
+        "notification_source": "repave-estate-oncall",
+        "notification_target": "pagerduty-payments",
+        "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        "slo_target_percent": "99.9",
+    }
+
+
+def test_monitors_policy_disabled_skips_selection(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    values = validate_inputs(
+        blueprint,
+        _monitors_custom_inputs(enable_policy="false"),
+        repo_root=repo_root,
+    )
+    assert values.get("enable_policy") == "false"
+    assert "_policy_selection" not in values
+
+
+def test_monitors_policy_enabled_writes_selection(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "monitors-as-code-generic",
+        repo_root,
+    )
+    values = validate_inputs(
+        blueprint,
+        {**_monitors_custom_inputs(enable_policy="true")},
+        repo_root=repo_root,
+    )
+    selection = values.get("_policy_selection")
+    assert isinstance(selection, PolicySelection)
+    assert selection.pack_source == "repave-observability-pack"
+    assert "opa:observability_prometheus" in selection.enabled_rules

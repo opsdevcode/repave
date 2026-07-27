@@ -56,14 +56,17 @@ files under `observability/monitors/` (see `observability/monitors/README.md`).
 resources. Community **monitor packs** (`monitor_pack_source`) materialize under native paths only;
 Terraform repos use the template baseline in `.tf` until pack Terraform is added in a later release.
 
-Generated repos vend `policy/opa/policies/` from the selected pack and `tests/fixtures/plan-create-only.json`
-for Conftest when live plan JSON is unavailable.
-
 ## Policy packs
 
-Default generate inputs: `policy_pack_source=repave-observability-pack`,
-`policy_profile=observability-default`. See `policy/PACKS.md` and
-`standards/policy/customization.md`.
+Set **`enable_policy`** to **`true`** at generate time (portal: **Apply OPA policy pack**) to
+vend **`repave-observability-pack`** / profile **`observability-default`**, copy selected Rego
+into `policy/opa/policies/`, and record `.repave/policy-selection.json`. When **`false`**
+(default), generated repos skip vendored Rego and the **`opa`** gate skips.
+
+When policy is enabled, defaults match the observability golden path:
+`policy_pack_source=repave-observability-pack`, `policy_profile=observability-default`.
+Terraform mode also gets `tests/fixtures/plan-create-only.json` for Conftest without live plan
+JSON. See `policy/PACKS.md` and `standards/policy/customization.md`.
 
 ## Validation
 

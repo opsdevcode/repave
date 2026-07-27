@@ -477,10 +477,28 @@
       </div>
       {% endif %}
 
-      {% if policy_customization and policy_catalog %}
+      {% if policy_customization_optional and policy_catalog %}
+      <div class="field-block policy-enable" id="policy-enable">
+        <label class="checkbox-row" for="enable_policy_toggle">
+          <input
+            type="checkbox"
+            id="enable_policy_toggle"
+            {% if policy_defaults.get('enable_policy') == 'true' %}checked{% endif %}
+          />
+          Apply OPA policy pack
+        </label>
+        <input type="hidden" id="enable_policy" name="enable_policy" value="false" />
+        <p class="hint">
+          When enabled, vend Conftest Rego from <code>repave-observability-pack</code> and run the
+          <code>opa</code> gate. Leave off for monitor layout and non-OPA gates only.
+        </p>
+      </div>
+      {% endif %}
+      {% if (policy_customization or policy_customization_optional) and policy_catalog %}
       <div
         class="field-block policy-customization"
         id="policy-customization"
+        {% if policy_customization_optional %}hidden{% endif %}
         {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
       >
         <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
@@ -583,7 +601,7 @@
 
       {% for field in blueprint.inputs %}
       {% if field.name == "provider_service_scope" %}
-      {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules") %}
+      {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules", "enable_policy") %}
       {% elif field.name in ("notification_source", "notification_target") %}
       {% elif blueprint.name == "app-service-generic" and field.name in ("system", "catalog_lifecycle") %}
       {% elif field.name == "dashboard_pack_source" %}
@@ -1767,12 +1785,14 @@
 </script>
 {% endif %}
 {% endif %}
-{% if policy_customization and policy_catalog %}
+{% if (policy_customization or policy_customization_optional) and policy_catalog %}
 <script id="policy-catalog-data" type="application/json">{{ policy_catalog | tojson }}</script>
 <script>
 (function () {
   const catalogEl = document.getElementById("policy-catalog-data");
   const root = document.getElementById("policy-customization");
+  const policyEnableToggle = document.getElementById("enable_policy_toggle");
+  const policyEnableHidden = document.getElementById("enable_policy");
   const profileSelect = document.getElementById("policy_profile");
   const packSelect = document.getElementById("policy_pack_source");
   const rulesHidden = document.getElementById("policy_rules");
@@ -1784,6 +1804,28 @@
   const enableOptionalBtn = document.getElementById("policy-rules-enable-optional");
   const useProfileBtn = document.getElementById("policy-rules-use-profile");
   if (!root || !profileSelect || !rulesHidden || !rulesList || !catalogEl) return;
+
+  const policyOptional = Boolean(policyEnableToggle && policyEnableHidden);
+
+  function setPolicyPanelEnabled(enabled) {
+    if (!policyOptional) return;
+    policyEnableHidden.value = enabled ? "true" : "false";
+    root.hidden = !enabled;
+    for (const el of root.querySelectorAll("select, input, button, textarea, search")) {
+      el.disabled = !enabled;
+    }
+  }
+
+  function syncPolicyEnableFromToggle() {
+    setPolicyPanelEnabled(Boolean(policyEnableToggle?.checked));
+  }
+
+  if (policyOptional) {
+    policyEnableToggle.addEventListener("change", syncPolicyEnableFromToggle);
+    syncPolicyEnableFromToggle();
+    document.getElementById("generate-form")?.addEventListener("submit", syncPolicyEnableFromToggle);
+    document.getElementById("generate-form")?.addEventListener("repave:stepper-pre-submit", syncPolicyEnableFromToggle);
+  }
 
   const blueprintName = {{ blueprint.name | tojson }};
   const policyDefaults = {{ policy_defaults | tojson }};

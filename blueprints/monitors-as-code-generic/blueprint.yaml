@@ -2,13 +2,13 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: monitors-as-code-generic
-  version: 0.3.0
+  version: 0.4.0
   description: Governed Datadog monitors and Prometheus alerting (native or Terraform).
 spec:
   artifactType: observability
   standard:
     source: standards/observability/monitors-as-code.md
-    version: 1.1.0
+    version: 1.2.0
   inputs:
     - name: service_name
       type: string
@@ -86,6 +86,14 @@ spec:
       required: false
       default: ""
       description: Optional availability SLO target (e.g. 99.9) for starter SLO rules (Prometheus).
+    - name: enable_policy
+      type: string
+      required: false
+      default: "false"
+      enum:
+        - "true"
+        - "false"
+      description: When true, vend the observability OPA pack and run the opa gate; when false, skip policy customization.
     - name: policy_pack_source
       type: string
       required: false
