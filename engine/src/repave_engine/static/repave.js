@@ -238,6 +238,7 @@
     var dryRunBtn = form.querySelector("[data-dry-run-run]");
     var drySubmitBtn = form.querySelector("[data-dry-run-submit]");
     var dryRunForceField = form.querySelector("[data-dry-run-force]");
+    var progressEl = form.querySelector("[data-stepper-progress]");
     var current = 0;
     var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
     if (Number.isNaN(maxStep)) {
@@ -397,6 +398,17 @@
       var stickyActions = form.querySelector(".form-actions--sticky");
       if (stickyActions) {
         stickyActions.classList.toggle("form-actions--stepper-final", current === maxStep);
+      }
+      if (progressEl) {
+        var activeStep = form.querySelector('.form-stepper__step[data-stepper-index="' + current + '"]');
+        var labelNode = activeStep ? activeStep.querySelector(".form-stepper__label") : null;
+        var label = labelNode ? labelNode.textContent.trim() : "";
+        progressEl.textContent =
+          "Step " +
+          (current + 1) +
+          " of " +
+          (maxStep + 1) +
+          (label ? " · " + label : "");
       }
       form.dispatchEvent(
         new CustomEvent("repave:stepper-change", {

@@ -2249,11 +2249,50 @@ details.file-panel summary {
 }
 
 .governance-card__gates {
-  gap: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-content: flex-start;
+}
+
+.governance-card__gates:not(:has(.governance-card__gates-details)) {
   max-height: 9rem;
   overflow-y: auto;
   padding-right: var(--space-1);
-  align-content: flex-start;
+}
+
+.governance-card__gates-details {
+  width: 100%;
+}
+
+.governance-card__gates-details summary {
+  cursor: pointer;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  list-style: none;
+}
+
+.governance-card__gates-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.governance-card__gates-details summary::before {
+  content: "▸ ";
+  color: var(--accent);
+}
+
+.governance-card__gates-details[open] summary::before {
+  content: "▾ ";
+}
+
+.governance-card__gates-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  max-height: 10rem;
+  overflow-y: auto;
+  padding-right: var(--space-1);
 }
 
 .governance-drift-summary {
@@ -2595,6 +2634,13 @@ details.file-panel summary {
   border-color: var(--accent);
   color: var(--accent);
   background: color-mix(in srgb, var(--accent-soft) 65%, transparent);
+}
+
+.form-stepper__progress {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.88rem;
+  order: 3;
 }
 
 .form-stepper__actions {
@@ -3207,7 +3253,83 @@ body.repave-busy {
   padding-top: var(--space-3);
 }
 
+.form-actions__delivery-hint--short {
+  display: none;
+}
+
+.form-actions__buttons--stack {
+  gap: var(--space-2);
+}
+
 @media (max-width: 640px) {
+  .form-layout--split {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-layout--split .form-panel {
+    order: 1;
+  }
+
+  .form-layout--split .governance-card {
+    order: 2;
+  }
+
+  .form-actions--sticky {
+    margin-left: calc(-1 * var(--space-3));
+    margin-right: calc(-1 * var(--space-3));
+    padding-left: var(--space-3);
+    padding-right: var(--space-3);
+    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+  }
+
+  .form-actions__preflight {
+    font-size: 0.82rem;
+  }
+
+  .form-actions__buttons--stack {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions__buttons--stack .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .form-actions__delivery-hint--full {
+    display: none;
+  }
+
+  .form-actions__delivery-hint--short {
+    display: block;
+  }
+
+  .form-stepper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-stepper__list {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-1);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .form-stepper__step {
+    flex: 0 0 auto;
+  }
+
+  .form-stepper__actions {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .governance-card__footnote {
+    display: none;
+  }
+
   .shell__bar {
     flex-wrap: wrap;
     padding: var(--space-3);

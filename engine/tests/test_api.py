@@ -313,6 +313,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
     assert "form-actions__delivery" in response.text
+    assert "data-stepper-progress" in response.text
+    assert "governance-card__gates-details" in response.text
+    assert "form-actions__buttons--stack" in response.text
     assert "novalidate" in response.text
 
 
@@ -343,11 +346,9 @@ def test_ansible_role_form_stepper(repo_root, output_config) -> None:
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
     assert "form-actions__delivery" in response.text
+    assert "data-stepper-progress" in response.text
+    assert "governance-card__gates-details" not in response.text
     assert "novalidate" in response.text
-
-
-@pytest.mark.slow
-def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
         "/generate",
