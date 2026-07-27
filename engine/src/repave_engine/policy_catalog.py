@@ -166,6 +166,22 @@ def enabled_rule_ids_for_profile(
         return {rule.id for rule in rules_for_artifact(catalog, artifact_type) if rule.required}
 
 
+_OBSERVABILITY_ARTIFACT_PROFILES = frozenset({"observability-default", "custom"})
+
+
+def profiles_for_api(
+    catalog: PolicyCatalog,
+    artifact_type: str,
+) -> dict[str, dict[str, Any]]:
+    if artifact_type == "observability":
+        return {
+            key: value
+            for key, value in catalog.profiles.items()
+            if key in _OBSERVABILITY_ARTIFACT_PROFILES
+        }
+    return dict(catalog.profiles)
+
+
 def catalog_for_api(
     catalog: PolicyCatalog,
     artifact_type: str,
@@ -187,7 +203,7 @@ def catalog_for_api(
                 if isinstance(value.get("includes"), list)
                 else [],
             }
-            for key, value in catalog.profiles.items()
+            for key, value in profiles_for_api(catalog, artifact_type).items()
         },
         "pack_sources": list(packs),
         "rules": [

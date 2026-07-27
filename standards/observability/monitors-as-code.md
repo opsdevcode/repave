@@ -53,8 +53,10 @@ files under `observability/monitors/` (see `observability/monitors/README.md`).
 | `prometheus` | `prometheus/rules/*.yaml`, `prometheus/alertmanager/alertmanager.yaml` | `prometheus_rules.tf`, `alertmanager.tf` — `null_resource` payloads (rule group + Alertmanager YAML) for GitOps; map triggers to your ruler (Mimir, AMP, Prometheus Operator, Thanos Ruler, etc.) |
 
 `output_mode=terraform` emits `versions.tf`, `providers.tf`, `variables.tf`, and backend-specific
-resources. Community **monitor packs** (`monitor_pack_source`) materialize under native paths only;
-Terraform repos use the template baseline in `.tf` until pack Terraform is added in a later release.
+resources. Community **monitor packs** (`monitor_pack_source`) materialize under native paths and,
+when the pack includes vendored files, generate **`monitor_packs.tf`** (Datadog `datadog_monitor`
+resources or Prometheus `null_resource` GitOps payloads). Empty packs (`repave-red-starter`) keep the
+template baseline in `monitors.tf` / `prometheus_rules.tf`.
 
 ## Policy packs
 

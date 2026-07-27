@@ -193,15 +193,55 @@ def render_blueprint(
     if blueprint.name == "monitors-as-code-generic":
         backend = str(payload.get("backend", "datadog"))
         output_mode = str(payload.get("output_mode", "native"))
-        _prune_monitors_backend_outputs(
-            output_dir,
-            backend=backend,
-            output_mode=output_mode,
+        repo_root = _find_repo_root(blueprint.path)
+        _prune_monitors_cross_backend(output_dir, backend)
+        from repave_engine.monitor_pack import (
+            materialize_monitor_pack,
+            write_monitor_pack_terraform,
         )
-        from repave_engine.monitor_pack import materialize_monitor_pack
+        from repave_engine.observability_catalog import (
+            load_observability_catalog,
+            monitor_pack_by_id,
+        )
 
-        if output_mode.strip().lower() == "native":
-            materialize_monitor_pack(output_dir, _find_repo_root(blueprint.path), payload)
+        pack_id = str(payload.get("monitor_pack_source", "repave-red-starter")).strip()
+        catalog = load_observability_catalog(repo_root)
+        pack = monitor_pack_by_id(catalog, pack_id)
+        if pack is not None and pack.files:
+            materialize_monitor_pack(output_dir, repo_root, payload)
+        mode = output_mode.strip().lower()
+        if mode == "terraform":
+            if pack is not None and pack.files:
+                normalized_backend = backend.strip().lower()
+                if normalized_backend == "datadog":
+                    starter = output_dir / "monitors.tf"
+                    if starter.is_file():
+                        starter.unlink()
+                elif normalized_backend == "prometheus":
+                    starter = output_dir / "prometheus_rules.tf"
+                    if starter.is_file():
+                        starter.unlink()
+                write_monitor_pack_terraform(output_dir, backend=backend)
+                _prune_monitors_terraform_outputs(
+                    output_dir,
+                    backend=backend,
+                    keep_pack_native=True,
+                )
+            else:
+                _prune_monitors_backend_outputs(
+                    output_dir,
+                    backend=backend,
+                    output_mode=output_mode,
+                )
+                pack_tf = output_dir / "monitor_packs.tf"
+                if pack_tf.is_file():
+                    pack_tf.unlink()
+        else:
+            _prune_monitors_backend_outputs(
+                output_dir,
+                backend=backend,
+                output_mode=output_mode,
+            )
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None
@@ -327,10 +367,44 @@ _MONITORS_TF_BY_BACKEND: dict[str, frozenset[str]] = {
     "datadog": frozenset({"monitors.tf"}),
     "prometheus": frozenset({"prometheus_rules.tf", "alertmanager.tf"}),
 }
-_MONITORS_TF_ROOT = frozenset({"versions.tf", "variables.tf", "providers.tf"})
+_MONITORS_TF_ROOT = frozenset({"versions.tf", "variables.tf", "providers.tf", "monitor_packs.tf"})
 _ALL_MONITORS_TF = (
     frozenset({"monitors.tf", "prometheus_rules.tf", "alertmanager.tf"}) | _MONITORS_TF_ROOT
 )
+
+
+def _prune_monitors_cross_backend(output_dir: Path, backend: str) -> None:
+    """Keep only the selected monitor backend native directory (Datadog vs Prometheus)."""
+    normalized = backend.strip().lower()
+    if normalized == "datadog":
+        target = output_dir / "prometheus"
+    elif normalized == "prometheus":
+        target = output_dir / "datadog"
+    else:
+        return
+    if target.is_dir():
+        shutil.rmtree(target)
+
+
+def _prune_monitors_terraform_outputs(
+    output_dir: Path,
+    *,
+    backend: str,
+    keep_pack_native: bool,
+) -> None:
+    selected = backend.strip().lower()
+    if not keep_pack_native:
+        for name in ("prometheus", "datadog"):
+            path = output_dir / name
+            if path.is_dir():
+                shutil.rmtree(path)
+    keep = _MONITORS_TF_BY_BACKEND.get(selected, frozenset()) | _MONITORS_TF_ROOT
+    for tf_name in _ALL_MONITORS_TF:
+        if tf_name in keep:
+            continue
+        tf_path = output_dir / tf_name
+        if tf_path.is_file():
+            tf_path.unlink()
 
 
 def _prune_monitors_backend_outputs(
