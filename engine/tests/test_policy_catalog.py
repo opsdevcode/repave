@@ -44,6 +44,16 @@ def test_observability_pack_source_filtered(repo_root: Path) -> None:
     assert "repave-checkov-pack" not in ids
 
 
+def test_observability_catalog_profiles_filtered(repo_root: Path) -> None:
+    from repave_engine.policy_catalog import catalog_for_api, load_policy_catalog
+
+    catalog = load_policy_catalog(repo_root)
+    payload = catalog_for_api(catalog, "observability")
+    profile_ids = set(payload["profiles"])
+    assert profile_ids == {"observability-default", "custom"}
+    assert "estate-default" not in profile_ids
+
+
 def test_observability_default_profile_rules(repo_root: Path) -> None:
     catalog = load_policy_catalog(repo_root)
     enabled = resolve_profile_rule_ids(
