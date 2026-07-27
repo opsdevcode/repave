@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.66.0  
-**In progress:** docs/observability/policy catalog alignment (post–dry-run gates)  
+**In progress:** v1.67 Ansible role patterns (Linux + Windows); docs/observability/policy catalog alignment (post–dry-run gates)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -48,6 +48,7 @@ remediation — not just one-shot module creation.
 ```text
 v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA pack (catalog v1.3.0)
   │
+  ├─ v1.67          Ansible role patterns   linux-service / windows-service catalog + portal picker
   ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
   ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
   ├─ v1.21–v1.26    estate-ready      standards pack; provenance; module CI; operator; k8s deploy
@@ -331,6 +332,34 @@ Host e2e smoke exercises the flag on the `terraform-minimal` fixture.
 ### v1.22 — Ansible collection golden path
 
 **Status:** Shipped on `main` (see [v1.22.0 — Ansible collection golden path](#v1220--ansible-collection-golden-path)).
+
+---
+
+### v1.67 — Ansible role patterns (Linux + Windows)
+
+**Problem:** `ansible-role-generic` shipped layout, lint pack, and Molecule wiring but
+**placeholder tasks** (`debug` only)—no runnable automation for Linux or Windows estates.
+
+**Approach:**
+
+- **`ansible/catalog.json`** with **`role_patterns`** (like observability monitor packs)
+- Engine **`ansible_pattern.py`**: materialize Jinja fragments, platform-aware default
+  (`linux-service` / `windows-service`), `requirements.yml` for collections
+- Patterns: **`linux-service`**, **`windows-service`**, opt-in **`repave-baseline`**
+- Windows: static CI (**ansible-lint** + **syntax-check** with `ansible.windows`);
+  optional **`molecule/windows/`** delegated scenario (not run by default gate)
+- Portal pattern picker filtered by Linux/Windows toggles; provenance
+  `role_pattern_source` + `required_collections`
+- Gate toolchain installs **`ansible/requirements-gate-collections.yml`**
+
+**Done when:** Default generate produces idempotent Linux or Windows tasks; Molecule
+verify asserts package/service state on Linux; Windows-only roles skip Docker Molecule
+without failing CI.
+
+**Status:** In progress (engine catalog, patterns, portal, standards v1.1.0, gate collections).
+
+**Follow-ups:** Cross-platform patterns, playbook-project patterns, collection sample
+role wired from the same catalog.
 
 ---
 

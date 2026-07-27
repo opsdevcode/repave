@@ -1,0 +1,99 @@
+{
+  "version": "1.0.0",
+  "defaults": {
+    "role_pattern_source": "linux-service"
+  },
+  "form_presets": {
+    "ansible-role-generic": {
+      "decision_fields": [
+        "role_name",
+        "namespace",
+        "role_pattern_source",
+        "support_linux",
+        "support_windows"
+      ]
+    }
+  },
+  "role_patterns": [
+    {
+      "id": "repave-baseline",
+      "label": "Structure only (placeholder tasks)",
+      "platform": "any",
+      "description": "Galaxy layout and gates only; debug placeholder in tasks/run.yml.",
+      "omit_docker_molecule": false,
+      "files": []
+    },
+    {
+      "id": "linux-service",
+      "label": "Linux package, config, and service",
+      "platform": "linux",
+      "description": "Install a package, deploy a templated config under /etc, enable a systemd unit.",
+      "omit_docker_molecule": false,
+      "requires_collections": [],
+      "files": [
+        {
+          "source": "roles/linux-service/tasks/run.yml.jinja",
+          "dest": "tasks/run.yml"
+        },
+        {
+          "source": "roles/linux-service/defaults/main.yml.jinja",
+          "dest": "defaults/main.yml"
+        },
+        {
+          "source": "roles/linux-service/handlers/main.yml.jinja",
+          "dest": "handlers/main.yml"
+        },
+        {
+          "source": "roles/linux-service/templates/app.conf.jinja",
+          "dest": "templates/{{ role_name }}.conf.jinja"
+        },
+        {
+          "source": "roles/linux-service/molecule/default/verify.yml.jinja",
+          "dest": "molecule/default/verify.yml"
+        }
+      ]
+    },
+    {
+      "id": "windows-service",
+      "label": "Windows service and config file",
+      "platform": "windows",
+      "description": "Deploy a win_template config and ensure a Windows service is running.",
+      "omit_docker_molecule": true,
+      "requires_collections": ["ansible.windows"],
+      "files": [
+        {
+          "source": "roles/windows-service/tasks/run.yml.jinja",
+          "dest": "tasks/run.yml"
+        },
+        {
+          "source": "roles/windows-service/defaults/main.yml.jinja",
+          "dest": "defaults/main.yml"
+        },
+        {
+          "source": "roles/windows-service/handlers/main.yml.jinja",
+          "dest": "handlers/main.yml"
+        },
+        {
+          "source": "roles/windows-service/templates/app.ini.jinja",
+          "dest": "templates/{{ role_name }}.ini.jinja"
+        },
+        {
+          "source": "roles/windows-service/molecule/windows/molecule.yml.jinja",
+          "dest": "molecule/windows/molecule.yml"
+        },
+        {
+          "source": "roles/windows-service/molecule/windows/converge.yml.jinja",
+          "dest": "molecule/windows/converge.yml"
+        },
+        {
+          "source": "roles/windows-service/molecule/windows/verify.yml.jinja",
+          "dest": "molecule/windows/verify.yml"
+        },
+        {
+          "source": "roles/windows-service/README-molecule-windows.md.jinja",
+          "dest": "molecule/windows/README.md"
+        }
+      ]
+    }
+  ]
+}

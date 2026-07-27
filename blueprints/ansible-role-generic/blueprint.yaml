@@ -2,13 +2,13 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: ansible-role-generic
-  version: 0.3.0
-  description: Galaxy-compatible Ansible role scaffold with production-profile lint pack.
+  version: 0.4.0
+  description: Galaxy-compatible Ansible role with community role patterns (Linux and Windows).
 spec:
   artifactType: ansible-role
   standard:
     source: standards/ansible
-    version: 1.0.0
+    version: 1.1.0
   inputs:
     - name: role_name
       type: string
@@ -22,6 +22,13 @@ spec:
       type: string
       required: true
       description: Short description of what the role does.
+    - name: role_pattern_source
+      type: string
+      required: false
+      default: ""
+      description: >-
+        Role pattern from ansible/catalog.json; when empty, defaults to linux-service or
+        windows-service from platform selection.
     - name: min_ansible_version
       type: string
       required: true

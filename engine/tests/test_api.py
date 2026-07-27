@@ -314,6 +314,7 @@ def test_ansible_role_form_stepper(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/ansible-role-generic")
     assert response.status_code == 200
+    assert 'id="role_pattern_source"' in response.text
     assert 'data-form-stepper-kind="standard"' in response.text
     assert 'data-form-stepper-max="1"' in response.text
     assert "data-dry-run-run" in response.text

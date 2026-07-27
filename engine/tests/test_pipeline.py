@@ -390,6 +390,64 @@ def test_generate_ansible_collection_publishes_repo(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_ansible_role_linux_service_pattern_dry_run(
+    ansible_blueprint,
+    ansible_sample_inputs,
+    output_config,
+    staging_root,
+) -> None:
+    result = generate_from_blueprint(
+        ansible_blueprint,
+        ansible_sample_inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+    output_dir = result.render.output_dir
+    run_yml = (output_dir / "tasks" / "run.yml").read_text(encoding="utf-8")
+    assert "ansible.builtin.package" in run_yml
+    assert (output_dir / "requirements.yml").is_file()
+    verify = (output_dir / "molecule" / "default" / "verify.yml").read_text(encoding="utf-8")
+    assert "package_facts" in verify
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["ansibleRole"]["role_pattern_source"] == "linux-service"
+
+
+def test_generate_ansible_role_windows_service_pattern_dry_run(
+    ansible_blueprint,
+    output_config,
+    staging_root,
+) -> None:
+    inputs = {
+        "role_name": "iis",
+        "namespace": "acme",
+        "description": "Windows IIS-style service role",
+        "min_ansible_version": "2.18",
+        "support_linux": "false",
+        "support_windows": "true",
+        "windows_server_generation": "2022",
+        "target_platforms_advanced": "",
+        "role_pattern_source": "windows-service",
+    }
+    result = generate_from_blueprint(
+        ansible_blueprint,
+        inputs,
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+    )
+    output_dir = result.render.output_dir
+    run_yml = (output_dir / "tasks" / "run.yml").read_text(encoding="utf-8")
+    assert "ansible.windows." in run_yml
+    req = (output_dir / "requirements.yml").read_text(encoding="utf-8")
+    assert "ansible.windows" in req
+    assert not (output_dir / "molecule" / "default" / "molecule.yml").is_file()
+    assert (output_dir / "molecule" / "windows" / "molecule.yml").is_file()
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["ansibleRole"]["role_pattern_source"] == "windows-service"
+    assert "ansible.windows" in spec["ansibleRole"]["required_collections"]
+
+
 def test_generate_ansible_role_generic_publishes_role_repo(
     ansible_blueprint,
     ansible_sample_inputs,

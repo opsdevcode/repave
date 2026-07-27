@@ -42,6 +42,12 @@ jobs:
 {% endif %}{% if needs_ansible %}
       - name: Install Ansible tooling
         run: pip install ansible ansible-lint
+{% endif %}{% if needs_ansible_collections %}
+      - name: Install Ansible collections
+        run: |
+          if [ -f requirements.yml ]; then
+            ansible-galaxy collection install -r requirements.yml
+          fi
 {% endif %}{% if needs_conftest %}
       - name: Install Conftest
         run: |

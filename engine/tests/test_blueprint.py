@@ -484,10 +484,10 @@ def test_validate_environment_stack_pinned_modules(repo_root: Path) -> None:
 
 def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
     assert ansible_blueprint.name == "ansible-role-generic"
-    assert ansible_blueprint.version == "0.3.0"
+    assert ansible_blueprint.version == "0.4.0"
     assert ansible_blueprint.artifact_type == "ansible-role"
     assert ansible_blueprint.standard_source == "standards/ansible"
-    assert ansible_blueprint.standard_version == "1.0.0"
+    assert ansible_blueprint.standard_version == "1.1.0"
     assert ansible_blueprint.provenance_file == "repave.yaml"
     assert ansible_blueprint.checkov_policies is None
     assert ansible_blueprint.ansible_lint_pack is not None
@@ -566,10 +566,15 @@ def test_validate_rejects_unknown_target_platform_advanced(ansible_blueprint) ->
         )
 
 
-def test_validate_ansible_role_inputs(ansible_blueprint, ansible_sample_inputs) -> None:
-    values = validate_inputs(ansible_blueprint, ansible_sample_inputs)
+def test_validate_ansible_role_inputs(
+    ansible_blueprint,
+    ansible_sample_inputs,
+    repo_root: Path,
+) -> None:
+    values = validate_inputs(ansible_blueprint, ansible_sample_inputs, repo_root=repo_root)
     assert values["role_name"] == "webserver"
     assert values["namespace"] == "acme"
+    assert values["role_pattern_source"] == "linux-service"
     assert "Debian:bookworm" in values["target_platforms"]
     assert "provider_service_scope" not in values
 

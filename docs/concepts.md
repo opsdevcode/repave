@@ -34,7 +34,9 @@ Blueprints may declare `spec.output.provenance.file` (typically `repave.yaml`).
 The engine writes a `GoldenPathArtifact` document after render with pinned
 blueprint and standard versions, generation metadata, and artifact-type-specific
 fields (`terraformModule` or `ansibleRole`). Ansible roles also record the pinned
-ansible-lint pack (`ansibleLint`). The `provenance-drift` gate validates
+ansible-lint pack (`ansibleLint`), optional **`role_pattern_source`**, and
+**`required_collections`** when a catalog pattern needs Galaxy collections. The
+`provenance-drift` gate validates
 the file against `schemas/golden-path-artifact.schema.json`.
 
 ## Ansible standards and policy pack
@@ -42,7 +44,9 @@ the file against `schemas/golden-path-artifact.schema.json`.
 Ansible golden paths pin a multi-file standard under `standards/ansible/`
 (role, collection, playbook-project, security appendix). The production-profile
 ansible-lint pack at `policy/ansible-lint/pack/` is copied into generated roles
-at render time (parallel to Checkov policies for Terraform modules).
+at render time (parallel to Checkov policies for Terraform modules). Role bodies
+come from **`ansible/catalog.json`** patterns when `ansible-role-generic` is used
+(see [`ansible/README.md`](../ansible/README.md)).
 
 ## Terraform standards pack
 

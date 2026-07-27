@@ -1,0 +1,13 @@
+# Windows delegated Molecule (opt-in)
+
+This scenario is **not** run by repave CI gates. Export a reachable Windows host and credentials, then:
+
+```bash
+export MOLECULE_WINDOWS_HOST=...
+export MOLECULE_WINDOWS_USER=...
+export MOLECULE_WINDOWS_PASSWORD=...
+cd molecule/windows
+molecule test
+```
+
+Generated roles still pass **ansible-lint** and **ansible-syntax-check** in CI when `requirements.yml` collections are installed.

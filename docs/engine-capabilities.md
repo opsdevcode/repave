@@ -28,7 +28,11 @@ from `repave.yaml`), gate execution, provenance in `repave.yaml`.
 [`policy/checkov/`](../policy/checkov/)), secrets scanning.
 
 **Ansible:** production-profile **ansible-lint** pack and standards under
-[`standards/ansible/`](../standards/ansible/).
+[`standards/ansible/`](../standards/ansible/). **`ansible-role-generic`** materializes
+community **role patterns** from [`ansible/catalog.json`](../ansible/catalog.json)
+(`linux-service`, `windows-service`, optional `repave-baseline`); generated roles
+include `requirements.yml` when a pattern needs collections. CI installs gate
+collections from [`ansible/requirements-gate-collections.yml`](../ansible/requirements-gate-collections.yml).
 
 **Policy:** OPA and Azure Policy gates where blueprints declare them — see
 [`policy/`](../policy/) and [`standards/policy/`](../standards/policy/).

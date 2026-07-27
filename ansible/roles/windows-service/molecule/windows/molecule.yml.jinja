@@ -1,0 +1,30 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: delegated
+platforms:
+  - name: windows
+    groups:
+      - windows
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      roles_path: ../..
+  inventory:
+    hosts:
+      all:
+        children:
+          windows:
+            hosts:
+              instance:
+                ansible_connection: winrm
+                ansible_winrm_transport: ntlm
+{% raw %}
+                ansible_host: "{{ lookup('env', 'MOLECULE_WINDOWS_HOST') | default('127.0.0.1', true) }}"
+                ansible_user: "{{ lookup('env', 'MOLECULE_WINDOWS_USER') | default('Administrator', true) }}"
+                ansible_password: "{{ lookup('env', 'MOLECULE_WINDOWS_PASSWORD') | default('', true) }}"
+{% endraw %}
+verifier:
+  name: ansible

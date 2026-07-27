@@ -27,3 +27,9 @@ install -m 0755 "$tmp/darwin-${helm_arch}/helm" "$DEST/helm"
 
 echo "Installed helm ${HELM_VERSION} to ${DEST}"
 echo "make test prepends this directory to PATH automatically."
+
+if command -v ansible-galaxy >/dev/null 2>&1; then
+  ansible-galaxy collection install -r "${REPO_ROOT}/ansible/requirements-gate-collections.yml" \
+    -p "${REPO_ROOT}/.ansible/collections" 2>/dev/null || true
+  echo "Ansible gate collections installed under .ansible/collections when ansible-galaxy is available."
+fi

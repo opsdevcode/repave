@@ -242,6 +242,16 @@ def render_blueprint(
                 backend=backend,
                 output_mode=output_mode,
             )
+    if blueprint.name == "ansible-role-generic":
+        from repave_engine.ansible_pattern import (
+            finalize_role_pattern_layout,
+            materialize_role_pattern,
+            write_ansible_requirements_yml,
+        )
+
+        materialize_role_pattern(output_dir, _find_repo_root(blueprint.path), payload)
+        write_ansible_requirements_yml(output_dir, payload)
+        finalize_role_pattern_layout(output_dir, payload)
     _write_scoped_resource_files(output_dir, blueprint, payload, scoped_resources)
     selection = payload.get("_policy_selection")
     policy_selection = selection if isinstance(selection, PolicySelection) else None

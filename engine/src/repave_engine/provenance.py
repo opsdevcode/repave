@@ -180,6 +180,14 @@ def _build_ansible_spec(blueprint: Blueprint, values: dict[str, Any]) -> tuple[d
         spec["ansibleRole"]["target_platforms"] = ",".join(
             sorted(str(item).strip() for item in platforms if str(item).strip())
         )
+    pattern = str(values.get("role_pattern_source", "")).strip()
+    if pattern:
+        spec["ansibleRole"]["role_pattern_source"] = pattern
+    collections = values.get("_role_pattern_requires_collections")
+    if isinstance(collections, list):
+        cleaned = sorted({str(item).strip() for item in collections if str(item).strip()})
+        if cleaned:
+            spec["ansibleRole"]["required_collections"] = cleaned
     if blueprint.ansible_lint_pack is not None:
         spec["ansibleLint"] = {
             "pack_source": blueprint.ansible_lint_pack.pack_source,

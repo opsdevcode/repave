@@ -1,0 +1,6 @@
+---
+# Defaults for linux-service pattern ({{ role_name }}).
+role_enabled: true
+linux_service_package: rsyslog
+linux_service_service_name: rsyslog
+linux_service_config_path: "/etc/rsyslog.d/99-{{ role_name }}.conf"
