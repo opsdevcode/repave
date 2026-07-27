@@ -14,7 +14,8 @@ Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  → 
 > optional Kubernetes **operator (GA)**. Run locally with Docker Compose — no cluster required
 > for generation.
 
-**Try it:** [Quickstart](docs/quickstart.md) · **[5-minute demo](docs/quickstart.md#five-minute-demo-portal)** ·
+**Try it:** [Quickstart](docs/quickstart.md) · **[Seven-minute demo (acts 1–6)](docs/seven-minute-demo.md)** ·
+**[5-minute demo](docs/quickstart.md#five-minute-demo-portal)** ·
 [Sales demo runbook](docs/sales-demo.md) → http://localhost:8088
 
 ---

@@ -1,7 +1,8 @@
 # Sales demo runbook (portal)
 
 Use this script in **live calls**, executive briefings, and internal enablement.
-It complements the hands-on [Quickstart — Five-minute demo](quickstart.md#five-minute-demo-portal).
+It complements the hands-on [Quickstart — Five-minute demo](quickstart.md#five-minute-demo-portal)
+and the click-by-click **[Seven-minute demo (acts 1–6)](seven-minute-demo.md)**.
 Before a big meeting, run the [Demo verification checklist](demo-verification.md).
 
 **Audience:** platform leads, engineering managers, security/governance stakeholders.  
