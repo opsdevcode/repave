@@ -29,7 +29,12 @@ manifests: controller-gen
 
 .PHONY: test
 test: manifests generate envtest
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
+	@assets="$$($(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)"; \
+	if [ -z "$$assets" ] || [ ! -d "$$assets" ]; then \
+	  echo "envtest assets missing (setup-envtest download failed for $(ENVTEST_K8S_VERSION))" >&2; \
+	  exit 1; \
+	fi; \
+	KUBEBUILDER_ASSETS="$$assets" go test $$(go list ./... | grep -v /e2e) -coverprofile cover.out
 
 .PHONY: lint
 lint: golangci-lint
@@ -67,7 +72,7 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST)
 
 $(ENVTEST): $(LOCALBIN)
-	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,latest)
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,v0.24.0)
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT)
