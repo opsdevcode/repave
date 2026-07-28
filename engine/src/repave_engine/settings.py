@@ -124,6 +124,42 @@ def load_audit_config(repo_root: Path) -> AuditConfig | None:
     return AuditConfig(enabled=True, file=path)
 
 
+@dataclass(frozen=True)
+class FleetConfig:
+    enabled: bool
+    file: Path
+
+
+def load_fleet_config(repo_root: Path) -> FleetConfig | None:
+    """Resolve the fleet registry sink, mirroring load_audit_config."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("fleet")
+    env_override = os.environ.get("REPAVE_FLEET_FILE", "").strip()
+
+    def _resolve(value: str) -> Path:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        return path
+
+    if block is None:
+        if not env_override:
+            return None
+        return FleetConfig(enabled=True, file=_resolve(env_override))
+
+    if not isinstance(block, dict):
+        raise ValueError("fleet must be a mapping in repave.config.yaml")
+
+    enabled_raw = block.get("enabled", True)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("fleet.enabled must be a boolean")
+
+    path = _resolve(str(block.get("file", "fleet/registry.jsonl")))
+    if env_override:
+        path = _resolve(env_override)
+    return FleetConfig(enabled=enabled_raw, file=path)
+
+
 def load_notifications_config(repo_root: Path) -> NotificationsConfig | None:
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("notifications")

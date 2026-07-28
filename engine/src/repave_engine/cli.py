@@ -7,9 +7,18 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
+from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import _find_repo_root, list_blueprints
+from repave_engine.fleet import (
+    FleetEntry,
+    normalize_repo_url,
+    pins_from_repave_file,
+    read_fleet,
+    register_repo,
+    unregister_repo,
+)
 from repave_engine.pipeline import generate_from_path
-from repave_engine.settings import OutputConfig, load_output_config
+from repave_engine.settings import OutputConfig, load_fleet_config, load_output_config
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
 
 
@@ -90,6 +99,77 @@ def cmd_list(args: argparse.Namespace) -> int:
         for bp in blueprints
     ]
     print(json.dumps(payload, indent=2))
+    return 0
+
+
+def _fleet_registry_path(args: argparse.Namespace) -> Path:
+    repo_root = Path(args.repo_root).resolve()
+    config = load_fleet_config(repo_root)
+    if config is None:
+        raise ValueError(
+            "Fleet registry is not configured. Add a fleet block to repave.config.yaml "
+            "or set REPAVE_FLEET_FILE."
+        )
+    if not config.enabled:
+        raise ValueError("Fleet registry is disabled (fleet.enabled: false)")
+    return config.file
+
+
+def cmd_register(args: argparse.Namespace) -> int:
+    registry = _fleet_registry_path(args)
+
+    pins = {
+        "blueprint_name": (args.blueprint or "").strip(),
+        "blueprint_version": (args.blueprint_version or "").strip(),
+        "standard_source": (args.standard_source or "").strip(),
+        "standard_version": (args.standard_version or "").strip(),
+    }
+    if args.path:
+        # Provenance in the repo wins: it is what the operator observes.
+        pins.update(pins_from_repave_file(Path(args.path).resolve()))
+    if not pins["blueprint_name"]:
+        raise ValueError("Provide --path to a checkout with repave.yaml, or --blueprint")
+
+    entry = register_repo(
+        registry,
+        FleetEntry(
+            repo_url=args.repo_url,
+            blueprint_name=pins["blueprint_name"],
+            blueprint_version=pins["blueprint_version"],
+            standard_source=pins["standard_source"],
+            standard_version=pins["standard_version"],
+            owner=(args.owner or "").strip(),
+            registered_by=current_acting_user(),
+        ),
+    )
+    print(json.dumps(entry.to_dict(), indent=2))
+    return 0
+
+
+def cmd_unregister(args: argparse.Namespace) -> int:
+    registry = _fleet_registry_path(args)
+    if not unregister_repo(registry, args.repo_url):
+        print(f"{args.repo_url} is not registered")
+        return 1
+    print(f"unregistered {normalize_repo_url(args.repo_url)}")
+    return 0
+
+
+def cmd_fleet(args: argparse.Namespace) -> int:
+    registry = _fleet_registry_path(args)
+    entries = read_fleet(registry)
+
+    if args.format == "json":
+        print(json.dumps([entry.to_dict() for entry in entries], indent=2))
+        return 0
+
+    if not entries:
+        print("No repositories registered.")
+        return 0
+    for entry in entries:
+        pin = f"{entry.blueprint_name}@{entry.blueprint_version or '?'}"
+        owner = f" owner={entry.owner}" if entry.owner else ""
+        print(f"{entry.repo_url}  {pin}{owner}")
     return 0
 
 
@@ -364,6 +444,40 @@ def build_parser() -> argparse.ArgumentParser:
 
     listing = sub.add_parser("list", help="List available blueprints", parents=[common])
     listing.set_defaults(func=cmd_list)
+
+    register = sub.add_parser(
+        "register",
+        help="Add a generated repository to the fleet registry",
+        parents=[common],
+    )
+    register.add_argument("repo_url", help="Git remote of the repository to govern")
+    register.add_argument(
+        "--path",
+        default=None,
+        help="Local checkout to read pins from repave.yaml (preferred over explicit pins)",
+    )
+    register.add_argument("--blueprint", default=None, help="Blueprint name when --path is absent")
+    register.add_argument("--blueprint-version", default=None, help="Blueprint version pin")
+    register.add_argument("--standard-source", default=None, help="Standard corpus source")
+    register.add_argument("--standard-version", default=None, help="Standard corpus version")
+    register.add_argument("--owner", default=None, help="Owning team or user")
+    register.set_defaults(func=cmd_register)
+
+    unregister = sub.add_parser(
+        "unregister",
+        help="Remove a repository from the fleet registry",
+        parents=[common],
+    )
+    unregister.add_argument("repo_url", help="Git remote of the repository to drop")
+    unregister.set_defaults(func=cmd_unregister)
+
+    fleet = sub.add_parser(
+        "fleet",
+        help="List repositories in the fleet registry",
+        parents=[common],
+    )
+    fleet.add_argument("--format", choices=["text", "json"], default="text")
+    fleet.set_defaults(func=cmd_fleet)
 
     gates_cmd = sub.add_parser(
         "gates",

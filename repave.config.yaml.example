@@ -45,6 +45,12 @@ gates:
 # Override path: REPAVE_AUDIT_FILE
 # Acting user: REPAVE_ACTING_USER (falls back to USER; OIDC session when auth enabled)
 
+# Optional fleet registry of repositories repave governs (`repave register`, portal fleet API).
+# fleet:
+#   enabled: true
+#   file: ../repave-fleet/registry.jsonl
+# Override path: REPAVE_FLEET_FILE
+
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.
 # notifications:

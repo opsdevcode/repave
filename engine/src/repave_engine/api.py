@@ -28,6 +28,7 @@ from repave_engine.audit_history import AuditHistoryEntry, read_recent_audit_ent
 from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
+    ROLE_VIEWER,
     build_login_redirect,
     clear_session,
     complete_oidc_callback,
@@ -36,7 +37,7 @@ from repave_engine.auth import (
     require_role,
     session_user,
 )
-from repave_engine.auth_context import reset_acting_user, set_acting_user
+from repave_engine.auth_context import current_acting_user, reset_acting_user, set_acting_user
 from repave_engine.blueprint import (
     artifact_family,
     group_blueprints_by_artifact,
@@ -45,6 +46,15 @@ from repave_engine.blueprint import (
     policy_kind_label,
 )
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
+from repave_engine.fleet import (
+    FleetEntry,
+    FleetError,
+    normalize_repo_url,
+    pins_from_repave_file,
+    read_fleet,
+    register_repo,
+    unregister_repo,
+)
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.generate_api import run_generate_api
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
@@ -80,6 +90,7 @@ from repave_engine.settings import (
     OutputConfig,
     load_audit_config,
     load_auth_config,
+    load_fleet_config,
     load_output_config,
     load_portal_config,
 )
@@ -756,6 +767,84 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 cli_open_pr_command=cli_open_pr,
             ),
         )
+
+    def fleet_registry_path() -> Path:
+        try:
+            fleet_cfg = load_fleet_config(repo_root)
+        except ValueError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        if fleet_cfg is None or not fleet_cfg.enabled:
+            raise HTTPException(
+                status_code=404,
+                detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
+            )
+        return fleet_cfg.file
+
+    @app.get("/api/v1/fleet")
+    async def api_fleet_list(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        entries = read_fleet(fleet_registry_path())
+        return JSONResponse(
+            {"count": len(entries), "repos": [entry.to_dict() for entry in entries]}
+        )
+
+    @app.post("/api/v1/fleet")
+    async def api_fleet_register(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_ADMIN)
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Expected JSON object")
+
+        repo_url = str(payload.get("repo_url", "")).strip()
+        if not repo_url:
+            raise HTTPException(status_code=400, detail="repo_url is required")
+
+        pins = {
+            "blueprint_name": str(payload.get("blueprint_name", "")).strip(),
+            "blueprint_version": str(payload.get("blueprint_version", "")).strip(),
+            "standard_source": str(payload.get("standard_source", "")).strip(),
+            "standard_version": str(payload.get("standard_version", "")).strip(),
+        }
+        local_path = str(payload.get("path", "")).strip()
+        try:
+            if local_path:
+                pins.update(pins_from_repave_file(Path(local_path).expanduser().resolve()))
+            if not pins["blueprint_name"]:
+                raise FleetError("blueprint_name is required when path is not supplied")
+            entry = register_repo(
+                fleet_registry_path(),
+                FleetEntry(
+                    repo_url=repo_url,
+                    blueprint_name=pins["blueprint_name"],
+                    blueprint_version=pins["blueprint_version"],
+                    standard_source=pins["standard_source"],
+                    standard_version=pins["standard_version"],
+                    owner=str(payload.get("owner", "")).strip(),
+                    registered_by=current_acting_user(),
+                ),
+            )
+        except FleetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse({"registered": entry.to_dict()}, status_code=201)
+
+    @app.delete("/api/v1/fleet")
+    async def api_fleet_unregister(request: Request, repo_url: str = "") -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_ADMIN)
+        if not repo_url.strip():
+            raise HTTPException(status_code=400, detail="repo_url query parameter is required")
+        try:
+            removed = unregister_repo(fleet_registry_path(), repo_url)
+        except FleetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not removed:
+            raise HTTPException(status_code=404, detail=f"{repo_url} is not registered")
+        return JSONResponse({"unregistered": normalize_repo_url(repo_url)})
 
     return app
 
