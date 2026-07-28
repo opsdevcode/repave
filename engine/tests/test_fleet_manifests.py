@@ -6,7 +6,7 @@ import pytest
 import yaml
 
 from repave_engine.cli import build_parser, cmd_fleet_manifests
-from repave_engine.fleet import FleetEntry, FleetError, register_repo
+from repave_engine.fleet import FleetEntry, FleetError, read_fleet, register_repo
 from repave_engine.fleet_manifests import manifest_for, render_manifests, resource_name
 
 
@@ -149,6 +149,24 @@ CONTRACT_ENTRIES = (
         registered_by="eric@example.com",
     ),
 )
+
+
+def test_kind_co_install_registry_matches_operator_fixtures(
+    repo_root: Path, tmp_path: Path
+) -> None:
+    """deploy/k8s/testdata/fleet-registry.jsonl must render operator/testdata/fleet fixtures."""
+    registry = repo_root / "deploy/k8s/testdata/fleet-registry.jsonl"
+    assert registry.is_file(), "run kind-co-install seed generation or commit fleet-registry.jsonl"
+    entries = read_fleet(registry)
+    assert len(entries) >= 2
+    fixture_dir = repo_root / "operator" / "testdata" / "fleet"
+    rendered = render_manifests(entries, tmp_path / "kind-fleet")
+    for item in rendered:
+        fixture = fixture_dir / item.path.name
+        assert fixture.is_file(), f"missing operator fixture {fixture}"
+        assert fixture.read_text(encoding="utf-8") == item.path.read_text(encoding="utf-8"), (
+            f"{fixture.name} differs from fleet-registry.jsonl; regenerate fixtures or registry"
+        )
 
 
 def test_checked_in_operator_fixtures_match_renderer(repo_root: Path, tmp_path: Path) -> None:

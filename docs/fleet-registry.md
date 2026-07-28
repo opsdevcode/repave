@@ -127,3 +127,8 @@ time. `test_fleet_manifests.py` asserts those fixtures still match the renderer.
 - Continuous sync: the operator does not watch the registry, so re-run
   `fleet-manifests` (or let GitOps do it) after registering or unregistering
 - Pruning: removing an entry does not delete an already-applied `GoldenPathRepo`
+
+**kind co-install:** `CO_INSTALL_KEEP_CLUSTER=1 make kind-co-install` seeds
+[`deploy/k8s/testdata/fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl),
+copies it into the portal pod, and applies rendered GPRs — see
+[`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md).
