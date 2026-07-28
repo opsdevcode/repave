@@ -5,12 +5,11 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.76.0  
-**In progress:** operator remote git inventory — Phases A–B shipped, Phase C open  
+**In progress:** [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart) — chart and CI validation; kind smoke optional locally  
 **Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) (store, CLI,
 and API shipped; portal view and operator sync open) →
-[k8s deploy](#kubernetes-deploy-path-helm-chart) →
 [`repave verify`](#repave-verify-for-existing-repositories) →
-[composite paths](#composite-golden-paths-bundles)  
+[composite paths](#composite-golden-paths-bundles); operator remote inventory **Phase C**  
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
 correctness and scale fixes that gate hosted multi-user use  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
@@ -1064,6 +1063,13 @@ model itself belongs to that entry.
 
 **Done when:** `helm install` serves the blueprint form on-cluster with dry-run generation
 working and probes gating traffic.
+
+**Status:** Chart added under `deploy/k8s/chart/`: Deployment, Service, optional Ingress,
+ConfigMap for `repave.config.yaml`, Secret refs, PVCs for modules/audit/fleet, probes on
+`/health` and `/readyz`. `make chart-validate` and the **Helm chart** GitHub workflow lint and
+template the chart; `make chart-smoke` is an optional kind install locally. Co-install notes in
+[`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md). Gate-toolchain image variant
+and required kind smoke in CI remain follow-ups.
 
 ---
 

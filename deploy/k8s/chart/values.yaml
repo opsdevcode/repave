@@ -1,0 +1,110 @@
+# Default values for the repave portal/API chart.
+# Build the engine image from deploy/local/Dockerfile (includes gate toolchain for dry-run).
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/opsdevcode/repave-engine
+  tag: "" # defaults to Chart.appVersion
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8088
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: repave.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# repave.config.yaml content (non-secret). Secrets below override via env where supported.
+repave:
+  env: production
+  output:
+    githubOrg: your-github-org
+    modulesRoot: /data/modules
+    repoNameTemplate: "tf-{module_name}"
+  portal:
+    density: default
+  gates:
+    checkov:
+      skipChecks: []
+    policy:
+      requiredRules:
+        - checkov:CKV2_REPAVE_1
+        - opa:destructive_changes
+  audit:
+    enabled: false
+    file: /data/audit/generation.jsonl
+  fleet:
+    enabled: false
+    file: /data/fleet/registry.jsonl
+  auth:
+    serviceMode: false
+    oidc:
+      issuer: ""
+      clientId: ""
+      redirectUri: ""
+      groupsClaim: groups
+      roles:
+        admin: []
+        generator: []
+
+# Optional persistence for module staging, audit, and fleet JSONL sinks.
+persistence:
+  modules:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 10Gi
+    existingClaim: ""
+  audit:
+    enabled: false
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    existingClaim: ""
+  fleet:
+    enabled: false
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    existingClaim: ""
+
+secrets:
+  # When true, chart creates a Secret from the values below (dev/kind only).
+  create: false
+  existingSecret: ""
+  githubToken: ""
+  sessionSecret: ""
+  oidcClientSecret: ""
+
+probes:
+  livenessPath: /health
+  readinessPath: /readyz

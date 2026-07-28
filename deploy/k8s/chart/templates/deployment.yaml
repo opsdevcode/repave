@@ -1,0 +1,167 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "repave.fullname" . }}
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "repave.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "repave.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "repave.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: repave
+          image: {{ include "repave.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - repave
+            - serve
+            - --repo-root
+            - /app
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8088"
+          ports:
+            - name: http
+              containerPort: 8088
+              protocol: TCP
+          env:
+            - name: REPAVE_ENV
+              value: {{ .Values.repave.env | quote }}
+            - name: REPAVE_GITHUB_ORG
+              value: {{ .Values.repave.output.githubOrg | quote }}
+            - name: REPAVE_MODULES_ROOT
+              value: {{ .Values.repave.output.modulesRoot | quote }}
+            {{- if .Values.repave.auth.serviceMode }}
+            - name: REPAVE_SERVICE_MODE
+              value: "1"
+            {{- end }}
+            {{- if .Values.repave.audit.enabled }}
+            - name: REPAVE_AUDIT_FILE
+              value: {{ .Values.repave.audit.file | quote }}
+            {{- end }}
+            {{- if .Values.repave.fleet.enabled }}
+            - name: REPAVE_FLEET_FILE
+              value: {{ .Values.repave.fleet.file | quote }}
+            {{- end }}
+            {{- $secretName := include "repave.secretName" . }}
+            {{- if $secretName }}
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: github-token
+                  optional: true
+            - name: REPAVE_SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: session-secret
+                  optional: true
+            - name: REPAVE_OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: oidc-client-secret
+                  optional: true
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.livenessPath }}
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.readinessPath }}
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/repave.config.yaml
+              subPath: repave.config.yaml
+            - name: modules
+              mountPath: {{ .Values.repave.output.modulesRoot }}
+            {{- if .Values.repave.audit.enabled }}
+            - name: audit
+              mountPath: /data/audit
+            {{- end }}
+            {{- if .Values.repave.fleet.enabled }}
+            - name: fleet
+              mountPath: /data/fleet
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "repave.fullname" . }}
+        - name: modules
+          {{- if .Values.persistence.modules.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.modules.existingClaim }}
+          {{- else if .Values.persistence.modules.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "repave.fullname" . }}-modules
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.repave.audit.enabled }}
+        - name: audit
+          {{- if and .Values.persistence.audit.enabled (not .Values.persistence.audit.existingClaim) }}
+          persistentVolumeClaim:
+            claimName: {{ include "repave.fullname" . }}-audit
+          {{- else if .Values.persistence.audit.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.audit.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.repave.fleet.enabled }}
+        - name: fleet
+          {{- if and .Values.persistence.fleet.enabled (not .Values.persistence.fleet.existingClaim) }}
+          persistentVolumeClaim:
+            claimName: {{ include "repave.fullname" . }}-fleet
+          {{- else if .Values.persistence.fleet.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.fleet.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

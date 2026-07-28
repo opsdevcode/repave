@@ -1,11 +1,12 @@
 # Kubernetes operability artifacts
 
-Starter manifests for hosted repave (roadmap v1.35–v1.36). Wire these into your
-Helm/Kustomize overlay alongside the engine Deployment from `deploy/local` or your
-org chart.
+Starter manifests for hosted repave (roadmap v1.35–v1.36). Install the engine with the
+**Helm chart** under [`chart/`](chart/README.md), then wire these observability artifacts
+into your overlay.
 
-| File | Purpose |
+| Path | Purpose |
 | --- | --- |
+| [`chart/`](chart/README.md) | Helm chart: Deployment, Service, Ingress, ConfigMap, probes |
 | `prometheus-rules.yaml` | Alert on generation failure rate and p95 latency |
 | `grafana-dashboard-repave.json` | Dashboard for throughput and gate outcomes |
 

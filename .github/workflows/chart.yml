@@ -1,0 +1,30 @@
+name: Helm chart
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - deploy/k8s/chart/**
+      - deploy/k8s/hack/**
+      - .github/workflows/chart.yml
+  pull_request:
+    paths:
+      - deploy/k8s/chart/**
+      - deploy/k8s/hack/**
+      - .github/workflows/chart.yml
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - name: Lint and template chart
+        run: |
+          chmod +x deploy/k8s/hack/validate-chart.sh
+          ./deploy/k8s/hack/validate-chart.sh

@@ -1,0 +1,53 @@
+{{- if and .Values.persistence.modules.enabled (not .Values.persistence.modules.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "repave.fullname" . }}-modules
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.modules.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.modules.size }}
+  {{- if .Values.persistence.modules.storageClass }}
+  storageClassName: {{ .Values.persistence.modules.storageClass | quote }}
+  {{- end }}
+{{- end }}
+---
+{{- if and .Values.repave.audit.enabled .Values.persistence.audit.enabled (not .Values.persistence.audit.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "repave.fullname" . }}-audit
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.audit.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.audit.size }}
+  {{- if .Values.persistence.audit.storageClass }}
+  storageClassName: {{ .Values.persistence.audit.storageClass | quote }}
+  {{- end }}
+{{- end }}
+---
+{{- if and .Values.repave.fleet.enabled .Values.persistence.fleet.enabled (not .Values.persistence.fleet.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "repave.fullname" . }}-fleet
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.fleet.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.fleet.size }}
+  {{- if .Values.persistence.fleet.storageClass }}
+  storageClassName: {{ .Values.persistence.fleet.storageClass | quote }}
+  {{- end }}
+{{- end }}
