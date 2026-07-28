@@ -34,6 +34,7 @@ COPY blueprints /repave/blueprints
 COPY schemas /repave/schemas
 COPY standards /repave/standards
 COPY policy /repave/policy
+COPY deploy/local/gate-toolchain-pins.env /repave/deploy/local/gate-toolchain-pins.env
 
 ENV REPAVE_REPO_ROOT=/repave
 ENV REPAVE_CLI=/repave/engine/.venv/bin/repave

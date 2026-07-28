@@ -8,6 +8,7 @@
 **/cover.out
 operator/bin
 deploy/local/*
+!deploy/local/gate-toolchain-pins.env
 !deploy/local/install-gate-toolchain.sh
 !deploy/local/certs
 !deploy/local/certs/**
