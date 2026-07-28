@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.77.0  
+**Current release:** v1.78.0  
 **In progress:** [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart) — chart and CI validation; kind smoke optional locally  
 **Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) (store, CLI,
 and API shipped; portal view and operator sync open) →
