@@ -96,6 +96,25 @@ Share notification webhook URLs between `repave.config.yaml` and operator env va
 Fleet registry manifests from `repave fleet-manifests` can target the same namespace as
 operator-managed `GoldenPathRepo` objects.
 
+### Full kind stack (portal + operator + fleet)
+
+After `make install` (engine venv), run:
+
+```bash
+CO_INSTALL_KEEP_CLUSTER=1 make kind-co-install
+kubectl port-forward svc/repave 8088:8088 -n repave
+```
+
+This creates a kind cluster with operator module fixtures mounted at `/modules`, installs
+the portal with [`values-kind.yaml`](values-kind.yaml), seeds
+[`deploy/k8s/testdata/fleet-registry.jsonl`](../testdata/fleet-registry.jsonl), renders
+GPRs with `repave fleet-manifests`, applies them plus the local `e2e-drift` fixture. Remote
+`repoURL` entries show fetch errors until you point at reachable git; `e2e-drift` exercises
+plan-only drift on `/modules/terraform-minimal`.
+
+Reuse an existing cluster or images: `CO_INSTALL_SKIP_CLUSTER=1`, `CO_INSTALL_SKIP_BUILD=1`.
+See [`deploy/k8s/hack/kind-co-install.sh`](../hack/kind-co-install.sh).
+
 ## Observability
 
 Scrape `GET /metrics` on the Service port. Starter Prometheus rules and a Grafana dashboard

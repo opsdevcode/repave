@@ -7,6 +7,7 @@ into your overlay.
 | Path | Purpose |
 | --- | --- |
 | [`chart/`](chart/README.md) | Helm chart: Deployment, Service, Ingress, ConfigMap, probes |
+| [`hack/kind-co-install.sh`](hack/kind-co-install.sh) | kind: portal + fleet registry + operator + `fleet-manifests` apply |
 | `prometheus-rules.yaml` | Alert on generation failure rate and p95 latency |
 | `grafana-dashboard-repave.json` | Dashboard for throughput and gate outcomes |
 
