@@ -65,14 +65,15 @@ def test_api_verify_json(
     assert "gates" in body
 
 
-def test_api_verify_rejects_remote_url(repo_root, output_config) -> None:
+def test_api_verify_clone_failure_returns_400(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
         "/api/v1/verify",
-        json={"path": "https://github.com/acme/mod"},
+        json={"repo_url": "https://example.invalid/acme/missing.git"},
     )
     assert response.status_code == 400
-    assert "clone locally" in response.json()["detail"]
+    detail = response.json()["detail"].lower()
+    assert "remote" in detail or "clon" in detail or "repository" in detail
 
 
 def test_nav_exposes_verify_link(repo_root, output_config) -> None:

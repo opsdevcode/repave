@@ -19,16 +19,18 @@ def test_parser_exposes_verify() -> None:
     assert args.require_run is False
 
 
-def test_verify_rejects_remote_url(capsys) -> None:
+def test_verify_clone_fails_for_unreachable_host(capsys) -> None:
     args = argparse.Namespace(
         repo_root=".",
-        path="https://github.com/acme/mod",
+        path="https://example.invalid/acme/missing.git",
         blueprint=None,
         format="text",
         require_run=False,
+        ref=None,
     )
     assert cmd_verify(args) == 2
-    assert "clone locally" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "example.invalid" in err or "clone" in err.lower()
 
 
 def test_verify_requires_blueprint_without_provenance(tmp_path: Path, repo_root: Path) -> None:
@@ -108,6 +110,7 @@ def test_verify_cli_json_ok_when_pins_aligned(
         blueprint=None,
         format="json",
         require_run=False,
+        ref=None,
     )
     assert cmd_verify(args) == 0
     payload = json.loads(capsys.readouterr().out)

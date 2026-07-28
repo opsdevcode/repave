@@ -28,7 +28,7 @@
   data-busy-stages="Reading repave.yaml…|Running gates…|Comparing pins…"
 >
   <div class="field">
-    <label class="field__label" for="target_repo">Repository path</label>
+    <label class="field__label" for="target_repo">Repository path or URL</label>
     <input
       class="field__input"
       type="text"
@@ -40,7 +40,8 @@
       autocomplete="off"
     />
     <p class="field__hint muted">
-      Local checkout with or without <code>repave.yaml</code>.
+      Local checkout or git remote (<code>https://</code>, <code>git@</code>, <code>ssh://</code>).
+      Private HTTPS remotes use <code>GITHUB_TOKEN</code> on the server or CLI environment.
       {% if demo_module_path %}
       Try the bundled fixture:
       <button type="button" class="btn btn--ghost btn--sm" data-fill-demo-path="{{ demo_module_path }}">
