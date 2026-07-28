@@ -27,6 +27,10 @@ dist/
 *.tfstate.*
 .terraform.lock.hcl
 
+# Locally supplied corporate CAs for the compose image
+deploy/local/certs/*.crt
+deploy/local/certs/*.pem
+
 # Editor / OS
 .DS_Store
 .idea/

@@ -1,0 +1,14 @@
+* text=auto
+
+# Shell scripts run inside Linux containers and CI; CRLF breaks the shebang.
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+Makefile text eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary

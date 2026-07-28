@@ -10,14 +10,32 @@ CHECKOV_PIP_SPEC="${CHECKOV_PIP_SPEC:-checkov>=3.2.0}"
 
 INSTALL_TERRAFORM="${INSTALL_TERRAFORM:-1}"
 INSTALL_ANSIBLE="${INSTALL_ANSIBLE:-1}"
+INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
 DEST="${DEST:-/usr/local/bin}"
 
+# Last resort behind a TLS-inspecting proxy. Prefer trusting the corporate CA
+# (deploy/local/certs for the compose image) over turning verification off.
+REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE:-0}"
+
+CURL_GET=(curl -fsSL)
+GALAXY_INSTALL=(ansible-galaxy collection install)
+UV_PIP_INSTALL=(uv pip install --system --no-cache)
+PIP_INSTALL=(python -m pip install)
+
+if [[ "$REPAVE_TLS_INSECURE" == "1" ]]; then
+  echo "WARNING: REPAVE_TLS_INSECURE=1 - TLS verification disabled for toolchain downloads." >&2
+  CURL_GET+=(--insecure)
+  GALAXY_INSTALL+=(--ignore-certs)
+  UV_PIP_INSTALL+=(--allow-insecure-host pypi.org --allow-insecure-host files.pythonhosted.org)
+  PIP_INSTALL+=(--trusted-host pypi.org --trusted-host files.pythonhosted.org)
+fi
+
 pip_install() {
   if [[ "${USE_UV_PIP:-0}" == "1" ]]; then
-    uv pip install --system --no-cache "$@"
+    "${UV_PIP_INSTALL[@]}" "$@"
   else
-    python -m pip install "$@"
+    "${PIP_INSTALL[@]}" "$@"
   fi
 }
 
@@ -54,17 +72,17 @@ install_bin() {
 
 if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   tmp="$(mktemp -d)"
-  curl -fsSL \
+  "${CURL_GET[@]}" \
     "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${tf_arch}.zip" \
     -o "$tmp/terraform.zip"
   unzip -q "$tmp/terraform.zip" -d "$tmp"
   install_bin "$tmp/terraform"
-  curl -fsSL \
+  "${CURL_GET[@]}" \
     "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${tflint_arch}.zip" \
     -o "$tmp/tflint.zip"
   unzip -q "$tmp/tflint.zip" -d "$tmp"
   install_bin "$tmp/tflint"
-  curl -fsSL \
+  "${CURL_GET[@]}" \
     "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_${conf_arch}.tar.gz" \
     | tar xz -C "$tmp" conftest
   install_bin "$tmp/conftest"
@@ -85,18 +103,18 @@ GATE_COLLECTIONS="${REPO_ROOT}/ansible/requirements-gate-collections.yml"
 
 if [[ "$INSTALL_ANSIBLE" == "1" ]]; then
   pip_install "ansible-lint>=24.0" "yamllint>=1.35" "ansible-core>=2.16"
-  if command -v ansible-galaxy >/dev/null 2>&1; then
+  if [[ "$INSTALL_ANSIBLE_COLLECTIONS" == "1" ]] && command -v ansible-galaxy >/dev/null 2>&1; then
     if [[ ! -f "$GATE_COLLECTIONS" ]]; then
       echo "The requirements file '${GATE_COLLECTIONS}' does not exist." >&2
       exit 1
     fi
-    ansible-galaxy collection install -r "$GATE_COLLECTIONS"
+    "${GALAXY_INSTALL[@]}" -r "$GATE_COLLECTIONS"
   fi
 fi
 
 if [[ "$INSTALL_HELM" == "1" ]]; then
   tmp_helm="$(mktemp -d)"
-  curl -fsSL \
+  "${CURL_GET[@]}" \
     "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${helm_arch}.tar.gz" \
     | tar xz -C "$tmp_helm"
   install_bin "$tmp_helm/linux-${helm_arch}/helm"

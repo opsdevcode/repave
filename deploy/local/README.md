@@ -19,6 +19,26 @@ If you open **http://127.0.0.1:8088** while Compose is up, you may hit a differe
 than **http://localhost:8088** and see macOS staging paths (`/var/folders/...`) with missing
 gate tools. For demos, use **http://localhost:8088** only and stop native `make serve`.
 
+### Compose environment variables
+
+With **no variables set**, `docker compose up --build` uses the secure defaults in the table
+below. Prefix a command (`VAR=value docker compose up --build`) or put the same keys in
+`deploy/local/.env` (optional; Compose loads it automatically from this directory).
+
+| Variable | Phase | Default | Purpose |
+| -------- | ----- | ------- | ------- |
+| `UV_SOURCE` | **build** | `registry` | `registry` copies pinned **uv** from `ghcr.io`; use `pip` when that registry is blocked. |
+| `REPAVE_TLS_INSECURE` | **build** | `0` | `1` disables TLS verification for toolchain downloads (last resort). |
+| `INSTALL_ANSIBLE_COLLECTIONS` | **build** | `1` | `0` skips `ansible-galaxy collection install` (offline builds). |
+| `GITHUB_TOKEN` | **runtime** | *(empty)* | GitHub PAT for portal **publish** (create/push module repos). |
+| *(files)* [`certs/*.crt`](certs/) | **build** | *(none)* | Corporate root CA PEM files; trusted during the image build. |
+
+Build-time variables are baked into the image. Change them only with **`docker compose up --build`**
+(or `docker compose build`); a plain `docker compose up` reuses the existing image.
+
+Step-by-step guidance for proxies and TLS inspection:
+[Enterprise proxies and TLS inspection](#enterprise-proxies-and-tls-inspection).
+
 ### Windows laptops
 
 From PowerShell or Git Bash (repo cloned anywhere Docker can access):
@@ -36,6 +56,43 @@ curl http://localhost:8088/readyz
 ```
 
 Expect `"runtime": { "in_container": true, ... }` and `"gate_tools"` all `true`.
+
+### Enterprise proxies and TLS inspection
+
+Use the [build-time variables](#compose-environment-variables) above. If `docker compose up --build`
+fails while downloading Terraform, Helm, Python packages, or Ansible collections, the build is
+almost certainly behind a TLS-inspecting proxy or cannot reach `ghcr.io`. Work through these in
+order.
+
+**1. Trust your corporate CA (preferred).** Copy your root CA as a PEM `*.crt` file into
+[`certs/`](certs/) and rebuild. It is registered with `update-ca-certificates` in the image, so
+curl, pip/uv, ansible-galaxy, and git all trust it. Certificates there are gitignored. See
+[`certs/README.md`](certs/README.md).
+
+**2. Install uv from PyPI when `ghcr.io` is blocked.** The image copies a pinned uv binary from
+`ghcr.io/astral-sh/uv` by default; switch the source without changing the version:
+
+```bash
+UV_SOURCE=pip docker compose up --build
+```
+
+**3. Skip Galaxy collections** for an otherwise offline build (`ansible-lint` and `yamllint` are
+still installed, so Ansible **gates** relying on collections may fail):
+
+```bash
+INSTALL_ANSIBLE_COLLECTIONS=0 docker compose up --build
+```
+
+**4. Last resort — disable TLS verification.** Only if the CA is genuinely unobtainable. This
+turns off certificate checking for `curl`, `ansible-galaxy`, **and** pip/uv, so tool binaries are
+fetched unverified. It is never on by default and prints a warning during the build:
+
+```bash
+REPAVE_TLS_INSECURE=1 docker compose up --build
+```
+
+The same variables work when running
+[`install-gate-toolchain.sh`](install-gate-toolchain.sh) directly on a host.
 
 The engine is installed **editable** from `/app/engine`, and compose bind-mounts
 the repo at `/app`. The service runs `repave serve --reload`, so Python changes
