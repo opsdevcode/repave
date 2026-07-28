@@ -1097,8 +1097,8 @@ migration rather than value.
 **Done when:** Pointing `repave verify` at a repo repave never generated produces a gate
 report and a pin-drift summary without modifying the repo.
 
-**Status:** CLI `repave verify` shipped on branch; see [`docs/verify.md`](verify.md). Portal
-and API follow in a second commit.
+**Status:** CLI, portal **Verify repo**, and `POST /api/v1/verify` on branch; see
+[`docs/verify.md`](verify.md). Remote clone remains open.
 
 ---
 

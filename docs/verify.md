@@ -33,8 +33,27 @@ fall back to the catalog list.
 (blueprint version, standard source/version, governance baseline, policy pack versions) are
 listed the same way as upgrade planning.
 
+## Portal
+
+**Verify repo** in the top navigation accepts a local path (optional blueprint override and
+**require-run** checkbox). Results show gate outcomes and pin drift vs the catalog.
+
+## API
+
+| Method | Path | Role (service mode) |
+| --- | --- | --- |
+| `POST` | `/api/v1/verify` | `viewer` and up |
+
+```bash
+curl -X POST localhost:8088/api/v1/verify \
+  -H 'content-type: application/json' \
+  -d '{"path": "/repos/tf-vpc", "require_run": false}'
+```
+
+Returns the same JSON as `repave verify --format json`. HTTP `422` when gates fail or pins
+drift; `400` for invalid input.
+
 ## Not in this slice
 
-- Portal **Verify** route and HTTP API
-- Remote clone from a repo URL
+- Remote clone from a repo URL in CLI, portal, or API
 - Standards clause diff beyond pin metadata (see `plan-upgrade` / standards diff for depth)

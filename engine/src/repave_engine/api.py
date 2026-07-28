@@ -96,6 +96,7 @@ from repave_engine.settings import (
 )
 from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
+from repave_engine.verify import VerifyError, _looks_like_remote_url, verify_repository
 
 
 def _dry_run_from_form(form: object) -> bool:
@@ -164,7 +165,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             return await call_next(request)
         user = session_user(request)
         if user is None:
-            if request.method == "POST" and path in {"/generate", "/update", "/api/v1/generate"}:
+            if request.method == "POST" and path in {
+                "/generate",
+                "/update",
+                "/verify",
+                "/api/v1/generate",
+                "/api/v1/verify",
+            }:
                 return JSONResponse(
                     status_code=401,
                     content={"detail": "Authentication required"},
@@ -786,6 +793,127 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 cli_open_pr_command=cli_open_pr,
             ),
         )
+
+    @app.get("/verify", response_class=HTMLResponse)
+    async def verify_form(request: Request) -> HTMLResponse:
+        demo_path = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
+        return templates.TemplateResponse(
+            request,
+            "verify.html",
+            page_context(
+                request,
+                nav_active="verify",
+                demo_module_path=str(demo_path.resolve()) if demo_path.is_dir() else "",
+            ),
+        )
+
+    @app.post("/verify", response_class=HTMLResponse)
+    async def verify_run(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        form = await request.form()
+        target_repo_raw = str(form.get("target_repo", "")).strip()
+        blueprint_override = str(form.get("blueprint", "")).strip() or None
+        require_run = str(form.get("require_run", "")).lower() in {"1", "true", "on", "yes"}
+
+        if not target_repo_raw:
+            return templates.TemplateResponse(
+                request,
+                "verify.html",
+                page_context(
+                    request,
+                    nav_active="verify",
+                    error_message="Repository path is required.",
+                    target_repo=target_repo_raw,
+                    blueprint=blueprint_override or "",
+                ),
+            )
+        if _looks_like_remote_url(target_repo_raw):
+            return templates.TemplateResponse(
+                request,
+                "verify.html",
+                page_context(
+                    request,
+                    nav_active="verify",
+                    error_message=(
+                        "Remote URLs are not supported yet; clone the repo locally first."
+                    ),
+                    target_repo=target_repo_raw,
+                    blueprint=blueprint_override or "",
+                ),
+            )
+
+        try:
+            outcome = verify_repository(
+                Path(target_repo_raw).expanduser(),
+                repo_root,
+                blueprint_name=blueprint_override,
+                require_run=require_run,
+            )
+        except VerifyError as exc:
+            return templates.TemplateResponse(
+                request,
+                "verify.html",
+                page_context(
+                    request,
+                    nav_active="verify",
+                    error_message=str(exc),
+                    target_repo=target_repo_raw,
+                    blueprint=blueprint_override or "",
+                ),
+            )
+
+        gates = list(outcome.gates)
+        return templates.TemplateResponse(
+            request,
+            "verify_result.html",
+            page_context(
+                request,
+                nav_active="verify",
+                verify=outcome,
+                target_repo=str(Path(target_repo_raw).expanduser().resolve()),
+                gate_summary=gate_summary(gates),
+                gates_ok=outcome.gates_passed,
+            ),
+        )
+
+    @app.post("/api/v1/verify")
+    async def api_verify(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        try:
+            body = await request.json()
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail="JSON body required") from exc
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="JSON object required")
+
+        path_raw = str(body.get("path", "")).strip()
+        if not path_raw:
+            raise HTTPException(status_code=400, detail="path is required")
+        if _looks_like_remote_url(path_raw):
+            raise HTTPException(
+                status_code=400,
+                detail="remote repository URLs are not supported yet; clone locally first",
+            )
+
+        blueprint_override = str(body.get("blueprint", "")).strip() or None
+        require_run = bool(body.get("require_run", False))
+        try:
+            outcome = verify_repository(
+                Path(path_raw).expanduser(),
+                repo_root,
+                blueprint_name=blueprint_override,
+                require_run=require_run,
+            )
+        except VerifyError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        payload = outcome.to_json_dict()
+        status = 200 if outcome.ok else 422
+        return JSONResponse(payload, status_code=status)
 
     def fleet_registry_path() -> Path:
         try:
