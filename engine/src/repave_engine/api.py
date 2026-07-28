@@ -60,6 +60,8 @@ from repave_engine.fleet import (
     register_repo,
     unregister_repo,
 )
+from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operator_status_file
+from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.generate_api import run_generate_api
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
@@ -318,7 +320,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         except ValueError:
             fleet_cfg = None
         enabled = fleet_cfg is not None and fleet_cfg.enabled
-        entries = read_fleet(fleet_cfg.file) if enabled and fleet_cfg else ()
+        entries: tuple[FleetEntry, ...] = ()
+        operator_by: dict[str, FleetOperatorStatus] = {}
+        gitops_namespace = "default"
+        if enabled and fleet_cfg is not None:
+            entries = read_fleet(fleet_cfg.file)
+            gitops_namespace = fleet_cfg.gitops_namespace
+            if fleet_cfg.operator_status_file is not None:
+                operator_by = load_operator_status_file(fleet_cfg.operator_status_file)
+        fleet_repos = build_fleet_rows(
+            entries,
+            operator_by_url=operator_by,
+            namespace=gitops_namespace,
+        )
         return templates.TemplateResponse(
             request,
             "fleet.html",
@@ -326,7 +340,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="fleet",
                 fleet_enabled=enabled,
-                fleet_repos=[entry.to_dict() for entry in entries],
+                fleet_repos=fleet_repos,
+                fleet_operator_status_enabled=bool(operator_by),
+                fleet_gitops_namespace=gitops_namespace,
             ),
         )
 
@@ -998,10 +1014,24 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         user = session_user(request)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        entries = read_fleet(fleet_registry_path())
-        return JSONResponse(
-            {"count": len(entries), "repos": [entry.to_dict() for entry in entries]}
+        fleet_cfg = load_fleet_config(repo_root)
+        if fleet_cfg is None or not fleet_cfg.enabled:
+            raise HTTPException(
+                status_code=404,
+                detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
+            )
+        entries = read_fleet(fleet_cfg.file)
+        operator_by = (
+            load_operator_status_file(fleet_cfg.operator_status_file)
+            if fleet_cfg.operator_status_file is not None
+            else {}
         )
+        repos = build_fleet_rows(
+            entries,
+            operator_by_url=operator_by,
+            namespace=fleet_cfg.gitops_namespace,
+        )
+        return JSONResponse({"count": len(repos), "repos": repos})
 
     @app.post("/api/v1/fleet")
     async def api_fleet_register(request: Request) -> JSONResponse:

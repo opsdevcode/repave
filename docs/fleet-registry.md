@@ -94,10 +94,42 @@ with an empty registry it points at `repave register`.
 The page is read-only. Registration stays in the CLI and API, where the acting user is
 recorded.
 
+### Operator drift (live status)
+
+When `fleet.operator_status_file` (or `REPAVE_FLEET_OPERATOR_STATUS_FILE`) points at a JSON
+snapshot, the fleet table shows each repo's operator **phase**, message, and open remediation
+PR link. Refresh the snapshot from a cluster that runs the repave operator:
+
+```bash
+repave fleet-operator-snapshot \
+  --output ../repave-fleet/operator-status.json \
+  --namespace repave-system
+```
+
+Run that on a schedule in CI or beside your GitOps apply job so the portal stays aligned with
+`GoldenPathRepo` status without the engine calling the Kubernetes API directly.
+
 ## Operator sync
 
 `repave fleet-manifests` renders one `GoldenPathRepo` per registered repository so the
 operator reconciles the same set the registry tracks:
+
+```bash
+repave fleet-manifests --output ./fleet-manifests --namespace repave-system \
+  --kustomization --gitops-readme --prune
+kubectl apply -k ./fleet-manifests
+```
+
+Flags:
+
+| Flag | Purpose |
+| --- | --- |
+| `--kustomization` | Write `kustomization.yaml` for `kubectl apply -k` |
+| `--gitops-readme` | Write `README.md` with apply and snapshot commands |
+| `--prune` | Delete stale `*.yaml` in `--output` after render |
+| `--enable-remediation` | Set `spec.remediation.enabled` on each manifest |
+
+The plain form still works:
 
 ```bash
 repave fleet-manifests --output ./fleet-manifests --namespace repave-system

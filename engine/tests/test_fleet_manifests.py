@@ -86,6 +86,32 @@ def test_manifest_requires_full_desired_pins(missing: str) -> None:
         manifest_for(_entry(**{missing: ""}))
 
 
+def test_render_prunes_stale_manifests(tmp_path: Path) -> None:
+    out = tmp_path / "manifests"
+    out.mkdir()
+    stale = out / "removed-repo.yaml"
+    stale.write_text("stale: true\n", encoding="utf-8")
+
+    render_manifests([_entry()], out, prune=True)
+
+    assert (out / "acme-tf-vpc.yaml").is_file()
+    assert not stale.exists()
+
+
+def test_render_writes_kustomization_and_readme(tmp_path: Path) -> None:
+    out = tmp_path / "manifests"
+    render_manifests([_entry()], out, kustomization=True, gitops_readme=True)
+
+    kustom = yaml.safe_load((out / "kustomization.yaml").read_text())
+    assert kustom["resources"] == ["acme-tf-vpc.yaml"]
+    assert (out / "README.md").is_file()
+
+
+def test_manifest_can_enable_remediation() -> None:
+    body = manifest_for(_entry(), enable_remediation=True)
+    assert body["spec"]["remediation"] == {"enabled": True}
+
+
 def test_render_writes_one_file_per_repo(tmp_path: Path) -> None:
     entries = [_entry(), _entry("https://github.com/acme/ansible-baseline")]
 
@@ -188,7 +214,14 @@ def test_checked_in_operator_fixtures_match_renderer(repo_root: Path, tmp_path: 
 
 
 def _args(**kwargs: object):
-    defaults = {"repo_root": ".", "namespace": "default"}
+    defaults = {
+        "repo_root": ".",
+        "namespace": "default",
+        "enable_remediation": False,
+        "prune": False,
+        "kustomization": False,
+        "gitops_readme": False,
+    }
     defaults.update(kwargs)
     return type("Args", (), defaults)()
 

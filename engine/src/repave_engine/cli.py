@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -19,6 +20,11 @@ from repave_engine.fleet import (
     unregister_repo,
 )
 from repave_engine.fleet_manifests import DEFAULT_NAMESPACE, render_manifests
+from repave_engine.fleet_operator_status import (
+    kubectl_goldenpathrepo_list,
+    parse_kubectl_gpr_list,
+    write_operator_status_snapshot,
+)
 from repave_engine.pipeline import generate_bundle_from_path, generate_from_path
 from repave_engine.settings import OutputConfig, load_fleet_config, load_output_config
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
@@ -220,11 +226,41 @@ def cmd_fleet_manifests(args: argparse.Namespace) -> int:
         return 0
 
     output_dir = Path(args.output).expanduser().resolve()
-    rendered = render_manifests(entries, output_dir, namespace=args.namespace)
+    rendered = render_manifests(
+        entries,
+        output_dir,
+        namespace=args.namespace,
+        enable_remediation=bool(args.enable_remediation),
+        prune=bool(args.prune),
+        kustomization=bool(args.kustomization),
+        gitops_readme=bool(args.gitops_readme),
+    )
     for item in rendered:
         print(f"{item.path}  {item.entry.repo_url}")
     print(f"\nRendered {len(rendered)} GoldenPathRepo manifest(s) into {output_dir}")
-    print(f"Apply with: kubectl apply -f {output_dir}")
+    if args.kustomization:
+        print(f"Kustomization: {output_dir / 'kustomization.yaml'}")
+    print(
+        f"Apply with: kubectl apply -k {output_dir}"
+        if args.kustomization
+        else f"Apply with: kubectl apply -f {output_dir}"
+    )
+    return 0
+
+
+def cmd_fleet_operator_snapshot(args: argparse.Namespace) -> int:
+    try:
+        payload = kubectl_goldenpathrepo_list(
+            namespace=args.namespace,
+            all_namespaces=bool(args.all_namespaces),
+        )
+    except (RuntimeError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    statuses = parse_kubectl_gpr_list(payload)
+    output = Path(args.output).expanduser().resolve()
+    write_operator_status_snapshot(output, statuses)
+    print(f"Wrote operator status for {len(statuses)} GoldenPathRepo(s) to {output}")
     return 0
 
 
@@ -593,7 +629,49 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_NAMESPACE,
         help=f"Namespace for the generated resources (default: {DEFAULT_NAMESPACE})",
     )
+    fleet_manifests.add_argument(
+        "--enable-remediation",
+        action="store_true",
+        help="Set spec.remediation.enabled on each GoldenPathRepo",
+    )
+    fleet_manifests.add_argument(
+        "--prune",
+        action="store_true",
+        help="Remove stale *.yaml manifests in --output that are no longer registered",
+    )
+    fleet_manifests.add_argument(
+        "--kustomization",
+        action="store_true",
+        help="Write kustomization.yaml listing rendered manifests",
+    )
+    fleet_manifests.add_argument(
+        "--gitops-readme",
+        action="store_true",
+        help="Write README.md with apply and portal status refresh commands",
+    )
     fleet_manifests.set_defaults(func=cmd_fleet_manifests)
+
+    fleet_snapshot = sub.add_parser(
+        "fleet-operator-snapshot",
+        help="Export GoldenPathRepo status JSON for the portal fleet page",
+        parents=[common],
+    )
+    fleet_snapshot.add_argument(
+        "--output",
+        required=True,
+        help="Path to write operator status JSON (fleet.operator_status_file)",
+    )
+    fleet_snapshot.add_argument(
+        "--namespace",
+        default=DEFAULT_NAMESPACE,
+        help=f"Kubernetes namespace to query (default: {DEFAULT_NAMESPACE})",
+    )
+    fleet_snapshot.add_argument(
+        "--all-namespaces",
+        action="store_true",
+        help="Query GoldenPathRepo resources in every namespace",
+    )
+    fleet_snapshot.set_defaults(func=cmd_fleet_operator_snapshot)
 
     verify_cmd = sub.add_parser(
         "verify",
