@@ -6,11 +6,15 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.74.0  
 **In progress:** operator remote git inventory — Phases A–B shipped, Phase C open  
-**Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) →
+**Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) (store, CLI,
+and API shipped; portal view and operator sync open) →
 [k8s deploy](#kubernetes-deploy-path-helm-chart) →
 [`repave verify`](#repave-verify-for-existing-repositories) →
 [composite paths](#composite-golden-paths-bundles)  
+**Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
+correctness and scale fixes that gate hosted multi-user use  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
+→ [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
 
@@ -38,6 +42,13 @@ locally after bumping `engine` `__version__`.
   next step.
 - Use [Path to v2.0.0](#path-to-v200) for the big-picture sequence and what v2
   means; individual releases below expand each step.
+- [Beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) holds the
+  next **major** theme only — a boundary marker, not a backlog. Entries there stay
+  directional until they are promoted into [Planned](#planned) with a real
+  problem/approach/done-when, and nothing lands from that section before v2 GA.
+- Keep **tech debt** in [Engine hardening and tech debt](#engine-hardening-and-tech-debt)
+  with the same problem/approach/done-when shape as features, and cite the file that
+  carries the debt so the entry stays checkable.
 - Portal **visual and layout** planning: [`portal-design.md`](portal-design.md)
   (implements primarily under v1.18).
 - Operator **local development and testing**: [`operator-local-dev.md`](operator-local-dev.md)
@@ -53,11 +64,16 @@ v2.0.0 is the **mature platform** milestone: repave governs a fleet of generated
 repositories end-to-end — bootstrap, standards, policy, upgrade, and drift
 remediation — not just one-shot module creation.
 
+The ladder below runs one rung past that milestone. v2 is where the contracts freeze, so
+it is also where the next major theme becomes definable — see
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) for what v3
+means and why it cannot be pulled forward.
+
 ```text
 v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA pack (catalog v1.3.0)
   │
   ├─ v1.67          Ansible role patterns   linux-service / windows-service catalog + portal picker
-  ├─ v1.17 GA       operator-e2e CI; repoURL inventory still future
+  ├─ v1.17 GA       operator-e2e CI; localPath inventory GA (repoURL landed later, v1.72–v1.73)
   ├─ v1.18–v1.22    operate + extend  portal UX; module updates; Ansible collection (shipped)
   ├─ v1.21–v1.26    estate-ready      standards pack; provenance; module CI; operator; k8s deploy
   ├─ v1.27–v1.28    service + SSO     authenticated single-tenant service via OIDC
@@ -71,12 +87,20 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   │  open work below is named by theme; engine tags are assigned at merge time
   │
+  ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
   ├─ k8s deploy      Helm chart for API/portal (unblocks the day-2 block)
+  ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
+  ├─ supply chain    GitHub App auth instead of PATs; governed PR conventions
+  ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
+  ├─ portal surfaces catalog, rendered docs, scorecards, observability read
   ├─ reach + breadth `repave verify` on existing repos; composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
+  ├─ cost            Infracost estimate on plan; cloud cost actuals on catalog tiles
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
+  │
+  v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane
 ```
 
 | Theme | Releases | Outcome |
@@ -92,7 +116,13 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **In-cluster operations (Day-2)** | open (day-2 themes) | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
 | **Estate control plane** | v1.72–v1.73 shipped; registry open | Operator observes and plans remote repos; fleet registry and portal fleet view next |
 | **Reach and usability** | open | Govern repos repave did not generate; composite paths; toolchain preflight; audit queries |
+| **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
+| **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
+| **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
+| **Developer portal surfaces** | open | Catalog, rendered docs, scorecards, and observability read in the portal |
+| **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
+| **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
 ---
 
@@ -882,7 +912,7 @@ top failure modes with concrete commands.
 
 ### v1.39 — Policy-as-code gate (OPA/conftest)
 
-**Status:** Shipped on `main` (see [Policy-as-code golden paths](#policy-as-code-golden-paths-opa--conftest--shipped-early-roadmap-v139)).
+**Status:** Shipped on `main` (see [Policy-as-code golden paths](#policy-golden-paths-opa-and-azure-policy--shipped-early-roadmap-v139)).
 Helm charts run conftest against `helm template` output via the `opa` gate (`kubernetes_workload.rego` baseline).
 
 ---
@@ -981,8 +1011,10 @@ than repos — so nobody can answer "how much of the estate is on the current st
 **Approach:**
 
 - Registry store keyed by repo URL: blueprint + version, standard/policy pins, owner,
-  last observed drift, last remediation PR — JSONL/SQLite first behind an interface, same
-  pattern as the v1.30 audit sink
+  last observed drift, last remediation PR — JSONL behind an interface, same pattern as the
+  v1.30 audit sink, with the database backend deferred to
+  [durability and concurrency](#durability-and-concurrency-for-hosted-use) rather than
+  chosen here
 - `repave register <repo-url>` / `repave unregister`, plus `repave fleet list` reading pins
   from each repo's `repave.yaml` provenance (v1.14)
 - API: `GET /api/v1/fleet`, `POST /api/v1/fleet` (admin role from v1.28)
@@ -995,6 +1027,12 @@ than repos — so nobody can answer "how much of the estate is on the current st
 
 **Done when:** A registered repo appears in the portal fleet view with its pins and drift
 state, and the operator picks it up without hand-written CRs.
+
+**Status:** Partially shipped. The JSONL store (`fleet.py`), `repave register` / `unregister` /
+`fleet list`, the `GET` / `POST` / `DELETE /api/v1/fleet` routes, and
+[`docs/fleet-registry.md`](fleet-registry.md) are on `main`. Still open: the portal **Fleet**
+route (no fleet template exists yet) and operator sync from registry entries to
+`GoldenPathRepo` CRs.
 
 ---
 
@@ -1017,6 +1055,12 @@ nothing to attach to. Realizes [v1.26](#kubernetes-deploy-path-superseded).
 - kind smoke test reusing `operator/hack/e2e.sh` infrastructure; non-blocking in CI initially
 
 **Dependencies:** Stable API surface; v1.27 auth config; audit sink path config (v1.30).
+
+**Relationship to durability:** the chart can ship first and serve single-replica traffic, but
+scaling replicas is only meaningful once
+[durability and concurrency](#durability-and-concurrency-for-hosted-use) has moved run state and
+sessions out of process. Add the worker/Job template and database values here; the execution
+model itself belongs to that entry.
 
 **Done when:** `helm install` serves the blueprint form on-cluster with dry-run generation
 working and probes gating traffic.
@@ -1116,14 +1160,318 @@ answer a compliance question without grepping a file.
   pagination; admin/viewer roles from v1.28
 - Portal activity view gains the same filters and a per-generation detail panel showing pins,
   gate results, and the resulting PR link
-- Indexed store behind the existing sink interface (SQLite) with JSONL retained as the
-  append-only source of truth
+- Filters run against the indexed store from
+  [durability and concurrency](#durability-and-concurrency-for-hosted-use), with JSONL
+  retained as the append-only source of truth — this entry consumes that store, it does not
+  pick its own
 - `repave audit query` CLI over the same filters for offline use
 
-**Dependencies:** v1.30 audit sink; v1.28 roles.
+**Dependencies:** v1.30 audit sink; v1.28 roles;
+[durability and concurrency](#durability-and-concurrency-for-hosted-use) for the indexed
+store (a JSONL-scan implementation is acceptable as a first cut, but the API contract should
+not assume it).
 
 **Done when:** An operator can answer "every generation of blueprint X by user Y that failed a
 gate last month" from the portal or one CLI call.
+
+---
+
+## Engine hardening and tech debt
+
+Debt inventoried against `main` at engine v1.74.0. Each row names the file that carries the
+debt so the entry can be re-checked instead of re-argued. Group A is correctness and safety
+and should land before the hosted-service themes below; group B is maintainability that can
+land opportunistically alongside feature work in the same files.
+
+### A1 — One source of truth for gate toolchain pins
+
+**Problem:** Toolchain versions are pinned in three places and have already drifted.
+`engine/src/repave_engine/ci_toolchain.py` pins `CONFTEST_VERSION = "0.56.0"` (and therefore so
+does every generated repo's CI workflow via `ci_workflow.py`), while
+`deploy/local/install-gate-toolchain.sh` installs conftest `0.68.2`. A generated module can
+pass the `opa` gate in the portal and fail it in its own CI, or the reverse. Both files carry a
+"keep aligned with" comment, which is the process admitting the coupling is manual.
+`CHECKOV_PIP_SPEC` is also a floating `checkov>=3.2.0`, so gate results are not reproducible
+across time.
+
+**Approach:**
+
+- Single pin module (or data file) consumed by `ci_toolchain.py`, the installer script, and
+  `deploy/local/Dockerfile`; the shell script sources generated exports rather than restating
+  versions
+- Pin Checkov to an exact version and bump it deliberately
+- Regression test asserting the installer and `ci_toolchain` agree, so drift fails CI
+
+**Done when:** One edit changes a gate CLI version everywhere, and a deliberately mismatched
+pin fails a test.
+
+### A2 — Subprocess timeouts on every gate and git invocation
+
+**Problem:** `run_command` in `gate_runners.py` calls `subprocess.run` with no `timeout`, and so
+do the git/CLI helpers in `module_inventory.py`, `target_repo.py`, `standards_diff.py`,
+`upgrade_plan.py`, and `gate_toolchain.py`. A hung `terraform init`, a credential prompt, or a
+slow registry wedges the request — and once generation runs on a shared service, one hung run
+holds a worker indefinitely. Bandit's `B603`/`B404` skips in `pyproject.toml` mean nothing flags
+this today.
+
+**Approach:**
+
+- Default per-gate timeout with a per-gate override, killing the process group on expiry and
+  reporting a distinct `timeout` gate outcome rather than a generic failure
+- Same treatment for git and `repave` CLI subprocesses used by inventory and upgrade planning
+- Narrow the Bandit skips to the call sites that need them
+
+**Done when:** A gate that sleeps past its budget is reported as timed out and the request
+returns, with no orphaned child process.
+
+### A3 — Coverage and operator e2e actually gate merges
+
+**Problem:** `make test` enforces `--cov-fail-under=75`, but `.github/workflows/ci.yml` runs
+`uv run pytest` with no coverage flags, so the threshold is advisory on PRs. `operator-e2e` is
+not in the required-check list in `.github/rulesets/main-branch.json`, and the ruleset-sync step
+in `release.yml` is `continue-on-error: true`, so branch-protection drift is silent.
+
+**Approach:**
+
+- Run the same coverage invocation in CI as in `make test`; add `[tool.coverage]` config so the
+  policy lives in `pyproject.toml` rather than the Makefile
+- Require `operator-e2e` on operator/engine/blueprint paths, or alert on nightly failure
+  instead of leaving it advisory
+- Fail closed on ruleset sync, or move it to a workflow whose failure is visible
+
+**Done when:** A PR that drops coverage below the threshold fails, and a red `operator-e2e`
+blocks or pages.
+
+### A4 — Concurrent-safe audit and fleet stores
+
+**Problem:** `audit.py` appends JSONL best-effort with no lock and never raises; `fleet.py`
+folds a JSONL file with an 8 MB soft cap. Two simultaneous writers can interleave partial
+lines, and a failed write is invisible. This is the same store the fleet registry and queryable
+audit entries build on, so it is worth fixing before they land.
+
+**Approach:** locked appends behind the existing sink interface, keeping JSONL as the file
+format — this is the **interim** fix, deliberately scoped so it can ship on its own. Choosing a
+database is [durability and concurrency](#durability-and-concurrency-for-hosted-use); this entry
+only stops today's file store from corrupting under concurrent writers.
+
+- Advisory lock around appends in `audit.py` and `fleet.py`
+- Surface write failures as a metric instead of swallowing them
+- Concurrency test that writes from multiple processes and asserts every record parses
+
+**Done when:** Parallel generations produce a store where every record round-trips, and a write
+failure is observable.
+
+### A5 — Honest changelog and version pointers
+
+**Problem:** `engine/CHANGELOG.md` ends at `0.2.0` while `engine/src/repave_engine/__init__.py`
+reports `1.74.0`, so the changelog is unusable for anyone consuming the package.
+`docs/concepts.md` still calls audit history and self-healing "planned" although both shipped,
+`docs/sales-demo.md` implies `spec.repoURL` is GA when Phase C is open, and
+`docs/operator-ga.md` records a last-verified engine of v1.63.0.
+
+**Approach:**
+
+- Rebuild changelog history from tags, or declare GitHub Releases the source of truth and make
+  the file point there
+- Refresh `concepts.md`, `sales-demo.md`, and `operator-ga.md`; extend
+  `scripts/sync_doc_versions.py` to the pointers it currently misses and add a `--check` mode CI
+  can run
+
+**Done when:** `make sync-doc-versions --check` passes in CI and no shipped feature is described
+as planned.
+
+### A6 — Traces are real or not claimed
+
+**Problem:** `engine/pyproject.toml` depends on `opentelemetry-api` only — no SDK, no exporter —
+so `tracing.py` is a no-op unless a host installs a provider, while the v1.30 entry reports
+traces as shipped.
+
+**Approach:** Add an optional `otel` extra with the SDK and an OTLP exporter plus configuration
+docs, or scope the shipped claim down to metrics and audit.
+
+**Done when:** A documented configuration produces spans in a collector, or the roadmap and
+docs stop promising them.
+
+### B — Maintainability (opportunistic)
+
+| Item | Evidence | Fix |
+| --- | --- | --- |
+| `gate_runners.py` is a 1354-line multi-domain module holding every gate CLI | `engine/src/repave_engine/gate_runners.py` | Split into a `gates/` package by domain, registry unchanged |
+| `api.py` (861 lines) mixes portal HTML, JSON API, and auth middleware; mypy has an `arg-type` carve-out for it | `engine/src/repave_engine/api.py`, `pyproject.toml` mypy overrides | Split into routers; drop the mypy override |
+| `cli.py` (576 lines) owns every command | `engine/src/repave_engine/cli.py` | `cli/` package per subcommand |
+| Gate-outcome summarization implemented four times with drifting empty/passed/failed semantics | `generate_api.py`, `api.py`, `pipeline.py`, `notifications.py` | One helper in `gates.py` |
+| Blueprint root `repo_root / "blueprints"` hardcoded in a dozen places | `api.py`, `cli.py`, `generate_api.py` | `blueprints_dir()` helper — also unblocks [forked and remote blueprint packs](#forked-and-remote-blueprint-packs) |
+| Actions pinned to mutable tags; `uv:latest` in the portal image | `.github/workflows/*.yml`, `deploy/local/Dockerfile` | Pin by digest/SHA |
+| No tests for `generate_api`, `auth_context`, `tracing`, `gate_builtin` | `engine/tests/` | Focused unit tests, auth first |
+| Operator apply integration test skips unconditionally | `operator/internal/repave/apply_test.go` | Move behind an e2e build tag or delete |
+| Python floor is 3.10 but CI only runs 3.12 | `engine/pyproject.toml`, CI workflows | Matrix 3.10 or raise the floor |
+| `.tmp-staging/` is not ignored, so rendered fixtures show up as untracked noise | `.gitignore` | Add the pattern and clean up |
+| Broad `except Exception` around the provenance gate masks bugs as gate failures | `gate_runners.py` | Narrow the exception |
+
+**Done when (group A):** All six A entries closed, with A1, A2, and A4 landed before the hosted
+service carries real users.
+
+---
+
+### Durability and concurrency for hosted use
+
+**Problem:** Generation is synchronous inside async request handlers — `api.py` calls
+`generate_from_blueprint` directly, so a single multi-minute run with real gates blocks the
+event loop and every other request with it. Audit, fleet, and run state are JSONL files, the
+session secret falls back to a per-process random value, and Prometheus counters are per-process
+so replicas cannot be aggregated. None of that survives a shared multi-user instance.
+
+**Why this is on the v1 path and not deferred:** v2 GA promises an authenticated multi-user
+service and freezes the config contract around it. Every open entry that stores state —
+[fleet registry](#fleet-registry-and-repave-register),
+[queryable audit history](#queryable-audit-history),
+[portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read),
+[fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) — otherwise picks its own
+backend, and the store choice becomes a v2 breaking change rather than a v1 decision. It is one
+decision made once, before four features encode the answer.
+
+**Approach:**
+
+- **Phase 1 (no k8s required):** run generation off the event loop in-process — a queue with
+  per-run records, worker threads, and status polling or streaming to the portal instead of one
+  long request. This alone fixes the blocking problem for the Compose deployment
+- **Phase 2:** store behind the existing sink interfaces for audit, fleet, sessions, and run
+  records — SQLite locally, PostgreSQL for hosted mode; JSONL retained as export
+- **Phase 3 (hosted only):** distribute execution as Kubernetes Jobs using the chart's worker
+  template, once the chart exists
+- Concurrency limit plus queue-depth metrics; idempotency key on the client request id so a
+  retried submit does not double-publish
+- Retry with backoff and a dead-letter store with admin replay for runs that fail
+  infrastructurally rather than on gates
+- Require an explicit session secret outside local mode; aggregate metrics across replicas
+
+**Dependencies:** [Engine hardening A2](#a2--subprocess-timeouts-on-every-gate-and-git-invocation)
+(a queued run with no timeout is a permanently occupied worker) and
+[A4](#a4--concurrent-safe-audit-and-fleet-stores) as the interim file-store fix; v1.30 audit sink
+interface. Phase 3 only needs the [Helm chart](#kubernetes-deploy-path-helm-chart) — phases 1 and
+2 do not, so this entry is **not** blocked behind the deploy path.
+
+**Done when:** Ten concurrent dry-runs from distinct users complete without blocking the API, run
+status is visible while a run is in flight, and a killed worker's run is replayable.
+
+---
+
+### GitHub App authentication for publish and remediation
+
+**Problem:** Publish and operator remediation both authenticate with a long-lived
+`GITHUB_TOKEN` PAT. On a shared cluster that means broad, non-expiring, hard-to-attribute write
+access in a Secret, and rate limits are shared across everything the token touches.
+
+**Approach:**
+
+- GitHub App credentials (app id + installation id + private key) as an alternative to the PAT in
+  `github.py`, with installation tokens minted per operation and cached until expiry
+- Same option for the operator's push path; secret refs rather than inline tokens
+- Per-installation rate-limit awareness so fleet campaigns can back off correctly
+- PAT remains supported for local development; docs cover App installation scoping
+
+**Dependencies:** Existing `github.py` / `pr.py` publish flow; operator `internal/git/push.go`.
+
+**Done when:** A publish and an operator remediation PR both succeed with no PAT present, and
+token material never appears in logs or error strings.
+
+---
+
+### Governed PR conventions
+
+**Problem:** Generated and remediation PRs carry a title and body but no organizational metadata,
+so teams bolt on branch naming, labels, reviewers, and evidence checklists by hand — and the
+operator's PRs look nothing like the ones humans open.
+
+**Approach:**
+
+- Configurable PR convention template in `repave.config.yaml`: branch prefix, label set, PR body
+  sections, and an evidence checklist rendered from the gate results
+- Optional `CODEOWNERS` snippet emitted with generated repos so review routing exists from the
+  first commit
+- Operator remediation PRs render the same template, so drift PRs are indistinguishable in shape
+  from generated ones
+- Conventions are data, not code: an organization supplies its own template without patching the
+  engine
+
+**Dependencies:** `pr.py`; operator remediation; v1.24 CI template pattern.
+
+**Done when:** One config change makes every generated and remediation PR carry the
+organization's branch prefix, labels, and evidence checklist.
+
+---
+
+### Operator fleet campaigns and Blueprint controller
+
+**Problem:** A standard bump means every registered repo is out of date at once, and the operator
+has no way to bound the resulting PR storm — nor a controller for the `Blueprint` CRD, so
+blueprint versions are not a queryable fleet target.
+
+**Approach:**
+
+- `Blueprint` controller: register available blueprint versions and publish the current pin target
+  in status, so repos can be compared against a declared target rather than a scan
+- Upgrade **campaigns**: a bounded rollout with max concurrent open PRs, pause/resume, and a
+  stop condition on repeated gate failures
+- Drift SLO metrics: number of out-of-date repos, age of the oldest drift, remediation MTTR
+- Campaign summaries through the existing notification webhooks
+
+**Dependencies:** [Fleet registry](#fleet-registry-and-repave-register);
+[GitHub App auth](#github-app-authentication-for-publish-and-remediation) for rate limits;
+operator remote inventory Phase C.
+
+**Done when:** A standard bump across a registry of repos opens a bounded set of remediation PRs,
+can be paused mid-flight, and reports drift MTTR.
+
+---
+
+### Developer portal surfaces: catalog, docs, scorecards, observability read
+
+**Problem:** The portal generates and updates repos but cannot answer "what do I own, is it
+healthy, and is it current?" — so teams still need a separate developer-portal product for
+discovery even though repave already holds the provenance that would populate it.
+
+**Approach:**
+
+- **Catalog:** scan the org for `catalog-info.yaml` and `repave.yaml`, build entity pages with
+  owner, blueprint and standard pins, links, and last remediation; reuse the fleet registry as
+  the backing store
+- **Docs:** render markdown from generated repos (README, upgrade notes, provenance) in-portal,
+  linking out rather than duplicating org-wide documentation
+- **Scorecards:** pin freshness, last gate status, provenance completeness, and runbook presence
+  per entity, aggregated to a fleet view
+- **Observability read:** embed an existing dashboard and show an SLO summary per entity from a
+  configurable read-only source — repave displays, it does not own the data
+
+**Dependencies:** v1.32 Backstage catalog rendering (same `catalog-info.yaml` contract);
+[fleet registry](#fleet-registry-and-repave-register); v1.40 observability path.
+
+**Done when:** A developer finds a service they own in the catalog and sees its pins, gate status,
+scorecard, and a health panel without leaving the portal.
+
+---
+
+### Cost visibility
+
+**Problem:** Nothing in the generate flow tells a user what an artifact will cost, and nothing in
+the catalog tells them what it does cost — so cost enters the conversation after provisioning.
+
+**Approach:**
+
+- **Estimate:** Infracost gate on Terraform dry-run and in generated-repo CI, reporting a delta on
+  the generation result page; warn by default, blockable per blueprint
+- **Actuals:** pluggable cloud cost reader (provider cost API, cached server-side with an `as-of`
+  timestamp) scoped by the tag keys the blueprints already require, mapped to catalog entities via
+  `repave.yaml` / `catalog-info.yaml` service name
+- Cost panel on catalog tiles and a cost dimension in scorecards
+- Optional in-cluster allocation source for Kubernetes workloads when one is deployed
+- Credentials read-only and server-side; documented lag, currency, and tag-coverage caveats
+
+**Dependencies:** v1.13 gate registry (Infracost as a gate); portal catalog surfaces; tag
+requirements on Terraform blueprints.
+
+**Done when:** A Terraform dry-run shows a cost delta, and a catalog entity with complete tags
+shows last-30-day actual spend with its as-of time.
 
 ---
 
@@ -1151,23 +1499,58 @@ generator.
 | Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 |
+| Durable multi-user service (SQL store, async runs) | [durability and concurrency](#durability-and-concurrency-for-hosted-use) |
+| Portal discovery surfaces (catalog, docs, scorecards, health) | [portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read) |
+| Cost at generate time and in the catalog | [cost visibility](#cost-visibility) |
+| Bounded fleet upgrade campaigns | [fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) |
 | Conversational / governed AI generation | v2 (see below) |
 
-**Breaking-change candidates (major bump):**
+**Contract freeze at v2.0.0**
 
-- Blueprint API `repave.dev/v1beta1` or `v2alpha1` with frozen CRD shapes
-- `GoldenPathRepo` / `Blueprint` CRD GA with migration guide from v1 inventory
-- Output contract: required `repave.yaml` provenance file in generated repos
-- Semantic versioning policy: blueprint `metadata.version` tied to template
-  breaking changes
+v2 is the point where integrators can build against repave without expecting the ground
+to move. That means declaring what is stable and what it costs to migrate — and opening the
+deprecation windows for the removals listed under
+[breaking at v3.0.0](#breaking-at-v300), since a sunset notice has to ship with the freeze
+rather than after it:
 
-**Non-goals for v2 (remain parking lot or post-v2):**
+| Change | Migration |
+| --- | --- |
+| **`/api/v2`** is the stable HTTP surface; `/api/v1` deprecated with a published sunset | v1 clients get a documented deprecation window before removal |
+| **`GoldenPathRepo` / `Blueprint`** promoted to `repave.dev/v1beta1` with frozen shapes | Conversion webhook plus a `kubectl`-level migration guide from `v1alpha1` |
+| **`repave.yaml` provenance required** on every publish | Operator flags non-compliant repos instead of silently skipping them |
+| **`repave.config.yaml` gains `apiVersion`** | Config loader accepts the unversioned form for one minor with a warning |
+| **Durable store required in service mode** (JSONL becomes export-only) | Documented external-database setup; local mode keeps the file store |
+| **Blueprint JSON Schema frozen** for the v2 line; `metadata.version` policy documented | Template breaking changes must bump blueprint minor/major |
+
+### Resilience and disaster recovery
+
+**Problem:** The hosted service has no documented recovery objective. The control plane
+(blueprints, standards, config, manifests) lives in git and is trivially re-deployable, but the
+durable store introduced for hosted mode is the first piece of state that can actually be lost.
+
+**Approach:**
+
+- Backup and restore procedure for the durable store, with a tested restore — not just a
+  configured backup
+- Active/passive second-region option for the API and store, with a documented failover
+  procedure and a recovery-time objective (target: hours, not days)
+- Periodic failover drill recorded in `docs/operations/`
+- Generated repos are unaffected by definition; recovery covers audit, fleet, and run history
+
+**Done when:** A recorded drill restores the service and its audit/fleet history within the
+documented objective.
+
+**Non-goals for v2** — scoped in
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) or left in the
+[parking lot](#parking-lot):
 
 - **Multi-tenant SaaS repave** — org isolation, per-tenant config/RBAC; the
   multi-tenant follow-on to the single-tenant SSO shipped in v1.26–v1.27
 - OPA/Sentinel as a *default/required* gate (v1.39 ships OPA opt-in; making it
-  mandatory estate-wide, and Sentinel support, stay post-v2)
+  mandatory estate-wide is a v3 breaking change, and Sentinel support stays unscheduled)
 - Private blueprint registry over OCI
+- **Autonomous merge of any kind** — v2 keeps a human on every remediation PR by design; the
+  low-risk tier is what v3 has to earn
 
 **Done when:**
 
@@ -1176,6 +1559,10 @@ generator.
 3. At least two production golden paths ship with standards + lint/policy packs.
 4. Documentation describes fork → customize standards/blueprints → fleet reconcile
    without referring to unreleased features.
+5. The conversational and form paths produce byte-identical gated output for the same
+   blueprint and inputs.
+6. CRD conversion runs in a non-production cluster with no data loss, and a recovery drill
+   meets the documented objective.
 
 ### Conversational and governed AI generation
 
@@ -1191,11 +1578,22 @@ ungoverned AI that bypasses repave's guarantees.
   or published — governance-by-construction still holds, with no bypass
 - Ground drafts in existing blueprint inputs and standards so generation starts from
   governed scaffolds rather than free-form text
+- Preferred flow is **intent → validated blueprint inputs → the existing deterministic
+  pipeline**, with the user confirming the resolved inputs before generate; free-form
+  artifact drafting is the narrow fallback, not the default
+- Retrieval over the in-repo standards, policy packs, and blueprint docs with **citations
+  required** on every answer, filtered by the caller's role so chat cannot surface what the
+  portal would deny
+- A **service registry** describing what the assistant may read and call — knowledge corpora
+  paths and read-only tools (fleet state, drift, gate history, cost summary) — so capabilities
+  are configuration rather than hardcoded integrations
 - Record provenance (v1.14) and an audit entry (v1.30) for every AI-assisted
-  generation — model, prompt hash, and gate results — and explain which gate/policy
-  blocked an output when it fails
+  generation — model id, prompt hash, confirmed inputs, and gate results — and explain which
+  gate/policy blocked an output when it fails; the PR body carries the same footer
 - Guardrails for prompt injection, secret leakage, cost/rate limits, and
   reproducibility
+- **Hard-blocked:** AI evaluating gate or policy outcomes, and autonomous merge to a
+  protected branch
 
 **Dependencies:** v1.13 gate registry; v1.14 provenance; v1.30 audit log; v1.39 OPA
 policy gate; a broad golden-path/standard library (v1.15, v1.33, v1.34, v1.40).
@@ -1208,10 +1606,85 @@ that passed every configured gate and policy, with full provenance and audit tra
 
 ---
 
+## Beyond v2.0.0 — autonomous estate and lifecycle control plane
+
+**Target (v3.0.0):** At v2 every remediation still waits for a human. At fleet scale that
+human is the bottleneck, and the changes they rubber-stamp are overwhelmingly mechanical
+version bumps. v3 earns trust for the mechanical tier and extends repave from "repositories"
+to the **lifecycle** around them — environments, deployments, and cost.
+
+**Why this section exists here.** Not to schedule work — nothing below is committed. It exists
+because the [contract freeze at v2.0.0](#v200--platform-ga) has to be designed against a known
+next major. Removing `/api/v1`, promoting CRDs to `v1`, and making policy gates mandatory are all
+v3 changes, so v2 has to open the deprecation windows for them; a v2 that freezes contracts
+without knowing what breaks next just breaks them again later. This section is the smallest thing
+that makes those v2 decisions checkable.
+
+**Discipline for this section:**
+
+- Entries stay one paragraph or less. Detail is earned by promotion into
+  [Planned](#planned), not written speculatively here
+- Nothing here starts before v2 GA. If something turns out to be needed sooner, it moves up to
+  [Planned](#planned) and stops being a v3 item
+- The only content that must stay accurate is the
+  [breaking-change list](#breaking-at-v300), because v2 deprecation notices point at it
+
+### Autonomous governed remediation
+
+- **Auto-merge for low-risk remediation:** blueprints declare a risk class per change type;
+  a pin bump with all gates green, no open waiver, and a healthy error budget can merge
+  without review. Anything touching resources, policy, or a higher risk class still routes
+  to a human
+- Instant-revert runbook and a kill switch that demotes the whole fleet back to
+  review-required in one config change
+- **Admission webhooks** on `GoldenPathRepo` and `Blueprint` — reject invalid pins and
+  missing required metadata at apply time rather than at reconcile time
+- **Policy gates mandatory** on regulated blueprint families, with waivers expressed as data
+  and an **enforced expiry** so no waiver becomes permanent
+- **Suggested fixes on gate failure:** a proposed diff only, re-gated like any other change,
+  never auto-applied outside the low-risk tier
+- **Fleet SLOs:** drift MTTR p95 and percentage of repos on the current blueprint patch,
+  reported in the portal and alertable
+
+### Lifecycle control plane
+
+- **Environments as a service:** promote `terraform-environment-stack` into a governed
+  environment lifecycle — request, vend, promote, and decommission — instead of one-shot
+  generation
+- **Deployment health:** read GitOps application status (Argo CD or Flux) into the catalog
+  entity so "is my last change live?" is answerable in the portal (read-only)
+- **Graph-scoped planning:** blast-radius view and graph-scoped plan/apply for large state,
+  surfaced as a registry tool rather than a repave-owned engine
+- **Cost showback:** budgets, multi-account rollups, chargeback exports, and anomaly alerts,
+  building on the estimate-and-actuals foundation in [cost visibility](#cost-visibility)
+- Optional promotions from the parking lot: **multi-tenant** config namespacing and an **OCI
+  blueprint registry**
+
+### Breaking at v3.0.0
+
+| Change | Migration |
+| --- | --- |
+| CRDs promoted to `repave.dev/v1`; `v1alpha1` removed | One-way upgrade job, deprecation announced at v2 |
+| Policy gates cannot be disabled on regulated blueprint families | Documented waiver process plus a blueprint pin bump |
+| `/api/v1` removed | Sunset announced with the v2 `/api/v2` freeze |
+| Blueprint schema v2 | `repave migrate-blueprint` CLI; deprecation window opens during v2.x |
+
+**Done when:**
+
+1. Low-risk auto-merge runs in a test organization with a demonstrated revert.
+2. The fleet SLO dashboard holds green for a sustained window in production.
+3. A graph-scoped plan is demonstrated for one large state boundary.
+4. `/api/v1` is removed and every known integrator has migrated.
+
+---
+
 ## Parking lot
 
 Ideas not yet scheduled for pre-v2 work — promote into [Planned](#planned) when
-there is an owner and a target release.
+there is an owner and a target release. Two of these (**multi-tenant repave** and the
+**private blueprint registry**) are named as optional promotions in
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); they stay here
+until someone owns them, since a v3 mention is not a commitment.
 
 - **Portal white-label** — custom logo URL and accent color override via config
   (deferred from v1.18 Phase 5; target v2 theming)
@@ -1230,6 +1703,8 @@ there is an owner and a target release.
   instead of `null_resource` placeholders (per cloud/resource type)
 - **License/policy pack** — optional LICENSE and compliance metadata generation
   (revisit v1.5 license UI with standards-driven templates)
+- **Chat-platform parity** — Slack/Teams bot over the same governed generation flow as the
+  v2 portal assistant, if portal chat proves out
 
 ---
 
