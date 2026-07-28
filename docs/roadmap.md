@@ -1097,6 +1097,9 @@ migration rather than value.
 **Done when:** Pointing `repave verify` at a repo repave never generated produces a gate
 report and a pin-drift summary without modifying the repo.
 
+**Status:** CLI `repave verify` shipped on branch; see [`docs/verify.md`](verify.md). Portal
+and API follow in a second commit.
+
 ---
 
 ### Composite golden paths (bundles)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
@@ -21,6 +22,7 @@ from repave_engine.fleet_manifests import DEFAULT_NAMESPACE, render_manifests
 from repave_engine.pipeline import generate_from_path
 from repave_engine.settings import OutputConfig, load_fleet_config, load_output_config
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
+from repave_engine.verify import VerifyError, _looks_like_remote_url, verify_repository
 
 
 def _parse_inputs(raw_inputs: list[str]) -> dict[str, str]:
@@ -188,6 +190,50 @@ def cmd_fleet_manifests(args: argparse.Namespace) -> int:
     print(f"\nRendered {len(rendered)} GoldenPathRepo manifest(s) into {output_dir}")
     print(f"Apply with: kubectl apply -f {output_dir}")
     return 0
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    raw_target = args.path.strip()
+    if _looks_like_remote_url(raw_target):
+        print(
+            "remote repository URLs are not supported yet; clone locally and pass the path",
+            file=sys.stderr,
+        )
+        return 2
+
+    repo_root = Path(args.repo_root).resolve()
+    try:
+        result = verify_repository(
+            Path(raw_target),
+            repo_root,
+            blueprint_name=args.blueprint,
+            require_run=args.require_run,
+        )
+    except VerifyError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(f"Target: {result.target}")
+        print(
+            f"Catalog blueprint: {result.catalog_blueprint_name}@{result.catalog_blueprint_version}"
+        )
+        if not result.provenance_present:
+            print("Provenance: (none — gates from catalog only)")
+        print("Gates:")
+        for gate in result.gates:
+            status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
+            print(f"  [{status}] {gate.name}: {gate.message}")
+        if result.pin_changes:
+            print("Pin drift (observed vs catalog):")
+            for row in result.pin_changes:
+                print(f"  {row.field}: {row.before} → {row.after}")
+        else:
+            print("Pins: aligned with catalog")
+
+    return 0 if result.ok else 1
 
 
 def cmd_gates(args: argparse.Namespace) -> int:
@@ -512,6 +558,33 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"Namespace for the generated resources (default: {DEFAULT_NAMESPACE})",
     )
     fleet_manifests.set_defaults(func=cmd_fleet_manifests)
+
+    verify_cmd = sub.add_parser(
+        "verify",
+        help="Run gates and pin-drift checks on an existing repository (no render/publish)",
+        parents=[common],
+    )
+    verify_cmd.add_argument(
+        "path",
+        help="Local path to the repository root (remote URLs: clone first)",
+    )
+    verify_cmd.add_argument(
+        "--blueprint",
+        default=None,
+        help="Catalog blueprint name when repave.yaml is absent",
+    )
+    verify_cmd.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Report format (default: text)",
+    )
+    verify_cmd.add_argument(
+        "--require-run",
+        action="store_true",
+        help="Treat skipped gates as failures when tools are missing (dry-run parity)",
+    )
+    verify_cmd.set_defaults(func=cmd_verify)
 
     gates_cmd = sub.add_parser(
         "gates",
