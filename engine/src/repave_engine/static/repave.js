@@ -97,30 +97,122 @@
   }
 
   function initFileExplorer() {
-    var explorer = document.querySelector("[data-file-explorer]");
-    if (!explorer) {
+    document.querySelectorAll("[data-file-explorer]").forEach(function (explorer) {
+      var tabs = explorer.querySelectorAll(".file-explorer__tab");
+      var panes = explorer.querySelectorAll(".file-explorer__pane");
+      tabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          var index = tab.getAttribute("data-file-index");
+          tabs.forEach(function (other) {
+            other.classList.toggle("is-active", other === tab);
+            other.setAttribute("aria-selected", other === tab ? "true" : "false");
+          });
+          panes.forEach(function (pane) {
+            var active = pane.getAttribute("data-file-pane") === index;
+            pane.classList.toggle("is-active", active);
+            pane.hidden = !active;
+          });
+        });
+      });
+      var backstageTab = explorer.querySelector("[data-backstage-file]");
+      if (backstageTab && document.querySelector("[data-backstage-highlight]")) {
+        backstageTab.click();
+      }
+    });
+  }
+
+  function initBundleMemberTabs() {
+    var root = document.querySelector("[data-bundle-member-tabs]");
+    if (!root) {
       return;
     }
-    var tabs = explorer.querySelectorAll(".file-explorer__tab");
-    var panes = explorer.querySelectorAll(".file-explorer__pane");
+    var tabs = root.querySelectorAll("[data-member-tab]");
+    var panels = root.querySelectorAll("[data-member-panel]");
     tabs.forEach(function (tab) {
       tab.addEventListener("click", function () {
-        var index = tab.getAttribute("data-file-index");
+        var memberId = tab.getAttribute("data-member-tab");
         tabs.forEach(function (other) {
-          other.classList.toggle("is-active", other === tab);
-          other.setAttribute("aria-selected", other === tab ? "true" : "false");
+          var active = other === tab;
+          other.classList.toggle("is-active", active);
+          other.setAttribute("aria-selected", active ? "true" : "false");
         });
-        panes.forEach(function (pane) {
-          var active = pane.getAttribute("data-file-pane") === index;
-          pane.classList.toggle("is-active", active);
-          pane.hidden = !active;
+        panels.forEach(function (panel) {
+          var active = panel.getAttribute("data-member-panel") === memberId;
+          panel.classList.toggle("is-active", active);
+          panel.hidden = !active;
         });
       });
     });
-    var backstageTab = explorer.querySelector("[data-backstage-file]");
-    if (backstageTab && document.querySelector("[data-backstage-highlight]")) {
-      backstageTab.click();
+  }
+
+  function initBundlePreview() {
+    var form = document.querySelector("[data-bundle-preview]");
+    if (!form) {
+      return;
     }
+    var configEl = document.getElementById("bundle-preview-templates");
+    if (!configEl) {
+      return;
+    }
+    var config;
+    try {
+      config = JSON.parse(configEl.textContent || "{}");
+    } catch (err) {
+      return;
+    }
+    var githubOrg = config.githubOrg || form.getAttribute("data-github-org") || "example-org";
+    var serviceField =
+      form.querySelector("[data-bundle-service-name]") || form.querySelector('[name="service_name"]');
+    var orgField = form.querySelector('[name="organization"]');
+
+    function slug(value, fallback) {
+      var text = (value || "").trim();
+      return text || fallback;
+    }
+
+    function updatePreview() {
+      var serviceName = slug(serviceField && serviceField.value, "example-service");
+      var organization = slug(orgField && orgField.value, "platform");
+      var items = form.querySelectorAll("[data-preview-member]");
+      items.forEach(function (item) {
+        var memberId = item.getAttribute("data-preview-member");
+        var repoEl = item.querySelector("[data-preview-repo-name]");
+        var xrefEl = item.querySelector("[data-preview-cross-ref]");
+        var repoName = "";
+        if (memberId === "app") {
+          repoName = "app-" + serviceName;
+        } else if (memberId === "helm") {
+          repoName = "helm-" + serviceName;
+        } else if (memberId === "dashboards") {
+          repoName = "dashboards-" + organization + "-" + serviceName;
+        }
+        if (repoEl && repoName) {
+          repoEl.textContent = repoName;
+        }
+        if (xrefEl) {
+          if (memberId === "app") {
+            xrefEl.textContent =
+              "Links to Helm chart at https://github.com/" +
+              githubOrg +
+              "/helm-" +
+              serviceName;
+          } else if (memberId === "helm") {
+            xrefEl.textContent =
+              "Image ghcr.io/" + githubOrg + "/app-" + serviceName + ":1.0.0";
+          } else if (memberId === "dashboards") {
+            xrefEl.textContent = "Dashboards for service " + serviceName;
+          }
+        }
+      });
+    }
+
+    if (serviceField) {
+      serviceField.addEventListener("input", updatePreview);
+    }
+    if (orgField) {
+      orgField.addEventListener("input", updatePreview);
+    }
+    updatePreview();
   }
 
   function initBusyForms() {
@@ -1022,6 +1114,8 @@
     initHomeResumeChip();
     initCopyButtons();
     initFileExplorer();
+    initBundleMemberTabs();
+    initBundlePreview();
     initBusyForms();
     initFormStepper();
     initFormDryRun();

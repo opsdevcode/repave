@@ -45,6 +45,11 @@ from repave_engine.blueprint import (
     load_blueprint,
     policy_kind_label,
 )
+from repave_engine.bundle import list_bundles, load_bundle
+from repave_engine.bundle_portal import (
+    build_bundle_result_portal_context,
+    bundle_member_previews,
+)
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.fleet import (
     FleetEntry,
@@ -69,7 +74,7 @@ from repave_engine.observability_selection import (
     blueprint_supports_observability_notifications,
     observability_input_defaults,
 )
-from repave_engine.pipeline import generate_from_blueprint
+from repave_engine.pipeline import generate_from_blueprint, generate_from_bundle
 from repave_engine.policy_catalog import (
     catalog_for_api,
     enabled_rule_ids_for_profile,
@@ -277,6 +282,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def index(request: Request) -> HTMLResponse:
         blueprints = list_blueprints(repo_root / "blueprints")
         catalog_groups = group_blueprints_by_artifact(blueprints)
+        catalog_bundles = list_bundles(repo_root)
         return templates.TemplateResponse(
             request,
             "index.html",
@@ -284,6 +290,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 blueprints=blueprints,
                 catalog_groups=catalog_groups,
+                catalog_bundles=catalog_bundles,
                 nav_active="catalog",
                 recent_activity=portal_recent_activity(),
             ),
@@ -421,6 +428,41 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 ansible_playbook_patterns=ansible_playbook_patterns,
                 ansible_collection_sample_patterns=ansible_collection_sample_patterns,
                 ansible_catalog=ansible_catalog,
+                nav_active="catalog",
+            ),
+        )
+
+    @app.get("/bundles/{bundle_name}", response_class=HTMLResponse)
+    async def bundle_form(request: Request, bundle_name: str) -> HTMLResponse:
+        bundle_dir = repo_root / "blueprints" / "bundles" / bundle_name
+        bundle = load_bundle(bundle_dir, repo_root)
+        preview_inputs: dict[str, str] = {
+            "service_name": "example-service",
+            "description": "Example service for repository preview",
+            "owner": "group:platform",
+            "organization": "platform",
+            "team": "payments",
+            "port": "8080",
+            "runtime": "python",
+            "catalog_lifecycle": "experimental",
+        }
+        for field in bundle.inputs:
+            if field.default not in (None, "") and field.name not in preview_inputs:
+                preview_inputs[field.name] = str(field.default)
+        previews = bundle_member_previews(
+            bundle,
+            preview_inputs,
+            repo_root=repo_root,
+            output_config=resolved_output,
+        )
+        return templates.TemplateResponse(
+            request,
+            "bundle_form.html",
+            page_context(
+                request,
+                bundle=bundle,
+                member_previews=previews,
+                github_org=resolved_output.github_org,
                 nav_active="catalog",
             ),
         )
@@ -586,9 +628,54 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         form = await request.form()
-        blueprint_name = str(form.get("blueprint_name", ""))
+        bundle_name = str(form.get("bundle_name", "")).strip()
         dry_run = _dry_run_from_form(form)
         require_run = dry_run or _plan_preview_from_form(form)
+        github_token = None
+        if not dry_run:
+            github_token = os.environ.get("GITHUB_TOKEN")
+
+        if bundle_name:
+            bundle_dir = repo_root / "blueprints" / "bundles" / bundle_name
+            bundle = load_bundle(bundle_dir, repo_root)
+            bundle_values: dict[str, str] = {}
+            for field in bundle.inputs:
+                if field.enum and field.multi:
+                    selected = [str(item) for item in form.getlist(field.name) if str(item).strip()]
+                    bundle_values[field.name] = ",".join(selected)
+                else:
+                    bundle_values[field.name] = str(form.get(field.name, ""))
+            bundle_result = generate_from_bundle(
+                bundle,
+                bundle_values,
+                repo_root=repo_root,
+                output_config=resolved_output,
+                dry_run=dry_run,
+                require_run=require_run,
+                github_token=github_token,
+            )
+            combined = bundle_result.combined_gates()
+            return templates.TemplateResponse(
+                request,
+                "bundle_result.html",
+                page_context(
+                    request,
+                    bundle_result=bundle_result,
+                    nav_active="catalog",
+                    gate_summary=gate_summary(combined),
+                    gates_ok=bundle_result.all_members_passed(),
+                    gate_toolchain_callout=gate_toolchain_callout(
+                        combined,
+                        dry_run=bundle_result.dry_run,
+                    ),
+                    result_portal=build_bundle_result_portal_context(
+                        bundle_result,
+                        shared_inputs=bundle_result.shared_inputs,
+                    ),
+                ),
+            )
+
+        blueprint_name = str(form.get("blueprint_name", ""))
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
         values: dict[str, str] = {}
         for field in blueprint.inputs:
@@ -615,10 +702,6 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 continue
 
             values[field.name] = str(form.get(field.name, ""))
-
-        github_token = None
-        if not dry_run:
-            github_token = os.environ.get("GITHUB_TOKEN")
 
         result = generate_from_blueprint(
             blueprint,

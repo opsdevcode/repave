@@ -1,0 +1,95 @@
+apiVersion: repave.dev/v1alpha1
+kind: Bundle
+metadata:
+  name: service-stack
+  version: 0.1.0
+  description: Application service, Helm chart, and Grafana dashboards with shared naming and cross-references.
+spec:
+  inputs:
+    - name: service_name
+      type: string
+      required: true
+      description: Logical service name (repos app-{name}, helm-{name}, dashboards).
+    - name: description
+      type: string
+      required: true
+      description: Short description for README and catalog metadata.
+    - name: owner
+      type: string
+      required: true
+      description: Owning team (Backstage spec.owner, e.g. group:platform).
+    - name: organization
+      type: string
+      required: true
+      description: Organization slug for observability dashboards repo naming.
+    - name: team
+      type: string
+      required: true
+      description: Team slug for dashboard tags.
+    - name: port
+      type: string
+      required: false
+      default: "8080"
+      description: Container listen port (app Dockerfile and Helm service).
+    - name: runtime
+      type: string
+      required: false
+      default: python
+      enum:
+        - python
+        - go
+      description: Application runtime for the app-service member.
+    - name: catalog_lifecycle
+      type: string
+      required: false
+      default: experimental
+      enum:
+        - experimental
+        - production
+        - deprecated
+      description: Backstage lifecycle for the generated component.
+    - name: image_repository
+      type: string
+      required: false
+      default: ""
+      description: >-
+        Container image repository for the Helm chart (without tag). When empty,
+        defaults to ghcr.io/{github_org}/app-{service_name}.
+  members:
+    - id: app
+      blueprint: app-service-generic
+      input_mapping:
+        service_name: "{service_name}"
+        description: "{description}"
+        owner: "{owner}"
+        system: ""
+        catalog_lifecycle: "{catalog_lifecycle}"
+        port: "{port}"
+        runtime: "{runtime}"
+        include_helm_reference: "true"
+        helm_chart_repo: "{helm_chart_repo}"
+    - id: helm
+      blueprint: helm-chart-generic
+      input_mapping:
+        chart_name: "{service_name}"
+        app_name: "{service_name}"
+        description: "{description}"
+        image_repository: "{image_repository}"
+        image_tag: "1.0.0"
+        service_port: "{port}"
+        enable_ingress: "false"
+        include_backstage_catalog: "false"
+    - id: dashboards
+      blueprint: dashboards-as-code-generic
+      input_mapping:
+        service_name: "{service_name}"
+        organization: "{organization}"
+        team: "{team}"
+        description: "{description}"
+        backend: grafana
+        configuration_mode: custom
+        output_mode: native
+        environment: prod
+        observability_focus: dashboards
+        dashboard_pack_source: repave-red-starter
+        datasource_uid: prometheus

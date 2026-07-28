@@ -103,6 +103,8 @@ def normalize_observability_inputs(
     normalized: dict[str, Any],
     repo_root: Path,
 ) -> None:
+    if blueprint.artifact_type != "observability":
+        return
     if blueprint_supports_observability_field_catalog(blueprint):
         apply_recommended_configuration(blueprint, normalized, repo_root)
     if blueprint_supports_observability_notifications(blueprint):
@@ -225,11 +227,17 @@ def _normalize_catalog_field_inputs(
         service_id = str(
             normalized.get("service_name", form_defaults.get("service_name", ""))
         ).strip()
-        service = service_by_id(catalog, service_id)
-        if service is None:
-            allowed = ", ".join(item.id for item in catalog.services)
-            raise ValueError(f"Invalid service_name: {service_id!r}. Allowed values: {allowed}")
-        normalized["service_name"] = service_id
+        mode = str(normalized.get("configuration_mode", "recommended")).strip()
+        if mode == "custom":
+            if not service_id:
+                raise ValueError("service_name is required")
+            normalized["service_name"] = service_id
+        else:
+            service = service_by_id(catalog, service_id)
+            if service is None:
+                allowed = ", ".join(item.id for item in catalog.services)
+                raise ValueError(f"Invalid service_name: {service_id!r}. Allowed values: {allowed}")
+            normalized["service_name"] = service_id
 
     if "organization" in names:
         org = str(normalized.get("organization", form_defaults.get("organization", ""))).strip()

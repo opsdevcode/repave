@@ -1,0 +1,24 @@
+inputs:
+  service_name: bundle-demo
+  description: Bundle conformance fixture service
+  owner: group:platform
+  organization: platform
+  team: payments
+  port: "8080"
+  runtime: python
+  catalog_lifecycle: experimental
+required_members:
+  - app
+  - helm
+  - dashboards
+member_required_files:
+  app:
+    - repave.yaml
+    - Dockerfile
+    - catalog-info.yaml
+  helm:
+    - repave.yaml
+    - Chart.yaml
+  dashboards:
+    - repave.yaml
+    - README.md
