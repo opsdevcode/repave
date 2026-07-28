@@ -932,13 +932,15 @@ called out in [`operator-ga.md`](operator-ga.md).
 **Done when:** A `GoldenPathRepo` with only `spec.repoURL` reports `OutOfDate` and a
 non-empty `status.upgradePlan` against a stale pin, with no local checkout.
 
-**Status:** **Phase A shipped** — `internal/git/clone.go` shallow-clones remotes into a
-temporary workspace and `inventory.RepoFetcher` feeds the existing observation path, so
-`spec.repoURL` populates `status.observedPins` and reports drift. Token material is
-redacted from git errors; clone failures set `RemoteFetchFailed` and requeue; remote repos
-re-observe on `REPAVE_OPERATOR_REMOTE_RESYNC` (default 10m). Phases B (`plan-upgrade`
-against the clone) and C (remediation from a clone) remain open — upgrade plans still
-require `spec.localPath`. Design: [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md).
+**Status:** **Phases A–B shipped** — `internal/git/clone.go` shallow-clones remotes into an
+`inventory.Workspace` that is materialized once per reconcile and reused for both
+observation and `repave plan-upgrade`, so `spec.repoURL` populates `status.observedPins`
+**and** `status.upgradePlan`. Token material is redacted from git errors; clone failures set
+`RemoteFetchFailed` and requeue; remote repos re-reconcile on
+`REPAVE_OPERATOR_REMOTE_RESYNC` (default 10m). Phase C (remediation PRs from a clone)
+remains open — remediation still requires `spec.localPath`, since pushing from an ephemeral
+shallow clone needs a write token and full history. Design:
+[ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md).
 
 ---
 

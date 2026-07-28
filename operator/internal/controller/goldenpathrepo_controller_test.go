@@ -286,6 +286,71 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
 	})
 
+	It("plans an upgrade for a remote repo from the clone", func() {
+		reconciler.Fetcher = &fixtureFetcher{source: fixtureModulePath()}
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				RepoURL: "https://github.com/example/module.git",
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "9.9.9",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
+		Expect(repo.Status.UpgradePlan).NotTo(BeNil())
+		Expect(repo.Status.UpgradePlan.ChangedFileCount).To(Equal(5))
+
+		// Phase C is outstanding: remote repos plan but do not open remediation PRs.
+		Expect(repo.Status.RemediationPR).To(BeNil())
+	})
+
+	It("plans against the clone path, not the remote URL", func() {
+		fetcher := &fixtureFetcher{source: fixtureModulePath()}
+		reconciler.Fetcher = fetcher
+		recorder := &repave.StaticPlanUpgrader{Result: repave.PlanResult{
+			BlueprintName:    "terraform-module-generic",
+			BlueprintVersion: "9.9.9",
+			ChangedFileCount: 1,
+			Summary:          "1 file(s) differ",
+		}}
+		reconciler.PlanUpgrader = recorder
+
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				RepoURL: "https://github.com/example/module.git",
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "9.9.9",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(recorder.TargetRepos).To(HaveLen(1))
+		Expect(recorder.TargetRepos[0]).NotTo(Equal(repo.Spec.RepoURL))
+		Expect(recorder.TargetRepos[0]).To(ContainSubstring("repave-inventory-"))
+
+		// The clone is released once the reconcile finishes.
+		Expect(recorder.TargetRepos[0]).NotTo(BeADirectory())
+	})
+
 	It("observes pins from a remote repo via the fetcher", func() {
 		reconciler.Fetcher = &fixtureFetcher{source: fixtureModulePath()}
 		repo := &repavev1alpha1.GoldenPathRepo{
@@ -310,9 +375,6 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
 		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.9.0"))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
-		// Remote repos are inventory-only in Phase A: no upgrade plan without localPath.
-		Expect(repo.Status.UpgradePlan).To(BeNil())
-		Expect(meta.IsStatusConditionFalse(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
 	})
 
 	It("requeues with RemoteFetchFailed when the clone fails", func() {

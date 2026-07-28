@@ -1,6 +1,6 @@
 # ADR 001: `GoldenPathRepo.spec.repoURL` remote inventory
 
-**Status:** Accepted — Phase A shipped (v1.72); Phases B and C outstanding  
+**Status:** Accepted — Phases A and B shipped (v1.72); Phase C outstanding  
 **Date:** 2026-07-26 (updated 2026-07-27)  
 **Scope:** repave operator (v1.17 GA+)
 
@@ -31,8 +31,10 @@ v1.17 GA:
    temporary workspace; read `repave.yaml`; populate `status.observedPins` (same shape as
    `localPath`); remove the workspace. `internal/git/clone.go` +
    `inventory.RepoFetcher`; transient failures set `RemoteFetchFailed` and requeue.
-2. **Phase B — Upgrade plan on cluster:** run bundled `repave plan-upgrade` against the
-   clone; set `status.upgradePlan` (matches e2e / envtest JSON today).
+2. **Phase B — Upgrade plan on cluster (shipped):** the clone is materialized once per
+   reconcile as an `inventory.Workspace` and reused for both observation and bundled
+   `repave plan-upgrade`, so `status.upgradePlan` is populated for remote repos with the
+   same JSON contract as `localPath`.
 3. **Phase C — Remediation:** reuse existing GitHub client; `spec.repoURL` + token on the
    operator Deployment; optional `preserveLocal` semantics documented for remote repos.
 
