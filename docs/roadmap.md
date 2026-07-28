@@ -5,9 +5,11 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.73.0  
-**In progress:** v1.72 Phase A remote git inventory (operator)  
-**Next up:** v1.73 → v1.76 estate chain (fleet registry → k8s deploy → `repave verify` →
-composite paths)  
+**In progress:** operator remote git inventory — Phases A–B shipped, Phase C open  
+**Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) →
+[k8s deploy](#kubernetes-deploy-path-helm-chart) →
+[`repave verify`](#repave-verify-for-existing-repositories) →
+[composite paths](#composite-golden-paths-bundles)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -27,6 +29,10 @@ locally after bumping `engine` `__version__`.
 
 - Add **future state** items under [Planned](#planned) with enough context to
   estimate and implement (problem, approach, dependencies, acceptance signals).
+- **Name open entries by theme, not by version.** Engine tags come from semantic-release
+  and consume numbers as they merge (`v1.72.0` and `v1.73.0` already shipped while
+  entries with those planning labels were still open). Shipped sections keep the number
+  they landed under; open sections carry a *Planning label* line only for traceability.
 - Move items to [Shipped](#shipped) when they land on `main` and cut a release.
 - Keep speculative ideas in [Parking lot](#parking-lot) until there is a concrete
   next step.
@@ -60,11 +66,15 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ v1.35–v1.38    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
   ├─ v1.39          policy-as-code    optional OPA/conftest gate on plan + manifests
   ├─ v1.40          observability     dashboards/alerts/monitors as code (Datadog/Grafana/Prom/OTel)
-  ├─ v1.69–v1.70    ansible patterns  cross-platform role + pinned-roles rollout (in progress)
-  ├─ v1.72–v1.73    estate control    operator remote git inventory; fleet registry + `repave register`
-  ├─ v1.74          k8s deploy        Helm chart for API/portal (realizes v1.26; unblocks v1.35–v1.38)
-  ├─ v1.75–v1.76    reach + breadth   `repave verify` on existing repos; composite golden paths
-  ├─ v1.77–v1.78    usability + audit `repave doctor`; queryable audit history
+  ├─ v1.69–v1.70    ansible patterns  cross-platform role + pinned-roles rollout (shipped)
+  ├─ v1.72–v1.73    remote inventory  operator observes and plans spec.repoURL repos (Phases A–B)
+  │
+  │  open work below is named by theme; engine tags are assigned at merge time
+  │
+  ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
+  ├─ k8s deploy      Helm chart for API/portal (unblocks the day-2 block)
+  ├─ reach + breadth `repave verify` on existing repos; composite golden paths
+  ├─ usability       `repave doctor`; queryable audit history
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
 ```
@@ -79,9 +89,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Access and multi-user** | v1.27–v1.28 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
-| **In-cluster operations (Day-2)** | v1.35–v1.38 | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
-| **Estate control plane** | v1.72–v1.74 | Operator governs remote repos; fleet registry and portal fleet view; on-cluster deploy |
-| **Reach and usability** | v1.75–v1.78 | Govern repos repave did not generate; composite paths; toolchain preflight; audit queries |
+| **In-cluster operations (Day-2)** | open (day-2 themes) | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
+| **Estate control plane** | v1.72–v1.73 shipped; registry open | Operator observes and plans remote repos; fleet registry and portal fleet view next |
+| **Reach and usability** | open | Govern repos repave did not generate; composite paths; toolchain preflight; audit queries |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 
 ---
@@ -471,7 +481,9 @@ aligned with `deploy/local/Dockerfile`).
 
 ---
 
-### v1.25 — Operator beta and fleet inventory
+### Operator beta and fleet inventory (superseded)
+
+*Planning label: v1.25 (roadmap numbering only).*
 
 **Problem:** v1.17 operator scope is large; teams need a minimal inventory model
 before full reconciliation.
@@ -492,12 +504,14 @@ before full reconciliation.
 version bumps on `main`.
 
 **Status:** Not started. `spec.localPath` inventory is GA (v1.17), but there is no
-registry of managed repos and no `repave register`. Split into [v1.72](#v172--operator-remote-git-inventory)
-(remote git inventory) and [v1.73](#v173--fleet-registry-and-repave-register) (registry, CLI, portal fleet view).
+registry of managed repos and no `repave register`. Split into [operator remote git inventory](#operator-remote-git-inventory) and
+[fleet registry and `repave register`](#fleet-registry-and-repave-register).
 
 ---
 
-### v1.26 — Kubernetes deploy path
+### Kubernetes deploy path (superseded)
+
+*Planning label: v1.26 (roadmap numbering only).*
 
 **Problem:** Local Docker Compose is the only first-class deploy story; platform
 teams want repave API/portal on-cluster alongside the future operator.
@@ -517,8 +531,8 @@ form on-cluster with dry-run generation working.
 
 **Status:** Not started. `deploy/k8s/` currently holds only observability starters
 (`prometheus-rules.yaml`, `grafana-dashboard-repave.json`) — no chart or Kustomize base
-for the API/portal. Scoped as [v1.74](#v174--kubernetes-deploy-path-helm-chart); v1.35–v1.38
-are blocked behind it.
+for the API/portal. Scoped as [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart); the
+day-2 entries are blocked behind it.
 
 ---
 
@@ -572,7 +586,9 @@ gates on mutating routes).
 
 ---
 
-### v1.29 — Remote and forked blueprint packs
+### Forked and remote blueprint packs
+
+*Planning label: v1.29 (roadmap numbering only).*
 
 **Problem:** Blueprints live only under `blueprints/` in the repave repo; enterprises
 want to fork repave and add paths, or pull read-only blueprint packs from git.
@@ -757,34 +773,38 @@ engine-written `catalog-info.yaml`).
 
 ---
 
-### v1.35 — Service health, resource management, and autoscaling
+### Service health, resource management, and autoscaling
 
-**Problem:** The v1.25 deploy installs the API and portal but defines no health
+*Planning label: v1.35 (roadmap numbering only).*
+
+**Problem:** The deploy path installs the API and portal but defines no health
 probes, resource guarantees, disruption budget, or autoscaling, so an ops team
 cannot run it reliably or plan capacity.
 
 **Approach:**
 
 - Liveness/readiness/startup probes: the API already serves `/health` (liveness) and
-  `/readyz`; wire both into the v1.74 chart and extend `/readyz` to check config/token
+  `/readyz`; wire both into the Helm chart and extend `/readyz` to check config/token
   presence and downstream reachability
 - Resource requests/limits with documented sizing guidance
 - HorizontalPodAutoscaler on CPU/concurrency with a documented generation-concurrency
   knob
 - PodDisruptionBudget and graceful shutdown (drain in-flight generations on SIGTERM,
   bounded `terminationGracePeriodSeconds`)
-- Expose all of the above as configurable values in the v1.25 chart / Kustomize
+- Expose all of the above as configurable values in the Helm chart / Kustomize
 
-**Dependencies:** [v1.74](#v174--kubernetes-deploy-path-helm-chart) Kubernetes deploy path.
+**Dependencies:** [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart).
 
 **Done when:** Draining a node or scaling replicas drops no in-flight requests; the
 HPA scales under load; probes gate traffic correctly.
 
-**Status:** Blocked on v1.74.
+**Status:** Blocked on the Helm chart entry.
 
 ---
 
-### v1.36 — Alerting rules, SLOs, and dashboards
+### Alerting rules, SLOs, and dashboards
+
+*Planning label: v1.36 (roadmap numbering only).*
 
 **Problem:** v1.30 emits metrics and traces, but ops teams have no alerts, SLOs, or
 dashboards to detect and triage problems.
@@ -809,7 +829,9 @@ shows throughput, success rate, and per-stage latency.
 
 ---
 
-### v1.37 — Zero-downtime upgrade and rollback
+### Zero-downtime upgrade and rollback
+
+*Planning label: v1.37 (roadmap numbering only).*
 
 **Problem:** There is no documented, safe upgrade/rollback path for the in-cluster
 service; upgrades risk dropping requests or breaking on config/schema changes.
@@ -817,23 +839,25 @@ service; upgrades risk dropping requests or breaking on config/schema changes.
 **Approach:**
 
 - Versioned Helm releases with a rolling-update strategy (`maxUnavailable`/`maxSurge`)
-  leveraging the v1.35 probes and PodDisruptionBudget
+  leveraging the service-health probes and PodDisruptionBudget
 - Backward-compatibility policy for API/schema/config within a minor, with migration
   notes for breaking config changes
 - Forward-compatible handling and documented migration steps for the v1.30 audit
   sink/inventory when it is backed by a database
 - `helm rollback` runbook with image digest pinning and a pre-upgrade smoke check
-  (reuse the v1.25 kind smoke test)
+  (reuse the kind smoke test)
 - Optional canary via two releases / weighted routing (documented, not required)
 
-**Dependencies:** v1.25 Helm packaging; v1.35 probes/PDB; v1.30 audit sink schema.
+**Dependencies:** Helm packaging; service-health probes/PDB; v1.30 audit sink schema.
 
 **Done when:** An upgrade and a rollback complete with no dropped requests in a test
 cluster, following the documented steps.
 
 ---
 
-### v1.38 — Operations runbooks and troubleshooting
+### Operations runbooks and troubleshooting
+
+*Planning label: v1.38 (roadmap numbering only).*
 
 **Problem:** Ops teams lack runbooks for common failures and routine day-to-day tasks.
 
@@ -906,7 +930,9 @@ packs; `amtool`, `datadog-api-validate`, and native/Terraform `opa` gates.
 
 ---
 
-### v1.72 — Operator remote git inventory
+### Operator remote git inventory
+
+*Planning label: v1.72 (roadmap numbering only).*
 
 **Problem:** The operator can only observe repos that already exist on local disk.
 `ObservePins` (`operator/internal/inventory/observe.go`) returns
@@ -944,7 +970,9 @@ shallow clone needs a write token and full history. Design:
 
 ---
 
-### v1.73 — Fleet registry and `repave register`
+### Fleet registry and `repave register`
+
+*Planning label: v1.73 (roadmap numbering only).*
 
 **Problem:** There is no list of repos repave manages. Every `GoldenPathRepo` is
 hand-authored, the engine CLI has no `register`, and `repave list` lists blueprints rather
@@ -970,11 +998,13 @@ state, and the operator picks it up without hand-written CRs.
 
 ---
 
-### v1.74 — Kubernetes deploy path (Helm chart)
+### Kubernetes deploy path (Helm chart)
+
+*Planning label: v1.74 (roadmap numbering only).*
 
 **Problem:** Docker Compose is still the only first-class deploy story. `deploy/k8s/`
 contains observability starters but no chart, so the entire day-2 block (v1.35–v1.38) has
-nothing to attach to. Realizes [v1.26](#v126--kubernetes-deploy-path).
+nothing to attach to. Realizes [v1.26](#kubernetes-deploy-path-superseded).
 
 **Approach:**
 
@@ -993,7 +1023,9 @@ working and probes gating traffic.
 
 ---
 
-### v1.75 — `repave verify` for existing repositories
+### `repave verify` for existing repositories
+
+*Planning label: v1.75 (roadmap numbering only).*
 
 **Problem:** Governance only applies to repos repave generated. A platform team adopting
 repave cannot measure the repos they already have, which makes the first conversation about
@@ -1017,7 +1049,9 @@ report and a pin-drift summary without modifying the repo.
 
 ---
 
-### v1.76 — Composite golden paths (bundles)
+### Composite golden paths (bundles)
+
+*Planning label: v1.76 (roadmap numbering only).*
 
 **Problem:** Every blueprint emits exactly one artifact, but a real service needs a
 Terraform module, a Helm chart, an app-service repo, and observability. All four paths exist
@@ -1044,7 +1078,9 @@ cross-references resolve without hand editing.
 
 ---
 
-### v1.77 — `repave doctor` toolchain preflight
+### `repave doctor` toolchain preflight
+
+*Planning label: v1.77 (roadmap numbering only).*
 
 **Problem:** Gate-toolchain drift between the Compose image, CI, and local machines keeps
 producing "gate skipped" and missing-CLI surprises; the portal banner and
@@ -1066,7 +1102,9 @@ with actionable output when a gate CLI is absent or mismatched.
 
 ---
 
-### v1.78 — Queryable audit history
+### Queryable audit history
+
+*Planning label: v1.78 (roadmap numbering only).*
 
 **Problem:** `audit.py` appends JSONL and `/activity` renders recent entries, but there is no
 filtering by repo, blueprint, user, or gate outcome and no API — so the audit trail cannot
@@ -1105,11 +1143,11 @@ generator.
 | Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.13–v1.16, v1.20, v1.33–v1.34, v1.40 |
 | Blueprint conformance in CI | v1.29 |
 | Self-heal drift and version bumps | v1.17, v1.19, v1.24 |
-| Fleet visibility | v1.72 remote inventory + v1.73 registry → v2 operator GA |
-| Govern repos repave did not generate | v1.75 |
-| Composite multi-artifact paths | v1.76 |
+| Fleet visibility | v1.72–v1.73 remote inventory + [fleet registry](#fleet-registry-and-repave-register) → v2 operator GA |
+| Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) |
+| Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) |
 | Module repos self-govern in CI | v1.23 |
-| On-cluster deploy | v1.74 |
+| On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) |
 | Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 |

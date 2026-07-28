@@ -13,7 +13,7 @@ reconciler, `make operator-test` with envtest.
 `status.observedPins`, set `OutOfDate` + `DriftDetected` when pins differ from
 `spec.desiredPins`.
 
-**Remote inventory and plan (v1.72 Phases A–B):** `spec.repoURL` is shallow-cloned into a
+**Remote inventory and plan (Phases A–B):** `spec.repoURL` is shallow-cloned into a
 temporary workspace, then observed **and** planned against exactly like `localPath` before
 the clone is removed. HTTPS remotes authenticate with `GITHUB_TOKEN` (read scope is enough);
 SSH remotes use the operator's mounted key. Because remote repos have no watch, they
