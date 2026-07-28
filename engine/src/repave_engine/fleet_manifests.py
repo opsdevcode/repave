@@ -120,9 +120,10 @@ def render_manifests(
     bodies: list[tuple[FleetEntry, str, dict[str, object]]] = []
     for entry in entries:
         body = manifest_for(entry, namespace=namespace)
-        metadata = body["metadata"]
-        assert isinstance(metadata, dict)
-        name = str(metadata["name"])
+        metadata_raw = body["metadata"]
+        if not isinstance(metadata_raw, dict):
+            raise FleetError("manifest metadata must be a mapping")
+        name = str(metadata_raw["name"])
         if name in names and names[name] != entry.repo_url:
             raise FleetError(
                 f"{entry.repo_url} and {names[name]} both map to resource name {name!r}; "
