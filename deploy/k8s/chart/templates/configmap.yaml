@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "repave.fullname" . }}
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+data:
+  repave.config.yaml: |
+    output:
+      github_org: {{ .Values.repave.output.githubOrg | quote }}
+      modules_root: {{ .Values.repave.output.modulesRoot | quote }}
+      repo_name_template: {{ .Values.repave.output.repoNameTemplate | quote }}
+    portal:
+      density: {{ .Values.repave.portal.density | quote }}
+    gates:
+      checkov:
+        skip_checks:
+{{ toYaml .Values.repave.gates.checkov.skipChecks | indent 10 }}
+      policy:
+        required_rules:
+{{ toYaml .Values.repave.gates.policy.requiredRules | indent 10 }}
+    {{- if .Values.repave.audit.enabled }}
+    audit:
+      enabled: true
+      file: {{ .Values.repave.audit.file | quote }}
+    {{- end }}
+    {{- if .Values.repave.fleet.enabled }}
+    fleet:
+      enabled: true
+      file: {{ .Values.repave.fleet.file | quote }}
+    {{- end }}
+    {{- if .Values.repave.auth.serviceMode }}
+    auth:
+      service_mode: true
+      oidc:
+        issuer: {{ .Values.repave.auth.oidc.issuer | quote }}
+        client_id: {{ .Values.repave.auth.oidc.clientId | quote }}
+        redirect_uri: {{ .Values.repave.auth.oidc.redirectUri | quote }}
+        groups_claim: {{ .Values.repave.auth.oidc.groupsClaim | quote }}
+        roles:
+          admin:
+{{ toYaml .Values.repave.auth.oidc.roles.admin | indent 12 }}
+          generator:
+{{ toYaml .Values.repave.auth.oidc.roles.generator | indent 12 }}
+    {{- end }}

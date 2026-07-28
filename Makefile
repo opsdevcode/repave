@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions chart-validate chart-smoke
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -85,3 +85,11 @@ operator-run:
 
 operator-e2e:
 	cd operator && $(MAKE) e2e
+
+chart-validate:
+	chmod +x deploy/k8s/hack/validate-chart.sh
+	./deploy/k8s/hack/validate-chart.sh
+
+chart-smoke:
+	chmod +x deploy/k8s/hack/chart-smoke.sh
+	./deploy/k8s/hack/chart-smoke.sh

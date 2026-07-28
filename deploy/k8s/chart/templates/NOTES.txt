@@ -1,0 +1,24 @@
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} svc {{ include "repave.fullname" . }} -o jsonpath="{.spec.ports[0].nodePort}")
+  export NODE_IP=$(kubectl get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  kubectl get svc {{ include "repave.fullname" . }} -n {{ .Release.Namespace }} -w
+{{- else if contains "ClusterIP" .Values.service.type }}
+  kubectl port-forward svc/{{ include "repave.fullname" . }} 8088:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+  echo "Open http://127.0.0.1:8088"
+{{- end }}
+
+2. Dry-run generation works without GITHUB_TOKEN; set secrets.githubToken or secrets.existingSecret for publish.
+
+3. Enable auth before exposing on a shared cluster: repave.auth.serviceMode and OIDC values plus session/OIDC secrets.
+
+See deploy/k8s/chart/README.md for co-install with the operator.
