@@ -1,0 +1,16 @@
+# kind / local co-install with the operator (see chart README).
+# Usage:
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f deploy/k8s/chart/values-kind.yaml \
+#     --set image.repository=repave-engine --set image.tag=local --set image.pullPolicy=Never
+
+repave:
+  fleet:
+    enabled: true
+    file: /data/fleet/registry.jsonl
+
+persistence:
+  modules:
+    enabled: false
+  fleet:
+    enabled: false

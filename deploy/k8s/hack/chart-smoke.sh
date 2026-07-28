@@ -46,11 +46,11 @@ kind load docker-image "${IMG_REPO}:${IMG_TAG}" --name "${CLUSTER_NAME}"
 echo "==> helm install"
 helm upgrade --install repave "${CHART}" \
   --namespace "${NS}" --create-namespace \
+  -f "${CHART}/values-kind.yaml" \
   --set image.repository="${IMG_REPO}" \
   --set image.tag="${IMG_TAG}" \
   --set image.pullPolicy=Never \
   --set repave.output.githubOrg=example-org \
-  --set persistence.modules.enabled=false \
   --wait --timeout "${TIMEOUT}s"
 
 echo "==> port-forward and probe"

@@ -13,7 +13,7 @@ spec:
     standardSource: standards/terraform-standards
     standardVersion: "1.1.0"
   remediation:
-    enabled: true
+    # Plan-only on kind: /modules is read-only on the node mount.
+    enabled: false
     dryRun: true
-    # When true, operator passes --preserve-local to repave apply-upgrade.
     preserveLocal: true

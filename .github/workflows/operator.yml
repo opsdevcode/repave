@@ -36,9 +36,27 @@ jobs:
           go-version-file: operator/go.mod
           cache-dependency-path: operator/go.sum
 
+      - name: Cache envtest binaries
+        if: steps.filter.outputs.operator == 'true'
+        uses: actions/cache@v4
+        with:
+          path: operator/bin/k8s
+          key: envtest-${{ runner.os }}-1.31.0-${{ hashFiles('operator/Makefile') }}
+          restore-keys: |
+            envtest-${{ runner.os }}-1.31.0-
+
       - name: Run tests (unit + envtest)
         if: steps.filter.outputs.operator == 'true'
-        run: make test
+        run: |
+          for attempt in 1 2 3; do
+            if make test; then
+              exit 0
+            fi
+            echo "make test failed (attempt ${attempt}/3); retrying envtest download..."
+            rm -rf bin/k8s
+            sleep 15
+          done
+          exit 1
 
       - name: Lint
         if: steps.filter.outputs.operator == 'true'
