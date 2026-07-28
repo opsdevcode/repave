@@ -3,6 +3,12 @@ services:
     build:
       context: ../..
       dockerfile: deploy/local/Dockerfile
+      args:
+        # Set UV_SOURCE=pip when ghcr.io is unreachable, and REPAVE_TLS_INSECURE=1
+        # only when a TLS-inspecting proxy leaves no other option (see README).
+        UV_SOURCE: ${UV_SOURCE:-registry}
+        REPAVE_TLS_INSECURE: ${REPAVE_TLS_INSECURE:-0}
+        INSTALL_ANSIBLE_COLLECTIONS: ${INSTALL_ANSIBLE_COLLECTIONS:-1}
     ports:
       - "8088:8088"
     environment:

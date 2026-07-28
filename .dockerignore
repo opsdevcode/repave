@@ -9,6 +9,8 @@
 operator/bin
 deploy/local/*
 !deploy/local/install-gate-toolchain.sh
+!deploy/local/certs
+!deploy/local/certs/**
 docs
 examples
 *.md

@@ -21,6 +21,12 @@ conflicts with native serve on macOS).
 Compose mounts a `repave-modules` volume at `/modules` and sets `REPAVE_MODULES_ROOT`
 so generated modules land outside the repave repo.
 
+Behind a corporate proxy or blocked `ghcr.io`? See
+[Compose environment variables](../deploy/local/README.md#compose-environment-variables)
+and [Enterprise proxies and TLS inspection](../deploy/local/README.md#enterprise-proxies-and-tls-inspection)
+in the local deploy guide (build-time `UV_SOURCE`, `REPAVE_TLS_INSECURE`, optional CA files in
+`deploy/local/certs/`).
+
 ### Windows
 
 1. Install [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
