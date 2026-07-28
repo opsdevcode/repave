@@ -5,7 +5,9 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.71.4  
-**In progress:** v1.69 cross-platform role pattern; docs/observability/policy catalog alignment (post–dry-run gates)  
+**In progress:** v1.69 cross-platform role pattern; v1.70 pinned Galaxy roles playbook pattern  
+**Next up:** v1.72 → v1.76 estate chain (remote git inventory → fleet registry → k8s deploy →
+`repave verify` → composite paths)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -58,6 +60,11 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ v1.35–v1.38    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
   ├─ v1.39          policy-as-code    optional OPA/conftest gate on plan + manifests
   ├─ v1.40          observability     dashboards/alerts/monitors as code (Datadog/Grafana/Prom/OTel)
+  ├─ v1.69–v1.70    ansible patterns  cross-platform role + pinned-roles rollout (in progress)
+  ├─ v1.72–v1.73    estate control    operator remote git inventory; fleet registry + `repave register`
+  ├─ v1.74          k8s deploy        Helm chart for API/portal (realizes v1.26; unblocks v1.35–v1.38)
+  ├─ v1.75–v1.76    reach + breadth   `repave verify` on existing repos; composite golden paths
+  ├─ v1.77–v1.78    usability + audit `repave doctor`; queryable audit history
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
 ```
@@ -73,6 +80,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
 | **In-cluster operations (Day-2)** | v1.35–v1.38 | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
+| **Estate control plane** | v1.72–v1.74 | Operator governs remote repos; fleet registry and portal fleet view; on-cluster deploy |
+| **Reach and usability** | v1.75–v1.78 | Govern repos repave did not generate; composite paths; toolchain preflight; audit queries |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 
 ---
@@ -480,6 +489,10 @@ before full reconciliation.
 **Done when:** Operator reports “out of date” repos when blueprint standard/policy
 version bumps on `main`.
 
+**Status:** Not started. `spec.localPath` inventory is GA (v1.17), but there is no
+registry of managed repos and no `repave register`. Split into [v1.72](#v172--operator-remote-git-inventory)
+(remote git inventory) and [v1.73](#v173--fleet-registry-and-repave-register) (registry, CLI, portal fleet view).
+
 ---
 
 ### v1.26 — Kubernetes deploy path
@@ -499,6 +512,11 @@ teams want repave API/portal on-cluster alongside the future operator.
 
 **Done when:** `helm install` (or documented kustomize apply) serves the blueprint
 form on-cluster with dry-run generation working.
+
+**Status:** Not started. `deploy/k8s/` currently holds only observability starters
+(`prometheus-rules.yaml`, `grafana-dashboard-repave.json`) — no chart or Kustomize base
+for the API/portal. Scoped as [v1.74](#v174--kubernetes-deploy-path-helm-chart); v1.35–v1.38
+are blocked behind it.
 
 ---
 
@@ -568,6 +586,9 @@ want to fork repave and add paths, or pull read-only blueprint packs from git.
 
 **Done when:** A forked repave repo loads an additional blueprint from its own
 tree without patching engine code.
+
+**Status:** Not started. Blueprint discovery is still hardcoded to `repo_root / "blueprints"`
+in `cli.py` and `api.py`; `settings.py` has no `blueprints_root` / `blueprint_sources` key.
 
 ---
 
@@ -742,8 +763,9 @@ cannot run it reliably or plan capacity.
 
 **Approach:**
 
-- Liveness/readiness/startup probes: `/healthz` liveness; `/readyz` readiness that
-  checks config/token presence and downstream reachability
+- Liveness/readiness/startup probes: the API already serves `/health` (liveness) and
+  `/readyz`; wire both into the v1.74 chart and extend `/readyz` to check config/token
+  presence and downstream reachability
 - Resource requests/limits with documented sizing guidance
 - HorizontalPodAutoscaler on CPU/concurrency with a documented generation-concurrency
   knob
@@ -751,10 +773,12 @@ cannot run it reliably or plan capacity.
   bounded `terminationGracePeriodSeconds`)
 - Expose all of the above as configurable values in the v1.25 chart / Kustomize
 
-**Dependencies:** v1.25 Kubernetes deploy path; may add health endpoints to the API.
+**Dependencies:** [v1.74](#v174--kubernetes-deploy-path-helm-chart) Kubernetes deploy path.
 
 **Done when:** Draining a node or scaling replicas drops no in-flight requests; the
 HPA scales under load; probes gate traffic correctly.
+
+**Status:** Blocked on v1.74.
 
 ---
 
@@ -880,6 +904,179 @@ packs; `amtool`, `datadog-api-validate`, and native/Terraform `opa` gates.
 
 ---
 
+### v1.72 — Operator remote git inventory
+
+**Problem:** The operator can only observe repos that already exist on local disk.
+`ObservePins` (`operator/internal/inventory/observe.go`) returns
+`ErrRemoteRepoNotSupported` for `spec.repoURL`, so "fleet drift detection" in practice
+means "drift detection on whatever was mounted into the pod". This is the last GA gap
+called out in [`operator-ga.md`](operator-ga.md).
+
+**Approach:**
+
+- Shallow clone/fetch `spec.repoURL` at `spec.ref` into a work dir, then reuse the existing
+  `localPath` observation path unchanged so drift logic stays single-sourced
+- Credentials via secret ref (`spec.secretRef`) for HTTPS token and SSH key; reuse the token
+  plumbing already in `operator/internal/git/push.go`
+- Cache clones with a resync interval and back-off; surface fetch failures as a distinct
+  status condition rather than silent `Unknown`
+- Extend `plan-upgrade` / `apply-upgrade` remediation to the cloned work dir (the JSON
+  contract to the engine is unchanged)
+- envtest coverage with a local bare-repo fixture; extend `operator/hack/e2e.sh` with a
+  `repoURL` case alongside the existing `terraform-minimal` local fixture
+
+**Dependencies:** v1.17 operator slices 1–3; existing `GitHubClient` mock harness.
+
+**Done when:** A `GoldenPathRepo` with only `spec.repoURL` reports `OutOfDate` and a
+non-empty `status.upgradePlan` against a stale pin, with no local checkout.
+
+---
+
+### v1.73 — Fleet registry and `repave register`
+
+**Problem:** There is no list of repos repave manages. Every `GoldenPathRepo` is
+hand-authored, the engine CLI has no `register`, and `repave list` lists blueprints rather
+than repos — so nobody can answer "how much of the estate is on the current standard?"
+
+**Approach:**
+
+- Registry store keyed by repo URL: blueprint + version, standard/policy pins, owner,
+  last observed drift, last remediation PR — JSONL/SQLite first behind an interface, same
+  pattern as the v1.30 audit sink
+- `repave register <repo-url>` / `repave unregister`, plus `repave fleet list` reading pins
+  from each repo's `repave.yaml` provenance (v1.14)
+- API: `GET /api/v1/fleet`, `POST /api/v1/fleet` (admin role from v1.28)
+- Portal **Fleet** route: table of managed repos with pin versions, drift state, and a link
+  to the open remediation PR; reuses the `/activity` presentation pattern
+- Optional operator sync: emit a `GoldenPathRepo` per registry entry so the CR set stops
+  being hand-maintained
+
+**Dependencies:** v1.14 provenance; v1.28 roles; v1.72 remote inventory for live drift state.
+
+**Done when:** A registered repo appears in the portal fleet view with its pins and drift
+state, and the operator picks it up without hand-written CRs.
+
+---
+
+### v1.74 — Kubernetes deploy path (Helm chart)
+
+**Problem:** Docker Compose is still the only first-class deploy story. `deploy/k8s/`
+contains observability starters but no chart, so the entire day-2 block (v1.35–v1.38) has
+nothing to attach to. Realizes [v1.26](#v126--kubernetes-deploy-path).
+
+**Approach:**
+
+- Chart under `deploy/k8s/chart/`: Deployment, Service, Ingress, ServiceAccount,
+  ConfigMap from `repave.config.yaml`, Secret refs for `GITHUB_TOKEN` and OIDC client secret
+- Probes wired to the existing `/health` and `/readyz` endpoints
+- Values for image digest pinning, replica count, resources, gate-toolchain image variant,
+  and audit sink volume
+- Document co-install with the operator (shared namespace and config)
+- kind smoke test reusing `operator/hack/e2e.sh` infrastructure; non-blocking in CI initially
+
+**Dependencies:** Stable API surface; v1.27 auth config; audit sink path config (v1.30).
+
+**Done when:** `helm install` serves the blueprint form on-cluster with dry-run generation
+working and probes gating traffic.
+
+---
+
+### v1.75 — `repave verify` for existing repositories
+
+**Problem:** Governance only applies to repos repave generated. A platform team adopting
+repave cannot measure the repos they already have, which makes the first conversation about
+migration rather than value.
+
+**Approach:**
+
+- `repave verify <path|repo-url> --blueprint <name>` (or inferred from `repave.yaml` when
+  present) runs the blueprint's declared gates against an existing tree via the v1.13 gate
+  registry — no rendering, no publish
+- Conformance report: which gates passed, which standard clauses are unmet, and the diff
+  between the repo's current pins and the blueprint's
+- `--report json` for CI use, plus a portal **Verify** route accepting a repo URL
+- Skip-if-not-installed semantics match generation gates; `require_run` honored
+- Feeds the v1.73 registry so an unmanaged repo can be scored before it is registered
+
+**Dependencies:** v1.13 gate registry; v1.14 provenance; v1.73 registry for scoring.
+
+**Done when:** Pointing `repave verify` at a repo repave never generated produces a gate
+report and a pin-drift summary without modifying the repo.
+
+---
+
+### v1.76 — Composite golden paths (bundles)
+
+**Problem:** Every blueprint emits exactly one artifact, but a real service needs a
+Terraform module, a Helm chart, an app-service repo, and observability. All four paths exist
+and there is no way to emit them together with shared naming, tags, owner, and
+cross-references — so users re-enter the same inputs four times and wire them by hand.
+
+**Approach:**
+
+- Bundle manifest (`blueprints/bundles/*.yaml`) listing member blueprints, a shared input
+  set, and per-member input mapping
+- Engine composes existing blueprint renders; shared `service_name`, `owner`, tags, and
+  naming flow to every member; members cross-reference (chart references the image from the
+  app service; observability targets the service name)
+- One dry-run preview and one gate summary across all members; publish creates each repo and
+  records a single bundle provenance entry
+- Portal presents a bundle as one multi-step form with a combined preview
+- Ship one bundle first (app service + chart + observability), Terraform module as a follow-on
+
+**Dependencies:** v1.30 conformance harness; v1.31 Helm path; v1.32 app-service path;
+v1.40 observability path; v1.14 provenance.
+
+**Done when:** One form submission produces a consistent, gate-green set of repos whose
+cross-references resolve without hand editing.
+
+---
+
+### v1.77 — `repave doctor` toolchain preflight
+
+**Problem:** Gate-toolchain drift between the Compose image, CI, and local machines keeps
+producing "gate skipped" and missing-CLI surprises; the portal banner and
+`deploy/local/install-gate-toolchain.sh` treat the symptom, not the diagnosis.
+
+**Approach:**
+
+- `repave doctor` reports each registered gate, whether its CLI is present, the detected
+  version, whether that version matches the pin in `deploy/local/Dockerfile`, and the install
+  hint when missing
+- `--blueprint <name>` narrows to the gates one path actually needs
+- Non-zero exit under `--strict` so CI and the container build can assert a complete toolchain
+- Shares the detection table with the portal missing-toolchain banner so both agree
+
+**Dependencies:** v1.13 gate registry; existing toolchain installer.
+
+**Done when:** `repave doctor --strict` passes in the Compose image and CI, and fails locally
+with actionable output when a gate CLI is absent or mismatched.
+
+---
+
+### v1.78 — Queryable audit history
+
+**Problem:** `audit.py` appends JSONL and `/activity` renders recent entries, but there is no
+filtering by repo, blueprint, user, or gate outcome and no API — so the audit trail cannot
+answer a compliance question without grepping a file.
+
+**Approach:**
+
+- `GET /api/v1/audit` with filters (blueprint, repo, acting user, outcome, time range) and
+  pagination; admin/viewer roles from v1.28
+- Portal activity view gains the same filters and a per-generation detail panel showing pins,
+  gate results, and the resulting PR link
+- Indexed store behind the existing sink interface (SQLite) with JSONL retained as the
+  append-only source of truth
+- `repave audit query` CLI over the same filters for offline use
+
+**Dependencies:** v1.30 audit sink; v1.28 roles.
+
+**Done when:** An operator can answer "every generation of blueprint X by user Y that failed a
+gate last month" from the portal or one CLI call.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
@@ -896,9 +1093,11 @@ generator.
 | Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.13–v1.16, v1.20, v1.33–v1.34, v1.40 |
 | Blueprint conformance in CI | v1.29 |
 | Self-heal drift and version bumps | v1.17, v1.19, v1.24 |
-| Fleet visibility | v1.24 inventory → v2 operator GA |
+| Fleet visibility | v1.72 remote inventory + v1.73 registry → v2 operator GA |
+| Govern repos repave did not generate | v1.75 |
+| Composite multi-artifact paths | v1.76 |
 | Module repos self-govern in CI | v1.23 |
-| On-cluster deploy | v1.25 |
+| On-cluster deploy | v1.74 |
 | Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 |
