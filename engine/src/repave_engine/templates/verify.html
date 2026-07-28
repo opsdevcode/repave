@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Verify repository — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/">← Catalog</a></p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Verify existing repository</h1>
+    <p class="page-lead">
+      Run golden-path gates and compare provenance pins to the catalog — no render, no publish.
+    </p>
+  </div>
+</header>
+
+{% if error_message %}
+<div class="alert alert--fail" role="alert">{{ error_message }}</div>
+{% endif %}
+
+<form
+  class="form-panel"
+  method="post"
+  action="/verify"
+  data-repave-busy-form
+  data-busy-label="Verifying…"
+  data-busy-stages="Reading repave.yaml…|Running gates…|Comparing pins…"
+>
+  <div class="field">
+    <label class="field__label" for="target_repo">Repository path</label>
+    <input
+      class="field__input"
+      type="text"
+      id="target_repo"
+      name="target_repo"
+      required
+      placeholder="/path/to/tf-aws-my-module"
+      value="{{ target_repo or '' }}"
+      autocomplete="off"
+    />
+    <p class="field__hint muted">
+      Local checkout with or without <code>repave.yaml</code>.
+      {% if demo_module_path %}
+      Try the bundled fixture:
+      <button type="button" class="btn btn--ghost btn--sm" data-fill-demo-path="{{ demo_module_path }}">
+        Use terraform-minimal
+      </button>
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="blueprint">Blueprint override</label>
+    <input
+      class="field__input"
+      type="text"
+      id="blueprint"
+      name="blueprint"
+      placeholder="Required when repave.yaml is absent"
+      value="{{ blueprint or '' }}"
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="field field--checkbox">
+    <label class="field__checkbox">
+      <input type="checkbox" name="require_run" value="true" />
+      Treat missing gate tools as failures (dry-run parity)
+    </label>
+  </div>
+
+  <div class="form-panel__actions form-actions form-actions--sticky">
+    <button class="btn btn--primary" type="submit">Run verify</button>
+  </div>
+</form>
+
+{% if demo_module_path %}
+<script>
+  (function () {
+    var btn = document.querySelector("[data-fill-demo-path]");
+    var input = document.getElementById("target_repo");
+    if (!btn || !input) return;
+    btn.addEventListener("click", function () {
+      input.value = btn.getAttribute("data-fill-demo-path") || "";
+      input.focus();
+    });
+  })();
+</script>
+{% endif %}
+
+<section class="card" aria-labelledby="cli-heading">
+  <div class="card__header">
+    <h2 id="cli-heading">CLI equivalent</h2>
+  </div>
+  <div class="card__body">
+    <p class="muted">
+      <code>repave verify /path/to/repo --format json</code> — exit code
+      <code>0</code> when gates pass and pins match the catalog.
+    </p>
+  </div>
+</section>
+{% endblock %}
