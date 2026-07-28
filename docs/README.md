@@ -23,6 +23,7 @@ is the front door; use this index when you need depth.
 
 | Doc | Contents |
 | --- | --- |
+| [Fleet registry](fleet-registry.md) | `repave register`, registry storage, fleet API |
 | [Operator overview](operator-overview.md) | CRDs, drift, remediation PRs |
 | [Operator local dev](operator-local-dev.md) | envtest, kind, running the controller locally |
 | [Operator GA scope](operator-ga.md) | v1.17 GA criteria and slices |

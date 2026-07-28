@@ -107,7 +107,8 @@ repave generate --repo-root .. --blueprint blueprints/terraform-module-generic -
 
 - **Generate** Terraform, Ansible, policy, observability, Helm, and app-service golden paths ([`blueprints/`](blueprints/)).
 - **Portal + API** at `:8088` — forms, `/activity` audit view, [`POST /api/v1/generate`](docs/backstage.md).
-- **CLI** — `repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades).
+- **CLI** — `repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades),
+  `repave register` / `repave fleet` ([fleet registry](docs/fleet-registry.md)).
 - **Publish** — local git under `REPAVE_MODULES_ROOT` or GitHub with `GITHUB_TOKEN` ([module repos](docs/module-repositories.md)).
 - **Operator (GA)** — drift detection, upgrade plans, and remediation PRs ([overview](docs/operator-overview.md) · [GA scope](docs/operator-ga.md))
 
