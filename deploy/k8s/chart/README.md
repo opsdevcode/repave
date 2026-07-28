@@ -16,8 +16,21 @@ docker build -f deploy/local/Dockerfile -t ghcr.io/your-org/repave-engine:1.75.0
 
 ## Quick install (dry-run only)
 
-Dry-run generation does not need `GITHUB_TOKEN`. For kind or minikube, disable module PVCs
-so you do not wait on storage:
+Dry-run generation does not need `GITHUB_TOKEN`. For **kind** (especially with the
+operator), prefer [`values-kind.yaml`](values-kind.yaml): fleet registry on `emptyDir` and
+no module PVC:
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  --namespace repave --create-namespace \
+  -f deploy/k8s/chart/values-kind.yaml \
+  --set repave.output.githubOrg=your-org \
+  --set image.repository=repave-engine \
+  --set image.tag=local \
+  --set image.pullPolicy=Never
+```
+
+Without fleet registry, disable module PVCs only:
 
 ```bash
 helm upgrade --install repave ./deploy/k8s/chart \
