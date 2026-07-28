@@ -8,7 +8,7 @@ spec:
   artifactType: opa-policy
   standard:
     source: standards/policy/opa.md
-    version: 1.0.0
+    version: 1.2.0
   inputs:
     - name: policy_name
       type: string

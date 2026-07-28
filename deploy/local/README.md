@@ -67,7 +67,7 @@ The container installs the **gate toolchain** via [`install-gate-toolchain.sh`](
 | **terraform** 1.9.8 | Terraform module / stack | fmt, validate, test, plan for OPA |
 | **tflint** 0.55.1 | Terraform | |
 | **checkov** ≥3.2 | Terraform, Checkov policy | `secrets` gate too |
-| **conftest** 0.56.0 | Terraform, OPA policy | plan-time Rego |
+| **conftest** 0.68.2 | Terraform, OPA policy | plan-time Rego |
 | **ansible-lint**, **yamllint**, **ansible-playbook** | Ansible role / playbook | `molecule` not in image (optional gate) |
 | **helm** 3.14.4 | Helm chart | lint + template gates |
 
