@@ -1,5 +1,7 @@
 # Application service standard (v1.0.0)
 
+Version: 1.0.0
+
 Governed application repositories from the `app-service-generic` golden path.
 
 ## Layout

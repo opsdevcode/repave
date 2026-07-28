@@ -1,5 +1,7 @@
 # Dashboards-as-code standard v1.2.0
 
+Version: 1.2.0
+
 Governed **Grafana** and **Datadog** dashboard JSON for the
 `dashboards-as-code-generic` golden path. This standard aligns repave output with
 widely adopted observability practice so teams start from a compliant baseline,
