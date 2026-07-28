@@ -3,6 +3,7 @@ package git
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 )
@@ -32,7 +33,7 @@ func PushBranch(ctx context.Context, repoDir, repoURL, branch, token string) err
 		return err
 	}
 
-	return runGit(ctx, repoDir, "push", "-u", "origin", branch)
+	return runGitSecret(ctx, repoDir, token, "push", "-u", "origin", branch)
 }
 
 func authenticatedRemote(repoURL, token string) (string, error) {
@@ -54,15 +55,33 @@ func authenticatedRemote(repoURL, token string) (string, error) {
 }
 
 func runGit(ctx context.Context, dir string, args ...string) error {
+	return runGitSecret(ctx, dir, "", args...)
+}
+
+// runGitSecret runs git non-interactively and strips secret from the command line and
+// output before it can reach controller logs or CR status.
+func runGitSecret(ctx context.Context, dir, secret string, args ...string) error {
 	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(),
+		"GIT_TERMINAL_PROMPT=0",
+		"GIT_ASKPASS=",
+		"GIT_SSH_COMMAND=ssh -o BatchMode=yes",
+	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		msg := strings.TrimSpace(string(out))
 		if msg == "" {
 			msg = err.Error()
 		}
-		return fmt.Errorf("git %s: %s", strings.Join(args, " "), msg)
+		return fmt.Errorf("git %s: %s", redactSecret(strings.Join(args, " "), secret), redactSecret(msg, secret))
 	}
 	return nil
+}
+
+func redactSecret(text, secret string) string {
+	if secret == "" {
+		return text
+	}
+	return strings.ReplaceAll(text, secret, "***")
 }

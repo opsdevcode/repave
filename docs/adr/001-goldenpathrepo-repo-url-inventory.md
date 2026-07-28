@@ -1,7 +1,7 @@
 # ADR 001: `GoldenPathRepo.spec.repoURL` remote inventory
 
-**Status:** Proposed  
-**Date:** 2026-07-26  
+**Status:** Accepted — Phase A shipped (v1.72); Phases B and C outstanding  
+**Date:** 2026-07-26 (updated 2026-07-27)  
 **Scope:** repave operator (v1.17 GA+)
 
 ## Context
@@ -27,15 +27,17 @@ against remote repos.
 Implement **remote git inventory** as a **follow-on operator slice**, not a blocker for
 v1.17 GA:
 
-1. **Phase A — Read-only inventory:** shallow clone or fetch + checkout of default branch;
-   read `repave.yaml`; populate `status.observedPins` (same shape as `localPath`).
+1. **Phase A — Read-only inventory (shipped):** shallow clone of the default branch into a
+   temporary workspace; read `repave.yaml`; populate `status.observedPins` (same shape as
+   `localPath`); remove the workspace. `internal/git/clone.go` +
+   `inventory.RepoFetcher`; transient failures set `RemoteFetchFailed` and requeue.
 2. **Phase B — Upgrade plan on cluster:** run bundled `repave plan-upgrade` against the
    clone; set `status.upgradePlan` (matches e2e / envtest JSON today).
 3. **Phase C — Remediation:** reuse existing GitHub client; `spec.repoURL` + token on the
    operator Deployment; optional `preserveLocal` semantics documented for remote repos.
 
-Until Phase A ships, **document and surface** `RemoteRepoUnsupported` clearly; continue to
-recommend `localPath` for kind/e2e and dev clusters.
+`RemoteRepoUnsupported` remains the surfaced reason when the operator runs without a
+configured fetcher; `localPath` is still recommended for kind/e2e and dev clusters.
 
 ## Non-goals (this ADR)
 

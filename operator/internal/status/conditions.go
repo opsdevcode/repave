@@ -22,6 +22,7 @@ const (
 	ReasonPinsDrift             = "PinsDrift"
 	ReasonProvenanceReadFailed  = "ProvenanceReadFailed"
 	ReasonRemoteRepoUnsupported = "RemoteRepoUnsupported"
+	ReasonRemoteFetchFailed     = "RemoteFetchFailed"
 	ReasonUpgradeDiffComputed   = "UpgradeDiffComputed"
 	ReasonUpgradePlanFailed     = "UpgradePlanFailed"
 	ReasonUpgradePlanSkipped      = "UpgradePlanSkipped"
