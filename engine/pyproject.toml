@@ -103,10 +103,13 @@ version_toml = ["pyproject.toml:project.version"]
 version_variables = ["src/repave_engine/__init__.py:__version__"]
 tag_format = "v{version}"
 commit_message = "chore(release): {version}"
-build_command = "uv build"
+# `uv lock` refreshes only the repave-engine version pin after the bump; it does not
+# upgrade dependencies. Without it the tracked lock drifts behind every release and
+# dirties local trees on the next uv command.
+build_command = "uv lock && uv build"
 upload_to_vcs_release = false
 upload_to_pypi = false
-assets = ["CHANGELOG.md"]
+assets = ["CHANGELOG.md", "uv.lock"]
 
 [tool.semantic_release.changelog]
 mode = "update"
