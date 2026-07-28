@@ -35,41 +35,80 @@ func (f GitFetcher) Fetch(ctx context.Context, repoURL, dir string) error {
 	return git.Clone(ctx, git.CloneOptions{RepoURL: repoURL, Dir: dir, Token: f.Token})
 }
 
-// ObservePins reads observed blueprint/standard pins from the registered repository.
-// localPath reads the working tree in place; repoURL is cloned into a temporary
-// workspace that is removed before returning.
+// Workspace is a filesystem view of a registered repository. Remote repos are cloned into
+// a temporary directory; local repos point at the working tree in place.
+type Workspace struct {
+	// Path is the repository root to read provenance from and re-render against.
+	Path string
+
+	// Remote is true when Path is a clone rather than the user's working tree.
+	Remote bool
+
+	tempDir string
+}
+
+// Close removes a cloned workspace. Local working trees are left untouched.
+func (w *Workspace) Close() {
+	if w == nil || w.tempDir == "" {
+		return
+	}
+	_ = os.RemoveAll(w.tempDir)
+	w.tempDir = ""
+}
+
+// Materialize resolves a spec to a Workspace. Callers must Close the result.
+func Materialize(
+	ctx context.Context,
+	spec repavev1alpha1.GoldenPathRepoSpec,
+	fetcher RepoFetcher,
+) (*Workspace, error) {
+	switch {
+	case spec.LocalPath != "":
+		return &Workspace{Path: spec.LocalPath}, nil
+	case spec.RepoURL != "":
+		if fetcher == nil {
+			return nil, ErrRemoteRepoNotSupported
+		}
+		return cloneWorkspace(ctx, spec.RepoURL, fetcher)
+	default:
+		return nil, fmt.Errorf("spec.repoURL or spec.localPath is required")
+	}
+}
+
+func cloneWorkspace(ctx context.Context, repoURL string, fetcher RepoFetcher) (*Workspace, error) {
+	tempDir, err := os.MkdirTemp("", "repave-inventory-")
+	if err != nil {
+		return nil, fmt.Errorf("create inventory workspace: %w", err)
+	}
+
+	repoDir := filepath.Join(tempDir, "repo")
+	if err := fetcher.Fetch(ctx, repoURL, repoDir); err != nil {
+		_ = os.RemoveAll(tempDir)
+		return nil, fmt.Errorf("%w: %s", ErrRemoteFetchFailed, err)
+	}
+	return &Workspace{Path: repoDir, Remote: true, tempDir: tempDir}, nil
+}
+
+// PinsFromWorkspace reads observed blueprint/standard pins from a materialized repo.
+func PinsFromWorkspace(workspace *Workspace) (drift.PinSet, error) {
+	if workspace == nil || workspace.Path == "" {
+		return drift.PinSet{}, fmt.Errorf("workspace is not materialized")
+	}
+	return provenance.ReadPinsFromRepoRoot(workspace.Path)
+}
+
+// ObservePins materializes the repo, reads its pins, and releases any clone.
 func ObservePins(
 	ctx context.Context,
 	spec repavev1alpha1.GoldenPathRepoSpec,
 	fetcher RepoFetcher,
 ) (drift.PinSet, error) {
-	switch {
-	case spec.LocalPath != "":
-		return provenance.ReadPinsFromRepoRoot(spec.LocalPath)
-	case spec.RepoURL != "":
-		if fetcher == nil {
-			return drift.PinSet{}, ErrRemoteRepoNotSupported
-		}
-		return observeRemote(ctx, spec.RepoURL, fetcher)
-	default:
-		return drift.PinSet{}, fmt.Errorf("spec.repoURL or spec.localPath is required")
-	}
-}
-
-func observeRemote(ctx context.Context, repoURL string, fetcher RepoFetcher) (drift.PinSet, error) {
-	workspace, err := os.MkdirTemp("", "repave-inventory-")
+	workspace, err := Materialize(ctx, spec, fetcher)
 	if err != nil {
-		return drift.PinSet{}, fmt.Errorf("create inventory workspace: %w", err)
+		return drift.PinSet{}, err
 	}
-	defer func() {
-		_ = os.RemoveAll(workspace)
-	}()
-
-	repoDir := filepath.Join(workspace, "repo")
-	if err := fetcher.Fetch(ctx, repoURL, repoDir); err != nil {
-		return drift.PinSet{}, fmt.Errorf("%w: %s", ErrRemoteFetchFailed, err)
-	}
-	return provenance.ReadPinsFromRepoRoot(repoDir)
+	defer workspace.Close()
+	return PinsFromWorkspace(workspace)
 }
 
 // EvaluateDesiredObserved compares desired spec pins to observed repo pins.

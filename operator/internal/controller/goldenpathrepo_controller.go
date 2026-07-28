@@ -125,14 +125,21 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 
-	retryAfter, err := applyInventoryStatus(ctx, r.Client, &repo, desired, r.Fetcher)
+	workspace, retryAfter, err := materializeWorkspace(ctx, r.Client, &repo, r.Fetcher)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	if retryAfter > 0 {
-		logger.Info("remote inventory unavailable; requeueing",
-			"name", req.Name, "retryAfter", retryAfter.String())
+	if workspace == nil {
+		if retryAfter > 0 {
+			logger.Info("remote inventory unavailable; requeueing",
+				"name", req.Name, "retryAfter", retryAfter.String())
+		}
 		return ctrl.Result{RequeueAfter: retryAfter}, nil
+	}
+	defer workspace.Close()
+
+	if _, err := applyInventoryStatus(ctx, r.Client, &repo, desired, workspace); err != nil {
+		return ctrl.Result{}, err
 	}
 
 	if err := r.Get(ctx, req.NamespacedName, &repo); err != nil {
@@ -143,7 +150,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if upgrader == nil {
 		upgrader = repave.CLIPlanUpgrader{}
 	}
-	if err := applyUpgradePlanStatus(ctx, r.Client, &repo, upgrader, r.RepaveConfig, desired); err != nil {
+	if err := applyUpgradePlanStatus(ctx, r.Client, &repo, upgrader, r.RepaveConfig, desired, workspace); err != nil {
 		return ctrl.Result{}, err
 	}
 

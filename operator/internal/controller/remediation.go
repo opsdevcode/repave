@@ -70,7 +70,7 @@ func applyRemediationPRStatus(
 	}
 
 	if repo.Spec.LocalPath == "" {
-		msg := "remediation requires spec.localPath until remote inventory is supported"
+		msg := "remediation requires spec.localPath; remote repos plan only (v1.72 Phase C pending)"
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,

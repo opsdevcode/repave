@@ -13,12 +13,13 @@ reconciler, `make operator-test` with envtest.
 `status.observedPins`, set `OutOfDate` + `DriftDetected` when pins differ from
 `spec.desiredPins`.
 
-**Remote inventory (v1.72 Phase A):** `spec.repoURL` is shallow-cloned into a temporary
-workspace, observed the same way as `localPath`, then removed. HTTPS remotes authenticate
-with `GITHUB_TOKEN` (read scope is enough); SSH remotes use the operator's mounted key.
-Because remote repos have no watch, they re-observe every `REPAVE_OPERATOR_REMOTE_RESYNC`
-(default `10m`), and a failed clone sets `Ready=False` with reason `RemoteFetchFailed` and
-requeues. Upgrade plans and remediation PRs still require `spec.localPath` (Phases B and C).
+**Remote inventory and plan (v1.72 Phases A–B):** `spec.repoURL` is shallow-cloned into a
+temporary workspace, then observed **and** planned against exactly like `localPath` before
+the clone is removed. HTTPS remotes authenticate with `GITHUB_TOKEN` (read scope is enough);
+SSH remotes use the operator's mounted key. Because remote repos have no watch, they
+re-reconcile every `REPAVE_OPERATOR_REMOTE_RESYNC` (default `10m`), and a failed clone sets
+`Ready=False` with reason `RemoteFetchFailed` and requeues. Remediation PRs still require
+`spec.localPath` (Phase C).
 
 **Local development and testing are first-class.** See
 [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).

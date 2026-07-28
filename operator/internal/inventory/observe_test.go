@@ -97,6 +97,68 @@ func TestObservePins_requiresLocation(t *testing.T) {
 	}
 }
 
+func TestMaterialize_localPathIsUsedInPlace(t *testing.T) {
+	root := fixtureRoot(t)
+	workspace, err := inventory.Materialize(
+		context.Background(),
+		repavev1alpha1.GoldenPathRepoSpec{LocalPath: root},
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("Materialize: %v", err)
+	}
+	if workspace.Path != root {
+		t.Fatalf("expected working tree path %q, got %q", root, workspace.Path)
+	}
+	if workspace.Remote {
+		t.Fatal("local path must not be marked remote")
+	}
+
+	// Close must never delete the user's working tree.
+	workspace.Close()
+	if _, statErr := os.Stat(root); statErr != nil {
+		t.Fatalf("local working tree removed by Close: %v", statErr)
+	}
+}
+
+func TestMaterialize_remoteCloneIsRemovedOnClose(t *testing.T) {
+	fetcher := &copyFetcher{source: fixtureRoot(t)}
+	workspace, err := inventory.Materialize(
+		context.Background(),
+		repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"},
+		fetcher,
+	)
+	if err != nil {
+		t.Fatalf("Materialize: %v", err)
+	}
+	if !workspace.Remote {
+		t.Fatal("cloned workspace must be marked remote")
+	}
+	if _, statErr := os.Stat(workspace.Path); statErr != nil {
+		t.Fatalf("expected clone at %q: %v", workspace.Path, statErr)
+	}
+
+	path := workspace.Path
+	workspace.Close()
+	if _, statErr := os.Stat(path); !os.IsNotExist(statErr) {
+		t.Fatalf("expected clone removed, stat returned %v", statErr)
+	}
+
+	// Close is idempotent.
+	workspace.Close()
+}
+
+func TestMaterialize_failedCloneLeavesNoWorkspace(t *testing.T) {
+	_, err := inventory.Materialize(
+		context.Background(),
+		repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"},
+		failingFetcher{},
+	)
+	if !errors.Is(err, inventory.ErrRemoteFetchFailed) {
+		t.Fatalf("expected ErrRemoteFetchFailed, got %v", err)
+	}
+}
+
 func TestGitFetcher_clonesLocalRemote(t *testing.T) {
 	remote := newLocalGitRemote(t)
 	dir := filepath.Join(t.TempDir(), "repo")

@@ -97,15 +97,20 @@ type StaticPlanUpgrader struct {
 	Result PlanResult
 	Err    error
 	Calls  int
+
+	// TargetRepos records each path planned against, so tests can assert the operator
+	// renders from a clone rather than a remote URL.
+	TargetRepos []string
 }
 
 func (s *StaticPlanUpgrader) PlanUpgrade(
 	_ context.Context,
 	_ Config,
-	_ string,
+	targetRepo string,
 	_ string,
 ) (PlanResult, error) {
 	s.Calls++
+	s.TargetRepos = append(s.TargetRepos, targetRepo)
 	if s.Err != nil {
 		return PlanResult{}, s.Err
 	}

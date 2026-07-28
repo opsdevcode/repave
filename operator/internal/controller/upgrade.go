@@ -9,6 +9,7 @@ import (
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
+	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -22,12 +23,13 @@ func applyUpgradePlanStatus(
 	upgrader repave.PlanUpgrader,
 	repaveCfg repave.Config,
 	desired drift.PinSet,
+	workspace *inventory.Workspace,
 ) error {
 	if repo.Status.Phase != repavev1alpha1.GoldenPathRepoPhaseOutOfDate {
 		return clearUpgradePlanStatus(ctx, c, repo)
 	}
-	if repo.Spec.LocalPath == "" {
-		msg := "upgrade diff requires spec.localPath; remote repos are inventory-only (v1.72 Phase A)"
+	if workspace == nil || workspace.Path == "" {
+		msg := "upgrade diff requires a materialized repository"
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			latest.Status.UpgradePlan = nil
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
@@ -45,7 +47,7 @@ func applyUpgradePlanStatus(
 	result, err := upgrader.PlanUpgrade(
 		ctx,
 		repaveCfg,
-		repo.Spec.LocalPath,
+		workspace.Path,
 		desired.BlueprintName,
 	)
 	if err != nil {

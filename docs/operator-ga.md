@@ -19,7 +19,7 @@ today and what remains intentionally out of scope.
 
 | Area | Target | Notes |
 | --- | --- | --- |
-| Remote git inventory | Phase A shipped | `spec.repoURL` shallow clone populates `status.observedPins`. Upgrade plan (Phase B) and remediation (Phase C) still need `localPath`. Design: [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md). |
+| Remote git inventory | Phases A–B shipped | `spec.repoURL` shallow clone populates `status.observedPins` and `status.upgradePlan`. Remediation (Phase C) still needs `localPath`. Design: [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md). |
 | Multi-tenant fleet API | v2 | Single-cluster inventory per operator instance |
 | In-cluster notifications | Optional | Webhooks via `REPAVE_OPERATOR_NOTIFY_*` (see operator README) |
 
