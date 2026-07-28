@@ -96,7 +96,7 @@ from repave_engine.settings import (
 )
 from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
-from repave_engine.verify import VerifyError, _looks_like_remote_url, verify_repository
+from repave_engine.verify import VerifyError, verify_target
 
 
 def _dry_run_from_form(form: object) -> bool:
@@ -824,29 +824,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 page_context(
                     request,
                     nav_active="verify",
-                    error_message="Repository path is required.",
-                    target_repo=target_repo_raw,
-                    blueprint=blueprint_override or "",
-                ),
-            )
-        if _looks_like_remote_url(target_repo_raw):
-            return templates.TemplateResponse(
-                request,
-                "verify.html",
-                page_context(
-                    request,
-                    nav_active="verify",
-                    error_message=(
-                        "Remote URLs are not supported yet; clone the repo locally first."
-                    ),
+                    error_message="Repository path or URL is required.",
                     target_repo=target_repo_raw,
                     blueprint=blueprint_override or "",
                 ),
             )
 
         try:
-            outcome = verify_repository(
-                Path(target_repo_raw).expanduser(),
+            outcome = verify_target(
+                target_repo_raw,
                 repo_root,
                 blueprint_name=blueprint_override,
                 require_run=require_run,
@@ -872,7 +858,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="verify",
                 verify=outcome,
-                target_repo=str(Path(target_repo_raw).expanduser().resolve()),
+                target_repo=outcome.target,
                 gate_summary=gate_summary(gates),
                 gates_ok=outcome.gates_passed,
             ),
@@ -890,23 +876,20 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if not isinstance(body, dict):
             raise HTTPException(status_code=400, detail="JSON object required")
 
-        path_raw = str(body.get("path", "")).strip()
+        path_raw = str(body.get("path") or body.get("repo_url") or "").strip()
         if not path_raw:
-            raise HTTPException(status_code=400, detail="path is required")
-        if _looks_like_remote_url(path_raw):
-            raise HTTPException(
-                status_code=400,
-                detail="remote repository URLs are not supported yet; clone locally first",
-            )
+            raise HTTPException(status_code=400, detail="path or repo_url is required")
 
         blueprint_override = str(body.get("blueprint", "")).strip() or None
         require_run = bool(body.get("require_run", False))
+        ref = str(body.get("ref", "")).strip() or None
         try:
-            outcome = verify_repository(
-                Path(path_raw).expanduser(),
+            outcome = verify_target(
+                path_raw,
                 repo_root,
                 blueprint_name=blueprint_override,
                 require_run=require_run,
+                ref=ref,
             )
         except VerifyError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

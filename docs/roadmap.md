@@ -7,7 +7,7 @@ work, writing ADRs, and opening issues.
 **Current release:** v1.80.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
 **Next up:** [composite golden paths](#composite-golden-paths-bundles) → operator remote inventory
-**Phase C** → verify **remote clone**; fleet **GitOps** (`fleet-manifests` + register) polish;
+**Phase C**; fleet **GitOps** (`fleet-manifests` + register) polish;
 [day-2 operability](#service-health-resource-management-and-autoscaling) on the Helm chart
 (chart-smoke in CI, gate-toolchain image variant still open)  
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
@@ -93,7 +93,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ supply chain    GitHub App auth instead of PATs; governed PR conventions
   ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
-  ├─ reach           repave verify local path (shipped); composite golden paths
+  ├─ reach           repave verify (local + remote clone shipped); composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
   ├─ cost            Infracost estimate on plan; cloud cost actuals on catalog tiles
   │
@@ -114,7 +114,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
 | **In-cluster operations (Day-2)** | open (day-2 themes) | Chart on cluster; HPA/alerts/runbooks attach to [`deploy/k8s/chart/`](../deploy/k8s/chart/) |
 | **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
-| **Reach and usability** | verify (local) shipped | Remote verify clone; composite paths; `repave doctor`; audit queries |
+| **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
 | **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
 | **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
@@ -318,7 +318,7 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 ### `repave verify` — local path (engine v1.75+)
 
 - CLI, portal **Verify repo**, `POST /api/v1/verify` ([`docs/verify.md`](verify.md))
-- **Follow-up:** clone and verify remote `repo-url` targets
+- Local paths and shallow git clone for remote URLs (`GITHUB_TOKEN` for private HTTPS)
 
 ### v1.18 — Portal UX (theme)
 
@@ -1116,9 +1116,8 @@ migration rather than value.
 **Done when:** Pointing `repave verify` at a repo repave never generated produces a gate
 report and a pin-drift summary without modifying the repo.
 
-**Status:** **Shipped on `main`** for **local paths** — see
-[Shipped — verify](#repave-verify--local-path-engine-v175). **Open:** remote `repo-url`
-clone; portal/API accept URL without a prior local checkout.
+**Status:** **Shipped on `main`** — local paths and remote URL shallow clone; see
+[Shipped — verify](#repave-verify--local-path-engine-v175).
 
 ---
 
@@ -1521,7 +1520,7 @@ generator.
 | Blueprint conformance in CI | v1.29 |
 | Self-heal drift and version bumps | v1.17, v1.19, v1.24 |
 | Fleet visibility | v1.72–v1.73+ remote inventory + fleet registry (portal + manifests) → v2 operator GA |
-| Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) (local path shipped) |
+| Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) (shipped) |
 | Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) |
 | Module repos self-govern in CI | v1.23 |
 | On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) (shipped; day-2 follow-ups) |
