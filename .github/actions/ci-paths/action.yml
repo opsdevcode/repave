@@ -12,6 +12,9 @@ runs:
     - uses: dorny/paths-filter@v3
       id: filter
       with:
+        # v3 defaults to predicate-quantifier "some", so "**" matches any file and
+        # negation rules never skip docs-only diffs. "every" applies exclusions.
+        predicate-quantifier: every
         filters: |
           ci_needed:
             - '**'
