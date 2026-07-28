@@ -5,11 +5,11 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.79.0  
-**In progress:** [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart) — chart and CI validation; kind smoke optional locally  
-**Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) (store, CLI,
-and API shipped; portal view and operator sync open) →
-[`repave verify`](#repave-verify-for-existing-repositories) →
-[composite paths](#composite-golden-paths-bundles); operator remote inventory **Phase C**  
+**In progress:** — (no single theme owns the tree; see **Next up**)  
+**Next up:** [composite golden paths](#composite-golden-paths-bundles) → operator remote inventory
+**Phase C** → verify **remote clone**; fleet **GitOps** (`fleet-manifests` + register) polish;
+[day-2 operability](#service-health-resource-management-and-autoscaling) on the Helm chart
+(chart-smoke in CI, gate-toolchain image variant still open)  
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
 correctness and scale fixes that gate hosted multi-user use  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
@@ -88,12 +88,12 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
-  ├─ k8s deploy      Helm chart for API/portal (unblocks the day-2 block)
+  ├─ k8s deploy      Helm chart for API/portal (shipped; day-2 + CI smoke follow-ups)
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
   ├─ supply chain    GitHub App auth instead of PATs; governed PR conventions
   ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
-  ├─ reach + breadth `repave verify` on existing repos; composite golden paths
+  ├─ reach           repave verify local path (shipped); composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
   ├─ cost            Infracost estimate on plan; cloud cost actuals on catalog tiles
   │
@@ -112,9 +112,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Access and multi-user** | v1.27–v1.28 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
-| **In-cluster operations (Day-2)** | open (day-2 themes) | Ops teams can run, scale, alert on, upgrade, and troubleshoot the service |
-| **Estate control plane** | v1.72–v1.73 shipped; registry open | Operator observes and plans remote repos; fleet registry and portal fleet view next |
-| **Reach and usability** | open | Govern repos repave did not generate; composite paths; toolchain preflight; audit queries |
+| **In-cluster operations (Day-2)** | open (day-2 themes) | Chart on cluster; HPA/alerts/runbooks attach to [`deploy/k8s/chart/`](../deploy/k8s/chart/) |
+| **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
+| **Reach and usability** | verify (local) shipped | Remote verify clone; composite paths; `repave doctor`; audit queries |
 | **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
 | **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
@@ -295,6 +295,30 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 - `--preserve-local` for hand-edited scaffold files
 - Operator `spec.remediation.preserveLocal` passes `--preserve-local` on apply-upgrade;
   host e2e smoke in `operator/hack/e2e.sh` covers the terraform-minimal fixture
+
+### Estate control — fleet registry and GitOps manifests (engine v1.73+)
+
+- JSONL fleet store, `repave register` / `unregister` / `fleet list`, REST API, portal
+  **Fleet** route ([`docs/fleet-registry.md`](fleet-registry.md))
+- `repave fleet-manifests` renders `GoldenPathRepo` YAML for GitOps (operator does not
+  read the registry — re-run after register/unregister)
+- kind co-install: `make kind-co-install`, [`values-kind.yaml`](../deploy/k8s/chart/values-kind.yaml),
+  sample [`fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl)
+
+**Still open:** operator **Phase C** remediation from clone; optional continuous sync beyond
+`fleet-manifests`.
+
+### Kubernetes deploy — Helm chart (engine v1.74+)
+
+- [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `make chart-validate` in CI;
+  optional `make chart-smoke` locally
+- **Follow-ups:** gate-toolchain image variant; required chart-smoke in CI; day-2 themes
+  (HPA, alerts, runbooks) in [Planned](#planned)
+
+### `repave verify` — local path (engine v1.75+)
+
+- CLI, portal **Verify repo**, `POST /api/v1/verify` ([`docs/verify.md`](verify.md))
+- **Follow-up:** clone and verify remote `repo-url` targets
 
 ### v1.18 — Portal UX (theme)
 
@@ -1027,11 +1051,10 @@ than repos — so nobody can answer "how much of the estate is on the current st
 **Done when:** A registered repo appears in the portal fleet view with its pins and drift
 state, and the operator picks it up without hand-written CRs.
 
-**Status:** Partially shipped. The JSONL store (`fleet.py`), `repave register` / `unregister` /
-`fleet list`, the `GET` / `POST` / `DELETE /api/v1/fleet` routes, and
-[`docs/fleet-registry.md`](fleet-registry.md) are on `main`. Still open: the portal **Fleet**
-route (no fleet template exists yet) and operator sync from registry entries to
-`GoldenPathRepo` CRs.
+**Status:** **Shipped on `main`** (store, CLI, API, portal **Fleet**, `fleet-manifests`,
+kind co-install). **Still open:** live drift in the portal fleet table (operator status
+not wired to registry rows); continuous sync remains `fleet-manifests` + GitOps, not an
+in-cluster registry watcher.
 
 ---
 
@@ -1064,12 +1087,8 @@ model itself belongs to that entry.
 **Done when:** `helm install` serves the blueprint form on-cluster with dry-run generation
 working and probes gating traffic.
 
-**Status:** Chart added under `deploy/k8s/chart/`: Deployment, Service, optional Ingress,
-ConfigMap for `repave.config.yaml`, Secret refs, PVCs for modules/audit/fleet, probes on
-`/health` and `/readyz`. `make chart-validate` and the **Helm chart** GitHub workflow lint and
-template the chart; `make chart-smoke` is an optional kind install locally. Co-install notes in
-[`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md). Gate-toolchain image variant
-and required kind smoke in CI remain follow-ups.
+**Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174).
+**Follow-ups in this entry:** gate-toolchain image variant; required `make chart-smoke` in CI.
 
 ---
 
@@ -1097,8 +1116,9 @@ migration rather than value.
 **Done when:** Pointing `repave verify` at a repo repave never generated produces a gate
 report and a pin-drift summary without modifying the repo.
 
-**Status:** CLI, portal **Verify repo**, and `POST /api/v1/verify` on branch; see
-[`docs/verify.md`](verify.md). Remote clone remains open.
+**Status:** **Shipped on `main`** for **local paths** — see
+[Shipped — verify](#repave-verify--local-path-engine-v175). **Open:** remote `repo-url`
+clone; portal/API accept URL without a prior local checkout.
 
 ---
 
@@ -1500,11 +1520,11 @@ generator.
 | Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.13–v1.16, v1.20, v1.33–v1.34, v1.40 |
 | Blueprint conformance in CI | v1.29 |
 | Self-heal drift and version bumps | v1.17, v1.19, v1.24 |
-| Fleet visibility | v1.72–v1.73 remote inventory + [fleet registry](#fleet-registry-and-repave-register) → v2 operator GA |
-| Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) |
+| Fleet visibility | v1.72–v1.73+ remote inventory + fleet registry (portal + manifests) → v2 operator GA |
+| Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) (local path shipped) |
 | Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) |
 | Module repos self-govern in CI | v1.23 |
-| On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) |
+| On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) (shipped; day-2 follow-ups) |
 | Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 |
