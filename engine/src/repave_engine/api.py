@@ -123,12 +123,6 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         session_secret = auth_config.session_secret
     elif not session_secret:
         session_secret = secrets.token_hex(32)
-    app.add_middleware(
-        SessionMiddleware,
-        secret_key=session_secret,
-        same_site="lax",
-        https_only=False,
-    )
     app.mount(
         "/static",
         StaticFiles(directory=str(package_dir / "static")),
@@ -173,6 +167,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             return await call_next(request)
         finally:
             reset_acting_user(token)
+
+    # Registered last so it wraps enforce_service_auth: Starlette runs the most recently
+    # added middleware outermost, and enforce_service_auth reads request.session.
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=session_secret,
+        same_site="lax",
+        https_only=False,
+    )
 
     def portal_recent_activity(*, limit: int = 8) -> tuple[AuditHistoryEntry, ...]:
         try:
