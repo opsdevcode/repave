@@ -1,0 +1,16 @@
+apiVersion: repave.dev/v1alpha1
+kind: GoldenPathRepo
+metadata:
+  name: acme-tf-vpc
+  namespace: default
+  labels:
+    repave.dev/managed-by: repave-fleet
+  annotations:
+    repave.dev/owner: platform
+spec:
+  repoURL: https://github.com/acme/tf-vpc
+  desiredPins:
+    blueprintName: terraform-module-generic
+    blueprintVersion: 0.9.0
+    standardSource: standards/terraform-standards
+    standardVersion: 1.1.0

@@ -94,6 +94,36 @@ with an empty registry it points at `repave register`.
 The page is read-only. Registration stays in the CLI and API, where the acting user is
 recorded.
 
+## Operator sync
+
+`repave fleet-manifests` renders one `GoldenPathRepo` per registered repository so the
+operator reconciles the same set the registry tracks:
+
+```bash
+repave fleet-manifests --output ./fleet-manifests --namespace repave-system
+kubectl apply -f ./fleet-manifests
+```
+
+The engine writes manifests rather than the operator reading the registry. That keeps the
+operator free of engine storage details and needs no in-cluster engine service or token, and
+it fits GitOps: commit the output directory and let Argo or Flux apply it.
+
+Each manifest sets `spec.repoURL` (never `localPath`, since registry entries are remote) and
+`spec.desiredPins` from the registered pins. Resource names come from the owner and repo
+(`acme/tf-vpc` becomes `acme-tf-vpc`) so two repos with the same short name do not collide;
+rendering aborts if two entries would still produce one name.
+
+Output is deterministic, so re-running with an unchanged registry produces no diff. Entries
+missing any pin are rejected before anything is written, because `desiredPins` fields are
+required by the CRD — a partial apply set is worse than none. Re-register such a repo with
+`--path` so pins come from its `repave.yaml`.
+
+`operator/testdata/fleet/` holds rendered fixtures that the operator decodes strictly in
+`fleet_manifest_test.go`, so a field rename on either side fails in CI rather than at apply
+time. `test_fleet_manifests.py` asserts those fixtures still match the renderer.
+
 ## Not in this slice
 
-- Operator sync that emits a `GoldenPathRepo` per registered entry
+- Continuous sync: the operator does not watch the registry, so re-run
+  `fleet-manifests` (or let GitOps do it) after registering or unregistering
+- Pruning: removing an entry does not delete an already-applied `GoldenPathRepo`

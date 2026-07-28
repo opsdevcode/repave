@@ -17,6 +17,7 @@ from repave_engine.fleet import (
     register_repo,
     unregister_repo,
 )
+from repave_engine.fleet_manifests import DEFAULT_NAMESPACE, render_manifests
 from repave_engine.pipeline import generate_from_path
 from repave_engine.settings import OutputConfig, load_fleet_config, load_output_config
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
@@ -170,6 +171,22 @@ def cmd_fleet(args: argparse.Namespace) -> int:
         pin = f"{entry.blueprint_name}@{entry.blueprint_version or '?'}"
         owner = f" owner={entry.owner}" if entry.owner else ""
         print(f"{entry.repo_url}  {pin}{owner}")
+    return 0
+
+
+def cmd_fleet_manifests(args: argparse.Namespace) -> int:
+    registry = _fleet_registry_path(args)
+    entries = read_fleet(registry)
+    if not entries:
+        print("No repositories registered; nothing to render.")
+        return 0
+
+    output_dir = Path(args.output).expanduser().resolve()
+    rendered = render_manifests(entries, output_dir, namespace=args.namespace)
+    for item in rendered:
+        print(f"{item.path}  {item.entry.repo_url}")
+    print(f"\nRendered {len(rendered)} GoldenPathRepo manifest(s) into {output_dir}")
+    print(f"Apply with: kubectl apply -f {output_dir}")
     return 0
 
 
@@ -478,6 +495,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
     fleet.add_argument("--format", choices=["text", "json"], default="text")
     fleet.set_defaults(func=cmd_fleet)
+
+    fleet_manifests = sub.add_parser(
+        "fleet-manifests",
+        help="Render GoldenPathRepo manifests for registered repositories",
+        parents=[common],
+    )
+    fleet_manifests.add_argument(
+        "--output",
+        required=True,
+        help="Directory to write one GoldenPathRepo manifest per repository",
+    )
+    fleet_manifests.add_argument(
+        "--namespace",
+        default=DEFAULT_NAMESPACE,
+        help=f"Namespace for the generated resources (default: {DEFAULT_NAMESPACE})",
+    )
+    fleet_manifests.set_defaults(func=cmd_fleet_manifests)
 
     gates_cmd = sub.add_parser(
         "gates",

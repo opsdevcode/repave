@@ -1,0 +1,14 @@
+apiVersion: repave.dev/v1alpha1
+kind: GoldenPathRepo
+metadata:
+  name: acme-opa-guardrails
+  namespace: default
+  labels:
+    repave.dev/managed-by: repave-fleet
+spec:
+  repoURL: https://github.com/acme/opa-guardrails
+  desiredPins:
+    blueprintName: opa-policy-generic
+    blueprintVersion: '1.0'
+    standardSource: standards/policy/opa.md
+    standardVersion: 1.2.0
