@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.81.0  
+**Current release:** v1.82.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
 **Next up:** operator remote inventory **Phase C** → verify **remote clone**; fleet **GitOps**
 (`fleet-manifests` + register) polish; [day-2 operability](#service-health-resource-management-and-autoscaling)
