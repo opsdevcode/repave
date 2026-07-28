@@ -1,4 +1,6 @@
-# Monitors-as-code standard v1.1.0
+# Monitors-as-code standard v1.2.0
+
+Version: 1.2.0
 
 Governed **alerts and monitors** for the `monitors-as-code-generic` golden path:
 Datadog monitors and Prometheus alerting rules (plus Alertmanager routing stubs). Dashboard

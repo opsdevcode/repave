@@ -1,5 +1,7 @@
 # Helm chart standard v1.0.0
 
+Version: 1.0.0
+
 Governed Kubernetes Helm charts from the `helm-chart-generic` golden path.
 
 ## Naming

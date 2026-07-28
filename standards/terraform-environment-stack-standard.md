@@ -1,5 +1,7 @@
 # Terraform environment stack standard (v0.1.0)
 
+Version: 0.1.0
+
 Environment stacks are **root modules** that compose pinned child module versions for
 a single cloud and deployment environment. They are not published as reusable modules.
 
