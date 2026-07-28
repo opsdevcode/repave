@@ -297,6 +297,25 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
+    @app.get("/fleet", response_class=HTMLResponse)
+    async def fleet_page(request: Request) -> HTMLResponse:
+        try:
+            fleet_cfg = load_fleet_config(repo_root)
+        except ValueError:
+            fleet_cfg = None
+        enabled = fleet_cfg is not None and fleet_cfg.enabled
+        entries = read_fleet(fleet_cfg.file) if enabled and fleet_cfg else ()
+        return templates.TemplateResponse(
+            request,
+            "fleet.html",
+            page_context(
+                request,
+                nav_active="fleet",
+                fleet_enabled=enabled,
+                fleet_repos=[entry.to_dict() for entry in entries],
+            ),
+        )
+
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)

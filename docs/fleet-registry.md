@@ -84,7 +84,16 @@ entry, including the normalized URL and the acting user recorded as `registered_
 A missing or disabled registry returns `404` rather than an empty list, so a
 misconfiguration cannot be mistaken for an empty fleet.
 
+## Portal
+
+**Fleet** in the top navigation lists governed repositories with the blueprint and standard
+each is pinned to, who registered it, and when. The page is always reachable so the nav
+link never dead-ends: with no registry configured it explains the `fleet` config block, and
+with an empty registry it points at `repave register`.
+
+The page is read-only. Registration stays in the CLI and API, where the acting user is
+recorded.
+
 ## Not in this slice
 
-- Portal fleet page (the API is in place; the view is a follow-up)
 - Operator sync that emits a `GoldenPathRepo` per registered entry
