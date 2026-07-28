@@ -180,6 +180,15 @@ jobs:
             git commit -m "chore(release): sync doc version pointers"
           fi
 
+          # Re-lock so the tracked uv.lock records the released version. This cannot be a
+          # semantic_release asset: build_command runs after PSR creates the version commit.
+          # `uv lock` keeps existing dependency pins; only repave-engine changes.
+          (cd engine && uv lock)
+          if ! git diff --quiet engine/uv.lock; then
+            git add engine/uv.lock
+            git commit -m "chore(release): sync uv.lock to ${VERSION}"
+          fi
+
           TAG="v${VERSION}"
           BRANCH="chore/release-${VERSION}"
           RELEASE_SHA="$(git rev-parse HEAD)"
