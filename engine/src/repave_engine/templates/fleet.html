@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Fleet — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/">← Catalog</a></p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Governed repositories</h1>
+    <p class="page-lead">
+      Repositories under repave governance, with the blueprint and standard each one is
+      pinned to.
+    </p>
+  </div>
+</header>
+
+{% if fleet_enabled %}
+  {% if fleet_repos %}
+<section class="card activity-card" aria-labelledby="fleet-heading">
+  <div class="card__header">
+    <h2 id="fleet-heading">{{ fleet_repos | length }} repositor{{ 'y' if fleet_repos | length == 1 else 'ies' }}</h2>
+    <p class="muted card__subtitle">Sorted by repository · registered with <code>repave register</code></p>
+  </div>
+  <div class="card__body">
+    <ul class="activity-list">
+      {% for row in fleet_repos %}
+      <li class="activity-list__item">
+        <div class="activity-list__primary">
+          <a href="{{ row.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ row.repo_url }}</code></a>
+          {% if row.owner %}
+          <span class="muted">· {{ row.owner }}</span>
+          {% endif %}
+        </div>
+        <div class="activity-list__meta">
+          <span class="badge badge--pass">
+            {{ row.blueprint_name }}{% if row.blueprint_version %}@{{ row.blueprint_version }}{% endif %}
+          </span>
+          {% if row.standard_version %}
+          <span class="badge badge--skip">standard {{ row.standard_version }}</span>
+          {% endif %}
+          <span class="muted">{{ row.registered_by }}</span>
+          {% if row.registered_at %}
+          <time class="muted" datetime="{{ row.registered_at }}">{{ row.registered_at[:19] }}</time>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+  {% else %}
+<div class="alert alert--info">
+  No repositories are registered yet. Add one with
+  <code>repave register &lt;repo-url&gt; --path &lt;local checkout&gt;</code>.
+</div>
+  {% endif %}
+{% else %}
+<div class="alert alert--info" role="status">
+  Set a <code>fleet</code> file in <code>repave.config.yaml</code> to track which repositories
+  repave governs.
+</div>
+{% endif %}
+{% endblock %}
