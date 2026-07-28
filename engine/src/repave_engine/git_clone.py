@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import quote, urlparse, urlunparse
 
+from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import _git_executable
 
 _DEFAULT_DEPTH = 1
@@ -82,12 +83,7 @@ def shallow_clone(
     cmd.extend([remote, str(dest_dir)])
 
     try:
-        subprocess.run(
-            cmd,
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        run_subprocess(cmd, git=True, check=True)
     except subprocess.CalledProcessError as exc:
         detail = (exc.stderr or exc.stdout or str(exc)).strip()
         detail = _redact_secrets(detail, secret)

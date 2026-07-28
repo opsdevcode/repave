@@ -174,7 +174,8 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
    `REPAVE_OPERATOR_REMOTE_RESYNC=15m`. A clone failure sets `Ready=False` with reason
    `RemoteFetchFailed` and requeues after two minutes; token material is stripped from the
    status message. `plan-upgrade` runs against the clone, so `status.upgradePlan` is
-   populated for remote repos too; remediation PRs still need `spec.localPath`.
+   populated for remote repos too; remediation can run against the clone when `spec.localPath`
+   is empty (Phase C).
 
    Remediation (slice 3): set `spec.remediation.enabled: true`. Use
    `spec.remediation.dryRun: true` locally to apply on a git branch without

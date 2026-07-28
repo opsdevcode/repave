@@ -16,6 +16,8 @@ from typing import Any
 
 import yaml
 
+from repave_engine.jsonl_lock import append_jsonl_line
+
 logger = logging.getLogger(__name__)
 
 EVENT_REGISTER = "register"
@@ -145,9 +147,7 @@ def append_fleet_event(path: Path, entry: FleetEntry, event: str) -> None:
         raise FleetError(f"unknown fleet event {event!r}")
     payload = entry.to_event(event)
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(json.dumps(payload, separators=(",", ":")) + "\n")
+        append_jsonl_line(path, json.dumps(payload, separators=(",", ":")))
     except OSError as exc:
         raise FleetError(f"fleet registry write failed ({path}): {exc}") from exc
 

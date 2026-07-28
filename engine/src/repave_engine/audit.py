@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from repave_engine.jsonl_lock import append_jsonl_line_best_effort
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,10 +43,5 @@ def acting_user_from_env() -> str:
 
 def append_audit_record(path: Path, record: AuditRecord) -> None:
     """Write one JSON line; never raises."""
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        line = json.dumps(record.to_dict(), separators=(",", ":"))
-        with path.open("a", encoding="utf-8") as handle:
-            handle.write(line + "\n")
-    except OSError as exc:
-        logger.warning("Audit log write failed (%s): %s", path, exc)
+    line = json.dumps(record.to_dict(), separators=(",", ":"))
+    append_jsonl_line_best_effort(path, line)

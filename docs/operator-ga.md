@@ -8,7 +8,8 @@ today and what remains intentionally out of scope.
 | Area | Status | Notes |
 | --- | --- | --- |
 | CRDs | GA | `GoldenPathRepo`, `Blueprint` |
-| Inventory / drift | GA | `spec.localPath` reads `repave.yaml` pins vs desired |
+| Inventory / drift | GA | `spec.localPath` or `spec.repoURL` (shallow clone) reads `repave.yaml` pins vs desired |
+| Remote remediation | GA | `spec.repoURL` + token: apply-upgrade and PR from the inventory clone ([ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md)) |
 | Upgrade planning | GA | `repave plan-upgrade` JSON on status |
 | Remediation | GA | `repave apply-upgrade`, optional GitHub PR, `preserveLocal` |
 | Blueprint pin watch | GA | `spec.blueprintRef` reconciles when catalog pins change |
@@ -19,13 +20,12 @@ today and what remains intentionally out of scope.
 
 | Area | Target | Notes |
 | --- | --- | --- |
-| Remote git inventory | Phases A–B shipped | `spec.repoURL` shallow clone populates `status.observedPins` and `status.upgradePlan`. Remediation (Phase C) still needs `localPath`. Design: [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md). |
 | Multi-tenant fleet API | v2 | Single-cluster inventory per operator instance |
 | In-cluster notifications | Optional | Webhooks via `REPAVE_OPERATOR_NOTIFY_*` (see operator README) |
 
 ## GA checklist (maintainers)
 
-Last verified on **`main`**: 2026-07-27 (engine **v1.63.0**).
+Last verified on **`main`**: 2026-07-27 (engine **v1.81.0**).
 
 - [x] `make operator-test` and `make operator-e2e` pass on `main`
 - [x] Sample manifests under `operator/config/e2e/` match blueprint pins on `main`

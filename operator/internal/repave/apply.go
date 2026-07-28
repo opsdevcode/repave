@@ -93,12 +93,14 @@ type StaticApplyUpgrader struct {
 	Calls  int
 	// LastPreserveLocal records the preserveLocal argument from the latest call.
 	LastPreserveLocal bool
+	// LastTargetRepo records the checkout path passed to apply-upgrade.
+	LastTargetRepo string
 }
 
 func (s *StaticApplyUpgrader) ApplyUpgrade(
 	_ context.Context,
 	_ Config,
-	_ string,
+	targetRepo string,
 	_ string,
 	_ string,
 	_ string,
@@ -106,6 +108,7 @@ func (s *StaticApplyUpgrader) ApplyUpgrade(
 ) (ApplyResult, error) {
 	s.Calls++
 	s.LastPreserveLocal = preserveLocal
+	s.LastTargetRepo = targetRepo
 	if s.Err != nil {
 		return ApplyResult{}, s.Err
 	}
