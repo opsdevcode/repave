@@ -160,7 +160,7 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
    REPAVE_REPO_ROOT=$(pwd) make operator-run
    ```
 
-   **Remote inventory and plan (v1.72 Phases A–B):** a `spec.repoURL` repo is shallow-cloned
+   **Remote inventory and plan (Phases A–B):** a `spec.repoURL` repo is shallow-cloned
    to a temporary directory, observed, planned against, and cleaned up — no host mount
    required. Try it against a local `file://` path first, which needs no credentials:
 
