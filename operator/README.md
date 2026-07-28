@@ -11,8 +11,14 @@ reconciler, `make operator-test` with envtest.
 
 **Slice 1 (inventory):** read `repave.yaml` from `spec.localPath`, populate
 `status.observedPins`, set `OutOfDate` + `DriftDetected` when pins differ from
-`spec.desiredPins`. `spec.repoURL` returns `RemoteRepoUnsupported` until git
-inventory lands.
+`spec.desiredPins`.
+
+**Remote inventory (v1.72 Phase A):** `spec.repoURL` is shallow-cloned into a temporary
+workspace, observed the same way as `localPath`, then removed. HTTPS remotes authenticate
+with `GITHUB_TOKEN` (read scope is enough); SSH remotes use the operator's mounted key.
+Because remote repos have no watch, they re-observe every `REPAVE_OPERATOR_REMOTE_RESYNC`
+(default `10m`), and a failed clone sets `Ready=False` with reason `RemoteFetchFailed` and
+requeues. Upgrade plans and remediation PRs still require `spec.localPath` (Phases B and C).
 
 **Local development and testing are first-class.** See
 [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).

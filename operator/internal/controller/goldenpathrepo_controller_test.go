@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -23,6 +25,29 @@ func fixtureModulePath() string {
 	path, err := filepath.Abs(filepath.Join("..", "..", "testdata", "modules", "terraform-minimal"))
 	Expect(err).NotTo(HaveOccurred())
 	return path
+}
+
+// fixtureFetcher stands in for a git clone by copying fixture provenance into the
+// inventory workspace, keeping envtest offline.
+type fixtureFetcher struct {
+	source string
+}
+
+func (f *fixtureFetcher) Fetch(_ context.Context, _ string, dir string) error {
+	if err := os.MkdirAll(dir, 0o750); err != nil {
+		return err
+	}
+	data, err := os.ReadFile(filepath.Join(f.source, "repave.yaml"))
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "repave.yaml"), data, 0o600)
+}
+
+type failingFetcher struct{}
+
+func (failingFetcher) Fetch(_ context.Context, _ string, _ string) error {
+	return fmt.Errorf("dial tcp: connection refused")
 }
 
 var _ = Describe("GoldenPathRepo reconciler", func() {
@@ -259,6 +284,87 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
 		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
+	})
+
+	It("observes pins from a remote repo via the fetcher", func() {
+		reconciler.Fetcher = &fixtureFetcher{source: fixtureModulePath()}
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				RepoURL: "https://github.com/example/module.git",
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "9.9.9",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.RequeueAfter).To(BeNumerically(">", 0))
+
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.9.0"))
+		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
+		// Remote repos are inventory-only in Phase A: no upgrade plan without localPath.
+		Expect(repo.Status.UpgradePlan).To(BeNil())
+		Expect(meta.IsStatusConditionFalse(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
+	})
+
+	It("requeues with RemoteFetchFailed when the clone fails", func() {
+		reconciler.Fetcher = failingFetcher{}
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				RepoURL: "https://github.com/example/module.git",
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "0.9.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(result.RequeueAfter).To(Equal(remoteFetchRetry))
+
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseError))
+		readyCondition := meta.FindStatusCondition(repo.Status.Conditions, status.ConditionReady)
+		Expect(readyCondition).NotTo(BeNil())
+		Expect(readyCondition.Reason).To(Equal(status.ReasonRemoteFetchFailed))
+	})
+
+	It("reports RemoteRepoUnsupported when no fetcher is configured", func() {
+		reconciler.Fetcher = nil
+		repo := &repavev1alpha1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1alpha1.GoldenPathRepoSpec{
+				RepoURL: "https://github.com/example/module.git",
+				DesiredPins: repavev1alpha1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "0.9.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		readyCondition := meta.FindStatusCondition(repo.Status.Conditions, status.ConditionReady)
+		Expect(readyCondition).NotTo(BeNil())
+		Expect(readyCondition.Reason).To(Equal(status.ReasonRemoteRepoUnsupported))
 	})
 
 	It("rejects spec with neither repoURL nor localPath at admission", func() {

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,6 +13,7 @@ import (
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/github"
+	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/pins"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
@@ -27,6 +29,25 @@ type GoldenPathRepoReconciler struct {
 	GitHub        github.Client
 	RepaveConfig  repave.Config
 	GitHubToken   string
+
+	// Fetcher materializes spec.repoURL repos for inventory. Nil disables remote
+	// observation, leaving repoURL specs on RemoteRepoUnsupported.
+	Fetcher inventory.RepoFetcher
+
+	// RemoteResync is the steady-state re-observation interval for spec.repoURL repos,
+	// which have no watch to trigger reconciliation. Zero uses defaultRemoteResync.
+	RemoteResync time.Duration
+}
+
+// defaultRemoteResync re-clones remote repos periodically so pin drift is noticed without
+// a Blueprint change to trigger reconciliation.
+const defaultRemoteResync = 10 * time.Minute
+
+func (r *GoldenPathRepoReconciler) remoteResyncInterval() time.Duration {
+	if r.RemoteResync > 0 {
+		return r.RemoteResync
+	}
+	return defaultRemoteResync
 }
 
 // +kubebuilder:rbac:groups=repave.dev,resources=goldenpathrepos,verbs=get;list;watch;update;patch
@@ -104,8 +125,14 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, nil
 	}
 
-	if err := applyInventoryStatus(ctx, r.Client, &repo, desired); err != nil {
+	retryAfter, err := applyInventoryStatus(ctx, r.Client, &repo, desired, r.Fetcher)
+	if err != nil {
 		return ctrl.Result{}, err
+	}
+	if retryAfter > 0 {
+		logger.Info("remote inventory unavailable; requeueing",
+			"name", req.Name, "retryAfter", retryAfter.String())
+		return ctrl.Result{RequeueAfter: retryAfter}, nil
 	}
 
 	if err := r.Get(ctx, req.NamespacedName, &repo); err != nil {
@@ -142,6 +169,9 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	logger.Info("reconciled GoldenPathRepo", "name", req.Name)
+	if repo.Spec.LocalPath == "" && repo.Spec.RepoURL != "" {
+		return ctrl.Result{RequeueAfter: r.remoteResyncInterval()}, nil
+	}
 	return ctrl.Result{}, nil
 }
 

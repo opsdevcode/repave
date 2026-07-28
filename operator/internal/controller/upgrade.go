@@ -27,7 +27,7 @@ func applyUpgradePlanStatus(
 		return clearUpgradePlanStatus(ctx, c, repo)
 	}
 	if repo.Spec.LocalPath == "" {
-		msg := "upgrade diff requires spec.localPath until remote inventory is supported"
+		msg := "upgrade diff requires spec.localPath; remote repos are inventory-only (v1.72 Phase A)"
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			latest.Status.UpgradePlan = nil
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{

@@ -160,6 +160,21 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
    REPAVE_REPO_ROOT=$(pwd) make operator-run
    ```
 
+   **Remote inventory (v1.72 Phase A):** a `spec.repoURL` repo is shallow-cloned to a
+   temporary directory, observed, and cleaned up — no host mount required. Try it against
+   a local `file://` path first, which needs no credentials:
+
+   ```yaml
+   spec:
+     repoURL: file:///tmp/module-fixture   # or https://github.com/acme/terraform-module-x
+   ```
+
+   HTTPS remotes read `GITHUB_TOKEN` from the operator environment (read scope is enough;
+   never a write token for inventory). Tune re-observation with
+   `REPAVE_OPERATOR_REMOTE_RESYNC=15m`. A clone failure sets `Ready=False` with reason
+   `RemoteFetchFailed` and requeues after two minutes; token material is stripped from the
+   status message. Upgrade plans and remediation still need `spec.localPath`.
+
    Remediation (slice 3): set `spec.remediation.enabled: true`. Use
    `spec.remediation.dryRun: true` locally to apply on a git branch without
    GitHub; production PRs need `spec.repoURL` and `GITHUB_TOKEN` on the operator.

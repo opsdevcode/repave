@@ -14,6 +14,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"os"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -27,8 +28,24 @@ import (
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	"github.com/opsdevcode/repave/operator/internal/controller"
 	"github.com/opsdevcode/repave/operator/internal/github"
+	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 )
+
+// remoteResyncFromEnv reads REPAVE_OPERATOR_REMOTE_RESYNC (Go duration, for example 15m).
+// Invalid or unset values fall back to the controller default.
+func remoteResyncFromEnv() time.Duration {
+	raw := os.Getenv("REPAVE_OPERATOR_REMOTE_RESYNC")
+	if raw == "" {
+		return 0
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil || parsed <= 0 {
+		setupLog.Info("ignoring invalid REPAVE_OPERATOR_REMOTE_RESYNC", "value", raw)
+		return 0
+	}
+	return parsed
+}
 
 var (
 	scheme   = runtime.NewScheme()
@@ -90,6 +107,8 @@ func main() {
 		GitHub:        ghClient,
 		RepaveConfig:  repave.ConfigFromEnv(os.Getenv("REPAVE_REPO_ROOT"), os.Getenv("REPAVE_CLI")),
 		GitHubToken:   githubToken,
+		Fetcher:       inventory.GitFetcher{Token: githubToken},
+		RemoteResync:  remoteResyncFromEnv(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GoldenPathRepo")
 		os.Exit(1)

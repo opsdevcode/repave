@@ -5,9 +5,9 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.71.4  
-**In progress:** v1.69 cross-platform role pattern; v1.70 pinned Galaxy roles playbook pattern  
-**Next up:** v1.72 → v1.76 estate chain (remote git inventory → fleet registry → k8s deploy →
-`repave verify` → composite paths)  
+**In progress:** v1.72 Phase A remote git inventory (operator)  
+**Next up:** v1.73 → v1.76 estate chain (fleet registry → k8s deploy → `repave verify` →
+composite paths)  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
@@ -383,7 +383,8 @@ exercised pins via the Copier placeholder loop (ping tasks), not a serial produc
 - Validate at least one **`pinned_roles`** entry when the pattern is selected
 - **`group_vars/all/vars.yml`** exposes `playbook_rollout_serial` tuning
 
-**Status:** In progress.
+**Status:** Shipped on `main` (`pinned-roles-rollout` in `ansible/catalog.json`
+`playbook_patterns`).
 
 ---
 
@@ -398,7 +399,8 @@ Windows automation unless operators hand-author tasks.
 - Portal/API expose the pattern only when **both** Linux and Windows are selected
 - Linux `user` + Windows `win_user` tasks with shared defaults; Molecule verify on Linux
 
-**Status:** In progress.
+**Status:** Shipped on `main` (`managed-local-account` in `ansible/catalog.json`
+`role_patterns`).
 
 ---
 
@@ -929,6 +931,14 @@ called out in [`operator-ga.md`](operator-ga.md).
 
 **Done when:** A `GoldenPathRepo` with only `spec.repoURL` reports `OutOfDate` and a
 non-empty `status.upgradePlan` against a stale pin, with no local checkout.
+
+**Status:** **Phase A shipped** — `internal/git/clone.go` shallow-clones remotes into a
+temporary workspace and `inventory.RepoFetcher` feeds the existing observation path, so
+`spec.repoURL` populates `status.observedPins` and reports drift. Token material is
+redacted from git errors; clone failures set `RemoteFetchFailed` and requeue; remote repos
+re-observe on `REPAVE_OPERATOR_REMOTE_RESYNC` (default 10m). Phases B (`plan-upgrade`
+against the clone) and C (remediation from a clone) remain open — upgrade plans still
+require `spec.localPath`. Design: [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md).
 
 ---
 
