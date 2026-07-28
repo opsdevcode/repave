@@ -1050,3 +1050,51 @@ def test_api_v1_generate_dry_run(repo_root, output_config, monkeypatch) -> None:
     assert payload["blueprint"] == "terraform-module-resource"
     assert payload["dry_run"] is True
     assert "gates_outcome" in payload
+
+
+def test_index_lists_service_stack_bundle(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "service-stack" in response.text
+    assert "/bundles/service-stack" in response.text
+
+
+def test_bundle_form_renders_shared_inputs(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/bundles/service-stack")
+    assert response.status_code == 200
+    assert 'name="bundle_name"' in response.text
+    assert 'name="service_name"' in response.text
+    assert "app-service-generic" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
+    assert "data-dry-run-run" in response.text
+    assert "data-bundle-preview" in response.text
+    assert "Repository preview" in response.text
+
+
+def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "bundle_name": "service-stack",
+            "dry_run": "true",
+            "service_name": "portal-bundle",
+            "description": "Portal bundle dry-run test",
+            "owner": "group:platform",
+            "organization": "platform",
+            "team": "payments",
+            "port": "8080",
+            "runtime": "python",
+            "catalog_lifecycle": "experimental",
+        },
+    )
+    assert response.status_code == 200
+    assert "Bundle service-stack" in response.text
+    assert "Generated files" in response.text or "file-explorer" in response.text
+    assert "app-service-generic" in response.text
+    assert "Lineage" in response.text
+    assert "data-bundle-member-tabs" in response.text
+    assert "Repositories" in response.text

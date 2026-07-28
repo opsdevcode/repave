@@ -488,6 +488,10 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
         return str(values.get("project_name", blueprint.name))
     if blueprint.artifact_type == "ansible-collection":
         return str(values.get("collection_name", blueprint.name))
+    if blueprint.artifact_type == "app-service":
+        return str(values.get("service_name", blueprint.name))
+    if blueprint.artifact_type == "helm-chart":
+        return str(values.get("chart_name", blueprint.name))
     if blueprint.artifact_type == "observability":
         return str(values.get("service_name", blueprint.name))
     if blueprint.artifact_type == "azure-policy":

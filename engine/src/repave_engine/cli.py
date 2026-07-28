@@ -19,7 +19,7 @@ from repave_engine.fleet import (
     unregister_repo,
 )
 from repave_engine.fleet_manifests import DEFAULT_NAMESPACE, render_manifests
-from repave_engine.pipeline import generate_from_path
+from repave_engine.pipeline import generate_bundle_from_path, generate_from_path
 from repave_engine.settings import OutputConfig, load_fleet_config, load_output_config
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
@@ -46,9 +46,12 @@ def _load_output_config_from_args(args: argparse.Namespace) -> OutputConfig:
 
 def cmd_generate(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo_root).resolve()
-    blueprint_path = Path(args.blueprint)
-    if not blueprint_path.is_absolute():
-        blueprint_path = (repo_root / blueprint_path).resolve()
+    bundle_name = (getattr(args, "bundle", None) or "").strip()
+    blueprint = (getattr(args, "blueprint", None) or "").strip()
+    if not bundle_name and not blueprint:
+        raise ValueError("Provide --blueprint or --bundle")
+    if bundle_name and blueprint:
+        raise ValueError("Use only one of --blueprint or --bundle")
 
     values = _parse_inputs(args.input or [])
     output_config = _load_output_config_from_args(args)
@@ -57,6 +60,39 @@ def cmd_generate(args: argparse.Namespace) -> int:
     github_token = args.github_token or os.environ.get("GITHUB_TOKEN")
     if args.dry_run:
         github_token = None
+
+    bundle_name = (getattr(args, "bundle", None) or "").strip()
+    if bundle_name:
+        bundle_path = Path(bundle_name)
+        if not bundle_path.is_absolute():
+            bundle_path = (repo_root / "blueprints" / "bundles" / bundle_name).resolve()
+        bundle_result = generate_bundle_from_path(
+            bundle_path,
+            values,
+            repo_root=repo_root,
+            output_config=output_config,
+            dry_run=args.dry_run,
+            github_token=github_token,
+            staging_root=staging_root,
+        )
+        print(f"Bundle: {bundle_result.bundle.name}@{bundle_result.bundle.version}")
+        exit_code = 0
+        for member in bundle_result.members:
+            print(f"\nMember: {member.member_id} ({member.result.blueprint.name})")
+            if member.result.module_repository:
+                print(f"  Repository: {member.result.module_repository.web_url}")
+            print("  Gates:")
+            for gate in member.result.gates:
+                status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
+                print(f"    - [{status}] {gate.name}: {gate.message}")
+            failed = [g for g in member.result.gates if not g.passed and not g.skipped]
+            if failed:
+                exit_code = 1
+        return exit_code
+
+    blueprint_path = Path(args.blueprint)
+    if not blueprint_path.is_absolute():
+        blueprint_path = (repo_root / blueprint_path).resolve()
 
     result = generate_from_path(
         blueprint_path,
@@ -477,7 +513,11 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[common],
     )
     _add_output_options(generate)
-    generate.add_argument("--blueprint", required=True, help="Blueprint path or name")
+    generate.add_argument("--blueprint", help="Blueprint path or name (required unless --bundle)")
+    generate.add_argument(
+        "--bundle",
+        help="Bundle name or path under blueprints/bundles/ (composite golden path)",
+    )
     generate.add_argument(
         "--input",
         action="append",

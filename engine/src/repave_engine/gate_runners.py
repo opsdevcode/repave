@@ -767,7 +767,10 @@ def run_helm_lint(ctx: GateContext) -> GateResult:
     if not chart_yaml.is_file():
         return GateResult("helm-lint", True, True, "no Chart.yaml found; skipped")
 
-    result = run_command(["helm", "lint", str(chart_dir.relative_to(output_dir))], output_dir)
+    result = run_command(
+        ["helm", "lint", str(chart_dir.resolve().relative_to(output_dir.resolve()))],
+        output_dir.resolve(),
+    )
     if result.returncode == 0:
         return GateResult("helm-lint", True, False, "helm lint passed")
     detail = result.stderr.strip() or result.stdout.strip() or "helm lint failed"
@@ -788,14 +791,16 @@ def run_helm_template(ctx: GateContext) -> GateResult:
 
     cfg = ctx.config("helm-template")
     release = str(cfg.get("release_name", "repave-test"))
+    resolved_out = output_dir.resolve()
+    resolved_chart = chart_dir.resolve()
     result = run_command(
         [
             "helm",
             "template",
             release,
-            str(chart_dir.relative_to(output_dir)),
+            str(resolved_chart.relative_to(resolved_out)),
         ],
-        output_dir,
+        resolved_out,
     )
     if result.returncode == 0:
         return GateResult("helm-template", True, False, "helm template passed")
@@ -811,14 +816,16 @@ def _write_helm_rendered_manifest(output_dir: Path, ctx: GateContext) -> tuple[P
         return None, "no Chart.yaml found"
     cfg = ctx.config("opa")
     release = str(cfg.get("helm_release_name", cfg.get("release_name", "repave-test")))
+    resolved_out = output_dir.resolve()
+    resolved_chart = chart_dir.resolve()
     result = run_command(
         [
             "helm",
             "template",
             release,
-            str(chart_dir.relative_to(output_dir)),
+            str(resolved_chart.relative_to(resolved_out)),
         ],
-        output_dir,
+        resolved_out,
     )
     if result.returncode != 0:
         detail = result.stderr.strip() or result.stdout.strip() or "helm template failed"

@@ -6,10 +6,10 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.81.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
-**Next up:** [composite golden paths](#composite-golden-paths-bundles) → operator remote inventory
-**Phase C**; fleet **GitOps** (`fleet-manifests` + register) polish;
-[day-2 operability](#service-health-resource-management-and-autoscaling) on the Helm chart
-(chart-smoke in CI, gate-toolchain image variant still open)  
+**Next up:** operator remote inventory **Phase C** → verify **remote clone**; fleet **GitOps**
+(`fleet-manifests` + register) polish; [day-2 operability](#service-health-resource-management-and-autoscaling)
+on the Helm chart (chart-smoke in CI, gate-toolchain image variant still open). **Composite bundles**
+shipped in this line — see [Composite golden paths (bundles)](#composite-golden-paths-bundles).
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
 correctness and scale fixes that gate hosted multi-user use  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
@@ -1124,6 +1124,10 @@ report and a pin-drift summary without modifying the repo.
 ### Composite golden paths (bundles)
 
 *Planning label: v1.76 (roadmap numbering only).*
+
+**Status:** **Shipped on `main`** — `schemas/bundle.schema.json`, `blueprints/bundles/service-stack/`
+(app + Helm + dashboards), `repave generate --bundle`, portal **Composite bundles** catalog
+and `/bundles/{name}` form with combined plan result.
 
 **Problem:** Every blueprint emits exactly one artifact, but a real service needs a
 Terraform module, a Helm chart, an app-service repo, and observability. All four paths exist

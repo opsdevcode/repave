@@ -161,6 +161,41 @@
 {% endif %}
 
 <div id="golden-paths" class="home-catalog">
+{% if catalog_bundles %}
+<section class="catalog-group catalog-group--app" aria-labelledby="catalog-bundles" data-catalog-group="bundles">
+  <header class="catalog-group__header">
+    <div>
+      <h2 class="catalog-group__title" id="catalog-bundles">Composite bundles</h2>
+      <p class="catalog-group__subtitle">
+        Scaffold linked repositories in one plan — shared naming and cross-references.
+      </p>
+    </div>
+    <span class="badge badge--app">{{ catalog_bundles|length }} bundles</span>
+  </header>
+  <div class="catalog-grid">
+    {% for bundle in catalog_bundles %}
+    <a
+      class="catalog-card catalog-card--app-service"
+      href="/bundles/{{ bundle.name }}"
+      data-catalog-card
+      data-search-text="{{ bundle.name }} {{ bundle.description or '' }} bundle composite"
+    >
+      <div class="catalog-card__top">
+        <h3 class="catalog-card__name">{{ bundle.name }}</h3>
+        <span class="badge badge--app">Bundle</span>
+      </div>
+      {% if bundle.description %}
+      <p class="catalog-card__desc">{{ bundle.description }}</p>
+      {% endif %}
+      <div class="catalog-card__meta">
+        <span class="badge badge--muted">v{{ bundle.version }}</span>
+        <span class="badge badge--muted">{{ bundle.members|length }} members</span>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% if catalog_groups %}
 {% for group in catalog_groups %}
 <section
