@@ -4,9 +4,11 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.75.0  
+**Current release:** v1.76.0  
 **In progress:** [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart) — chart and CI validation; kind smoke optional locally  
-**Next up:** estate chain — [`repave verify`](#repave-verify-for-existing-repositories) →
+**Next up:** estate chain — [fleet registry](#fleet-registry-and-repave-register) (store, CLI,
+and API shipped; portal view and operator sync open) →
+[`repave verify`](#repave-verify-for-existing-repositories) →
 [composite paths](#composite-golden-paths-bundles); operator remote inventory **Phase C**  
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
 correctness and scale fixes that gate hosted multi-user use  
