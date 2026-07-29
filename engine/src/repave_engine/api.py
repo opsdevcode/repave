@@ -92,7 +92,7 @@ from repave_engine.fleet import (
 from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.gates import GateResult, all_gates_passed
-from repave_engine.generate_api import run_generate_api
+from repave_engine.generate_api import generation_result_from_stored_run, run_generate_api
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.governance_preflight import build_blueprint_preflight, build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
@@ -1483,24 +1483,30 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             raise HTTPException(status_code=404, detail="Run not found")
         if record.status != RunStatus.SUCCEEDED:
             raise HTTPException(status_code=400, detail="Run is not complete")
-        inputs_raw = record.payload.get("inputs", {})
-        if not isinstance(inputs_raw, dict):
-            inputs_raw = {}
         blueprint_name = record.blueprint_name
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        values = {str(k): str(v) for k, v in inputs_raw.items()}
         dry_run = record.dry_run
-        require_run = dry_run
-        github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
-        result = generate_from_blueprint(
-            blueprint,
-            values,
-            output_config=resolved_output,
-            dry_run=dry_run,
-            require_run=require_run,
-            github_token=github_token,
+        result = generation_result_from_stored_run(
+            record=record,
             repo_root=repo_root,
+            output_config=resolved_output,
         )
+        if result is None:
+            inputs_raw = record.payload.get("inputs", {})
+            if not isinstance(inputs_raw, dict):
+                inputs_raw = {}
+            values = {str(k): str(v) for k, v in inputs_raw.items()}
+            require_run = dry_run
+            github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
+            result = generate_from_blueprint(
+                blueprint,
+                values,
+                output_config=resolved_output,
+                dry_run=dry_run,
+                require_run=require_run,
+                github_token=github_token,
+                repo_root=repo_root,
+            )
         return templates.TemplateResponse(
             request,
             "result.html",
