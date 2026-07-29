@@ -125,6 +125,7 @@ def _record_operability(
             acting_user=current_acting_user(),
             extra={"duration_seconds": round(elapsed, 3)},
         ),
+        repo_root=catalog_root,
     )
 
 
@@ -370,6 +371,7 @@ def _record_bundle_operability(
                 "bundle_provenance": provenance,
             },
         ),
+        repo_root=catalog_root,
     )
 
 

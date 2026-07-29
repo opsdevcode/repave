@@ -3,11 +3,18 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from repave_engine.sql_store import (
+    DatabaseConfig,
+    SqlConnection,
+    connect,
+    database_config_for_runs_db,
+    ensure_schema,
+)
 
 MAX_EVENTS_PER_RUN = 500
 
@@ -27,47 +34,33 @@ class RunEvent:
 class RunEventStore:
     """Thread-safe persisted event log with in-process wait/notify for SSE."""
 
-    def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
+    def __init__(self, db: Path | DatabaseConfig) -> None:
+        self._config = db if isinstance(db, DatabaseConfig) else database_config_for_runs_db(db)
         self._lock = threading.RLock()
         self._cond = threading.Condition(self._lock)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._init_db()
+        with self._lock, connect(self._config) as conn:
+            ensure_schema(conn)
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._db_path, timeout=30.0)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _init_db(self) -> None:
-        with self._lock, self._connect() as conn:
-            conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS run_events (
-                    run_id TEXT NOT NULL,
-                    seq INTEGER NOT NULL,
-                    kind TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    PRIMARY KEY (run_id, seq)
-                )
-                """
-            )
-            conn.commit()
+    def _connect(self) -> SqlConnection:
+        return connect(self._config)
 
     def append(self, run_id: str, kind: str, payload: dict[str, Any] | None = None) -> RunEvent:
         body = payload if payload is not None else {}
         with self._cond:
             with self._connect() as conn:
-                row = conn.execute(
+                cur = conn.execute(
                     "SELECT COALESCE(MAX(seq), 0) AS mx FROM run_events WHERE run_id = ?",
                     (run_id,),
-                ).fetchone()
-                next_seq = int(row["mx"]) + 1 if row else 1
-                count_row = conn.execute(
+                )
+                row = cur.fetchone()
+                next_seq = int(row["mx"] if isinstance(row, dict) else row[0]) + 1 if row else 1
+                cur = conn.execute(
                     "SELECT COUNT(*) AS c FROM run_events WHERE run_id = ?",
                     (run_id,),
-                ).fetchone()
-                if count_row and int(count_row["c"]) >= MAX_EVENTS_PER_RUN:
+                )
+                count_row = cur.fetchone()
+                count = int(count_row["c"] if isinstance(count_row, dict) else count_row[0])
+                if count >= MAX_EVENTS_PER_RUN:
                     raise RuntimeError(f"run event log full for {run_id}")
                 conn.execute(
                     """
@@ -83,20 +76,24 @@ class RunEventStore:
 
     def list_from(self, run_id: str, *, after_seq: int = 0) -> list[RunEvent]:
         with self._lock, self._connect() as conn:
-            rows = conn.execute(
+            cur = conn.execute(
                 """
                 SELECT seq, kind, payload_json FROM run_events
                 WHERE run_id = ? AND seq > ?
                 ORDER BY seq ASC
                 """,
                 (run_id, after_seq),
-            ).fetchall()
+            )
+            rows = cur.fetchall()
         events: list[RunEvent] = []
         for row in rows:
-            payload = json.loads(row["payload_json"])
+            seq = int(row["seq"] if isinstance(row, dict) else row[0])
+            kind = str(row["kind"] if isinstance(row, dict) else row[1])
+            raw = row["payload_json"] if isinstance(row, dict) else row[2]
+            payload = json.loads(raw)
             if not isinstance(payload, dict):
                 payload = {}
-            events.append(RunEvent(seq=int(row["seq"]), kind=str(row["kind"]), payload=payload))
+            events.append(RunEvent(seq=seq, kind=kind, payload=payload))
         return events
 
     def wait_for_events(
@@ -114,5 +111,5 @@ class RunEventStore:
             return self.list_from(run_id, after_seq=after_seq)
 
 
-def build_run_event_store(db_path: Path) -> RunEventStore:
-    return RunEventStore(db_path)
+def build_run_event_store(db: Path | DatabaseConfig) -> RunEventStore:
+    return RunEventStore(db)

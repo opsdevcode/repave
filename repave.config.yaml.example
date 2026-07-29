@@ -53,14 +53,19 @@ gates:
 #   operator_status_file: ../repave-fleet/operator-status.json
 # Override path: REPAVE_FLEET_FILE, REPAVE_FLEET_OPERATOR_STATUS_FILE
 
-# Optional async generation queue (Phase 1 durability — see docs/durability.md).
+# Optional async generation queue (see docs/durability.md).
 # durability:
 #   async_generation: true
 #   max_concurrent_runs: 2
 #   queue_max_depth: 32
 #   runs_db: data/runs.sqlite
 #   require_session_secret: true
-# Or: REPAVE_ASYNC_GENERATION=1, REPAVE_RUNS_DB=...
+#   # Phase 2: unified SQL for runs, audit, and fleet (JSONL export optional):
+#   database_url: sqlite:///data/repave.sqlite
+#   export_jsonl: true
+#   # Phase 3: API enqueues only; workers run `repave run-worker`:
+#   worker_mode: external
+# Or: REPAVE_ASYNC_GENERATION=1, REPAVE_DATABASE_URL=..., REPAVE_EXTERNAL_WORKERS=1
 
 # Optional OpenTelemetry trace export for pipeline spans (requires `uv sync --extra otel`).
 # tracing:

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.auth_context import reset_acting_user, set_acting_user
+from repave_engine.durability_store import load_durability_store_settings, resolve_runs_database
 from repave_engine.generate_api import run_generate_api
 from repave_engine.metrics import (
     record_run_queue_depth,
@@ -28,6 +29,7 @@ class RunQueueConfig:
     max_concurrent_runs: int = 2
     queue_max_depth: int = 32
     db_path: Path | None = None
+    external_workers: bool = False
 
 
 class RunQueueFullError(RuntimeError):
@@ -55,6 +57,7 @@ class RunQueue:
         self._event_store = event_store
         self._executor = ThreadPoolExecutor(max_workers=config.max_concurrent_runs)
         self._accepting = True
+        self._external_workers = config.external_workers
         self._refresh_metrics()
 
     @property
@@ -121,9 +124,22 @@ class RunQueue:
             acting_user=acting_user,
             client_request_id=client_request_id or None,
         )
-        self._executor.submit(self._run_worker, record.run_id, acting_user)
+        if not self._external_workers:
+            self._executor.submit(self._run_worker, record.run_id, acting_user)
         self._refresh_metrics()
         return record
+
+    def claim_and_process(self) -> bool:
+        """Claim one queued run and execute it (external worker loop)."""
+        record = self._store.claim_next_queued()
+        if record is None:
+            return False
+        self.process_run(record.run_id, record.acting_user)
+        return True
+
+    def process_run(self, run_id: str, acting_user: str) -> None:
+        """Execute one run (external worker / Kubernetes Job entrypoint)."""
+        self._run_worker(run_id, acting_user)
 
     def replay(self, run_id: str) -> RunRecord:
         record = self._store.get(run_id)
@@ -132,7 +148,8 @@ class RunQueue:
         if record.status not in (RunStatus.FAILED, RunStatus.DEAD_LETTER):
             raise ValueError("only failed or dead_letter runs can be replayed")
         self._store.update_status(run_id, RunStatus.QUEUED, result=None, error=None)
-        self._executor.submit(self._run_worker, run_id, record.acting_user)
+        if not self._external_workers:
+            self._executor.submit(self._run_worker, run_id, record.acting_user)
         self._refresh_metrics()
         updated = self._store.get(run_id)
         if updated is None:
@@ -208,13 +225,28 @@ def build_run_queue(
     output_config: OutputConfig,
     config: RunQueueConfig,
 ) -> RunQueue:
+    store_settings = load_durability_store_settings(repo_root)
     db_path = config.db_path or (repo_root / "data" / "runs.sqlite")
-    store = RunStore(db_path)
-    event_store = build_run_event_store(db_path)
+    db_cfg = resolve_runs_database(
+        repo_root,
+        runs_db=db_path,
+        store_settings=store_settings,
+    )
+    external = config.external_workers or (
+        store_settings.external_workers if store_settings is not None else False
+    )
+    queue_config = RunQueueConfig(
+        max_concurrent_runs=config.max_concurrent_runs,
+        queue_max_depth=config.queue_max_depth,
+        db_path=config.db_path,
+        external_workers=external,
+    )
+    store = RunStore(db_cfg)
+    event_store = build_run_event_store(db_cfg)
     return RunQueue(
         repo_root=repo_root,
         output_config=output_config,
         store=store,
-        config=config,
+        config=queue_config,
         event_store=event_store,
     )

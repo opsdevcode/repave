@@ -186,6 +186,7 @@ def cmd_register(args: argparse.Namespace) -> int:
             owner=(args.owner or "").strip(),
             registered_by=current_acting_user(),
         ),
+        repo_root=Path(args.repo_root).resolve(),
     )
     print(json.dumps(entry.to_dict(), indent=2))
     return 0
@@ -193,7 +194,8 @@ def cmd_register(args: argparse.Namespace) -> int:
 
 def cmd_unregister(args: argparse.Namespace) -> int:
     registry = _fleet_registry_path(args)
-    if not unregister_repo(registry, args.repo_url):
+    root = Path(args.repo_root).resolve()
+    if not unregister_repo(registry, args.repo_url, repo_root=root):
         print(f"{args.repo_url} is not registered")
         return 1
     print(f"unregistered {normalize_repo_url(args.repo_url)}")
@@ -202,7 +204,8 @@ def cmd_unregister(args: argparse.Namespace) -> int:
 
 def cmd_fleet(args: argparse.Namespace) -> int:
     registry = _fleet_registry_path(args)
-    entries = read_fleet(registry)
+    root = Path(args.repo_root).resolve()
+    entries = read_fleet(registry, repo_root=root)
 
     if args.format == "json":
         print(json.dumps([entry.to_dict() for entry in entries], indent=2))
@@ -220,7 +223,8 @@ def cmd_fleet(args: argparse.Namespace) -> int:
 
 def cmd_fleet_manifests(args: argparse.Namespace) -> int:
     registry = _fleet_registry_path(args)
-    entries = read_fleet(registry)
+    root = Path(args.repo_root).resolve()
+    entries = read_fleet(registry, repo_root=root)
     if not entries:
         print("No repositories registered; nothing to render.")
         return 0
@@ -487,6 +491,52 @@ def cmd_update(args: argparse.Namespace) -> int:
     if getattr(args, "open_pr", False):
         return _cmd_open_upgrade_pull_request(args)
     return cmd_apply_upgrade(args)
+
+
+def cmd_run_worker(args: argparse.Namespace) -> int:
+    import time
+
+    from repave_engine.run_queue import RunQueueConfig, build_run_queue
+    from repave_engine.run_store import RunStatus
+    from repave_engine.settings import load_durability_config
+
+    repo_root = Path(args.repo_root).resolve()
+    durability = load_durability_config(repo_root)
+    if durability is None:
+        raise SystemExit(
+            "durability.async_generation must be enabled (or REPAVE_ASYNC_GENERATION=1)"
+        )
+
+    output_config = _load_output_config_from_args(args)
+    queue = build_run_queue(
+        repo_root,
+        output_config,
+        RunQueueConfig(
+            max_concurrent_runs=durability.max_concurrent_runs,
+            queue_max_depth=durability.queue_max_depth,
+            db_path=durability.runs_db,
+            external_workers=True,
+        ),
+    )
+    try:
+        if args.run_id:
+            record = queue.get(args.run_id)
+            if record is None:
+                raise SystemExit(f"unknown run_id: {args.run_id}")
+            if record.status == RunStatus.QUEUED:
+                queue._store.update_status(args.run_id, RunStatus.RUNNING)
+            queue.process_run(args.run_id, record.acting_user)
+            return 0
+        while True:
+            if queue.claim_and_process():
+                if args.once:
+                    return 0
+                continue
+            if args.once:
+                return 0
+            time.sleep(args.poll_interval)
+    finally:
+        queue.close(wait=True)
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
@@ -769,6 +819,30 @@ def build_parser() -> argparse.ArgumentParser:
     _add_upgrade_github_pr_options(update)
     _add_preserve_local_option(update)
     update.set_defaults(func=cmd_update)
+
+    run_worker = sub.add_parser(
+        "run-worker",
+        help="Process async generation runs (Phase 3 external worker / Job mode)",
+        parents=[common],
+    )
+    _add_output_options(run_worker)
+    run_worker.add_argument(
+        "--run-id",
+        default="",
+        help="Process a specific run id once (Kubernetes Job target)",
+    )
+    run_worker.add_argument(
+        "--once",
+        action="store_true",
+        help="Exit after processing one run (or when the queue is empty)",
+    )
+    run_worker.add_argument(
+        "--poll-interval",
+        type=float,
+        default=5.0,
+        help="Seconds to wait when polling the queue (default 5)",
+    )
+    run_worker.set_defaults(func=cmd_run_worker)
 
     serve = sub.add_parser("serve", help="Run local web UI/API", parents=[common])
     _add_output_options(serve)

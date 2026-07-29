@@ -137,7 +137,9 @@ def pins_from_repave_file(repo_path: Path) -> dict[str, str]:
     }
 
 
-def append_fleet_event(path: Path, entry: FleetEntry, event: str) -> None:
+def append_fleet_event(
+    path: Path, entry: FleetEntry, event: str, *, repo_root: Path | None = None
+) -> None:
     """Append one register/unregister event. Raises on write failure.
 
     Unlike the audit sink, registry writes are user-initiated commands, so a failure must
@@ -146,14 +148,67 @@ def append_fleet_event(path: Path, entry: FleetEntry, event: str) -> None:
     if event not in (EVENT_REGISTER, EVENT_UNREGISTER):
         raise FleetError(f"unknown fleet event {event!r}")
     payload = entry.to_event(event)
+    line = json.dumps(payload, separators=(",", ":"))
+    if repo_root is not None:
+        from repave_engine.durability_store import load_durability_store_settings
+        from repave_engine.sql_store import append_fleet_event_line, connect, ensure_schema
+
+        settings = load_durability_store_settings(repo_root)
+        if settings is not None:
+            created_at = str(payload.get("timestamp", _now()))
+            try:
+                with connect(settings.database) as conn:
+                    ensure_schema(conn)
+                    append_fleet_event_line(conn, payload, created_at=created_at)
+                    conn.commit()
+            except OSError as exc:
+                raise FleetError(f"fleet registry SQL write failed: {exc}") from exc
+            if settings.export_jsonl:
+                try:
+                    append_jsonl_line(path, line)
+                except OSError as exc:
+                    raise FleetError(f"fleet registry JSONL mirror failed ({path}): {exc}") from exc
+            return
     try:
-        append_jsonl_line(path, json.dumps(payload, separators=(",", ":")))
+        append_jsonl_line(path, line)
     except OSError as exc:
         raise FleetError(f"fleet registry write failed ({path}): {exc}") from exc
 
 
-def read_fleet(path: Path) -> tuple[FleetEntry, ...]:
+def _fold_fleet_payloads(payloads: list[dict[str, Any]]) -> tuple[FleetEntry, ...]:
+    current: dict[str, FleetEntry] = {}
+    for payload in payloads:
+        event = str(payload.get("event", "")).strip()
+        repo_url = str(payload.get("repo_url", "")).strip()
+        if not repo_url:
+            continue
+        if event == EVENT_UNREGISTER:
+            current.pop(repo_url, None)
+            continue
+        if event != EVENT_REGISTER:
+            continue
+        entry = FleetEntry.from_event(payload)
+        if entry is not None:
+            current[repo_url] = entry
+    return tuple(sorted(current.values(), key=lambda item: item.repo_url))
+
+
+def read_fleet(path: Path, *, repo_root: Path | None = None) -> tuple[FleetEntry, ...]:
     """Return currently registered repos, sorted by URL. Never raises."""
+    if repo_root is not None:
+        from repave_engine.durability_store import load_durability_store_settings
+        from repave_engine.sql_store import connect, read_fleet_event_lines
+
+        settings = load_durability_store_settings(repo_root)
+        if settings is not None:
+            try:
+                with connect(settings.database) as conn:
+                    payloads = read_fleet_event_lines(conn)
+            except OSError as exc:
+                logger.warning("Fleet SQL read failed (%s): %s", settings.database, exc)
+            else:
+                return _fold_fleet_payloads(payloads)
+
     if not path.is_file():
         return ()
     try:
@@ -191,7 +246,7 @@ def read_fleet(path: Path) -> tuple[FleetEntry, ...]:
     return tuple(sorted(current.values(), key=lambda item: item.repo_url))
 
 
-def register_repo(path: Path, entry: FleetEntry) -> FleetEntry:
+def register_repo(path: Path, entry: FleetEntry, *, repo_root: Path | None = None) -> FleetEntry:
     """Register (or re-register with new pins) a repository."""
     normalized = replace(
         entry,
@@ -200,18 +255,19 @@ def register_repo(path: Path, entry: FleetEntry) -> FleetEntry:
     )
     if not normalized.blueprint_name:
         raise FleetError("blueprint name is required to register a repository")
-    append_fleet_event(path, normalized, EVENT_REGISTER)
+    append_fleet_event(path, normalized, EVENT_REGISTER, repo_root=repo_root)
     return normalized
 
 
-def unregister_repo(path: Path, repo_url: str) -> bool:
+def unregister_repo(path: Path, repo_url: str, *, repo_root: Path | None = None) -> bool:
     """Remove a repository. Returns False when it was not registered."""
     normalized = normalize_repo_url(repo_url)
-    if not any(item.repo_url == normalized for item in read_fleet(path)):
+    if not any(item.repo_url == normalized for item in read_fleet(path, repo_root=repo_root)):
         return False
     append_fleet_event(
         path,
         FleetEntry(repo_url=normalized, blueprint_name="-", blueprint_version=""),
         EVENT_UNREGISTER,
+        repo_root=repo_root,
     )
     return True
