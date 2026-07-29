@@ -1,0 +1,72 @@
+{{- if and .Values.repave.durability.enabled (eq .Values.repave.durability.workerMode "external") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "repave.fullname" . }}-worker
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: run-worker
+spec:
+  replicas: {{ .Values.repave.durability.workerReplicas | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "repave.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: run-worker
+  template:
+    metadata:
+      labels:
+        {{- include "repave.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: run-worker
+    spec:
+      serviceAccountName: {{ include "repave.serviceAccountName" . }}
+      containers:
+        - name: run-worker
+          image: {{ include "repave.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - repave
+            - run-worker
+            - --repo-root
+            - /app
+            - --poll-interval
+            - {{ .Values.repave.durability.workerPollSeconds | default 5 | quote }}
+          env:
+            - name: REPAVE_ASYNC_GENERATION
+              value: "1"
+            - name: REPAVE_RUNS_DB
+              value: {{ .Values.repave.durability.runsDb | quote }}
+            {{- if .Values.repave.durability.databaseUrl }}
+            - name: REPAVE_DATABASE_URL
+              value: {{ .Values.repave.durability.databaseUrl | quote }}
+            {{- end }}
+            - name: REPAVE_EXTERNAL_WORKERS
+              value: "1"
+            - name: REPAVE_GITHUB_ORG
+              value: {{ .Values.repave.output.githubOrg | quote }}
+            - name: REPAVE_MODULES_ROOT
+              value: {{ .Values.repave.output.modulesRoot | quote }}
+          volumeMounts:
+            - name: config
+              mountPath: /app/repave.config.yaml
+              subPath: repave.config.yaml
+            {{- if .Values.repave.durability.enabled }}
+            - name: runs
+              mountPath: /data/runs
+            {{- end }}
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "repave.fullname" . }}
+        {{- if .Values.repave.durability.enabled }}
+        - name: runs
+          {{- if and .Values.persistence.runs.enabled (not .Values.persistence.runs.existingClaim) }}
+          persistentVolumeClaim:
+            claimName: {{ include "repave.fullname" . }}-runs
+          {{- else if .Values.persistence.runs.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.runs.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+{{- end }}

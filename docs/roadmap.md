@@ -1417,8 +1417,10 @@ status is visible while a run is in flight, and a killed worker's run is replaya
 
 **Status:** **Phase 1 shipped on `main`** — SQLite run store, in-process worker queue,
 `/api/v1/runs` + async `POST /api/v1/generate`, idempotency keys, replay for dead-letter runs,
-metrics — see [`docs/durability.md`](durability.md). Phase 2 (SQL audit/fleet) and Phase 3
-(Kubernetes Job workers) remain open.
+metrics — see [`docs/durability.md`](durability.md). **Phase 2–3 in progress on branch:**
+unified SQL store (`database_url`) for audit/fleet/runs with JSONL export mirrors,
+`repave run-worker` + Helm worker Deployment for external/`REPAVE_EXTERNAL_WORKERS` mode;
+PostgreSQL via optional `repave-engine[postgres]`.
 
 ---
 

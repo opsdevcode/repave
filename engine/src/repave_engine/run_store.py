@@ -12,6 +12,14 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from repave_engine.sql_store import (
+    DatabaseConfig,
+    SqlConnection,
+    connect,
+    database_config_for_runs_db,
+    ensure_schema,
+)
+
 
 class RunStatus(Enum):
     QUEUED = "queued"
@@ -59,40 +67,16 @@ def _now_iso() -> str:
 
 
 class RunStore:
-    """Thread-safe SQLite store for async generation runs."""
+    """Thread-safe store for async generation runs (SQLite or PostgreSQL)."""
 
-    def __init__(self, db_path: Path) -> None:
-        self._db_path = db_path
+    def __init__(self, db: Path | DatabaseConfig) -> None:
+        self._config = db if isinstance(db, DatabaseConfig) else database_config_for_runs_db(db)
         self._lock = threading.RLock()
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        self._init_db()
+        with self._lock, connect(self._config) as conn:
+            ensure_schema(conn)
 
-    def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self._db_path, timeout=30.0)
-        conn.row_factory = sqlite3.Row
-        return conn
-
-    def _init_db(self) -> None:
-        with self._lock, self._connect() as conn:
-            conn.execute(
-                """
-                    CREATE TABLE IF NOT EXISTS runs (
-                        run_id TEXT PRIMARY KEY,
-                        client_request_id TEXT UNIQUE,
-                        status TEXT NOT NULL,
-                        blueprint_name TEXT NOT NULL,
-                        dry_run INTEGER NOT NULL,
-                        acting_user TEXT NOT NULL,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        payload_json TEXT NOT NULL,
-                        result_json TEXT,
-                        error TEXT
-                    )
-                    """
-            )
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status)")
-            conn.commit()
+    def _connect(self) -> SqlConnection:
+        return connect(self._config)
 
     def create_run(
         self,
@@ -134,6 +118,12 @@ class RunStore:
                     if existing is not None:
                         return existing
                 raise exc
+            except Exception as exc:
+                if client_request_id and "unique" in str(exc).lower():
+                    existing = self.get_by_client_request_id(client_request_id)
+                    if existing is not None:
+                        return existing
+                raise
         row = self.get(run_id)
         if row is None:
             raise RuntimeError(f"run row missing immediately after insert: {run_id}")
@@ -141,15 +131,17 @@ class RunStore:
 
     def get(self, run_id: str) -> RunRecord | None:
         with self._lock, self._connect() as conn:
-            row = conn.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,)).fetchone()
+            cur = conn.execute("SELECT * FROM runs WHERE run_id = ?", (run_id,))
+            row = cur.fetchone()
         return _row_to_record(row) if row else None
 
     def get_by_client_request_id(self, client_request_id: str) -> RunRecord | None:
         with self._lock, self._connect() as conn:
-            row = conn.execute(
+            cur = conn.execute(
                 "SELECT * FROM runs WHERE client_request_id = ?",
                 (client_request_id,),
-            ).fetchone()
+            )
+            row = cur.fetchone()
         return _row_to_record(row) if row else None
 
     def update_status(
@@ -173,19 +165,51 @@ class RunStore:
             )
             conn.commit()
 
+    def claim_next_queued(self) -> RunRecord | None:
+        """Atomically move one queued run to running (external worker / Job mode)."""
+        now = _now_iso()
+        with self._lock, self._connect() as conn:
+            if conn.dialect == "sqlite":
+                conn.execute("BEGIN IMMEDIATE")
+            cur = conn.execute(
+                """
+                SELECT run_id FROM runs
+                WHERE status = ?
+                ORDER BY created_at ASC
+                LIMIT 1
+                """,
+                (RunStatus.QUEUED.value,),
+            )
+            row = cur.fetchone()
+            if not row:
+                conn.commit()
+                return None
+            run_id = row["run_id"] if isinstance(row, dict) else row[0]
+            conn.execute(
+                "UPDATE runs SET status = ?, updated_at = ? WHERE run_id = ?",
+                (RunStatus.RUNNING.value, now, run_id),
+            )
+            conn.commit()
+        return self.get(run_id)
+
     def count_by_status(self, *statuses: RunStatus) -> int:
         return sum(self._count_one_status(status) for status in statuses)
 
     def _count_one_status(self, status: RunStatus) -> int:
         with self._lock, self._connect() as conn:
-            row = conn.execute(
+            cur = conn.execute(
                 "SELECT COUNT(*) AS c FROM runs WHERE status = ?",
                 (status.value,),
-            ).fetchone()
-        return int(row["c"]) if row else 0
+            )
+            row = cur.fetchone()
+        if not row:
+            return 0
+        if isinstance(row, dict):
+            return int(row["c"])
+        return int(row[0])
 
 
-def _row_to_record(row: sqlite3.Row) -> RunRecord:
+def _row_to_record(row: Any) -> RunRecord:
     payload = json.loads(row["payload_json"])
     result_raw = row["result_json"]
     result = json.loads(result_raw) if result_raw else None

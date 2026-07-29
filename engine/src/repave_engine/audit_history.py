@@ -48,9 +48,33 @@ class AuditHistoryEntry:
 
 
 def read_recent_audit_entries(
-    path: Path, *, limit: int = _DEFAULT_LIMIT
+    path: Path,
+    *,
+    limit: int = _DEFAULT_LIMIT,
+    repo_root: Path | None = None,
 ) -> tuple[AuditHistoryEntry, ...]:
     """Return the most recent generation records, newest first."""
+    if repo_root is not None:
+        from repave_engine.durability_store import load_durability_store_settings
+        from repave_engine.sql_store import connect, read_audit_events
+
+        settings = load_durability_store_settings(repo_root)
+        if settings is not None:
+            try:
+                with connect(settings.database) as conn:
+                    payloads = read_audit_events(conn, limit=limit)
+            except OSError as exc:
+                logger.warning("Audit SQL read failed: %s", exc)
+            else:
+                entries: list[AuditHistoryEntry] = []
+                for payload in payloads:
+                    entry = AuditHistoryEntry.from_dict(payload)
+                    if entry is not None:
+                        entries.append(entry)
+                    if len(entries) >= limit:
+                        break
+                return tuple(entries)
+
     if limit <= 0 or not path.is_file():
         return ()
     try:
@@ -75,7 +99,7 @@ def read_recent_audit_entries(
         logger.warning("Audit history read failed (%s): %s", path, exc)
         return ()
 
-    entries: list[AuditHistoryEntry] = []
+    file_entries: list[AuditHistoryEntry] = []
     for line in reversed(lines):
         try:
             payload = json.loads(line)
@@ -86,7 +110,7 @@ def read_recent_audit_entries(
         entry = AuditHistoryEntry.from_dict(payload)
         if entry is None:
             continue
-        entries.append(entry)
-        if len(entries) >= limit:
+        file_entries.append(entry)
+        if len(file_entries) >= limit:
             break
-    return tuple(entries)
+    return tuple(file_entries)

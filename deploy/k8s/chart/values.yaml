@@ -109,6 +109,11 @@ repave:
     queueMaxDepth: 32
     runsDb: /data/runs/runs.sqlite
     requireSessionSecret: false
+    databaseUrl: ""
+    exportJsonl: true
+    workerMode: inline
+    workerReplicas: 1
+    workerPollSeconds: 5
   auth:
     serviceMode: false
     oidc:

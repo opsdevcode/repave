@@ -362,7 +362,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             return ()
         if audit_cfg is None or not audit_cfg.enabled:
             return ()
-        return read_recent_audit_entries(audit_cfg.file, limit=limit)
+        return read_recent_audit_entries(audit_cfg.file, limit=limit, repo_root=repo_root)
 
     def audit_portal_enabled() -> bool:
         try:
@@ -477,7 +477,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         operator_by: dict[str, FleetOperatorStatus] = {}
         gitops_namespace = "default"
         if enabled and fleet_cfg is not None:
-            entries = read_fleet(fleet_cfg.file)
+            entries = read_fleet(fleet_cfg.file, repo_root=repo_root)
             gitops_namespace = fleet_cfg.gitops_namespace
             if fleet_cfg.operator_status_file is not None:
                 operator_by = load_operator_status_file(fleet_cfg.operator_status_file)
@@ -1390,7 +1390,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 status_code=404,
                 detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
             )
-        entries = read_fleet(fleet_cfg.file)
+        entries = read_fleet(fleet_cfg.file, repo_root=repo_root)
         operator_by = (
             load_operator_status_file(fleet_cfg.operator_status_file)
             if fleet_cfg.operator_status_file is not None
@@ -1439,6 +1439,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     owner=str(payload.get("owner", "")).strip(),
                     registered_by=current_acting_user(),
                 ),
+                repo_root=repo_root,
             )
         except FleetError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -1452,7 +1453,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if not repo_url.strip():
             raise HTTPException(status_code=400, detail="repo_url query parameter is required")
         try:
-            removed = unregister_repo(fleet_registry_path(), repo_url)
+            removed = unregister_repo(fleet_registry_path(), repo_url, repo_root=repo_root)
         except FleetError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         if not removed:
