@@ -1,5 +1,5 @@
 # Default values for the repave portal/API chart.
-# Build the engine image from deploy/local/Dockerfile (includes gate toolchain for dry-run).
+# Build from deploy/local/Dockerfile (INSTALL_GATE_TOOLCHAIN=1 by default).
 
 replicaCount: 1
 
@@ -7,6 +7,9 @@ image:
   repository: ghcr.io/opsdevcode/repave-engine
   tag: "" # defaults to Chart.appVersion
   pullPolicy: IfNotPresent
+  # true: image built with INSTALL_GATE_TOOLCHAIN=1 (Plan/dry-run runs real gates).
+  # false: portal-only image (INSTALL_GATE_TOOLCHAIN=0); set repository/tag to that build.
+  gateToolchain: true
 
 nameOverride: ""
 fullnameOverride: ""

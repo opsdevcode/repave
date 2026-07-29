@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # kind smoke: build engine image, helm install chart, curl /health and catalog.
-# Non-blocking in CI by default; run locally via: make chart-smoke
+# CI: .github/workflows/chart.yml (required check; path-gated skip on unrelated PRs).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -9,6 +9,7 @@ CLUSTER_NAME="${KIND_CLUSTER_NAME:-repave-chart-smoke}"
 NS="${CHART_SMOKE_NAMESPACE:-repave-smoke}"
 IMG_REPO="${CHART_SMOKE_IMAGE_REPO:-repave-engine}"
 IMG_TAG="${CHART_SMOKE_IMAGE_TAG:-chart-smoke}"
+INSTALL_GATE_TOOLCHAIN="${CHART_SMOKE_INSTALL_GATE_TOOLCHAIN:-1}"
 TIMEOUT="${CHART_SMOKE_TIMEOUT:-240}"
 
 if ! command -v kind >/dev/null 2>&1; then
@@ -37,8 +38,10 @@ echo "==> kind cluster ${CLUSTER_NAME}"
 kind delete cluster --name "${CLUSTER_NAME}" >/dev/null 2>&1 || true
 kind create cluster --name "${CLUSTER_NAME}"
 
-echo "==> docker build ${IMG_REPO}:${IMG_TAG}"
-docker build -f "${ROOT}/deploy/local/Dockerfile" -t "${IMG_REPO}:${IMG_TAG}" "${ROOT}"
+echo "==> docker build ${IMG_REPO}:${IMG_TAG} (INSTALL_GATE_TOOLCHAIN=${INSTALL_GATE_TOOLCHAIN})"
+docker build -f "${ROOT}/deploy/local/Dockerfile" \
+  --build-arg "INSTALL_GATE_TOOLCHAIN=${INSTALL_GATE_TOOLCHAIN}" \
+  -t "${IMG_REPO}:${IMG_TAG}" "${ROOT}"
 
 echo "==> kind load image"
 kind load docker-image "${IMG_REPO}:${IMG_TAG}" --name "${CLUSTER_NAME}"

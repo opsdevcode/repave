@@ -1,0 +1,32 @@
+name: Detect Helm chart CI paths
+description: >-
+  True when changes can affect chart render, portal image, or chart-smoke.
+  Workflow runs on every PR so required checks can skip heavy steps when false.
+outputs:
+  chart_needed:
+    description: Run chart validate/smoke when true
+    value: ${{ steps.filter.outputs.chart_needed }}
+runs:
+  using: composite
+  steps:
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        predicate-quantifier: every
+        filters: |
+          chart_needed:
+            - 'deploy/k8s/**'
+            - 'deploy/local/Dockerfile'
+            - 'deploy/local/gate-toolchain-pins.env'
+            - 'deploy/local/install-gate-toolchain.sh'
+            - 'deploy/local/certs/**'
+            - 'engine/pyproject.toml'
+            - 'engine/uv.lock'
+            - 'engine/src/**'
+            - 'schemas/**'
+            - 'blueprints/**'
+            - 'standards/**'
+            - 'policy/**'
+            - 'ansible/requirements-gate-collections.yml'
+            - '.github/workflows/chart.yml'
+            - '.github/actions/chart-ci-paths/**'

@@ -18,6 +18,7 @@ spec:
         {{- end }}
       labels:
         {{- include "repave.selectorLabels" . | nindent 8 }}
+        repave.dev/gate-toolchain: {{ ternary "true" "false" .Values.image.gateToolchain | quote }}
     spec:
       serviceAccountName: {{ include "repave.serviceAccountName" . }}
       {{- with .Values.podSecurityContext }}
@@ -42,6 +43,8 @@ spec:
               containerPort: 8088
               protocol: TCP
           env:
+            - name: REPAVE_IMAGE_GATE_TOOLCHAIN
+              value: {{ ternary "1" "0" .Values.image.gateToolchain | quote }}
             - name: REPAVE_ENV
               value: {{ .Values.repave.env | quote }}
             - name: REPAVE_GITHUB_ORG

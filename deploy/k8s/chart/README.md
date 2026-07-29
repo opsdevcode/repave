@@ -1,8 +1,15 @@
 # repave Helm chart
 
-Install the repave **portal and API** on Kubernetes. The container image is built from
-[`deploy/local/Dockerfile`](../../local/Dockerfile) (Python engine plus gate toolchain for
-dry-run generation).
+Install the repave **portal and API** on Kubernetes. Images build from
+[`deploy/local/Dockerfile`](../../local/Dockerfile):
+
+| Variant | Build | Helm |
+| --- | --- | --- |
+| **Gate toolchain** (default) | `docker build -f deploy/local/Dockerfile -t repave-engine:TAG .` | `image.gateToolchain: true` (default) |
+| **Portal-only** | `docker build -f deploy/local/Dockerfile --build-arg INSTALL_GATE_TOOLCHAIN=0 -t repave-engine-portal:TAG .` | `-f values-portal.yaml` or `image.gateToolchain: false` |
+
+The gate-toolchain image includes pinned CLIs for Plan/dry-run. The portal-only image
+is smaller and suits catalog/auth-only deployments; dry-run gates report missing tools.
 
 ## Prerequisites
 
@@ -123,8 +130,8 @@ live in [`deploy/k8s/`](../README.md) (parent directory).
 ## Validation
 
 ```bash
-make chart-validate    # helm lint + template smoke
-make chart-smoke       # kind install (optional; requires docker + kind + helm)
+make chart-validate    # helm lint + template smoke (CI: chart-validate)
+make chart-smoke       # kind install (CI: chart-smoke on chart/image paths)
 ```
 
 ## Scaling

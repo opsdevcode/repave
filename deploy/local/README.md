@@ -30,6 +30,7 @@ below. Prefix a command (`VAR=value docker compose up --build`) or put the same 
 | `UV_SOURCE` | **build** | `registry` | `registry` copies pinned **uv** from `ghcr.io`; use `pip` when that registry is blocked. |
 | `REPAVE_TLS_INSECURE` | **build** | `0` | `1` disables TLS verification for toolchain downloads (last resort). |
 | `INSTALL_ANSIBLE_COLLECTIONS` | **build** | `1` | `0` skips `ansible-galaxy collection install` (offline builds). |
+| `INSTALL_GATE_TOOLCHAIN` | **build** | `1` | `0` skips gate CLIs (portal-only Kubernetes image; see `deploy/k8s/chart/values-portal.yaml`). |
 | `GITHUB_TOKEN` | **runtime** | *(empty)* | GitHub PAT for portal **publish** (create/push module repos). |
 | *(files)* [`certs/*.crt`](certs/) | **build** | *(none)* | Corporate root CA PEM files; trusted during the image build. |
 

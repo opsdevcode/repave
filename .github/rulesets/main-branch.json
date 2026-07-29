@@ -36,7 +36,9 @@
           {"context": "commitlint"},
           {"context": "semantic-pull-request"},
           {"context": "operator-test"},
-          {"context": "operator-e2e"}
+          {"context": "operator-e2e"},
+          {"context": "chart-validate"},
+          {"context": "chart-smoke"}
         ]
       }
     },

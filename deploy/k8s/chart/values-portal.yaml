@@ -1,0 +1,16 @@
+# Portal-only image (no gate CLIs). Build:
+#   docker build -f deploy/local/Dockerfile \
+#     --build-arg INSTALL_GATE_TOOLCHAIN=0 \
+#     -t ghcr.io/your-org/repave-engine-portal:TAG .
+
+image:
+  gateToolchain: false
+  repository: ghcr.io/opsdevcode/repave-engine-portal
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

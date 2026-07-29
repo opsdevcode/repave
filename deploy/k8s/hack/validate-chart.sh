@@ -35,4 +35,23 @@ if ! grep -q 'path: /health' "${rendered}" || ! grep -q 'path: /readyz' "${rende
   exit 1
 fi
 
+if ! grep -q 'name: REPAVE_IMAGE_GATE_TOOLCHAIN' "${rendered}"; then
+  echo "deployment must set REPAVE_IMAGE_GATE_TOOLCHAIN" >&2
+  exit 1
+fi
+
+portal_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}"' EXIT
+
+helm template repave-portal "${CHART}" \
+  --namespace repave-portal \
+  -f "${CHART}/values-portal.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${portal_rendered}"
+
+if ! grep -q 'repave.dev/gate-toolchain: "false"' "${portal_rendered}"; then
+  echo "values-portal.yaml must render gate-toolchain: false label" >&2
+  exit 1
+fi
+
 echo "helm lint and template checks passed"
