@@ -12,7 +12,7 @@ from typing import Any
 
 import yaml
 
-from repave_engine.blueprint import load_blueprint
+from repave_engine.blueprint import blueprints_dir, load_blueprint
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig
 
@@ -63,7 +63,7 @@ class ConformanceResult:
 
 
 def blueprint_dirs(repo_root: Path) -> tuple[Path, ...]:
-    root = repo_root / "blueprints"
+    root = blueprints_dir(repo_root)
     return tuple(
         sorted(
             path for path in root.iterdir() if path.is_dir() and (path / "blueprint.yaml").is_file()

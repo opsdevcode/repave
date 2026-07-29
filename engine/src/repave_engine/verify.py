@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.artifact_blueprint import blueprint_from_repave_file
-from repave_engine.blueprint import Blueprint, load_blueprint
+from repave_engine.blueprint import Blueprint, blueprint_dir, blueprints_dir, load_blueprint
 from repave_engine.fleet import normalize_repo_url
 from repave_engine.gate_registry import GateResult
 from repave_engine.gates import all_gates_passed, run_gates
@@ -119,9 +119,9 @@ def verify_repository(
             "repave.yaml is missing; pass --blueprint to select a catalog golden path"
         )
 
-    catalog_path = repo_root / "blueprints" / resolved_name
+    catalog_path = blueprint_dir(repo_root, resolved_name)
     if not catalog_path.is_dir():
-        raise VerifyError(f"unknown blueprint {resolved_name!r} under {repo_root / 'blueprints'}")
+        raise VerifyError(f"unknown blueprint {resolved_name!r} under {blueprints_dir(repo_root)}")
 
     catalog_blueprint = load_blueprint(catalog_path, repo_root)
     if provenance_present:

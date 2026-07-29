@@ -5,26 +5,19 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from repave_engine.blueprint import Blueprint, load_blueprint, primary_publish_name, validate_inputs
-from repave_engine.gates import GateResult, RunEventCallback, all_gates_passed
+from repave_engine.blueprint import (
+    Blueprint,
+    blueprint_dir,
+    load_blueprint,
+    primary_publish_name,
+    validate_inputs,
+)
+from repave_engine.gates import GateResult, RunEventCallback, all_gates_passed, gate_outcome
 from repave_engine.pipeline import GenerationResult, generate_from_blueprint
 from repave_engine.render import RenderResult, collect_rendered_files
 from repave_engine.run_store import RunRecord
 from repave_engine.settings import OutputConfig, load_gate_overrides
 from repave_engine.target_repo import resolve_module_repository
-
-
-def gate_outcome(gates: list[GateResult]) -> str:
-    failed = sum(1 for gate in gates if not gate.passed and not gate.skipped)
-    if failed:
-        return "failed"
-    if gates and all(gate.passed or gate.skipped for gate in gates):
-        return "passed"
-    return "empty"
-
-
-def _blueprint_path(repo_root: Path, blueprint_name: str) -> Path:
-    return repo_root / "blueprints" / blueprint_name
 
 
 def async_run_artifact_dir(repo_root: Path, run_id: str) -> Path:
@@ -43,7 +36,7 @@ def run_generate_api(
     on_event: RunEventCallback | None = None,
     staging_root: Path | None = None,
 ) -> dict[str, Any]:
-    blueprint = load_blueprint(_blueprint_path(repo_root, blueprint_name), repo_root)
+    blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
     values = {str(key): str(value) for key, value in inputs.items()}
     result = generate_from_blueprint(
         blueprint,
@@ -134,7 +127,7 @@ def generation_result_from_stored_run(
     if not isinstance(gates_raw, list) or not gates_raw:
         return None
 
-    blueprint = load_blueprint(_blueprint_path(repo_root, record.blueprint_name), repo_root)
+    blueprint = load_blueprint(blueprint_dir(repo_root, record.blueprint_name), repo_root)
     inputs_raw = record.payload.get("inputs", {})
     if not isinstance(inputs_raw, dict):
         inputs_raw = {}

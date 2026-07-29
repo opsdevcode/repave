@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine import __version__
-from repave_engine.blueprint import load_blueprint, primary_publish_name
+from repave_engine.blueprint import blueprint_dir, load_blueprint, primary_publish_name
 from repave_engine.bundle import (
     Bundle,
     build_bundle_context,
@@ -43,7 +43,7 @@ def bundle_member_previews(
     context = build_bundle_context(shared, github_org=output_config.github_org)
     previews: list[BundleMemberPreview] = []
     for member in bundle.members:
-        blueprint = load_blueprint(repo_root / "blueprints" / member.blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, member.blueprint_name), repo_root)
         mapped = map_member_inputs(member, context)
         module_name = primary_publish_name(blueprint, mapped)
         repository = resolve_module_repository(

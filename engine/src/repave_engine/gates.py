@@ -36,6 +36,8 @@ __all__ = [
     "build_checkov_command",
     "build_secrets_scan_command",
     "clean_gate_artifacts",
+    "gate_outcome",
+    "gate_summary",
     "is_gate_artifact_path",
     "run_checkov",
     "run_docs_drift",
@@ -164,6 +166,34 @@ def run_gates(
 
 def all_gates_passed(results: list[GateResult]) -> bool:
     return all(r.passed or r.skipped for r in results)
+
+
+def _gate_counts(gates: list[GateResult]) -> tuple[int, int, int]:
+    passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
+    failed = sum(1 for gate in gates if not gate.passed and not gate.skipped)
+    skipped = sum(1 for gate in gates if gate.skipped)
+    return passed, failed, skipped
+
+
+def gate_outcome(gates: list[GateResult]) -> str:
+    """Aggregate outcome for audit, metrics, and API (`passed` | `failed` | `empty`)."""
+    _, failed, _ = _gate_counts(gates)
+    if failed:
+        return "failed"
+    if gates and all(gate.passed or gate.skipped for gate in gates):
+        return "passed"
+    return "empty"
+
+
+def gate_summary(gates: list[GateResult]) -> dict[str, int | str]:
+    """Counts plus outcome for portal result templates."""
+    passed, failed, skipped = _gate_counts(gates)
+    return {
+        "passed": passed,
+        "failed": failed,
+        "skipped": skipped,
+        "outcome": gate_outcome(gates),
+    }
 
 
 def clean_gate_artifacts(output_dir: Path, *, artifact_type: str = "terraform-module") -> None:

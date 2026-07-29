@@ -14,6 +14,8 @@ from repave_engine.blueprint import (
     Blueprint,
     InputField,
     _find_repo_root,
+    blueprint_dir,
+    bundles_dir,
     load_blueprint,
     validate_inputs,
 )
@@ -38,7 +40,7 @@ class Bundle:
 
 
 def _bundles_dir(repo_root: Path) -> Path:
-    return repo_root / "blueprints" / "bundles"
+    return bundles_dir(repo_root)
 
 
 def _bundle_schema_path(repo_root: Path) -> Path:
@@ -167,8 +169,8 @@ def resolve_member_blueprint(
     repo_root: Path,
     member: BundleMember,
 ) -> Blueprint:
-    blueprint_dir = repo_root / "blueprints" / member.blueprint_name
-    return load_blueprint(blueprint_dir, repo_root)
+    path = blueprint_dir(repo_root, member.blueprint_name)
+    return load_blueprint(path, repo_root)
 
 
 def prepare_member_values(
