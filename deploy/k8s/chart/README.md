@@ -75,6 +75,17 @@ Probes use `GET /health` (liveness), `GET /readyz` (readiness), and an optional
 run state — see roadmap **durability and concurrency** before enabling `autoscaling` in
 production.
 
+| `shutdown.drainSeconds` | Async run drain before exit (`REPAVE_SHUTDOWN_DRAIN_SECONDS`) |
+| `shutdown.readyRequireGithub` | Fail `/readyz` when GitHub API unreachable (publish clusters) |
+| `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
+| `persistence.runs` | PVC for `/data/runs` (use `emptyDir` when `enabled: false`) |
+
+**Graceful shutdown:** SIGTERM sets `/readyz` to 503, stops new async submits, drains the queue
+for `shutdown.drainSeconds`, then exits. Pair with `terminationGracePeriodSeconds` and
+`lifecycle.preStop`.
+
+See [upgrade and rollback](../../../docs/operations/upgrade-and-rollback.md) for release steps.
+
 Example HPA (after durability or for portal-only read paths):
 
 ```bash

@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import secrets
+import signal
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -99,8 +101,15 @@ from repave_engine.policy_selection import (
 )
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.readiness import evaluate_readiness
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
-from repave_engine.run_queue import RunQueue, RunQueueConfig, RunQueueFullError, build_run_queue
+from repave_engine.run_queue import (
+    RunQueue,
+    RunQueueConfig,
+    RunQueueFullError,
+    RunQueueShuttingDownError,
+    build_run_queue,
+)
 from repave_engine.run_store import RunStatus
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
@@ -208,13 +217,42 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        app.state.shutting_down = False
+        logger = logging.getLogger(__name__)
+
+        def on_sigterm(signum: int, _frame: object) -> None:
+            app.state.shutting_down = True
+            queue = getattr(app.state, "run_queue", None)
+            if queue is not None:
+                queue.stop_accepting()
+
+        if hasattr(signal, "SIGTERM"):
+            signal.signal(signal.SIGTERM, on_sigterm)
+
         yield
+
+        app.state.shutting_down = True
         queue = getattr(app.state, "run_queue", None)
         if queue is not None:
-            queue.close()
+            queue.stop_accepting()
+            drain_raw = os.environ.get("REPAVE_SHUTDOWN_DRAIN_SECONDS", "105").strip()
+            try:
+                drain_seconds = float(drain_raw)
+            except ValueError:
+                drain_seconds = 105.0
+            if drain_seconds > 0:
+                drained = queue.drain(drain_seconds)
+                if not drained:
+                    logger.warning(
+                        "run queue still has %s in-flight jobs after %.0fs drain",
+                        queue.queue_depth(),
+                        drain_seconds,
+                    )
+            queue.close(wait=True)
 
     app = FastAPI(title="repave", version=__version__, lifespan=lifespan)
     app.state.run_queue = run_queue
+    app.state.shutting_down = False
 
     configure_tracing(load_tracing_config(repo_root))
 
@@ -822,6 +860,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 )
             except RunQueueFullError:
                 pass
+            except RunQueueShuttingDownError:
+                pass
             else:
                 return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
 
@@ -861,23 +901,23 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
     @app.get("/readyz")
-    async def readyz() -> dict[str, object]:
+    async def readyz() -> JSONResponse:
         token_ok = bool(os.environ.get("GITHUB_TOKEN", "").strip())
-        payload: dict[str, object] = {
-            "status": "ready",
-            "config_loaded": True,
-            "github_token_configured": token_ok,
-        }
-        if os.environ.get("REPAVE_ENV") == "local":
-            from repave_engine.gate_toolchain import gate_tool_status, portal_runtime_info
-
-            payload["gate_tools"] = gate_tool_status()
-            payload["runtime"] = portal_runtime_info()
         queue = getattr(app.state, "run_queue", None)
-        if queue is not None:
-            payload["async_generation"] = True
-            payload["run_queue_inflight"] = queue.queue_depth()
-        return payload
+        runs_db = durability_config.runs_db if durability_config is not None else None
+        report = evaluate_readiness(
+            modules_root=resolved_output.modules_root,
+            runs_db=runs_db,
+            shutting_down=bool(getattr(app.state, "shutting_down", False)),
+            auth_service_enabled=auth_config is not None and auth_config.service_enabled,
+            require_session_secret=(
+                durability_config.require_session_secret if durability_config else False
+            ),
+            github_token_configured=token_ok,
+            run_queue_depth=queue.queue_depth() if queue is not None else None,
+        )
+        status_code = 200 if report.ready else 503
+        return JSONResponse(report.to_payload(), status_code=status_code)
 
     @app.get("/auth/login")
     async def auth_login(request: Request) -> RedirectResponse:
@@ -940,6 +980,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 )
             except RunQueueFullError as exc:
                 raise HTTPException(status_code=429, detail=str(exc)) from exc
+            except RunQueueShuttingDownError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
             return JSONResponse(
                 record.to_public_dict(),
                 status_code=202 if record.status.value == "queued" else 200,
@@ -993,6 +1035,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         except RunQueueFullError as exc:
             raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         return JSONResponse(record.to_public_dict(), status_code=202)
 
     @app.get("/api/v1/runs/{run_id}")

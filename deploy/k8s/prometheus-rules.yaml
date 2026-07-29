@@ -24,6 +24,25 @@ spec:
             summary: Repave generation failure rate above 25%
             runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
 
+        - alert: RepaveRunQueueBacklogHigh
+          expr: repave_run_queue_inflight >= 28
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Repave async run queue depth is high
+            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#scale-out
+
+        - alert: RepaveAsyncRunDeadLetterRate
+          expr: |
+            sum(rate(repave_async_runs_total{outcome="dead_letter"}[15m])) > 0.05
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: Repave async runs entering dead letter
+            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
+
         - alert: RepaveGenerationLatencyHigh
           expr: |
             histogram_quantile(

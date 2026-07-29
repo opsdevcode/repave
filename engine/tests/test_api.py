@@ -1023,6 +1023,7 @@ def test_readyz(repo_root, output_config) -> None:
     payload = response.json()
     assert payload["status"] == "ready"
     assert payload["config_loaded"] is True
+    assert payload["checks"]["modules_root_writable"] is True
 
 
 @pytest.mark.slow

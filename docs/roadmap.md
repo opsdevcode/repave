@@ -6,11 +6,10 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.86.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
-**Next up:** [day-2 operability](#service-health-resource-management-and-autoscaling)
-on the Helm chart (HPA, alerts, runbooks). **Engine hardening**
-(A3 operator-e2e required check; A5/A6 docs and traces shipped) continues alongside features.
-**Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) — A1/A2/A4 landed on this line;
-operator remote inventory **Phase C** (remediation from clone) shipped with it.  
+**Next up:** [durability Phase 2](#durability-and-concurrency-for-hosted-use) (SQL audit/fleet)
+and [portal live governance](#portal-live-governance-surfaces) items 3–8. **Day-2 operability**
+(v1.35–v1.38) is **shipped** — see [Shipped — day-2](#day-2-operability-shipped).
+**Engine hardening** (A1/A2/A4) continues alongside features.  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -827,6 +826,19 @@ engine-written `catalog-info.yaml`).
 
 ---
 
+### Day-2 operability (shipped)
+
+Engine and chart work for v1.35–v1.38:
+
+- **Service health** — [`readiness.py`](../engine/src/repave_engine/readiness.py),
+  `/readyz` 503 with `checks`, queue drain via `REPAVE_SHUTDOWN_DRAIN_SECONDS`
+- **Alerts** — [`deploy/k8s/prometheus-rules.yaml`](../deploy/k8s/prometheus-rules.yaml)
+  (failure rate, latency, queue backlog, dead letter)
+- **Upgrade/rollback** — [`docs/operations/upgrade-and-rollback.md`](operations/upgrade-and-rollback.md)
+- **Runbooks** — [`docs/operations/README.md`](operations/README.md)
+
+---
+
 ### Service health, resource management, and autoscaling
 
 *Planning label: v1.35 (roadmap numbering only).*
@@ -852,10 +864,7 @@ cannot run it reliably or plan capacity.
 **Done when:** Draining a node or scaling replicas drops no in-flight requests; the
 HPA scales under load; probes gate traffic correctly.
 
-**Status:** **Partial on `main`** — chart wires liveness/readiness/startup probes, resource
-defaults, HPA, PDB, rolling strategy, and graceful termination; [`docs/operations/README.md`](operations/README.md)
-covers drain/scale runbooks. Remaining: deeper `/readyz` downstream checks and queue drain on
-SIGTERM when async runs ship.
+**Status:** **Shipped on `main`** — see [Day-2 operability (shipped)](#day-2-operability-shipped).
 
 ---
 
@@ -881,8 +890,8 @@ dashboards to detect and triage problems.
 **Done when:** Alerts fire in a test cluster on induced failures, and the dashboard
 shows throughput, success rate, and per-stage latency.
 
-**Status:** Starter pack on `main` (`deploy/k8s/prometheus-rules.yaml`,
-`grafana-dashboard-repave.json`, [`docs/operations/README.md`](operations/README.md)).
+**Status:** **Shipped on `main`** — starter pack plus queue/dead-letter alerts; see
+[Day-2 operability (shipped)](#day-2-operability-shipped).
 
 ---
 
@@ -910,6 +919,8 @@ service; upgrades risk dropping requests or breaking on config/schema changes.
 **Done when:** An upgrade and a rollback complete with no dropped requests in a test
 cluster, following the documented steps.
 
+**Status:** **Shipped on `main`** — [`docs/operations/upgrade-and-rollback.md`](operations/upgrade-and-rollback.md).
+
 ---
 
 ### Operations runbooks and troubleshooting
@@ -934,6 +945,8 @@ v1.27 auth.
 
 **Done when:** Each shipped alert links to a runbook step, and the runbook covers the
 top failure modes with concrete commands.
+
+**Status:** **Shipped on `main`** — [`docs/operations/README.md`](operations/README.md).
 
 ---
 

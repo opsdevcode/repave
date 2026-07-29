@@ -43,3 +43,11 @@ data:
           generator:
 {{ toYaml .Values.repave.auth.oidc.roles.generator | indent 12 }}
     {{- end }}
+    {{- if .Values.repave.durability.enabled }}
+    durability:
+      async_generation: true
+      max_concurrent_runs: {{ .Values.repave.durability.maxConcurrentRuns }}
+      queue_max_depth: {{ .Values.repave.durability.queueMaxDepth }}
+      runs_db: {{ .Values.repave.durability.runsDb | quote }}
+      require_session_secret: {{ .Values.repave.durability.requireSessionSecret }}
+    {{- end }}

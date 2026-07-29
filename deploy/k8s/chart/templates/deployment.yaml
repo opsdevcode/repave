@@ -57,6 +57,18 @@ spec:
               value: {{ ternary "1" "0" .Values.image.gateToolchain | quote }}
             - name: REPAVE_ENV
               value: {{ .Values.repave.env | quote }}
+            {{- if .Values.repave.durability.enabled }}
+            - name: REPAVE_ASYNC_GENERATION
+              value: "1"
+            - name: REPAVE_RUNS_DB
+              value: {{ .Values.repave.durability.runsDb | quote }}
+            {{- end }}
+            - name: REPAVE_SHUTDOWN_DRAIN_SECONDS
+              value: {{ .Values.shutdown.drainSeconds | quote }}
+            {{- if .Values.shutdown.readyRequireGithub }}
+            - name: REPAVE_READY_REQUIRE_GITHUB
+              value: "1"
+            {{- end }}
             - name: REPAVE_GITHUB_ORG
               value: {{ .Values.repave.output.githubOrg | quote }}
             - name: REPAVE_MODULES_ROOT
@@ -148,6 +160,10 @@ spec:
             - name: fleet
               mountPath: /data/fleet
             {{- end }}
+            {{- if .Values.repave.durability.enabled }}
+            - name: runs
+              mountPath: /data/runs
+            {{- end }}
       volumes:
         - name: config
           configMap:
@@ -182,6 +198,18 @@ spec:
           {{- else if .Values.persistence.fleet.existingClaim }}
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.fleet.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.repave.durability.enabled }}
+        - name: runs
+          {{- if and .Values.persistence.runs.enabled (not .Values.persistence.runs.existingClaim) }}
+          persistentVolumeClaim:
+            claimName: {{ include "repave.fullname" . }}-runs
+          {{- else if .Values.persistence.runs.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.runs.existingClaim }}
           {{- else }}
           emptyDir: {}
           {{- end }}

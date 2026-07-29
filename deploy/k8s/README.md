@@ -14,7 +14,8 @@ into your overlay.
 Health endpoints on the engine:
 
 - `GET /health` — liveness
-- `GET /readyz` — readiness (config loaded; reports `GITHUB_TOKEN` presence)
+- `GET /readyz` — readiness (`checks`: writable paths, gate tools when `REPAVE_IMAGE_GATE_TOOLCHAIN=1`,
+  optional GitHub API, fails with 503 while draining for shutdown)
 - `GET /metrics` — Prometheus scrape target
 
 Enable service-mode auth and OIDC before exposing the portal on a shared cluster.

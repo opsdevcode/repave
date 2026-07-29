@@ -51,3 +51,21 @@ spec:
   storageClassName: {{ .Values.persistence.fleet.storageClass | quote }}
   {{- end }}
 {{- end }}
+---
+{{- if and .Values.repave.durability.enabled .Values.persistence.runs.enabled (not .Values.persistence.runs.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "repave.fullname" . }}-runs
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.runs.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.runs.size }}
+  {{- if .Values.persistence.runs.storageClass }}
+  storageClassName: {{ .Values.persistence.runs.storageClass | quote }}
+  {{- end }}
+{{- end }}
