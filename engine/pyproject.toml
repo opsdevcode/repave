@@ -42,6 +42,9 @@ otel = [
 postgres = [
   "psycopg[binary]>=3.2",
 ]
+s3 = [
+  "boto3>=1.34",
+]
 
 [project.scripts]
 repave = "repave_engine.cli:main"
@@ -100,7 +103,7 @@ mypy_path = ["src"]
 packages = ["repave_engine"]
 
 [[tool.mypy.overrides]]
-module = ["copier.*", "jsonschema.*", "opentelemetry.*"]
+module = ["copier.*", "jsonschema.*", "opentelemetry.*", "boto3.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

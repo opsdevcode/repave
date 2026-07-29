@@ -17,12 +17,17 @@ spec:
       labels:
         {{- include "repave.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: run-worker
+        repave.dev/gate-toolchain: "true"
     spec:
       serviceAccountName: {{ include "repave.serviceAccountName" . }}
+      {{- if .Values.corpus.enabled }}
+      initContainers:
+        {{- include "repave.corpusInitContainer" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: run-worker
-          image: {{ include "repave.image" . }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: {{ include "repave.workerImage" . }}
+          imagePullPolicy: {{ default .Values.image.pullPolicy .Values.workerImage.pullPolicy }}
           command:
             - repave
             - run-worker
@@ -31,6 +36,8 @@ spec:
             - --poll-interval
             - {{ .Values.repave.durability.workerPollSeconds | default 5 | quote }}
           env:
+            - name: REPAVE_IMAGE_GATE_TOOLCHAIN
+              value: "1"
             - name: REPAVE_ASYNC_GENERATION
               value: "1"
             - name: REPAVE_RUNS_DB
@@ -39,16 +46,30 @@ spec:
             - name: REPAVE_DATABASE_URL
               value: {{ .Values.repave.durability.databaseUrl | quote }}
             {{- end }}
+            {{- if .Values.repave.durability.artifactStoreUri }}
+            - name: REPAVE_ARTIFACT_STORE_URI
+              value: {{ .Values.repave.durability.artifactStoreUri | quote }}
+            {{- end }}
             - name: REPAVE_EXTERNAL_WORKERS
               value: "1"
             - name: REPAVE_GITHUB_ORG
               value: {{ .Values.repave.output.githubOrg | quote }}
             - name: REPAVE_MODULES_ROOT
               value: {{ .Values.repave.output.modulesRoot | quote }}
+            {{- $secretName := include "repave.secretName" . }}
+            {{- if $secretName }}
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretName }}
+                  key: github-token
+                  optional: true
+            {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/repave.config.yaml
               subPath: repave.config.yaml
+            {{- include "repave.corpusVolumeMounts" . | nindent 12 }}
             {{- if .Values.repave.durability.enabled }}
             - name: runs
               mountPath: /data/runs
@@ -57,6 +78,7 @@ spec:
         - name: config
           configMap:
             name: {{ include "repave.fullname" . }}
+        {{- include "repave.corpusVolume" . | nindent 8 }}
         {{- if .Values.repave.durability.enabled }}
         - name: runs
           {{- if and .Values.persistence.runs.enabled (not .Values.persistence.runs.existingClaim) }}

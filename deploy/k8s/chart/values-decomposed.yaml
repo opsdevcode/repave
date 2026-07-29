@@ -1,0 +1,43 @@
+# Example: PostgreSQL-backed queue with external worker Deployment, corpus OCI mount,
+# and S3-compatible artifact store (service decomposition Phase 2).
+#
+#   helm install -f values.yaml -f values-decomposed.yaml ...
+
+repave:
+  durability:
+    enabled: true
+    databaseUrl: postgresql://repave:change-me@postgres.repave.svc:5432/repave
+    exportJsonl: false
+    workerMode: external
+    executionMode: worker
+    requireSessionSecret: true
+    artifactStoreUri: s3://repave-artifacts/prod
+
+  audit:
+    enabled: true
+  auth:
+    serviceMode: true
+    oidc:
+      issuer: https://auth.example.com
+      clientId: repave
+      redirectUri: https://repave.example.com/auth/callback
+      groupsClaim: groups
+      roles:
+        admin: []
+        generator: []
+
+# Portal/API: no gate CLIs, no embedded corpus.
+image:
+  gateToolchain: false
+  repository: ghcr.io/opsdevcode/repave-engine-portal
+
+# Worker: gate toolchain image (corpus mounted separately).
+workerImage:
+  repository: ghcr.io/opsdevcode/repave-engine
+
+# Generation corpus OCI artifact (initContainer copies into emptyDir).
+corpus:
+  enabled: true
+  repository: ghcr.io/opsdevcode/repave-corpus
+
+# Worker and portal need AWS credentials (IRSA, env, or secret) when artifactStoreUri is s3://.

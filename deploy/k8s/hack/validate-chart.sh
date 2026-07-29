@@ -15,7 +15,8 @@ helm lint "${CHART}"
 rendered="$(mktemp)"
 portal_rendered="$(mktemp)"
 hpa_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}"' EXIT
+decomposed_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -85,6 +86,32 @@ helm template repave-portal "${CHART}" \
 
 if ! grep -q 'repave.dev/gate-toolchain: "false"' "${portal_rendered}"; then
   echo "values-portal.yaml must render gate-toolchain: false label" >&2
+  exit 1
+fi
+
+helm template repave-decomposed "${CHART}" \
+  --namespace repave-decomposed \
+  -f "${CHART}/values-decomposed.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${decomposed_rendered}"
+
+if ! grep -q 'name: repave-decomposed-worker' "${decomposed_rendered}"; then
+  echo "values-decomposed.yaml must render worker Deployment" >&2
+  exit 1
+fi
+
+if ! grep -q 'name: corpus-init' "${decomposed_rendered}"; then
+  echo "values-decomposed.yaml must render corpus initContainer" >&2
+  exit 1
+fi
+
+if ! grep -q 'ghcr.io/opsdevcode/repave-engine:' "${decomposed_rendered}"; then
+  echo "worker Deployment must use gate-toolchain image" >&2
+  exit 1
+fi
+
+if ! grep -q 'REPAVE_ARTIFACT_STORE_URI' "${decomposed_rendered}"; then
+  echo "values-decomposed.yaml must set REPAVE_ARTIFACT_STORE_URI" >&2
   exit 1
 fi
 

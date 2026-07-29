@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from repave_engine.artifact_store import ArtifactStore, resolve_artifact_store
 from repave_engine.auth_context import reset_acting_user, set_acting_user
 from repave_engine.durability_store import (
     load_durability_runtime,
@@ -17,7 +18,7 @@ from repave_engine.durability_store import (
     resolve_runs_database,
 )
 from repave_engine.execution_mode import ExecutionMode
-from repave_engine.generate_api import async_run_artifact_dir, run_generate_api
+from repave_engine.generate_api import run_generate_api
 from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
@@ -56,12 +57,14 @@ class RunQueue:
         store: RunStore,
         config: RunQueueConfig,
         event_store: RunEventStore | None = None,
+        artifact_store: ArtifactStore | None = None,
     ) -> None:
         self._repo_root = repo_root
         self._output_config = output_config
         self._store = store
         self._config = config
         self._event_store = event_store
+        self._artifact_store = artifact_store or resolve_artifact_store(repo_root)
         self._enqueue_only = config.enqueue_only or config.external_workers
         self._use_claim_workers = config.use_claim_workers
         self._executor: ThreadPoolExecutor | None = None
@@ -205,8 +208,7 @@ class RunQueue:
                 self._emit_event(run_id, kind, payload)
 
             github_token = None if record.dry_run else os.environ.get("GITHUB_TOKEN")
-            artifact_dir = async_run_artifact_dir(self._repo_root, run_id)
-            artifact_dir.mkdir(parents=True, exist_ok=True)
+            artifact_dir = self._artifact_store.local_staging_dir(self._repo_root, run_id)
             try:
                 result = run_generate_api(
                     repo_root=self._repo_root,
@@ -228,12 +230,14 @@ class RunQueue:
                 self._emit_event(run_id, "run_failed", {"error": str(exc)})
                 record_run_terminal("dead_letter", record.blueprint_name)
             else:
+                artifact_fields = self._artifact_store.persist_run_artifacts(run_id, artifact_dir)
+                merged = {**result, **artifact_fields}
                 self._store.update_status(
                     run_id,
                     RunStatus.SUCCEEDED,
-                    result=result,
+                    result=merged,
                 )
-                outcome = str(result.get("gates_outcome", "unknown"))
+                outcome = str(merged.get("gates_outcome", "unknown"))
                 self._emit_event(
                     run_id,
                     "run_finished",

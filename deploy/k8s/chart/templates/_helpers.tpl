@@ -52,6 +52,56 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s:%s" .Values.image.repository $tag }}
 {{- end }}
 
+{{- define "repave.workerImage" -}}
+{{- $repo := default "ghcr.io/opsdevcode/repave-engine" .Values.workerImage.repository -}}
+{{- $tag := default (default .Chart.AppVersion .Values.image.tag) .Values.workerImage.tag -}}
+{{- printf "%s:%s" $repo $tag }}
+{{- end }}
+
+{{- define "repave.corpusImage" -}}
+{{- $tag := default .Chart.AppVersion .Values.corpus.tag -}}
+{{- printf "%s:%s" .Values.corpus.repository $tag }}
+{{- end }}
+
+{{- define "repave.corpusInitContainer" -}}
+{{- if .Values.corpus.enabled }}
+- name: corpus-init
+  image: {{ include "repave.corpusImage" . }}
+  imagePullPolicy: {{ .Values.corpus.pullPolicy }}
+  command:
+    - /bin/sh
+    - -c
+    - cp -a /app/. /corpus-data/
+  volumeMounts:
+    - name: corpus-data
+      mountPath: /corpus-data
+{{- end }}
+{{- end }}
+
+{{- define "repave.corpusVolumeMounts" -}}
+{{- if .Values.corpus.enabled }}
+- name: corpus-data
+  mountPath: /app/schemas
+  subPath: schemas
+- name: corpus-data
+  mountPath: /app/blueprints
+  subPath: blueprints
+- name: corpus-data
+  mountPath: /app/standards
+  subPath: standards
+- name: corpus-data
+  mountPath: /app/policy
+  subPath: policy
+{{- end }}
+{{- end }}
+
+{{- define "repave.corpusVolume" -}}
+{{- if .Values.corpus.enabled }}
+- name: corpus-data
+  emptyDir: {}
+{{- end }}
+{{- end }}
+
 {{- define "repave.secretName" -}}
 {{- if .Values.secrets.existingSecret }}
 {{- .Values.secrets.existingSecret }}

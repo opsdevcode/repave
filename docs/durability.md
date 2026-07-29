@@ -99,10 +99,16 @@ Environment: `REPAVE_EXECUTION_MODE=worker`, `REPAVE_EXTERNAL_WORKERS=1`.
 With **PostgreSQL**, run claims use `FOR UPDATE SKIP LOCKED` so multiple worker replicas
 can scale safely.
 
-**Container images (Phase 0):** CI publishes digest-pinned images on `main` and semver tags:
+**Container images (Phase 0–2):** CI publishes digest-pinned images on `main` and semver tags:
 
-- `ghcr.io/opsdevcode/repave-engine` — gate toolchain (`INSTALL_GATE_TOOLCHAIN=1`)
-- `ghcr.io/opsdevcode/repave-engine-portal` — portal/API without gate CLIs
+- `ghcr.io/opsdevcode/repave-engine` — gate toolchain (`INSTALL_GATE_TOOLCHAIN=1`, no embedded corpus)
+- `ghcr.io/opsdevcode/repave-engine-portal` — portal/API without gate CLIs or embedded corpus
+- `ghcr.io/opsdevcode/repave-corpus` — generation corpus (`blueprints/`, `standards/`, `policy/`, `schemas/`)
+
+**Phase 2 decomposition:** mount the corpus image read-only via chart `corpus.enabled`; store async
+run artifacts in S3-compatible object storage (`durability.artifact_store_uri` or
+`REPAVE_ARTIFACT_STORE_URI`) so portal and worker pods need no shared filesystem. Example:
+[`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml).
 
 See [ADR 002](adr/002-v2-service-decomposition.md) and `.github/workflows/container.yml`.
 

@@ -50,5 +50,8 @@ def test_run_queue_executes_job(tmp_path) -> None:
             time.sleep(0.05)
         assert terminal is not None
         assert terminal.status == RunStatus.SUCCEEDED
-        assert terminal.result == fake_result
+        assert terminal.result is not None
+        for key, value in fake_result.items():
+            assert terminal.result.get(key) == value
+        assert "artifact_root" in terminal.result
     queue.close()
