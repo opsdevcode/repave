@@ -381,6 +381,7 @@ def load_gate_overrides(repo_root: Path) -> GateOverrides:
 @dataclass(frozen=True)
 class PortalConfig:
     density: str
+    observability_dashboard_url: str = ""
 
 
 def load_portal_config(repo_root: Path) -> PortalConfig:
@@ -391,7 +392,11 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     density = str(block.get("density", "default")).strip().lower()
     if density not in ("default", "compact"):
         raise ValueError("portal.density must be 'default' or 'compact'")
-    return PortalConfig(density=density)
+    obs_url = str(block.get("observability_dashboard_url", "")).strip()
+    env_obs = os.environ.get("REPAVE_OBSERVABILITY_DASHBOARD_URL", "").strip()
+    if env_obs:
+        obs_url = env_obs
+    return PortalConfig(density=density, observability_dashboard_url=obs_url)
 
 
 def load_auth_config(repo_root: Path) -> AuthConfig | None:

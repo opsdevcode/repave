@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.87.0  
+**Current release:** v1.88.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
 **Next up:** [durability Phase 2](#durability-and-concurrency-for-hosted-use) (SQL audit/fleet)
 and [portal live governance](#portal-live-governance-surfaces) items 3–8. **Day-2 operability**
@@ -118,7 +118,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
 | **Service decomposition** | open | Portal, API, and gate-running worker as independent k8s workloads; operator as an API client |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
-| **Developer portal surfaces** | open | Catalog, rendered docs, scorecards, and observability read in the portal |
+| **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |

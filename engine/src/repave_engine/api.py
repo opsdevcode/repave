@@ -65,6 +65,14 @@ from repave_engine.bundle_portal import (
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models
+from repave_engine.entity_catalog import (
+    CatalogEntity,
+    build_catalog_entities,
+    build_catalog_from_fleet,
+    find_catalog_entity,
+    observability_embed_url,
+    read_entity_docs,
+)
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.fleet import (
     FleetEntry,
@@ -104,6 +112,7 @@ from repave_engine.policy_selection import (
     blueprint_supports_policy_customization,
     policy_input_defaults,
 )
+from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.readiness import evaluate_readiness
@@ -305,6 +314,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             {"kind": "nav", "label": "Upgrade repo", "href": "/update"},
             {"kind": "nav", "label": "Verify repo", "href": "/verify"},
             {"kind": "nav", "label": "Fleet", "href": "/fleet"},
+            {"kind": "nav", "label": "Services", "href": "/services"},
             {"kind": "nav", "label": "Estate map", "href": "/estate"},
             {"kind": "nav", "label": "Activity", "href": "/activity"},
             {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
@@ -401,6 +411,44 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         except ValueError:
             return False
         return audit_cfg is not None and audit_cfg.enabled
+
+    def portal_catalog_entities() -> list[CatalogEntity]:
+        audit_entries: tuple[AuditHistoryEntry, ...] = ()
+        if audit_portal_enabled():
+            try:
+                audit_cfg = load_audit_config(repo_root)
+            except ValueError:
+                audit_cfg = None
+            if audit_cfg is not None:
+                audit_entries = read_recent_audit_entries(
+                    audit_cfg.file,
+                    limit=100,
+                )
+        modules_root = resolved_output.modules_root
+        try:
+            fleet_cfg = load_fleet_config(repo_root)
+        except ValueError:
+            fleet_cfg = None
+        if fleet_cfg is not None and fleet_cfg.enabled:
+            entries = read_fleet(fleet_cfg.file)
+            operator_by = (
+                load_operator_status_file(fleet_cfg.operator_status_file)
+                if fleet_cfg.operator_status_file is not None
+                else {}
+            )
+            return build_catalog_from_fleet(
+                entries,
+                modules_root=modules_root,
+                operator_by_url=operator_by,
+                namespace=fleet_cfg.gitops_namespace,
+                audit_entries=audit_entries,
+            )
+        return build_catalog_entities(
+            fleet_rows=[],
+            modules_root=modules_root,
+            operator_by_url={},
+            audit_entries=audit_entries,
+        )
 
     def gate_summary(gates: list[GateResult]) -> dict[str, int | str]:
         passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
@@ -570,6 +618,62 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "tiles": [tile.to_public_dict() for tile in tiles],
             }
         )
+
+    @app.get("/services", response_class=HTMLResponse)
+    async def services_page(request: Request) -> HTMLResponse:
+        entities = portal_catalog_entities()
+        return templates.TemplateResponse(
+            request,
+            "services.html",
+            page_context(
+                request,
+                nav_active="services",
+                catalog_entities=entities,
+                observability_configured=bool(portal_config.observability_dashboard_url),
+            ),
+        )
+
+    @app.get("/services/{entity_id}", response_class=HTMLResponse)
+    async def service_detail_page(request: Request, entity_id: str) -> HTMLResponse:
+        entities = portal_catalog_entities()
+        entity = find_catalog_entity(entities, entity_id)
+        if entity is None:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        docs: dict[str, str] = {}
+        readme_html = ""
+        runbook_html = ""
+        runbook_label = ""
+        if entity.local_path is not None:
+            docs = read_entity_docs(entity.local_path)
+            if docs.get("readme"):
+                readme_html = render_portal_markdown(docs["readme"])
+            if docs.get("runbook"):
+                runbook_html = render_portal_markdown(docs["runbook"])
+                runbook_label = docs.get("runbook_label", "Runbook")
+        elif entity.readme_preview:
+            readme_html = render_portal_markdown(entity.readme_preview)
+        obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
+        return templates.TemplateResponse(
+            request,
+            "service_detail.html",
+            page_context(
+                request,
+                nav_active="services",
+                entity=entity,
+                readme_html=readme_html,
+                runbook_html=runbook_html,
+                runbook_label=runbook_label,
+                observability_url=obs_url,
+            ),
+        )
+
+    @app.get("/catalog/entities", response_class=RedirectResponse)
+    async def catalog_entities_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/services", status_code=302)
+
+    @app.get("/catalog/entities/{entity_id}", response_class=RedirectResponse)
+    async def catalog_entity_redirect(entity_id: str) -> RedirectResponse:
+        return RedirectResponse(url=f"/services/{entity_id}", status_code=302)
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
@@ -1536,6 +1640,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
             )
         return fleet_cfg.file
+
+    @app.get("/api/v1/catalog/entities")
+    async def api_catalog_entities(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        entities = portal_catalog_entities()
+        payload = {
+            "count": len(entities),
+            "entities": [item.to_public_dict() for item in entities],
+        }
+        return JSONResponse(payload)
+
+    @app.get("/api/v1/catalog/entities/{entity_id}")
+    async def api_catalog_entity(request: Request, entity_id: str) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        entity = find_catalog_entity(portal_catalog_entities(), entity_id)
+        if entity is None:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        body = entity.to_public_dict()
+        obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
+        if obs_url:
+            body["observability_url"] = obs_url
+        return JSONResponse(body)
 
     @app.get("/api/v1/fleet")
     async def api_fleet_list(request: Request) -> JSONResponse:
