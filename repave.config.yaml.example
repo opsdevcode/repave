@@ -49,7 +49,9 @@ gates:
 # fleet:
 #   enabled: true
 #   file: ../repave-fleet/registry.jsonl
-# Override path: REPAVE_FLEET_FILE
+#   gitops_namespace: repave-system
+#   operator_status_file: ../repave-fleet/operator-status.json
+# Override path: REPAVE_FLEET_FILE, REPAVE_FLEET_OPERATOR_STATUS_FILE
 
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.

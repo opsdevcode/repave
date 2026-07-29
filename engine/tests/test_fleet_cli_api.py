@@ -203,10 +203,10 @@ def test_fleet_route_roles_are_least_privilege() -> None:
 
 
 def test_api_fleet_unconfigured_registry_returns_404(
-    repo_root, output_config, monkeypatch: pytest.MonkeyPatch
+    repo_root, output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("REPAVE_FLEET_FILE", raising=False)
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
-    # repo_root has no fleet block, so the registry is absent rather than empty.
     assert client.get("/api/v1/fleet").status_code == 404

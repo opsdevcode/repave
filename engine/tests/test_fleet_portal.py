@@ -7,6 +7,10 @@ from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
 from repave_engine.fleet import FleetEntry, register_repo
+from repave_engine.fleet_operator_status import (
+    FleetOperatorStatus,
+    write_operator_status_snapshot,
+)
 
 PROVENANCE_ENTRY = FleetEntry(
     repo_url="https://github.com/acme/tf-vpc",
@@ -24,6 +28,36 @@ def registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     path = tmp_path / "registry.jsonl"
     monkeypatch.setenv("REPAVE_FLEET_FILE", str(path))
     return path
+
+
+def test_fleet_page_shows_operator_phase(
+    output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry = tmp_path / "registry.jsonl"
+    register_repo(registry, PROVENANCE_ENTRY)
+    status_file = tmp_path / "operator-status.json"
+    write_operator_status_snapshot(
+        status_file,
+        [
+            FleetOperatorStatus(
+                repo_url=PROVENANCE_ENTRY.repo_url,
+                phase="OutOfDate",
+                message="pins differ",
+            )
+        ],
+    )
+    (tmp_path / "repave.config.yaml").write_text(
+        f"fleet:\n  enabled: true\n  file: {registry}\n  operator_status_file: {status_file}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+
+    body = client.get("/fleet").text
+
+    assert "operator OutOfDate" in body
+    assert "pins differ" in body
+    assert "GitOps sync" in body
 
 
 def test_fleet_page_lists_registered_repos(repo_root, output_config, registry: Path) -> None:
@@ -69,14 +103,14 @@ def test_fleet_page_empty_state_points_at_register(
 
 
 def test_fleet_page_explains_unconfigured_registry(
-    repo_root, output_config, monkeypatch: pytest.MonkeyPatch
+    output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("REPAVE_FLEET_FILE", raising=False)
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
     response = client.get("/fleet")
 
-    # The page stays reachable so the nav link never dead-ends; it explains the setup instead.
     assert response.status_code == 200
     assert "repave.config.yaml" in response.text
 

@@ -1050,9 +1050,9 @@ than repos — so nobody can answer "how much of the estate is on the current st
 state, and the operator picks it up without hand-written CRs.
 
 **Status:** **Shipped on `main`** (store, CLI, API, portal **Fleet**, `fleet-manifests`,
-kind co-install). **Still open:** live drift in the portal fleet table (operator status
-not wired to registry rows); continuous sync remains `fleet-manifests` + GitOps, not an
-in-cluster registry watcher.
+kind co-install). **Polish shipped:** portal operator status via snapshot file, GitOps bundle
+flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`), and
+`repave fleet-operator-snapshot`. Continuous in-cluster registry sync remains out of scope.
 
 ---
 

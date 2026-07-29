@@ -128,6 +128,8 @@ def load_audit_config(repo_root: Path) -> AuditConfig | None:
 class FleetConfig:
     enabled: bool
     file: Path
+    operator_status_file: Path | None = None
+    gitops_namespace: str = "default"
 
 
 def load_fleet_config(repo_root: Path) -> FleetConfig | None:
@@ -145,7 +147,13 @@ def load_fleet_config(repo_root: Path) -> FleetConfig | None:
     if block is None:
         if not env_override:
             return None
-        return FleetConfig(enabled=True, file=_resolve(env_override))
+        status_env = os.environ.get("REPAVE_FLEET_OPERATOR_STATUS_FILE", "").strip()
+        status_path = _resolve(status_env) if status_env else None
+        return FleetConfig(
+            enabled=True,
+            file=_resolve(env_override),
+            operator_status_file=status_path,
+        )
 
     if not isinstance(block, dict):
         raise ValueError("fleet must be a mapping in repave.config.yaml")
@@ -157,7 +165,24 @@ def load_fleet_config(repo_root: Path) -> FleetConfig | None:
     path = _resolve(str(block.get("file", "fleet/registry.jsonl")))
     if env_override:
         path = _resolve(env_override)
-    return FleetConfig(enabled=enabled_raw, file=path)
+
+    status_env = os.environ.get("REPAVE_FLEET_OPERATOR_STATUS_FILE", "").strip()
+    operator_status_path: Path | None = None
+    status_raw = block.get("operator_status_file")
+    if status_env:
+        operator_status_path = _resolve(status_env)
+    elif isinstance(status_raw, str) and status_raw.strip():
+        operator_status_path = _resolve(status_raw.strip())
+
+    namespace_raw = block.get("gitops_namespace", "default")
+    gitops_namespace = str(namespace_raw).strip() or "default"
+
+    return FleetConfig(
+        enabled=enabled_raw,
+        file=path,
+        operator_status_file=operator_status_path,
+        gitops_namespace=gitops_namespace,
+    )
 
 
 def load_notifications_config(repo_root: Path) -> NotificationsConfig | None:

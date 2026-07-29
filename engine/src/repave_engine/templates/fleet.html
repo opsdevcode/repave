@@ -10,8 +10,8 @@
   <div>
     <h1 class="page-title">Governed repositories</h1>
     <p class="page-lead">
-      Repositories under repave governance, with the blueprint and standard each one is
-      pinned to.
+      Repositories under repave governance, with blueprint pins, operator drift when
+      configured, and GitOps manifest names for each entry.
     </p>
   </div>
 </header>
@@ -21,7 +21,10 @@
 <section class="card activity-card" aria-labelledby="fleet-heading">
   <div class="card__header">
     <h2 id="fleet-heading">{{ fleet_repos | length }} repositor{{ 'y' if fleet_repos | length == 1 else 'ies' }}</h2>
-    <p class="muted card__subtitle">Sorted by repository · registered with <code>repave register</code></p>
+    <p class="muted card__subtitle">
+      Sorted by repository · register with <code>repave register</code>
+      {% if fleet_operator_status_enabled %} · operator status from snapshot{% endif %}
+    </p>
   </div>
   <div class="card__body">
     <ul class="activity-list">
@@ -40,14 +43,57 @@
           {% if row.standard_version %}
           <span class="badge badge--skip">standard {{ row.standard_version }}</span>
           {% endif %}
+          <span class="badge badge--muted" title="GoldenPathRepo manifest">
+            {{ row.manifest_namespace }}/{{ row.manifest_name }}
+          </span>
+          {% if row.operator_phase %}
+            {% if row.operator_phase == 'Ready' %}
+          <span class="badge badge--pass">operator {{ row.operator_phase }}</span>
+            {% elif row.operator_phase == 'OutOfDate' %}
+          <span class="badge badge--fail">operator {{ row.operator_phase }}</span>
+            {% elif row.operator_phase == 'Error' %}
+          <span class="badge badge--error">operator {{ row.operator_phase }}</span>
+            {% else %}
+          <span class="badge badge--skip">operator {{ row.operator_phase }}</span>
+            {% endif %}
+          {% endif %}
+          {% if row.remediation_pr_url %}
+          <a class="muted" href="{{ row.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">remediation PR</a>
+          {% endif %}
           <span class="muted">{{ row.registered_by }}</span>
           {% if row.registered_at %}
           <time class="muted" datetime="{{ row.registered_at }}">{{ row.registered_at[:19] }}</time>
           {% endif %}
         </div>
+        {% if row.operator_message and row.operator_phase %}
+        <p class="muted">{{ row.operator_message }}</p>
+        {% endif %}
       </li>
       {% endfor %}
     </ul>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="fleet-gitops-heading">
+  <div class="card__header">
+    <h2 id="fleet-gitops-heading">GitOps sync</h2>
+    <p class="muted card__subtitle">Render manifests after register/unregister, then commit for your controller.</p>
+  </div>
+  <div class="card__body">
+    <pre class="panel-code"><code>repave fleet-manifests --output ./fleet-manifests \
+  --namespace {{ fleet_gitops_namespace }} \
+  --kustomization --gitops-readme --prune
+
+kubectl apply -k ./fleet-manifests</code></pre>
+    {% if not fleet_operator_status_enabled %}
+    <p class="muted">
+      For live drift on this page, refresh an operator status file and set
+      <code>fleet.operator_status_file</code> in <code>repave.config.yaml</code>:
+    </p>
+    <pre class="panel-code"><code>repave fleet-operator-snapshot \
+  --output ../repave-fleet/operator-status.json \
+  --namespace {{ fleet_gitops_namespace }}</code></pre>
+    {% endif %}
   </div>
 </section>
   {% else %}
