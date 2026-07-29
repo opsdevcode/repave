@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.92.1  
+**Current release:** v1.92.2  
 **In progress:** [service decomposition Phase 0–1](#service-decomposition-for-hosted-scale) (container CI, execution mode, Postgres queue claims)  
 **Next up:** service decomposition **Phase 2** (portal-only image default in chart, corpus OCI artifact) and
 remaining **engine hardening** (maintainability group B). **Queryable audit** and
