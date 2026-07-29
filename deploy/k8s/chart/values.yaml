@@ -114,6 +114,8 @@ repave:
     workerMode: inline
     workerReplicas: 1
     workerPollSeconds: 5
+    # inprocess (default) | worker — API enqueue-only when worker (see docs/durability.md)
+    executionMode: ""
   auth:
     serviceMode: false
     oidc:

@@ -169,8 +169,30 @@ class RunStore:
         """Atomically move one queued run to running (external worker / Job mode)."""
         now = _now_iso()
         with self._lock, self._connect() as conn:
-            if conn.dialect == "sqlite":
-                conn.execute("BEGIN IMMEDIATE")
+            if conn.dialect == "postgresql":
+                cur = conn.execute(
+                    """
+                    UPDATE runs
+                    SET status = ?, updated_at = ?
+                    WHERE run_id = (
+                        SELECT run_id FROM runs
+                        WHERE status = ?
+                        ORDER BY created_at ASC
+                        FOR UPDATE SKIP LOCKED
+                        LIMIT 1
+                    )
+                    RETURNING run_id
+                    """,
+                    (RunStatus.RUNNING.value, now, RunStatus.QUEUED.value),
+                )
+                row = cur.fetchone()
+                conn.commit()
+                if not row:
+                    return None
+                run_id = row["run_id"] if isinstance(row, dict) else row[0]
+                return self.get(run_id)
+
+            conn.execute("BEGIN IMMEDIATE")
             cur = conn.execute(
                 """
                 SELECT run_id FROM runs

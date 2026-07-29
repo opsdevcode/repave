@@ -69,6 +69,8 @@ spec:
             {{- if eq .Values.repave.durability.workerMode "external" }}
             - name: REPAVE_EXTERNAL_WORKERS
               value: "1"
+            - name: REPAVE_EXECUTION_MODE
+              value: worker
             {{- end }}
             {{- end }}
             - name: REPAVE_SHUTDOWN_DRAIN_SECONDS

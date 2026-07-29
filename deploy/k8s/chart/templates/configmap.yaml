@@ -55,4 +55,9 @@ data:
       {{- end }}
       export_jsonl: {{ .Values.repave.durability.exportJsonl }}
       worker_mode: {{ .Values.repave.durability.workerMode | quote }}
+      {{- if eq .Values.repave.durability.workerMode "external" }}
+      execution_mode: worker
+      {{- else if .Values.repave.durability.executionMode }}
+      execution_mode: {{ .Values.repave.durability.executionMode | quote }}
+      {{- end }}
     {{- end }}

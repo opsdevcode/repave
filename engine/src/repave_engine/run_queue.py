@@ -11,7 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.auth_context import reset_acting_user, set_acting_user
-from repave_engine.durability_store import load_durability_store_settings, resolve_runs_database
+from repave_engine.durability_store import (
+    load_durability_runtime,
+    load_durability_store_settings,
+    resolve_runs_database,
+)
+from repave_engine.execution_mode import ExecutionMode
 from repave_engine.generate_api import run_generate_api
 from repave_engine.metrics import (
     record_run_queue_depth,
@@ -30,6 +35,8 @@ class RunQueueConfig:
     queue_max_depth: int = 32
     db_path: Path | None = None
     external_workers: bool = False
+    enqueue_only: bool = False
+    use_claim_workers: bool = False
 
 
 class RunQueueFullError(RuntimeError):
@@ -55,9 +62,12 @@ class RunQueue:
         self._store = store
         self._config = config
         self._event_store = event_store
-        self._executor = ThreadPoolExecutor(max_workers=config.max_concurrent_runs)
+        self._enqueue_only = config.enqueue_only or config.external_workers
+        self._use_claim_workers = config.use_claim_workers
+        self._executor: ThreadPoolExecutor | None = None
+        if not self._enqueue_only:
+            self._executor = ThreadPoolExecutor(max_workers=config.max_concurrent_runs)
         self._accepting = True
-        self._external_workers = config.external_workers
         self._refresh_metrics()
 
     @property
@@ -84,7 +94,8 @@ class RunQueue:
 
     def close(self, *, wait: bool = True) -> None:
         self._accepting = False
-        self._executor.shutdown(wait=wait, cancel_futures=not wait)
+        if self._executor is not None:
+            self._executor.shutdown(wait=wait, cancel_futures=not wait)
 
     def _refresh_metrics(self) -> None:
         queued = self._store.count_by_status(RunStatus.QUEUED)
@@ -93,6 +104,14 @@ class RunQueue:
 
     def _queue_depth(self) -> int:
         return self._store.count_by_status(RunStatus.QUEUED, RunStatus.RUNNING)
+
+    def _schedule_execution(self, *, acting_user: str, run_id: str | None = None) -> None:
+        if self._enqueue_only or self._executor is None:
+            return
+        if self._use_claim_workers:
+            self._executor.submit(self.claim_and_process)
+        elif run_id is not None:
+            self._executor.submit(self._run_worker, run_id, acting_user)
 
     def submit(
         self,
@@ -124,8 +143,7 @@ class RunQueue:
             acting_user=acting_user,
             client_request_id=client_request_id or None,
         )
-        if not self._external_workers:
-            self._executor.submit(self._run_worker, record.run_id, acting_user)
+        self._schedule_execution(acting_user=acting_user, run_id=record.run_id)
         self._refresh_metrics()
         return record
 
@@ -148,8 +166,7 @@ class RunQueue:
         if record.status not in (RunStatus.FAILED, RunStatus.DEAD_LETTER):
             raise ValueError("only failed or dead_letter runs can be replayed")
         self._store.update_status(run_id, RunStatus.QUEUED, result=None, error=None)
-        if not self._external_workers:
-            self._executor.submit(self._run_worker, run_id, record.acting_user)
+        self._schedule_execution(acting_user=record.acting_user, run_id=run_id)
         self._refresh_metrics()
         updated = self._store.get(run_id)
         if updated is None:
@@ -165,11 +182,16 @@ class RunQueue:
     def _run_worker(self, run_id: str, acting_user: str) -> None:
         token = set_acting_user(acting_user)
         try:
-            self._store.update_status(run_id, RunStatus.RUNNING)
-            self._refresh_metrics()
-            record = self._store.get(run_id)
-            if record is None:
-                return
+            if self._use_claim_workers:
+                record = self._store.get(run_id)
+                if record is None or record.status != RunStatus.RUNNING:
+                    return
+            else:
+                self._store.update_status(run_id, RunStatus.RUNNING)
+                self._refresh_metrics()
+                record = self._store.get(run_id)
+                if record is None:
+                    return
             self._emit_event(
                 run_id,
                 "run_started",
@@ -226,20 +248,27 @@ def build_run_queue(
     config: RunQueueConfig,
 ) -> RunQueue:
     store_settings = load_durability_store_settings(repo_root)
+    runtime = load_durability_runtime(repo_root)
     db_path = config.db_path or (repo_root / "data" / "runs.sqlite")
     db_cfg = resolve_runs_database(
         repo_root,
         runs_db=db_path,
         store_settings=store_settings,
     )
-    external = config.external_workers or (
-        store_settings.external_workers if store_settings is not None else False
+    enqueue_only = (
+        config.enqueue_only
+        or config.external_workers
+        or runtime.external_workers
+        or runtime.execution_mode == ExecutionMode.WORKER
     )
+    use_claim_workers = db_cfg.dialect == "postgresql"
     queue_config = RunQueueConfig(
         max_concurrent_runs=config.max_concurrent_runs,
         queue_max_depth=config.queue_max_depth,
         db_path=config.db_path,
-        external_workers=external,
+        external_workers=enqueue_only,
+        enqueue_only=enqueue_only,
+        use_claim_workers=use_claim_workers,
     )
     store = RunStore(db_cfg)
     event_store = build_run_event_store(db_cfg)

@@ -1,0 +1,24 @@
+# Example: PostgreSQL-backed queue with external worker Deployment.
+# Merge with values.yaml or use: helm install -f values.yaml -f values-postgres-worker.yaml
+
+repave:
+  durability:
+    enabled: true
+    databaseUrl: postgresql://repave:change-me@postgres.repave.svc:5432/repave
+    exportJsonl: false
+    workerMode: external
+    executionMode: worker
+    requireSessionSecret: true
+
+  audit:
+    enabled: true
+  auth:
+    serviceMode: true
+
+# API pods: portal-only image (no gate CLIs). Workers use the gate-toolchain image.
+image:
+  gateToolchain: false
+  repository: ghcr.io/opsdevcode/repave-engine-portal
+
+# Override worker Deployment image in a follow-up values file or subchart when splitting
+# worker image repository to ghcr.io/opsdevcode/repave-engine (gate toolchain).
