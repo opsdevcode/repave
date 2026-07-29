@@ -17,6 +17,18 @@ def _load_sync_module(repo_root: Path):
     return module
 
 
+def test_list_paths_includes_all_doc_targets(repo_root: Path) -> None:
+    sync = _load_sync_module(repo_root)
+    paths = set(sync.DOC_TARGET_REL_PATHS)
+    assert paths == {
+        "docs/roadmap.md",
+        "README.md",
+        "docs/portal-design.md",
+        "docs/demo-verification.md",
+        "docs/operator-ga.md",
+    }
+
+
 def test_sync_updates_doc_pointers(repo_root: Path, tmp_path: Path) -> None:
     sync = _load_sync_module(repo_root)
     roadmap = tmp_path / "docs" / "roadmap.md"

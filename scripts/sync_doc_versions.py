@@ -69,6 +69,8 @@ DOC_TARGETS: tuple[tuple[str, tuple[tuple[re.Pattern[str], str], ...]], ...] = (
     ),
 )
 
+DOC_TARGET_REL_PATHS: tuple[str, ...] = tuple(rel for rel, _ in DOC_TARGETS)
+
 
 def read_engine_version() -> str:
     init_path = REPO_ROOT / "engine" / "src" / "repave_engine" / "__init__.py"
@@ -120,7 +122,17 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Exit 1 if files would change (CI)",
     )
+    parser.add_argument(
+        "--list-paths",
+        action="store_true",
+        help="Print doc paths managed by this script (one per line)",
+    )
     args = parser.parse_args(argv)
+
+    if args.list_paths:
+        for rel in DOC_TARGET_REL_PATHS:
+            print(rel)
+        return 0
 
     version = args.version or read_engine_version()
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):

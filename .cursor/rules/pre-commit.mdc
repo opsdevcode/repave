@@ -19,9 +19,11 @@ on the changed paths (see **repave-python** skill).
 
 - **`make format`** — `ruff format` on `engine/src` and `engine/tests` (run Ruff on other `.py` paths manually)
 - **`make quality`** — `ruff check`, `ruff format --check`, **`mypy src`**
-- **`make test`** — full pytest + coverage threshold (75%)
+- **`make test`** — doc version pointer check (`sync-doc-versions-check`) + full pytest + coverage threshold (75%)
+- **`make sync-doc-versions`** — refresh README/roadmap doc pointers to match `engine` `__version__` (after merging `main` or before push if CI fails **Verify doc version pointers**)
+- **`make sync-doc-versions-check`** — same check CI runs (also runs as the first step of **`make test`**)
 
-While editing Python, **`make test-fast`** skips `@pytest.mark.slow` and coverage.
+While editing Python, **`make test-fast`** skips `@pytest.mark.slow`, coverage, and the doc version check — run **`make sync-doc-versions-check`** before push if you merged release bumps from `main`.
 
 ## When to add checks
 

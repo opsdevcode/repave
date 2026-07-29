@@ -48,7 +48,7 @@ gh run view <run-id> --repo opsdevcode/repave --log-failed
 3. Confirm `pull-requests: write` on workflow.
 4. Confirm operator + engine tests still run before release step.
 5. After merge to `main`, watch the Release run until tag + release exist.
-6. Release also commits doc version pointers (`scripts/sync_doc_versions.py`) when
-   the semver bump changes `README.md` / roadmap / portal-design links.
+6. Release runs `scripts/sync_doc_versions.py` and commits every path from
+   `python3 scripts/sync_doc_versions.py --list-paths` (not a hardcoded subset).
 
 See also repo rule `.cursor/rules/repave-release.mdc` and root `CONTRIBUTING.md`.

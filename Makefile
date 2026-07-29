@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions chart-validate chart-smoke kind-co-install
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-doc-versions-check chart-validate chart-smoke kind-co-install
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -17,11 +17,14 @@ changelog:
 sync-doc-versions:
 	python3 scripts/sync_doc_versions.py
 
+sync-doc-versions-check:
+	python3 scripts/sync_doc_versions.py --check
+
 policy-standards-watch:
 	python3 scripts/sync_policy_standards.py --update
 
 
-test:
+test: sync-doc-versions-check
 	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest --cov=repave_engine --cov-report=term-missing
 
 # Daily dev loop: skip slow integration/conformance tests and coverage (run `make test` before push).
