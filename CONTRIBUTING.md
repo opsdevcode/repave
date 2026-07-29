@@ -85,6 +85,13 @@ test or quality targets, run `make quality && make test` locally even when CI sk
 The `release` workflow keeps workflow-level `paths-ignore` for docs-only merges to
 `main` (no release job for markdown-only commits).
 
+### Helm chart CI
+
+**`chart-validate`** (helm lint + template) and **`chart-smoke`** (kind + Docker install)
+run on every pull request. Unrelated diffs skip heavy steps via
+`.github/actions/chart-ci-paths/`; every push to **`main`** runs both jobs in full.
+Locally: `make chart-validate` and `make chart-smoke`.
+
 ### Branch ruleset (`main`)
 
 Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)
@@ -92,7 +99,7 @@ requires on `main` for normal contributors:
 
 - Changes merged via pull request (no approving review required — solo maintainer)
 - Status checks: `test`, `Python quality and security`, `commitlint`,
-  `semantic-pull-request`, `operator-test`, `operator-e2e`
+  `semantic-pull-request`, `operator-test`, `operator-e2e`, `chart-validate`, `chart-smoke`
 - No force-push (`non_fast_forward`)
 
 **Release automation bypass:** the ruleset grants **repository administrators**

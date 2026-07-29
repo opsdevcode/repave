@@ -27,6 +27,8 @@ ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt \
 # Last-resort escape hatch for TLS-inspecting proxies without an obtainable CA.
 ARG REPAVE_TLS_INSECURE=0
 ARG INSTALL_ANSIBLE_COLLECTIONS=1
+# 1 = full portal dry-run gates (default). 0 = slimmer portal-only image (Helm image.gateToolchain: false).
+ARG INSTALL_GATE_TOOLCHAIN=1
 
 COPY deploy/local/certs/ /usr/local/share/ca-certificates/repave/
 
@@ -40,10 +42,12 @@ RUN apt-get update \
     && update-ca-certificates \
     && sed -i 's/\r$//' /tmp/install-gate-toolchain.sh \
     && chmod +x /tmp/install-gate-toolchain.sh \
-    && REPO_ROOT=/app USE_UV_PIP=1 \
-       REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE}" \
-       INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS}" \
-       /tmp/install-gate-toolchain.sh \
+    && if [ "${INSTALL_GATE_TOOLCHAIN}" = "1" ]; then \
+         REPO_ROOT=/app USE_UV_PIP=1 \
+           REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE}" \
+           INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS}" \
+           /tmp/install-gate-toolchain.sh; \
+       fi \
     && rm /tmp/install-gate-toolchain.sh /tmp/gate-toolchain-pins.env \
     && git config --global user.email "repave@local.dev" \
     && git config --global user.name "repave"

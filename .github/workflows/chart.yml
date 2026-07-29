@@ -1,30 +1,94 @@
 name: Helm chart
 
 on:
+  pull_request:
   push:
     branches: [main]
-    paths:
-      - deploy/k8s/chart/**
-      - deploy/k8s/hack/**
-      - .github/workflows/chart.yml
-  pull_request:
-    paths:
-      - deploy/k8s/chart/**
-      - deploy/k8s/hack/**
-      - .github/workflows/chart.yml
+  workflow_dispatch:
+
+concurrency:
+  group: helm-chart-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  validate:
+  chart-validate:
+    name: chart-validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/chart-ci-paths
+        id: paths
+
+      - name: Unrelated change (skip chart validate)
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.paths.outputs.chart_needed != 'true'
+        run: echo "No chart or portal image paths; skipping helm lint."
+
       - name: Install Helm
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
         uses: azure/setup-helm@v4
         with:
           version: v3.16.4
 
       - name: Lint and template chart
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
         run: |
           chmod +x deploy/k8s/hack/validate-chart.sh
           ./deploy/k8s/hack/validate-chart.sh
+
+  chart-smoke:
+    name: chart-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/chart-ci-paths
+        id: paths
+
+      - name: Unrelated change (skip chart smoke)
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.paths.outputs.chart_needed != 'true'
+        run: echo "No chart or portal image paths; skipping kind smoke."
+
+      - name: Install Helm
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - uses: actions/setup-go@v5
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        with:
+          go-version-file: operator/go.mod
+          cache: false
+
+      - name: Install kind
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: go install sigs.k8s.io/kind@v0.27.0
+
+      - name: Add Go bin to PATH
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run chart smoke (kind)
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: |
+          chmod +x deploy/k8s/hack/chart-smoke.sh
+          ./deploy/k8s/hack/chart-smoke.sh

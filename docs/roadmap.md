@@ -6,8 +6,8 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.83.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
-**Next up:** fleet **GitOps** (`fleet-manifests` + register) polish; [day-2 operability](#service-health-resource-management-and-autoscaling)
-on the Helm chart (chart-smoke in CI, gate-toolchain image variant still open). **Engine hardening**
+**Next up:** [day-2 operability](#service-health-resource-management-and-autoscaling)
+on the Helm chart (HPA, alerts, runbooks). **Engine hardening**
 (A3 operator-e2e required check, A5/A6 docs and traces) continues alongside features.
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) — A1/A2/A4 landed on this line;
 operator remote inventory **Phase C** (remediation from clone) shipped with it.  
@@ -308,10 +308,9 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 ### Kubernetes deploy — Helm chart (engine v1.74+)
 
-- [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `make chart-validate` in CI;
-  optional `make chart-smoke` locally
-- **Follow-ups:** gate-toolchain image variant; required chart-smoke in CI; day-2 themes
-  (HPA, alerts, runbooks) in [Planned](#planned)
+- [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `chart-validate` and
+  `chart-smoke` required checks (path-gated skip on unrelated PRs; full smoke on `main`)
+- **Follow-ups:** day-2 themes (HPA, alerts, runbooks) in [Planned](#planned)
 
 ### `repave verify` — local path (engine v1.75+)
 
@@ -1086,7 +1085,9 @@ model itself belongs to that entry.
 working and probes gating traffic.
 
 **Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174).
-**Follow-ups in this entry:** gate-toolchain image variant; required `make chart-smoke` in CI.
+**Follow-ups in this entry:** day-2 operability (HPA, alerts, runbooks). Chart smoke is a
+required CI check; `INSTALL_GATE_TOOLCHAIN` build arg and `values-portal.yaml` document the
+portal-only image variant.
 
 ---
 

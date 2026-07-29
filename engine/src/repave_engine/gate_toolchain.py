@@ -113,8 +113,14 @@ def gate_tool_status() -> dict[str, bool]:
 
 def portal_runtime_info() -> dict[str, str | bool]:
     in_container = Path("/.dockerenv").is_file()
-    return {
+    info: dict[str, str | bool] = {
         "in_container": in_container,
         "platform": sys.platform,
         "serve_kind": "docker" if in_container else "host",
     }
+    gate_env = os.environ.get("REPAVE_IMAGE_GATE_TOOLCHAIN", "").strip()
+    if gate_env in ("0", "false", "False"):
+        info["gate_toolchain_image"] = False
+    elif gate_env in ("1", "true", "True"):
+        info["gate_toolchain_image"] = True
+    return info

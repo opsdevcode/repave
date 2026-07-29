@@ -35,3 +35,16 @@ def test_ensure_gate_path_prepends_standard_dirs(monkeypatch) -> None:
     path = os.environ["PATH"]
     assert "/custom/bin" in path
     assert any(prefix in path for prefix in gt._STANDARD_BIN_DIRS)
+
+
+def test_portal_runtime_info_reads_gate_toolchain_env(monkeypatch) -> None:
+    from repave_engine.gate_toolchain import portal_runtime_info
+
+    monkeypatch.delenv("REPAVE_IMAGE_GATE_TOOLCHAIN", raising=False)
+    assert "gate_toolchain_image" not in portal_runtime_info()
+
+    monkeypatch.setenv("REPAVE_IMAGE_GATE_TOOLCHAIN", "0")
+    assert portal_runtime_info()["gate_toolchain_image"] is False
+
+    monkeypatch.setenv("REPAVE_IMAGE_GATE_TOOLCHAIN", "1")
+    assert portal_runtime_info()["gate_toolchain_image"] is True
