@@ -12,6 +12,7 @@ INSTALL_ANSIBLE="${INSTALL_ANSIBLE:-1}"
 INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
 DEST="${DEST:-/usr/local/bin}"
+GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 
 # Last resort behind a TLS-inspecting proxy. Prefer trusting the corporate CA
 # (deploy/local/certs for the compose image) over turning verification off.
@@ -21,6 +22,11 @@ CURL_GET=(curl -fsSL)
 GALAXY_INSTALL=(ansible-galaxy collection install)
 UV_PIP_INSTALL=(uv pip install --system --no-cache)
 PIP_INSTALL=(python -m pip install)
+if [[ -n "$GATE_PIP_TARGET" ]]; then
+  mkdir -p "$GATE_PIP_TARGET"
+  UV_PIP_INSTALL=(uv pip install --target "$GATE_PIP_TARGET" --no-cache)
+  PIP_INSTALL=(python -m pip install --target "$GATE_PIP_TARGET")
+fi
 
 if [[ "$REPAVE_TLS_INSECURE" == "1" ]]; then
   echo "WARNING: REPAVE_TLS_INSECURE=1 - TLS verification disabled for toolchain downloads." >&2

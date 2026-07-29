@@ -1,13 +1,56 @@
 name: Gate toolchain
 description: Pinned CLIs for engine dry-run gate tests (aligned with deploy/local)
 
+inputs:
+  enable-cache:
+    description: Restore and save the gate toolchain between runs
+    required: false
+    default: "true"
+
 runs:
   using: composite
   steps:
-    - name: Install gate toolchain
+    - name: Prepare gate toolchain paths
       shell: bash
+      run: |
+        set -euo pipefail
+        root="${GITHUB_WORKSPACE}"
+        mkdir -p "${root}/.gate-tools/bin" "${root}/.gate-tools/py-deps/bin"
+        echo "${root}/.gate-tools/bin" >> "$GITHUB_PATH"
+        echo "${root}/.gate-tools/py-deps/bin" >> "$GITHUB_PATH"
+        {
+          echo -n "PYTHONPATH=${root}/.gate-tools/py-deps"
+          if [[ -n "${PYTHONPATH:-}" ]]; then
+            echo -n ":${PYTHONPATH}"
+          fi
+          echo
+        } >> "$GITHUB_ENV"
+
+    - uses: actions/cache@v4
+      if: inputs.enable-cache == 'true'
+      id: gate-toolchain-cache
+      with:
+        path: |
+          .gate-tools/bin
+          .gate-tools/py-deps
+          ~/.ansible/collections
+        key: gate-toolchain-${{ runner.os }}-${{ hashFiles('deploy/local/install-gate-toolchain.sh', 'ansible/requirements-gate-collections.yml') }}
+
+    - name: Install gate toolchain
+      if: inputs.enable-cache != 'true' || steps.gate-toolchain-cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        DEST: ${{ github.workspace }}/.gate-tools/bin
+        GATE_PIP_TARGET: ${{ github.workspace }}/.gate-tools/py-deps
+        REPO_ROOT: ${{ github.workspace }}
+        USE_UV_PIP: "1"
       run: |
         set -euo pipefail
         cd "${GITHUB_WORKSPACE}"
         chmod +x deploy/local/install-gate-toolchain.sh
         deploy/local/install-gate-toolchain.sh
+
+    - name: Gate toolchain cache hit
+      if: inputs.enable-cache == 'true' && steps.gate-toolchain-cache.outputs.cache-hit == 'true'
+      shell: bash
+      run: echo "Restored gate toolchain from cache."

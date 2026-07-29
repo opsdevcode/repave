@@ -8,6 +8,10 @@ on:
       - ".github/workflows/operator.yml"
   pull_request:
 
+concurrency:
+  group: operator-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: operator-test
