@@ -1188,3 +1188,53 @@ def test_run_events_sse_replays_terminal_event(
         assert response.status_code == 200
         body = response.read().decode("utf-8")
     assert "run_finished" in body or "run_failed" in body
+
+
+@pytest.mark.slow
+def test_run_result_view_reuses_async_artifact_without_regenerating(
+    repo_root,
+    output_config,
+    sample_inputs,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import time
+
+    from repave_engine.pipeline import generate_from_blueprint as pipeline_generate
+
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    submit = client.post(
+        "/api/v1/runs",
+        json={
+            "blueprint": "terraform-module-generic",
+            "dry_run": True,
+            "inputs": sample_inputs,
+        },
+    )
+    assert submit.status_code == 202
+    run_id = submit.json()["run_id"]
+    deadline = time.time() + 180
+    while time.time() < deadline:
+        record = client.get(f"/api/v1/runs/{run_id}").json()
+        if record["status"] in ("succeeded", "dead_letter"):
+            break
+        time.sleep(0.25)
+    else:
+        pytest.fail("run did not finish in time")
+    assert record["status"] == "succeeded"
+    assert record.get("result", {}).get("artifact_root")
+
+    regen_calls = 0
+
+    def _spy_generate(*args: object, **kwargs: object) -> GenerationResult:
+        nonlocal regen_calls
+        regen_calls += 1
+        return pipeline_generate(*args, **kwargs)
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", _spy_generate)
+    page = client.get(f"/runs/{run_id}/result")
+    assert page.status_code == 200
+    assert regen_calls == 0
+    assert "terraform-module-generic" in page.text

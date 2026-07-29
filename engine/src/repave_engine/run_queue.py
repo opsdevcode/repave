@@ -17,7 +17,7 @@ from repave_engine.durability_store import (
     resolve_runs_database,
 )
 from repave_engine.execution_mode import ExecutionMode
-from repave_engine.generate_api import run_generate_api
+from repave_engine.generate_api import async_run_artifact_dir, run_generate_api
 from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
@@ -205,6 +205,8 @@ class RunQueue:
                 self._emit_event(run_id, kind, payload)
 
             github_token = None if record.dry_run else os.environ.get("GITHUB_TOKEN")
+            artifact_dir = async_run_artifact_dir(self._repo_root, run_id)
+            artifact_dir.mkdir(parents=True, exist_ok=True)
             try:
                 result = run_generate_api(
                     repo_root=self._repo_root,
@@ -214,6 +216,7 @@ class RunQueue:
                     dry_run=record.dry_run,
                     github_token=github_token,
                     on_event=on_event,
+                    staging_root=artifact_dir,
                 )
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)

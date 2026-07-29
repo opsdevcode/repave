@@ -58,6 +58,9 @@ from repave_engine.auth import (
 from repave_engine.auth_context import current_acting_user, reset_acting_user, set_acting_user
 from repave_engine.blueprint import (
     artifact_family,
+    blueprint_dir,
+    blueprints_dir,
+    bundles_dir,
     group_blueprints_by_artifact,
     list_blueprints,
     load_blueprint,
@@ -91,8 +94,8 @@ from repave_engine.fleet import (
 )
 from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
-from repave_engine.gates import GateResult, all_gates_passed
-from repave_engine.generate_api import run_generate_api
+from repave_engine.gates import GateResult, all_gates_passed, gate_summary
+from repave_engine.generate_api import generation_result_from_stored_run, run_generate_api
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.governance_preflight import build_blueprint_preflight, build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
@@ -325,7 +328,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             {"kind": "nav", "label": "Activity", "href": "/activity"},
             {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
         ]
-        for blueprint in list_blueprints(repo_root / "blueprints"):
+        for blueprint in list_blueprints(blueprints_dir(repo_root)):
             items.append(
                 {
                     "kind": "blueprint",
@@ -489,23 +492,6 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             audit_entries=audit_entries,
         )
 
-    def gate_summary(gates: list[GateResult]) -> dict[str, int | str]:
-        passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
-        failed = sum(1 for gate in gates if not gate.passed and not gate.skipped)
-        skipped = sum(1 for gate in gates if gate.skipped)
-        if failed:
-            outcome = "failed"
-        elif gates and all(gate.passed or gate.skipped for gate in gates):
-            outcome = "passed"
-        else:
-            outcome = "empty"
-        return {
-            "passed": passed,
-            "failed": failed,
-            "skipped": skipped,
-            "outcome": outcome,
-        }
-
     def gate_toolchain_callout(gates: list[GateResult], *, dry_run: bool) -> str | None:
         if not dry_run or not gates:
             return None
@@ -553,7 +539,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
-        blueprints = list_blueprints(repo_root / "blueprints")
+        blueprints = list_blueprints(blueprints_dir(repo_root))
         catalog_groups = group_blueprints_by_artifact(blueprints)
         catalog_bundles = list_bundles(repo_root)
         return templates.TemplateResponse(
@@ -742,7 +728,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         policy_catalog: dict[str, object] | None = None
         policy_defaults: dict[str, str] = {}
         policy_enabled_rule_ids: set[str] = set()
@@ -874,7 +860,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/bundles/{bundle_name}", response_class=HTMLResponse)
     async def bundle_form(request: Request, bundle_name: str) -> HTMLResponse:
-        bundle_dir = repo_root / "blueprints" / "bundles" / bundle_name
+        bundle_dir = bundles_dir(repo_root) / bundle_name
         bundle = load_bundle(bundle_dir, repo_root)
         preview_inputs: dict[str, str] = {
             "service_name": "example-service",
@@ -898,7 +884,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         member_gates: list[str] = []
         for member in bundle.members:
             member_blueprint = load_blueprint(
-                repo_root / "blueprints" / member.blueprint_name,
+                blueprint_dir(repo_root, member.blueprint_name),
                 repo_root,
             )
             member_gates.extend(member_blueprint.gates)
@@ -928,7 +914,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         support_linux: str = "true",
         support_windows: str = "false",
     ) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         supports_catalog = (
             blueprint_supports_role_patterns(blueprint)
             or blueprint_supports_playbook_patterns(blueprint)
@@ -957,7 +943,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def provider_service_detail(
         blueprint_name: str, cloud_provider: str, service: str
     ) -> dict[str, list[str]]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         catalog = load_provider_catalog(blueprint.path)
         definition = get_service_definition(catalog, cloud_provider, service)
         if definition is None:
@@ -969,7 +955,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         user = session_user(request)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         standards = standards_diff_for_pin(
             repo_root,
             standard_source=blueprint.standard_source,
@@ -1007,7 +993,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/blueprints/{blueprint_name}/policy-catalog")
     async def policy_catalog(blueprint_name: str) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if not blueprint_supports_policy_customization(
             blueprint
         ) and not blueprint_supports_optional_policy(blueprint):
@@ -1021,7 +1007,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/blueprints/{blueprint_name}/observability-catalog")
     async def observability_catalog(blueprint_name: str) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         obs_catalog_api = (
             blueprint_supports_observability_notifications(blueprint)
             or blueprint_supports_dashboard_packs(blueprint)
@@ -1052,7 +1038,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/blueprints/{blueprint_name}/service-inventory")
     async def service_inventory(blueprint_name: str) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "observability":
             return {"services": [], "discovered_count": 0}
         catalog = load_observability_catalog(repo_root)
@@ -1067,7 +1053,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint_name: str,
         cloud_provider: str = "",
     ) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "terraform-environment-stack":
             return {"modules": []}
         return inventory_modules_json(
@@ -1081,7 +1067,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint_name: str,
         repo_name: str,
     ) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "terraform-environment-stack":
             return {"repo_name": repo_name, "versions": []}
         token = os.environ.get("GITHUB_TOKEN")
@@ -1094,7 +1080,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/blueprints/{blueprint_name}/role-inventory")
     async def role_inventory(blueprint_name: str) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "ansible-playbook-project":
             return {"roles": []}
         return inventory_roles_json(
@@ -1107,7 +1093,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint_name: str,
         repo_name: str,
     ) -> dict[str, object]:
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "ansible-playbook-project":
             return {"repo_name": repo_name, "versions": []}
         token = os.environ.get("GITHUB_TOKEN")
@@ -1132,7 +1118,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             github_token = os.environ.get("GITHUB_TOKEN")
 
         if bundle_name:
-            bundle_dir = repo_root / "blueprints" / "bundles" / bundle_name
+            bundle_dir = bundles_dir(repo_root) / bundle_name
             bundle = load_bundle(bundle_dir, repo_root)
             bundle_values: dict[str, str] = {}
             for field in bundle.inputs:
@@ -1172,7 +1158,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
 
         blueprint_name = str(form.get("blueprint_name", ""))
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         values = _blueprint_values_from_form(form, blueprint)
 
         use_stream = _stream_from_form(form)
@@ -1455,7 +1441,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
         blueprint = load_blueprint(
-            repo_root / "blueprints" / record.blueprint_name,
+            blueprint_dir(repo_root, record.blueprint_name),
             repo_root,
         )
         return templates.TemplateResponse(
@@ -1483,24 +1469,30 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             raise HTTPException(status_code=404, detail="Run not found")
         if record.status != RunStatus.SUCCEEDED:
             raise HTTPException(status_code=400, detail="Run is not complete")
-        inputs_raw = record.payload.get("inputs", {})
-        if not isinstance(inputs_raw, dict):
-            inputs_raw = {}
         blueprint_name = record.blueprint_name
-        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        values = {str(k): str(v) for k, v in inputs_raw.items()}
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         dry_run = record.dry_run
-        require_run = dry_run
-        github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
-        result = generate_from_blueprint(
-            blueprint,
-            values,
-            output_config=resolved_output,
-            dry_run=dry_run,
-            require_run=require_run,
-            github_token=github_token,
+        result = generation_result_from_stored_run(
+            record=record,
             repo_root=repo_root,
+            output_config=resolved_output,
         )
+        if result is None:
+            inputs_raw = record.payload.get("inputs", {})
+            if not isinstance(inputs_raw, dict):
+                inputs_raw = {}
+            values = {str(k): str(v) for k, v in inputs_raw.items()}
+            require_run = dry_run
+            github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
+            result = generate_from_blueprint(
+                blueprint,
+                values,
+                output_config=resolved_output,
+                dry_run=dry_run,
+                require_run=require_run,
+                github_token=github_token,
+                repo_root=repo_root,
+            )
         return templates.TemplateResponse(
             request,
             "result.html",

@@ -8,6 +8,7 @@ from pathlib import Path
 
 import httpx
 import jsonschema
+import yaml
 
 from repave_engine.blueprint import CheckovGateConfig, TflintGateConfig, _find_repo_root
 from repave_engine.gate_registry import GateContext, GateResult
@@ -326,7 +327,7 @@ def run_provenance_drift(ctx: GateContext) -> GateResult:
             False,
             f"Invalid provenance file: {exc.message}",
         )
-    except Exception as exc:
+    except (yaml.YAMLError, ValueError, OSError) as exc:
         return GateResult("provenance-drift", False, False, str(exc))
 
     return GateResult("provenance-drift", True, False, "Provenance file present and valid")

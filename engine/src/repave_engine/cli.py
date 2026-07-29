@@ -11,7 +11,7 @@ from typing import cast
 
 from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.auth_context import current_acting_user
-from repave_engine.blueprint import _find_repo_root, list_blueprints
+from repave_engine.blueprint import _find_repo_root, blueprints_dir, bundles_dir, list_blueprints
 from repave_engine.doctor import (
     doctor_exit_code,
     format_doctor_report,
@@ -83,7 +83,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     if bundle_name:
         bundle_path = Path(bundle_name)
         if not bundle_path.is_absolute():
-            bundle_path = (repo_root / "blueprints" / "bundles" / bundle_name).resolve()
+            bundle_path = (bundles_dir(repo_root) / bundle_name).resolve()
         bundle_result = generate_bundle_from_path(
             bundle_path,
             values,
@@ -145,7 +145,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
 def cmd_list(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo_root).resolve()
-    blueprints = list_blueprints(repo_root / "blueprints")
+    blueprints = list_blueprints(blueprints_dir(repo_root))
     payload = [
         {
             "name": bp.name,

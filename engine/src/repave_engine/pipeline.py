@@ -27,6 +27,7 @@ from repave_engine.gates import (
     RunEventCallback,
     all_gates_passed,
     clean_gate_artifacts,
+    gate_outcome,
     run_gates,
 )
 from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
@@ -83,14 +84,6 @@ class BundleGenerationResult:
         return all(all_gates_passed(member.result.gates) for member in self.members)
 
 
-def _gates_outcome(gates: list[GateResult]) -> str:
-    if not gates:
-        return "empty"
-    if all(gate.passed or gate.skipped for gate in gates):
-        return "passed"
-    return "failed"
-
-
 def _record_operability(
     catalog_root: Path,
     *,
@@ -102,7 +95,7 @@ def _record_operability(
     started_at: float,
 ) -> None:
     elapsed = time.perf_counter() - started_at
-    outcome = _gates_outcome(gates)
+    outcome = gate_outcome(gates)
     GENERATION_DURATION.labels(blueprint=blueprint.name).observe(elapsed)
     GENERATION_TOTAL.labels(outcome=outcome, blueprint=blueprint.name).inc()
 
@@ -344,7 +337,7 @@ def _record_bundle_operability(
     from repave_engine.bundle_portal import build_bundle_provenance_document
 
     elapsed = time.perf_counter() - started_at
-    outcome = _gates_outcome(gates)
+    outcome = gate_outcome(gates)
     GENERATION_DURATION.labels(blueprint=bundle.name).observe(elapsed)
     GENERATION_TOTAL.labels(outcome=outcome, blueprint=bundle.name).inc()
     try:

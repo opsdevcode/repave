@@ -12,7 +12,7 @@ from urllib.parse import urlparse
 import httpx
 
 from repave_engine.blueprint import Blueprint
-from repave_engine.gates import GateResult
+from repave_engine.gates import GateResult, gate_summary
 from repave_engine.settings import NotificationsConfig, load_notifications_config
 
 logger = logging.getLogger(__name__)
@@ -32,14 +32,12 @@ def publish_succeeded(*, pr_message: str, dry_run: bool) -> bool:
 
 
 def summarize_gates(gates: list[GateResult]) -> str:
-    passed = sum(1 for gate in gates if gate.passed and not gate.skipped)
-    failed = sum(1 for gate in gates if not gate.passed and not gate.skipped)
-    skipped = sum(1 for gate in gates if gate.skipped)
-    parts = [f"{passed} passed"]
-    if failed:
-        parts.append(f"{failed} failed")
-    if skipped:
-        parts.append(f"{skipped} skipped")
+    summary = gate_summary(gates)
+    parts = [f"{summary['passed']} passed"]
+    if summary["failed"]:
+        parts.append(f"{summary['failed']} failed")
+    if summary["skipped"]:
+        parts.append(f"{summary['skipped']} skipped")
     return ", ".join(parts)
 
 

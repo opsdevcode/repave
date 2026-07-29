@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.blueprint import load_blueprint, validate_inputs
+from repave_engine.blueprint import blueprint_dir, load_blueprint, validate_inputs
 from repave_engine.github import create_github_pull_request, push_git_branch
 from repave_engine.policy_selection import diff_policy_provenance
 from repave_engine.provenance_inputs import (
@@ -302,7 +302,7 @@ def _render_upgrade_staging(
     doc = load_provenance_document(provenance_path)
     old_policy = doc.get("spec", {}).get("policy") if isinstance(doc.get("spec"), dict) else None
     resolved_blueprint = (blueprint_name or blueprint_name_from_provenance(doc)).strip()
-    blueprint_path = repo_root / "blueprints" / resolved_blueprint
+    blueprint_path = blueprint_dir(repo_root, resolved_blueprint)
     blueprint = load_blueprint(blueprint_path, repo_root)
     gate_overrides = load_gate_overrides(repo_root)
     values = validate_inputs(

@@ -594,6 +594,19 @@ def _format_scope_summary(scope_json: str) -> str:
     return "\n".join(lines)
 
 
+def blueprints_dir(repo_root: Path) -> Path:
+    """Root directory for blueprint.yaml catalog entries."""
+    return repo_root / "blueprints"
+
+
+def blueprint_dir(repo_root: Path, blueprint_name: str) -> Path:
+    return blueprints_dir(repo_root) / blueprint_name
+
+
+def bundles_dir(repo_root: Path) -> Path:
+    return blueprints_dir(repo_root) / "bundles"
+
+
 def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
     results: list[Blueprint] = []
     if not blueprints_dir.exists():
