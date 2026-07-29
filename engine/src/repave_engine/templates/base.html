@@ -18,7 +18,7 @@
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <div class="shell{% if portal_density == 'compact' %} shell--compact{% endif %}">
+    <div class="shell{% if portal_density == 'compact' %} shell--compact{% endif %}{% if presenter_mode %} shell--presenter{% endif %}">
       <div class="shell__atmosphere" aria-hidden="true"></div>
       <header class="shell__bar">
         <a class="shell__brand" href="/" aria-label="repave home">
@@ -40,6 +40,9 @@
           </a>
           <a href="/services" {% if nav_active == "services" %}aria-current="page"{% endif %}>
             Services
+          </a>
+          <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>
+            Estate
           </a>
           <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
             Activity

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Estate map — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/fleet">← Fleet</a> · <a href="/">Catalog</a></p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Estate map</h1>
+    <p class="page-lead">
+      Fleet repositories as freshness-colored tiles. Sparklines summarize recent generation
+      outcomes from the audit log when configured.
+    </p>
+  </div>
+</header>
+
+{% if estate_enabled %}
+  {% if estate_tiles %}
+<section class="estate-grid" aria-labelledby="estate-heading">
+  <h2 id="estate-heading" class="visually-hidden">Registered repositories</h2>
+  {% for tile in estate_tiles %}
+  <article class="estate-tile estate-tile--{{ tile.freshness }}" title="{{ tile.freshness_detail }}">
+    <header class="estate-tile__header">
+      <h3 class="estate-tile__title">{{ tile.title }}</h3>
+      {% if tile.owner %}
+      <p class="estate-tile__owner muted">{{ tile.owner }}</p>
+      {% endif %}
+    </header>
+    <p class="estate-tile__blueprint">
+      <span class="badge badge--pass">{{ tile.blueprint_label }}</span>
+    </p>
+    {% if tile.operator_phase %}
+    <p class="estate-tile__operator muted">operator {{ tile.operator_phase }}</p>
+    {% endif %}
+    <div class="estate-tile__sparkline" role="img" aria-label="Recent generation outcomes">
+      {% for value in tile.sparkline %}
+      <span class="estate-spark estate-spark--{% if value == 1 %}pass{% elif value == 0 %}fail{% else %}empty{% endif %}"></span>
+      {% endfor %}
+    </div>
+    <footer class="estate-tile__footer">
+      <a href="{{ tile.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ tile.repo_url }}</code></a>
+      {% if tile.registered_at %}
+      <time class="muted" datetime="{{ tile.registered_at }}">{{ tile.registered_at[:19] }}</time>
+      {% endif %}
+    </footer>
+  </article>
+  {% endfor %}
+</section>
+  {% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">No repositories registered yet. Use <code>repave register</code> or the fleet API.</p>
+  </div>
+</section>
+  {% endif %}
+{% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">Enable the fleet registry in <code>repave.config.yaml</code> or set <code>REPAVE_FLEET_FILE</code>.</p>
+  </div>
+</section>
+{% endif %}
+{% if not audit_sparklines_enabled %}
+<p class="hint estate-map-hint">Enable the audit sink to populate generation sparklines on each tile.</p>
+{% endif %}
+{% endblock %}

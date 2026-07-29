@@ -124,6 +124,8 @@
                 {% endfor %}
               </ul>
             </details>
+            {% include "partials/diff_viewer.html" %}
+            {% include "partials/governance_annotations.html" %}
             <p class="hint governance-drift-hint">
               Full pin comparison on <a href="/update">Upgrade existing repo</a>.
             </p>
@@ -905,10 +907,9 @@
     </section>
 
     <div class="form-actions form-actions--sticky{% if form_stepper %} form-actions--stepper{% if publish_step == 0 %} form-actions--stepper-final{% endif %}{% endif %}">
-      <p class="form-actions__preflight muted">
-        {{ blueprint.gates|length }} quality gates on scaffold ·
-        <code>{{ blueprint.standard_source }}</code>@{{ blueprint.standard_version }}
-      </p>
+      <div class="form-actions__preflight">
+        {% include "partials/governance_preflight.html" %}
+      </div>
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
       {% if async_generation_enabled %}
       <label class="form-actions__stream hint">

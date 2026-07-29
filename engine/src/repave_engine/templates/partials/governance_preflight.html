@@ -1,0 +1,31 @@
+<dl class="preflight-panel">
+  <div class="preflight-panel__row">
+    <dt>Gates</dt>
+    <dd>{{ governance_preflight.gate_count }} on scaffold</dd>
+  </div>
+  <div class="preflight-panel__row">
+    <dt>Standard</dt>
+    <dd><code>{{ governance_preflight.standard_label }}</code></dd>
+  </div>
+  <div class="preflight-panel__row">
+    <dt>Policy</dt>
+    <dd><code>{{ governance_preflight.policy_profile }}</code></dd>
+  </div>
+  {% if governance_preflight.example_repo_name %}
+  <div class="preflight-panel__row">
+    <dt>Example repo</dt>
+    <dd><code>{{ governance_preflight.example_repo_name }}</code></dd>
+  </div>
+  {% endif %}
+  <div class="preflight-panel__row">
+    <dt>Gate CLIs</dt>
+    <dd>
+      {% if governance_preflight.tools_ready %}
+      <span class="badge badge--pass">Toolchain ready</span>
+      {% else %}
+      <span class="badge badge--fail">Missing on server</span>
+      <span class="muted">{{ governance_preflight.missing_tools | join(', ') }}</span>
+      {% endif %}
+    </dd>
+  </div>
+</dl>

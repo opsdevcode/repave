@@ -90,6 +90,20 @@
       </div>
       {% endfor %}
     </dl>
+    {% if presenter_mode %}
+    <div class="presenter-receipt">
+      <button type="button" class="btn btn--secondary btn--sm" data-copy-lineage-receipt>
+        Copy shareable receipt
+      </button>
+      <script type="application/json" id="lineage-receipt-data">
+        {% set lineage_receipt_rows = [] %}
+        {% for row in result_portal.lineage %}
+        {% if lineage_receipt_rows.append({"label": row.label, "value": row.value}) %}{% endif %}
+        {% endfor %}
+        {{ {"lineage": lineage_receipt_rows, "blueprint": result.blueprint.name, "outcome": gate_summary.outcome} | tojson }}
+      </script>
+    </div>
+    {% endif %}
     {% if result_portal.policy_profile %}
     <div class="result-lineage__policy">
       <h3 class="form-section__subtitle">Policy pack</h3>

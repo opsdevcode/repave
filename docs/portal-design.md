@@ -270,7 +270,7 @@ Further craft (illustration, stepper) is optional.
 | --- | --- |
 | Live run console (`/runs/{id}`, SSE gate events) | Shipped |
 | Command palette (Cmd/Ctrl-K) | Shipped |
-| Estate map, diff viewer, annotations, preflight, bundle graph, presenter mode | Roadmap |
+| Estate map, diff viewer, annotations, preflight, bundle graph, presenter mode | Shipped |
 
 **Done when:** Users who enable “Live run console” on the blueprint form watch gates complete in
 real time; any route exposes Cmd/Ctrl-K navigation without a SPA rewrite.

@@ -1,0 +1,12 @@
+{% if standards_diff_views %}
+<div class="diff-viewer-stack">
+  {% for view in standards_diff_views %}
+  <details class="diff-viewer" open>
+    <summary><code>{{ view.path }}</code></summary>
+    <div class="diff-viewer__body">
+      {{ view.html | safe }}
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}
