@@ -1,0 +1,66 @@
+---
+description: Python style, typing, and tests for all Python in the repave repo
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python standards (repave)
+
+**Scope:** every **`.py`** file in this repository (`engine/`, `scripts/`, and any future Python paths). Authoritative tool config: `engine/pyproject.toml`. Human overview: `CONTRIBUTING.md`.
+
+Agent skill: **`.cursor/skills/repave-python/SKILL.md`**.
+
+## Runtime and layout
+
+- **Python 3.10+**; package code lives under `engine/src/repave_engine/`, tests under `engine/tests/`.
+- Use **`uv`** from `engine/` (`make install` at repo root). Do not add cloud-specific logic to `engine/` — clouds belong in `blueprints/`.
+- **`scripts/`** and other standalone modules: same style and security rules; run Ruff against edited paths (see skill) even when CI only gates `engine/src` and `engine/tests`.
+
+## Style (Ruff)
+
+- **Line length 100**, **double-quoted** strings (`[tool.ruff.format]`).
+- Enabled lint: **E, F, I, UP, B, SIM, RUF** — fix with `make format` (applies `ruff format`) and `make lint`.
+- **Import order**: stdlib → third party → `repave_engine` (isort via Ruff **I**).
+- Prefer **`from __future__ import annotations`** in new modules (matches existing engine code).
+- Use **pathlib.Path**, **dataclasses**, and explicit types on public functions; avoid bare `except` and unnecessary `# noqa`.
+
+## Modern Python (3.10+, community idioms)
+
+- **Typing:** `X | None`, **`collections.abc`** (`Callable`, `Iterable`, `Mapping`); use **`typing.Protocol`** for pluggable interfaces; **`typing.Final`** / **`frozenset`** for immutable config (see `AuthConfig`).
+- **Dataclasses:** prefer **`@dataclass(frozen=True)`** for value objects; mutable aggregates only when lifecycle requires it.
+- **Enums:** use **`enum.Enum`** (or **`StrEnum`** when the project minimum becomes 3.11+) for fixed sets instead of string literals where it reduces mistakes.
+- **Context:** **`contextvars`** for request-scoped identity (`auth_context`); do not thread acting-user through deep call stacks when context suffices.
+- **Errors:** catch **specific exceptions**; use **`raise ... from exc`** when wrapping; avoid silent **`except Exception: pass`**.
+- **Logging:** **`logging.getLogger(__name__)`** — not `print` — for operational messages in library and API code.
+- **Performance:** **`functools.cache`** / **`lru_cache`** only for pure functions with hashable args; no caches of mutable or request-bound state.
+- **`match` / `case`:** use when it clarifies branching on enums or structured tags; do not replace simple `if/elif` for readability.
+
+Security-specific rules: **`.cursor/rules/python-security.mdc`**.
+
+## Typing (mypy)
+
+- **`disallow_untyped_defs`** on `repave_engine` — add parameter and return types on new/changed functions in the package.
+- **All new Python modules** (including under `scripts/`): prefer full type annotations on public functions and `-> None` on typed test functions.
+- Use **`collections.abc`** for `Callable`, `Iterable`, etc. Prefer **`X | None`** (pyupgrade **UP**) over `Optional[X]`.
+- Third-party stubs: missing imports are ignored only for modules listed in `[[tool.mypy.overrides]]` — do not widen ignores without cause.
+- Narrow **`type: ignore`** comments; prefer fixing types or using `cast()` at boundaries (see `cli.py` patterns).
+
+## Tests (pytest)
+
+- Files **`test_*.py`** under `engine/tests/`; test functions **`test_*`** with **`-> None`** return type when typed.
+- Mark expensive integration/conformance tests with **`@pytest.mark.slow`**; default dev loop uses `make test-fast` (`-m "not slow"`).
+- **Coverage** `fail_under = 75` on full `make test` — add tests with behavior changes.
+- Tests may use **`assert`** (Ruff **S101** ignored under `tests/**`).
+
+## Security and dependencies
+
+- Details: **`.cursor/rules/python-security.mdc`**. Run **`make security`** when changing **`engine/`**; run **Bandit** on any new/changed `.py` outside `engine/` when adding subprocess, network, or parsing code (see **repave-python** skill).
+- After editing **`engine/pyproject.toml`** dependencies, run **`make lock`** and commit **`engine/uv.lock`**.
+
+## Before push
+
+```bash
+make format && make quality && make test
+```
+
+Use **`make test-fast`** while iterating; run full **`make test`** before opening a PR.

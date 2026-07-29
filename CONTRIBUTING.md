@@ -66,6 +66,34 @@ make test
 
 ### Python quality and security tooling
 
+#### Coding standards and security (all Python)
+
+Every **`.py`** file in this repository follows the same conventions — not only
+`engine/` and `scripts/`, but any Python added elsewhere in the monorepo.
+
+| Resource | Purpose |
+| --- | --- |
+| [`.cursor/rules/python-standards.mdc`](.cursor/rules/python-standards.mdc) | Ruff, mypy, pytest, modern 3.10+ idioms |
+| [`.cursor/rules/python-security.mdc`](.cursor/rules/python-security.mdc) | Subprocess, secrets, safe parsing, HTTP, dependencies |
+| [`.cursor/skills/repave-python/SKILL.md`](.cursor/skills/repave-python/SKILL.md) | Local workflow, CI alignment, check commands |
+| [`.cursor/skills/repave-python/reference.md`](.cursor/skills/repave-python/reference.md) | Detailed patterns and checklists |
+
+Tool versions and Ruff/mypy/pytest settings live in **`engine/pyproject.toml`**.
+
+CI runs Ruff, mypy, Bandit, and pip-audit on **`engine/src`** and
+**`engine/tests`**. When you change Python under **`scripts/`** or other paths,
+run the same tools on those files before opening a PR:
+
+```bash
+cd engine
+uv run ruff check ../scripts
+uv run ruff format ../scripts
+uv run bandit -r ../scripts -c pyproject.toml   # when security-relevant
+```
+
+Packaged engine changes: use repo-root **`make format`**, **`make quality`**,
+**`make security`**, and **`make test`** as below.
+
 CI runs these OSS tools on every push and pull request. **Docs-only** changes still trigger workflows (so required status checks complete) but jobs skip heavy work when
 the diff touches only:
 

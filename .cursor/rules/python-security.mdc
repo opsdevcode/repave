@@ -1,0 +1,47 @@
+---
+description: Python security practices for all Python in the repave repo
+globs: "**/*.py"
+alwaysApply: false
+---
+
+# Python security (repave)
+
+**Scope:** all **`.py`** files in this repository. CI enforces **Bandit** and **pip-audit** on `engine/src` — run **`make security`** before pushing engine changes; apply the same rules to **`scripts/`** and any other Python you add or edit.
+
+Config: `engine/pyproject.toml` `[tool.bandit]` (subprocess is intentional; do not disable skips without review).
+
+## Subprocess and shell
+
+- **Never `shell=True`**. Pass **`list[str]`** argv only.
+- Prefer **`repave_engine.subprocess_run.run_subprocess`** or **`gate_runners.run_command`** in the engine; in **`scripts/`** or other code, use the same pattern (list argv, explicit timeout, no shell).
+- Do not interpolate untrusted input into a single shell string; if a tool needs a script, invoke the interpreter with a fixed `-c` or a path under controlled staging.
+- New gate/tool runners need tests for timeout and failure paths (see `tests/test_subprocess_run.py`).
+
+## Deserialization and parsing
+
+- **YAML:** only **`yaml.safe_load`** (never `yaml.load` / `Loader=`-style unsafe loads).
+- **JSON:** parse with **`json.loads`**; validate blueprint/input payloads with existing **`jsonschema`** paths where schemas apply.
+- **No `pickle`**, **`marshal`**, or **`eval`/`exec`** on untrusted or repo-supplied content.
+
+## Paths and files
+
+- Normalize with **`Path.resolve()`** before git/subprocess cwd or cross-repo writes.
+- Keep generated output under configured **staging / modules roots**; reject `..` traversal in user-supplied paths when adding new CLI or API parameters.
+- Read/write text with **`encoding="utf-8"`** explicitly.
+
+## Secrets, auth, and logging
+
+- Load tokens and client secrets from **environment or settings**, not source code.
+- Use **`secrets`** (e.g. `token_urlsafe`) for CSRF/OIDC state — see `auth.py`.
+- **Do not log** passwords, session secrets, `GITHUB_TOKEN`, or OIDC tokens; log ids and outcomes at **`logging`** INFO/WARNING.
+- New FastAPI routes: reuse **`require_role`**, **`session_user`**, and public-path rules — do not add unauthenticated mutating endpoints in service mode.
+
+## HTTP clients
+
+- **`httpx`** calls must set **`timeout=`** (sync and `AsyncClient`); handle **`httpx.HTTPError`** without leaking response bodies that may contain secrets.
+- Treat outbound URLs as untrusted unless from operator config; avoid SSRF to metadata endpoints when adding user-controlled URLs.
+
+## Dependencies
+
+- Pin changes in **`engine/pyproject.toml`** and refresh **`engine/uv.lock`** (`make lock`).
+- Prefer minimal new dependencies; CI installs with **`uv sync --frozen`**.
