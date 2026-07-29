@@ -1366,7 +1366,7 @@ OTEL env vars, [`docs/tracing.md`](tracing.md).
 
 | Item | Evidence | Fix |
 | --- | --- | --- |
-| `gate_runners.py` is a 1354-line multi-domain module holding every gate CLI | `engine/src/repave_engine/gate_runners.py` | Split into a `gates/` package by domain, registry unchanged |
+| `gate_runners.py` is a 1354-line multi-domain module holding every gate CLI | `engine/src/repave_engine/gate_runners/` | **Shipped** — split into domain modules (`_core`, `terraform`, `policy`, `drift`, `observability`, `helm`, `app`, `ansible`); registry unchanged |
 | `api.py` (861 lines) mixes portal HTML, JSON API, and auth middleware; mypy has an `arg-type` carve-out for it | `engine/src/repave_engine/api.py`, `pyproject.toml` mypy overrides | Split into routers; drop the mypy override |
 | `cli.py` (576 lines) owns every command | `engine/src/repave_engine/cli.py` | `cli/` package per subcommand |
 | Gate-outcome summarization implemented four times with drifting empty/passed/failed semantics | `generate_api.py`, `api.py`, `pipeline.py`, `notifications.py` | One helper in `gates.py` |
