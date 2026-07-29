@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -48,6 +49,9 @@ class GovernancePreflight:
         }
 
 
+_TEMPLATE_PLACEHOLDER = re.compile(r"\{(\w+)\}")
+
+
 def _example_values(blueprint: Blueprint) -> dict[str, str]:
     values: dict[str, str] = {}
     for field in blueprint.inputs:
@@ -56,6 +60,10 @@ def _example_values(blueprint: Blueprint) -> dict[str, str]:
     values.setdefault("module_name", "example-module")
     values.setdefault("role_name", "example-role")
     values.setdefault("service_name", "example-service")
+    for match in _TEMPLATE_PLACEHOLDER.finditer(blueprint.output_repo_name_template):
+        key = match.group(1)
+        slug = key.replace("_", "-")
+        values.setdefault(key, f"example-{slug}")
     return values
 
 

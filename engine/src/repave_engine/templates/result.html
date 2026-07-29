@@ -96,7 +96,11 @@
         Copy shareable receipt
       </button>
       <script type="application/json" id="lineage-receipt-data">
-        {{ {"lineage": [{"label": row.label, "value": row.value} for row in result_portal.lineage], "blueprint": result.blueprint.name, "outcome": gate_summary.outcome} | tojson }}
+        {% set lineage_receipt_rows = [] %}
+        {% for row in result_portal.lineage %}
+        {% if lineage_receipt_rows.append({"label": row.label, "value": row.value}) %}{% endif %}
+        {% endfor %}
+        {{ {"lineage": lineage_receipt_rows, "blueprint": result.blueprint.name, "outcome": gate_summary.outcome} | tojson }}
       </script>
     </div>
     {% endif %}
