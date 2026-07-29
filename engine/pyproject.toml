@@ -35,6 +35,10 @@ dev = [
   "pip-audit>=2.9.0",
   "types-PyYAML",
 ]
+otel = [
+  "opentelemetry-sdk>=1.27.0",
+  "opentelemetry-exporter-otlp-proto-http>=1.27.0",
+]
 
 [project.scripts]
 repave = "repave_engine.cli:main"
@@ -93,7 +97,7 @@ mypy_path = ["src"]
 packages = ["repave_engine"]
 
 [[tool.mypy.overrides]]
-module = ["copier.*", "jsonschema.*"]
+module = ["copier.*", "jsonschema.*", "opentelemetry.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
