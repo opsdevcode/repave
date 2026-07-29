@@ -2719,6 +2719,28 @@ details.file-panel summary {
   margin-bottom: var(--space-6);
 }
 
+.activity-filters {
+  margin-bottom: var(--space-6);
+}
+
+.activity-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-4);
+}
+
+.activity-list__detail {
+  flex-basis: 100%;
+  margin-top: var(--space-1);
+}
+
+.activity-list__extra {
+  font-size: var(--text-xs);
+  margin: var(--space-2) 0 0;
+  max-height: 8rem;
+  overflow: auto;
+}
+
 .activity-list {
   list-style: none;
   margin: 0;

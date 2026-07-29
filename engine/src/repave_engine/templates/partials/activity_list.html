@@ -15,7 +15,16 @@
       <span class="badge badge--skip">{% if row.dry_run %}dry-run{% else %}publish{% endif %}</span>
       <span class="muted">{{ row.acting_user }}</span>
       <time class="muted" datetime="{{ row.timestamp }}">{{ row.timestamp[:19] }}</time>
+      {% if row.repository_url %}
+      <a class="muted" href="{{ row.repository_url }}">repo</a>
+      {% endif %}
     </div>
+    {% if row.extra %}
+    <details class="activity-list__detail">
+      <summary class="muted">Details</summary>
+      <pre class="activity-list__extra">{{ row.extra | tojson(indent=2) }}</pre>
+    </details>
+    {% endif %}
   </li>
   {% endfor %}
 </ul>

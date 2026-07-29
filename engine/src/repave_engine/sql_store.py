@@ -240,7 +240,11 @@ def append_audit_event(conn: SqlConnection, record: dict[str, Any], *, created_a
 
 
 def read_audit_events(conn: SqlConnection, *, limit: int) -> list[dict[str, Any]]:
-    if limit <= 0:
+    return scan_audit_events(conn, max_rows=limit * 3)
+
+
+def scan_audit_events(conn: SqlConnection, *, max_rows: int) -> list[dict[str, Any]]:
+    if max_rows <= 0:
         return []
     cur = conn.execute(
         """
@@ -248,7 +252,7 @@ def read_audit_events(conn: SqlConnection, *, limit: int) -> list[dict[str, Any]
         ORDER BY id DESC
         LIMIT ?
         """,
-        (limit * 3,),
+        (max_rows,),
     )
     rows = cur.fetchall() if hasattr(cur, "fetchall") else list(cur)
     out: list[dict[str, Any]] = []

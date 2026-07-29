@@ -34,7 +34,7 @@ runs:
           .gate-tools/bin
           .gate-tools/py-deps
           ~/.ansible/collections
-        key: gate-toolchain-${{ runner.os }}-${{ hashFiles('deploy/local/install-gate-toolchain.sh', 'ansible/requirements-gate-collections.yml') }}
+        key: gate-toolchain-${{ runner.os }}-${{ hashFiles('deploy/local/gate-toolchain-pins.env', 'deploy/local/install-gate-toolchain.sh', 'ansible/requirements-gate-collections.yml') }}
 
     - name: Install gate toolchain
       if: inputs.enable-cache != 'true' || steps.gate-toolchain-cache.outputs.cache-hit != 'true'
@@ -54,3 +54,10 @@ runs:
       if: inputs.enable-cache == 'true' && steps.gate-toolchain-cache.outputs.cache-hit == 'true'
       shell: bash
       run: echo "Restored gate toolchain from cache."
+
+    - name: Verify gate toolchain pins
+      shell: bash
+      working-directory: engine
+      run: |
+        set -euo pipefail
+        uv run repave doctor --strict --repo-root "${GITHUB_WORKSPACE}"

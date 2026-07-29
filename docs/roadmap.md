@@ -6,8 +6,10 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.90.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
-**Next up:** [durability Phase 2](#durability-and-concurrency-for-hosted-use) (SQL audit/fleet)
-and [portal live governance](#portal-live-governance-surfaces) items 3–8. **Day-2 operability**
+**Next up:** [service decomposition Phase 0–1](#service-decomposition-for-hosted-scale) and
+remaining **engine hardening** (maintainability group B). **Queryable audit** and
+**`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
+and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
 (v1.35–v1.38) is **shipped** — see [Shipped — day-2](#day-2-operability-shipped).
 **Engine hardening** (A1/A2/A4) continues alongside features.  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
@@ -1195,6 +1197,10 @@ producing "gate skipped" and missing-CLI surprises; the portal banner and
 **Done when:** `repave doctor --strict` passes in the Compose image and CI, and fails locally
 with actionable output when a gate CLI is absent or mismatched.
 
+**Status:** **Shipped on `main`** — `repave doctor` CLI (`--blueprint`, `--strict`, `--all-pins`),
+pin checks via `deploy/local/gate-toolchain-pins.env`, **`make gate-doctor`**, CI gate-toolchain
+action, and Compose **`docker build`** verification.
+
 ---
 
 ### Queryable audit history
@@ -1224,6 +1230,9 @@ not assume it).
 
 **Done when:** An operator can answer "every generation of blueprint X by user Y that failed a
 gate last month" from the portal or one CLI call.
+
+**Status:** **Shipped on `main`** — `GET /api/v1/audit`, `/activity` filter form,
+`repave audit query`, SQL + JSONL backends via `query_audit_entries`.
 
 ---
 
