@@ -34,21 +34,22 @@ COPY deploy/local/certs/ /usr/local/share/ca-certificates/repave/
 
 # Gate toolchain: see deploy/local/install-gate-toolchain.sh (keep versions in ci_toolchain.py)
 COPY ansible/requirements-gate-collections.yml /app/ansible/requirements-gate-collections.yml
-COPY deploy/local/gate-toolchain-pins.env /tmp/gate-toolchain-pins.env
-COPY deploy/local/install-gate-toolchain.sh /tmp/install-gate-toolchain.sh
+RUN mkdir -p /app/deploy/local
+COPY deploy/local/gate-toolchain-pins.env /app/deploy/local/gate-toolchain-pins.env
+COPY deploy/local/install-gate-toolchain.sh /app/deploy/local/install-gate-toolchain.sh
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl unzip git \
     && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates \
-    && sed -i 's/\r$//' /tmp/install-gate-toolchain.sh \
-    && chmod +x /tmp/install-gate-toolchain.sh \
+    && sed -i 's/\r$//' /app/deploy/local/install-gate-toolchain.sh \
+    && chmod +x /app/deploy/local/install-gate-toolchain.sh \
     && if [ "${INSTALL_GATE_TOOLCHAIN}" = "1" ]; then \
          REPO_ROOT=/app USE_UV_PIP=1 \
            REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE}" \
            INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS}" \
-           /tmp/install-gate-toolchain.sh; \
+           /app/deploy/local/install-gate-toolchain.sh; \
        fi \
-    && rm /tmp/install-gate-toolchain.sh /tmp/gate-toolchain-pins.env \
+    && rm /app/deploy/local/install-gate-toolchain.sh \
     && git config --global user.email "repave@local.dev" \
     && git config --global user.name "repave"
 
