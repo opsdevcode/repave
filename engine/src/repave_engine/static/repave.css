@@ -3501,3 +3501,116 @@ body.repave-busy {
   display: none;
 }
 
+.visually-hidden {
+  border: 0;
+  clip: rect(0 0 0 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.run-console__stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+}
+
+.run-console__stage {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  padding: var(--space-1) var(--space-3);
+}
+
+.run-console__stage.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.run-console__stage.is-done {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.run-console__log {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  max-height: 16rem;
+  overflow: auto;
+  padding: var(--space-3);
+  white-space: pre-wrap;
+}
+
+.command-palette {
+  inset: 0;
+  position: fixed;
+  z-index: 200;
+}
+
+.command-palette__backdrop {
+  background: rgb(0 0 0 / 55%);
+  inset: 0;
+  position: absolute;
+}
+
+.command-palette__panel {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 48px rgb(0 0 0 / 45%);
+  left: 50%;
+  max-width: 32rem;
+  position: absolute;
+  top: 12vh;
+  transform: translateX(-50%);
+  width: calc(100% - var(--space-6));
+}
+
+.command-palette__input {
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+}
+
+.command-palette__list {
+  list-style: none;
+  margin: 0;
+  max-height: 18rem;
+  overflow: auto;
+  padding: var(--space-2);
+}
+
+.command-palette__item {
+  border-radius: var(--radius);
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+}
+
+.command-palette__item.is-active,
+.command-palette__item:hover {
+  background: var(--accent-soft);
+}
+
+.command-palette__item-kind {
+  color: var(--text-muted);
+  display: block;
+  font-size: 0.75rem;
+}
+
+.form-actions__stream {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+

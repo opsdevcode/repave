@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Run — {{ blueprint.name }} — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/">← Catalog</a>
+  ·
+  <a href="/blueprints/{{ blueprint.name }}">← {{ blueprint.name }}</a>
+</p>
+
+<section
+  class="run-console card"
+  data-run-console
+  data-run-id="{{ run_id }}"
+  data-run-status="{{ run_record.status.value }}"
+  data-result-url="/runs/{{ run_id }}/result"
+  aria-labelledby="run-console-heading"
+>
+  <div class="card__header">
+    <h1 id="run-console-heading" class="card__title">Live run</h1>
+    <p class="hint">
+      {{ blueprint.name }}@{{ blueprint.version }}
+      {% if run_record.dry_run %}
+      · <span class="badge badge--skip">Plan</span>
+      {% else %}
+      · <span class="badge badge--pass">Apply</span>
+      {% endif %}
+    </p>
+  </div>
+  <div class="card__body">
+    <ol class="run-console__stages" aria-label="Pipeline stages">
+      <li class="run-console__stage" data-stage="validate">Validate inputs</li>
+      <li class="run-console__stage" data-stage="render">Render templates</li>
+      <li class="run-console__stage" data-stage="gates">Run gates</li>
+      <li class="run-console__stage" data-stage="publish">Publish</li>
+    </ol>
+
+    <div class="run-console__gates" aria-label="Gate progress">
+      <table class="gate-table run-console__gate-table">
+        <thead>
+          <tr>
+            <th scope="col">Gate</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for gate in gate_names %}
+          <tr data-run-gate-row data-gate="{{ gate }}">
+            <td><code>{{ gate }}</code></td>
+            <td><span class="badge badge--muted" data-gate-status>Pending</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <pre class="run-console__log" id="run-console-log" aria-live="polite" aria-label="Run log"></pre>
+
+    {% if run_record.error %}
+    <p class="alert alert--fail" role="alert">{{ run_record.error }}</p>
+    {% endif %}
+
+    <p class="run-console__actions" hidden data-run-complete-actions>
+      <a class="btn btn--primary" href="/runs/{{ run_id }}/result">View full result</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

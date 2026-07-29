@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import shutil
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from repave_engine.blueprint import Blueprint
 from repave_engine.gate_registry import (
@@ -117,6 +119,9 @@ def _apply_require_run_policy(context: GateContext, result: GateResult) -> GateR
     )
 
 
+RunEventCallback = Callable[[str, dict[str, Any]], None]
+
+
 def run_gates(
     output_dir: Path,
     gate_names: tuple[str, ...],
@@ -124,6 +129,7 @@ def run_gates(
     blueprint: Blueprint | None = None,
     gate_overrides: GateOverrides | None = None,
     require_run: bool = False,
+    on_event: RunEventCallback | None = None,
 ) -> list[GateResult]:
     ensure_gate_path()
     ensure_gates_loaded()
@@ -135,11 +141,24 @@ def run_gates(
     )
     results: list[GateResult] = []
     for gate_name in gate_names:
+        if on_event is not None:
+            on_event("gate_started", {"gate": gate_name})
         spec = get_gate(gate_name)
         if spec is None:
-            results.append(GateResult(gate_name, False, False, f"Unknown gate: {gate_name}"))
-            continue
-        results.append(_apply_require_run_policy(context, spec.runner(context)))
+            gate_result = GateResult(gate_name, False, False, f"Unknown gate: {gate_name}")
+        else:
+            gate_result = _apply_require_run_policy(context, spec.runner(context))
+        results.append(gate_result)
+        if on_event is not None:
+            on_event(
+                "gate_finished",
+                {
+                    "gate": gate_name,
+                    "passed": gate_result.passed,
+                    "skipped": gate_result.skipped,
+                    "message": gate_result.message,
+                },
+            )
     return results
 
 

@@ -910,6 +910,12 @@
         <code>{{ blueprint.standard_source }}</code>@{{ blueprint.standard_version }}
       </p>
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
+      {% if async_generation_enabled %}
+      <label class="form-actions__stream hint">
+        <input type="checkbox" name="stream" value="1" />
+        Live run console (stream gate progress)
+      </label>
+      {% endif %}
       {% if form_stepper %}
       <div class="form-actions__delivery-block">
         <span class="form-actions__delivery-label">Delivery</span>
@@ -948,6 +954,12 @@
         <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
       </div>
       {% else %}
+      {% if async_generation_enabled %}
+      <label class="form-actions__stream hint">
+        <input type="checkbox" name="stream" value="1" />
+        Live run console (stream gate progress)
+      </label>
+      {% endif %}
       <div class="form-actions__buttons form-actions__buttons--stack">
         <button
           type="submit"

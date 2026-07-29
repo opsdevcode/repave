@@ -12,6 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/repave.css?v={{ app_version }}" />
+    <script id="command-palette-data" type="application/json">{{ command_palette_items | tojson }}</script>
     <script src="/static/repave.js?v={{ app_version }}" defer></script>
     {% block head %}{% endblock %}
   </head>
@@ -82,6 +83,36 @@
       </div>
 
       <div id="repave-toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+      <div
+        id="command-palette"
+        class="command-palette"
+        hidden
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="command-palette-label"
+      >
+        <div class="command-palette__backdrop" data-command-palette-close tabindex="-1"></div>
+        <div class="command-palette__panel">
+          <label id="command-palette-label" class="visually-hidden" for="command-palette-input">
+            Command palette
+          </label>
+          <input
+            id="command-palette-input"
+            class="command-palette__input input"
+            type="search"
+            placeholder="Jump to blueprint, route, or action…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <ul
+            id="command-palette-list"
+            class="command-palette__list"
+            role="listbox"
+            aria-label="Matches"
+          ></ul>
+        </div>
+      </div>
 
       <footer class="shell__footer">
         Governed golden paths · engine {{ app_version }}

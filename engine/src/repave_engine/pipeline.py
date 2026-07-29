@@ -22,7 +22,13 @@ from repave_engine.bundle import (
     prepare_member_values,
     validate_bundle_inputs,
 )
-from repave_engine.gates import GateResult, all_gates_passed, clean_gate_artifacts, run_gates
+from repave_engine.gates import (
+    GateResult,
+    RunEventCallback,
+    all_gates_passed,
+    clean_gate_artifacts,
+    run_gates,
+)
 from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
 from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
@@ -122,6 +128,13 @@ def _record_operability(
     )
 
 
+def _emit_stage(on_event: RunEventCallback | None, stage: str, *, started: bool) -> None:
+    if on_event is None:
+        return
+    kind = "stage_started" if started else "stage_finished"
+    on_event(kind, {"stage": stage})
+
+
 def generate_from_blueprint(
     blueprint: Blueprint,
     values: dict[str, Any],
@@ -136,12 +149,14 @@ def generate_from_blueprint(
     send_notification: bool = True,
     member_id: str | None = None,
     skip_input_validation: bool = False,
+    on_event: RunEventCallback | None = None,
 ) -> GenerationResult:
     started_at = time.perf_counter()
     pack_root = repo_root if repo_root is not None else _find_repo_root(blueprint.path)
     gate_overrides = load_gate_overrides(pack_root)
     catalog_root = _find_repo_root(blueprint.path)
     with pipeline_span("repave.validate"):
+        _emit_stage(on_event, "validate", started=True)
         if skip_input_validation:
             normalized = dict(values)
         else:
@@ -151,6 +166,7 @@ def generate_from_blueprint(
                 repo_root=catalog_root,
                 gate_overrides=gate_overrides,
             )
+        _emit_stage(on_event, "validate", started=False)
     module_name = primary_publish_name(blueprint, normalized)
     module_repository = resolve_module_repository(
         module_name=module_name,
@@ -171,9 +187,12 @@ def generate_from_blueprint(
 
     try:
         with pipeline_span("repave.render"):
+            _emit_stage(on_event, "render", started=True)
             render_result = render_blueprint(blueprint, normalized, staging_dir)
+            _emit_stage(on_event, "render", started=False)
         run_gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
         with pipeline_span("repave.gates"):
+            _emit_stage(on_event, "gates", started=True)
             gate_require_run = dry_run if require_run is None else require_run
             if dry_run:
                 gate_require_run = True
@@ -183,7 +202,9 @@ def generate_from_blueprint(
                 blueprint=blueprint,
                 gate_overrides=run_gate_overrides,
                 require_run=gate_require_run,
+                on_event=on_event,
             )
+            _emit_stage(on_event, "gates", started=False)
         clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)
 
         pr_plan: PullRequestPlan | None = None
@@ -192,6 +213,7 @@ def generate_from_blueprint(
 
         if all_gates_passed(gate_results):
             with pipeline_span("repave.publish"):
+                _emit_stage(on_event, "publish", started=True)
                 publish_message = publish_to_module_repository(
                     render_result.output_dir,
                     module_repository,
@@ -214,6 +236,7 @@ def generate_from_blueprint(
             else:
                 pr_body = create_pull_request(pr_plan, github_token=github_token)
                 pr_message = f"{publish_message}\n\n{pr_body}"
+            _emit_stage(on_event, "publish", started=False)
         else:
             published_repository = None
             if dry_run:

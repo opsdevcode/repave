@@ -259,6 +259,24 @@ Further craft (illustration, stepper) is optional.
 
 ---
 
+## Phase 6 — Live governance surfaces
+
+**Status:** Tier 1 shipped (live run console, command palette). Tier 2 items 3–8 are in
+[roadmap — Portal live governance surfaces](roadmap.md#portal-live-governance-surfaces).
+
+**Goal:** Make governance visible while it runs — not only on the result page.
+
+| Item | Status |
+| --- | --- |
+| Live run console (`/runs/{id}`, SSE gate events) | Shipped |
+| Command palette (Cmd/Ctrl-K) | Shipped |
+| Estate map, diff viewer, annotations, preflight, bundle graph, presenter mode | Roadmap |
+
+**Done when:** Users who enable “Live run console” on the blueprint form watch gates complete in
+real time; any route exposes Cmd/Ctrl-K navigation without a SPA rewrite.
+
+---
+
 ## Copy and voice
 
 Portal strings are **product copy**, not engine documentation.

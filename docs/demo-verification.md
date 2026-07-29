@@ -17,6 +17,7 @@ Manual pass (≈7 minutes) — detail in [seven-minute-demo.md](seven-minute-dem
 1. Start: `make serve` or [Docker Compose](../deploy/local/README.md) → http://localhost:8088
 2. **Act 1 — Home:** catalog loads; open **terraform-module-generic**.
 3. **Acts 2–3 — Generate:** module `demo`, AWS, **ec2 + s3** → **Dry run preview** → **Plan only**, lineage, gates, **Generated files**.
+   Optional (when `durability.async_generation` or `REPAVE_ASYNC_GENERATION=true`): enable **Live run console** on the form and confirm `/runs/{id}` streams gate rows before the full result.
 4. **Act 4 — Update repo:** **Use terraform-minimal** → **Preview upgrade**.
 5. **Act 5 — OPA block:** **opa-policy-generic**, **plan demo** `destructive_delete` → dry-run → publish blocked.
 6. **Act 6 — Backstage:** Terraform form, **Include Backstage catalog** `true`, **owner** `group:platform` → dry-run → **`catalog-info.yaml`** in preview.

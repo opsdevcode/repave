@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.blueprint import Blueprint, load_blueprint
-from repave_engine.gates import GateResult, all_gates_passed
+from repave_engine.gates import GateResult, RunEventCallback, all_gates_passed
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig
 
@@ -28,6 +28,7 @@ def run_generate_api(
     inputs: dict[str, Any],
     dry_run: bool,
     github_token: str | None,
+    on_event: RunEventCallback | None = None,
 ) -> dict[str, Any]:
     blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
     values = {str(key): str(value) for key, value in inputs.items()}
@@ -39,6 +40,7 @@ def run_generate_api(
         require_run=dry_run,
         github_token=github_token,
         repo_root=repo_root,
+        on_event=on_event,
     )
     return serialize_generation_result(blueprint, result, dry_run=dry_run)
 
