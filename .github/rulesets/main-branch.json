@@ -35,7 +35,8 @@
           {"context": "Python quality and security"},
           {"context": "commitlint"},
           {"context": "semantic-pull-request"},
-          {"context": "operator-test"}
+          {"context": "operator-test"},
+          {"context": "operator-e2e"}
         ]
       }
     },

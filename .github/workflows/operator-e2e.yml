@@ -2,14 +2,12 @@ name: Operator e2e
 
 on:
   schedule:
-    # Nightly 06:00 UTC — kind + Docker; not run on every PR.
+    # Nightly 06:00 UTC — full kind + Docker when PRs skipped path-gated e2e.
     - cron: "0 6 * * *"
   workflow_dispatch:
+  pull_request:
   push:
     branches: [main]
-    paths:
-      - "operator/**"
-      - ".github/workflows/operator-e2e.yml"
 
 concurrency:
   group: operator-e2e-${{ github.ref }}
@@ -22,16 +20,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: ./.github/actions/operator-e2e-paths
+        id: paths
+
+      - name: Unrelated change (skip kind e2e on PR)
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.paths.outputs.e2e_needed != 'true'
+        run: echo "No operator/engine/blueprint changes; skipping kind e2e."
+
       - uses: actions/setup-go@v5
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.e2e_needed == 'true'
         with:
           go-version-file: operator/go.mod
           cache-dependency-path: operator/go.sum
 
       - name: Install kind
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.e2e_needed == 'true'
         run: go install sigs.k8s.io/kind@v0.27.0
 
       - name: Add Go bin to PATH
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.e2e_needed == 'true'
         run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Run operator e2e (kind)
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.e2e_needed == 'true'
         run: make operator-e2e
