@@ -5,15 +5,15 @@ on:
     # Nightly 06:00 UTC — kind + Docker; not run on every PR.
     - cron: "0 6 * * *"
   workflow_dispatch:
-  pull_request:
-    paths:
-      - "operator/**"
-      - ".github/workflows/operator-e2e.yml"
   push:
     branches: [main]
     paths:
       - "operator/**"
       - ".github/workflows/operator-e2e.yml"
+
+concurrency:
+  group: operator-e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   kind-e2e:

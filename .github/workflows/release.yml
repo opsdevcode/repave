@@ -63,7 +63,7 @@ jobs:
 
       - name: Run engine tests
         working-directory: engine
-        run: uv run pytest
+        run: uv run pytest -n auto
 
       - name: Run operator tests
         working-directory: operator

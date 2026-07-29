@@ -31,9 +31,8 @@ make test
 
 For day-to-day edits, **`make test-fast`** runs pytest with `-m "not slow"` and no
 coverage (skips blueprint conformance and full generate + gate toolchain tests).
-Run **`make test`** before you push; CI always runs the full suite. Optional
-**`make test-parallel`** runs the full suite with `pytest-xdist` (`-n auto`) when
-you want shorter wall time locally.
+Run **`make test`** before you push; CI runs the full suite with **`pytest -n auto`**
+(parallel workers). Optional **`make test-parallel`** matches CI parallelism locally.
 
 ### Blueprint conformance
 
@@ -90,8 +89,8 @@ Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)
 requires on `main` for normal contributors:
 
 - Changes merged via pull request (no approving review required — solo maintainer)
-- Status checks: `test`, `Code quality (Ruff + mypy)`, `Security (Bandit + pip-audit)`,
-  `commitlint`, `semantic-pull-request`, `operator-test`
+- Status checks: `test`, `Python quality and security`, `commitlint`,
+  `semantic-pull-request`, `operator-test`
 - No force-push (`non_fast_forward`)
 
 **Release automation bypass:** the ruleset grants **repository administrators**

@@ -14,7 +14,7 @@ today and what remains intentionally out of scope.
 | Remediation | GA | `repave apply-upgrade`, optional GitHub PR, `preserveLocal` |
 | Blueprint pin watch | GA | `spec.blueprintRef` reconciles when catalog pins change |
 | Local verification | GA | `make operator-test`, `make operator-e2e` (kind, no production GitHub) |
-| CI | GA | `operator-test` on PRs; `operator-e2e` on operator/engine/blueprint changes |
+| CI | GA | `operator-test` on PRs; `operator-e2e` nightly, on `main` operator changes, and `workflow_dispatch` |
 
 ## Out of scope for GA
 

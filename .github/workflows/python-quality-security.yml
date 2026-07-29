@@ -5,12 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: python-quality-security-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
-  quality:
-    name: Code quality (Ruff + mypy)
+  quality-and-security:
+    name: Python quality and security
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -21,9 +25,9 @@ jobs:
       - uses: ./.github/actions/ci-paths
         id: paths
 
-      - name: Docs-only change (skip quality)
+      - name: Docs-only change (skip quality and security)
         if: steps.paths.outputs.ci_needed != 'true'
-        run: echo "No code changes outside docs-only paths; skipping quality checks."
+        run: echo "No code changes outside docs-only paths; skipping quality and security."
 
       - uses: astral-sh/setup-uv@v5
         if: steps.paths.outputs.ci_needed == 'true'
@@ -35,7 +39,7 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install engine and quality tools
+      - name: Install engine and tools
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv sync --extra dev --frozen
 
@@ -50,36 +54,6 @@ jobs:
       - name: mypy
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run mypy src
-
-  security:
-    name: Security (Bandit + pip-audit)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: engine
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/ci-paths
-        id: paths
-
-      - name: Docs-only change (skip security)
-        if: steps.paths.outputs.ci_needed != 'true'
-        run: echo "No code changes outside docs-only paths; skipping security scans."
-
-      - uses: astral-sh/setup-uv@v5
-        if: steps.paths.outputs.ci_needed == 'true'
-        with:
-          enable-cache: true
-
-      - uses: actions/setup-python@v5
-        if: steps.paths.outputs.ci_needed == 'true'
-        with:
-          python-version: "3.12"
-
-      - name: Install engine and security tools
-        if: steps.paths.outputs.ci_needed == 'true'
-        run: uv sync --extra dev --frozen
 
       - name: Bandit (Python SAST)
         if: steps.paths.outputs.ci_needed == 'true'
