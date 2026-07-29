@@ -135,7 +135,8 @@ class RunStore:
                         return existing
                 raise exc
         row = self.get(run_id)
-        assert row is not None
+        if row is None:
+            raise RuntimeError(f"run row missing immediately after insert: {run_id}")
         return row
 
     def get(self, run_id: str) -> RunRecord | None:
@@ -173,14 +174,13 @@ class RunStore:
             conn.commit()
 
     def count_by_status(self, *statuses: RunStatus) -> int:
-        if not statuses:
-            return 0
-        placeholders = ",".join("?" for _ in statuses)
-        values = [status.value for status in statuses]
+        return sum(self._count_one_status(status) for status in statuses)
+
+    def _count_one_status(self, status: RunStatus) -> int:
         with self._lock, self._connect() as conn:
             row = conn.execute(
-                f"SELECT COUNT(*) AS c FROM runs WHERE status IN ({placeholders})",
-                values,
+                "SELECT COUNT(*) AS c FROM runs WHERE status = ?",
+                (status.value,),
             ).fetchone()
         return int(row["c"]) if row else 0
 

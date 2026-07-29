@@ -100,7 +100,8 @@ class RunQueue:
         self._executor.submit(self._run_worker, run_id, record.acting_user)
         self._refresh_metrics()
         updated = self._store.get(run_id)
-        assert updated is not None
+        if updated is None:
+            raise RuntimeError(f"run row missing after replay queue: {run_id}")
         return updated
 
     def get(self, run_id: str) -> RunRecord | None:
