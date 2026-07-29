@@ -1,0 +1,40 @@
+---
+description: Go security practices for the repave operator and any repo Go code
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go security (repave)
+
+**Scope:** all **`.go`** in the repository. CI runs **golangci-lint** (includes **govet**, **staticcheck**) on **`operator/**`** via **`make operator-lint`**.
+
+## Secrets and configuration
+
+- **Never commit** tokens, kubeconfigs, or PATs. **`GITHUB_TOKEN`** and similar come from **environment / Deployment secrets** only.
+- Do not log tokens, Authorization headers, or full GitHub error bodies that may leak credentials.
+- Trim and validate config strings before use (see **`internal/github`**).
+
+## HTTP and GitHub API
+
+- Use **`http.NewRequestWithContext`** and a client with **timeouts** (default **30s** in **`HTTPClient`**).
+- Check **status codes** before parsing JSON; limit response reads where practical.
+- Construct URLs from **parsed owner/repo** fields — do not concatenate untrusted input into host paths without validation.
+
+## Subprocess and filesystem
+
+- **`exec.CommandContext`** with explicit args — **no shell `-c`** with user-controlled strings.
+- Git clone paths: use **temp dirs** under operator control; clean up in **`defer`** / **`RemoveAll`**.
+- **`filepath.Clean`** / rooted paths when joining user-influenced segments.
+
+## Kubernetes
+
+- **Least-privilege RBAC:** add **`+kubebuilder:rbac`** markers only for verbs the reconciler needs; regenerate **`config/rbac`**.
+- **Non-root** container user (**65532**) in **`operator/Dockerfile`** — preserve for new images.
+- Patch **status** subresource only; never require users to edit status fields.
+
+## Dependencies
+
+- Module changes in **`operator/go.mod`**: run **`go mod tidy`** in **`operator/`** and commit **`go.sum`**.
+- Prefer well-maintained **`k8s.io/*`** and **controller-runtime** versions aligned with **`go.mod`**.
+
+Optional local check: **`cd operator && go vet ./...`**.

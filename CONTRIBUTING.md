@@ -117,6 +117,30 @@ ESLint runs in CI inside **Python quality and security** when the change is not
 docs-only. Portal behavior changes: run **`make test-fast`** (or **`make test`**) — see
 **`engine/tests/test_api.py`**.
 
+#### Coding standards and security (all Go)
+
+Every **`.go`** file follows the same conventions — the **`operator/`** module today,
+and any Go added elsewhere in the monorepo later.
+
+| Resource | Purpose |
+| --- | --- |
+| [`.cursor/rules/golang-standards.mdc`](.cursor/rules/golang-standards.mdc) | Kubebuilder layout, golangci-lint, tests, generation |
+| [`.cursor/rules/golang-security.mdc`](.cursor/rules/golang-security.mdc) | Secrets, HTTP/git, RBAC, subprocess |
+| [`.cursor/skills/repave-golang/SKILL.md`](.cursor/skills/repave-golang/SKILL.md) | Local workflow and CI |
+| [`.cursor/skills/repave-golang/reference.md`](.cursor/skills/repave-golang/reference.md) | Checklists and community links |
+| [`docs/operator-standards.md`](docs/operator-standards.md) | Authoritative operator/CRD product standards |
+
+Lint config: **`operator/.golangci.yml`**. Go version: **`operator/go.mod`**.
+
+```bash
+make operator-lint
+make operator-test
+```
+
+After API or **`+kubebuilder:rbac`** changes: **`cd operator && make manifests generate`**
+and commit generated **`config/crd/bases`**, **`config/rbac`**, and deepcopy files.
+CI job **`operator-test`** runs when the diff includes **`operator/**`**.
+
 CI runs these OSS tools on every push and pull request. **Docs-only** changes still trigger workflows (so required status checks complete) but jobs skip heavy work when
 the diff touches only:
 
