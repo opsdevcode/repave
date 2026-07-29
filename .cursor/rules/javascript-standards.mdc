@@ -1,0 +1,46 @@
+---
+description: JavaScript style and portal patterns for all JS in the repave repo
+globs: "**/*.{js,mjs,cjs}"
+alwaysApply: false
+---
+
+# JavaScript standards (repave)
+
+**Scope:** every **`.js`**, **`.mjs`**, and **`.cjs`** file in this repository.
+
+Agent skill: **`.cursor/skills/repave-javascript/SKILL.md`**. Portal behavior contracts:
+**`.cursor/rules/portal-ui-behavior.mdc`**, **`.cursor/rules/portal-ux-copy.mdc`**.
+
+Lint config: root **`eslint.config.js`** — run **`make js-lint`** (or `npm run lint:js`).
+
+## Layout
+
+| Path | Role |
+|------|------|
+| `engine/src/repave_engine/static/repave.js` | Portal UI (IIFE, no bundler, served as static asset) |
+| `.github/commitlint.config.mjs` | Commitlint config (ESM, Node) |
+
+Do not add npm build steps or frontend frameworks to the portal static bundle without an explicit design decision.
+
+## Portal script (`repave.js`)
+
+- **Single IIFE**, **`defer`** load from `base.html` — keep globals minimal; expose **`window.repavePortal`** only for template hooks.
+- **DOM:** prefer **`querySelector` / `addEventListener`**; use **`hidden`**, **`classList`**, and **`aria-*`** for stepper/tabs (see existing `initFormStepper`, file explorer).
+- **Custom events:** preserve **`repave:stepper-*`** and related contracts — templates and tests depend on them.
+- **Storage:** wrap **`sessionStorage` / `localStorage`** in try/catch (private mode, quota).
+- **Forms:** stepper forms use **`novalidate`** + JS validation in `initFormStepper`; do not re-enable native validation that blocks dry-run from early steps.
+- **Style:** existing file uses **`var`**; prefer **`const` / `let`** in **new** functions; match surrounding code when editing legacy blocks.
+
+## Node / ESM (`.github/*.mjs`)
+
+- Use **`export default`**; keep configs small and declarative.
+- No runtime secrets in config files.
+
+## Before push (JavaScript changes)
+
+```bash
+make js-lint
+make test-fast   # portal tests in engine/tests/test_api.py
+```
+
+Security: **`.cursor/rules/javascript-security.mdc`**.

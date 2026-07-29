@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Python standards (repave)
 
-**Scope:** every **`.py`** file in this repository (`engine/`, `scripts/`, and any future Python paths). Authoritative tool config: `engine/pyproject.toml`. Human overview: `CONTRIBUTING.md`.
+**Scope:** every **`.py`** file in this repository (`engine/`, `scripts/`, and any future Python paths). JavaScript: **`.cursor/rules/javascript-*.mdc`**. Authoritative tool config: `engine/pyproject.toml`. Human overview: `CONTRIBUTING.md`.
 
 Agent skill: **`.cursor/skills/repave-python/SKILL.md`**.
 

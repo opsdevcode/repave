@@ -94,6 +94,29 @@ uv run bandit -r ../scripts -c pyproject.toml   # when security-relevant
 Packaged engine changes: use repo-root **`make format`**, **`make quality`**,
 **`make security`**, and **`make test`** as below.
 
+#### Coding standards and security (all JavaScript)
+
+Every **`.js`**, **`.mjs`**, and **`.cjs`** file follows the same conventions — portal
+static **`repave.js`**, **`.github/commitlint.config.mjs`**, and any future JS paths.
+
+| Resource | Purpose |
+| --- | --- |
+| [`.cursor/rules/javascript-standards.mdc`](.cursor/rules/javascript-standards.mdc) | Portal IIFE patterns, ESLint, portal UI contracts |
+| [`.cursor/rules/javascript-security.mdc`](.cursor/rules/javascript-security.mdc) | XSS-safe DOM, storage, no eval |
+| [`.cursor/skills/repave-javascript/SKILL.md`](.cursor/skills/repave-javascript/SKILL.md) | Local workflow and CI |
+| [`.cursor/skills/repave-javascript/reference.md`](.cursor/skills/repave-javascript/reference.md) | DOM XSS checklist, event contracts |
+
+Lint config: root **`eslint.config.js`** and **`package.json`**.
+
+```bash
+npm ci
+make js-lint
+```
+
+ESLint runs in CI inside **Python quality and security** when the change is not
+docs-only. Portal behavior changes: run **`make test-fast`** (or **`make test`**) — see
+**`engine/tests/test_api.py`**.
+
 CI runs these OSS tools on every push and pull request. **Docs-only** changes still trigger workflows (so required status checks complete) but jobs skip heavy work when
 the diff touches only:
 

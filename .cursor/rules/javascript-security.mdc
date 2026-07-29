@@ -1,0 +1,35 @@
+---
+description: JavaScript security practices for repave portal and repo scripts
+globs: "**/*.{js,mjs,cjs}"
+alwaysApply: false
+---
+
+# JavaScript security (repave)
+
+**Scope:** all **`.js` / `.mjs` / `.cjs`** in this repository. Run **`make js-lint`** before push (ESLint recommended + security rules).
+
+## XSS and DOM
+
+- **Avoid `innerHTML`** with dynamic or storage-backed strings (`sessionStorage`, user input, API JSON). Prefer **`textContent`**, **`createElement`**, or **`insertAdjacentText`**.
+- When HTML is unavoidable, use a vetted escape helper or server-rendered static markup only — never concatenate untrusted data into tags or attributes.
+- URL paths: use **`encodeURIComponent`** for path segments (see last-run / resume links).
+- **`JSON.parse`**: only on trusted or size-bounded text; always **try/catch**; never parse cross-origin responses without validation.
+
+## Execution and supply chain
+
+- **No `eval`**, **`new Function`**, or **`setTimeout(string)`**.
+- Portal static assets: **no third-party script tags** and no loading remote JS — keep logic in **`repave.js`** (CSP-friendly).
+- Do not embed secrets, tokens, or session keys in client-side source.
+
+## Browser storage and clipboard
+
+- **sessionStorage / localStorage**: store non-sensitive UI state only (draft form fields, last-run metadata). Do not persist auth tokens in the browser.
+- **Clipboard API**: use **`navigator.clipboard.writeText`** with rejection handled; copy **text**, not HTML.
+
+## HTTP (if extended)
+
+- Prefer same-origin form POSTs (current portal). Any future **`fetch`**: set explicit timeouts, avoid sending cookies to untrusted URLs, validate JSON shape before use.
+
+## CI
+
+ESLint runs in **Python quality and security** when `ci_needed` is true (see **`eslint.config.js`**).
