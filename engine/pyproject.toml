@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repave-engine"
-version = "1.83.1"
+version = "1.84.0"
 description = "Governed, repeatable platform engineering generation engine"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
@@ -34,6 +34,10 @@ dev = [
   "bandit[toml]>=1.8.0",
   "pip-audit>=2.9.0",
   "types-PyYAML",
+]
+otel = [
+  "opentelemetry-sdk>=1.27.0",
+  "opentelemetry-exporter-otlp-proto-http>=1.27.0",
 ]
 
 [project.scripts]
@@ -93,7 +97,7 @@ mypy_path = ["src"]
 packages = ["repave_engine"]
 
 [[tool.mypy.overrides]]
-module = ["copier.*", "jsonschema.*"]
+module = ["copier.*", "jsonschema.*", "opentelemetry.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

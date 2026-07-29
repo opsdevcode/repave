@@ -4,11 +4,11 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.83.1  
+**Current release:** v1.84.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
 **Next up:** [day-2 operability](#service-health-resource-management-and-autoscaling)
 on the Helm chart (HPA, alerts, runbooks). **Engine hardening**
-(A3 operator-e2e required check, A5/A6 docs and traces) continues alongside features.
+(A3 operator-e2e required check; A5/A6 docs and traces shipped) continues alongside features.
 **Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) — A1/A2/A4 landed on this line;
 operator remote inventory **Phase C** (remediation from clone) shipped with it.  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
@@ -713,7 +713,8 @@ shows per-stage timing.
 
 **Status:** Shipped on `main` (`audit.py` JSONL sink, `/metrics` Prometheus
 endpoint, pipeline spans and `repave_generation_*` counters; configure via
-`repave.config.yaml` `audit` and `REPAVE_ACTING_USER`).
+`repave.config.yaml` `audit` and `REPAVE_ACTING_USER`). **Traces:** install the
+[`otel` extra](../engine/pyproject.toml) and configure OTLP per [`docs/tracing.md`](tracing.md).
 
 ---
 
@@ -1315,6 +1316,9 @@ reports `1.74.0`, so the changelog is unusable for anyone consuming the package.
 **Done when:** `make sync-doc-versions --check` passes in CI and no shipped feature is described
 as planned.
 
+**Status:** **Shipped on `main`** — `CHANGELOG.md` points to GitHub Releases; `concepts.md`,
+`sales-demo.md`, and `operator-ga.md` refreshed; `sync_doc_versions.py --check` runs in CI.
+
 ### A6 — Traces are real or not claimed
 
 **Problem:** `engine/pyproject.toml` depends on `opentelemetry-api` only — no SDK, no exporter —
@@ -1326,6 +1330,9 @@ docs, or scope the shipped claim down to metrics and audit.
 
 **Done when:** A documented configuration produces spans in a collector, or the roadmap and
 docs stop promising them.
+
+**Status:** **Shipped on `main`** — optional `otel` extra (SDK + OTLP/HTTP), `tracing` config and
+OTEL env vars, [`docs/tracing.md`](tracing.md).
 
 ### B — Maintainability (opportunistic)
 

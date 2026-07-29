@@ -125,6 +125,51 @@ def load_audit_config(repo_root: Path) -> AuditConfig | None:
 
 
 @dataclass(frozen=True)
+class TracingConfig:
+    enabled: bool
+    otlp_endpoint: str
+    service_name: str
+
+
+def load_tracing_config(repo_root: Path) -> TracingConfig | None:
+    """Resolve OpenTelemetry OTLP export from config and standard OTEL env vars."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("tracing") if isinstance(file_data, dict) else None
+
+    env_endpoint = (
+        os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "").strip()
+        or os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "").strip()
+        or os.environ.get("REPAVE_OTEL_EXPORTER_OTLP_ENDPOINT", "").strip()
+    )
+    env_service = os.environ.get("OTEL_SERVICE_NAME", "").strip() or os.environ.get(
+        "REPAVE_OTEL_SERVICE_NAME", "repave-engine"
+    )
+
+    enabled = bool(env_endpoint)
+    endpoint = env_endpoint
+    service_name = env_service or "repave-engine"
+
+    if isinstance(block, dict):
+        block_enabled = block.get("enabled", True)
+        if not isinstance(block_enabled, bool):
+            raise ValueError("tracing.enabled must be a boolean")
+        if block.get("otlp_endpoint") is not None:
+            endpoint = str(block["otlp_endpoint"]).strip()
+        if block.get("service_name") is not None:
+            service_name = str(block["service_name"]).strip() or service_name
+        if env_endpoint:
+            enabled = True
+        elif endpoint:
+            enabled = block_enabled
+        else:
+            enabled = False
+
+    if not enabled or not endpoint:
+        return None
+    return TracingConfig(enabled=True, otlp_endpoint=endpoint, service_name=service_name)
+
+
+@dataclass(frozen=True)
 class FleetConfig:
     enabled: bool
     file: Path

@@ -62,6 +62,13 @@ gates:
 #   require_session_secret: true
 # Or: REPAVE_ASYNC_GENERATION=1, REPAVE_RUNS_DB=...
 
+# Optional OpenTelemetry trace export for pipeline spans (requires `uv sync --extra otel`).
+# tracing:
+#   enabled: true
+#   otlp_endpoint: http://127.0.0.1:4318
+#   service_name: repave-engine
+# Or: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME (see docs/tracing.md)
+
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.
 # notifications:
