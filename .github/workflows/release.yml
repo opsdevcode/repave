@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths-ignore:
       - "docs/**"
+      - ".cursor/**"
       - "**/*.md"
       - "LICENSE"
       - ".github/pull_request_template.md"

@@ -62,3 +62,14 @@ jobs:
       - name: pip-audit (dependency vulnerabilities)
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run pip-audit
+
+      - uses: actions/setup-node@v4
+        if: steps.paths.outputs.ci_needed == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: ESLint (JavaScript)
+        if: steps.paths.outputs.ci_needed == 'true'
+        working-directory: ${{ github.workspace }}
+        run: npm ci && npm run lint:js
