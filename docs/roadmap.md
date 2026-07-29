@@ -849,7 +849,10 @@ cannot run it reliably or plan capacity.
 **Done when:** Draining a node or scaling replicas drops no in-flight requests; the
 HPA scales under load; probes gate traffic correctly.
 
-**Status:** Blocked on the Helm chart entry.
+**Status:** **Partial on `main`** — chart wires liveness/readiness/startup probes, resource
+defaults, HPA, PDB, rolling strategy, and graceful termination; [`docs/operations/README.md`](operations/README.md)
+covers drain/scale runbooks. Remaining: deeper `/readyz` downstream checks and queue drain on
+SIGTERM when async runs ship.
 
 ---
 

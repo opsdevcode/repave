@@ -3,6 +3,21 @@
 
 replicaCount: 1
 
+# Rolling update and graceful termination (in-flight generations may run for minutes).
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+terminationGracePeriodSeconds: 120
+
+lifecycle:
+  preStop:
+    enabled: true
+    # Brief sleep so endpoints remove the pod before SIGTERM (uvicorn drains open connections).
+    sleepSeconds: 15
+
 image:
   repository: ghcr.io/opsdevcode/repave-engine
   tag: "" # defaults to Chart.appVersion
@@ -40,7 +55,26 @@ ingress:
           pathType: Prefix
   tls: []
 
-resources: {}
+# Sizing for gate-toolchain image (Plan/dry-run). Portal-only images can lower CPU/memory.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "2"
+    memory: 2Gi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  # targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+  # maxUnavailable: 1
 
 nodeSelector: {}
 tolerations: []
@@ -109,5 +143,21 @@ secrets:
   oidcClientSecret: ""
 
 probes:
-  livenessPath: /health
-  readinessPath: /readyz
+  liveness:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    path: /readyz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  startup:
+    enabled: true
+    path: /health
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30

@@ -17,6 +17,18 @@ Starter SLOs, alerts, and runbooks for a hosted repave engine (v1.35–v1.38).
 
 ## Runbooks
 
+### Node drain / rollout
+
+1. Chart defaults: `maxUnavailable: 0`, PDB `minAvailable: 1`, `terminationGracePeriodSeconds: 120`.
+2. Ensure no long sync generations during drain, or wait for queue drain (durability Phase 1+).
+3. `kubectl rollout status deployment/repave -n repave`
+
+### Scale out
+
+1. Confirm shared session/run store if `autoscaling.enabled` or `replicaCount` > 1.
+2. Watch HPA: `kubectl get hpa -n repave`
+3. Dashboard: generation latency and CPU in [`grafana-dashboard-repave.json`](../../deploy/k8s/grafana-dashboard-repave.json).
+
 ### Generation failures
 
 1. Check portal or audit JSONL for `gates_outcome=failed`.
