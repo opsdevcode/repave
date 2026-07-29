@@ -102,12 +102,14 @@ def _adapt_sql(sql: str, dialect: Dialect) -> str:
 
 def connect(config: DatabaseConfig) -> SqlConnection:
     if config.dialect == "sqlite":
-        assert config.sqlite_path is not None
+        if config.sqlite_path is None:
+            raise ValueError("sqlite database config requires sqlite_path")
         config.sqlite_path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(config.sqlite_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         return SqlConnection(conn)
-    assert config.postgres_dsn is not None
+    if config.postgres_dsn is None:
+        raise ValueError("postgresql database config requires postgres_dsn")
     try:
         import psycopg  # type: ignore[import-not-found]
         from psycopg.rows import dict_row  # type: ignore[import-not-found]
