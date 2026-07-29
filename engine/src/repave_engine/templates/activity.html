@@ -16,11 +16,55 @@
 </header>
 
 {% if audit_enabled %}
+<form class="card activity-filters" method="get" action="/activity" aria-labelledby="activity-filter-heading">
+  <div class="card__header">
+    <h2 id="activity-filter-heading" class="card__title">Filter</h2>
+    <p class="muted card__subtitle">Narrow by blueprint, repo, user, outcome, or time range (UTC ISO timestamps).</p>
+  </div>
+  <div class="card__body activity-filters__grid">
+    <label class="field">
+      <span class="field__label">Blueprint</span>
+      <input class="field__input" name="blueprint" type="text" value="{{ activity_filters.blueprint_name or '' }}" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span class="field__label">Module / repo</span>
+      <input class="field__input" name="module_name" type="text" value="{{ activity_filters.module_name or '' }}" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span class="field__label">Acting user</span>
+      <input class="field__input" name="acting_user" type="text" value="{{ activity_filters.acting_user or '' }}" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span class="field__label">Gate outcome</span>
+      <select class="field__input" name="gates_outcome">
+        <option value="">Any</option>
+        <option value="passed" {% if activity_filters.gates_outcome == 'passed' %}selected{% endif %}>passed</option>
+        <option value="failed" {% if activity_filters.gates_outcome == 'failed' %}selected{% endif %}>failed</option>
+        <option value="empty" {% if activity_filters.gates_outcome == 'empty' %}selected{% endif %}>empty</option>
+      </select>
+    </label>
+    <label class="field">
+      <span class="field__label">Since (ISO)</span>
+      <input class="field__input" name="since" type="text" value="{{ activity_filters.since or '' }}" placeholder="2026-01-01T00:00:00+00:00" />
+    </label>
+    <label class="field">
+      <span class="field__label">Until (ISO)</span>
+      <input class="field__input" name="until" type="text" value="{{ activity_filters.until or '' }}" />
+    </label>
+  </div>
+  <div class="card__footer form-actions">
+    <button type="submit" class="btn btn--primary">Apply filters</button>
+    <a class="btn btn--ghost" href="/activity">Clear</a>
+  </div>
+</form>
+
   {% if recent_activity %}
 <section class="card activity-card" aria-labelledby="activity-full-heading">
   <div class="card__header">
     <h2 id="activity-full-heading">Recent generations</h2>
-    <p class="muted card__subtitle">Newest first · showing up to {{ activity_limit }} entries</p>
+    <p class="muted card__subtitle">
+      Newest first · {{ activity_total }} matching · showing up to {{ activity_limit }} rows
+    </p>
   </div>
   <div class="card__body">
     {% include "partials/activity_list.html" %}
@@ -28,7 +72,7 @@
 </section>
   {% else %}
 <div class="alert alert--info">
-  Audit is enabled but no generation events were recorded yet. Run a generate from the portal or CLI.
+  Audit is enabled but no generation events matched these filters yet.
 </div>
   {% endif %}
 {% else %}

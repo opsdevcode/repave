@@ -36,6 +36,20 @@ Run **`make test`** before you push; CI runs the full suite with **`pytest -n au
 `engine/pyproject.toml` (`[tool.coverage.report]`). Optional **`make test-parallel`**
 matches CI parallelism locally.
 
+### Gate toolchain (CI, Compose, local)
+
+CI and Release install pinned CLIs via
+[`.github/actions/gate-toolchain`](.github/actions/gate-toolchain) and then run
+**`repave doctor --strict`** (same pins as `deploy/local/gate-toolchain-pins.env`).
+The Compose image runs the same check at **`docker build`** when
+`INSTALL_GATE_TOOLCHAIN=1`.
+
+Locally, after [`deploy/local/install-gate-toolchain.sh`](deploy/local/install-gate-toolchain.sh):
+
+```bash
+make gate-doctor
+```
+
 ### Blueprint conformance
 
 Every golden path under `blueprints/*/blueprint.yaml` must ship a sibling

@@ -36,7 +36,13 @@ from repave_engine.ansible_role_inventory import (
     inventory_role_versions_json,
     inventory_roles_json,
 )
-from repave_engine.audit_history import AuditHistoryEntry, read_recent_audit_entries
+from repave_engine.audit_history import (
+    AuditHistoryEntry,
+    AuditQueryFilters,
+    audit_filters_from_mapping,
+    query_audit_entries,
+    read_recent_audit_entries,
+)
 from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
@@ -376,14 +382,47 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         https_only=False,
     )
 
-    def portal_recent_activity(*, limit: int = 8) -> tuple[AuditHistoryEntry, ...]:
+    def portal_recent_activity(
+        *,
+        limit: int = 8,
+        filters: AuditQueryFilters | None = None,
+    ) -> tuple[AuditHistoryEntry, ...]:
         try:
             audit_cfg = load_audit_config(repo_root)
         except ValueError:
             return ()
         if audit_cfg is None or not audit_cfg.enabled:
             return ()
-        return read_recent_audit_entries(audit_cfg.file, limit=limit, repo_root=repo_root)
+        if filters is None:
+            return read_recent_audit_entries(audit_cfg.file, limit=limit, repo_root=repo_root)
+        merged = AuditQueryFilters(
+            blueprint_name=filters.blueprint_name,
+            module_name=filters.module_name,
+            repository_url=filters.repository_url,
+            acting_user=filters.acting_user,
+            gates_outcome=filters.gates_outcome,
+            since=filters.since,
+            until=filters.until,
+            limit=limit,
+            offset=filters.offset,
+        )
+        return query_audit_entries(
+            audit_cfg.file,
+            merged,
+            repo_root=repo_root,
+        ).entries
+
+    def audit_file_or_404() -> Path:
+        try:
+            audit_cfg = load_audit_config(repo_root)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        if audit_cfg is None or not audit_cfg.enabled:
+            raise HTTPException(
+                status_code=404,
+                detail="Audit log is not configured (set audit.enabled in repave.config.yaml)",
+            )
+        return audit_cfg.file
 
     def portal_fleet_context() -> tuple[bool, list[dict[str, object]], str]:
         try:
@@ -533,15 +572,41 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/activity", response_class=HTMLResponse)
     async def activity_page(request: Request) -> HTMLResponse:
         activity_limit = 50
+        raw_filters = {key: str(value) for key, value in request.query_params.items()}
+        activity_filters = audit_filters_from_mapping(raw_filters)
+        activity_filters = AuditQueryFilters(
+            blueprint_name=activity_filters.blueprint_name,
+            module_name=activity_filters.module_name,
+            repository_url=activity_filters.repository_url,
+            acting_user=activity_filters.acting_user,
+            gates_outcome=activity_filters.gates_outcome,
+            since=activity_filters.since,
+            until=activity_filters.until,
+            limit=activity_limit,
+            offset=activity_filters.offset,
+        )
+        query_result = None
+        recent: tuple[AuditHistoryEntry, ...] = ()
+        enabled = audit_portal_enabled()
+        if enabled:
+            audit_path = audit_file_or_404()
+            query_result = query_audit_entries(
+                audit_path,
+                activity_filters,
+                repo_root=repo_root,
+            )
+            recent = query_result.entries
         return templates.TemplateResponse(
             request,
             "activity.html",
             page_context(
                 request,
                 nav_active="activity",
-                recent_activity=portal_recent_activity(limit=activity_limit),
-                audit_enabled=audit_portal_enabled(),
+                recent_activity=recent,
+                audit_enabled=enabled,
                 activity_limit=activity_limit,
+                activity_filters=activity_filters,
+                activity_total=query_result.total if query_result is not None else 0,
             ),
         )
 
@@ -1666,6 +1731,24 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if obs_url:
             body["observability_url"] = obs_url
         return JSONResponse(body)
+
+    @app.get("/api/v1/audit")
+    async def api_audit_query(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        audit_path = audit_file_or_404()
+        raw_filters = {key: str(value) for key, value in request.query_params.items()}
+        filters = audit_filters_from_mapping(raw_filters)
+        result = query_audit_entries(audit_path, filters, repo_root=repo_root)
+        return JSONResponse(
+            {
+                "total": result.total,
+                "limit": result.limit,
+                "offset": result.offset,
+                "entries": [entry.to_public_dict() for entry in result.entries],
+            }
+        )
 
     @app.get("/api/v1/fleet")
     async def api_fleet_list(request: Request) -> JSONResponse:

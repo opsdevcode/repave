@@ -19,6 +19,7 @@ def test_build_estate_tiles_freshness_and_sparkline() -> None:
     audit = (
         AuditHistoryEntry(
             timestamp="2026-01-02T00:00:00Z",
+            event="generation",
             blueprint_name="terraform-module-generic",
             blueprint_version="1.0.0",
             module_name="tf-vpc",
@@ -26,6 +27,7 @@ def test_build_estate_tiles_freshness_and_sparkline() -> None:
             gates_outcome="passed",
             acting_user="tester@example.com",
             repository_url="https://github.com/acme/tf-vpc",
+            extra={},
         ),
     )
     tiles = build_estate_tiles(rows, audit_entries=audit, sparkline_slots=4)

@@ -120,6 +120,10 @@ On branch with the latest portal stepper fixes, after `docker compose up --build
 
 The container installs the **gate toolchain** via [`install-gate-toolchain.sh`](install-gate-toolchain.sh):
 
+During **`docker compose build`**, the image also runs **`repave doctor --strict`**
+so Terraform, tflint, Checkov, Conftest, and Helm match the pin file before the
+image is tagged.
+
 | Tool | Golden paths | Notes |
 | ---- | ------------- | ----- |
 | **terraform** 1.9.8 | Terraform module / stack | fmt, validate, test, plan for OPA |

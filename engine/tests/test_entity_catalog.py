@@ -34,6 +34,7 @@ def test_build_scorecard_passes_with_fleet_and_audit(tmp_path: Path) -> None:
     )
     audit = AuditHistoryEntry(
         timestamp="2026-01-02T03:04:05Z",
+        event="generation",
         module_name="tf-vpc",
         blueprint_name="terraform-module-generic",
         blueprint_version="1.0.0",
@@ -41,6 +42,7 @@ def test_build_scorecard_passes_with_fleet_and_audit(tmp_path: Path) -> None:
         dry_run=True,
         acting_user="tester@example.com",
         repository_url="https://github.com/acme/tf-vpc",
+        extra={},
     )
     dims = build_scorecard(
         repo_dir=repo,

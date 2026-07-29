@@ -8,21 +8,10 @@ from typing import Any
 
 from repave_engine.blueprint import Blueprint, primary_publish_name
 from repave_engine.bundle import Bundle
+from repave_engine.gate_tool_hints import GATE_TOOL_HINTS
 from repave_engine.gate_toolchain import gate_tool_status
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import resolve_module_repository
-
-_GATE_TOOL_HINTS: dict[str, tuple[str, ...]] = {
-    "terraform-fmt": ("terraform",),
-    "terraform-validate": ("terraform",),
-    "terraform-test": ("terraform",),
-    "tflint": ("tflint",),
-    "checkov": ("checkov",),
-    "opa": ("conftest",),
-    "azure-policy": ("conftest",),
-    "helm-lint": ("helm",),
-    "helm-template": ("helm",),
-}
 
 
 @dataclass(frozen=True)
@@ -71,7 +60,7 @@ def _missing_tools_for_gates(gate_names: tuple[str, ...]) -> tuple[str, ...]:
     status = gate_tool_status()
     needed: set[str] = set()
     for gate in gate_names:
-        for tool in _GATE_TOOL_HINTS.get(gate, ()):
+        for tool in GATE_TOOL_HINTS.get(gate, ()):
             needed.add(tool)
     missing = sorted(tool for tool in needed if not status.get(tool, False))
     return tuple(missing)

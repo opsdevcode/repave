@@ -60,6 +60,10 @@ COPY engine/src /app/engine/src
 # without rebuilding the image for every portal tweak.
 RUN uv pip install --system --no-cache -e /app/engine
 
+RUN if [ "${INSTALL_GATE_TOOLCHAIN}" = "1" ]; then \
+      repave doctor --strict --repo-root /app; \
+    fi
+
 COPY schemas /app/schemas
 COPY blueprints /app/blueprints
 COPY standards /app/standards

@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions chart-validate chart-smoke kind-co-install
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions chart-validate chart-smoke kind-co-install gate-doctor
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -27,6 +27,12 @@ test:
 # Daily dev loop: skip slow integration/conformance tests and coverage (run `make test` before push).
 test-fast:
 	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest -m "not slow" --no-cov -q
+
+# After deploy/local/install-gate-toolchain.sh (same pins CI and Compose assert).
+gate-doctor:
+	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$(REPO_ROOT)/.gate-tools/py-deps/bin:$$PATH" \
+	  PYTHONPATH="$(REPO_ROOT)/.gate-tools/py-deps" \
+	  uv run repave doctor --strict --repo-root $(REPO_ROOT)
 
 # Full suite with parallel workers (requires pytest-xdist; gate tools on PATH).
 test-parallel:

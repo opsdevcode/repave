@@ -9,8 +9,15 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import cast
 
+from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import _find_repo_root, list_blueprints
+from repave_engine.doctor import (
+    doctor_exit_code,
+    format_doctor_report,
+    load_blueprint_tools,
+    run_doctor,
+)
 from repave_engine.fleet import (
     FleetEntry,
     normalize_repo_url,
@@ -26,7 +33,12 @@ from repave_engine.fleet_operator_status import (
     write_operator_status_snapshot,
 )
 from repave_engine.pipeline import generate_bundle_from_path, generate_from_path
-from repave_engine.settings import OutputConfig, load_fleet_config, load_output_config
+from repave_engine.settings import (
+    OutputConfig,
+    load_audit_config,
+    load_fleet_config,
+    load_output_config,
+)
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
 
@@ -147,6 +159,14 @@ def cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _audit_file(args: argparse.Namespace) -> Path:
+    root = Path(args.repo_root).resolve()
+    audit_cfg = load_audit_config(root)
+    if audit_cfg is None or not audit_cfg.enabled:
+        raise ValueError("Audit is not enabled (set audit.enabled in repave.config.yaml)")
+    return audit_cfg.file
+
+
 def _fleet_registry_path(args: argparse.Namespace) -> Path:
     repo_root = Path(args.repo_root).resolve()
     config = load_fleet_config(repo_root)
@@ -219,6 +239,63 @@ def cmd_fleet(args: argparse.Namespace) -> int:
         owner = f" owner={entry.owner}" if entry.owner else ""
         print(f"{entry.repo_url}  {pin}{owner}")
     return 0
+
+
+def cmd_audit_query(args: argparse.Namespace) -> int:
+    root = Path(args.repo_root).resolve()
+    try:
+        audit_path = _audit_file(args)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    raw = {
+        "blueprint": (args.blueprint or "").strip(),
+        "module_name": (args.module_name or "").strip(),
+        "repository_url": (args.repository_url or "").strip(),
+        "acting_user": (args.acting_user or "").strip(),
+        "gates_outcome": (args.gates_outcome or "").strip(),
+        "since": (args.since or "").strip(),
+        "until": (args.until or "").strip(),
+        "limit": str(args.limit),
+        "offset": str(args.offset),
+    }
+    filters = audit_filters_from_mapping(raw)
+    result = query_audit_entries(audit_path, filters, repo_root=root)
+    if args.format == "json":
+        payload = {
+            "total": result.total,
+            "limit": result.limit,
+            "offset": result.offset,
+            "entries": [entry.to_public_dict() for entry in result.entries],
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+    if not result.entries:
+        print("No matching audit entries.")
+        return 0
+    for entry in result.entries:
+        mode = "dry-run" if entry.dry_run else "publish"
+        print(
+            f"{entry.timestamp}  {entry.blueprint_name}@{entry.blueprint_version}  "
+            f"{entry.gates_outcome}  {mode}  user={entry.acting_user}  "
+            f"module={entry.module_name}"
+        )
+    print(f"\n{result.total} matching (showing {len(result.entries)})")
+    return 0
+
+
+def cmd_doctor(args: argparse.Namespace) -> int:
+    root = Path(args.repo_root).resolve()
+    tools = None
+    blueprint = (getattr(args, "blueprint", None) or "").strip()
+    if blueprint:
+        blueprint_path = Path(blueprint)
+        if not blueprint_path.is_absolute():
+            blueprint_path = (root / blueprint_path).resolve()
+        tools = load_blueprint_tools(blueprint_path, repo_root=root)
+    results = run_doctor(tools=tools, all_pins=bool(getattr(args, "all_pins", False)))
+    print(format_doctor_report(results))
+    return doctor_exit_code(results, strict=bool(args.strict))
 
 
 def cmd_fleet_manifests(args: argparse.Namespace) -> int:
@@ -663,6 +740,52 @@ def build_parser() -> argparse.ArgumentParser:
     )
     fleet.add_argument("--format", choices=["text", "json"], default="text")
     fleet.set_defaults(func=cmd_fleet)
+
+    audit = sub.add_parser("audit", help="Query the generation audit log")
+    audit_sub = audit.add_subparsers(dest="audit_command", required=True)
+    audit_query = audit_sub.add_parser(
+        "query",
+        help="Filter audit entries by blueprint, user, outcome, or time range",
+        parents=[common],
+    )
+    audit_query.add_argument("--blueprint", default=None, help="Exact blueprint name")
+    audit_query.add_argument("--module-name", default=None, help="Substring match on module name")
+    audit_query.add_argument("--repository-url", default=None, help="Substring match on repo URL")
+    audit_query.add_argument("--acting-user", default=None, help="Exact acting user id")
+    audit_query.add_argument(
+        "--gates-outcome",
+        default=None,
+        choices=["passed", "failed", "empty"],
+        help="Gate summary outcome",
+    )
+    audit_query.add_argument("--since", default=None, help="Inclusive ISO-8601 lower bound")
+    audit_query.add_argument("--until", default=None, help="Inclusive ISO-8601 upper bound")
+    audit_query.add_argument("--limit", type=int, default=50)
+    audit_query.add_argument("--offset", type=int, default=0)
+    audit_query.add_argument("--format", choices=["text", "json"], default="text")
+    audit_query.set_defaults(func=cmd_audit_query)
+
+    doctor_cmd = sub.add_parser(
+        "doctor",
+        help="Report gate CLI presence and pin alignment",
+        parents=[common],
+    )
+    doctor_cmd.add_argument(
+        "--blueprint",
+        default=None,
+        help="Blueprint path or name — check only tools required by its gates",
+    )
+    doctor_cmd.add_argument(
+        "--strict",
+        action="store_true",
+        help="Exit non-zero when a required CLI is missing or mismatched",
+    )
+    doctor_cmd.add_argument(
+        "--all-pins",
+        action="store_true",
+        help="Check every pin in gate-toolchain-pins.env (includes hadolint/go not in Compose)",
+    )
+    doctor_cmd.set_defaults(func=cmd_doctor)
 
     fleet_manifests = sub.add_parser(
         "fleet-manifests",
