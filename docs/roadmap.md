@@ -89,6 +89,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
   ├─ k8s deploy      Helm chart for API/portal (shipped; day-2 + CI smoke follow-ups)
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
+  ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
   ├─ supply chain    GitHub App auth instead of PATs; governed PR conventions
   ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
@@ -116,6 +117,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
 | **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
 | **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
+| **Service decomposition** | open | Portal, API, and gate-running worker as independent k8s workloads; operator as an API client |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
 | **Developer portal surfaces** | open | Catalog, rendered docs, scorecards, and observability read in the portal |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
@@ -1525,6 +1527,58 @@ shows last-30-day actual spend with its as-of time.
 
 ---
 
+### Service decomposition for hosted scale
+
+**Problem:** v2 promises an authenticated multi-user service, but the runtime is one portal
+process that renders HTML, serves the JSON API, and runs multi-minute gate subprocesses in the
+same container. `engine/src/repave_engine/api.py` imports the pipeline, gates, fleet, audit,
+auth, and every catalog, so nothing can be scaled or hardened independently. The portal image
+carries the whole gate toolchain (terraform, tflint, checkov, conftest, helm, ansible-lint,
+molecule) that only `gates.run_gates` executes, and the operator ships a Python venv plus a
+monorepo corpus purely to exec `repave plan-upgrade`. Freezing contracts at v2 on top of that
+shape locks in the coupling.
+
+**Approach:** roles of one codebase, not separate codebases — the full loop must still run on a
+laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
+
+- **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
+  ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
+  ([A2](#a2--subprocess-timeouts-on-every-gate-and-git-invocation)); unified toolchain pins
+  ([A1](#a1--one-source-of-truth-for-gate-toolchain-pins)); build and push digest-pinned images
+  from CI, which publishes wheels but **no container images** today
+- **Phase 1:** replace the in-process `ThreadPoolExecutor` in `run_queue.py` with a
+  Postgres-backed queue (`FOR UPDATE SKIP LOCKED`); add a `worker` role and chart Deployment
+  behind `execution.mode: inprocess | worker`; the API stops running gates in-request
+- **Phase 2:** toolchain-free portal/API image (extends `values-portal.yaml`); the
+  `blueprints/`/`standards/`/`policy/`/`schemas/` corpus becomes a digest-pinned OCI artifact
+  mounted read-only; run artifacts and dry-run previews move to object storage — **no shared
+  RWX volume between roles**
+- **Phase 3:** promote the CRDs to `repave.dev/v1beta1` with a conversion webhook and have the
+  operator call `/api/v2` instead of exec'ing the CLI, dropping `operator/Dockerfile.e2e`
+- **Phase 4 (optional):** per-run Kubernetes Jobs
+  ([durability](#durability-and-concurrency-for-hosted-use) Phase 3); split portal and API into
+  distinct Deployments only if their scaling profiles diverge
+- Extend the `client_request_id` idempotency key through publish, keyed on target repo plus
+  content hash, so a retried run cannot double-publish to GitHub
+- **Repository strategy:** stay a monorepo through v2 and make it split-ready; revisit at v3 on
+  a concrete trigger (independent release cadence, external contributors, another language)
+
+**Non-goals:** gates as a service separate from the pipeline (they need the staging tree on
+local disk); fleet/audit/registry as services (read models over Postgres); splitting the CLI;
+multi-tenancy.
+
+**Dependencies:** [durability and concurrency](#durability-and-concurrency-for-hosted-use)
+Phase 2 is a hard prerequisite — nothing splits while state is on local disk;
+[Helm chart](#kubernetes-deploy-path-helm-chart) for the worker template; `/api/v2` from the
+[v2 contract freeze](#v200--platform-ga).
+
+**Done when:** `helm install` runs portal and worker Deployments where the portal image
+contains no gate binaries, a generation submitted in the portal is executed by the worker, a
+killed worker's run is replayable and visible from a second portal replica, and
+`docker compose up` still completes a full generate → gates → publish loop with no Postgres.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
@@ -1550,6 +1604,7 @@ generator.
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 |
 | Durable multi-user service (SQL store, async runs) | [durability and concurrency](#durability-and-concurrency-for-hosted-use) |
+| Independently scaled portal / API / gate worker on k8s | [service decomposition](#service-decomposition-for-hosted-scale) |
 | Portal discovery surfaces (catalog, docs, scorecards, health) | [portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read) |
 | Cost at generate time and in the catalog | [cost visibility](#cost-visibility) |
 | Bounded fleet upgrade campaigns | [fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) |
