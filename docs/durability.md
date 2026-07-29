@@ -77,6 +77,35 @@ repave run-worker --repo-root /app --poll-interval 5
 The Helm chart can set `repave.durability.workerMode: external` and install a worker
 Deployment alongside the portal (see [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md)).
 
+## Service decomposition (Phase 0–1)
+
+**Execution mode** splits the API from gate execution:
+
+| Mode | API / portal | Workers |
+| --- | --- | --- |
+| `inprocess` (default) | Thread pool runs gates (SQLite local dev) | Same process |
+| `worker` | Enqueue only — no gate subprocesses | `repave run-worker` or chart worker Deployment |
+
+```yaml
+durability:
+  async_generation: true
+  database_url: postgresql://repave:secret@postgres:5432/repave
+  execution_mode: worker      # API pods
+  worker_mode: external       # chart worker Deployment
+```
+
+Environment: `REPAVE_EXECUTION_MODE=worker`, `REPAVE_EXTERNAL_WORKERS=1`.
+
+With **PostgreSQL**, run claims use `FOR UPDATE SKIP LOCKED` so multiple worker replicas
+can scale safely.
+
+**Container images (Phase 0):** CI publishes digest-pinned images on `main` and semver tags:
+
+- `ghcr.io/opsdevcode/repave-engine` — gate toolchain (`INSTALL_GATE_TOOLCHAIN=1`)
+- `ghcr.io/opsdevcode/repave-engine-portal` — portal/API without gate CLIs
+
+See [ADR 002](adr/002-v2-service-decomposition.md) and `.github/workflows/container.yml`.
+
 ## API
 
 | Method | Path | Purpose |

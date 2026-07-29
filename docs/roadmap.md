@@ -5,8 +5,8 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.91.0  
-**In progress:** — (no single theme owns the tree; see **Next up**)  
-**Next up:** [service decomposition Phase 0–1](#service-decomposition-for-hosted-scale) and
+**In progress:** [service decomposition Phase 0–1](#service-decomposition-for-hosted-scale) (container CI, execution mode, Postgres queue claims)  
+**Next up:** service decomposition **Phase 2** (portal-only image default in chart, corpus OCI artifact) and
 remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1603,6 +1603,14 @@ shape locks in the coupling.
 
 **Approach:** roles of one codebase, not separate codebases — the full loop must still run on a
 laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
+
+**Status (Phase 0–1):** **In progress on `main` follow-up** — `REPAVE_EXECUTION_MODE` /
+`durability.execution_mode` (`inprocess` \| `worker`), enqueue-only API when `worker`;
+PostgreSQL `claim_next_queued` with `FOR UPDATE SKIP LOCKED`; chart `executionMode` and
+[`values-postgres-worker.yaml`](../deploy/k8s/chart/values-postgres-worker.yaml); CI
+[`.github/workflows/container.yml`](../.github/workflows/container.yml) publishes
+`repave-engine` (gate) and `repave-engine-portal` images. Phase 2 still required for
+“portal image has no gate binaries” acceptance.
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts

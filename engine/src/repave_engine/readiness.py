@@ -65,6 +65,14 @@ def github_api_reachable(token: str, *, timeout: float = 5.0) -> tuple[bool, str
 
 
 def gate_toolchain_required() -> bool:
+    if os.environ.get("REPAVE_EXTERNAL_WORKERS", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    ):
+        return False
+    if os.environ.get("REPAVE_EXECUTION_MODE", "").strip().lower() == "worker":
+        return False
     gate_env = os.environ.get("REPAVE_IMAGE_GATE_TOOLCHAIN", "").strip().lower()
     if gate_env in ("1", "true", "yes"):
         return True
