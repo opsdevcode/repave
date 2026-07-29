@@ -118,7 +118,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
 | **Service decomposition** | open | Portal, API, and gate-running worker as independent k8s workloads; operator as an API client |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
-| **Developer portal surfaces** | open | Catalog, rendered docs, scorecards, and observability read in the portal |
+| **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
 | **Portal live governance** | partial | Live run console + command palette shipped; estate map, diff viewer, annotations open |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |

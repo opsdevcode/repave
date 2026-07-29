@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entity.display_name }} — Services — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/services">← Services</a></p>
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">{{ entity.display_name }}</h1>
+    <p class="page-lead">
+      {% if entity.repo_url %}
+      <a href="{{ entity.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ entity.repo_url }}</code></a>
+      {% else %}
+      Local entity under <code>modules_root</code>
+      {% endif %}
+      {% if entity.owner %} · owner {{ entity.owner }}{% endif %}
+    </p>
+  </div>
+</header>
+
+<section class="card" aria-labelledby="pins-heading">
+  <div class="card__header">
+    <h2 id="pins-heading">Pins and governance</h2>
+  </div>
+  <div class="card__body entity-detail-meta">
+    {% if entity.blueprint_name %}
+    <p>
+      <span class="badge badge--pass">
+        {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
+      </span>
+      {% if entity.standard_version %}
+      <span class="badge badge--skip">standard {{ entity.standard_version }}</span>
+      {% endif %}
+    </p>
+    {% endif %}
+    {% if entity.operator_phase %}
+    <p>
+      {% if entity.operator_phase == 'Ready' %}
+      <span class="badge badge--pass">operator {{ entity.operator_phase }}</span>
+      {% elif entity.operator_phase == 'OutOfDate' %}
+      <span class="badge badge--fail">operator {{ entity.operator_phase }}</span>
+      {% elif entity.operator_phase == 'Error' %}
+      <span class="badge badge--error">operator {{ entity.operator_phase }}</span>
+      {% else %}
+      <span class="badge badge--skip">operator {{ entity.operator_phase }}</span>
+      {% endif %}
+      {% if entity.operator_message %}
+      <span class="muted">{{ entity.operator_message }}</span>
+      {% endif %}
+    </p>
+    {% endif %}
+    {% if entity.remediation_pr_url %}
+    <p><a href="{{ entity.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">Remediation pull request</a></p>
+    {% endif %}
+    {% if entity.manifest_name %}
+    <p class="muted">GitOps manifest {{ entity.manifest_namespace }}/{{ entity.manifest_name }}</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="scorecard-heading">
+  <div class="card__header">
+    <h2 id="scorecard-heading">Scorecard</h2>
+  </div>
+  <div class="card__body">
+    <ul class="scorecard-grid">
+      {% for dim in entity.scorecard %}
+      <li class="scorecard-grid__item">
+        <span class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}">{{ dim.label }}</span>
+        <p class="muted scorecard-grid__detail">{{ dim.detail }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+{% if observability_url %}
+<section class="card entity-observability" aria-labelledby="obs-heading">
+  <div class="card__header">
+    <h2 id="obs-heading">Observability</h2>
+    <p class="muted card__subtitle">Read-only dashboard link from portal configuration.</p>
+  </div>
+  <div class="card__body">
+    <p><a class="btn btn--secondary btn--sm" href="{{ observability_url }}" rel="noreferrer noopener" target="_blank">Open dashboard</a></p>
+    <iframe
+      class="entity-observability__frame"
+      title="Observability dashboard for {{ entity.display_name }}"
+      src="{{ observability_url }}"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    ></iframe>
+  </div>
+</section>
+{% endif %}
+
+{% if readme_html %}
+<section class="card" aria-labelledby="readme-heading">
+  <div class="card__header">
+    <h2 id="readme-heading">README</h2>
+    <p class="muted card__subtitle">Rendered from the local checkout when available.</p>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ readme_html | safe }}
+  </div>
+</section>
+{% endif %}
+
+{% if runbook_html %}
+<section class="card" aria-labelledby="runbook-heading">
+  <div class="card__header">
+    <h2 id="runbook-heading">{{ runbook_label or 'Runbook' }}</h2>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ runbook_html | safe }}
+  </div>
+</section>
+{% endif %}
+{% endblock %}
