@@ -14,3 +14,5 @@ persistence:
     enabled: false
   fleet:
     enabled: false
+  runs:
+    enabled: false

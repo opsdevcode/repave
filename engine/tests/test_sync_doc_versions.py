@@ -109,3 +109,10 @@ def test_sync_check_fails_when_stale(repo_root: Path, tmp_path: Path) -> None:
             sync.apply_sync("9.9.9", check=True)
     finally:
         sync.REPO_ROOT = original_root
+
+
+def test_release_workflow_commits_all_doc_targets(repo_root: Path) -> None:
+    sync = _load_sync_module(repo_root)
+    workflow = (repo_root / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    for rel_path in sync.DOC_TARGET_PATHS:
+        assert rel_path in workflow, f"release.yml must git add {rel_path}"

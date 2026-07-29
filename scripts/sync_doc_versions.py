@@ -70,6 +70,9 @@ DOC_TARGETS: tuple[tuple[str, tuple[tuple[re.Pattern[str], str], ...]], ...] = (
 )
 
 
+DOC_TARGET_PATHS: tuple[str, ...] = tuple(rel for rel, _ in DOC_TARGETS)
+
+
 def read_engine_version() -> str:
     init_path = REPO_ROOT / "engine" / "src" / "repave_engine" / "__init__.py"
     text = init_path.read_text(encoding="utf-8")

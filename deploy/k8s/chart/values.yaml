@@ -102,6 +102,13 @@ repave:
   fleet:
     enabled: false
     file: /data/fleet/registry.jsonl
+  durability:
+    # Async run queue (Phase 1 durability). Recommended for in-cluster deploys.
+    enabled: true
+    maxConcurrentRuns: 2
+    queueMaxDepth: 32
+    runsDb: /data/runs/runs.sqlite
+    requireSessionSecret: false
   auth:
     serviceMode: false
     oidc:
@@ -133,6 +140,17 @@ persistence:
     accessMode: ReadWriteOnce
     size: 1Gi
     existingClaim: ""
+  runs:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    existingClaim: ""
+
+# Graceful shutdown: drain async runs before SIGKILL (keep below terminationGracePeriodSeconds).
+shutdown:
+  drainSeconds: 105
+  readyRequireGithub: false
 
 secrets:
   # When true, chart creates a Secret from the values below (dev/kind only).

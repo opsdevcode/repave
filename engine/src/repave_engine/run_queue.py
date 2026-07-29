@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,10 @@ class RunQueueFullError(RuntimeError):
     """Raised when the queue depth limit is reached."""
 
 
+class RunQueueShuttingDownError(RuntimeError):
+    """Raised when the queue is draining for shutdown."""
+
+
 class RunQueue:
     def __init__(
         self,
@@ -49,6 +54,7 @@ class RunQueue:
         self._config = config
         self._event_store = event_store
         self._executor = ThreadPoolExecutor(max_workers=config.max_concurrent_runs)
+        self._accepting = True
         self._refresh_metrics()
 
     @property
@@ -60,8 +66,22 @@ class RunQueue:
             return
         self._event_store.append(run_id, kind, payload or {})
 
-    def close(self) -> None:
-        self._executor.shutdown(wait=False, cancel_futures=True)
+    def stop_accepting(self) -> None:
+        self._accepting = False
+
+    def drain(self, timeout: float) -> bool:
+        """Wait for queued and running jobs to finish. Returns True if the queue emptied."""
+        self._accepting = False
+        deadline = time.monotonic() + max(0.0, timeout)
+        while time.monotonic() < deadline:
+            if self._queue_depth() == 0:
+                return True
+            time.sleep(0.25)
+        return self._queue_depth() == 0
+
+    def close(self, *, wait: bool = True) -> None:
+        self._accepting = False
+        self._executor.shutdown(wait=wait, cancel_futures=not wait)
 
     def _refresh_metrics(self) -> None:
         queued = self._store.count_by_status(RunStatus.QUEUED)
@@ -80,6 +100,9 @@ class RunQueue:
         acting_user: str,
         client_request_id: str | None = None,
     ) -> RunRecord:
+        if not self._accepting:
+            raise RunQueueShuttingDownError("async generation queue is shutting down")
+
         if client_request_id:
             existing = self._store.get_by_client_request_id(client_request_id)
             if existing is not None:
