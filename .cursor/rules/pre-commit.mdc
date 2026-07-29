@@ -1,0 +1,43 @@
+---
+description: Local quality gate before git commit in repave
+alwaysApply: true
+---
+
+# Pre-commit (repave)
+
+Run from **repo root** before every commit that touches runtime code (not docs-only).
+
+## Standard loop
+
+```bash
+make format && make quality && make test
+```
+
+Before opening a PR that touches **any Python** (`**/*.py`), also run **`make security`**
+when the diff includes **`engine/`**; for **scripts-only** Python, run Ruff and Bandit
+on the changed paths (see **repave-python** skill).
+
+- **`make format`** — `ruff format` on `engine/src` and `engine/tests` (run Ruff on other `.py` paths manually)
+- **`make quality`** — `ruff check`, `ruff format --check`, **`mypy src`**
+- **`make test`** — full pytest + coverage threshold (75%)
+
+While editing Python, **`make test-fast`** skips `@pytest.mark.slow` and coverage.
+
+## When to add checks
+
+| Change | Also run |
+|--------|----------|
+| Any **`*.py`** | Follow `.cursor/rules/python-standards.mdc` and `python-security.mdc` |
+| `engine/` Python | **`make security`** (Bandit + pip-audit — same as CI) |
+| `scripts/` or other `.py` | `cd engine && uv run ruff check/format` on changed paths; Bandit if security-relevant |
+| `operator/` | **`make operator-lint`** and **`make operator-test`**; follow `golang-standards.mdc` / `golang-security.mdc` |
+| `engine/pyproject.toml` deps | `make lock` and commit `engine/uv.lock` |
+| Any **`*.js` / `*.mjs` / `*.cjs`** | **`make js-lint`**; follow `javascript-standards.mdc` / `javascript-security.mdc` |
+| Helm chart | `make chart-validate` |
+
+## Commits and PRs
+
+- Conventional commits; PR titles validated by CI — see `.cursor/rules/pull-requests.mdc`.
+- Ship **tests in the same PR** as new engine behavior unless the change is docs-only.
+
+Details: `CONTRIBUTING.md`; Python: `.cursor/rules/python-standards.mdc`, security: `.cursor/rules/python-security.mdc`; JavaScript: `.cursor/rules/javascript-standards.mdc`, `.cursor/rules/javascript-security.mdc`; Go: `.cursor/rules/golang-standards.mdc`, `.cursor/rules/golang-security.mdc`.

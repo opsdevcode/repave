@@ -157,7 +157,7 @@
     var config;
     try {
       config = JSON.parse(configEl.textContent || "{}");
-    } catch (err) {
+    } catch (_err) {
       return;
     }
     var githubOrg = config.githubOrg || form.getAttribute("data-github-org") || "example-org";

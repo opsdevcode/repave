@@ -19,6 +19,7 @@ runs:
           ci_needed:
             - '**'
             - '!docs/**'
+            - '!.cursor/**'
             - '!**/*.md'
             - '!LICENSE'
             - '!.github/pull_request_template.md'

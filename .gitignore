@@ -37,3 +37,6 @@ deploy/local/certs/*.pem
 .DS_Store
 .idea/
 .vscode/
+
+# JavaScript (root ESLint for portal static + .github configs)
+node_modules/

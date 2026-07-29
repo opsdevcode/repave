@@ -66,10 +66,86 @@ make test
 
 ### Python quality and security tooling
 
+#### Coding standards and security (all Python)
+
+Every **`.py`** file in this repository follows the same conventions — not only
+`engine/` and `scripts/`, but any Python added elsewhere in the monorepo.
+
+| Resource | Purpose |
+| --- | --- |
+| [`.cursor/rules/python-standards.mdc`](.cursor/rules/python-standards.mdc) | Ruff, mypy, pytest, modern 3.10+ idioms |
+| [`.cursor/rules/python-security.mdc`](.cursor/rules/python-security.mdc) | Subprocess, secrets, safe parsing, HTTP, dependencies |
+| [`.cursor/skills/repave-python/SKILL.md`](.cursor/skills/repave-python/SKILL.md) | Local workflow, CI alignment, check commands |
+| [`.cursor/skills/repave-python/reference.md`](.cursor/skills/repave-python/reference.md) | Detailed patterns and checklists |
+
+Tool versions and Ruff/mypy/pytest settings live in **`engine/pyproject.toml`**.
+
+CI runs Ruff, mypy, Bandit, and pip-audit on **`engine/src`** and
+**`engine/tests`**. When you change Python under **`scripts/`** or other paths,
+run the same tools on those files before opening a PR:
+
+```bash
+cd engine
+uv run ruff check ../scripts
+uv run ruff format ../scripts
+uv run bandit -r ../scripts -c pyproject.toml   # when security-relevant
+```
+
+Packaged engine changes: use repo-root **`make format`**, **`make quality`**,
+**`make security`**, and **`make test`** as below.
+
+#### Coding standards and security (all JavaScript)
+
+Every **`.js`**, **`.mjs`**, and **`.cjs`** file follows the same conventions — portal
+static **`repave.js`**, **`.github/commitlint.config.mjs`**, and any future JS paths.
+
+| Resource | Purpose |
+| --- | --- |
+| [`.cursor/rules/javascript-standards.mdc`](.cursor/rules/javascript-standards.mdc) | Portal IIFE patterns, ESLint, portal UI contracts |
+| [`.cursor/rules/javascript-security.mdc`](.cursor/rules/javascript-security.mdc) | XSS-safe DOM, storage, no eval |
+| [`.cursor/skills/repave-javascript/SKILL.md`](.cursor/skills/repave-javascript/SKILL.md) | Local workflow and CI |
+| [`.cursor/skills/repave-javascript/reference.md`](.cursor/skills/repave-javascript/reference.md) | DOM XSS checklist, event contracts |
+
+Lint config: root **`eslint.config.js`** and **`package.json`**.
+
+```bash
+npm ci
+make js-lint
+```
+
+ESLint runs in CI inside **Python quality and security** when the change is not
+docs-only. Portal behavior changes: run **`make test-fast`** (or **`make test`**) — see
+**`engine/tests/test_api.py`**.
+
+#### Coding standards and security (all Go)
+
+Every **`.go`** file follows the same conventions — the **`operator/`** module today,
+and any Go added elsewhere in the monorepo later.
+
+| Resource | Purpose |
+| --- | --- |
+| [`.cursor/rules/golang-standards.mdc`](.cursor/rules/golang-standards.mdc) | Kubebuilder layout, golangci-lint, tests, generation |
+| [`.cursor/rules/golang-security.mdc`](.cursor/rules/golang-security.mdc) | Secrets, HTTP/git, RBAC, subprocess |
+| [`.cursor/skills/repave-golang/SKILL.md`](.cursor/skills/repave-golang/SKILL.md) | Local workflow and CI |
+| [`.cursor/skills/repave-golang/reference.md`](.cursor/skills/repave-golang/reference.md) | Checklists and community links |
+| [`docs/operator-standards.md`](docs/operator-standards.md) | Authoritative operator/CRD product standards |
+
+Lint config: **`operator/.golangci.yml`**. Go version: **`operator/go.mod`**.
+
+```bash
+make operator-lint
+make operator-test
+```
+
+After API or **`+kubebuilder:rbac`** changes: **`cd operator && make manifests generate`**
+and commit generated **`config/crd/bases`**, **`config/rbac`**, and deepcopy files.
+CI job **`operator-test`** runs when the diff includes **`operator/**`**.
+
 CI runs these OSS tools on every push and pull request. **Docs-only** changes still trigger workflows (so required status checks complete) but jobs skip heavy work when
 the diff touches only:
 
 - `docs/**`
+- `.cursor/**` (Cursor rules and skills — no runtime effect)
 - `**/*.md`
 - `LICENSE`
 - `.github/pull_request_template.md`

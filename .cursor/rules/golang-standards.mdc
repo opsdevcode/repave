@@ -1,0 +1,46 @@
+---
+description: Go style and Kubebuilder patterns for all Go in the repave repo
+globs: "**/*.go"
+alwaysApply: false
+---
+
+# Go standards (repave)
+
+**Scope:** every **`.go`** file in this repository (today: **`operator/`** only).
+
+Agent skill: **`.cursor/skills/repave-golang/SKILL.md`**. Operator product rules:
+**`docs/operator-standards.md`**, **`operator/CONTRIBUTING.md`**.
+
+Lint config: **`operator/.golangci.yml`**. Go version: **`operator/go.mod`**.
+
+## Layout (Kubebuilder)
+
+| Path | Purpose |
+|------|---------|
+| `operator/api/<version>/` | CRD types, kubebuilder markers, generated deepcopy |
+| `operator/internal/controller/` | Reconcilers — thin; delegate to `internal/<domain>/` |
+| `operator/internal/<domain>/` | Pure, unit-testable packages (`drift`, `git`, `repave`, …) |
+| `operator/cmd/main.go` | Manager, schemes, probes |
+| `operator/config/crd/bases/`, `config/rbac/` | **Generated** — run `make manifests generate` after API/RBAC marker changes |
+
+Module import path: **`github.com/opsdevcode/repave/operator/...`**.
+
+## Style and idioms
+
+- **Go 1.23+** features OK when readable; match existing files in the package.
+- **Errors:** wrap with **`fmt.Errorf("…: %w", err)`**; never discard errors (`errcheck` in CI).
+- **Context:** pass **`context.Context`** as first param on I/O and reconcile helpers; respect **`ctx.Done()`**.
+- **Logging:** use **`log.FromContext(ctx)`** (controller-runtime) in reconcilers, not `fmt.Print`.
+- **API types:** kubebuilder validation markers on spec; **status** via **`metav1.Condition`** (`meta.SetStatusCondition`).
+- **Tests:** table-driven **`testing.T`** in `internal/*`; envtest in **`internal/controller/*_test.go`**; **`testify`** only where already used.
+- **Generated code:** do not hand-edit **`zz_generated.deepcopy.go`** or committed CRD YAML — regenerate.
+
+## Before push (`operator/` changes)
+
+```bash
+make operator-lint
+make operator-test
+cd operator && make manifests generate && git diff --exit-code
+```
+
+Security: **`.cursor/rules/golang-security.mdc`**.
