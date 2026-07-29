@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.90.0  
+**Current release:** v1.91.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
 **Next up:** [service decomposition Phase 0–1](#service-decomposition-for-hosted-scale) and
 remaining **engine hardening** (maintainability group B). **Queryable audit** and
