@@ -13,7 +13,9 @@ fi
 helm lint "${CHART}"
 
 rendered="$(mktemp)"
-trap 'rm -f "${rendered}"' EXIT
+portal_rendered="$(mktemp)"
+hpa_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -35,13 +37,45 @@ if ! grep -q 'path: /health' "${rendered}" || ! grep -q 'path: /readyz' "${rende
   exit 1
 fi
 
+if ! grep -q 'kind: PodDisruptionBudget' "${rendered}"; then
+  echo "default render must include PodDisruptionBudget" >&2
+  exit 1
+fi
+
+if ! grep -q 'startupProbe:' "${rendered}"; then
+  echo "deployment must define startupProbe" >&2
+  exit 1
+fi
+
+if ! grep -q 'terminationGracePeriodSeconds: 120' "${rendered}"; then
+  echo "deployment must set terminationGracePeriodSeconds" >&2
+  exit 1
+fi
+
+helm template repave-hpa "${CHART}" \
+  --namespace repave-hpa \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set autoscaling.enabled=true \
+  --set autoscaling.minReplicas=2 \
+  --set autoscaling.maxReplicas=5 \
+  >"${hpa_rendered}"
+
+if ! grep -q 'kind: HorizontalPodAutoscaler' "${hpa_rendered}"; then
+  echo "autoscaling.enabled must render HorizontalPodAutoscaler" >&2
+  exit 1
+fi
+
+if grep -q '^  replicas:' "${hpa_rendered}"; then
+  echo "HPA mode must omit Deployment.spec.replicas" >&2
+  exit 1
+fi
+
 if ! grep -q 'name: REPAVE_IMAGE_GATE_TOOLCHAIN' "${rendered}"; then
   echo "deployment must set REPAVE_IMAGE_GATE_TOOLCHAIN" >&2
   exit 1
 fi
 
-portal_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}"' EXIT
 
 helm template repave-portal "${CHART}" \
   --namespace repave-portal \

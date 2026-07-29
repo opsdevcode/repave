@@ -56,7 +56,36 @@ kubectl port-forward svc/repave 8088:8088 -n repave
 open http://127.0.0.1:8088
 ```
 
-Probes use `GET /health` (liveness) and `GET /readyz` (readiness).
+Probes use `GET /health` (liveness), `GET /readyz` (readiness), and an optional
+**startup** probe for slow gate-toolchain images.
+
+## Day-2 operability
+
+| Values path | Purpose |
+| --- | --- |
+| `resources` | CPU/memory requests and limits (defaults sized for gate-toolchain) |
+| `autoscaling.enabled` | HorizontalPodAutoscaler on CPU (omits static `replicaCount`) |
+| `podDisruptionBudget` | Voluntary disruption budget (`minAvailable: 1` by default) |
+| `deploymentStrategy` | Rolling update (`maxUnavailable: 0` default) |
+| `terminationGracePeriodSeconds` | Time for uvicorn to drain in-flight requests on SIGTERM |
+| `lifecycle.preStop` | Optional sleep before SIGTERM so endpoints drop the pod first |
+| `probes.*` | Liveness, readiness, and startup probe timings |
+
+**Scaling replicas:** default `replicaCount: 1`. Multiple replicas need shared session and
+run state — see roadmap **durability and concurrency** before enabling `autoscaling` in
+production.
+
+Example HPA (after durability or for portal-only read paths):
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  --set autoscaling.enabled=true \
+  --set autoscaling.minReplicas=2 \
+  --set autoscaling.maxReplicas=4 \
+  ...
+```
+
+See also [`docs/operations/README.md`](../../../docs/operations/README.md) for SLOs and alerts.
 
 ## Configuration
 
@@ -136,5 +165,7 @@ make chart-smoke       # kind install (CI: chart-smoke on chart/image paths)
 
 ## Scaling
 
-Default `replicaCount: 1`. Multiple replicas require shared session and run state — see roadmap
-**durability and concurrency** before scaling the Deployment.
+Default `replicaCount: 1`. The chart ships **HPA**, **PDB**, resource defaults, rolling
+update strategy, startup probe, and graceful termination — see **Day-2 operability** above.
+Multiple replicas still require shared session and run state; enable autoscaling only after
+roadmap **durability and concurrency** (or for portal-only read paths).
