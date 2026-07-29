@@ -1,0 +1,19 @@
+{% if bundle_topology.nodes %}
+<section class="bundle-topology" aria-labelledby="bundle-topology-heading">
+  <h2 class="form-section__title" id="bundle-topology-heading">Topology</h2>
+  <p class="hint">Cross-references between bundle members at example inputs.</p>
+  <div class="bundle-topology__graph">
+    {% for node in bundle_topology.nodes %}
+    <div class="bundle-topology__node bundle-topology__node--{{ node.role }}" id="topo-{{ node.id }}">
+      <strong>{{ node.label }}</strong>
+      <span class="muted">{{ node.subtitle }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <ul class="bundle-topology__edges muted">
+    {% for edge in bundle_topology.edges %}
+    <li><code>{{ edge.source }}</code> → <code>{{ edge.target }}</code> · {{ edge.label }}</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

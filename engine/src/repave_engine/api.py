@@ -62,7 +62,10 @@ from repave_engine.bundle_portal import (
     build_bundle_result_portal_context,
     bundle_member_previews,
 )
+from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
+from repave_engine.diff_view import diff_view_models
+from repave_engine.estate_map import build_estate_tiles
 from repave_engine.fleet import (
     FleetEntry,
     FleetError,
@@ -76,6 +79,8 @@ from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operat
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.gates import GateResult, all_gates_passed
 from repave_engine.generate_api import run_generate_api
+from repave_engine.governance_annotations import build_governance_previews
+from repave_engine.governance_preflight import build_blueprint_preflight, build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
@@ -276,12 +281,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         from repave_engine.gate_toolchain import portal_runtime_info
 
         auth_user = session_user(request) if request is not None else None
+        presenter_mode = False
+        if request is not None:
+            raw_presenter = request.query_params.get("presenter", "").strip().lower()
+            presenter_mode = raw_presenter in ("1", "true", "yes")
         return {
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
             "local_toolchain_warning": local_portal_toolchain_warning(),
             "portal_runtime": portal_runtime_info(),
             "portal_density": portal_config.density,
+            "presenter_mode": presenter_mode,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
             "async_generation_enabled": run_queue is not None,
@@ -295,6 +305,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             {"kind": "nav", "label": "Upgrade repo", "href": "/update"},
             {"kind": "nav", "label": "Verify repo", "href": "/verify"},
             {"kind": "nav", "label": "Fleet", "href": "/fleet"},
+            {"kind": "nav", "label": "Estate map", "href": "/estate"},
             {"kind": "nav", "label": "Activity", "href": "/activity"},
             {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
         ]
@@ -363,6 +374,26 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if audit_cfg is None or not audit_cfg.enabled:
             return ()
         return read_recent_audit_entries(audit_cfg.file, limit=limit, repo_root=repo_root)
+
+    def portal_fleet_context() -> tuple[bool, list[dict[str, object]], str]:
+        try:
+            fleet_cfg = load_fleet_config(repo_root)
+        except ValueError:
+            return False, [], "default"
+        if fleet_cfg is None or not fleet_cfg.enabled:
+            return False, [], "default"
+        entries = read_fleet(fleet_cfg.file, repo_root=repo_root)
+        operator_by = (
+            load_operator_status_file(fleet_cfg.operator_status_file)
+            if fleet_cfg.operator_status_file is not None
+            else {}
+        )
+        rows = build_fleet_rows(
+            entries,
+            operator_by_url=operator_by,
+            namespace=fleet_cfg.gitops_namespace,
+        )
+        return True, rows, fleet_cfg.gitops_namespace
 
     def audit_portal_enabled() -> bool:
         try:
@@ -499,6 +530,47 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
+    @app.get("/estate", response_class=HTMLResponse)
+    async def estate_map_page(request: Request) -> HTMLResponse:
+        enabled, fleet_repos, _namespace = portal_fleet_context()
+        audit_entries: tuple[AuditHistoryEntry, ...] = ()
+        if audit_portal_enabled():
+            audit_entries = portal_recent_activity(limit=80)
+        tiles = build_estate_tiles(fleet_repos, audit_entries=audit_entries) if enabled else []
+        return templates.TemplateResponse(
+            request,
+            "estate_map.html",
+            page_context(
+                request,
+                nav_active="estate",
+                estate_enabled=enabled,
+                estate_tiles=tiles,
+                audit_sparklines_enabled=audit_portal_enabled(),
+            ),
+        )
+
+    @app.get("/api/v1/estate")
+    async def api_estate_map(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        enabled, fleet_repos, _namespace = portal_fleet_context()
+        if not enabled:
+            raise HTTPException(
+                status_code=404,
+                detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
+            )
+        audit_entries: tuple[AuditHistoryEntry, ...] = ()
+        if audit_portal_enabled():
+            audit_entries = portal_recent_activity(limit=80)
+        tiles = build_estate_tiles(fleet_repos, audit_entries=audit_entries)
+        return JSONResponse(
+            {
+                "count": len(tiles),
+                "tiles": [tile.to_public_dict() for tile in tiles],
+            }
+        )
+
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
@@ -566,6 +638,33 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         provider_catalog = load_provider_catalog(blueprint.path)
         # Golden-path forms use a single scrollable page (no Back/Next stepper).
         form_stepper = None
+        profile = policy_defaults.get("policy_profile", "estate-default")
+        standards = standards_diff_for_pin(
+            repo_root,
+            standard_source=blueprint.standard_source,
+            pinned_version=blueprint.standard_version,
+        )
+        try:
+            policy_catalog_obj = load_policy_catalog(repo_root)
+        except FileNotFoundError:
+            policy_catalog_obj = None
+        enabled_policy_ids = policy_enabled_rule_ids
+        if not enabled_policy_ids and policy_catalog_obj is not None:
+            enabled_policy_ids = enabled_rule_ids_for_profile(
+                policy_catalog_obj,
+                profile=profile,
+                artifact_type=blueprint.artifact_type,
+            )
+        policy_rules = (
+            tuple(rule for rule in policy_catalog_obj.rules if rule.id in enabled_policy_ids)
+            if policy_catalog_obj is not None
+            else ()
+        )
+        governance_previews = build_governance_previews(
+            repo_root,
+            standards,
+            policy_rules,
+        )
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
@@ -574,10 +673,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 blueprint=blueprint,
                 provider_catalog=provider_catalog,
                 form_stepper=form_stepper,
-                standards_diff=standards_diff_for_pin(
-                    repo_root,
-                    standard_source=blueprint.standard_source,
-                    pinned_version=blueprint.standard_version,
+                standards_diff=standards,
+                standards_diff_views=diff_view_models(standards),
+                governance_previews=governance_previews,
+                governance_preflight=build_blueprint_preflight(
+                    blueprint,
+                    output_config=resolved_output,
+                    policy_profile=profile,
                 ),
                 recent_activity=portal_recent_activity(),
                 policy_customization=blueprint_supports_policy_customization(blueprint),
@@ -624,6 +726,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             repo_root=repo_root,
             output_config=resolved_output,
         )
+        member_gates: list[str] = []
+        for member in bundle.members:
+            member_blueprint = load_blueprint(
+                repo_root / "blueprints" / member.blueprint_name,
+                repo_root,
+            )
+            member_gates.extend(member_blueprint.gates)
+        unique_gates = tuple(dict.fromkeys(member_gates))
+        topology_nodes, topology_edges = build_bundle_topology(bundle, previews)
         return templates.TemplateResponse(
             request,
             "bundle_form.html",
@@ -632,6 +743,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 bundle=bundle,
                 member_previews=previews,
                 github_org=resolved_output.github_org,
+                governance_preflight=build_bundle_preflight(
+                    bundle,
+                    gate_names=unique_gates,
+                    total_gate_runs=len(member_gates),
+                ),
+                bundle_topology=topology_public(topology_nodes, topology_edges),
                 nav_active="catalog",
             ),
         )
@@ -677,6 +794,47 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if definition is None:
             return {"resources": [], "basic": []}
         return definition
+
+    @app.get("/api/v1/governance/annotations/{blueprint_name}")
+    async def api_governance_annotations(blueprint_name: str, request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        standards = standards_diff_for_pin(
+            repo_root,
+            standard_source=blueprint.standard_source,
+            pinned_version=blueprint.standard_version,
+        )
+        try:
+            catalog = load_policy_catalog(repo_root)
+        except FileNotFoundError:
+            catalog = None
+        policy_defaults = policy_input_defaults(blueprint)
+        profile = policy_defaults.get("policy_profile", "estate-default")
+        enabled_ids = (
+            enabled_rule_ids_for_profile(
+                catalog,
+                profile=profile,
+                artifact_type=blueprint.artifact_type,
+            )
+            if catalog is not None
+            else frozenset()
+        )
+        policy_rules = (
+            tuple(rule for rule in catalog.rules if rule.id in enabled_ids)
+            if catalog is not None
+            else ()
+        )
+        previews = build_governance_previews(repo_root, standards, policy_rules)
+        return JSONResponse(
+            {
+                "blueprint": blueprint_name,
+                "standard": standards.standard_source,
+                "pinned_version": standards.pinned_version,
+                "previews": [item.to_public_dict() for item in previews],
+            }
+        )
 
     @app.get("/blueprints/{blueprint_name}/policy-catalog")
     async def policy_catalog(blueprint_name: str) -> dict[str, object]:

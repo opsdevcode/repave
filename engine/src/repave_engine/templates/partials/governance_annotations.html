@@ -1,0 +1,19 @@
+{% if governance_previews %}
+<div class="governance-annotations" aria-labelledby="gov-annotations-heading">
+  <h3 class="governance-card__section-title" id="gov-annotations-heading">Governance annotations</h3>
+  <p class="hint">
+    Standard sections and policy rules linked to lines in the pinned standard (read-only preview).
+  </p>
+  {% for preview in governance_previews %}
+  <details class="governance-annotations__file" {% if loop.first %}open{% endif %}>
+    <summary>
+      <code>{{ preview.path }}</code>
+      <span class="badge badge--muted">{{ preview.annotation_count }} marked lines</span>
+    </summary>
+    <div class="governance-annotations__body">
+      {{ preview.html | safe }}
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}

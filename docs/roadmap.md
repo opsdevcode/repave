@@ -119,7 +119,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Service decomposition** | open | Portal, API, and gate-running worker as independent k8s workloads; operator as an API client |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
 | **Developer portal surfaces** | open | Catalog, rendered docs, scorecards, and observability read in the portal |
-| **Portal live governance** | partial | Live run console + command palette shipped; estate map, diff viewer, annotations open |
+| **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
@@ -1524,7 +1524,10 @@ for the estate map; [queryable audit history](#queryable-audit-history) for serv
 **Done when:** Items 1–2 are on `main` with portal contract tests; items 3–8 remain specified here
 for promotion into owned issues.
 
-**Status:** **Shipped on `main`** — live run console + command palette (Tier 1). Items 3–8 open.
+**Status:** **Tier 1 on `main`** (live run console, command palette). **Tier 2** — estate
+map (`/estate`), standards diff viewer, **governance annotation previews** on blueprint forms,
+governance preflight panel, bundle topology graph, presenter mode (`?presenter=1`) with shareable
+lineage receipt.
 
 ---
 

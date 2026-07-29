@@ -65,6 +65,33 @@
     document.body.classList.toggle("repave-busy", active);
   }
 
+  function initLineageReceiptCopy() {
+    document.querySelectorAll("[data-copy-lineage-receipt]").forEach(function (button) {
+      if (button.dataset.repaveLineageCopyBound) {
+        return;
+      }
+      button.dataset.repaveLineageCopyBound = "1";
+      var defaultLabel = button.textContent.trim() || "Copy";
+      button.addEventListener("click", function () {
+        var node = document.getElementById("lineage-receipt-data");
+        if (!node) {
+          return;
+        }
+        var text = node.textContent.trim();
+        if (!text || !navigator.clipboard || !navigator.clipboard.writeText) {
+          return;
+        }
+        navigator.clipboard.writeText(text).then(function () {
+          showToast("Lineage receipt copied");
+          button.textContent = "Copied";
+          setTimeout(function () {
+            button.textContent = defaultLabel;
+          }, 2000);
+        });
+      });
+    });
+  }
+
   function initCopyButtons() {
     document.querySelectorAll("[data-copy-target]").forEach(function (button) {
       if (button.dataset.repaveCopyBound) {
@@ -1410,6 +1437,7 @@
     renderLastRun();
     initHomeResumeChip();
     initCopyButtons();
+    initLineageReceiptCopy();
     initFileExplorer();
     initBundleMemberTabs();
     initBundlePreview();

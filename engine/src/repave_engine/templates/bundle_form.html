@@ -116,6 +116,8 @@
       </ul>
     </section>
 
+    {% include "partials/bundle_topology.html" %}
+
     <section class="form-section" aria-labelledby="bundle-delivery-heading">
       <h2 class="form-section__title" id="bundle-delivery-heading">Delivery</h2>
       <div class="segmented publish-toggle" role="radiogroup" aria-label="Delivery mode">
@@ -135,9 +137,9 @@
     </section>
 
     <div class="form-actions form-actions--sticky">
-      <p class="form-actions__preflight muted">
-        {{ bundle.members|length }} repositories · bundle {{ bundle.name }}@{{ bundle.version }}
-      </p>
+      <div class="form-actions__preflight">
+        {% include "partials/governance_preflight.html" %}
+      </div>
       <div class="form-actions__buttons form-actions__buttons--stack">
         <button
           type="submit"

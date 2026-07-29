@@ -50,7 +50,7 @@ repave = "repave_engine.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-repave_engine = ["templates/*.html", "templates/ci/*", "static/*", "data/*"]
+repave_engine = ["templates/*.html", "templates/partials/*.html", "templates/ci/*", "static/*", "data/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
