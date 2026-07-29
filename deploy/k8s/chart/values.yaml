@@ -116,6 +116,8 @@ repave:
     workerPollSeconds: 5
     # inprocess (default) | worker — API enqueue-only when worker (see docs/durability.md)
     executionMode: ""
+    # s3://bucket/prefix for async run artifacts when portal and worker are split (Phase 2).
+    artifactStoreUri: ""
   auth:
     serviceMode: false
     oidc:
@@ -126,6 +128,19 @@ repave:
       roles:
         admin: []
         generator: []
+
+# Gate-toolchain worker image (external workerMode). Defaults to repave-engine when repository is empty.
+workerImage:
+  repository: ""
+  tag: ""
+  pullPolicy: ""
+
+# Digest-pinned generation corpus mounted read-only (Phase 2 decomposition).
+corpus:
+  enabled: false
+  repository: ghcr.io/opsdevcode/repave-corpus
+  tag: ""
+  pullPolicy: IfNotPresent
 
 # Optional persistence for module staging, audit, and fleet JSONL sinks.
 persistence:

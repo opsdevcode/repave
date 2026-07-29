@@ -1,6 +1,7 @@
-# Portal-only image (no gate CLIs). Build:
+# Portal-only image (no gate CLIs, no embedded corpus). Build:
 #   docker build -f deploy/local/Dockerfile \
 #     --build-arg INSTALL_GATE_TOOLCHAIN=0 \
+#     --build-arg INCLUDE_CORPUS=0 \
 #     -t ghcr.io/your-org/repave-engine-portal:TAG .
 
 image:

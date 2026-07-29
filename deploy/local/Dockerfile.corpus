@@ -1,0 +1,9 @@
+# syntax=docker/dockerfile:1
+# Versioned generation corpus (blueprints, standards, policy, schemas) for decomposed
+# portal/worker deploys. Mount read-only via chart initContainer or pin by digest in CI.
+FROM alpine:3.21
+
+COPY schemas /app/schemas
+COPY blueprints /app/blueprints
+COPY standards /app/standards
+COPY policy /app/policy

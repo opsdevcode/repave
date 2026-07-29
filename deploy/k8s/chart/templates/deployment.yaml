@@ -35,6 +35,10 @@ spec:
       securityContext:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if .Values.corpus.enabled }}
+      initContainers:
+        {{- include "repave.corpusInitContainer" . | nindent 8 }}
+      {{- end }}
       containers:
         - name: repave
           image: {{ include "repave.image" . }}
@@ -72,6 +76,10 @@ spec:
             - name: REPAVE_EXECUTION_MODE
               value: worker
             {{- end }}
+            {{- end }}
+            {{- if .Values.repave.durability.artifactStoreUri }}
+            - name: REPAVE_ARTIFACT_STORE_URI
+              value: {{ .Values.repave.durability.artifactStoreUri | quote }}
             {{- end }}
             - name: REPAVE_SHUTDOWN_DRAIN_SECONDS
               value: {{ .Values.shutdown.drainSeconds | quote }}
@@ -162,6 +170,7 @@ spec:
               subPath: repave.config.yaml
             - name: modules
               mountPath: {{ .Values.repave.output.modulesRoot }}
+            {{- include "repave.corpusVolumeMounts" . | nindent 12 }}
             {{- if .Values.repave.audit.enabled }}
             - name: audit
               mountPath: /data/audit
@@ -188,6 +197,7 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- include "repave.corpusVolume" . | nindent 8 }}
         {{- if .Values.repave.audit.enabled }}
         - name: audit
           {{- if and .Values.persistence.audit.enabled (not .Values.persistence.audit.existingClaim) }}

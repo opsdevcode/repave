@@ -20,5 +20,7 @@ image:
   gateToolchain: false
   repository: ghcr.io/opsdevcode/repave-engine-portal
 
-# Override worker Deployment image in a follow-up values file or subchart when splitting
-# worker image repository to ghcr.io/opsdevcode/repave-engine (gate toolchain).
+workerImage:
+  repository: ghcr.io/opsdevcode/repave-engine
+
+# Enable corpus OCI mount and artifact store for full Phase 2 — see values-decomposed.yaml.

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from repave_engine.artifact_store import resolve_artifact_store
 from repave_engine.blueprint import (
     Blueprint,
     blueprint_dir,
@@ -22,7 +23,7 @@ from repave_engine.target_repo import resolve_module_repository
 
 def async_run_artifact_dir(repo_root: Path, run_id: str) -> Path:
     """Persistent staging for async runs so the portal can show results without re-running gates."""
-    return repo_root / "data" / "async-run-artifacts" / run_id
+    return resolve_artifact_store(repo_root).local_staging_dir(repo_root, run_id)
 
 
 def run_generate_api(
@@ -117,11 +118,9 @@ def generation_result_from_stored_run(
     stored = record.result
     if stored is None:
         return None
-    artifact_raw = stored.get("artifact_root") or stored.get("output_dir")
-    if artifact_raw is None:
-        return None
-    artifact_root = Path(str(artifact_raw))
-    if not artifact_root.is_dir():
+    artifact_store = resolve_artifact_store(repo_root)
+    artifact_root = artifact_store.materialize_run_artifacts(stored)
+    if artifact_root is None:
         return None
     gates_raw = stored.get("gates")
     if not isinstance(gates_raw, list) or not gates_raw:

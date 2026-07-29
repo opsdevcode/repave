@@ -60,4 +60,7 @@ data:
       {{- else if .Values.repave.durability.executionMode }}
       execution_mode: {{ .Values.repave.durability.executionMode | quote }}
       {{- end }}
+      {{- if .Values.repave.durability.artifactStoreUri }}
+      artifact_store_uri: {{ .Values.repave.durability.artifactStoreUri | quote }}
+      {{- end }}
     {{- end }}

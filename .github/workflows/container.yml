@@ -48,6 +48,7 @@ jobs:
           labels: ${{ steps.meta-gate.outputs.labels }}
           build-args: |
             INSTALL_GATE_TOOLCHAIN=1
+            INCLUDE_CORPUS=0
 
       - id: meta-portal
         uses: docker/metadata-action@v5
@@ -68,3 +69,22 @@ jobs:
           labels: ${{ steps.meta-portal.outputs.labels }}
           build-args: |
             INSTALL_GATE_TOOLCHAIN=0
+            INCLUDE_CORPUS=0
+
+      - id: meta-corpus
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/opsdevcode/repave-corpus
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - name: Build and push corpus image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/local/Dockerfile.corpus
+          push: true
+          tags: ${{ steps.meta-corpus.outputs.tags }}
+          labels: ${{ steps.meta-corpus.outputs.labels }}

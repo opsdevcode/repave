@@ -6,7 +6,8 @@ Install the repave **portal and API** on Kubernetes. Images build from
 | Variant | Build | Helm |
 | --- | --- | --- |
 | **Gate toolchain** (default) | `docker build -f deploy/local/Dockerfile -t repave-engine:TAG .` | `image.gateToolchain: true` (default) |
-| **Portal-only** | `docker build -f deploy/local/Dockerfile --build-arg INSTALL_GATE_TOOLCHAIN=0 -t repave-engine-portal:TAG .` | `-f values-portal.yaml` or `image.gateToolchain: false` |
+| **Portal-only** | `docker build -f deploy/local/Dockerfile --build-arg INSTALL_GATE_TOOLCHAIN=0 --build-arg INCLUDE_CORPUS=0 -t repave-engine-portal:TAG .` | `-f values-portal.yaml` or `image.gateToolchain: false` |
+| **Corpus** | `docker build -f deploy/local/Dockerfile.corpus -t repave-corpus:TAG .` | `corpus.enabled: true` (see `values-decomposed.yaml`) |
 
 The gate-toolchain image includes pinned CLIs for Plan/dry-run. The portal-only image
 is smaller and suits catalog/auth-only deployments; dry-run gates report missing tools.
@@ -78,6 +79,9 @@ production.
 | `shutdown.drainSeconds` | Async run drain before exit (`REPAVE_SHUTDOWN_DRAIN_SECONDS`) |
 | `shutdown.readyRequireGithub` | Fail `/readyz` when GitHub API unreachable (publish clusters) |
 | `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
+| `workerImage.*` | Gate-toolchain image for external worker Deployment (defaults to `repave-engine`) |
+| `corpus.*` | Mount digest-pinned corpus OCI artifact (Phase 2 decomposition) |
+| `repave.durability.artifactStoreUri` | S3-compatible store for async run artifacts (`s3://bucket/prefix`) |
 | `persistence.runs` | PVC for `/data/runs` (use `emptyDir` when `enabled: false`) |
 
 **Graceful shutdown:** SIGTERM sets `/readyz` to 503, stops new async submits, drains the queue

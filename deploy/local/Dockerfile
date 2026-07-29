@@ -29,6 +29,8 @@ ARG REPAVE_TLS_INSECURE=0
 ARG INSTALL_ANSIBLE_COLLECTIONS=1
 # 1 = full portal dry-run gates (default). 0 = slimmer portal-only image (Helm image.gateToolchain: false).
 ARG INSTALL_GATE_TOOLCHAIN=1
+# 1 = embed generation corpus in image (default). 0 = mount corpus OCI artifact at runtime.
+ARG INCLUDE_CORPUS=1
 
 COPY deploy/local/certs/ /usr/local/share/ca-certificates/repave/
 
@@ -59,7 +61,7 @@ COPY engine/pyproject.toml engine/uv.lock /app/engine/
 COPY engine/src /app/engine/src
 # Editable install so compose bind-mount of /app picks up template/CSS changes
 # without rebuilding the image for every portal tweak.
-RUN uv pip install --system --no-cache -e /app/engine
+RUN uv pip install --system --no-cache -e "/app/engine[s3]"
 
 RUN if [ "${INSTALL_GATE_TOOLCHAIN}" = "1" ]; then \
       repave doctor --strict --repo-root /app; \
@@ -69,8 +71,11 @@ COPY schemas /app/schemas
 COPY blueprints /app/blueprints
 COPY standards /app/standards
 COPY policy /app/policy
+RUN if [ "${INCLUDE_CORPUS}" = "0" ]; then \
+      rm -rf /app/schemas /app/blueprints /app/standards /app/policy; \
+    fi
 # Root README.md and examples/ test fixtures are bind-mounted at /app for compose;
-# service images ship standards/ and policy/ only (not examples/).
+# service images ship standards/ and policy/ only (not examples/) when INCLUDE_CORPUS=1.
 
 EXPOSE 8088
 
