@@ -1,0 +1,26 @@
+name: Detect operator e2e paths
+description: >-
+  True when changes can affect plan-upgrade/apply-upgrade or the kind e2e harness.
+  Workflows always run so the operator-e2e required check can succeed with a skip.
+outputs:
+  e2e_needed:
+    description: Run kind e2e when true; docs-only and unrelated paths are false
+    value: ${{ steps.filter.outputs.e2e_needed }}
+runs:
+  using: composite
+  steps:
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        predicate-quantifier: every
+        filters: |
+          e2e_needed:
+            - 'operator/**'
+            - 'engine/**'
+            - 'blueprints/**'
+            - 'deploy/local/gate-toolchain-pins.env'
+            - 'deploy/local/install-gate-toolchain.sh'
+            - 'deploy/local/Dockerfile'
+            - '.github/workflows/operator-e2e.yml'
+            - '.github/actions/gate-toolchain/**'
+            - '.github/actions/operator-e2e-paths/**'

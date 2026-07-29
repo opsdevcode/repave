@@ -30,7 +30,6 @@ jobs:
           persist-credentials: false
 
       - name: Sync main branch ruleset (release bypass for administrators)
-        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
         run: |
@@ -63,7 +62,7 @@ jobs:
 
       - name: Run engine tests
         working-directory: engine
-        run: uv run pytest -n auto
+        run: uv run pytest -n auto --cov=repave_engine --cov-report=term-missing
 
       - name: Run operator tests
         working-directory: operator

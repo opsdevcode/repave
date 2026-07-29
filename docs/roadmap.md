@@ -1272,6 +1272,10 @@ in `release.yml` is `continue-on-error: true`, so branch-protection drift is sil
 **Done when:** A PR that drops coverage below the threshold fails, and a red `operator-e2e`
 blocks or pages.
 
+**Status:** **Shipped on `main`** — CI and Release pytest use `[tool.coverage.report] fail_under`;
+`operator-e2e` is a required check (path-gated skip on PRs; full run on `main` push and nightly);
+Release ruleset sync fails closed.
+
 ### A4 — Concurrent-safe audit and fleet stores
 
 **Problem:** `audit.py` appends JSONL best-effort with no lock and never raises; `fleet.py`

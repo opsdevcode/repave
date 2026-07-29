@@ -32,7 +32,9 @@ make test
 For day-to-day edits, **`make test-fast`** runs pytest with `-m "not slow"` and no
 coverage (skips blueprint conformance and full generate + gate toolchain tests).
 Run **`make test`** before you push; CI runs the full suite with **`pytest -n auto`**
-(parallel workers). Optional **`make test-parallel`** matches CI parallelism locally.
+(parallel workers) and enforces the **`fail_under = 75`** coverage threshold from
+`engine/pyproject.toml` (`[tool.coverage.report]`). Optional **`make test-parallel`**
+matches CI parallelism locally.
 
 ### Blueprint conformance
 
@@ -90,7 +92,7 @@ requires on `main` for normal contributors:
 
 - Changes merged via pull request (no approving review required — solo maintainer)
 - Status checks: `test`, `Python quality and security`, `commitlint`,
-  `semantic-pull-request`, `operator-test`
+  `semantic-pull-request`, `operator-test`, `operator-e2e`
 - No force-push (`non_fast_forward`)
 
 **Release automation bypass:** the ruleset grants **repository administrators**
@@ -100,7 +102,19 @@ Use a maintainer PAT with admin on this repo only for that secret; do not use it
 for everyday feature work (use PRs like everyone else).
 
 The **Release** and **Sync main branch ruleset** workflows apply the JSON from
-this repo before publishing so bypass stays in sync with git.
+this repo before publishing so bypass stays in sync with git. A failed ruleset sync
+blocks release (fix the JSON or `gh` permissions before retrying).
+
+### Operator kind e2e
+
+**`operator-e2e`** (kind + Docker) is a required check on every pull request. PRs
+that only touch docs-only paths (same list as above) or paths outside
+`operator/`, `engine/`, `blueprints/`, and gate-toolchain deploy files skip the
+heavy run but still report success — see `.github/actions/operator-e2e-paths/`.
+Every push to **`main`** and the **nightly** schedule run the full harness so
+skipped PRs do not leave `main` untested for long.
+
+Local: `make operator-e2e` ([`docs/operator-local-dev.md`](docs/operator-local-dev.md)).
 
 Re-apply or update the ruleset after editing the JSON:
 
