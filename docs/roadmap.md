@@ -1389,6 +1389,11 @@ interface. Phase 3 only needs the [Helm chart](#kubernetes-deploy-path-helm-char
 **Done when:** Ten concurrent dry-runs from distinct users complete without blocking the API, run
 status is visible while a run is in flight, and a killed worker's run is replayable.
 
+**Status:** **Phase 1 shipped on `main`** — SQLite run store, in-process worker queue,
+`/api/v1/runs` + async `POST /api/v1/generate`, idempotency keys, replay for dead-letter runs,
+metrics — see [`docs/durability.md`](durability.md). Phase 2 (SQL audit/fleet) and Phase 3
+(Kubernetes Job workers) remain open.
+
 ---
 
 ### GitHub App authentication for publish and remediation

@@ -185,6 +185,72 @@ def load_fleet_config(repo_root: Path) -> FleetConfig | None:
     )
 
 
+@dataclass(frozen=True)
+class DurabilityConfig:
+    async_generation: bool
+    max_concurrent_runs: int
+    queue_max_depth: int
+    runs_db: Path
+    require_session_secret: bool
+
+
+def load_durability_config(repo_root: Path) -> DurabilityConfig | None:
+    """Async run queue settings; disabled when absent or async_generation is false."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("durability")
+    env_async = os.environ.get("REPAVE_ASYNC_GENERATION", "").strip().lower()
+    if env_async in ("1", "true", "yes"):
+        enabled = True
+    elif env_async in ("0", "false", "no"):
+        enabled = False
+    elif isinstance(block, dict):
+        raw = block.get("async_generation", False)
+        if not isinstance(raw, bool):
+            raise ValueError("durability.async_generation must be a boolean")
+        enabled = raw
+    else:
+        return None
+
+    if not enabled:
+        return None
+
+    max_workers = 2
+    queue_max = 32
+    runs_db = repo_root / "data" / "runs.sqlite"
+    require_secret = False
+
+    if isinstance(block, dict):
+        if block.get("max_concurrent_runs") is not None:
+            max_workers = int(block["max_concurrent_runs"])
+        if block.get("queue_max_depth") is not None:
+            queue_max = int(block["queue_max_depth"])
+        if block.get("runs_db") is not None:
+            runs_db = Path(str(block["runs_db"])).expanduser()
+            if not runs_db.is_absolute():
+                runs_db = (repo_root / runs_db).resolve()
+        req = block.get("require_session_secret", False)
+        if not isinstance(req, bool):
+            raise ValueError("durability.require_session_secret must be a boolean")
+        require_secret = req
+
+    max_workers = max(1, min(max_workers, 16))
+    queue_max = max(1, min(queue_max, 256))
+
+    env_db = os.environ.get("REPAVE_RUNS_DB", "").strip()
+    if env_db:
+        runs_db = Path(env_db).expanduser()
+        if not runs_db.is_absolute():
+            runs_db = (repo_root / runs_db).resolve()
+
+    return DurabilityConfig(
+        async_generation=True,
+        max_concurrent_runs=max_workers,
+        queue_max_depth=queue_max,
+        runs_db=runs_db,
+        require_session_secret=require_secret,
+    )
+
+
 def load_notifications_config(repo_root: Path) -> NotificationsConfig | None:
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("notifications")

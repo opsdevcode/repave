@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import os
 import secrets
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -89,6 +91,7 @@ from repave_engine.policy_selection import (
 )
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.run_queue import RunQueue, RunQueueConfig, RunQueueFullError, build_run_queue
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -97,6 +100,7 @@ from repave_engine.settings import (
     OutputConfig,
     load_audit_config,
     load_auth_config,
+    load_durability_config,
     load_fleet_config,
     load_output_config,
     load_portal_config,
@@ -136,11 +140,38 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     except ValueError as exc:
         raise RuntimeError(str(exc)) from exc
 
-    app = FastAPI(title="repave", version=__version__)
+    durability_config = load_durability_config(repo_root)
+    run_queue: RunQueue | None = None
+    if durability_config is not None:
+        run_queue = build_run_queue(
+            repo_root,
+            resolved_output,
+            RunQueueConfig(
+                max_concurrent_runs=durability_config.max_concurrent_runs,
+                queue_max_depth=durability_config.queue_max_depth,
+                db_path=durability_config.runs_db,
+            ),
+        )
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        yield
+        queue = getattr(app.state, "run_queue", None)
+        if queue is not None:
+            queue.close()
+
+    app = FastAPI(title="repave", version=__version__, lifespan=lifespan)
+    app.state.run_queue = run_queue
+
     session_secret = os.environ.get("REPAVE_SESSION_SECRET", "").strip()
     if auth_config is not None and auth_config.service_enabled:
         session_secret = auth_config.session_secret
     elif not session_secret:
+        if durability_config is not None and durability_config.require_session_secret:
+            raise RuntimeError(
+                "REPAVE_SESSION_SECRET is required when durability.require_session_secret "
+                "is enabled"
+            )
         session_secret = secrets.token_hex(32)
     app.mount(
         "/static",
@@ -767,6 +798,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
             payload["gate_tools"] = gate_tool_status()
             payload["runtime"] = portal_runtime_info()
+        queue = getattr(app.state, "run_queue", None)
+        if queue is not None:
+            payload["async_generation"] = True
+            payload["run_queue_inflight"] = queue.queue_depth()
         return payload
 
     @app.get("/auth/login")
@@ -807,6 +842,34 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         inputs_raw = payload.get("inputs", {})
         if not isinstance(inputs_raw, dict):
             raise HTTPException(status_code=400, detail="inputs must be an object")
+
+        use_async = bool(payload.get("async", False))
+        queue = getattr(app.state, "run_queue", None)
+        if use_async:
+            if queue is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Async generation is not enabled (durability.async_generation)",
+                )
+            client_request_id = str(payload.get("client_request_id", "")).strip() or None
+            idempotency = request.headers.get("Idempotency-Key", "").strip() or None
+            key = client_request_id or idempotency
+            acting = user.subject if user else current_acting_user()
+            try:
+                record = queue.submit(
+                    blueprint_name=blueprint_name,
+                    inputs=inputs_raw,
+                    dry_run=dry_run,
+                    acting_user=acting,
+                    client_request_id=key,
+                )
+            except RunQueueFullError as exc:
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            return JSONResponse(
+                record.to_public_dict(),
+                status_code=202 if record.status.value == "queued" else 200,
+            )
+
         github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
         try:
             body = run_generate_api(
@@ -820,6 +883,71 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         except (ValueError, FileNotFoundError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(body)
+
+    @app.post("/api/v1/runs")
+    async def api_runs_submit(request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        queue = getattr(app.state, "run_queue", None)
+        if queue is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Async runs require durability.async_generation",
+            )
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            raise HTTPException(status_code=400, detail="Expected JSON object")
+        blueprint_name = str(payload.get("blueprint", "")).strip()
+        if not blueprint_name:
+            raise HTTPException(status_code=400, detail="blueprint is required")
+        dry_run = bool(payload.get("dry_run", True))
+        inputs_raw = payload.get("inputs", {})
+        if not isinstance(inputs_raw, dict):
+            raise HTTPException(status_code=400, detail="inputs must be an object")
+        client_request_id = str(payload.get("client_request_id", "")).strip() or None
+        idempotency = request.headers.get("Idempotency-Key", "").strip() or None
+        acting = user.subject if user else current_acting_user()
+        try:
+            record = queue.submit(
+                blueprint_name=blueprint_name,
+                inputs=inputs_raw,
+                dry_run=dry_run,
+                acting_user=acting,
+                client_request_id=client_request_id or idempotency,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        return JSONResponse(record.to_public_dict(), status_code=202)
+
+    @app.get("/api/v1/runs/{run_id}")
+    async def api_runs_get(run_id: str, request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        queue = getattr(app.state, "run_queue", None)
+        if queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        record = queue.get(run_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Run not found")
+        return JSONResponse(record.to_public_dict())
+
+    @app.post("/api/v1/runs/{run_id}/replay")
+    async def api_runs_replay(run_id: str, request: Request) -> JSONResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_ADMIN)
+        queue = getattr(app.state, "run_queue", None)
+        if queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        try:
+            record = queue.replay(run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Run not found") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(record.to_public_dict(), status_code=202)
 
     @app.get("/update", response_class=HTMLResponse)
     async def update_form(request: Request) -> HTMLResponse:
