@@ -98,6 +98,7 @@ CI runs these OSS tools on every push and pull request. **Docs-only** changes st
 the diff touches only:
 
 - `docs/**`
+- `.cursor/**` (Cursor rules and skills — no runtime effect)
 - `**/*.md`
 - `LICENSE`
 - `.github/pull_request_template.md`
