@@ -175,8 +175,16 @@ jobs:
 
           VERSION="$(read_version)"
           python3 scripts/sync_doc_versions.py "${VERSION}"
-          if ! git diff --quiet docs/roadmap.md README.md docs/portal-design.md; then
-            git add docs/roadmap.md README.md docs/portal-design.md
+          # Paths must match DOC_TARGET_PATHS in scripts/sync_doc_versions.py
+          SYNC_DOC_PATHS=(
+            docs/roadmap.md
+            README.md
+            docs/portal-design.md
+            docs/demo-verification.md
+            docs/operator-ga.md
+          )
+          if ! git diff --quiet "${SYNC_DOC_PATHS[@]}"; then
+            git add "${SYNC_DOC_PATHS[@]}"
             git commit -m "chore(release): sync doc version pointers"
           fi
 
