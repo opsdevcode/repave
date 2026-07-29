@@ -118,6 +118,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
 | **Developer portal surfaces** | open | Catalog, rendered docs, scorecards, and observability read in the portal |
+| **Portal live governance** | partial | Live run console + command palette shipped; estate map, diff viewer, annotations open |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
@@ -1472,6 +1473,41 @@ operator remote inventory Phase C.
 
 **Done when:** A standard bump across a registry of repos opens a bounded set of remediation PRs,
 can be paused mid-flight, and reports drift MTTR.
+
+---
+
+### Portal live governance surfaces
+
+**Problem:** The portal still blocks on synchronous `POST /generate` with a busy overlay whose
+stage labels rotate on a timer. Durability Phase 1 shipped an async run queue and `/api/v1/runs`,
+but no HTML route consumes it — so mandatory gates are only visible after the page reloads.
+
+**Approach (eight candidates; Tier 1 ships on v1):**
+
+1. **Live run console (Tier 1 — ship)** — SSE `/api/v1/runs/{id}/events` streams stage and
+   per-gate events; portal `/runs/{id}` shows a gate table and log pane, then links to full
+   `result.html`.
+2. **Command palette (Tier 1 — ship)** — Cmd/Ctrl-K (and `/`) fuzzy jump to blueprints,
+   bundles, primary nav, and “resume last run” from sessionStorage.
+3. **Estate map** — Fleet rows become a freshness-colored tile grid with drift-age sparklines.
+4. **Real diff viewer** — Split/word-level diffs on upgrade preview (extends deferred standards
+   diff).
+5. **Governance annotations** — Syntax-highlighted file preview with gutter markers to standard
+   / policy clauses.
+6. **Governance preflight** — Form-side preview of gates, policy packs, resolved repo name, and
+   missing gate CLIs (pairs with `repave doctor`).
+7. **Bundle topology graph** — Live cross-reference diagram on bundle form and result.
+8. **Presenter mode + shareable receipt** — `?presenter=1` demo density and exportable lineage
+   card for sales/demo flows.
+
+**Dependencies:** [Durability and concurrency](#durability-and-concurrency-for-hosted-use) Phase 1
+(run queue, shipped); v1.18 portal shell; [fleet registry](#fleet-registry-and-repave-register)
+for the estate map; [queryable audit history](#queryable-audit-history) for server-side run history.
+
+**Done when:** Items 1–2 are on `main` with portal contract tests; items 3–8 remain specified here
+for promotion into owned issues.
+
+**Status:** **Shipped on `main`** — live run console + command palette (Tier 1). Items 3–8 open.
 
 ---
 

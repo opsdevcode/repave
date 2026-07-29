@@ -1098,3 +1098,92 @@ def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) ->
     assert "Lineage" in response.text
     assert "data-bundle-member-tabs" in response.text
     assert "Repositories" in response.text
+
+
+def test_generate_stream_redirects_when_async_enabled(
+    repo_root,
+    output_config,
+    sample_inputs,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            "stream": "1",
+            **sample_inputs,
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    location = response.headers.get("location", "")
+    assert location.startswith("/runs/")
+
+
+def test_run_console_page_when_async_enabled(
+    repo_root,
+    output_config,
+    sample_inputs,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    submit = client.post(
+        "/api/v1/runs",
+        json={
+            "blueprint": "terraform-module-generic",
+            "dry_run": True,
+            "inputs": sample_inputs,
+        },
+    )
+    assert submit.status_code == 202
+    run_id = submit.json()["run_id"]
+    page = client.get(f"/runs/{run_id}")
+    assert page.status_code == 200
+    assert "data-run-console" in page.text
+    assert "command-palette" in page.text
+
+
+@pytest.mark.slow
+def test_run_events_sse_replays_terminal_event(
+    repo_root,
+    output_config,
+    sample_inputs,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import time
+
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    submit = client.post(
+        "/api/v1/runs",
+        json={
+            "blueprint": "terraform-module-generic",
+            "dry_run": True,
+            "inputs": sample_inputs,
+        },
+    )
+    assert submit.status_code == 202
+    run_id = submit.json()["run_id"]
+    deadline = time.time() + 180
+    while time.time() < deadline:
+        record = client.get(f"/api/v1/runs/{run_id}").json()
+        if record["status"] in ("succeeded", "dead_letter"):
+            break
+        time.sleep(0.25)
+    else:
+        pytest.fail("run did not finish in time")
+
+    with client.stream("GET", f"/api/v1/runs/{run_id}/events") as response:
+        assert response.status_code == 200
+        body = response.read().decode("utf-8")
+    assert "run_finished" in body or "run_failed" in body

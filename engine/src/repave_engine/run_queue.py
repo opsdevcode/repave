@@ -15,6 +15,7 @@ from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
 )
+from repave_engine.run_events import RunEventStore, build_run_event_store
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
 from repave_engine.settings import OutputConfig
 
@@ -40,13 +41,24 @@ class RunQueue:
         output_config: OutputConfig,
         store: RunStore,
         config: RunQueueConfig,
+        event_store: RunEventStore | None = None,
     ) -> None:
         self._repo_root = repo_root
         self._output_config = output_config
         self._store = store
         self._config = config
+        self._event_store = event_store
         self._executor = ThreadPoolExecutor(max_workers=config.max_concurrent_runs)
         self._refresh_metrics()
+
+    @property
+    def event_store(self) -> RunEventStore | None:
+        return self._event_store
+
+    def _emit_event(self, run_id: str, kind: str, payload: dict[str, Any] | None = None) -> None:
+        if self._event_store is None:
+            return
+        self._event_store.append(run_id, kind, payload or {})
 
     def close(self) -> None:
         self._executor.shutdown(wait=False, cancel_futures=True)
@@ -118,9 +130,18 @@ class RunQueue:
             record = self._store.get(run_id)
             if record is None:
                 return
+            self._emit_event(
+                run_id,
+                "run_started",
+                {"blueprint": record.blueprint_name, "dry_run": record.dry_run},
+            )
             inputs_raw = record.payload.get("inputs", {})
             if not isinstance(inputs_raw, dict):
                 inputs_raw = {}
+
+            def on_event(kind: str, payload: dict[str, Any]) -> None:
+                self._emit_event(run_id, kind, payload)
+
             github_token = None if record.dry_run else os.environ.get("GITHUB_TOKEN")
             try:
                 result = run_generate_api(
@@ -130,6 +151,7 @@ class RunQueue:
                     inputs=inputs_raw,
                     dry_run=record.dry_run,
                     github_token=github_token,
+                    on_event=on_event,
                 )
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)
@@ -138,6 +160,7 @@ class RunQueue:
                     RunStatus.DEAD_LETTER,
                     error=str(exc),
                 )
+                self._emit_event(run_id, "run_failed", {"error": str(exc)})
                 record_run_terminal("dead_letter", record.blueprint_name)
             else:
                 self._store.update_status(
@@ -146,6 +169,11 @@ class RunQueue:
                     result=result,
                 )
                 outcome = str(result.get("gates_outcome", "unknown"))
+                self._emit_event(
+                    run_id,
+                    "run_finished",
+                    {"status": "succeeded", "gates_outcome": outcome},
+                )
                 record_run_terminal(outcome, record.blueprint_name)
         finally:
             reset_acting_user(token)
@@ -159,9 +187,11 @@ def build_run_queue(
 ) -> RunQueue:
     db_path = config.db_path or (repo_root / "data" / "runs.sqlite")
     store = RunStore(db_path)
+    event_store = build_run_event_store(db_path)
     return RunQueue(
         repo_root=repo_root,
         output_config=output_config,
         store=store,
         config=config,
+        event_store=event_store,
     )

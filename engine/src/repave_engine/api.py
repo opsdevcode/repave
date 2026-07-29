@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 import secrets
 from collections.abc import AsyncIterator
@@ -7,7 +9,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
@@ -91,7 +99,9 @@ from repave_engine.policy_selection import (
 )
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueConfig, RunQueueFullError, build_run_queue
+from repave_engine.run_store import RunStatus
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -127,6 +137,47 @@ def _dry_run_from_form(form: object) -> bool:
 def _plan_preview_from_form(form: object) -> bool:
     get = getattr(form, "get", lambda _k, _d=None: "")
     return str(get("plan_preview", "")).strip() in ("1", "true", "yes")
+
+
+def _stream_from_form(form: object) -> bool:
+    get = getattr(form, "get", lambda _k, _d=None: "")
+    return str(get("stream", "")).strip() in ("1", "true", "yes")
+
+
+def _blueprint_values_from_form(form: object, blueprint: object) -> dict[str, str]:
+    from repave_engine.blueprint import Blueprint
+
+    if not isinstance(blueprint, Blueprint):
+        raise TypeError("blueprint must be Blueprint")
+    values: dict[str, str] = {}
+    get = getattr(form, "get", lambda _k, _d="": "")
+    getlist = getattr(form, "getlist", None)
+    for field in blueprint.inputs:
+        if field.name == "provider_services":
+            selected: list[str] = []
+            if getlist is not None:
+                selected = [str(item) for item in getlist("provider_services") if str(item).strip()]
+            if not selected and getlist is not None:
+                selected = [
+                    str(item) for item in getlist("provider_service_option") if str(item).strip()
+                ]
+            values[field.name] = ",".join(selected)
+            continue
+
+        if field.name == "provider_service_scope":
+            values[field.name] = str(get(field.name, ""))
+            continue
+
+        if field.enum and field.multi:
+            if getlist is None:
+                values[field.name] = str(get(field.name, ""))
+            else:
+                selected = [str(item) for item in getlist(field.name) if str(item).strip()]
+                values[field.name] = ",".join(selected)
+            continue
+
+        values[field.name] = str(get(field.name, ""))
+    return values
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
@@ -195,8 +246,37 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "portal_density": portal_config.density,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
+            "async_generation_enabled": run_queue is not None,
+            "command_palette_items": command_palette_items(),
             **extra,
         }
+
+    def command_palette_items() -> list[dict[str, str]]:
+        items: list[dict[str, str]] = [
+            {"kind": "nav", "label": "Catalog", "href": "/"},
+            {"kind": "nav", "label": "Upgrade repo", "href": "/update"},
+            {"kind": "nav", "label": "Verify repo", "href": "/verify"},
+            {"kind": "nav", "label": "Fleet", "href": "/fleet"},
+            {"kind": "nav", "label": "Activity", "href": "/activity"},
+            {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
+        ]
+        for blueprint in list_blueprints(repo_root / "blueprints"):
+            items.append(
+                {
+                    "kind": "blueprint",
+                    "label": blueprint.name,
+                    "href": f"/blueprints/{blueprint.name}",
+                }
+            )
+        for bundle in list_bundles(repo_root):
+            items.append(
+                {
+                    "kind": "bundle",
+                    "label": bundle.name,
+                    "href": f"/bundles/{bundle.name}",
+                }
+            )
+        return items
 
     @app.middleware("http")
     async def enforce_service_auth(request: Request, call_next):  # type: ignore[no-untyped-def]
@@ -674,7 +754,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
 
     @app.post("/generate")
-    async def generate(request: Request) -> HTMLResponse:
+    async def generate(request: Request) -> Response:
         user = session_user(request)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
@@ -728,31 +808,22 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
         blueprint_name = str(form.get("blueprint_name", ""))
         blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
-        values: dict[str, str] = {}
-        for field in blueprint.inputs:
-            if field.name == "provider_services":
-                selected = [
-                    str(item) for item in form.getlist("provider_services") if str(item).strip()
-                ]
-                if not selected:
-                    selected = [
-                        str(item)
-                        for item in form.getlist("provider_service_option")
-                        if str(item).strip()
-                    ]
-                values[field.name] = ",".join(selected)
-                continue
+        values = _blueprint_values_from_form(form, blueprint)
 
-            if field.name == "provider_service_scope":
-                values[field.name] = str(form.get(field.name, ""))
-                continue
-
-            if field.enum and field.multi:
-                selected = [str(item) for item in form.getlist(field.name) if str(item).strip()]
-                values[field.name] = ",".join(selected)
-                continue
-
-            values[field.name] = str(form.get(field.name, ""))
+        use_stream = _stream_from_form(form)
+        if use_stream and run_queue is not None:
+            acting = user.subject if user else current_acting_user()
+            try:
+                record = run_queue.submit(
+                    blueprint_name=blueprint_name,
+                    inputs=values,
+                    dry_run=dry_run,
+                    acting_user=acting,
+                )
+            except RunQueueFullError:
+                pass
+            else:
+                return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
 
         result = generate_from_blueprint(
             blueprint,
@@ -952,6 +1023,129 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(record.to_public_dict(), status_code=202)
+
+    @app.get("/api/v1/runs/{run_id}/events")
+    async def api_run_events(run_id: str, request: Request) -> StreamingResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        if run_queue is None or run_queue.event_store is None:
+            raise HTTPException(status_code=503, detail="Run events are not enabled")
+        record = run_queue.get(run_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Run not found")
+
+        last_event_id = request.headers.get("Last-Event-ID", "").strip()
+        after_seq = int(last_event_id) if last_event_id.isdigit() else 0
+        event_store = run_queue.event_store
+
+        async def event_stream() -> AsyncIterator[str]:
+            nonlocal after_seq
+            while True:
+                events = await asyncio.to_thread(
+                    event_store.list_from,
+                    run_id,
+                    after_seq=after_seq,
+                )
+                if not events:
+                    events = await asyncio.to_thread(
+                        event_store.wait_for_events,
+                        run_id,
+                        after_seq=after_seq,
+                        timeout_seconds=15.0,
+                    )
+                if not events:
+                    yield ": heartbeat\n\n"
+                    current = run_queue.get(run_id)
+                    if current is not None and current.status.value in {
+                        "succeeded",
+                        "failed",
+                        "dead_letter",
+                    }:
+                        return
+                    continue
+                for event in events:
+                    after_seq = event.seq
+                    payload = json.dumps(event.to_sse_data(), separators=(",", ":"))
+                    yield f"id: {event.seq}\ndata: {payload}\n\n"
+                    if event.kind in TERMINAL_EVENT_KINDS:
+                        return
+
+        return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+    @app.get("/runs/{run_id}", response_class=HTMLResponse)
+    async def run_console(run_id: str, request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        record = run_queue.get(run_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Run not found")
+        blueprint = load_blueprint(
+            repo_root / "blueprints" / record.blueprint_name,
+            repo_root,
+        )
+        return templates.TemplateResponse(
+            request,
+            "run_console.html",
+            page_context(
+                request,
+                nav_active="catalog",
+                run_id=run_id,
+                run_record=record,
+                blueprint=blueprint,
+                gate_names=blueprint.gates,
+            ),
+        )
+
+    @app.get("/runs/{run_id}/result", response_class=HTMLResponse)
+    async def run_result_view(run_id: str, request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        record = run_queue.get(run_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="Run not found")
+        if record.status != RunStatus.SUCCEEDED:
+            raise HTTPException(status_code=400, detail="Run is not complete")
+        inputs_raw = record.payload.get("inputs", {})
+        if not isinstance(inputs_raw, dict):
+            inputs_raw = {}
+        blueprint_name = record.blueprint_name
+        blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+        values = {str(k): str(v) for k, v in inputs_raw.items()}
+        dry_run = record.dry_run
+        require_run = dry_run
+        github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
+        result = generate_from_blueprint(
+            blueprint,
+            values,
+            output_config=resolved_output,
+            dry_run=dry_run,
+            require_run=require_run,
+            github_token=github_token,
+            repo_root=repo_root,
+        )
+        return templates.TemplateResponse(
+            request,
+            "result.html",
+            page_context(
+                request,
+                result=result,
+                nav_active="catalog",
+                gate_summary=gate_summary(result.gates),
+                gates_ok=all_gates_passed(result.gates),
+                gate_toolchain_callout=gate_toolchain_callout(
+                    result.gates,
+                    dry_run=result.dry_run,
+                ),
+                result_portal=build_result_portal_context(result, repo_root),
+            ),
+        )
 
     @app.get("/update", response_class=HTMLResponse)
     async def update_form(request: Request) -> HTMLResponse:

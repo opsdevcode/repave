@@ -221,6 +221,10 @@
         if (event.defaultPrevented) {
           return;
         }
+        var streamBox = form.querySelector('input[name="stream"][value="1"]');
+        if (streamBox && streamBox.checked) {
+          return;
+        }
         var btn =
           form.querySelector("[data-dry-run-run]:not([hidden])") ||
           form.querySelector("[data-stepper-submit]:not([hidden])") ||
@@ -1087,6 +1091,299 @@
     });
   }
 
+  function initRunConsole() {
+    var root = document.querySelector("[data-run-console]");
+    if (!root) {
+      return;
+    }
+    var runId = root.getAttribute("data-run-id");
+    var resultUrl = root.getAttribute("data-result-url") || "";
+    var logEl = document.getElementById("run-console-log");
+    var completeActions = root.querySelector("[data-run-complete-actions]");
+    var initialStatus = root.getAttribute("data-run-status") || "";
+
+    function appendLog(line) {
+      if (!logEl) {
+        return;
+      }
+      logEl.textContent = (logEl.textContent ? logEl.textContent + "\n" : "") + line;
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function setStage(stage, state) {
+      var el = root.querySelector('[data-stage="' + stage + '"]');
+      if (!el) {
+        return;
+      }
+      el.classList.remove("is-active", "is-done");
+      if (state === "active") {
+        el.classList.add("is-active");
+      } else if (state === "done") {
+        el.classList.add("is-done");
+      }
+    }
+
+    function setGateRow(gate, status, message) {
+      var row = root.querySelector('[data-gate="' + gate + '"]');
+      if (!row) {
+        return;
+      }
+      var badge = row.querySelector("[data-gate-status]");
+      if (!badge) {
+        return;
+      }
+      badge.classList.remove("badge--muted", "badge--pass", "badge--fail", "badge--skip");
+      if (status === "running") {
+        badge.textContent = "Running";
+        badge.classList.add("badge--muted");
+      } else if (status === "passed") {
+        badge.textContent = "Passed";
+        badge.classList.add("badge--pass");
+      } else if (status === "skipped") {
+        badge.textContent = "Skipped";
+        badge.classList.add("badge--skip");
+      } else {
+        badge.textContent = "Failed";
+        badge.classList.add("badge--fail");
+      }
+      if (message) {
+        appendLog(gate + ": " + message);
+      }
+    }
+
+    function handleEvent(data) {
+      if (!data || !data.kind) {
+        return;
+      }
+      if (data.kind === "stage_started") {
+        setStage(data.stage, "active");
+        appendLog("Stage: " + data.stage);
+      } else if (data.kind === "stage_finished") {
+        setStage(data.stage, "done");
+      } else if (data.kind === "gate_started") {
+        setGateRow(data.gate, "running", "");
+      } else if (data.kind === "gate_finished") {
+        var status = data.skipped ? "skipped" : data.passed ? "passed" : "failed";
+        setGateRow(data.gate, status, data.message || "");
+      } else if (data.kind === "run_finished") {
+        appendLog("Run complete.");
+        if (completeActions) {
+          completeActions.hidden = false;
+        }
+        if (resultUrl && data.status === "succeeded") {
+          window.setTimeout(function () {
+            window.location.href = resultUrl;
+          }, 800);
+        }
+      } else if (data.kind === "run_failed") {
+        appendLog("Run failed: " + (data.error || "unknown error"));
+        if (completeActions) {
+          completeActions.hidden = false;
+        }
+      }
+    }
+
+    function pollStatus() {
+      fetch("/api/v1/runs/" + encodeURIComponent(runId), { credentials: "same-origin" })
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (body) {
+          if (body && body.status === "succeeded" && body.result && body.result.gates) {
+            body.result.gates.forEach(function (gate) {
+              var status = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
+              setGateRow(gate.name, status, gate.message || "");
+            });
+            if (completeActions) {
+              completeActions.hidden = false;
+            }
+          }
+        })
+        .catch(function () {
+          /* ignore */
+        });
+    }
+
+    if (initialStatus === "succeeded" || initialStatus === "dead_letter") {
+      pollStatus();
+      if (completeActions) {
+        completeActions.hidden = false;
+      }
+      return;
+    }
+
+    var source = new EventSource("/api/v1/runs/" + encodeURIComponent(runId) + "/events");
+    source.onmessage = function (msg) {
+      try {
+        handleEvent(JSON.parse(msg.data));
+      } catch (_err) {
+        /* ignore */
+      }
+    };
+    source.onerror = function () {
+      source.close();
+      pollStatus();
+    };
+  }
+
+  function fuzzyMatchScore(query, label) {
+    var q = (query || "").toLowerCase().trim();
+    var text = (label || "").toLowerCase();
+    if (!q) {
+      return 1;
+    }
+    var qi = 0;
+    for (var ti = 0; ti < text.length && qi < q.length; ti += 1) {
+      if (text.charAt(ti) === q.charAt(qi)) {
+        qi += 1;
+      }
+    }
+    if (qi !== q.length) {
+      return 0;
+    }
+    return q.length / Math.max(text.length, 1);
+  }
+
+  function initCommandPalette() {
+    var dataEl = document.getElementById("command-palette-data");
+    var dialog = document.getElementById("command-palette");
+    var input = document.getElementById("command-palette-input");
+    var list = document.getElementById("command-palette-list");
+    if (!dataEl || !dialog || !input || !list) {
+      return;
+    }
+    var items = [];
+    try {
+      items = JSON.parse(dataEl.textContent || "[]");
+    } catch (_err) {
+      items = [];
+    }
+    var activeIndex = 0;
+    var filtered = items.slice();
+
+    function closePalette() {
+      dialog.hidden = true;
+      document.body.classList.remove("command-palette-open");
+    }
+
+    function openPalette() {
+      dialog.hidden = false;
+      document.body.classList.add("command-palette-open");
+      input.value = "";
+      filtered = items.slice();
+      activeIndex = 0;
+      renderList();
+      input.focus();
+    }
+
+    function runItem(item) {
+      if (!item) {
+        return;
+      }
+      if (item.action === "resume-last-run") {
+        var last = readLastRun();
+        if (last && last.blueprint) {
+          window.location.href = "/blueprints/" + encodeURIComponent(last.blueprint);
+          return;
+        }
+        showToast("No last run in this browser.");
+        closePalette();
+        return;
+      }
+      if (item.href) {
+        window.location.href = item.href;
+      }
+    }
+
+    function renderList() {
+      list.innerHTML = "";
+      filtered.forEach(function (item, index) {
+        var li = document.createElement("li");
+        li.className = "command-palette__item" + (index === activeIndex ? " is-active" : "");
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", index === activeIndex ? "true" : "false");
+        li.id = "command-palette-opt-" + index;
+        var labelSpan = document.createElement("span");
+        labelSpan.textContent = item.label || "";
+        li.appendChild(labelSpan);
+        var kind = document.createElement("span");
+        kind.className = "command-palette__item-kind";
+        kind.textContent = item.kind || item.action || "item";
+        li.appendChild(kind);
+        li.addEventListener("click", function () {
+          runItem(item);
+        });
+        list.appendChild(li);
+      });
+      if (filtered[activeIndex]) {
+        input.setAttribute("aria-activedescendant", "command-palette-opt-" + activeIndex);
+      }
+    }
+
+    function applyFilter() {
+      var query = input.value || "";
+      filtered = items
+        .map(function (item) {
+          return { item: item, score: fuzzyMatchScore(query, item.label || "") };
+        })
+        .filter(function (row) {
+          return row.score > 0;
+        })
+        .sort(function (a, b) {
+          return b.score - a.score;
+        })
+        .map(function (row) {
+          return row.item;
+        });
+      if (!filtered.length && !query.trim()) {
+        filtered = items.slice();
+      }
+      activeIndex = 0;
+      renderList();
+    }
+
+    document.addEventListener("keydown", function (event) {
+      var mod = event.metaKey || event.ctrlKey;
+      if (mod && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        if (dialog.hidden) {
+          openPalette();
+        } else {
+          closePalette();
+        }
+        return;
+      }
+      if (!dialog.hidden && event.key === "/") {
+        event.preventDefault();
+        input.focus();
+        return;
+      }
+      if (dialog.hidden) {
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closePalette();
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        activeIndex = Math.min(activeIndex + 1, filtered.length - 1);
+        renderList();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        activeIndex = Math.max(activeIndex - 1, 0);
+        renderList();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        runItem(filtered[activeIndex]);
+      }
+    });
+
+    input.addEventListener("input", applyFilter);
+    dialog.querySelectorAll("[data-command-palette-close]").forEach(function (el) {
+      el.addEventListener("click", closePalette);
+    });
+  }
+
   window.repavePortal = {
     saveLastRun: function (payload) {
       try {
@@ -1123,5 +1420,7 @@
     initCatalogSearch();
     initGateDashboard();
     initFormDraft();
+    initRunConsole();
+    initCommandPalette();
   });
 })();
