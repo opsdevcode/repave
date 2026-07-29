@@ -25,7 +25,7 @@ Starter SLOs, alerts, and runbooks for a hosted repave engine (v1.35–v1.38).
 
 ### Slow generations
 
-1. Inspect `/metrics` and traces (OpenTelemetry) for stage timing.
+1. Inspect `/metrics` and [OpenTelemetry traces](tracing.md) for stage timing.
 2. Scale replicas or reduce concurrent Scaffolder/portal load.
 
 ### OIDC / sign-in outage

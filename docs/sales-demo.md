@@ -65,8 +65,10 @@ The **operator** (GA for inventory, upgrade planning, dry-run remediation) watch
 
 **Do not over-promise:**
 
-- Remote git inventory via `spec.repoURL` is **not** GA — use `spec.localPath` or future work.
-- Remediation PRs to GitHub need token and `repoURL`; portal **Update repo** + CLI cover the same engine contracts today.
+- Remote git inventory and remediation from **`spec.repoURL`** are **GA** when a token/secret is
+  configured; local-only demos can still use `spec.localPath` ([Operator GA](operator-ga.md)).
+- Remediation PRs to GitHub need token material and reachable `repoURL`; portal **Update repo** +
+  CLI cover the same engine contracts today.
 
 Scope: [Operator GA](operator-ga.md) · [Operator overview](operator-overview.md)
 

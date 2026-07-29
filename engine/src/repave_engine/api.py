@@ -100,8 +100,10 @@ from repave_engine.settings import (
     load_fleet_config,
     load_output_config,
     load_portal_config,
+    load_tracing_config,
 )
 from repave_engine.standards_diff import standards_diff_for_pin
+from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
 
@@ -137,6 +139,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         raise RuntimeError(str(exc)) from exc
 
     app = FastAPI(title="repave", version=__version__)
+
+    configure_tracing(load_tracing_config(repo_root))
+
     session_secret = os.environ.get("REPAVE_SESSION_SECRET", "").strip()
     if auth_config is not None and auth_config.service_enabled:
         session_secret = auth_config.session_secret
