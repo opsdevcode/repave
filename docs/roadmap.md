@@ -6,12 +6,11 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.82.0  
 **In progress:** — (no single theme owns the tree; see **Next up**)  
-**Next up:** operator remote inventory **Phase C** → verify **remote clone**; fleet **GitOps**
-(`fleet-manifests` + register) polish; [day-2 operability](#service-health-resource-management-and-autoscaling)
-on the Helm chart (chart-smoke in CI, gate-toolchain image variant still open). **Composite bundles**
-shipped in this line — see [Composite golden paths (bundles)](#composite-golden-paths-bundles).
-**Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) —
-correctness and scale fixes that gate hosted multi-user use  
+**Next up:** fleet **GitOps** (`fleet-manifests` + register) polish; [day-2 operability](#service-health-resource-management-and-autoscaling)
+on the Helm chart (chart-smoke in CI, gate-toolchain image variant still open). **Engine hardening**
+(A3 operator-e2e required check, A5/A6 docs and traces) continues alongside features.
+**Also open:** [engine hardening and tech debt](#engine-hardening-and-tech-debt) — A1/A2/A4 landed on this line;
+operator remote inventory **Phase C** (remediation from clone) shipped with it.  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -305,8 +304,7 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 - kind co-install: `make kind-co-install`, [`values-kind.yaml`](../deploy/k8s/chart/values-kind.yaml),
   sample [`fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl)
 
-**Still open:** operator **Phase C** remediation from clone; optional continuous sync beyond
-`fleet-manifests`.
+**Still open:** optional continuous sync beyond `fleet-manifests`.
 
 ### Kubernetes deploy — Helm chart (engine v1.74+)
 
@@ -1016,9 +1014,9 @@ non-empty `status.upgradePlan` against a stale pin, with no local checkout.
 observation and `repave plan-upgrade`, so `spec.repoURL` populates `status.observedPins`
 **and** `status.upgradePlan`. Token material is redacted from git errors; clone failures set
 `RemoteFetchFailed` and requeue; remote repos re-reconcile on
-`REPAVE_OPERATOR_REMOTE_RESYNC` (default 10m). Phase C (remediation PRs from a clone)
-remains open — remediation still requires `spec.localPath`, since pushing from an ephemeral
-shallow clone needs a write token and full history. Design:
+`REPAVE_OPERATOR_REMOTE_RESYNC` (default 10m). **Phase C shipped** — remediation runs against
+the materialized clone when `spec.localPath` is empty; push/PR reuse `spec.repoURL` and
+`GITHUB_TOKEN`. Design:
 [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md).
 
 ---

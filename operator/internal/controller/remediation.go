@@ -13,6 +13,7 @@ import (
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
 	"github.com/opsdevcode/repave/operator/internal/github"
+	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
 	"github.com/opsdevcode/repave/operator/internal/repave"
@@ -44,6 +45,7 @@ func applyRemediationPRStatus(
 	ctx context.Context,
 	c client.Client,
 	repo *repavev1alpha1.GoldenPathRepo,
+	workspace *inventory.Workspace,
 	applier repave.ApplyUpgrader,
 	gh github.Client,
 	repaveCfg repave.Config,
@@ -69,14 +71,14 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	if repo.Spec.LocalPath == "" {
-		msg := "remediation requires spec.localPath; remote repos plan only (Phase C pending)"
+	workDir, workErr := remediationWorkDir(repo.Spec, workspace)
+	if workErr != nil {
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionFalse,
 				Reason:  status.ReasonRemediationSkipped,
-				Message: msg,
+				Message: workErr.Error(),
 			})
 		})
 	}
@@ -114,7 +116,7 @@ func applyRemediationPRStatus(
 	applyResult, err := applier.ApplyUpgrade(
 		ctx,
 		repaveCfg,
-		repo.Spec.LocalPath,
+		workDir,
 		desired.BlueprintName,
 		branch,
 		commitMessage,
@@ -184,7 +186,7 @@ func applyRemediationPRStatus(
 		gh = &github.HTTPClient{Token: githubToken}
 	}
 
-	if err := git.PushBranch(ctx, repo.Spec.LocalPath, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {
+	if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {
 		msg := err.Error()
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
 			latest.Status.RemediationPR = nil
@@ -250,6 +252,19 @@ func applyRemediationPRStatus(
 	sendOperatorNotify(notify.EventRemediationPROpened, repo, applyResult.GitBranch, pr.HTMLURL, pr.Title,
 		fmt.Sprintf("Remediation PR opened: %s", pr.Title))
 	return nil
+}
+
+func remediationWorkDir(
+	spec repavev1alpha1.GoldenPathRepoSpec,
+	workspace *inventory.Workspace,
+) (string, error) {
+	if spec.LocalPath != "" {
+		return spec.LocalPath, nil
+	}
+	if workspace != nil && workspace.Path != "" {
+		return workspace.Path, nil
+	}
+	return "", fmt.Errorf("remediation requires spec.localPath or a materialized spec.repoURL clone")
 }
 
 func sendOperatorNotify(

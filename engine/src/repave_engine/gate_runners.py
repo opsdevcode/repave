@@ -20,6 +20,7 @@ from repave_engine.gate_toolchain import (
 )
 from repave_engine.policy_selection import load_policy_selection_file
 from repave_engine.provenance import validate_provenance_file
+from repave_engine.subprocess_run import run_subprocess
 
 
 def run_command(
@@ -37,14 +38,22 @@ def run_command(
     if extra_env is not None:
         env.update(extra_env)
     run_cwd = subprocess_cwd(cwd)
-    return subprocess.run(
-        cmd,
-        cwd=run_cwd,
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
+    try:
+        return run_subprocess(
+            cmd,
+            cwd=run_cwd,
+            env=env,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        stdout = exc.stdout if isinstance(exc.stdout, str) else (exc.stdout or b"").decode()
+        stderr = exc.stderr if isinstance(exc.stderr, str) else (exc.stderr or b"").decode()
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=124,
+            stdout=stdout,
+            stderr=f"{stderr}\ncommand timed out after {exc.timeout}s",
+        )
 
 
 def terraform_usable(output_dir: Path) -> bool:

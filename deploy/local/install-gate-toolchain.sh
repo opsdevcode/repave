@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Pinned gate CLIs for portal dry-run and CI (keep aligned with engine/ci_toolchain.py).
+# Pinned gate CLIs for portal dry-run and CI (pins: deploy/local/gate-toolchain-pins.env).
 set -euo pipefail
 
-TERRAFORM_VERSION="${TERRAFORM_VERSION:-1.9.8}"
-TFLINT_VERSION="${TFLINT_VERSION:-0.55.1}"
-CONFTEST_VERSION="${CONFTEST_VERSION:-0.68.2}"
-HELM_VERSION="${HELM_VERSION:-3.14.4}"
-CHECKOV_PIP_SPEC="${CHECKOV_PIP_SPEC:-checkov>=3.2.0}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=gate-toolchain-pins.env
+source "${SCRIPT_DIR}/gate-toolchain-pins.env"
+CHECKOV_PIP_SPEC="${CHECKOV_PIP_SPEC:-checkov==${CHECKOV_VERSION}}"
 
 INSTALL_TERRAFORM="${INSTALL_TERRAFORM:-1}"
 INSTALL_ANSIBLE="${INSTALL_ANSIBLE:-1}"

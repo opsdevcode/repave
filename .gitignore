@@ -17,6 +17,7 @@ venv/
 .conformance-staging/
 .conformance-modules/
 .gate-tools/
+.tmp-staging/
 repave.config.yaml
 dist/
 *.tmp

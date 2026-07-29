@@ -1,6 +1,6 @@
 # ADR 001: `GoldenPathRepo.spec.repoURL` remote inventory
 
-**Status:** Accepted — Phases A and B shipped (v1.72); Phase C outstanding  
+**Status:** Accepted — Phases A–C shipped (v1.72+); remote remediation uses the inventory clone  
 **Date:** 2026-07-26 (updated 2026-07-27)  
 **Scope:** repave operator (v1.17 GA+)
 
@@ -35,8 +35,10 @@ v1.17 GA:
    reconcile as an `inventory.Workspace` and reused for both observation and bundled
    `repave plan-upgrade`, so `status.upgradePlan` is populated for remote repos with the
    same JSON contract as `localPath`.
-3. **Phase C — Remediation:** reuse existing GitHub client; `spec.repoURL` + token on the
-   operator Deployment; optional `preserveLocal` semantics documented for remote repos.
+3. **Phase C — Remediation (shipped):** reuse existing GitHub client; apply-upgrade and
+   git push run against the materialized clone when `spec.localPath` is empty;
+   `spec.repoURL` + token on the operator Deployment; optional `preserveLocal` semantics
+   documented for remote repos.
 
 `RemoteRepoUnsupported` remains the surfaced reason when the operator runs without a
 configured fetcher; `localPath` is still recommended for kind/e2e and dev clusters.

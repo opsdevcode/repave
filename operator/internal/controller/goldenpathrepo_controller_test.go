@@ -287,6 +287,17 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 	})
 
 	It("plans an upgrade for a remote repo from the clone", func() {
+		applier := &repave.StaticApplyUpgrader{
+			Result: repave.ApplyResult{
+				BlueprintName:    "terraform-module-generic",
+				BlueprintVersion: "9.9.9",
+				ChangedFileCount: 5,
+				GitBranch:        "repave/upgrade/terraform-module-generic-9.9.9",
+				CommitSHA:        "abc123",
+				Summary:          "planned upgrade",
+			},
+		}
+		reconciler.ApplyUpgrader = applier
 		reconciler.Fetcher = &fixtureFetcher{source: fixtureModulePath()}
 		repo := &repavev1alpha1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
@@ -298,11 +309,17 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 					StandardSource:   "standards/terraform-standards",
 					StandardVersion:  "1.1.0",
 				},
+				Remediation: repavev1alpha1.RemediationSpec{
+					Enabled: true,
+					DryRun:  true,
+				},
 			},
 		}
 		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
 
 		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+		_, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
@@ -310,9 +327,10 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
 		Expect(repo.Status.UpgradePlan).NotTo(BeNil())
 		Expect(repo.Status.UpgradePlan.ChangedFileCount).To(Equal(5))
-
-		// Phase C is outstanding: remote repos plan but do not open remediation PRs.
-		Expect(repo.Status.RemediationPR).To(BeNil())
+		Expect(applier.Calls).To(Equal(1))
+		Expect(applier.LastTargetRepo).To(ContainSubstring("repave-inventory-"))
+		Expect(repo.Status.RemediationPR).NotTo(BeNil())
+		Expect(repo.Status.RemediationPR.State).To(Equal(remediation.PRStatePlanned))
 	})
 
 	It("plans against the clone path, not the remote URL", func() {

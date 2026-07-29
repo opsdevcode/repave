@@ -166,6 +166,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		ctx,
 		r.Client,
 		&repo,
+		workspace,
 		applier,
 		r.GitHub,
 		r.RepaveConfig,

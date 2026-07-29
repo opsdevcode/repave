@@ -41,4 +41,9 @@ jobs:
 
       - name: Run tests
         if: steps.paths.outputs.ci_needed == 'true'
-        run: uv run pytest
+        run: uv run pytest --cov=repave_engine --cov-report=term-missing --cov-fail-under=75
+
+      - name: Verify doc version pointers
+        if: steps.paths.outputs.ci_needed == 'true'
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/sync_doc_versions.py --check

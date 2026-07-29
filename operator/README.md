@@ -18,8 +18,11 @@ temporary workspace, then observed **and** planned against exactly like `localPa
 the clone is removed. HTTPS remotes authenticate with `GITHUB_TOKEN` (read scope is enough);
 SSH remotes use the operator's mounted key. Because remote repos have no watch, they
 re-reconcile every `REPAVE_OPERATOR_REMOTE_RESYNC` (default `10m`), and a failed clone sets
-`Ready=False` with reason `RemoteFetchFailed` and requeues. Remediation PRs still require
-`spec.localPath` (Phase C).
+`Ready=False` with reason `RemoteFetchFailed` and requeues.
+
+**Remote remediation (Phase C):** when remediation is enabled, `apply-upgrade` and optional
+GitHub PR push run against the same materialized clone (no `spec.localPath` required).
+Write access uses `GITHUB_TOKEN` on the operator Deployment.
 
 **Local development and testing are first-class.** See
 [`docs/operator-local-dev.md`](../docs/operator-local-dev.md).
