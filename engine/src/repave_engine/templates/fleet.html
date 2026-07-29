@@ -23,6 +23,7 @@
     <h2 id="fleet-heading">{{ fleet_repos | length }} repositor{{ 'y' if fleet_repos | length == 1 else 'ies' }}</h2>
     <p class="muted card__subtitle">
       Sorted by repository · register with <code>repave register</code>
+      · <a href="/services">service catalog and scorecards</a>
       {% if fleet_operator_status_enabled %} · operator status from snapshot{% endif %}
     </p>
   </div>

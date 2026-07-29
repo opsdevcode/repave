@@ -20,6 +20,18 @@ def test_load_portal_config_invalid_density(tmp_path: Path) -> None:
         load_portal_config(tmp_path)
 
 
+def test_load_portal_config_observability_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "portal:\n  observability_dashboard_url: https://from-file\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_OBSERVABILITY_DASHBOARD_URL", "https://from-env")
+    cfg = load_portal_config(tmp_path)
+    assert cfg.observability_dashboard_url == "https://from-env"
+
+
 def test_role_for_groups() -> None:
     config = AuthConfig(
         service_enabled=True,
