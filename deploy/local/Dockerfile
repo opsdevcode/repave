@@ -34,7 +34,7 @@ ARG INCLUDE_CORPUS=1
 
 COPY deploy/local/certs/ /usr/local/share/ca-certificates/repave/
 
-# Gate toolchain: see deploy/local/install-gate-toolchain.sh (keep versions in ci_toolchain.py)
+# Gate toolchain: deploy/local/install-gate-toolchain.sh sources gate-toolchain-pins.env
 COPY ansible/requirements-gate-collections.yml /app/ansible/requirements-gate-collections.yml
 RUN mkdir -p /app/deploy/local
 COPY deploy/local/gate-toolchain-pins.env /app/deploy/local/gate-toolchain-pins.env
