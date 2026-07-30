@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.94.0  
 **In progress:** [service decomposition Phase 2b](#service-decomposition-for-hosted-scale) — run-record preview snapshots.  
-**Next up:** engine hardening A1/A2/A4, then operator `/api/v2` (Phase 3).
+**Next up:** engine hardening A1 and A4, then operator `/api/v2` (Phase 3).
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1284,7 +1284,10 @@ this today.
 **Done when:** A gate that sleeps past its budget is reported as timed out and the request
 returns, with no orphaned child process.
 
-### A3 — Coverage and operator e2e actually gate merges
+**Status:** **Shipped on `main` follow-up** — `subprocess_run.run_subprocess` with env-configured
+timeouts (`REPAVE_SUBPROCESS_TIMEOUT_SECONDS`, `REPAVE_GIT_TIMEOUT_SECONDS`), process-group kill
+on expiry, git/inventory/upgrade paths migrated, `gate_outcome` returns `timeout`, per-gate
+`timeout_seconds` blueprint override supported via `gate_timeout_seconds`.
 
 **Problem:** `make test` enforces `--cov-fail-under=75`, but `.github/workflows/ci.yml` runs
 `uv run pytest` with no coverage flags, so the threshold is advisory on PRs. `operator-e2e` is

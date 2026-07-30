@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
+from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import ModuleRepository, _git_executable, _run_git
 
 
@@ -86,12 +86,11 @@ def create_github_pull_request(
 
 def _configure_git_origin(repo_dir: Path, owner: str, name: str, token: str) -> None:
     auth_url = f"https://x-access-token:{token}@github.com/{owner}/{name}.git"
-    remotes = subprocess.run(
+    remotes = run_subprocess(
         [_git_executable(), "remote"],
         cwd=repo_dir,
         check=True,
-        capture_output=True,
-        text=True,
+        git=True,
     )
     if "origin" in remotes.stdout.split():
         _run_git(["remote", "set-url", "origin", auth_url], cwd=repo_dir)
