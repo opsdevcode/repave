@@ -13,14 +13,16 @@ def run_terraform_fmt(ctx: GateContext) -> GateResult:
     if not _gr.terraform_usable(output_dir):
         return _toolchain_skip(ctx, "terraform-fmt", "terraform not available")
 
-    result = _gr.run_command(["terraform", "fmt", "-check", "-recursive"], output_dir)
-    if result.returncode == 0:
-        return GateResult("terraform-fmt", True, False, "terraform fmt check passed")
-    return GateResult(
+    result = _gr.run_command(
+        ["terraform", "fmt", "-check", "-recursive"],
+        output_dir,
+        timeout=_gr.gate_timeout_seconds(ctx, "terraform-fmt"),
+    )
+    return _gr.gate_result_from_command(
         "terraform-fmt",
-        False,
-        False,
-        result.stderr.strip() or result.stdout.strip() or "terraform fmt check failed",
+        result,
+        ok_message="terraform fmt check passed",
+        fail_message="terraform fmt check failed",
     )
 
 

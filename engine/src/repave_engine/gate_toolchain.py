@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+from repave_engine.subprocess_run import run_subprocess
 
 # Typical install locations when PATH is trimmed (e.g. uvicorn reload workers).
 if sys.platform == "darwin":
@@ -88,13 +89,12 @@ def terraform_cli_ready() -> bool:
     if not terraform_bin:
         return False
     run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
-    result = subprocess.run(
+    result = run_subprocess(
         [terraform_bin, "version"],
         cwd=run_cwd,
-        capture_output=True,
-        text=True,
         check=False,
         env=os.environ.copy(),
+        timeout=15,
     )
     return result.returncode == 0
 

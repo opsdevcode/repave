@@ -82,7 +82,7 @@ def test_push_module_repository_adds_remote_and_pushes(tmp_path: Path) -> None:
     with (
         patch("repave_engine.github._git_executable", return_value="git"),
         patch(
-            "repave_engine.github.subprocess.run",
+            "repave_engine.github.run_subprocess",
         ) as run,
         patch("repave_engine.github._run_git") as run_git,
     ):
@@ -138,7 +138,7 @@ def test_push_module_repository_updates_existing_origin(tmp_path: Path) -> None:
     with (
         patch("repave_engine.github._git_executable", return_value="git"),
         patch(
-            "repave_engine.github.subprocess.run",
+            "repave_engine.github.run_subprocess",
         ) as run,
         patch("repave_engine.github._run_git") as run_git,
     ):
@@ -155,7 +155,7 @@ def test_push_git_branch_pushes_named_branch(tmp_path: Path) -> None:
     with (
         patch("repave_engine.github._git_executable", return_value="git"),
         patch(
-            "repave_engine.github.subprocess.run",
+            "repave_engine.github.run_subprocess",
         ) as run,
         patch("repave_engine.github._run_git") as run_git,
     ):

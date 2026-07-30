@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
-import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from repave_engine.fleet import normalize_repo_url
+from repave_engine.subprocess_run import run_subprocess
 
 logger = logging.getLogger(__name__)
 
@@ -139,10 +139,8 @@ def kubectl_goldenpathrepo_list(
     elif namespace.strip():
         cmd.extend(["-n", namespace.strip()])
     cmd.extend(["-o", "json"])
-    result = subprocess.run(
+    result = run_subprocess(
         cmd,
-        capture_output=True,
-        text=True,
         check=False,
         timeout=120,
     )

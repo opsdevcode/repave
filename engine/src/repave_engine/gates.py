@@ -176,7 +176,12 @@ def _gate_counts(gates: list[GateResult]) -> tuple[int, int, int]:
 
 
 def gate_outcome(gates: list[GateResult]) -> str:
-    """Aggregate outcome for audit, metrics, and API (`passed` | `failed` | `empty`)."""
+    """Aggregate outcome for audit, metrics, and API (`passed` | `failed` | `timeout` | `empty`)."""
+    if any(
+        not gate.passed and not gate.skipped and "timed out" in gate.message.lower()
+        for gate in gates
+    ):
+        return "timeout"
     _, failed, _ = _gate_counts(gates)
     if failed:
         return "failed"

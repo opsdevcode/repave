@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import shutil
-import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,6 +18,7 @@ from repave_engine.provenance_inputs import (
 from repave_engine.render import render_blueprint
 from repave_engine.settings import load_gate_overrides
 from repave_engine.standards_diff import PinChange, diff_observed_vs_catalog_pins
+from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import _git_executable, _run_git, resolve_module_repository_from_git
 
 _SKIP_DIR_NAMES = frozenset({".git", "__pycache__", ".terraform", ".pytest_cache", ".ruff_cache"})
@@ -267,21 +267,20 @@ def _git_branch_commit(repo: Path, branch: str, message: str) -> str:
 
     _run_git(["checkout", "-B", branch], cwd=repo)
     _run_git(["add", "-A"], cwd=repo)
-    commit = subprocess.run(
+    commit = run_subprocess(
         [_git_executable(), "commit", "-m", message],
         cwd=repo,
-        capture_output=True,
-        text=True,
+        check=False,
+        git=True,
     )
     if commit.returncode != 0 and "nothing to commit" not in (commit.stdout + commit.stderr):
         raise RuntimeError(commit.stderr.strip() or commit.stdout.strip() or "git commit failed")
 
-    head = subprocess.run(
+    head = run_subprocess(
         [_git_executable(), "rev-parse", "HEAD"],
         cwd=repo,
         check=True,
-        capture_output=True,
-        text=True,
+        git=True,
     )
     return head.stdout.strip()
 
