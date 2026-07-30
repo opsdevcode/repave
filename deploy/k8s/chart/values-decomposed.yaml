@@ -1,5 +1,6 @@
-# Example: PostgreSQL-backed queue with external worker Deployment, corpus OCI mount,
-# and S3-compatible artifact store (service decomposition Phase 2).
+# Example: PostgreSQL-backed queue with external worker Deployment and corpus OCI mount
+# (service decomposition Phase 2). Async run previews rehydrate from Postgres snapshots;
+# object storage is optional — see artifactStoreUri below.
 #
 #   helm install -f values.yaml -f values-decomposed.yaml ...
 
@@ -11,7 +12,8 @@ repave:
     workerMode: external
     executionMode: worker
     requireSessionSecret: true
-    artifactStoreUri: s3://repave-artifacts/prod
+    # Optional: full staging-tree retention (preview snapshots default in result_json).
+    # artifactStoreUri: s3://repave-artifacts/prod
 
   audit:
     enabled: true
@@ -40,4 +42,4 @@ corpus:
   enabled: true
   repository: ghcr.io/opsdevcode/repave-corpus
 
-# Worker and portal need AWS credentials (IRSA, env, or secret) when artifactStoreUri is s3://.
+# Optional: set repave.durability.artifactStoreUri for full-tree retention in S3.

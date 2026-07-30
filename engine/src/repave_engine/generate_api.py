@@ -15,7 +15,7 @@ from repave_engine.blueprint import (
 )
 from repave_engine.gates import GateResult, RunEventCallback, all_gates_passed, gate_outcome
 from repave_engine.pipeline import GenerationResult, generate_from_blueprint
-from repave_engine.render import RenderResult, collect_rendered_files
+from repave_engine.render import RenderedFile, RenderResult, collect_rendered_files
 from repave_engine.run_store import RunRecord
 from repave_engine.settings import OutputConfig, load_gate_overrides
 from repave_engine.target_repo import resolve_module_repository
@@ -83,13 +83,73 @@ def serialize_generation_result(
             }
             for gate in gates
         ],
-        "rendered_files": len(result.rendered_files),
         "output_dir": str(result.render.output_dir),
     }
     if persist_artifact:
         body["artifact_root"] = str(result.render.output_dir)
         body["pr_message"] = result.pr_message
+        body["rendered_files"] = [
+            {
+                "path": rendered.path,
+                "content": rendered.content,
+                "truncated": rendered.truncated,
+            }
+            for rendered in result.rendered_files
+        ]
+    else:
+        body["rendered_files"] = len(result.rendered_files)
     return body
+
+
+def _rendered_files_from_snapshot(raw: object) -> tuple[RenderedFile, ...] | None:
+    """Parse a persisted preview snapshot; return None when `raw` is a legacy count."""
+    if isinstance(raw, int):
+        return None
+    if not isinstance(raw, list):
+        return None
+    files: list[RenderedFile] = []
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        path = row.get("path")
+        content = row.get("content")
+        if not isinstance(path, str) or not isinstance(content, str):
+            continue
+        files.append(
+            RenderedFile(
+                path=path,
+                content=content,
+                truncated=bool(row.get("truncated", False)),
+            )
+        )
+    return tuple(files)
+
+
+def _resolve_stored_rendered_files(
+    *,
+    stored: dict[str, object],
+    repo_root: Path,
+    blueprint: Blueprint,
+    dry_run: bool,
+) -> tuple[RenderedFile, ...] | None:
+    if not dry_run:
+        return ()
+    snapshot = _rendered_files_from_snapshot(stored.get("rendered_files"))
+    if isinstance(stored.get("rendered_files"), list):
+        return snapshot if snapshot is not None else ()
+    artifact_store = resolve_artifact_store(repo_root)
+    artifact_root = artifact_store.materialize_run_artifacts(stored)
+    if artifact_root is None:
+        return None
+    return collect_rendered_files(artifact_root, artifact_type=blueprint.artifact_type)
+
+
+def _stored_output_dir(stored: dict[str, object]) -> Path:
+    for key in ("output_dir", "artifact_root"):
+        raw = stored.get(key)
+        if raw is not None:
+            return Path(str(raw))
+    return Path(".")
 
 
 def _gates_from_stored_payload(rows: list[Any]) -> list[GateResult]:
@@ -118,10 +178,6 @@ def generation_result_from_stored_run(
     stored = record.result
     if stored is None:
         return None
-    artifact_store = resolve_artifact_store(repo_root)
-    artifact_root = artifact_store.materialize_run_artifacts(stored)
-    if artifact_root is None:
-        return None
     gates_raw = stored.get("gates")
     if not isinstance(gates_raw, list) or not gates_raw:
         return None
@@ -143,6 +199,15 @@ def generation_result_from_stored_run(
         normalized = dict(values)
 
     dry_run = record.dry_run
+    rendered_files = _resolve_stored_rendered_files(
+        stored=stored,
+        repo_root=repo_root,
+        blueprint=blueprint,
+        dry_run=dry_run,
+    )
+    if rendered_files is None:
+        return None
+    output_dir = _stored_output_dir(stored)
     module_name = primary_publish_name(blueprint, normalized)
     module_repository = resolve_module_repository(
         module_name=module_name,
@@ -150,14 +215,9 @@ def generation_result_from_stored_run(
         name_template=blueprint.output_repo_name_template,
         template_values=normalized,
     )
-    rendered_files = (
-        collect_rendered_files(artifact_root, artifact_type=blueprint.artifact_type)
-        if dry_run
-        else ()
-    )
     return GenerationResult(
         blueprint=blueprint,
-        render=RenderResult(output_dir=artifact_root, values=normalized),
+        render=RenderResult(output_dir=output_dir, values=normalized),
         gates=_gates_from_stored_payload(gates_raw),
         module_repository=module_repository,
         pr_plan=None,

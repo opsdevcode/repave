@@ -90,6 +90,10 @@ S3-compatible object store. A shared `ReadWriteMany` volume between portal and w
 explicitly rejected: it re-creates the coupling this ADR removes and does not survive
 multi-zone scheduling.
 
+**Addendum ([002-addendum-run-artifact-rehydrate.md](002-addendum-run-artifact-rehydrate.md)):**
+portal rehydrate **defaults** to a bounded `rendered_files` snapshot in `result_json`. Object
+storage is **optional** for full staging-tree retention.
+
 The generation corpus becomes a **versioned OCI artifact pinned by digest**, mounted
 read-only into `portal` and `worker`. It is static and already pinned by blueprint and
 standard versions, so a service in front of it would add hops and a failure mode without
@@ -143,9 +147,10 @@ operator on the CLI path.
 
 - **Positive:** the portal scales on a small image; gate load scales independently; the
   operator stops shipping a Python runtime; run state survives a pod restart.
-- **Negative:** hosted mode gains a required Postgres and an object store; two image variants
-  to build, scan, and pin; the internal call path becomes a network boundary that needs
-  service-to-service auth.
+- **Negative:** hosted mode gains a required Postgres; two image variants to build, scan, and
+  pin; the internal call path becomes a network boundary that needs service-to-service auth.
+  Object storage is **optional** (see
+  [002 addendum](002-addendum-run-artifact-rehydrate.md)).
 - **Contract risk:** `/api/v2` is simultaneously the frozen public surface and the internal
   transport. Design it as a public API and treat the operator as one more client, or internal
   convenience gets frozen into it.
@@ -170,6 +175,7 @@ operator on the CLI path.
 - [Roadmap — service decomposition for hosted scale](../roadmap.md#service-decomposition-for-hosted-scale)
 - [Roadmap — durability and concurrency](../roadmap.md#durability-and-concurrency-for-hosted-use)
 - [`docs/durability.md`](../durability.md)
+- [ADR 002 addendum — run artifact rehydrate](002-addendum-run-artifact-rehydrate.md)
 - [ADR 001](001-goldenpathrepo-repo-url-inventory.md)
 - Fat controller: `engine/src/repave_engine/api.py`; pipeline: `pipeline.py`; gates:
   `gates.py`, `gate_runners.py`; queue: `run_queue.py`

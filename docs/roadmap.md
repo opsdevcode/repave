@@ -5,8 +5,8 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.93.0  
-**In progress:** [service decomposition Phase 2](#service-decomposition-for-hosted-scale) on branch; Phase 0–1 shipped on `main`.  
-**Next up:** engine hardening group B (remaining), A1/A2/A4, and operator `/api/v2` (Phase 3).
+**In progress:** [service decomposition Phase 2b](#service-decomposition-for-hosted-scale) — run-record preview snapshots.  
+**Next up:** engine hardening A1/A2/A4, then operator `/api/v2` (Phase 3).
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1604,14 +1604,10 @@ shape locks in the coupling.
 **Approach:** roles of one codebase, not separate codebases — the full loop must still run on a
 laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
-**Status (Phase 0–2):** **Phase 0–1 shipped on `main`** — `REPAVE_EXECUTION_MODE` /
-`durability.execution_mode` (`inprocess` \| `worker`), enqueue-only API when `worker`;
-PostgreSQL `claim_next_queued` with `FOR UPDATE SKIP LOCKED`; chart `executionMode` and
-[`values-postgres-worker.yaml`](../deploy/k8s/chart/values-postgres-worker.yaml); CI
-[`.github/workflows/container.yml`](../.github/workflows/container.yml) publishes
-`repave-engine`, `repave-engine-portal`, and `repave-corpus` images. **Phase 2** adds
-[`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml) (corpus OCI mount,
-split worker image, S3 artifact store).
+**Status (Phase 0–2b):** **Phase 0–2 shipped on `main`** — split portal/worker/corpus images,
+[`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml), optional S3 artifact store.
+**Phase 2b** (in progress) stores bounded dry-run previews in `result_json` so hosted decomposition
+does not require object storage — [ADR 002 addendum](adr/002-addendum-run-artifact-rehydrate.md).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
@@ -1621,10 +1617,10 @@ split worker image, S3 artifact store).
 - **Phase 1:** replace the in-process `ThreadPoolExecutor` in `run_queue.py` with a
   Postgres-backed queue (`FOR UPDATE SKIP LOCKED`); add a `worker` role and chart Deployment
   behind `execution.mode: inprocess | worker`; the API stops running gates in-request
-- **Phase 2:** toolchain-free portal/API image (extends `values-portal.yaml`); the
-  `blueprints/`/`standards/`/`policy/`/`schemas/` corpus becomes a digest-pinned OCI artifact
-  mounted read-only; run artifacts and dry-run previews move to object storage — **no shared
-  RWX volume between roles**
+- **Phase 2:** toolchain-free portal/API image; corpus as OCI artifact; optional object store for
+  full staging-tree retention — **no shared RWX volume between roles**
+- **Phase 2b:** bounded `rendered_files` snapshot in `result_json` for portal rehydrate (default);
+  object storage optional — [addendum](adr/002-addendum-run-artifact-rehydrate.md)
 - **Phase 3:** promote the CRDs to `repave.dev/v1beta1` with a conversion webhook and have the
   operator call `/api/v2` instead of exec'ing the CLI, dropping `operator/Dockerfile.e2e`
 - **Phase 4 (optional):** per-run Kubernetes Jobs
