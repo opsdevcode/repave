@@ -38,8 +38,12 @@ def _kill_process_tree(process: subprocess.Popen[Any]) -> None:
         return
     try:
         if hasattr(os, "killpg"):
-            os.killpg(process.pid, signal.SIGKILL)
-            return
+            child_pgid = os.getpgid(process.pid)
+            # Never kill our own process group (pytest-xdist workers share pgid with
+            # children when start_new_session is unavailable or misbehaves).
+            if child_pgid != os.getpgid(0):
+                os.killpg(child_pgid, signal.SIGKILL)
+                return
         process.kill()
     except ProcessLookupError:
         pass
