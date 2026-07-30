@@ -31,18 +31,61 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md) and [`.github/rulesets/README.md`](../
 ## After opening a PR
 
 When `gh pr create` succeeds (or the user asked to open a PR and one already exists),
-**always end the turn with a short “What’s next” section** — do not stop at the PR URL alone.
+**always end the turn with merge status and a detailed “What’s next” section** — do not
+stop at the PR URL alone.
 
-1. Return the **PR URL**.
-2. Read **`docs/roadmap.md`** (top **In progress** / **Shipped** lines and the section
-   that matches the work just opened — for example service decomposition, durability,
-   operator).
-3. Check **`gh pr list --state open`** for other open PRs on related themes.
-4. Display **What’s next** as a prioritized list (2–4 items max):
-   - Waiting on CI / review for the PR just opened
-   - Other open PRs that should merge first or in parallel
-   - The next roadmap item to implement (with section link or path)
-   - Explicitly deferred / optional items only if nothing clearer is in progress
+### 1. Verify merge readiness
 
-Keep it actionable: name the next task the user can ask for (for example “decomposed chart
-CI smoke”), not a generic “let me know if you want more.”
+Run for the PR just opened (and note conflicts on related open PRs):
+
+```bash
+gh pr view <number> --json number,title,url,mergeable,mergeStateStatus,state
+gh pr list --state open --json number,title,headRefName,mergeable,mergeStateStatus
+```
+
+Report explicitly:
+
+| Field | Meaning |
+| --- | --- |
+| `mergeable: MERGEABLE` | No merge conflicts with base |
+| `mergeable: CONFLICTING` | **Conflicts** — rebase on `origin/main` before merge |
+| `mergeable: UNKNOWN` | GitHub still computing — say so |
+| `mergeStateStatus: BLOCKED` | Normal when required checks are pending or failing |
+| `mergeStateStatus: DIRTY` | Conflicts or git error state |
+
+If **CONFLICTING** / **DIRTY**, say so first and offer to rebase/fix — do not describe
+the PR as merge-ready.
+
+Optionally summarize CI: `gh pr checks <number>` or `statusCheckRollup` from
+`gh pr view --json statusCheckRollup`.
+
+### 2. Gather context
+
+- Read **`docs/roadmap.md`** — top **In progress** / **Shipped** lines plus the section
+  that matches the work (service decomposition, durability, operator, portal, etc.).
+- Read **`docs/adr/`** when the next item references an ADR.
+- List **other open PRs** (`gh pr list --state open`) that share the theme or should
+  merge before/after the new PR.
+
+### 3. Display “What’s next” (detailed)
+
+Use this structure (adjust length to the task; skip empty subsections):
+
+**Merge status** — one line per open PR you touched: URL, mergeable/conflicts, CI summary.
+
+**Recommended order** — numbered list of what to do before starting new work (for example
+wait for CI, merge #321, merge #322, pull `main`).
+
+**Next implementation** (primary follow-up task):
+
+- **Goal** — one sentence from the roadmap problem/approach
+- **Scope** — key paths, packages, or workflows to touch
+- **Done when** — acceptance criteria from roadmap or ADR
+- **Depends on** — merged PRs, infra, or prior phases
+- **Start with** — suggested branch name and first command or test to run
+
+**Later / optional** — deferred roadmap items (Phase 4, sessions store, etc.) only when
+relevant; keep short.
+
+Name concrete next tasks the user can request (for example “decomposed chart CI smoke”),
+not “let me know if you want more.”
