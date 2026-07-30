@@ -10,6 +10,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from repave_engine.auth import AuthConfig
 from repave_engine.readiness import evaluate_readiness
+from repave_engine.session_store import SessionStore
 from repave_engine.settings import DurabilityConfig, OutputConfig
 
 
@@ -18,6 +19,7 @@ def build_ops_router(
     output_config: OutputConfig,
     auth_config: AuthConfig | None,
     durability_config: DurabilityConfig | None,
+    session_store: SessionStore | None = None,
 ) -> APIRouter:
     """Return health, metrics, and readiness probes."""
     router = APIRouter(tags=["ops"])
@@ -46,6 +48,7 @@ def build_ops_router(
             ),
             github_token_configured=token_ok,
             run_queue_depth=queue.queue_depth() if queue is not None else None,
+            sql_session_store_ok=session_store.ping() if session_store is not None else None,
         )
         status_code = 200 if report.ready else 503
         return JSONResponse(report.to_payload(), status_code=status_code)

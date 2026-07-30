@@ -22,10 +22,16 @@ export REPAVE_ASYNC_GENERATION=1
 export REPAVE_RUNS_DB=/var/lib/repave/runs.sqlite
 ```
 
-## Phase 2 — unified SQL store (audit + fleet + runs)
+## Phase 2 — unified SQL store (audit + fleet + runs + sessions)
 
-When `database_url` is set, **audit**, **fleet**, and **async runs** share one database.
-JSONL paths remain optional **export mirrors** (`export_jsonl: true`, default).
+When `database_url` is set, **audit**, **fleet**, **async runs**, and **OIDC sessions**
+share one database. JSONL paths remain optional **export mirrors** (`export_jsonl: true`,
+default).
+
+With `database_url` configured, the portal stores auth session payloads in the `sessions`
+table and keeps only a signed session id in the browser cookie — so multiple portal
+replicas share login state without sticky sessions. `REPAVE_SESSION_SECRET` (or
+`require_session_secret`) remains required to sign session ids.
 
 ```yaml
 durability:

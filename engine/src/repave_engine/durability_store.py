@@ -17,7 +17,7 @@ from repave_engine.worker_mode import WorkerMode, parse_worker_mode
 
 @dataclass(frozen=True)
 class DurabilityStoreSettings:
-    """Phase 2 unified SQL store (audit, fleet, runs) plus optional JSONL export."""
+    """Phase 2 unified SQL store (audit, fleet, runs, sessions) plus optional JSONL export."""
 
     database: DatabaseConfig
     export_jsonl: bool = True

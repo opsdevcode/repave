@@ -129,6 +129,7 @@ from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
 )
+from repave_engine.session_store import load_session_store
 from repave_engine.settings import (
     OutputConfig,
     load_auth_config,
@@ -138,6 +139,7 @@ from repave_engine.settings import (
     load_portal_config,
     load_tracing_config,
 )
+from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
@@ -340,6 +342,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         return items
 
+    session_store = load_session_store(repo_root)
+    app.state.session_store = session_store
+
     @app.middleware("http")
     async def enforce_service_auth(request: Request, call_next):  # type: ignore[no-untyped-def]
         if auth_config is None or not auth_config.service_enabled:
@@ -373,12 +378,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     # Registered last so it wraps enforce_service_auth: Starlette runs the most recently
     # added middleware outermost, and enforce_service_auth reads request.session.
-    app.add_middleware(
-        SessionMiddleware,
-        secret_key=session_secret,
-        same_site="lax",
-        https_only=False,
-    )
+    if session_store is not None:
+        app.add_middleware(
+            SqlSessionMiddleware,
+            secret_key=session_secret,
+            session_store=session_store,
+            same_site="lax",
+            https_only=False,
+        )
+    else:
+        app.add_middleware(
+            SessionMiddleware,
+            secret_key=session_secret,
+            same_site="lax",
+            https_only=False,
+        )
 
     def gate_toolchain_callout(gates: list[GateResult], *, dry_run: bool) -> str | None:
         if not dry_run or not gates:
@@ -1285,6 +1299,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             output_config=resolved_output,
             auth_config=auth_config,
             durability_config=durability_config,
+            session_store=session_store,
         )
     )
     app.include_router(build_auth_router(auth_config=auth_config))
