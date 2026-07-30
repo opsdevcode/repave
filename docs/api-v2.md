@@ -26,10 +26,25 @@ operator can call HTTP instead of exec'ing the CLI.
 
 | Method | Path | Body |
 | --- | --- | --- |
-| `POST` | `/api/v2/upgrades/plan` | `{ "target_repo", "blueprint"?, "staging_root"? }` |
-| `POST` | `/api/v2/upgrades/apply` | `{ "target_repo", "git_branch", "commit_message", "blueprint"?, "preserve_local"?, "staging_root"? }` |
+| `POST` | `/api/v2/upgrades/plan` | `{ "target_repo" \| "repo_url", "blueprint"?, "staging_root"? }` |
+| `POST` | `/api/v2/upgrades/apply` | `{ "target_repo" \| "repo_url", "git_branch", "commit_message", "blueprint"?, "preserve_local"?, "push"?, "staging_root"? }` |
+
+When `repo_url` is set (or `target_repo` is an `http(s)` URL), the API shallow-clones the
+repository server-side. For apply, `"push": true` pushes the branch with `GITHUB_TOKEN`
+after commit (used by the operator in HTTP mode).
 
 Response shapes match the CLI JSON documents (`UpgradePlanResult`, `ApplyUpgradeResult`).
+Apply responses may include `"pushed": true` when the branch was pushed remotely.
+
+## Operator (Phase 3b)
+
+Set `REPAVE_API_URL` on the operator Deployment (for example `http://repave-portal:8000`).
+When set, plan/apply call `/api/v2/upgrades/*` instead of exec'ing the CLI. Remote
+`spec.repoURL` repos use `repo_url` so the API clones server-side; optional
+`REPAVE_API_TOKEN` is sent as a Bearer token when service auth is enabled.
+
+CLI mode remains the default when `REPAVE_API_URL` is unset (`REPAVE_REPO_ROOT` +
+`REPAVE_CLI`).
 
 ## Authentication
 
@@ -38,6 +53,6 @@ Unauthenticated `/api/v2/*` requests receive `401` JSON.
 
 ## Follow-ups
 
-- Operator `HTTPPlanUpgrader` / `HTTPApplyUpgrader` (Phase 3b)
 - Mirror remaining v1 read models (fleet, audit, catalog) under v2
 - Published `/api/v1` deprecation timeline
+- Service-to-service auth beyond optional `REPAVE_API_TOKEN` Bearer header

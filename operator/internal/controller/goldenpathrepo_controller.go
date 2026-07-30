@@ -148,7 +148,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	upgrader := r.PlanUpgrader
 	if upgrader == nil {
-		upgrader = repave.CLIPlanUpgrader{}
+		upgrader = repave.NewPlanUpgrader(r.RepaveConfig)
 	}
 	if err := applyUpgradePlanStatus(ctx, r.Client, &repo, upgrader, r.RepaveConfig, desired, workspace); err != nil {
 		return ctrl.Result{}, err
@@ -160,7 +160,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	applier := r.ApplyUpgrader
 	if applier == nil {
-		applier = repave.CLIApplyUpgrader{}
+		applier = repave.NewApplyUpgrader(r.RepaveConfig)
 	}
 	if err := applyRemediationPRStatus(
 		ctx,

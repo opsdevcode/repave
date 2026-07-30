@@ -92,7 +92,7 @@ func applyRemediationPRStatus(
 	}
 
 	if applier == nil {
-		applier = repave.CLIApplyUpgrader{}
+		applier = repave.NewApplyUpgrader(repaveCfg)
 	}
 
 	branch := remediation.UpgradeBranchName(
@@ -113,14 +113,18 @@ func applyRemediationPRStatus(
 	)
 	commitMessage := title
 
+	pushRemote := repaveCfg.HTTPMode() && repo.Spec.RepoURL != "" && !repo.Spec.Remediation.DryRun
+	applyTarget := repave.UpgradeTarget(repo.Spec.RepoURL, repo.Spec.LocalPath, workDir, repaveCfg)
+
 	applyResult, err := applier.ApplyUpgrade(
 		ctx,
 		repaveCfg,
-		workDir,
+		applyTarget,
 		desired.BlueprintName,
 		branch,
 		commitMessage,
 		repo.Spec.Remediation.PreserveLocal,
+		pushRemote,
 	)
 	if err != nil {
 		msg := err.Error()
@@ -186,17 +190,19 @@ func applyRemediationPRStatus(
 		gh = &github.HTTPClient{Token: githubToken}
 	}
 
-	if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {
-		msg := err.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-			latest.Status.RemediationPR = nil
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationFailed,
-				Message: msg,
+	if !applyResult.Pushed {
+		if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {
+			msg := err.Error()
+			return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+				latest.Status.RemediationPR = nil
+				status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+					Type:    status.ConditionRemediationPR,
+					Status:  metav1.ConditionFalse,
+					Reason:  status.ReasonRemediationFailed,
+					Message: msg,
+				})
 			})
-		})
+		}
 	}
 
 	repository, err := github.ParseRepositoryURL(repo.Spec.RepoURL)

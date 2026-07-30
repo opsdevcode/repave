@@ -99,13 +99,19 @@ func main() {
 		ghClient = &github.HTTPClient{Token: githubToken}
 	}
 
+	repaveCfg := repave.ConfigFromEnv(
+		os.Getenv("REPAVE_REPO_ROOT"),
+		os.Getenv("REPAVE_CLI"),
+		os.Getenv("REPAVE_API_URL"),
+	)
+
 	if err := (&controller.GoldenPathRepoReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-		PlanUpgrader:  repave.CLIPlanUpgrader{},
-		ApplyUpgrader: repave.CLIApplyUpgrader{},
+		PlanUpgrader:  repave.NewPlanUpgrader(repaveCfg),
+		ApplyUpgrader: repave.NewApplyUpgrader(repaveCfg),
 		GitHub:        ghClient,
-		RepaveConfig:  repave.ConfigFromEnv(os.Getenv("REPAVE_REPO_ROOT"), os.Getenv("REPAVE_CLI")),
+		RepaveConfig:  repaveCfg,
 		GitHubToken:   githubToken,
 		Fetcher:       inventory.GitFetcher{Token: githubToken},
 		RemoteResync:  remoteResyncFromEnv(),

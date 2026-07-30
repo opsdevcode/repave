@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// ApplyResult is the JSON payload from `repave apply-upgrade --format json`.
+// ApplyResult is the JSON payload from apply-upgrade (CLI or /api/v2/upgrades/apply).
 type ApplyResult struct {
 	BlueprintName    string `json:"blueprint_name"`
 	BlueprintVersion string `json:"blueprint_version"`
@@ -17,6 +17,7 @@ type ApplyResult struct {
 	GitBranch        string `json:"git_branch"`
 	CommitSHA        string `json:"commit_sha"`
 	Summary          string `json:"summary"`
+	Pushed           bool   `json:"pushed"`
 }
 
 // ApplyUpgrader applies rendered upgrades onto a local git checkout.
@@ -29,6 +30,7 @@ type ApplyUpgrader interface {
 		gitBranch string,
 		commitMessage string,
 		preserveLocal bool,
+		pushRemote bool,
 	) (ApplyResult, error)
 }
 
@@ -43,6 +45,7 @@ func (CLIApplyUpgrader) ApplyUpgrade(
 	gitBranch string,
 	commitMessage string,
 	preserveLocal bool,
+	_ bool,
 ) (ApplyResult, error) {
 	if strings.TrimSpace(cfg.RepoRoot) == "" {
 		return ApplyResult{}, fmt.Errorf("repave repo root is not configured")
@@ -105,6 +108,7 @@ func (s *StaticApplyUpgrader) ApplyUpgrade(
 	_ string,
 	_ string,
 	preserveLocal bool,
+	pushRemote bool,
 ) (ApplyResult, error) {
 	s.Calls++
 	s.LastPreserveLocal = preserveLocal

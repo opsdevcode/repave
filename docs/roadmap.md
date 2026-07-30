@@ -5,8 +5,8 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.95.0  
-**In progress:** [service decomposition Phase 3](#service-decomposition-for-hosted-scale) — `/api/v2` JSON surface.  
-**Next up:** operator HTTP client for plan/apply upgrades, then group B maintainability splits.
+**In progress:** operator HTTP client for plan/apply upgrades (Phase 3b).  
+**Next up:** CRD `v1beta1` promotion, group B maintainability splits.
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1609,8 +1609,9 @@ laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
 **Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
 bounded run-record snapshots, optional S3 artifact store.
-**Phase 3 (in progress):** `/api/v2` router with generate/runs/upgrade endpoints — see
-[`docs/api-v2.md`](api-v2.md). Operator HTTP migration and CRD `v1beta1` promotion follow.
+**Phase 3 (in progress):** `/api/v2` router shipped; **Phase 3b** wires operator
+`HTTPPlanUpgrader` / `HTTPApplyUpgrader` via `REPAVE_API_URL` — see [`docs/api-v2.md`](api-v2.md).
+Operator HTTP migration and CRD `v1beta1` promotion follow.
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
