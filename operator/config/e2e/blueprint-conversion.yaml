@@ -1,0 +1,10 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: e2e-conversion
+  namespace: default
+spec:
+  version: "0.9.0"
+  standard:
+    source: standards/terraform-standards
+    version: "1.1.0"

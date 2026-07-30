@@ -1,6 +1,6 @@
 # ADR 002: v2 service decomposition and repository strategy
 
-**Status:** Proposed (Phase 0–2 implemented; Phase 1 worker-mode contract enforced)
+**Status:** Proposed (Phase 0–3 implemented; Phase 1 worker-mode contract enforced)
 **Date:** 2026-07-29  
 **Scope:** engine, portal, operator, `deploy/k8s/chart` (v2.0.0 platform GA)
 
@@ -127,7 +127,7 @@ Each phase is independently shippable and leaves the tree working.
 | **0** | Postgres store (durability Phase 2); subprocess timeouts (A2); unified toolchain pins (A1); build and push digest-pinned images in CI | — |
 | **1** | Postgres-backed queue; `worker` role and chart Deployment; `execution.mode: inprocess \| worker` | Phase 0 |
 | **2** | Toolchain-free portal/api image; corpus as OCI artifact; object store for artifacts and previews | Phase 1 |
-| **3** | `repave.dev/v1beta1` + conversion webhook; operator calls `/api/v2`; drop CLI exec | Phase 1, `/api/v2` |
+| **3** | `repave.dev/v1beta1` + conversion webhook; operator calls `/api/v2`; drop CLI exec | Phase 1, `/api/v2` — **shipped** (CLI fallback remains for local `make operator-run`) |
 | **4** | Optional: per-run Kubernetes Jobs (durability Phase 3); optional portal/api Deployment split | Phase 2 |
 
 Phases 0–2 carry nearly all of the value. If v2 scope tightens, cut Phase 4 and leave the

@@ -87,6 +87,10 @@ kubectl -n repave-system rollout status deployment/repave-operator --timeout="${
 echo "==> Applying drift GoldenPathRepo fixture"
 kubectl apply -f config/e2e/goldenpathrepo-drift.yaml
 
+echo "==> Assert CRD conversion (v1alpha1 apply → v1beta1 storage)"
+chmod +x hack/assert-crd-conversion.sh
+bash hack/assert-crd-conversion.sh
+
 wait_gpr_field() {
   local jsonpath="$1"
   local expected="$2"

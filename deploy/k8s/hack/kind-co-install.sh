@@ -121,6 +121,10 @@ echo "==> apply fleet GPRs + local drift fixture"
 kubectl apply -f "${MANIFESTS_DIR}/"
 kubectl apply -f "${OPERATOR}/config/e2e/goldenpathrepo-drift.yaml"
 
+echo "==> assert CRD conversion (v1alpha1 apply → v1beta1 storage)"
+chmod +x "${OPERATOR}/hack/assert-crd-conversion.sh"
+bash "${OPERATOR}/hack/assert-crd-conversion.sh"
+
 echo "==> wait for e2e-drift upgrade plan"
 deadline=$((SECONDS + TIMEOUT))
 while (( SECONDS < deadline )); do
