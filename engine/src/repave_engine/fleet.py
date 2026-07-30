@@ -165,12 +165,12 @@ def append_fleet_event(
                 raise FleetError(f"fleet registry SQL write failed: {exc}") from exc
             if settings.export_jsonl:
                 try:
-                    append_jsonl_line(path, line)
+                    append_jsonl_line(path, line, store="fleet")
                 except OSError as exc:
                     raise FleetError(f"fleet registry JSONL mirror failed ({path}): {exc}") from exc
             return
     try:
-        append_jsonl_line(path, line)
+        append_jsonl_line(path, line, store="fleet")
     except OSError as exc:
         raise FleetError(f"fleet registry write failed ({path}): {exc}") from exc
 

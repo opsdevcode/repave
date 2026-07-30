@@ -6,12 +6,12 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.94.0  
 **In progress:** [service decomposition Phase 2b](#service-decomposition-for-hosted-scale) — run-record preview snapshots.  
-**Next up:** engine hardening A4, then operator `/api/v2` (Phase 3).
+**Next up:** operator `/api/v2` (Phase 3 — service decomposition).
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
 (v1.35–v1.38) is **shipped** — see [Shipped — day-2](#day-2-operability-shipped).
-**Engine hardening** (A1/A2/A4) continues alongside features.  
+**Engine hardening group A** (A1–A4) is **shipped on `main`**.  
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1323,6 +1323,10 @@ only stops today's file store from corrupting under concurrent writers.
 
 **Done when:** Parallel generations produce a store where every record round-trips, and a write
 failure is observable.
+
+**Status:** **Shipped on `main` follow-up** — `jsonl_lock.append_jsonl_line` with `fcntl` advisory
+locks, audit/fleet wired through the helper, `repave_jsonl_append_failures_total` metric,
+multiprocess regression tests for audit and fleet stores.
 
 ### A5 — Honest changelog and version pointers
 
