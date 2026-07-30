@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# kind e2e: deploy operator image (with repave CLI), apply drift fixture, assert
-# OutOfDate + UpgradePlanned + non-empty upgradePlan.
+# kind e2e: slim operator (distroless) + in-cluster portal (/api/v2), apply drift
+# fixture, assert OutOfDate + UpgradePlanned + non-empty upgradePlan.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -9,8 +9,8 @@ cd "${ROOT}"
 
 CLUSTER_NAME="${KIND_CLUSTER_NAME:-repave-local}"
 IMG="${IMG:-repave-operator:dev}"
+PORTAL_IMG="${PORTAL_IMG:-repave-portal:e2e}"
 TIMEOUT_SEC="${E2E_TIMEOUT_SEC:-180}"
-DOCKERFILE="${OPERATOR_E2E_DOCKERFILE:-${ROOT}/Dockerfile.e2e}"
 
 if [[ -n "${KIND_BIN:-}" ]] && [[ -x "${KIND_BIN}" ]]; then
   :
@@ -47,17 +47,27 @@ sed "s|hostPath: ./testdata/modules|hostPath: ${MODULES_HOST}|" \
 "${KIND_BIN}" create cluster --name "${CLUSTER_NAME}" --config "${tmp_kind_cfg}"
 rm -f "${tmp_kind_cfg}"
 
-echo "==> Building operator e2e image ${IMG} (repave CLI bundled)"
-docker build -f "${DOCKERFILE}" -t "${IMG}" "${MONOREPO_ROOT}"
+echo "==> Building slim operator image ${IMG}"
+docker build -f "${ROOT}/Dockerfile" -t "${IMG}" "${ROOT}"
 
-echo "==> Loading image into kind"
+echo "==> Building portal image ${PORTAL_IMG} (no gate toolchain)"
+docker build -f "${MONOREPO_ROOT}/deploy/local/Dockerfile" \
+  --build-arg INSTALL_GATE_TOOLCHAIN=0 \
+  -t "${PORTAL_IMG}" "${MONOREPO_ROOT}"
+
+echo "==> Loading images into kind"
 "${KIND_BIN}" load docker-image "${IMG}" --name "${CLUSTER_NAME}"
+"${KIND_BIN}" load docker-image "${PORTAL_IMG}" --name "${CLUSTER_NAME}"
 
 echo "==> Applying CRDs and e2e manifests"
 kubectl apply -f config/crd/bases/
 kubectl apply -f config/e2e/namespace.yaml
 kubectl apply -f config/e2e/rbac.yaml
+kubectl apply -f config/e2e/portal.yaml
 kubectl apply -f config/e2e/manager.yaml
+
+echo "==> Waiting for portal Deployment"
+kubectl -n repave-system rollout status deployment/repave-portal --timeout="${TIMEOUT_SEC}s"
 
 echo "==> Waiting for operator Deployment"
 kubectl -n repave-system rollout status deployment/repave-operator --timeout="${TIMEOUT_SEC}s"
@@ -100,6 +110,7 @@ done
 if [[ "${planned}" != "True" ]]; then
   echo "Timed out waiting for UpgradePlanned=True (last=${planned:-<empty>})" >&2
   kubectl -n repave-system logs deploy/repave-operator --tail=120 || true
+  kubectl -n repave-system logs deploy/repave-portal --tail=120 || true
   kubectl get goldenpathrepo e2e-drift -o yaml || true
   exit 1
 fi

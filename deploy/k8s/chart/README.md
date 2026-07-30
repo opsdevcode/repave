@@ -157,7 +157,8 @@ kubectl port-forward svc/repave 8088:8088 -n repave
 ```
 
 This creates a kind cluster with operator module fixtures mounted at `/modules`, installs
-the portal with [`values-kind.yaml`](values-kind.yaml), seeds
+the portal (with the same `/modules` hostPath via `values-kind.yaml`) and slim operator
+(`REPAVE_API_URL` → portal Service), seeds
 [`deploy/k8s/testdata/fleet-registry.jsonl`](../testdata/fleet-registry.jsonl), renders
 GPRs with `repave fleet-manifests`, applies them plus the local `e2e-drift` fixture. Remote
 `repoURL` entries show fetch errors until you point at reachable git; `e2e-drift` exercises

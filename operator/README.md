@@ -92,7 +92,7 @@ From repository root:
 ```bash
 make operator-test      # unit + envtest (no kind)
 make operator-run       # controller against current kubeconfig
-make operator-e2e       # kind + Dockerfile.e2e (repave CLI) + OutOfDate/UpgradePlanned
+make operator-e2e       # kind + slim operator + portal /api/v2 + OutOfDate/UpgradePlanned
 ```
 
 Generate fixture module repos with the same engine path as production:

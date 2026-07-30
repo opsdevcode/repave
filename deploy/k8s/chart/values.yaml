@@ -150,6 +150,8 @@ persistence:
     accessMode: ReadWriteOnce
     size: 10Gi
     existingClaim: ""
+    # kind co-install only: hostPath on the kind node (see values-kind.yaml).
+    kindHostPath: ""
   audit:
     enabled: false
     storageClass: ""

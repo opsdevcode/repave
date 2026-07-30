@@ -5,6 +5,9 @@
 #     --set image.repository=repave-engine --set image.tag=local --set image.pullPolicy=Never
 
 repave:
+  output:
+    # kind node mounts operator test fixtures at /modules (see kind-co-install).
+    modulesRoot: /modules
   fleet:
     enabled: true
     file: /data/fleet/registry.jsonl
@@ -12,6 +15,9 @@ repave:
 persistence:
   modules:
     enabled: false
+    # Mount the same hostPath as the operator e2e fixture so /api/v2 upgrades/plan
+    # can read GoldenPathRepo spec.localPath targets (e.g. /modules/terraform-minimal).
+    kindHostPath: /modules
   fleet:
     enabled: false
   runs:

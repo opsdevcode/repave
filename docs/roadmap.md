@@ -5,7 +5,7 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.96.0  
-**In progress:** operator HTTP client for plan/apply upgrades (Phase 3b).  
+**In progress:** slim operator image for e2e/co-install (Phase 3c).  
 **Next up:** CRD `v1beta1` promotion, group B maintainability splits.
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
@@ -265,8 +265,9 @@ Also shipped with this line: Release CI hardening (`upload_to_vcs_release = fals
 `psr()` / unset `GITHUB_OUTPUT`) so automated versioning stays reliable on
 protected `main`.
 
-**GA path:** `make operator-e2e` (`operator/hack/e2e.sh`) uses `Dockerfile.e2e`
-(kind + bundled `repave` CLI) and asserts `OutOfDate`, `UpgradePlanned`, and a
+**GA path:** `make operator-e2e` (`operator/hack/e2e.sh`) uses the slim
+`operator/Dockerfile` plus an in-cluster portal (`config/e2e/portal.yaml`) calling
+`/api/v2` (kind + fixture hostPath) and asserts `OutOfDate`, `UpgradePlanned`, and a
 non-empty `status.upgradePlan`. CI: `.github/workflows/operator-e2e.yml`
 (nightly, `workflow_dispatch`, and on main when operator/engine/blueprint paths
 change). **`spec.localPath` inventory is GA**; `spec.repoURL` git inventory remains
@@ -286,7 +287,7 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 - `make operator-e2e` kind harness asserting `GoldenPathRepo` `OutOfDate` for a
   stale pin (no `GITHUB_TOKEN`)
-- GA close-out: `Dockerfile.e2e` bundles `repave plan-upgrade`; e2e asserts
+- GA close-out: slim operator + portal `/api/v2`; e2e asserts
   `UpgradePlanned` and `status.upgradePlan`; CI via `operator-e2e` workflow
 - Roadmap/status docs aligned after the v1.18.0 cut
 
@@ -1609,9 +1610,9 @@ laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
 **Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
 bounded run-record snapshots, optional S3 artifact store.
-**Phase 3 (in progress):** `/api/v2` router shipped; **Phase 3b** wires operator
-`HTTPPlanUpgrader` / `HTTPApplyUpgrader` via `REPAVE_API_URL` — see [`docs/api-v2.md`](api-v2.md).
-Operator HTTP migration and CRD `v1beta1` promotion follow.
+**Phase 3 (in progress):** `/api/v2` router and **Phase 3b** operator HTTP client
+shipped; **Phase 3c** drops `operator/Dockerfile.e2e` — e2e/co-install use slim
+operator + portal — see [`docs/api-v2.md`](api-v2.md). CRD `v1beta1` promotion follows.
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts

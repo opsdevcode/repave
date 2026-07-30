@@ -40,10 +40,8 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           env:
-            - name: REPAVE_REPO_ROOT
-              value: /repave
-            - name: REPAVE_CLI
-              value: /repave/engine/.venv/bin/repave
+            - name: REPAVE_API_URL
+              value: http://repave-portal:8088
           volumeMounts:
             - name: modules
               mountPath: /modules
