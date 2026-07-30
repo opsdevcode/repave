@@ -36,12 +36,16 @@ after commit (used by the operator in HTTP mode).
 Response shapes match the CLI JSON documents (`UpgradePlanResult`, `ApplyUpgradeResult`).
 Apply responses may include `"pushed": true` when the branch was pushed remotely.
 
-## Operator (Phase 3b)
+## Operator (Phase 3b–3c)
 
-Set `REPAVE_API_URL` on the operator Deployment (for example `http://repave-portal:8000`).
+Set `REPAVE_API_URL` on the operator Deployment (for example `http://repave-portal:8088`).
 When set, plan/apply call `/api/v2/upgrades/*` instead of exec'ing the CLI. Remote
 `spec.repoURL` repos use `repo_url` so the API clones server-side; optional
 `REPAVE_API_TOKEN` is sent as a Bearer token when service auth is enabled.
+
+`make operator-e2e` deploys the slim distroless operator plus an in-cluster portal
+(`operator/config/e2e/portal.yaml`) with the same `/modules` hostPath as the operator
+so plan-upgrade can read `spec.localPath` targets.
 
 CLI mode remains the default when `REPAVE_API_URL` is unset (`REPAVE_REPO_ROOT` +
 `REPAVE_CLI`).

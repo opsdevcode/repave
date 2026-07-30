@@ -194,6 +194,10 @@ spec:
           {{- else if .Values.persistence.modules.enabled }}
           persistentVolumeClaim:
             claimName: {{ include "repave.fullname" . }}-modules
+          {{- else if .Values.persistence.modules.kindHostPath }}
+          hostPath:
+            path: {{ .Values.persistence.modules.kindHostPath | quote }}
+            type: Directory
           {{- else }}
           emptyDir: {}
           {{- end }}

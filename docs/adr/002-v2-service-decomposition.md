@@ -14,10 +14,10 @@ contracts around it. Today the runtime is two deployables that do not match that
   auth, catalog reads, and the JSON API from one process, and calls
   `pipeline.generate_from_blueprint` in that same process. `api.py` imports the pipeline,
   gates, fleet, audit, auth, and every catalog module.
-- **Operator** — a thin CLI orchestrator that execs `repave plan-upgrade` /
-  `apply-upgrade` against a monorepo checkout baked into the image
-  ([`operator/internal/repave/plan.go`](../../operator/internal/repave/plan.go),
-  [`operator/Dockerfile.e2e`](../../operator/Dockerfile.e2e)).
+- **Operator** — a thin reconciler that calls `/api/v2` for plan/apply upgrades when
+  `REPAVE_API_URL` is set ([`operator/internal/repave/http.go`](../../operator/internal/repave/http.go),
+  [`operator/Dockerfile`](../../operator/Dockerfile)); local dev may still exec the CLI via
+  `REPAVE_REPO_ROOT` + `REPAVE_CLI`.
 
 Three properties block scaling that shape:
 
@@ -103,7 +103,8 @@ adding a capability.
 
 At `repave.dev/v1beta1` — the CRD promotion the v2 contract freeze already schedules — the
 reconciler calls `/api/v2` instead of exec'ing the CLI. The Python venv and the monorepo
-corpus leave the operator image, and `Dockerfile.e2e` collapses into the production image.
+corpus leave the operator image (**Phase 3b–3c shipped**); e2e and co-install use the
+slim distroless operator plus an in-cluster portal.
 
 ## Non-goals
 

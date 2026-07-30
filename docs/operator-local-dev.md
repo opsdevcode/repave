@@ -200,8 +200,9 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 - Prerequisites: Docker, kubectl, [kind](https://kind.sigs.k8.io/)
   (`go install sigs.k8s.io/kind@v0.27.0`).
 - Flow (`operator/hack/e2e.sh`): kind up (`repave-local` + fixture hostPath) →
-  `docker build -f Dockerfile.e2e` (bundled `repave` CLI + blueprints) →
-  `kind load` → apply CRDs + `config/e2e/` → assert `OutOfDate`,
+  build slim `operator/Dockerfile` + portal (`deploy/local/Dockerfile`,
+  `INSTALL_GATE_TOOLCHAIN=0`) → `kind load` → apply CRDs + `config/e2e/`
+  (portal Deployment + operator with `REPAVE_API_URL`) → assert `OutOfDate`,
   `UpgradePlanned=True`, non-empty `status.upgradePlan`, and
   `status.upgradePlan.blueprintVersion` matches catalog `terraform-module-generic`.
 - No `GITHUB_TOKEN` required (inventory + plan diff; remediation stays dry-run).
@@ -237,7 +238,7 @@ CI job `operator-test` runs on changes under `operator/**` (see roadmap v1.17).
 | --- | --- | --- |
 | `operator-test` | PR touching `operator/**` | envtest + unit; no kind |
 | `operator-lint` | Same | golangci-lint (`make operator-lint`) |
-| `operator-e2e` | Nightly, workflow_dispatch, `main` operator path changes | kind + `Dockerfile.e2e` |
+| `operator-e2e` | Nightly, workflow_dispatch, `main` operator path changes | kind + slim operator + portal `/api/v2` |
 
 Docs-only PRs use [ci-paths](../.github/actions/ci-paths/) like engine workflows.
 

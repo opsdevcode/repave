@@ -69,21 +69,13 @@ fi
 if [[ "${CO_INSTALL_SKIP_BUILD:-}" != "1" ]]; then
   echo "==> docker build ${ENGINE_IMG} (portal)"
   docker build -f "${ROOT}/deploy/local/Dockerfile" -t "${ENGINE_IMG}" "${ROOT}"
-  echo "==> docker build ${OPERATOR_IMG} (operator + repave CLI)"
-  docker build -f "${OPERATOR}/Dockerfile.e2e" -t "${OPERATOR_IMG}" "${ROOT}"
+  echo "==> docker build ${OPERATOR_IMG} (slim distroless operator)"
+  docker build -f "${OPERATOR}/Dockerfile" -t "${OPERATOR_IMG}" "${OPERATOR}"
 fi
 
 echo "==> kind load images"
 kind load docker-image "${ENGINE_IMG}" --name "${CLUSTER_NAME}"
 kind load docker-image "${OPERATOR_IMG}" --name "${CLUSTER_NAME}"
-
-echo "==> operator CRDs and manager"
-kubectl apply -f "${OPERATOR}/config/crd/bases/"
-kubectl apply -f "${OPERATOR}/config/e2e/namespace.yaml"
-kubectl apply -f "${OPERATOR}/config/e2e/rbac.yaml"
-sed 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Never/' \
-  "${OPERATOR}/config/e2e/manager.yaml" | kubectl apply -f -
-kubectl -n repave-system rollout status deployment/repave-operator --timeout="${TIMEOUT}s"
 
 echo "==> helm portal (${PORTAL_NS}) with fleet registry"
 helm upgrade --install repave "${CHART}" \
@@ -95,6 +87,16 @@ helm upgrade --install repave "${CHART}" \
   --set repave.output.githubOrg=example-org \
   --wait --timeout "${TIMEOUT}s"
 kubectl -n "${PORTAL_NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"
+
+PORTAL_API_URL="http://repave.${PORTAL_NS}.svc.cluster.local:8088"
+echo "==> operator CRDs and manager (REPAVE_API_URL=${PORTAL_API_URL})"
+kubectl apply -f "${OPERATOR}/config/crd/bases/"
+kubectl apply -f "${OPERATOR}/config/e2e/namespace.yaml"
+kubectl apply -f "${OPERATOR}/config/e2e/rbac.yaml"
+sed -e 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Never/' \
+  -e "s|http://repave-portal:8088|${PORTAL_API_URL}|" \
+  "${OPERATOR}/config/e2e/manager.yaml" | kubectl apply -f -
+kubectl -n repave-system rollout status deployment/repave-operator --timeout="${TIMEOUT}s"
 
 echo "==> seed fleet registry in portal pod"
 portal_pod="$(kubectl get pod -n "${PORTAL_NS}" -l app.kubernetes.io/name=repave \
