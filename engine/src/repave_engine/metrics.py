@@ -23,6 +23,15 @@ RUNS_TOTAL = Counter(
     "Async generation runs by terminal outcome",
     ["outcome", "blueprint"],
 )
+JSONL_APPEND_FAILURES = Counter(
+    "repave_jsonl_append_failures_total",
+    "Failed append-only JSONL store writes",
+    ["store"],
+)
+
+
+def record_jsonl_append_failure(store: str) -> None:
+    JSONL_APPEND_FAILURES.labels(store=store).inc()
 
 
 def record_run_queue_depth(depth: int) -> None:

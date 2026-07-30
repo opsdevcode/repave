@@ -60,6 +60,6 @@ def append_audit_record(path: Path, record: AuditRecord, *, repo_root: Path | No
                 logger.error("audit SQL append failed: %s", exc)
             else:
                 if settings.export_jsonl:
-                    append_jsonl_line_best_effort(path, line)
+                    append_jsonl_line_best_effort(path, line, store="audit")
                 return
-    append_jsonl_line_best_effort(path, line)
+    append_jsonl_line_best_effort(path, line, store="audit")

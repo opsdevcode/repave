@@ -27,6 +27,7 @@ def test_metrics_exposes_prometheus(repo_root, output_config) -> None:
 
     assert response.status_code == 200
     assert "repave_generations_total" in response.text
+    assert "repave_jsonl_append_failures_total" in response.text
 
 
 def test_index_lists_blueprints(repo_root, output_config) -> None:
