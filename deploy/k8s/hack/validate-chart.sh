@@ -110,8 +110,8 @@ if ! grep -q 'ghcr.io/opsdevcode/repave-engine:' "${decomposed_rendered}"; then
   exit 1
 fi
 
-if ! grep -q 'REPAVE_ARTIFACT_STORE_URI' "${decomposed_rendered}"; then
-  echo "values-decomposed.yaml must set REPAVE_ARTIFACT_STORE_URI" >&2
+if grep -q 'REPAVE_ARTIFACT_STORE_URI' "${decomposed_rendered}"; then
+  echo "values-decomposed.yaml must not require REPAVE_ARTIFACT_STORE_URI (snapshots default)" >&2
   exit 1
 fi
 

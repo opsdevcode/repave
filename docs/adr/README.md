@@ -7,3 +7,4 @@ Lightweight ADRs for repave platform choices. Number files sequentially; link fr
 | --- | --- |
 | [001](001-goldenpathrepo-repo-url-inventory.md) | `GoldenPathRepo.spec.repoURL` remote inventory |
 | [002](002-v2-service-decomposition.md) | v2 service decomposition and repository strategy |
+| [002 addendum](002-addendum-run-artifact-rehydrate.md) | Async run rehydrate: run-record snapshots (default) vs object storage (optional) |

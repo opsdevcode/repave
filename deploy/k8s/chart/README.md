@@ -81,7 +81,7 @@ production.
 | `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
 | `workerImage.*` | Gate-toolchain image for external worker Deployment (defaults to `repave-engine`) |
 | `corpus.*` | Mount digest-pinned corpus OCI artifact (Phase 2 decomposition) |
-| `repave.durability.artifactStoreUri` | S3-compatible store for async run artifacts (`s3://bucket/prefix`) |
+| `repave.durability.artifactStoreUri` | Optional S3-compatible store for full staging-tree retention (previews default in run record) |
 | `persistence.runs` | PVC for `/data/runs` (use `emptyDir` when `enabled: false`) |
 
 **Graceful shutdown:** SIGTERM sets `/readyz` to 503, stops new async submits, drains the queue

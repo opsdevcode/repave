@@ -105,9 +105,11 @@ can scale safely.
 - `ghcr.io/opsdevcode/repave-engine-portal` — portal/API without gate CLIs or embedded corpus
 - `ghcr.io/opsdevcode/repave-corpus` — generation corpus (`blueprints/`, `standards/`, `policy/`, `schemas/`)
 
-**Phase 2 decomposition:** mount the corpus image read-only via chart `corpus.enabled`; store async
-run artifacts in S3-compatible object storage (`durability.artifact_store_uri` or
-`REPAVE_ARTIFACT_STORE_URI`) so portal and worker pods need no shared filesystem. Example:
+**Phase 2 decomposition:** mount the corpus image read-only via chart `corpus.enabled`. Async run
+previews rehydrate from **bounded `rendered_files` snapshots in `result_json`** (Postgres/SQLite)
+so portal and worker pods need no shared filesystem — see
+[ADR 002 addendum](adr/002-addendum-run-artifact-rehydrate.md). Optional S3-compatible storage
+(`durability.artifact_store_uri`) retains the full staging tree when configured. Example:
 [`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml).
 
 See [ADR 002](adr/002-v2-service-decomposition.md) and `.github/workflows/container.yml`.
