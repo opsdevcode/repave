@@ -1371,15 +1371,15 @@ OTEL env vars, [`docs/tracing.md`](tracing.md).
 | Item | Evidence | Fix |
 | --- | --- | --- |
 | `gate_runners.py` is a 1354-line multi-domain module holding every gate CLI | `engine/src/repave_engine/gate_runners/` | **Shipped** — split into domain modules (`_core`, `terraform`, `policy`, `drift`, `observability`, `helm`, `app`, `ansible`); registry unchanged |
-| `api.py` (861 lines) mixes portal HTML, JSON API, and auth middleware; mypy has an `arg-type` carve-out for it | `engine/src/repave_engine/api.py`, `pyproject.toml` mypy overrides | Split into routers; drop the mypy override |
-| `cli.py` (576 lines) owns every command | `engine/src/repave_engine/cli.py` | `cli/` package per subcommand |
-| Gate-outcome summarization implemented four times with drifting empty/passed/failed semantics | `generate_api.py`, `api.py`, `pipeline.py`, `notifications.py` | One helper in `gates.py` |
-| Blueprint root `repo_root / "blueprints"` hardcoded in a dozen places | `api.py`, `cli.py`, `generate_api.py` | `blueprints_dir()` helper — also unblocks [forked and remote blueprint packs](#forked-and-remote-blueprint-packs) |
-| Actions pinned to mutable tags; `uv:latest` in the portal image | `.github/workflows/*.yml`, `deploy/local/Dockerfile` | Pin by digest/SHA |
-| No tests for `generate_api`, `auth_context`, `tracing`, `gate_builtin` | `engine/tests/` | Focused unit tests, auth first |
-| Operator apply integration test skips unconditionally | `operator/internal/repave/apply_test.go` | Move behind an e2e build tag or delete |
-| Python floor is 3.10 but CI only runs 3.12 | `engine/pyproject.toml`, CI workflows | Matrix 3.10 or raise the floor |
-| `.tmp-staging/` is not ignored, so rendered fixtures show up as untracked noise | `.gitignore` | Add the pattern and clean up |
+| `api.py` mixes portal HTML, JSON API, and auth middleware; mypy has an `arg-type` carve-out for it | `engine/src/repave_engine/api.py`, `pyproject.toml` mypy overrides | **Shipped** — `/api/v1`, `/api/v2`, `/auth`, and ops routes in separate routers; portal HTML stays in `api.py`; mypy override dropped |
+| `cli.py` (576 lines) owns every command | `engine/src/repave_engine/cli/` | **Shipped** — `cli/` package with one module per command group |
+| Gate-outcome summarization implemented four times with drifting empty/passed/failed semantics | `generate_api.py`, `api.py`, `pipeline.py`, `notifications.py` | **Shipped** — `gate_summary` / `all_gates_passed` in `gates.py` |
+| Blueprint root `repo_root / "blueprints"` hardcoded in a dozen places | `api.py`, `cli.py`, `generate_api.py` | **Shipped** — `blueprints_dir()` helper |
+| Actions pinned to mutable tags; `uv:latest` in the portal image | `.github/workflows/*.yml`, `deploy/local/Dockerfile` | Pin by digest/SHA (deferred) |
+| No tests for `generate_api`, `auth_context`, `tracing`, `gate_builtin` | `engine/tests/` | **Shipped** — focused unit tests under `engine/tests/` |
+| Operator apply integration test skips unconditionally | `operator/internal/repave/apply_test.go` | **Shipped** — dead skip test removed (e2e covers preserve-local) |
+| Python floor is 3.10 but CI only runs 3.12 | `engine/pyproject.toml`, CI workflows | Matrix 3.10 or raise the floor (deferred) |
+| `.tmp-staging/` is not ignored, so rendered fixtures show up as untracked noise | `.gitignore` | **Shipped** — pattern in root `.gitignore` |
 | Broad `except Exception` around the provenance gate masks bugs as gate failures | `gate_runners.py` | Narrow the exception |
 
 **Done when (group A):** All six A entries closed, with A1, A2, and A4 landed before the hosted

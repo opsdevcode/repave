@@ -106,10 +106,6 @@ packages = ["repave_engine"]
 module = ["copier.*", "jsonschema.*", "opentelemetry.*", "boto3.*"]
 ignore_missing_imports = true
 
-[[tool.mypy.overrides]]
-module = ["repave_engine.api"]
-disable_error_code = ["arg-type"]
-
 [tool.bandit]
 exclude_dirs = ["tests"]
 skips = ["B404"]  # subprocess module import where shell=True is intentional

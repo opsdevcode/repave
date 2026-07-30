@@ -1,0 +1,115 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from repave_engine.cli._common import _github_token_from_args
+from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
+
+
+def cmd_plan_upgrade(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    target_repo = Path(args.target_repo).resolve()
+    staging_root = Path(args.staging_root).resolve() if args.staging_root else None
+
+    result = plan_upgrade(
+        target_repo,
+        repo_root,
+        blueprint_name=args.blueprint,
+        staging_root=staging_root,
+    )
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(result.summary)
+        if result.added:
+            print("Added:")
+            for path in result.added:
+                print(f"  + {path}")
+        if result.modified:
+            print("Modified:")
+            for path in result.modified:
+                print(f"  ~ {path}")
+        if result.removed:
+            print("Removed:")
+            for path in result.removed:
+                print(f"  - {path}")
+
+    return 0
+
+
+def _cmd_open_upgrade_pull_request(args: argparse.Namespace) -> int:
+    repo_root = Path(args.repo_root).resolve()
+    target_repo = Path(args.target_repo).resolve()
+    staging_root = Path(args.staging_root).resolve() if args.staging_root else None
+
+    if not args.git_branch:
+        raise SystemExit("--git-branch is required when opening a pull request")
+
+    result = open_upgrade_pull_request(
+        target_repo,
+        repo_root,
+        github_token=_github_token_from_args(args),
+        blueprint_name=args.blueprint,
+        staging_root=staging_root,
+        git_branch=args.git_branch,
+        base_branch=getattr(args, "base_branch", "main") or "main",
+        commit_message=args.commit_message,
+    )
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(result.summary)
+        print(f"Branch: {result.apply.git_branch}")
+        print(f"Commit: {result.apply.commit_sha}")
+        print(f"Pull request: {result.pull_request_url}")
+
+    return 0
+
+
+def cmd_apply_upgrade(args: argparse.Namespace) -> int:
+    if getattr(args, "open_pr", False):
+        return _cmd_open_upgrade_pull_request(args)
+
+    repo_root = Path(args.repo_root).resolve()
+    target_repo = Path(args.target_repo).resolve()
+    staging_root = Path(args.staging_root).resolve() if args.staging_root else None
+
+    if not args.git_branch:
+        raise SystemExit("--git-branch is required for apply-upgrade")
+
+    result = apply_upgrade(
+        target_repo,
+        repo_root,
+        blueprint_name=args.blueprint,
+        staging_root=staging_root,
+        git_branch=args.git_branch,
+        commit_message=args.commit_message,
+        preserve_local=getattr(args, "preserve_local", False),
+    )
+
+    if args.format == "json":
+        print(json.dumps(result.to_json_dict(), indent=2))
+    else:
+        print(result.summary)
+        print(f"Branch: {result.git_branch}")
+        print(f"Commit: {result.commit_sha}")
+        if result.preserved_local:
+            print("Preserved local edits (blueprint copies under .repave/upgrade-staging/):")
+            for path in result.preserved_local:
+                print(f"  * {path}")
+
+    return 0
+
+
+def cmd_update(args: argparse.Namespace) -> int:
+    if args.dry_run:
+        return cmd_plan_upgrade(args)
+    if not args.git_branch:
+        raise SystemExit("--git-branch is required when applying an upgrade (--no-dry-run)")
+    if getattr(args, "open_pr", False):
+        return _cmd_open_upgrade_pull_request(args)
+    return cmd_apply_upgrade(args)
