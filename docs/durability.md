@@ -78,6 +78,34 @@ repave run-worker --repo-root /app --poll-interval 5
 The Helm chart can set `repave.durability.workerMode: external` and install a worker
 Deployment alongside the portal (see [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md)).
 
+## Phase 4 — per-run Kubernetes Jobs
+
+Instead of a long-lived worker Deployment, each enqueued run spawns a **batch Job** that
+executes:
+
+```bash
+repave run-worker --repo-root /app --run-id "$RUN_ID" --once
+```
+
+Enable with:
+
+```yaml
+durability:
+  worker_mode: job
+  execution_mode: worker
+  database_url: postgresql://repave:secret@postgres:5432/repave
+```
+
+Helm example: [`values-decomposed-job.yaml`](../deploy/k8s/chart/values-decomposed-job.yaml).
+The portal ServiceAccount receives RBAC to create Jobs in its namespace (`REPAVE_RUN_JOBS=1`).
+
+Job pods use the gate-toolchain worker image, mount `repave.config.yaml`, and optionally the
+corpus initContainer — same as the external worker Deployment. Publish idempotency and run
+record snapshots apply unchanged.
+
+**Local dev:** `worker_mode: job` without in-cluster credentials leaves runs queued; use
+`repave run-worker --run-id … --once` manually or switch to `inline` / `external`.
+
 ## Service decomposition (Phase 0–1)
 
 **Execution mode** splits the API from gate execution:

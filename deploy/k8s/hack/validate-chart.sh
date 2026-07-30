@@ -16,7 +16,8 @@ rendered="$(mktemp)"
 portal_rendered="$(mktemp)"
 hpa_rendered="$(mktemp)"
 decomposed_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}"' EXIT
+job_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -112,6 +113,27 @@ fi
 
 if grep -q 'REPAVE_ARTIFACT_STORE_URI' "${decomposed_rendered}"; then
   echo "values-decomposed.yaml must not require REPAVE_ARTIFACT_STORE_URI (snapshots default)" >&2
+  exit 1
+fi
+
+helm template repave-decomposed-job "${CHART}" \
+  --namespace repave-decomposed-job \
+  -f "${CHART}/values-decomposed-job.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${job_rendered}"
+
+if grep -q 'name: repave-decomposed-job-worker' "${job_rendered}"; then
+  echo "values-decomposed-job.yaml must not render worker Deployment" >&2
+  exit 1
+fi
+
+if ! grep -q 'kind: Role' "${job_rendered}" || ! grep -q 'run-jobs' "${job_rendered}"; then
+  echo "values-decomposed-job.yaml must render run-job RBAC Role" >&2
+  exit 1
+fi
+
+if ! grep -q 'REPAVE_RUN_JOBS' "${job_rendered}"; then
+  echo "values-decomposed-job.yaml must set REPAVE_RUN_JOBS on portal Deployment" >&2
   exit 1
 fi
 

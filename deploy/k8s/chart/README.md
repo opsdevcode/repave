@@ -79,7 +79,8 @@ production.
 | `shutdown.drainSeconds` | Async run drain before exit (`REPAVE_SHUTDOWN_DRAIN_SECONDS`) |
 | `shutdown.readyRequireGithub` | Fail `/readyz` when GitHub API unreachable (publish clusters) |
 | `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
-| `workerImage.*` | Gate-toolchain image for external worker Deployment (defaults to `repave-engine`) |
+| `workerImage.*` | Gate-toolchain image for external worker Deployment or per-run Jobs (defaults to `repave-engine`) |
+| `repave.durability.workerMode` | `inline` (default), `external` (worker Deployment), or `job` (one Job per run — see `values-decomposed-job.yaml`) |
 | `corpus.*` | Mount digest-pinned corpus OCI artifact (Phase 2 decomposition) |
 | `repave.durability.artifactStoreUri` | Optional S3-compatible store for full staging-tree retention (previews default in run record) |
 | `persistence.runs` | PVC for `/data/runs` (use `emptyDir` when `enabled: false`) |

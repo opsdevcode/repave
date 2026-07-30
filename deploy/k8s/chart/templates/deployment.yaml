@@ -75,6 +75,32 @@ spec:
               value: "1"
             - name: REPAVE_EXECUTION_MODE
               value: worker
+            {{- else if eq .Values.repave.durability.workerMode "job" }}
+            - name: REPAVE_EXTERNAL_WORKERS
+              value: "1"
+            - name: REPAVE_EXECUTION_MODE
+              value: worker
+            - name: REPAVE_RUN_JOBS
+              value: "1"
+            - name: REPAVE_RUN_JOB_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: REPAVE_RUN_JOB_IMAGE
+              value: {{ include "repave.workerImage" . | quote }}
+            - name: REPAVE_RUN_JOB_CONFIGMAP
+              value: {{ include "repave.fullname" . | quote }}
+            - name: REPAVE_RUN_JOB_SERVICE_ACCOUNT
+              value: {{ include "repave.serviceAccountName" . | quote }}
+            {{- if .Values.corpus.enabled }}
+            - name: REPAVE_RUN_JOB_CORPUS_IMAGE
+              value: {{ include "repave.corpusImage" . | quote }}
+            {{- end }}
+            {{- $secretName := include "repave.secretName" . }}
+            {{- if $secretName }}
+            - name: REPAVE_RUN_JOB_GITHUB_SECRET
+              value: {{ $secretName | quote }}
+            {{- end }}
             {{- end }}
             {{- end }}
             {{- if .Values.repave.durability.artifactStoreUri }}

@@ -112,6 +112,7 @@ repave:
     databaseUrl: ""
     exportJsonl: true
     workerMode: inline
+    # inline | external (Deployment poll) | job (one Kubernetes Job per run)
     workerReplicas: 1
     workerPollSeconds: 5
     # inprocess (default) | worker — API enqueue-only when worker (see docs/durability.md)

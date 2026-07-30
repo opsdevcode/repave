@@ -1,0 +1,27 @@
+{{- if and .Values.repave.durability.enabled (eq .Values.repave.durability.workerMode "job") }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "repave.fullname" . }}-run-jobs
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create", "get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "repave.fullname" . }}-run-jobs
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "repave.fullname" . }}-run-jobs
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "repave.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

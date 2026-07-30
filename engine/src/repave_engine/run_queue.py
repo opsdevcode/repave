@@ -25,6 +25,7 @@ from repave_engine.metrics import (
 )
 from repave_engine.publish_idempotency import PublishIdempotencyContext, PublishIdempotencyStore
 from repave_engine.run_events import RunEventStore, build_run_event_store
+from repave_engine.run_job_dispatcher import RunJobDispatcher, build_run_job_dispatcher
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
 from repave_engine.settings import OutputConfig
 
@@ -60,6 +61,7 @@ class RunQueue:
         event_store: RunEventStore | None = None,
         artifact_store: ArtifactStore | None = None,
         publish_store: PublishIdempotencyStore | None = None,
+        job_dispatcher: RunJobDispatcher | None = None,
     ) -> None:
         self._repo_root = repo_root
         self._output_config = output_config
@@ -68,6 +70,7 @@ class RunQueue:
         self._event_store = event_store
         self._artifact_store = artifact_store or resolve_artifact_store(repo_root)
         self._publish_store = publish_store
+        self._job_dispatcher = job_dispatcher
         self._enqueue_only = config.enqueue_only or config.external_workers
         self._use_claim_workers = config.use_claim_workers
         self._executor: ThreadPoolExecutor | None = None
@@ -119,6 +122,22 @@ class RunQueue:
         elif run_id is not None:
             self._executor.submit(self._run_worker, run_id, acting_user)
 
+    def _dispatch_run(self, *, run_id: str, acting_user: str) -> None:
+        if self._job_dispatcher is not None:
+            try:
+                self._job_dispatcher.dispatch(run_id)
+            except Exception as exc:
+                logger.exception("failed to dispatch run Job for %s", run_id)
+                self._store.update_status(
+                    run_id,
+                    RunStatus.DEAD_LETTER,
+                    error=f"job dispatch: {exc}",
+                )
+                self._emit_event(run_id, "run_failed", {"error": str(exc)})
+                raise
+            return
+        self._schedule_execution(acting_user=acting_user, run_id=run_id)
+
     def submit(
         self,
         *,
@@ -149,7 +168,7 @@ class RunQueue:
             acting_user=acting_user,
             client_request_id=client_request_id or None,
         )
-        self._schedule_execution(acting_user=acting_user, run_id=record.run_id)
+        self._dispatch_run(run_id=record.run_id, acting_user=acting_user)
         self._refresh_metrics()
         return record
 
@@ -172,7 +191,7 @@ class RunQueue:
         if record.status not in (RunStatus.FAILED, RunStatus.DEAD_LETTER):
             raise ValueError("only failed or dead_letter runs can be replayed")
         self._store.update_status(run_id, RunStatus.QUEUED, result=None, error=None)
-        self._schedule_execution(acting_user=record.acting_user, run_id=run_id)
+        self._dispatch_run(run_id=run_id, acting_user=record.acting_user)
         self._refresh_metrics()
         updated = self._store.get(run_id)
         if updated is None:
@@ -277,7 +296,7 @@ def build_run_queue(
         or runtime.external_workers
         or runtime.execution_mode == ExecutionMode.WORKER
     )
-    use_claim_workers = db_cfg.dialect == "postgresql"
+    use_claim_workers = db_cfg.dialect == "postgresql" and runtime.worker_mode.value != "job"
     queue_config = RunQueueConfig(
         max_concurrent_runs=config.max_concurrent_runs,
         queue_max_depth=config.queue_max_depth,
@@ -289,6 +308,7 @@ def build_run_queue(
     store = RunStore(db_cfg)
     event_store = build_run_event_store(db_cfg)
     publish_store = PublishIdempotencyStore(db_cfg)
+    job_dispatcher = build_run_job_dispatcher(repo_root, worker_mode=runtime.worker_mode)
     return RunQueue(
         repo_root=repo_root,
         output_config=output_config,
@@ -296,4 +316,5 @@ def build_run_queue(
         config=queue_config,
         event_store=event_store,
         publish_store=publish_store,
+        job_dispatcher=job_dispatcher,
     )
