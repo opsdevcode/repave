@@ -5,10 +5,10 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.101.0  
-**In progress:** decomposed chart CI smoke.
+**In progress:** decomposed chart CI smoke.  
 **Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
 decomposition Phase 0–3 (including CRD `repave.dev/v1beta1` + conversion webhook);
-publish idempotency through queue retries (target repo + content hash).
+publish idempotency through queue retries; **Phase 4 per-run Kubernetes Jobs** (`worker_mode: job`).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1606,7 +1606,7 @@ shape locks in the coupling.
 **Approach:** roles of one codebase, not separate codebases — the full loop must still run on a
 laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
-**Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
+**Status (Phase 0–4):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
 bounded run-record snapshots, optional S3 artifact store. **Phase 1 shipped on `main`** —
 Postgres claim queue, worker Deployment, `execution_mode: worker`, and API/portal enqueue-only
 (no in-request gate execution when worker mode is active). **Phase 3 shipped on `main`** —
@@ -1614,6 +1614,8 @@ Postgres claim queue, worker Deployment, `execution_mode: worker`, and API/porta
 with conversion webhook, and e2e conversion assertions — see
 [`docs/operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md) and
 [`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md).
+**Phase 4 shipped on `main`** — `worker_mode: job` spawns a Kubernetes Job per run; see
+[`values-decomposed-job.yaml`](../../deploy/k8s/chart/values-decomposed-job.yaml).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
@@ -1629,9 +1631,9 @@ with conversion webhook, and e2e conversion assertions — see
   object storage optional — [addendum](adr/002-addendum-run-artifact-rehydrate.md)
 - **Phase 3:** promote the CRDs to `repave.dev/v1beta1` with a conversion webhook and have the
   operator call `/api/v2` instead of exec'ing the CLI, dropping `operator/Dockerfile.e2e`
-- **Phase 4 (optional):** per-run Kubernetes Jobs
-  ([durability](#durability-and-concurrency-for-hosted-use) Phase 3); split portal and API into
-  distinct Deployments only if their scaling profiles diverge
+- **Phase 4:** per-run Kubernetes Jobs (`worker_mode: job`) — **shipped on `main`**; portal
+  creates a batch Job per enqueued run (`values-decomposed-job.yaml`); optional portal/API
+  Deployment split deferred until scaling profiles diverge
 - Extend the `client_request_id` idempotency key through publish, keyed on target repo plus
   content hash, so a retried run cannot double-publish to GitHub — **shipped on `main`**
   (`publish_receipts` store + `PublishIdempotencyStore`)

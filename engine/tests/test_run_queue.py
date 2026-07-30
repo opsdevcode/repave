@@ -105,3 +105,37 @@ def test_run_queue_passes_publish_idempotency_context(tmp_path) -> None:
             time.sleep(0.05)
         assert captured == [(run_id, "publish-replay")]
     queue.close()
+
+
+def test_run_queue_dispatches_job_on_submit(tmp_path) -> None:
+    store = RunStore(tmp_path / "runs.sqlite")
+    output = OutputConfig(
+        github_org="example",
+        modules_root=tmp_path / "modules",
+    )
+    dispatched: list[str] = []
+
+    class FakeJobDispatcher:
+        def dispatch(self, run_id: str) -> None:
+            dispatched.append(run_id)
+
+    queue = RunQueue(
+        repo_root=tmp_path,
+        output_config=output,
+        store=store,
+        config=RunQueueConfig(
+            max_concurrent_runs=1,
+            queue_max_depth=4,
+            external_workers=True,
+            enqueue_only=True,
+        ),
+        job_dispatcher=FakeJobDispatcher(),
+    )
+    record = queue.submit(
+        blueprint_name="terraform-module-generic",
+        inputs={"module_name": "demo"},
+        dry_run=True,
+        acting_user="tester",
+    )
+    assert dispatched == [record.run_id]
+    queue.close()

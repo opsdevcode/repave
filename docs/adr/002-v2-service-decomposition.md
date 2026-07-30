@@ -128,7 +128,7 @@ Each phase is independently shippable and leaves the tree working.
 | **1** | Postgres-backed queue; `worker` role and chart Deployment; `execution.mode: inprocess \| worker` | Phase 0 |
 | **2** | Toolchain-free portal/api image; corpus as OCI artifact; object store for artifacts and previews | Phase 1 |
 | **3** | `repave.dev/v1beta1` + conversion webhook; operator calls `/api/v2`; drop CLI exec | Phase 1, `/api/v2` — **shipped** (CLI fallback remains for local `make operator-run`) |
-| **4** | Optional: per-run Kubernetes Jobs (durability Phase 3); optional portal/api Deployment split | Phase 2 |
+| **4** | Optional: per-run Kubernetes Jobs (`worker_mode: job`); optional portal/api Deployment split | Phase 2 — **Jobs shipped**; portal/api split deferred |
 
 Phases 0–2 carry nearly all of the value. If v2 scope tightens, cut Phase 4 and leave the
 operator on the CLI path.

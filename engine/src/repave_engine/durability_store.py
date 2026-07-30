@@ -12,6 +12,7 @@ from repave_engine.execution_mode import (
     parse_execution_mode,
 )
 from repave_engine.sql_store import DatabaseConfig, load_database_config, parse_database_url
+from repave_engine.worker_mode import WorkerMode, parse_worker_mode
 
 
 @dataclass(frozen=True)
@@ -22,12 +23,14 @@ class DurabilityStoreSettings:
     export_jsonl: bool = True
     external_workers: bool = False
     execution_mode: ExecutionMode = ExecutionMode.INPROCESS
+    worker_mode: WorkerMode = WorkerMode.INLINE
 
 
 @dataclass(frozen=True)
 class DurabilityRuntimeSettings:
     execution_mode: ExecutionMode = ExecutionMode.INPROCESS
     external_workers: bool = False
+    worker_mode: WorkerMode = WorkerMode.INLINE
 
 
 def _resolve_durability_runtime(
@@ -35,9 +38,12 @@ def _resolve_durability_runtime(
 ) -> DurabilityRuntimeSettings:
     execution_mode = ExecutionMode.INPROCESS
     external_workers = False
+    worker_mode = WorkerMode.INLINE
     if isinstance(block, dict):
         worker_raw = str(block.get("worker_mode", "inline")).strip().lower()
-        if worker_raw in ("external", "kubernetes", "job"):
+        if worker_raw:
+            worker_mode = parse_worker_mode(worker_raw)
+        if worker_mode in (WorkerMode.EXTERNAL, WorkerMode.JOB):
             external_workers = True
             execution_mode = ExecutionMode.WORKER
         mode_raw = block.get("execution_mode")
@@ -55,9 +61,16 @@ def _resolve_durability_runtime(
         if execution_mode == ExecutionMode.WORKER:
             external_workers = True
 
+    env_job = os.environ.get("REPAVE_RUN_JOBS", "").strip().lower()
+    if env_job in ("1", "true", "yes"):
+        worker_mode = WorkerMode.JOB
+        external_workers = True
+        execution_mode = ExecutionMode.WORKER
+
     return DurabilityRuntimeSettings(
         execution_mode=execution_mode,
         external_workers=external_workers,
+        worker_mode=worker_mode,
     )
 
 
@@ -89,6 +102,7 @@ def load_durability_store_settings(repo_root: Path) -> DurabilityStoreSettings |
         export_jsonl=export_jsonl,
         external_workers=runtime.external_workers,
         execution_mode=runtime.execution_mode,
+        worker_mode=runtime.worker_mode,
     )
 
 

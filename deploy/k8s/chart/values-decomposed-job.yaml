@@ -1,0 +1,37 @@
+# Example: PostgreSQL-backed queue with per-run Kubernetes Jobs (Phase 4).
+# Portal/API enqueues runs and creates a Job per run; no worker Deployment.
+#
+#   helm install -f values.yaml -f values-decomposed-job.yaml ...
+
+repave:
+  durability:
+    enabled: true
+    databaseUrl: postgresql://repave:change-me@postgres.repave.svc:5432/repave
+    exportJsonl: false
+    workerMode: job
+    executionMode: worker
+    requireSessionSecret: true
+
+  audit:
+    enabled: true
+  auth:
+    serviceMode: true
+    oidc:
+      issuer: https://auth.example.com
+      clientId: repave
+      redirectUri: https://repave.example.com/auth/callback
+      groupsClaim: groups
+      roles:
+        admin: []
+        generator: []
+
+image:
+  gateToolchain: false
+  repository: ghcr.io/opsdevcode/repave-engine-portal
+
+workerImage:
+  repository: ghcr.io/opsdevcode/repave-engine
+
+corpus:
+  enabled: true
+  repository: ghcr.io/opsdevcode/repave-corpus

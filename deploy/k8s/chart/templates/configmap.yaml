@@ -55,7 +55,7 @@ data:
       {{- end }}
       export_jsonl: {{ .Values.repave.durability.exportJsonl }}
       worker_mode: {{ .Values.repave.durability.workerMode | quote }}
-      {{- if eq .Values.repave.durability.workerMode "external" }}
+      {{- if or (eq .Values.repave.durability.workerMode "external") (eq .Values.repave.durability.workerMode "job") }}
       execution_mode: worker
       {{- else if .Values.repave.durability.executionMode }}
       execution_mode: {{ .Values.repave.durability.executionMode | quote }}
