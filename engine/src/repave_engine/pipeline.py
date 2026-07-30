@@ -33,6 +33,12 @@ from repave_engine.gates import (
 from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
 from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
+from repave_engine.publish_idempotency import (
+    PublishIdempotencyContext,
+    build_publish_key,
+    compute_publish_content_hash,
+    publish_message_succeeded,
+)
 from repave_engine.render import (
     RenderedFile,
     RenderResult,
@@ -129,6 +135,78 @@ def _emit_stage(on_event: RunEventCallback | None, stage: str, *, started: bool)
     on_event(kind, {"stage": stage})
 
 
+def _publish_after_gates(
+    *,
+    blueprint: Blueprint,
+    render_result: RenderResult,
+    module_repository: ModuleRepository,
+    normalized: dict[str, Any],
+    dry_run: bool,
+    github_token: str | None,
+    on_event: RunEventCallback | None,
+    publish_idempotency: PublishIdempotencyContext | None,
+) -> tuple[str, ModuleRepository | None]:
+    content_hash = compute_publish_content_hash(
+        render_result.output_dir,
+        artifact_type=blueprint.artifact_type,
+    )
+    publish_key = build_publish_key(module_repository, content_hash)
+    cached_message: str | None = None
+    store = (
+        publish_idempotency.store
+        if publish_idempotency is not None and not dry_run and github_token
+        else None
+    )
+    if store is not None:
+        receipt = store.get(publish_key)
+        if receipt is not None:
+            cached_message = receipt.pr_message
+
+    with pipeline_span("repave.publish"):
+        _emit_stage(on_event, "publish", started=True)
+        if cached_message is not None:
+            pr_message = cached_message
+            published_repository = module_repository
+        else:
+            publish_message = publish_to_module_repository(
+                render_result.output_dir,
+                module_repository,
+                dry_run=dry_run,
+                artifact_type=blueprint.artifact_type,
+            )
+            pr_plan = plan_pull_request(
+                blueprint_name=blueprint.name,
+                blueprint_version=blueprint.version,
+                standard_version=blueprint.standard_version,
+                title_template=blueprint.output_title_template,
+                input_fields=tuple(field.name for field in blueprint.inputs),
+                files_root=module_repository.local_path,
+                repository=module_repository,
+                module_values=normalized,
+            )
+            if dry_run:
+                pr_body = create_pull_request(pr_plan, github_token=None)
+            else:
+                pr_body = create_pull_request(pr_plan, github_token=github_token)
+            pr_message = f"{publish_message}\n\n{pr_body}"
+            published_repository = module_repository
+            if (
+                store is not None
+                and publish_idempotency is not None
+                and publish_message_succeeded(pr_message)
+            ):
+                store.record(
+                    publish_key=publish_key,
+                    pr_message=pr_message,
+                    repository_web_url=module_repository.web_url,
+                    content_hash=content_hash,
+                    run_id=publish_idempotency.run_id,
+                    client_request_id=publish_idempotency.client_request_id,
+                )
+        _emit_stage(on_event, "publish", started=False)
+    return pr_message, published_repository
+
+
 def generate_from_blueprint(
     blueprint: Blueprint,
     values: dict[str, Any],
@@ -144,6 +222,7 @@ def generate_from_blueprint(
     member_id: str | None = None,
     skip_input_validation: bool = False,
     on_event: RunEventCallback | None = None,
+    publish_idempotency: PublishIdempotencyContext | None = None,
 ) -> GenerationResult:
     started_at = time.perf_counter()
     pack_root = repo_root if repo_root is not None else _find_repo_root(blueprint.path)
@@ -206,14 +285,16 @@ def generate_from_blueprint(
         published_repository: ModuleRepository | None = module_repository
 
         if all_gates_passed(gate_results):
-            with pipeline_span("repave.publish"):
-                _emit_stage(on_event, "publish", started=True)
-                publish_message = publish_to_module_repository(
-                    render_result.output_dir,
-                    module_repository,
-                    dry_run=dry_run,
-                    artifact_type=blueprint.artifact_type,
-                )
+            pr_message, published_repository = _publish_after_gates(
+                blueprint=blueprint,
+                render_result=render_result,
+                module_repository=module_repository,
+                normalized=normalized,
+                dry_run=dry_run,
+                github_token=github_token,
+                on_event=on_event,
+                publish_idempotency=publish_idempotency,
+            )
             pr_plan = plan_pull_request(
                 blueprint_name=blueprint.name,
                 blueprint_version=blueprint.version,
@@ -224,13 +305,6 @@ def generate_from_blueprint(
                 repository=module_repository,
                 module_values=normalized,
             )
-            if dry_run:
-                pr_body = create_pull_request(pr_plan, github_token=None)
-                pr_message = f"{publish_message}\n\n{pr_body}"
-            else:
-                pr_body = create_pull_request(pr_plan, github_token=github_token)
-                pr_message = f"{publish_message}\n\n{pr_body}"
-            _emit_stage(on_event, "publish", started=False)
         else:
             published_repository = None
             if dry_run:

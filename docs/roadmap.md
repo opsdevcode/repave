@@ -5,9 +5,10 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.101.0  
-**In progress:** service decomposition hardening (publish idempotency, decomposed chart CI smoke).  
+**In progress:** decomposed chart CI smoke.
 **Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
-decomposition Phase 0–3 (including CRD `repave.dev/v1beta1` + conversion webhook).  
+decomposition Phase 0–3 (including CRD `repave.dev/v1beta1` + conversion webhook);
+publish idempotency through queue retries (target repo + content hash).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1632,7 +1633,8 @@ with conversion webhook, and e2e conversion assertions — see
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 3); split portal and API into
   distinct Deployments only if their scaling profiles diverge
 - Extend the `client_request_id` idempotency key through publish, keyed on target repo plus
-  content hash, so a retried run cannot double-publish to GitHub
+  content hash, so a retried run cannot double-publish to GitHub — **shipped on `main`**
+  (`publish_receipts` store + `PublishIdempotencyStore`)
 - **Repository strategy:** stay a monorepo through v2 and make it split-ready; revisit at v3 on
   a concrete trigger (independent release cadence, external contributors, another language)
 

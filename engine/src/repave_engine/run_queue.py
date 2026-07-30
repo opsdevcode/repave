@@ -23,6 +23,7 @@ from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
 )
+from repave_engine.publish_idempotency import PublishIdempotencyContext, PublishIdempotencyStore
 from repave_engine.run_events import RunEventStore, build_run_event_store
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
 from repave_engine.settings import OutputConfig
@@ -58,6 +59,7 @@ class RunQueue:
         config: RunQueueConfig,
         event_store: RunEventStore | None = None,
         artifact_store: ArtifactStore | None = None,
+        publish_store: PublishIdempotencyStore | None = None,
     ) -> None:
         self._repo_root = repo_root
         self._output_config = output_config
@@ -65,6 +67,7 @@ class RunQueue:
         self._config = config
         self._event_store = event_store
         self._artifact_store = artifact_store or resolve_artifact_store(repo_root)
+        self._publish_store = publish_store
         self._enqueue_only = config.enqueue_only or config.external_workers
         self._use_claim_workers = config.use_claim_workers
         self._executor: ThreadPoolExecutor | None = None
@@ -209,6 +212,11 @@ class RunQueue:
 
             github_token = None if record.dry_run else os.environ.get("GITHUB_TOKEN")
             artifact_dir = self._artifact_store.local_staging_dir(self._repo_root, run_id)
+            publish_ctx = PublishIdempotencyContext(
+                store=self._publish_store,
+                run_id=run_id,
+                client_request_id=record.client_request_id,
+            )
             try:
                 result = run_generate_api(
                     repo_root=self._repo_root,
@@ -219,6 +227,7 @@ class RunQueue:
                     github_token=github_token,
                     on_event=on_event,
                     staging_root=artifact_dir,
+                    publish_idempotency=publish_ctx,
                 )
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)
@@ -279,10 +288,12 @@ def build_run_queue(
     )
     store = RunStore(db_cfg)
     event_store = build_run_event_store(db_cfg)
+    publish_store = PublishIdempotencyStore(db_cfg)
     return RunQueue(
         repo_root=repo_root,
         output_config=output_config,
         store=store,
         config=queue_config,
         event_store=event_store,
+        publish_store=publish_store,
     )

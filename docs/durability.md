@@ -128,7 +128,11 @@ See [ADR 002](adr/002-v2-service-decomposition.md) and `.github/workflows/contai
 | `POST` | `/api/v1/runs/{run_id}/replay` | Requeue `failed` / `dead_letter` runs (admin) |
 | `POST` | `/api/v1/generate` | Pass `"async": true` when durability is enabled |
 
-**Idempotency:** `client_request_id` or `Idempotency-Key` header.
+**Idempotency:** `client_request_id` or `Idempotency-Key` header dedupes run enqueue.
+Publish idempotency extends through GitHub publish: when a worker retries the same gated
+output for the same target repository, the engine reuses the stored `pr_message` from
+`publish_receipts` (keyed by `github:{owner}/{repo}:{content_hash}`) instead of pushing
+again.
 
 **Metrics:** `repave_run_queue_inflight`, `repave_async_runs_total`.
 
