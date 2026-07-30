@@ -41,13 +41,14 @@ func applyUpgradePlanStatus(
 		})
 	}
 	if upgrader == nil {
-		upgrader = repave.CLIPlanUpgrader{}
+		upgrader = repave.NewPlanUpgrader(repaveCfg)
 	}
 
+	target := repave.UpgradeTarget(repo.Spec.RepoURL, repo.Spec.LocalPath, workspace.Path, repaveCfg)
 	result, err := upgrader.PlanUpgrade(
 		ctx,
 		repaveCfg,
-		workspace.Path,
+		target,
 		desired.BlueprintName,
 	)
 	if err != nil {

@@ -26,7 +26,12 @@ from repave_engine.generate_api import run_generate_api
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.settings import OutputConfig
-from repave_engine.upgrade_plan import apply_upgrade, plan_upgrade
+from repave_engine.upgrade_api import (
+    UpgradeTargetError,
+    resolve_upgrade_target,
+    run_apply_upgrade,
+    run_plan_upgrade,
+)
 
 V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2",
@@ -244,20 +249,24 @@ def build_api_v2_router(
     async def api_v2_upgrades_plan(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
         payload = await _parse_json_object(request)
-        target_repo_raw = str(payload.get("target_repo", "")).strip()
-        if not target_repo_raw:
-            raise HTTPException(status_code=400, detail="target_repo is required")
+        try:
+            target = resolve_upgrade_target(
+                target_repo=str(payload.get("target_repo", "")),
+                repo_url=str(payload.get("repo_url", "")).strip() or None,
+            )
+        except UpgradeTargetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         blueprint_name = str(payload.get("blueprint", "")).strip() or None
         staging_root_raw = str(payload.get("staging_root", "")).strip()
         staging_root = Path(staging_root_raw) if staging_root_raw else None
         try:
-            result = plan_upgrade(
-                Path(target_repo_raw),
-                repo_root,
+            result = run_plan_upgrade(
+                repo_root=repo_root,
+                target=target,
                 blueprint_name=blueprint_name,
                 staging_root=staging_root,
             )
-        except (ValueError, FileNotFoundError, OSError) as exc:
+        except (ValueError, FileNotFoundError, OSError, UpgradeTargetError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(result.to_json_dict())
 
@@ -265,9 +274,13 @@ def build_api_v2_router(
     async def api_v2_upgrades_apply(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
         payload = await _parse_json_object(request)
-        target_repo_raw = str(payload.get("target_repo", "")).strip()
-        if not target_repo_raw:
-            raise HTTPException(status_code=400, detail="target_repo is required")
+        try:
+            target = resolve_upgrade_target(
+                target_repo=str(payload.get("target_repo", "")),
+                repo_url=str(payload.get("repo_url", "")).strip() or None,
+            )
+        except UpgradeTargetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         git_branch = str(payload.get("git_branch", "")).strip()
         commit_message = str(payload.get("commit_message", "")).strip()
         if not git_branch:
@@ -276,20 +289,25 @@ def build_api_v2_router(
             raise HTTPException(status_code=400, detail="commit_message is required")
         blueprint_name = str(payload.get("blueprint", "")).strip() or None
         preserve_local = bool(payload.get("preserve_local", False))
+        push = bool(payload.get("push", False))
         staging_root_raw = str(payload.get("staging_root", "")).strip()
         staging_root = Path(staging_root_raw) if staging_root_raw else None
         try:
-            result = apply_upgrade(
-                Path(target_repo_raw),
-                repo_root,
+            result, pushed = run_apply_upgrade(
+                repo_root=repo_root,
+                target=target,
                 blueprint_name=blueprint_name,
                 staging_root=staging_root,
                 git_branch=git_branch,
                 commit_message=commit_message,
                 preserve_local=preserve_local,
+                push=push,
             )
-        except (ValueError, FileNotFoundError, OSError) as exc:
+        except (ValueError, FileNotFoundError, OSError, UpgradeTargetError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return JSONResponse(result.to_json_dict())
+        body = result.to_json_dict()
+        if pushed:
+            body["pushed"] = True
+        return JSONResponse(body)
 
     return router

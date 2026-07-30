@@ -34,6 +34,7 @@ func TestCLIApplyUpgraderPassesPreserveLocalFlag(t *testing.T) {
 		"repave/upgrade-test",
 		"upgrade",
 		true,
+		false,
 	)
 	if err != nil {
 		t.Fatalf("ApplyUpgrade: %v", err)

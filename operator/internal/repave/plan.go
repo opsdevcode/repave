@@ -11,13 +11,7 @@ import (
 
 const defaultCLI = "repave"
 
-// Config locates the repave engine checkout and CLI binary for plan-upgrade.
-type Config struct {
-	RepoRoot string
-	Command  string
-}
-
-// PlanResult is the JSON payload from `repave plan-upgrade --format json`.
+// PlanResult is the JSON payload from plan-upgrade (CLI or /api/v2/upgrades/plan).
 type PlanResult struct {
 	BlueprintName    string   `json:"blueprint_name"`
 	BlueprintVersion string   `json:"blueprint_version"`
@@ -82,14 +76,6 @@ func (CLIPlanUpgrader) PlanUpgrade(
 		return PlanResult{}, fmt.Errorf("parse plan-upgrade json: %w", err)
 	}
 	return result, nil
-}
-
-// ConfigFromEnv reads REPAVE_REPO_ROOT and optional REPAVE_CLI.
-func ConfigFromEnv(repoRootEnv, cliEnv string) Config {
-	return Config{
-		RepoRoot: strings.TrimSpace(repoRootEnv),
-		Command:  strings.TrimSpace(cliEnv),
-	}
 }
 
 // StaticPlanUpgrader returns a fixed result (envtest and unit tests).
