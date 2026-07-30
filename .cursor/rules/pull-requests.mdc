@@ -27,3 +27,22 @@ When opening PRs for this repository (including via `gh pr create`):
 After required checks pass, use the normal **Merge pull request** control on GitHub.
 Release automation (`chore/release/*`) still admin-merges outside branch rules.
 See [CONTRIBUTING.md](../CONTRIBUTING.md) and [`.github/rulesets/README.md`](../.github/rulesets/README.md).
+
+## After opening a PR
+
+When `gh pr create` succeeds (or the user asked to open a PR and one already exists),
+**always end the turn with a short “What’s next” section** — do not stop at the PR URL alone.
+
+1. Return the **PR URL**.
+2. Read **`docs/roadmap.md`** (top **In progress** / **Shipped** lines and the section
+   that matches the work just opened — for example service decomposition, durability,
+   operator).
+3. Check **`gh pr list --state open`** for other open PRs on related themes.
+4. Display **What’s next** as a prioritized list (2–4 items max):
+   - Waiting on CI / review for the PR just opened
+   - Other open PRs that should merge first or in parallel
+   - The next roadmap item to implement (with section link or path)
+   - Explicitly deferred / optional items only if nothing clearer is in progress
+
+Keep it actionable: name the next task the user can ask for (for example “decomposed chart
+CI smoke”), not a generic “let me know if you want more.”
