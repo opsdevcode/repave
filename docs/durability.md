@@ -97,8 +97,12 @@ durability:
 
 Environment: `REPAVE_EXECUTION_MODE=worker`, `REPAVE_EXTERNAL_WORKERS=1`.
 
-With **PostgreSQL**, run claims use `FOR UPDATE SKIP LOCKED` so multiple worker replicas
-can scale safely.
+When `execution_mode=worker`, the API and portal **do not run gates in-process**. Sync
+`POST /api/v1/generate` and `POST /api/v2/generate` return **409** unless `"async": true`;
+use `POST /api/v1/runs` or enable the portal live run console (async is automatic in worker
+mode). Bundle generation remains in-process only (local / `inprocess` mode).
+
+See [ADR 002](adr/002-v2-service-decomposition.md).
 
 **Container images (Phase 0–2):** CI publishes digest-pinned images on `main` and semver tags:
 

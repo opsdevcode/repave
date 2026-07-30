@@ -4,6 +4,12 @@ from __future__ import annotations
 
 import os
 from enum import Enum
+from pathlib import Path
+
+SYNC_GENERATE_UNAVAILABLE_DETAIL = (
+    "Sync generation is unavailable when execution_mode=worker; "
+    "set async=true or POST /api/v1/runs (or /api/v2/runs)"
+)
 
 
 class ExecutionMode(str, Enum):
@@ -25,3 +31,10 @@ def execution_mode_from_env() -> ExecutionMode | None:
     if not raw:
         return None
     return parse_execution_mode(raw)
+
+
+def worker_execution_mode_active(repo_root: Path) -> bool:
+    """True when API/portal pods must enqueue runs instead of executing gates locally."""
+    from repave_engine.durability_store import load_durability_runtime
+
+    return load_durability_runtime(repo_root).execution_mode == ExecutionMode.WORKER
