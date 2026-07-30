@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.99.1  
+**Current release:** v1.100.0  
 **In progress:** CRD `repave.dev/v1beta1` promotion + conversion webhook (Phase 3d).  
 **Next up:** group B maintainability splits.
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
