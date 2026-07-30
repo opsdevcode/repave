@@ -3,7 +3,6 @@ package repave
 import (
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -48,23 +47,4 @@ func TestCLIApplyUpgraderPassesPreserveLocalFlag(t *testing.T) {
 	if !strings.Contains(joined, "--preserve-local") {
 		t.Fatalf("expected --preserve-local in logged args, got %q", joined)
 	}
-}
-
-func TestCLIApplyUpgraderUsesRepaveCLI(t *testing.T) {
-	if _, err := exec.LookPath("repave"); err != nil {
-		t.Skip("repave CLI not on PATH")
-	}
-	repoRoot := os.Getenv("REPAVE_REPO_ROOT")
-	if repoRoot == "" {
-		t.Skip("REPAVE_REPO_ROOT not set")
-	}
-	fixture := filepath.Join("..", "..", "testdata", "modules", "terraform-minimal")
-	absFixture, err := filepath.Abs(fixture)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(absFixture); err != nil {
-		t.Skip("terraform-minimal fixture missing")
-	}
-	t.Skip("integration apply requires git checkout; covered by hack/e2e.sh preserve-local smoke")
 }
