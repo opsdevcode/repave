@@ -15,7 +15,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 )
 
 var (
@@ -41,7 +41,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = repavev1alpha1.AddToScheme(scheme.Scheme)
+	err = repavev1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
@@ -65,14 +65,14 @@ var _ = Describe("GoldenPathRepo controller", func() {
 	}
 
 	BeforeEach(func() {
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
 				Namespace: "default",
 			},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: "/tmp/example-module",
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.9.0",
 					StandardSource:   "standards/terraform-standards",
@@ -84,23 +84,23 @@ var _ = Describe("GoldenPathRepo controller", func() {
 	})
 
 	AfterEach(func() {
-		repo := &repavev1alpha1.GoldenPathRepo{}
+		repo := &repavev1beta1.GoldenPathRepo{}
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
 		Expect(k8sClient.Delete(ctx, repo)).To(Succeed())
 	})
 
 	It("should accept CRD create and allow status subresource update", func() {
-		repo := &repavev1alpha1.GoldenPathRepo{}
+		repo := &repavev1beta1.GoldenPathRepo{}
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
 
-		repo.Status.Phase = repavev1alpha1.GoldenPathRepoPhaseReady
+		repo.Status.Phase = repavev1beta1.GoldenPathRepoPhaseReady
 		repo.Status.Message = "envtest"
 		repo.Status.ObservedGeneration = repo.Generation
 		Expect(k8sClient.Status().Update(ctx, repo)).To(Succeed())
 
-		updated := &repavev1alpha1.GoldenPathRepo{}
+		updated := &repavev1beta1.GoldenPathRepo{}
 		Expect(k8sClient.Get(ctx, typeNamespacedName, updated)).To(Succeed())
-		Expect(updated.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseReady))
+		Expect(updated.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseReady))
 		Expect(updated.Status.Message).To(Equal("envtest"))
 	})
 })

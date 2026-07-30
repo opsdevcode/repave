@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 )
 
@@ -46,7 +46,7 @@ func (failingFetcher) Fetch(_ context.Context, _ string, _ string) error {
 }
 
 func TestObservePins_localFixture(t *testing.T) {
-	spec := repavev1alpha1.GoldenPathRepoSpec{LocalPath: fixtureRoot(t)}
+	spec := repavev1beta1.GoldenPathRepoSpec{LocalPath: fixtureRoot(t)}
 	pins, err := inventory.ObservePins(context.Background(), spec, nil)
 	if err != nil {
 		t.Fatalf("ObservePins: %v", err)
@@ -58,7 +58,7 @@ func TestObservePins_localFixture(t *testing.T) {
 
 func TestObservePins_remoteReadsClonedProvenance(t *testing.T) {
 	fetcher := &copyFetcher{source: fixtureRoot(t)}
-	spec := repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"}
+	spec := repavev1beta1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"}
 
 	pins, err := inventory.ObservePins(context.Background(), spec, fetcher)
 	if err != nil {
@@ -73,7 +73,7 @@ func TestObservePins_remoteReadsClonedProvenance(t *testing.T) {
 }
 
 func TestObservePins_remoteFetchFailureIsTransient(t *testing.T) {
-	spec := repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"}
+	spec := repavev1beta1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"}
 
 	_, err := inventory.ObservePins(context.Background(), spec, failingFetcher{})
 	if !errors.Is(err, inventory.ErrRemoteFetchFailed) {
@@ -82,7 +82,7 @@ func TestObservePins_remoteFetchFailureIsTransient(t *testing.T) {
 }
 
 func TestObservePins_remoteWithoutFetcherUnsupported(t *testing.T) {
-	spec := repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"}
+	spec := repavev1beta1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"}
 
 	_, err := inventory.ObservePins(context.Background(), spec, nil)
 	if !errors.Is(err, inventory.ErrRemoteRepoNotSupported) {
@@ -91,7 +91,7 @@ func TestObservePins_remoteWithoutFetcherUnsupported(t *testing.T) {
 }
 
 func TestObservePins_requiresLocation(t *testing.T) {
-	_, err := inventory.ObservePins(context.Background(), repavev1alpha1.GoldenPathRepoSpec{}, nil)
+	_, err := inventory.ObservePins(context.Background(), repavev1beta1.GoldenPathRepoSpec{}, nil)
 	if err == nil {
 		t.Fatal("expected error when neither localPath nor repoURL is set")
 	}
@@ -101,7 +101,7 @@ func TestMaterialize_localPathIsUsedInPlace(t *testing.T) {
 	root := fixtureRoot(t)
 	workspace, err := inventory.Materialize(
 		context.Background(),
-		repavev1alpha1.GoldenPathRepoSpec{LocalPath: root},
+		repavev1beta1.GoldenPathRepoSpec{LocalPath: root},
 		nil,
 	)
 	if err != nil {
@@ -125,7 +125,7 @@ func TestMaterialize_remoteCloneIsRemovedOnClose(t *testing.T) {
 	fetcher := &copyFetcher{source: fixtureRoot(t)}
 	workspace, err := inventory.Materialize(
 		context.Background(),
-		repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"},
+		repavev1beta1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"},
 		fetcher,
 	)
 	if err != nil {
@@ -151,7 +151,7 @@ func TestMaterialize_remoteCloneIsRemovedOnClose(t *testing.T) {
 func TestMaterialize_failedCloneLeavesNoWorkspace(t *testing.T) {
 	_, err := inventory.Materialize(
 		context.Background(),
-		repavev1alpha1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"},
+		repavev1beta1.GoldenPathRepoSpec{RepoURL: "https://github.com/example/module.git"},
 		failingFetcher{},
 	)
 	if !errors.Is(err, inventory.ErrRemoteFetchFailed) {

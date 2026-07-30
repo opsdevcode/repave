@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
 	"github.com/opsdevcode/repave/operator/internal/status"
@@ -87,7 +87,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 	})
 
 	AfterEach(func() {
-		repo := &repavev1alpha1.GoldenPathRepo{}
+		repo := &repavev1beta1.GoldenPathRepo{}
 		err := k8sClient.Get(ctx, typeNamespacedName, repo)
 		if err != nil {
 			return
@@ -100,11 +100,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 	})
 
 	It("sets Ready when observed pins match desired", func() {
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: fixtureModulePath(),
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.9.0",
 					StandardSource:   "standards/terraform-standards",
@@ -118,7 +118,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseReady))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseReady))
 		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.9.0"))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionReady)).To(BeTrue())
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeFalse())
@@ -126,11 +126,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 	})
 
 	It("sets OutOfDate when desired pins differ from repave.yaml", func() {
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: fixtureModulePath(),
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
 					StandardSource:   "standards/terraform-standards",
@@ -144,7 +144,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseOutOfDate))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
 		Expect(repo.Status.UpgradePlan).NotTo(BeNil())
@@ -164,17 +164,17 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 			},
 		}
 		reconciler.ApplyUpgrader = applier
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: fixtureModulePath(),
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
 					StandardSource:   "standards/terraform-standards",
 					StandardVersion:  "1.1.0",
 				},
-				Remediation: repavev1alpha1.RemediationSpec{
+				Remediation: repavev1beta1.RemediationSpec{
 					Enabled: true,
 					DryRun:  true,
 				},
@@ -207,17 +207,17 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 			},
 		}
 		reconciler.ApplyUpgrader = applier
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: fixtureModulePath(),
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
 					StandardSource:   "standards/terraform-standards",
 					StandardVersion:  "1.1.0",
 				},
-				Remediation: repavev1alpha1.RemediationSpec{
+				Remediation: repavev1beta1.RemediationSpec{
 					Enabled:       true,
 					DryRun:        true,
 					PreserveLocal: true,
@@ -237,11 +237,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 
 	It("sets OutOfDate when Blueprint catalog pins bump via blueprintRef", func() {
 		bpName := "terraform-module-generic"
-		bp := &repavev1alpha1.Blueprint{
+		bp := &repavev1beta1.Blueprint{
 			ObjectMeta: metav1.ObjectMeta{Name: bpName, Namespace: "default"},
-			Spec: repavev1alpha1.BlueprintSpec{
+			Spec: repavev1beta1.BlueprintSpec{
 				Version: "0.9.0",
-				Standard: repavev1alpha1.BlueprintStandardPins{
+				Standard: repavev1beta1.BlueprintStandardPins{
 					Source:  "standards/terraform-standards",
 					Version: "1.1.0",
 				},
@@ -252,12 +252,12 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 			_ = k8sClient.Delete(ctx, bp)
 		}()
 
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: fixtureModulePath(),
-				BlueprintRef: &repavev1alpha1.BlueprintRef{Name: bpName},
-				DesiredPins: repavev1alpha1.DesiredPins{
+				BlueprintRef: &repavev1beta1.BlueprintRef{Name: bpName},
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    bpName,
 					BlueprintVersion: "unused",
 					StandardSource:   "unused",
@@ -270,7 +270,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseReady))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseReady))
 
 		Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(bp), bp)).To(Succeed())
 		bp.Spec.Version = "9.9.9"
@@ -282,7 +282,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		_, err = reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseOutOfDate))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
 	})
 
@@ -299,17 +299,17 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		}
 		reconciler.ApplyUpgrader = applier
 		reconciler.Fetcher = &fixtureFetcher{source: fixtureModulePath()}
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				RepoURL: "https://github.com/example/module.git",
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
 					StandardSource:   "standards/terraform-standards",
 					StandardVersion:  "1.1.0",
 				},
-				Remediation: repavev1alpha1.RemediationSpec{
+				Remediation: repavev1beta1.RemediationSpec{
 					Enabled: true,
 					DryRun:  true,
 				},
@@ -323,7 +323,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseOutOfDate))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionUpgradePlanned)).To(BeTrue())
 		Expect(repo.Status.UpgradePlan).NotTo(BeNil())
 		Expect(repo.Status.UpgradePlan.ChangedFileCount).To(Equal(5))
@@ -344,11 +344,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		}}
 		reconciler.PlanUpgrader = recorder
 
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				RepoURL: "https://github.com/example/module.git",
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
 					StandardSource:   "standards/terraform-standards",
@@ -371,11 +371,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 
 	It("observes pins from a remote repo via the fetcher", func() {
 		reconciler.Fetcher = &fixtureFetcher{source: fixtureModulePath()}
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				RepoURL: "https://github.com/example/module.git",
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "9.9.9",
 					StandardSource:   "standards/terraform-standards",
@@ -390,18 +390,18 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(result.RequeueAfter).To(BeNumerically(">", 0))
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseOutOfDate))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseOutOfDate))
 		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.9.0"))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
 	})
 
 	It("requeues with RemoteFetchFailed when the clone fails", func() {
 		reconciler.Fetcher = failingFetcher{}
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				RepoURL: "https://github.com/example/module.git",
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.9.0",
 					StandardSource:   "standards/terraform-standards",
@@ -416,7 +416,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(result.RequeueAfter).To(Equal(remoteFetchRetry))
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
-		Expect(repo.Status.Phase).To(Equal(repavev1alpha1.GoldenPathRepoPhaseError))
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseError))
 		readyCondition := meta.FindStatusCondition(repo.Status.Conditions, status.ConditionReady)
 		Expect(readyCondition).NotTo(BeNil())
 		Expect(readyCondition.Reason).To(Equal(status.ReasonRemoteFetchFailed))
@@ -424,11 +424,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 
 	It("reports RemoteRepoUnsupported when no fetcher is configured", func() {
 		reconciler.Fetcher = nil
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				RepoURL: "https://github.com/example/module.git",
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.9.0",
 					StandardSource:   "standards/terraform-standards",
@@ -448,11 +448,11 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 	})
 
 	It("rejects spec with neither repoURL nor localPath at admission", func() {
-		repo := &repavev1alpha1.GoldenPathRepo{
+		repo := &repavev1beta1.GoldenPathRepo{
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
-			Spec: repavev1alpha1.GoldenPathRepoSpec{
+			Spec: repavev1beta1.GoldenPathRepoSpec{
 				LocalPath: fixtureModulePath(),
-				DesiredPins: repavev1alpha1.DesiredPins{
+				DesiredPins: repavev1beta1.DesiredPins{
 					BlueprintName:    "terraform-module-generic",
 					BlueprintVersion: "0.9.0",
 					StandardSource:   "standards/terraform-standards",

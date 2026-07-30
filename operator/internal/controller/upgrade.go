@@ -7,7 +7,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/repave"
@@ -19,18 +19,18 @@ const maxUpgradePlanPaths = 20
 func applyUpgradePlanStatus(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 	upgrader repave.PlanUpgrader,
 	repaveCfg repave.Config,
 	desired drift.PinSet,
 	workspace *inventory.Workspace,
 ) error {
-	if repo.Status.Phase != repavev1alpha1.GoldenPathRepoPhaseOutOfDate {
+	if repo.Status.Phase != repavev1beta1.GoldenPathRepoPhaseOutOfDate {
 		return clearUpgradePlanStatus(ctx, c, repo)
 	}
 	if workspace == nil || workspace.Path == "" {
 		msg := "upgrade diff requires a materialized repository"
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			latest.Status.UpgradePlan = nil
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionUpgradePlanned,
@@ -53,7 +53,7 @@ func applyUpgradePlanStatus(
 	)
 	if err != nil {
 		msg := err.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			latest.Status.UpgradePlan = nil
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionUpgradePlanned,
@@ -74,8 +74,8 @@ func applyUpgradePlanStatus(
 		)
 	}
 
-	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-		latest.Status.UpgradePlan = &repavev1alpha1.UpgradePlan{
+	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+		latest.Status.UpgradePlan = &repavev1beta1.UpgradePlan{
 			ChangedFileCount: result.ChangedFileCount,
 			BlueprintName:    result.BlueprintName,
 			BlueprintVersion: result.BlueprintVersion,
@@ -96,13 +96,13 @@ func applyUpgradePlanStatus(
 func clearUpgradePlanStatus(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 ) error {
 	if repo.Status.UpgradePlan == nil &&
 		!hasConditionType(repo.Status.Conditions, status.ConditionUpgradePlanned) {
 		return nil
 	}
-	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 		latest.Status.UpgradePlan = nil
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionUpgradePlanned,

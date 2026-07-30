@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
 	"github.com/opsdevcode/repave/operator/internal/github"
@@ -25,7 +25,7 @@ const goldenPathRepoFinalizer = "repave.dev/goldenpathrepo-finalizer"
 func ensureRemediationFinalizer(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 ) (bool, error) {
 	if !repo.Spec.Remediation.Enabled {
 		return false, nil
@@ -44,7 +44,7 @@ func ensureRemediationFinalizer(
 func applyRemediationPRStatus(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 	workspace *inventory.Workspace,
 	applier repave.ApplyUpgrader,
 	gh github.Client,
@@ -56,12 +56,12 @@ func applyRemediationPRStatus(
 		return clearRemediationPRStatus(ctx, c, repo, status.ReasonRemediationDisabled, "remediation disabled")
 	}
 
-	if repo.Status.Phase != repavev1alpha1.GoldenPathRepoPhaseOutOfDate {
+	if repo.Status.Phase != repavev1beta1.GoldenPathRepoPhaseOutOfDate {
 		return clearRemediationPRStatus(ctx, c, repo, status.ReasonRemediationCleared, "pins aligned; remediation not required")
 	}
 
 	if !meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionUpgradePlanned) {
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionFalse,
@@ -73,7 +73,7 @@ func applyRemediationPRStatus(
 
 	workDir, workErr := remediationWorkDir(repo.Spec, workspace)
 	if workErr != nil {
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionFalse,
@@ -128,7 +128,7 @@ func applyRemediationPRStatus(
 	)
 	if err != nil {
 		msg := err.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			latest.Status.RemediationPR = nil
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
@@ -140,8 +140,8 @@ func applyRemediationPRStatus(
 	}
 
 	if repo.Spec.Remediation.DryRun {
-		err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-			latest.Status.RemediationPR = &repavev1alpha1.RemediationPRStatus{
+		err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+			latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
 				Branch:                  applyResult.GitBranch,
 				Title:                   title,
 				State:                   remediation.PRStatePlanned,
@@ -164,7 +164,7 @@ func applyRemediationPRStatus(
 
 	if repo.Spec.RepoURL == "" {
 		msg := "remediation PR requires spec.repoURL when dryRun is false"
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionFalse,
@@ -176,7 +176,7 @@ func applyRemediationPRStatus(
 
 	if githubToken == "" {
 		msg := "set GITHUB_TOKEN to push branch and open remediation PR"
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionFalse,
@@ -193,7 +193,7 @@ func applyRemediationPRStatus(
 	if !applyResult.Pushed {
 		if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {
 			msg := err.Error()
-			return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+			return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 				latest.Status.RemediationPR = nil
 				status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 					Type:    status.ConditionRemediationPR,
@@ -207,7 +207,7 @@ func applyRemediationPRStatus(
 
 	repository, err := github.ParseRepositoryURL(repo.Spec.RepoURL)
 	if err != nil {
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionFalse,
@@ -226,7 +226,7 @@ func applyRemediationPRStatus(
 	})
 	if err != nil {
 		msg := err.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			latest.Status.RemediationPR = nil
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
@@ -237,8 +237,8 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-		latest.Status.RemediationPR = &repavev1alpha1.RemediationPRStatus{
+	if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+		latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
 			URL:                     pr.HTMLURL,
 			Number:                  pr.Number,
 			Branch:                  applyResult.GitBranch,
@@ -261,7 +261,7 @@ func applyRemediationPRStatus(
 }
 
 func remediationWorkDir(
-	spec repavev1alpha1.GoldenPathRepoSpec,
+	spec repavev1beta1.GoldenPathRepoSpec,
 	workspace *inventory.Workspace,
 ) (string, error) {
 	if spec.LocalPath != "" {
@@ -275,7 +275,7 @@ func remediationWorkDir(
 
 func sendOperatorNotify(
 	event string,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 	branch string,
 	prURL string,
 	_ string,
@@ -299,7 +299,7 @@ func sendOperatorNotify(
 func clearRemediationPRStatus(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 	reason string,
 	message string,
 ) error {
@@ -307,7 +307,7 @@ func clearRemediationPRStatus(
 		!hasConditionType(repo.Status.Conditions, status.ConditionRemediationPR) {
 		return nil
 	}
-	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1alpha1.GoldenPathRepo) {
+	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 		latest.Status.RemediationPR = nil
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionRemediationPR,
@@ -321,7 +321,7 @@ func clearRemediationPRStatus(
 func handleGoldenPathRepoDeletion(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 ) (bool, error) {
 	if repo.DeletionTimestamp == nil {
 		return false, nil

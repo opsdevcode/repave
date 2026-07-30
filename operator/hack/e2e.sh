@@ -28,6 +28,10 @@ if ! command -v kubectl >/dev/null 2>&1; then
   echo "kubectl is required for operator e2e" >&2
   exit 1
 fi
+if ! command -v openssl >/dev/null 2>&1; then
+  echo "openssl is required for conversion webhook TLS in operator e2e" >&2
+  exit 1
+fi
 
 cleanup() {
   if [[ "${E2E_KEEP_CLUSTER:-}" == "1" ]]; then
@@ -59,10 +63,18 @@ echo "==> Loading images into kind"
 "${KIND_BIN}" load docker-image "${IMG}" --name "${CLUSTER_NAME}"
 "${KIND_BIN}" load docker-image "${PORTAL_IMG}" --name "${CLUSTER_NAME}"
 
-echo "==> Applying CRDs and e2e manifests"
-kubectl apply -f config/crd/bases/
+echo "==> Applying namespace and webhook TLS"
 kubectl apply -f config/e2e/namespace.yaml
+chmod +x hack/setup-webhook-certs.sh hack/inject-crd-ca-bundle.sh
+bash hack/setup-webhook-certs.sh
+crd_tmp="$(mktemp -d)"
+bash hack/inject-crd-ca-bundle.sh hack/webhook-certs/ca.crt config/crd/bases "${crd_tmp}"
+
+echo "==> Applying CRDs and e2e manifests"
+kubectl apply -f "${crd_tmp}/"
+rm -rf "${crd_tmp}"
 kubectl apply -f config/e2e/rbac.yaml
+kubectl apply -f config/e2e/webhook-service.yaml
 kubectl apply -f config/e2e/portal.yaml
 kubectl apply -f config/e2e/manager.yaml
 

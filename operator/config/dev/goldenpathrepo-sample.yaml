@@ -1,4 +1,4 @@
-apiVersion: repave.dev/v1alpha1
+apiVersion: repave.dev/v1beta1
 kind: GoldenPathRepo
 metadata:
   name: example-module

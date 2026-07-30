@@ -164,6 +164,7 @@ Add verbs only when controller needs them.
 
 - **v1alpha1**: breaking changes allowed with changelog note.
 - Before **v1beta1**: publish conversion webhook or single-version migration doc.
+  **Shipped:** conversion webhook + [`operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md).
 - CRD storage version: one stored version per GA kind; old versions served only if
   conversion exists.
 

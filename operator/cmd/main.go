@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/controller"
 	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
@@ -55,6 +56,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(repavev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(repavev1beta1.AddToScheme(scheme))
 }
 
 func main() {
@@ -104,6 +106,15 @@ func main() {
 		os.Getenv("REPAVE_CLI"),
 		os.Getenv("REPAVE_API_URL"),
 	)
+
+	if err := (&repavev1alpha1.GoldenPathRepo{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "GoldenPathRepo")
+		os.Exit(1)
+	}
+	if err := (&repavev1alpha1.Blueprint{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Blueprint")
+		os.Exit(1)
+	}
 
 	if err := (&controller.GoldenPathRepoReconciler{
 		Client: mgr.GetClient(),

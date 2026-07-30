@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: repave-webhook-service
+  namespace: repave-system
+spec:
+  selector:
+    app: repave-operator
+  ports:
+    - name: webhook
+      port: 443
+      targetPort: webhook-server

@@ -7,7 +7,7 @@ import (
 
 	"sigs.k8s.io/yaml"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 )
 
 // The engine renders these fixtures with `repave fleet-manifests`; they are checked in so a
@@ -34,15 +34,15 @@ func TestFleetManifestsDecodeStrictly(t *testing.T) {
 				t.Fatalf("read fixture: %v", err)
 			}
 
-			var repo repavev1alpha1.GoldenPathRepo
+			var repo repavev1beta1.GoldenPathRepo
 			// Strict decoding rejects unknown or misspelled fields, which is the point:
 			// the engine must emit exactly the CRD's field names.
 			if err := yaml.UnmarshalStrict(data, &repo); err != nil {
 				t.Fatalf("manifest does not match the GoldenPathRepo API: %v", err)
 			}
 
-			if repo.APIVersion != "repave.dev/v1alpha1" {
-				t.Errorf("apiVersion = %q, want repave.dev/v1alpha1", repo.APIVersion)
+			if repo.APIVersion != "repave.dev/v1beta1" {
+				t.Errorf("apiVersion = %q, want repave.dev/v1beta1", repo.APIVersion)
 			}
 			if repo.Kind != "GoldenPathRepo" {
 				t.Errorf("kind = %q, want GoldenPathRepo", repo.Kind)
@@ -80,7 +80,7 @@ func TestFleetManifestVersionsSurviveAsStrings(t *testing.T) {
 		t.Fatalf("read fixture: %v", err)
 	}
 
-	var repo repavev1alpha1.GoldenPathRepo
+	var repo repavev1beta1.GoldenPathRepo
 	if err := yaml.UnmarshalStrict(data, &repo); err != nil {
 		t.Fatalf("decode: %v", err)
 	}

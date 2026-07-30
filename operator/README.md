@@ -6,7 +6,8 @@ direct pushes to module repos).
 
 GA scope, checklist, and out-of-scope items: [`docs/operator-ga.md`](../docs/operator-ga.md).
 
-**Slice 0 (scaffold):** `GoldenPathRepo` CRD (`repave.dev/v1alpha1`), baseline
+**Slice 0 (scaffold):** `GoldenPathRepo` CRD (`repave.dev/v1beta1`, storage version;
+`v1alpha1` served with conversion), baseline
 reconciler, `make operator-test` with envtest.
 
 **Slice 1 (inventory):** read `repave.yaml` from `spec.localPath`, populate

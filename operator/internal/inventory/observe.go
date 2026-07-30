@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
 	"github.com/opsdevcode/repave/operator/internal/provenance"
@@ -59,7 +59,7 @@ func (w *Workspace) Close() {
 // Materialize resolves a spec to a Workspace. Callers must Close the result.
 func Materialize(
 	ctx context.Context,
-	spec repavev1alpha1.GoldenPathRepoSpec,
+	spec repavev1beta1.GoldenPathRepoSpec,
 	fetcher RepoFetcher,
 ) (*Workspace, error) {
 	switch {
@@ -100,7 +100,7 @@ func PinsFromWorkspace(workspace *Workspace) (drift.PinSet, error) {
 // ObservePins materializes the repo, reads its pins, and releases any clone.
 func ObservePins(
 	ctx context.Context,
-	spec repavev1alpha1.GoldenPathRepoSpec,
+	spec repavev1beta1.GoldenPathRepoSpec,
 	fetcher RepoFetcher,
 ) (drift.PinSet, error) {
 	workspace, err := Materialize(ctx, spec, fetcher)

@@ -26,6 +26,8 @@ generate: controller-gen
 manifests: controller-gen
 	$(CONTROLLER_GEN) rbac:roleName=manager-role paths="./internal/..."
 	$(CONTROLLER_GEN) crd paths="./api/..." output:crd:artifacts:config=config/crd/bases
+	chmod +x hack/patch-crd-conversion.sh
+	hack/patch-crd-conversion.sh
 
 .PHONY: test
 test: manifests generate envtest

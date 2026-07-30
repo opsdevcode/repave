@@ -3,7 +3,7 @@ package drift
 import (
 	"fmt"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 )
 
 // PinSet holds blueprint and standard identity for comparison.
@@ -15,7 +15,7 @@ type PinSet struct {
 }
 
 // PinsFromDesired extracts pins from a GoldenPathRepo spec.
-func PinsFromDesired(spec repavev1alpha1.GoldenPathRepoSpec) PinSet {
+func PinsFromDesired(spec repavev1beta1.GoldenPathRepoSpec) PinSet {
 	return PinSet{
 		BlueprintName:    spec.DesiredPins.BlueprintName,
 		BlueprintVersion: spec.DesiredPins.BlueprintVersion,
@@ -47,8 +47,8 @@ func (p PinSet) Validate() error {
 }
 
 // ToObserved converts pins to GoldenPathRepo status fields.
-func (p PinSet) ToObserved() repavev1alpha1.ObservedPins {
-	return repavev1alpha1.ObservedPins{
+func (p PinSet) ToObserved() repavev1beta1.ObservedPins {
+	return repavev1beta1.ObservedPins{
 		BlueprintName:    p.BlueprintName,
 		BlueprintVersion: p.BlueprintVersion,
 		StandardSource:   p.StandardSource,
@@ -57,7 +57,7 @@ func (p PinSet) ToObserved() repavev1alpha1.ObservedPins {
 }
 
 // PinSetFromObserved reads status observed pins.
-func PinSetFromObserved(o repavev1alpha1.ObservedPins) PinSet {
+func PinSetFromObserved(o repavev1beta1.ObservedPins) PinSet {
 	return PinSet{
 		BlueprintName:    o.BlueprintName,
 		BlueprintVersion: o.BlueprintVersion,

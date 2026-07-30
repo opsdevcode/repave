@@ -5,15 +5,15 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 )
 
 // patchGoldenPathRepoStatus updates status using a merge patch to reduce conflict.
 func patchGoldenPathRepoStatus(
 	ctx context.Context,
 	c client.Client,
-	repo *repavev1alpha1.GoldenPathRepo,
-	mutate func(*repavev1alpha1.GoldenPathRepo),
+	repo *repavev1beta1.GoldenPathRepo,
+	mutate func(*repavev1beta1.GoldenPathRepo),
 ) error {
 	base := client.MergeFrom(repo.DeepCopy())
 	mutate(repo)

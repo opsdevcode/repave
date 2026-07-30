@@ -1,0 +1,11 @@
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: repave-webhook-service
+          namespace: repave-system
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1

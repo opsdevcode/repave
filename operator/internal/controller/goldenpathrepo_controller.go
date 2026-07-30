@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/pins"
@@ -59,7 +59,7 @@ func (r *GoldenPathRepoReconciler) remoteResyncInterval() time.Duration {
 func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	var repo repavev1alpha1.GoldenPathRepo
+	var repo repavev1beta1.GoldenPathRepo
 	if err := r.Get(ctx, req.NamespacedName, &repo); err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -80,8 +80,8 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if repo.Spec.RepoURL == "" && repo.Spec.LocalPath == "" {
-		if err := patchGoldenPathRepoStatus(ctx, r.Client, &repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-			latest.Status.Phase = repavev1alpha1.GoldenPathRepoPhaseError
+		if err := patchGoldenPathRepoStatus(ctx, r.Client, &repo, func(latest *repavev1beta1.GoldenPathRepo) {
+			latest.Status.Phase = repavev1beta1.GoldenPathRepoPhaseError
 			latest.Status.Message = "spec.repoURL or spec.localPath is required"
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionInvalidSpec,
@@ -104,8 +104,8 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	desired, err := pins.EffectiveDesired(ctx, r.Client, &repo)
 	if err != nil {
 		msg := err.Error()
-		if patchErr := patchGoldenPathRepoStatus(ctx, r.Client, &repo, func(latest *repavev1alpha1.GoldenPathRepo) {
-			latest.Status.Phase = repavev1alpha1.GoldenPathRepoPhaseError
+		if patchErr := patchGoldenPathRepoStatus(ctx, r.Client, &repo, func(latest *repavev1beta1.GoldenPathRepo) {
+			latest.Status.Phase = repavev1beta1.GoldenPathRepoPhaseError
 			latest.Status.Message = msg
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionInvalidSpec,
@@ -183,7 +183,7 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func displayLocation(spec repavev1alpha1.GoldenPathRepoSpec) string {
+func displayLocation(spec repavev1beta1.GoldenPathRepoSpec) string {
 	if spec.LocalPath != "" {
 		return spec.LocalPath
 	}
@@ -193,9 +193,9 @@ func displayLocation(spec repavev1alpha1.GoldenPathRepoSpec) string {
 // SetupWithManager registers the reconciler with the Manager.
 func (r *GoldenPathRepoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&repavev1alpha1.GoldenPathRepo{}).
+		For(&repavev1beta1.GoldenPathRepo{}).
 		Watches(
-			&repavev1alpha1.Blueprint{},
+			&repavev1beta1.Blueprint{},
 			blueprintWatchHandler(r),
 		).
 		Complete(r)

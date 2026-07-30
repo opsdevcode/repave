@@ -8,19 +8,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 )
 
 func (r *GoldenPathRepoReconciler) enqueueGoldenPathReposForBlueprint(
 	ctx context.Context,
 	obj client.Object,
 ) []reconcile.Request {
-	bp, ok := obj.(*repavev1alpha1.Blueprint)
+	bp, ok := obj.(*repavev1beta1.Blueprint)
 	if !ok {
 		return nil
 	}
 
-	var list repavev1alpha1.GoldenPathRepoList
+	var list repavev1beta1.GoldenPathRepoList
 	if err := r.List(ctx, &list, client.InNamespace(bp.Namespace)); err != nil {
 		return nil
 	}
@@ -41,7 +41,7 @@ func (r *GoldenPathRepoReconciler) enqueueGoldenPathReposForBlueprint(
 	return requests
 }
 
-func goldenPathRepoWatchesBlueprint(gpr *repavev1alpha1.GoldenPathRepo, blueprintName string) bool {
+func goldenPathRepoWatchesBlueprint(gpr *repavev1beta1.GoldenPathRepo, blueprintName string) bool {
 	if gpr.Spec.BlueprintRef != nil && gpr.Spec.BlueprintRef.Name == blueprintName {
 		return true
 	}

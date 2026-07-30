@@ -52,7 +52,7 @@ def test_resource_name_rejects_unusable_url() -> None:
 def test_manifest_matches_crd_shape() -> None:
     body = manifest_for(_entry())
 
-    assert body["apiVersion"] == "repave.dev/v1alpha1"
+    assert body["apiVersion"] == "repave.dev/v1beta1"
     assert body["kind"] == "GoldenPathRepo"
     assert body["metadata"]["name"] == "acme-tf-vpc"
     assert body["metadata"]["namespace"] == "default"
