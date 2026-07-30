@@ -15,6 +15,7 @@ from repave_engine.blueprint import (
 )
 from repave_engine.gates import GateResult, RunEventCallback, all_gates_passed, gate_outcome
 from repave_engine.pipeline import GenerationResult, generate_from_blueprint
+from repave_engine.publish_idempotency import PublishIdempotencyContext
 from repave_engine.render import RenderedFile, RenderResult, collect_rendered_files
 from repave_engine.run_store import RunRecord
 from repave_engine.settings import OutputConfig, load_gate_overrides
@@ -36,6 +37,7 @@ def run_generate_api(
     github_token: str | None,
     on_event: RunEventCallback | None = None,
     staging_root: Path | None = None,
+    publish_idempotency: PublishIdempotencyContext | None = None,
 ) -> dict[str, Any]:
     blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
     values = {str(key): str(value) for key, value in inputs.items()}
@@ -49,6 +51,7 @@ def run_generate_api(
         repo_root=repo_root,
         on_event=on_event,
         staging_root=staging_root,
+        publish_idempotency=publish_idempotency,
     )
     return serialize_generation_result(
         blueprint,

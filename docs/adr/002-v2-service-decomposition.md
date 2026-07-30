@@ -156,8 +156,8 @@ operator on the CLI path.
   transport. Design it as a public API and treat the operator as one more client, or internal
   convenience gets frozen into it.
 - **Idempotency risk:** publish mutates GitHub. Behind a retryable queue, the existing
-  `client_request_id` idempotency must extend through publish, keyed on target repo plus
-  content hash, or a retried run can double-publish.
+  `client_request_id` idempotency extends through publish, keyed on target repo plus
+  content hash — **implemented** via `publish_receipts` and `PublishIdempotencyStore`.
 - **Local mode:** unchanged. `execution.mode: inprocess` and the SQLite/JSONL stores remain
   the default outside service mode.
 

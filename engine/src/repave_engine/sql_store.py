@@ -178,6 +178,23 @@ def _ensure_schema_sqlite(conn: SqlConnection) -> None:
         )
         """
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS publish_receipts (
+            publish_key TEXT PRIMARY KEY,
+            pr_message TEXT NOT NULL,
+            repository_web_url TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            run_id TEXT,
+            client_request_id TEXT,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_publish_receipts_client_request "
+        "ON publish_receipts(client_request_id)"
+    )
 
 
 def _ensure_schema_postgres(conn: SqlConnection) -> None:
@@ -228,6 +245,23 @@ def _ensure_schema_postgres(conn: SqlConnection) -> None:
             created_at TEXT NOT NULL
         )
         """
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS publish_receipts (
+            publish_key TEXT PRIMARY KEY,
+            pr_message TEXT NOT NULL,
+            repository_web_url TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            run_id TEXT,
+            client_request_id TEXT,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_publish_receipts_client_request "
+        "ON publish_receipts(client_request_id)"
     )
 
 

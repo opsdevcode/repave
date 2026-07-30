@@ -5,8 +5,9 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.100.0  
-**In progress:** CRD `repave.dev/v1beta1` promotion + conversion webhook (Phase 3d).  
-**Next up:** group B maintainability splits.
+**In progress:** CRD `repave.dev/v1beta1` promotion + conversion webhook (Phase 3d); decomposed
+chart CI smoke.  
+**Shipped on `main`:** publish idempotency through queue retries (target repo + content hash).  
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1636,7 +1637,8 @@ shipped; **Phase 3d** promotes `GoldenPathRepo` / `Blueprint` to **`repave.dev/v
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 3); split portal and API into
   distinct Deployments only if their scaling profiles diverge
 - Extend the `client_request_id` idempotency key through publish, keyed on target repo plus
-  content hash, so a retried run cannot double-publish to GitHub
+  content hash, so a retried run cannot double-publish to GitHub — **shipped on `main`**
+  (`publish_receipts` store + `PublishIdempotencyStore`)
 - **Repository strategy:** stay a monorepo through v2 and make it split-ready; revisit at v3 on
   a concrete trigger (independent release cadence, external contributors, another language)
 
