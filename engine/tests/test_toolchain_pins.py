@@ -50,13 +50,18 @@ def test_doctor_pin_map_matches_ci_toolchain() -> None:
     assert _PIN_BY_TOOL["helm"] == ci_toolchain.HELM_VERSION
 
 
-def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint) -> None:
+def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint, repo_root: Path) -> None:
+    from repave_engine.blueprint import load_blueprint
+
     text = render_ci_workflow(terraform_blueprint)
     assert ci_toolchain.TERRAFORM_VERSION in text
     assert ci_toolchain.TFLINT_VERSION in text
     assert ci_toolchain.CONFTEST_VERSION in text
     assert ci_toolchain.CHECKOV_PIP_SPEC in text
-    assert ci_toolchain.HELM_VERSION in text
+
+    helm_blueprint = load_blueprint(repo_root / "blueprints" / "helm-chart-generic", repo_root)
+    helm_text = render_ci_workflow(helm_blueprint)
+    assert ci_toolchain.HELM_VERSION in helm_text
 
 
 def test_load_pin_file_rejects_missing_required_key(tmp_path: Path) -> None:
