@@ -17,7 +17,8 @@ portal_rendered="$(mktemp)"
 hpa_rendered="$(mktemp)"
 decomposed_rendered="$(mktemp)"
 job_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}"' EXIT
+decomposed_smoke_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -134,6 +135,22 @@ fi
 
 if ! grep -q 'REPAVE_RUN_JOBS' "${job_rendered}"; then
   echo "values-decomposed-job.yaml must set REPAVE_RUN_JOBS on portal Deployment" >&2
+  exit 1
+fi
+
+helm template repave-decomposed-smoke "${CHART}" \
+  --namespace repave-decomposed-smoke \
+  -f "${CHART}/values-decomposed-smoke.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${decomposed_smoke_rendered}"
+
+if ! grep -q 'name: repave-decomposed-smoke-worker' "${decomposed_smoke_rendered}"; then
+  echo "values-decomposed-smoke.yaml must render worker Deployment" >&2
+  exit 1
+fi
+
+if ! grep -q 'repave.dev/gate-toolchain: "false"' "${decomposed_smoke_rendered}"; then
+  echo "values-decomposed-smoke.yaml must render portal without gate toolchain" >&2
   exit 1
 fi
 

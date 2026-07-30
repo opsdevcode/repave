@@ -1,0 +1,56 @@
+# Ephemeral Postgres for decomposed chart smoke (kind / CI only).
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: smoke-fixture
+spec:
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+  selector:
+    app.kubernetes.io/name: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: smoke-fixture
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/component: smoke-fixture
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: repave
+            - name: POSTGRES_PASSWORD
+              value: repave
+            - name: POSTGRES_DB
+              value: repave
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - repave
+            initialDelaySeconds: 3
+            periodSeconds: 3

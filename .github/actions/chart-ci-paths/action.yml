@@ -17,6 +17,7 @@ runs:
           chart_needed:
             - 'deploy/k8s/**'
             - 'deploy/local/Dockerfile'
+            - 'deploy/local/Dockerfile.corpus'
             - 'deploy/local/gate-toolchain-pins.env'
             - 'deploy/local/install-gate-toolchain.sh'
             - 'deploy/local/certs/**'

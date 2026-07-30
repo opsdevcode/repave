@@ -5,10 +5,10 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.103.0  
-**In progress:** decomposed chart CI smoke.
+**In progress:** (none — decomposition hardening closeout).  
 **Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
-decomposition Phase 0–3 (including CRD `repave.dev/v1beta1` + conversion webhook);
-publish idempotency through queue retries; **Phase 4 per-run Kubernetes Jobs** (`worker_mode: job`).
+decomposition Phase 0–4 (including CRD `repave.dev/v1beta1` + conversion webhook,
+publish idempotency, per-run Kubernetes Jobs, **decomposed chart CI smoke**).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -310,8 +310,9 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 ### Kubernetes deploy — Helm chart (engine v1.74+)
 
-- [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `chart-validate` and
-  `chart-smoke` required checks (path-gated skip on unrelated PRs; full smoke on `main`)
+- [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `chart-validate`,
+  `chart-smoke`, and `chart-smoke-decomposed` required checks (path-gated skip on unrelated
+  PRs; full smoke on `main`)
 - **Follow-ups:** day-2 themes (HPA, alerts, runbooks) in [Planned](#planned)
 
 ### `repave verify` — local path (engine v1.75+)
@@ -1615,7 +1616,9 @@ with conversion webhook, and e2e conversion assertions — see
 [`docs/operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md) and
 [`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md).
 **Phase 4 shipped on `main`** — `worker_mode: job` spawns a Kubernetes Job per run; see
-[`values-decomposed-job.yaml`](../../deploy/k8s/chart/values-decomposed-job.yaml).
+[`values-decomposed-job.yaml`](../../deploy/k8s/chart/values-decomposed-job.yaml). **Decomposed
+chart CI smoke shipped on `main`** — `make chart-smoke-decomposed` /
+[`chart-smoke-decomposed.sh`](../../deploy/k8s/hack/chart-smoke-decomposed.sh).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
