@@ -1,7 +1,7 @@
 """Pinned toolchain versions for generated-repo CI.
 
 Values load from ``deploy/local/gate-toolchain-pins.env`` at the repo root so the
-installer script and engine agree without duplicating pins.
+installer script, Docker image, and ``repave doctor`` agree without duplicating pins.
 """
 
 from __future__ import annotations
@@ -9,37 +9,50 @@ from __future__ import annotations
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_PINS_FILE = _REPO_ROOT / "deploy" / "local" / "gate-toolchain-pins.env"
+PINS_FILE = _REPO_ROOT / "deploy" / "local" / "gate-toolchain-pins.env"
+
+# Keys required in gate-toolchain-pins.env (single edit point for gate CLIs).
+PIN_ENV_KEYS: tuple[str, ...] = (
+    "TERRAFORM_VERSION",
+    "TFLINT_VERSION",
+    "CHECKOV_VERSION",
+    "PYTHON_VERSION",
+    "HELM_VERSION",
+    "CONFTEST_VERSION",
+    "HADOLINT_VERSION",
+    "GO_VERSION",
+)
 
 
-def _load_pins() -> dict[str, str]:
-    if not _PINS_FILE.is_file():
-        raise FileNotFoundError(f"Missing gate toolchain pins: {_PINS_FILE}")
+def load_pin_file(path: Path | None = None) -> dict[str, str]:
+    pin_path = path or PINS_FILE
+    if not pin_path.is_file():
+        raise FileNotFoundError(f"Missing gate toolchain pins: {pin_path}")
     values: dict[str, str] = {}
-    for line in _PINS_FILE.read_text(encoding="utf-8").splitlines():
+    for line in pin_path.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        if "=" not in stripped:
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
             continue
         key, _, raw = stripped.partition("=")
         values[key.strip()] = raw.strip()
+    missing = [key for key in PIN_ENV_KEYS if key not in values]
+    if missing:
+        joined = ", ".join(missing)
+        raise ValueError(f"gate-toolchain-pins.env missing required keys: {joined}")
     return values
 
 
-_PINS = _load_pins()
+_PINS = load_pin_file()
 
 TERRAFORM_VERSION = _PINS["TERRAFORM_VERSION"]
 TFLINT_VERSION = _PINS["TFLINT_VERSION"]
 CHECKOV_VERSION = _PINS["CHECKOV_VERSION"]
-CHECKOV_PIP_SPEC = f"checkov=={CHECKOV_VERSION}"
+CHECKOV_PIP_SPEC = _PINS.get("CHECKOV_PIP_SPEC") or f"checkov=={CHECKOV_VERSION}"
 PYTHON_VERSION = _PINS["PYTHON_VERSION"]
 HELM_VERSION = _PINS["HELM_VERSION"]
 CONFTEST_VERSION = _PINS["CONFTEST_VERSION"]
 HADOLINT_VERSION = _PINS["HADOLINT_VERSION"]
 GO_VERSION = _PINS["GO_VERSION"]
-
-PINS_FILE = _PINS_FILE
 
 __all__ = [
     "CHECKOV_PIP_SPEC",
@@ -49,7 +62,9 @@ __all__ = [
     "HADOLINT_VERSION",
     "HELM_VERSION",
     "PINS_FILE",
+    "PIN_ENV_KEYS",
     "PYTHON_VERSION",
     "TERRAFORM_VERSION",
     "TFLINT_VERSION",
+    "load_pin_file",
 ]

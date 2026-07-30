@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.94.0  
 **In progress:** [service decomposition Phase 2b](#service-decomposition-for-hosted-scale) — run-record preview snapshots.  
-**Next up:** engine hardening A1 and A4, then operator `/api/v2` (Phase 3).
+**Next up:** engine hardening A4, then operator `/api/v2` (Phase 3).
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1245,25 +1245,21 @@ land opportunistically alongside feature work in the same files.
 
 ### A1 — One source of truth for gate toolchain pins
 
-**Problem:** Toolchain versions are pinned in three places and have already drifted.
-`engine/src/repave_engine/ci_toolchain.py` pins `CONFTEST_VERSION = "0.56.0"` (and therefore so
-does every generated repo's CI workflow via `ci_workflow.py`), while
-`deploy/local/install-gate-toolchain.sh` installs conftest `0.68.2`. A generated module can
-pass the `opa` gate in the portal and fail it in its own CI, or the reverse. Both files carry a
-"keep aligned with" comment, which is the process admitting the coupling is manual.
-`CHECKOV_PIP_SPEC` is also a floating `checkov>=3.2.0`, so gate results are not reproducible
-across time.
+**Problem:** Gate CLI versions must not drift between the local installer, generated-repo CI
+workflows, and `repave doctor`. Floating Checkov pins make gate results non-reproducible.
 
 **Approach:**
 
-- Single pin module (or data file) consumed by `ci_toolchain.py`, the installer script, and
-  `deploy/local/Dockerfile`; the shell script sources generated exports rather than restating
-  versions
-- Pin Checkov to an exact version and bump it deliberately
-- Regression test asserting the installer and `ci_toolchain` agree, so drift fails CI
+- Single pin file (`deploy/local/gate-toolchain-pins.env`) consumed by `ci_toolchain.py`, the
+  installer script, Docker image, and doctor
+- Exact Checkov pin (`checkov==…`) shared with generated CI workflows
+- Regression tests assert installer URLs, `ci_toolchain`, doctor, and rendered workflows agree
 
 **Done when:** One edit changes a gate CLI version everywhere, and a deliberately mismatched
 pin fails a test.
+
+**Status:** **Shipped on `main` follow-up** — `gate-toolchain-pins.env`, `ci_toolchain.load_pin_file`,
+`test_toolchain_pins.py`, installer URL assertions, explicit `CHECKOV_PIP_SPEC`.
 
 ### A2 — Subprocess timeouts on every gate and git invocation
 
