@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.101.0  
+**Current release:** v1.102.0  
 **In progress:** decomposed chart CI smoke.
 **Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
 decomposition Phase 0–3 (including CRD `repave.dev/v1beta1` + conversion webhook);
