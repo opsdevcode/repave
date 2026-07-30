@@ -69,4 +69,5 @@ jobs:
       - name: Verify generated manifests committed
         if: steps.filter.outputs.operator == 'true'
         run: |
-          git diff --exit-code config/crd/bases config/rbac api/v1alpha1/zz_generated.deepcopy.go
+          git diff --exit-code config/crd/bases config/rbac \
+            api/v1alpha1/zz_generated.deepcopy.go api/v1beta1/zz_generated.deepcopy.go
