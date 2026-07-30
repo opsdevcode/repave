@@ -1,0 +1,40 @@
+# kind / CI smoke for decomposed portal + worker (Postgres queue, corpus mount).
+# Used with deploy/k8s/hack/chart-smoke-decomposed.sh and postgres-kind.yaml.
+
+repave:
+  durability:
+    enabled: true
+    databaseUrl: postgresql://repave:repave@postgres:5432/repave
+    exportJsonl: false
+    workerMode: external
+    executionMode: worker
+    requireSessionSecret: false
+  auth:
+    serviceMode: false
+  audit:
+    enabled: false
+
+image:
+  gateToolchain: false
+  pullPolicy: Never
+
+workerImage:
+  pullPolicy: Never
+
+corpus:
+  enabled: true
+  pullPolicy: Never
+
+persistence:
+  modules:
+    enabled: false
+  fleet:
+    enabled: false
+  runs:
+    enabled: false
+
+secrets:
+  create: true
+  githubToken: ""
+  sessionSecret: chart-smoke-decomposed-session
+  oidcClientSecret: ""

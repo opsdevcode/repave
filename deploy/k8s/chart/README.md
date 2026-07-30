@@ -176,8 +176,9 @@ live in [`deploy/k8s/`](../README.md) (parent directory).
 ## Validation
 
 ```bash
-make chart-validate    # helm lint + template smoke (CI: chart-validate)
-make chart-smoke       # kind install (CI: chart-smoke on chart/image paths)
+make chart-validate           # helm lint + template smoke (CI: chart-validate)
+make chart-smoke              # kind install (CI: chart-smoke on chart/image paths)
+make chart-smoke-decomposed   # decomposed portal + worker + Postgres async run (CI: chart-smoke-decomposed)
 ```
 
 ## Scaling
