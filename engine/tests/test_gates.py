@@ -209,7 +209,7 @@ def test_run_gates_checkov_applies_gate_overrides(tmp_path: Path, monkeypatch) -
     monkeypatch.setattr("repave_engine.gate_runners.checkov_argv", lambda: ["/usr/bin/checkov"])
     captured: dict[str, list[str]] = {}
 
-    def fake_run(cmd, cwd, *, extra_env=None):
+    def fake_run(cmd, cwd, *, extra_env=None, timeout=None):
         captured["cmd"] = cmd
         captured["extra_env"] = extra_env
         return MagicMock(returncode=0, stdout="", stderr="")
@@ -238,7 +238,7 @@ def test_run_gates_secrets_invokes_checkov(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("repave_engine.gate_runners.checkov_argv", lambda: ["/usr/bin/checkov"])
     captured: dict[str, list[str]] = {}
 
-    def fake_run(cmd, cwd, *, extra_env=None):
+    def fake_run(cmd, cwd, *, extra_env=None, timeout=None):
         captured["cmd"] = cmd
         return MagicMock(returncode=0, stdout="", stderr="")
 
@@ -253,7 +253,7 @@ def test_run_gates_secrets_invokes_checkov(tmp_path: Path, monkeypatch) -> None:
 def test_terraform_fmt_failure(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _dir: True)
 
-    def fake_run(cmd, cwd, *, extra_env=None):
+    def fake_run(cmd, cwd, *, extra_env=None, timeout=None):
         return MagicMock(returncode=1, stdout="", stderr="fmt failed")
 
     monkeypatch.setattr("repave_engine.gate_runners.run_command", fake_run)
@@ -269,7 +269,7 @@ def test_tflint_uses_blueprint_config_file(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "tflint")
     captured: list[list[str]] = []
 
-    def fake_run(cmd, cwd, *, extra_env=None):
+    def fake_run(cmd, cwd, *, extra_env=None, timeout=None):
         captured.append(cmd)
         return MagicMock(returncode=0, stdout="", stderr="")
 

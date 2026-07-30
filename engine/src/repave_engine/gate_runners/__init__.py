@@ -5,6 +5,8 @@ import httpx
 from repave_engine.gate_runners._core import (
     build_checkov_command,
     build_secrets_scan_command,
+    gate_result_from_command,
+    gate_timeout_seconds,
     run_command,
     terraform_usable,
 )
@@ -56,6 +58,8 @@ __all__ = [
     "build_checkov_command",
     "build_secrets_scan_command",
     "checkov_argv",
+    "gate_result_from_command",
+    "gate_timeout_seconds",
     "httpx",
     "run_amtool",
     "run_ansible_lint",

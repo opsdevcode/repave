@@ -12,6 +12,7 @@ from repave_engine.governance import (
     GOVERNANCE_BASELINE_SOURCE,
     GOVERNANCE_BASELINE_VERSION,
 )
+from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import _git_executable
 
 
@@ -36,12 +37,11 @@ class StandardsDiffResult:
 
 
 def _git(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
+    return run_subprocess(
         [_git_executable(), *args],
         cwd=repo_root,
-        capture_output=True,
-        text=True,
         check=False,
+        git=True,
     )
 
 

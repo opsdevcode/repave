@@ -12,7 +12,12 @@ from repave_engine.gate_toolchain import (
     resolve_tool,
     subprocess_cwd,
 )
-from repave_engine.subprocess_run import run_subprocess
+from repave_engine.subprocess_run import (
+    SUBPROCESS_TIMEOUT_RETURN_CODE,
+    command_timed_out,
+    run_subprocess,
+    subprocess_timeout_seconds,
+)
 
 
 def run_command(
@@ -20,6 +25,7 @@ def run_command(
     cwd: Path,
     *,
     extra_env: dict[str, str] | None = None,
+    timeout: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
     ensure_gate_path()
     if cmd:
@@ -36,16 +42,44 @@ def run_command(
             cwd=run_cwd,
             env=env,
             check=False,
+            timeout=timeout,
         )
     except subprocess.TimeoutExpired as exc:
         stdout = exc.stdout if isinstance(exc.stdout, str) else (exc.stdout or b"").decode()
         stderr = exc.stderr if isinstance(exc.stderr, str) else (exc.stderr or b"").decode()
+        budget = exc.timeout or timeout or subprocess_timeout_seconds()
         return subprocess.CompletedProcess(
             args=cmd,
-            returncode=124,
+            returncode=SUBPROCESS_TIMEOUT_RETURN_CODE,
             stdout=stdout,
-            stderr=f"{stderr}\ncommand timed out after {exc.timeout}s",
+            stderr=f"{stderr}\ncommand timed out after {budget}s".strip(),
         )
+
+
+def gate_timeout_seconds(ctx: GateContext, gate_name: str) -> int | None:
+    raw = ctx.config(gate_name).get("timeout_seconds")
+    if raw is None:
+        return None
+    try:
+        return max(1, int(raw))
+    except (TypeError, ValueError):
+        return None
+
+
+def gate_result_from_command(
+    gate_name: str,
+    result: subprocess.CompletedProcess[str],
+    *,
+    ok_message: str,
+    fail_message: str,
+) -> GateResult:
+    if result.returncode == 0:
+        return GateResult(gate_name, True, False, ok_message)
+    if command_timed_out(result):
+        detail = (result.stderr or result.stdout or "").strip()
+        return GateResult(gate_name, False, False, detail or fail_message)
+    detail = result.stderr.strip() or result.stdout.strip() or fail_message
+    return GateResult(gate_name, False, False, detail)
 
 
 def terraform_usable(output_dir: Path) -> bool:
@@ -57,13 +91,12 @@ def terraform_usable(output_dir: Path) -> bool:
     terraform_bin = resolve_tool("terraform")
     if not terraform_bin:
         return False
-    result = subprocess.run(
+    result = run_subprocess(
         [terraform_bin, "version"],
         cwd=run_cwd,
-        capture_output=True,
-        text=True,
         check=False,
         env=os.environ.copy(),
+        timeout=15,
     )
     return result.returncode == 0
 

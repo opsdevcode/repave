@@ -112,7 +112,7 @@ disable_error_code = ["arg-type"]
 
 [tool.bandit]
 exclude_dirs = ["tests"]
-skips = ["B404", "B603"]  # subprocess used intentionally for gate execution
+skips = ["B404"]  # subprocess module import where shell=True is intentional
 
 [tool.semantic_release]
 # Git root is one level up; keeps changelog and tags aligned with the monorepo.

@@ -8,6 +8,7 @@ from typing import Any, cast
 import yaml
 
 from repave_engine.github import GitHubError, list_repository_tags
+from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import _git_executable, resolve_module_repository_from_git
 
 
@@ -62,12 +63,11 @@ def _git_clone_url(repo_dir: Path, fallback_org: str, repo_name: str) -> str:
 def _list_local_git_tags(repo_dir: Path) -> list[str]:
     if not (repo_dir / ".git").is_dir():
         return []
-    result = subprocess.run(
+    result = run_subprocess(
         [_git_executable(), "tag", "--list", "--sort=-v:refname"],
         cwd=repo_dir,
-        capture_output=True,
-        text=True,
         check=False,
+        git=True,
     )
     if result.returncode != 0:
         return []

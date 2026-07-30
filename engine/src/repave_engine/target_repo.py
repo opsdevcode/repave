@@ -9,6 +9,7 @@ from typing import Any
 
 from repave_engine.gates import is_gate_artifact_path
 from repave_engine.settings import OutputConfig
+from repave_engine.subprocess_run import git_subprocess_error, run_subprocess
 
 
 @dataclass(frozen=True)
@@ -46,13 +47,15 @@ _GITHUB_REMOTE = re.compile(r"github\.com[/:](?P<owner>[^/]+)/(?P<name>[^/.]+(?:
 
 def resolve_module_repository_from_git(repo_dir: Path) -> ModuleRepository:
     repo_dir = repo_dir.resolve()
-    result = subprocess.run(
-        [_git_executable(), "remote", "get-url", "origin"],
-        cwd=repo_dir,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = run_subprocess(
+            [_git_executable(), "remote", "get-url", "origin"],
+            cwd=repo_dir,
+            check=True,
+            git=True,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError("git remote get-url origin timed out") from exc
     url = result.stdout.strip()
     match = _GITHUB_REMOTE.search(url)
     if not match:
@@ -131,13 +134,10 @@ def _git_executable() -> str:
 
 
 def _run_git(args: list[str], *, cwd: Path) -> None:
-    subprocess.run(
-        [_git_executable(), *args],
-        cwd=cwd,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        run_subprocess([_git_executable(), *args], cwd=cwd, check=True, git=True)
+    except subprocess.TimeoutExpired as exc:
+        raise git_subprocess_error(args, exc) from exc
 
 
 def _ensure_git_repository(repo_dir: Path, *, module_name: str) -> None:

@@ -20,6 +20,13 @@ def test_gate_outcome_failed() -> None:
     assert gate_outcome([_gate(passed=False)]) == "failed"
 
 
+def test_gate_outcome_timeout() -> None:
+    assert (
+        gate_outcome([GateResult("slow-gate", False, False, "command timed out after 1s")])
+        == "timeout"
+    )
+
+
 def test_gate_summary_counts() -> None:
     summary = gate_summary(
         [_gate(passed=True), _gate(passed=False), _gate(passed=True, skipped=True)]

@@ -1280,7 +1280,10 @@ this today.
 **Done when:** A gate that sleeps past its budget is reported as timed out and the request
 returns, with no orphaned child process.
 
-### A3 — Coverage and operator e2e actually gate merges
+**Status:** **Shipped on `main` follow-up** — `subprocess_run.run_subprocess` with env-configured
+timeouts (`REPAVE_SUBPROCESS_TIMEOUT_SECONDS`, `REPAVE_GIT_TIMEOUT_SECONDS`), process-group kill
+on expiry, git/inventory/upgrade paths migrated, `gate_outcome` returns `timeout`, per-gate
+`timeout_seconds` blueprint override supported via `gate_timeout_seconds`.
 
 **Problem:** `make test` enforces `--cov-fail-under=75`, but `.github/workflows/ci.yml` runs
 `uv run pytest` with no coverage flags, so the threshold is advisory on PRs. `operator-e2e` is
