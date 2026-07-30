@@ -4,7 +4,7 @@ Planning document for the repave web portal (Jinja templates under
 `engine/src/repave_engine/templates/`). The [roadmap](roadmap.md) tracks release
 labels; this file holds **visual layout**, **component patterns**, and
 **acceptance signals** for portal work shipped under the **v1.18 theme**
-(engine tags through **v1.95.0**).
+(engine tags through **v1.96.0**).
 
 **Current UI (shipped):** night-ops console — shared `base.html`, `/static/repave.css`,
 `/static/repave.js`, sticky shell with optional environment badge.
