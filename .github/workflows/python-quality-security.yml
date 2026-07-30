@@ -41,7 +41,7 @@ jobs:
 
       - name: Install engine and tools
         if: steps.paths.outputs.ci_needed == 'true'
-        run: uv sync --extra dev --frozen
+        run: uv sync --extra dev --extra postgres --frozen
 
       - name: Ruff lint
         if: steps.paths.outputs.ci_needed == 'true'

@@ -117,7 +117,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
 | **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
 | **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
-| **Hosted durability** | open | SQL-backed audit/fleet/run state, async run queue, DLQ and replay |
+| **Hosted durability** | partial (Phase 1–2 shipped) | Unified SQL store for audit/fleet/runs; async queue + DLQ/replay; external workers (Phase 3) |
 | **Service decomposition** | open | Portal, API, and gate-running worker as independent k8s workloads; operator as an API client |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
 | **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
@@ -1430,10 +1430,11 @@ status is visible while a run is in flight, and a killed worker's run is replaya
 
 **Status:** **Phase 1 shipped on `main`** — SQLite run store, in-process worker queue,
 `/api/v1/runs` + async `POST /api/v1/generate`, idempotency keys, replay for dead-letter runs,
-metrics — see [`docs/durability.md`](durability.md). **Phase 2–3 in progress on branch:**
-unified SQL store (`database_url`) for audit/fleet/runs with JSONL export mirrors,
-`repave run-worker` + Helm worker Deployment for external/`REPAVE_EXTERNAL_WORKERS` mode;
-PostgreSQL via optional `repave-engine[postgres]`.
+metrics — see [`docs/durability.md`](durability.md). **Phase 2 shipped on `main`** — unified SQL
+store (`database_url`) for audit, fleet, and runs with optional JSONL export mirrors; PostgreSQL
+via `repave-engine[postgres]` (included in portal/worker container images). **Phase 3 shipped on
+`main`** — `repave run-worker`, Helm worker Deployment, and `REPAVE_EXTERNAL_WORKERS` /
+`worker_mode: external` for distributed execution.
 
 ---
 

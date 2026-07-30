@@ -37,7 +37,7 @@ jobs:
 
       - name: Install engine
         if: steps.paths.outputs.ci_needed == 'true'
-        run: uv sync --extra dev --frozen
+        run: uv sync --extra dev --extra postgres --frozen
 
       - name: Install gate toolchain
         if: steps.paths.outputs.ci_needed == 'true'

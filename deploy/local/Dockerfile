@@ -61,7 +61,7 @@ COPY engine/pyproject.toml engine/uv.lock /app/engine/
 COPY engine/src /app/engine/src
 # Editable install so compose bind-mount of /app picks up template/CSS changes
 # without rebuilding the image for every portal tweak.
-RUN uv pip install --system --no-cache -e "/app/engine[s3]"
+RUN uv pip install --system --no-cache -e "/app/engine[s3,postgres]"
 
 RUN if [ "${INSTALL_GATE_TOOLCHAIN}" = "1" ]; then \
       repave doctor --strict --repo-root /app; \

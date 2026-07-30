@@ -111,8 +111,8 @@ def connect(config: DatabaseConfig) -> SqlConnection:
     if config.postgres_dsn is None:
         raise ValueError("postgresql database config requires postgres_dsn")
     try:
-        import psycopg  # type: ignore[import-not-found]
-        from psycopg.rows import dict_row  # type: ignore[import-not-found]
+        import psycopg
+        from psycopg.rows import dict_row
     except ImportError as exc:
         raise RuntimeError(
             "PostgreSQL database_url requires psycopg; install repave-engine[postgres]"
