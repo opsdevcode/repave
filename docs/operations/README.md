@@ -90,3 +90,4 @@ digest, `helm upgrade --wait`, and `helm rollback`.
 - [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC and roles
 - [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
+- [`crd-conversion-recovery.md`](crd-conversion-recovery.md) — operator CRD conversion drill

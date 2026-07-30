@@ -5,14 +5,10 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.100.0  
-**In progress:** CRD `repave.dev/v1beta1` promotion + conversion webhook (Phase 3d); decomposed
-chart CI smoke.  
-**Shipped on `main`:** publish idempotency through queue retries (target repo + content hash).  
-Remaining **engine hardening** (maintainability group B). **Queryable audit** and
-**`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
-and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
-(v1.35–v1.38) is **shipped** — see [Shipped — day-2](#day-2-operability-shipped).
-**Engine hardening group A** (A1–A4) is **shipped on `main`**.  
+**In progress:** decomposed chart CI smoke.  
+**Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
+decomposition Phase 0–3 (including CRD `repave.dev/v1beta1` + conversion webhook);
+publish idempotency through queue retries (target repo + content hash).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1613,11 +1609,11 @@ laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 **Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
 bounded run-record snapshots, optional S3 artifact store. **Phase 1 shipped on `main`** —
 Postgres claim queue, worker Deployment, `execution_mode: worker`, and API/portal enqueue-only
-(no in-request gate execution when worker mode is active).
-**Phase 3 (in progress):** `/api/v2`, operator HTTP client, and slim e2e operator
-shipped; **Phase 3d** promotes `GoldenPathRepo` / `Blueprint` to **`repave.dev/v1beta1`**
-(storage) with conversion webhook — see
-[`docs/operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md).
+(no in-request gate execution when worker mode is active). **Phase 3 shipped on `main`** —
+`/api/v2`, slim operator HTTP client (`REPAVE_API_URL`), **`repave.dev/v1beta1` storage**
+with conversion webhook, and e2e conversion assertions — see
+[`docs/operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md) and
+[`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
@@ -1746,7 +1742,9 @@ documented objective.
 5. The conversational and form paths produce byte-identical gated output for the same
    blueprint and inputs.
 6. CRD conversion runs in a non-production cluster with no data loss, and a recovery drill
-   meets the documented objective.
+   meets the documented objective — see
+   [`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md)
+   (automated baseline in `make operator-e2e`).
 
 ### Conversational and governed AI generation
 

@@ -48,5 +48,6 @@ the webhook Service, TLS secret, and manager webhook port (9443) aligned with
 `operator/config/e2e/webhook-service.yaml`. To roll back CRDs, reinstall the previous
 operator release that served v1alpha1 as the storage version (no conversion block).
 
-See also [`docs/operator-standards.md`](operator-standards.md) and
+See also [`docs/operator-standards.md`](operator-standards.md),
+[`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md), and
 [`docs/roadmap.md`](roadmap.md) (Phase 3d).
