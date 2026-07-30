@@ -71,6 +71,21 @@ def test_default_run_verifies_tls_for_every_downloader(tmp_path: Path) -> None:
     assert "WARNING" not in proc.stderr
 
 
+def test_installer_download_urls_use_pins_file(tmp_path: Path) -> None:
+    from repave_engine import ci_toolchain
+
+    proc, calls = _run_installer(tmp_path)
+
+    assert proc.returncode == 0, proc.stderr
+    curl_blob = "\n".join(_lines(calls, "curl"))
+    assert ci_toolchain.TERRAFORM_VERSION in curl_blob
+    assert ci_toolchain.TFLINT_VERSION in curl_blob
+    assert ci_toolchain.CONFTEST_VERSION in curl_blob
+    assert ci_toolchain.HELM_VERSION in curl_blob
+    uv_blob = "\n".join(_lines(calls, "uv"))
+    assert ci_toolchain.CHECKOV_PIP_SPEC in uv_blob
+
+
 def test_insecure_opt_in_relaxes_curl_galaxy_and_uv(tmp_path: Path) -> None:
     proc, calls = _run_installer(tmp_path, REPAVE_TLS_INSECURE="1")
 
