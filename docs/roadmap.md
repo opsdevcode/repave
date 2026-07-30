@@ -5,8 +5,8 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.95.0  
-**In progress:** [service decomposition Phase 2b](#service-decomposition-for-hosted-scale) — run-record preview snapshots.  
-**Next up:** operator `/api/v2` (Phase 3 — service decomposition).
+**In progress:** [service decomposition Phase 3](#service-decomposition-for-hosted-scale) — `/api/v2` JSON surface.  
+**Next up:** operator HTTP client for plan/apply upgrades, then group B maintainability splits.
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1607,10 +1607,10 @@ shape locks in the coupling.
 **Approach:** roles of one codebase, not separate codebases — the full loop must still run on a
 laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
-**Status (Phase 0–2b):** **Phase 0–2 shipped on `main`** — split portal/worker/corpus images,
-[`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml), optional S3 artifact store.
-**Phase 2b** (in progress) stores bounded dry-run previews in `result_json` so hosted decomposition
-does not require object storage — [ADR 002 addendum](adr/002-addendum-run-artifact-rehydrate.md).
+**Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
+bounded run-record snapshots, optional S3 artifact store.
+**Phase 3 (in progress):** `/api/v2` router with generate/runs/upgrade endpoints — see
+[`docs/api-v2.md`](api-v2.md). Operator HTTP migration and CRD `v1beta1` promotion follow.
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts

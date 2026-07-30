@@ -36,6 +36,7 @@ from repave_engine.ansible_role_inventory import (
     inventory_role_versions_json,
     inventory_roles_json,
 )
+from repave_engine.api_v2 import build_api_v2_router
 from repave_engine.audit_history import (
     AuditHistoryEntry,
     AuditQueryFilters,
@@ -361,6 +362,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "/verify",
                 "/api/v1/generate",
                 "/api/v1/verify",
+                "/api/v2/generate",
             }:
                 return JSONResponse(
                     status_code=401,
@@ -1822,6 +1824,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if not removed:
             raise HTTPException(status_code=404, detail=f"{repo_url} is not registered")
         return JSONResponse({"unregistered": normalize_repo_url(repo_url)})
+
+    app.include_router(
+        build_api_v2_router(
+            repo_root=repo_root,
+            output_config=resolved_output,
+            auth_config=auth_config,
+        )
+    )
 
     return app
 
