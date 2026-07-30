@@ -27,6 +27,8 @@ spec:
           ports:
             - name: health
               containerPort: 8081
+            - name: webhook-server
+              containerPort: 9443
           livenessProbe:
             httpGet:
               path: /healthz
@@ -43,6 +45,9 @@ spec:
             - name: REPAVE_API_URL
               value: http://repave-portal:8088
           volumeMounts:
+            - name: webhook-certs
+              mountPath: /tmp/k8s-webhook-server/serving-certs
+              readOnly: true
             - name: modules
               mountPath: /modules
               readOnly: true
@@ -54,6 +59,9 @@ spec:
               cpu: 500m
               memory: 256Mi
       volumes:
+        - name: webhook-certs
+          secret:
+            secretName: webhook-server-cert
         - name: modules
           hostPath:
             path: /modules

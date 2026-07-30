@@ -9,18 +9,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/pins"
 )
 
 func TestEffectiveDesiredStaticPins(t *testing.T) {
 	scheme := runtime.NewScheme()
-	require.NoError(t, repavev1alpha1.AddToScheme(scheme))
+	require.NoError(t, repavev1beta1.AddToScheme(scheme))
 
-	repo := &repavev1alpha1.GoldenPathRepo{
+	repo := &repavev1beta1.GoldenPathRepo{
 		ObjectMeta: metav1.ObjectMeta{Name: "mod", Namespace: "default"},
-		Spec: repavev1alpha1.GoldenPathRepoSpec{
-			DesiredPins: repavev1alpha1.DesiredPins{
+		Spec: repavev1beta1.GoldenPathRepoSpec{
+			DesiredPins: repavev1beta1.DesiredPins{
 				BlueprintName:    "terraform-module-generic",
 				BlueprintVersion: "0.9.0",
 				StandardSource:   "standards/terraform-standards",
@@ -36,23 +36,23 @@ func TestEffectiveDesiredStaticPins(t *testing.T) {
 
 func TestEffectiveDesiredFromBlueprintRef(t *testing.T) {
 	scheme := runtime.NewScheme()
-	require.NoError(t, repavev1alpha1.AddToScheme(scheme))
+	require.NoError(t, repavev1beta1.AddToScheme(scheme))
 
-	bp := &repavev1alpha1.Blueprint{
+	bp := &repavev1beta1.Blueprint{
 		ObjectMeta: metav1.ObjectMeta{Name: "terraform-module-generic", Namespace: "default"},
-		Spec: repavev1alpha1.BlueprintSpec{
+		Spec: repavev1beta1.BlueprintSpec{
 			Version: "0.9.0",
-			Standard: repavev1alpha1.BlueprintStandardPins{
+			Standard: repavev1beta1.BlueprintStandardPins{
 				Source:  "standards/terraform-standards",
 				Version: "1.1.0",
 			},
 		},
 	}
-	repo := &repavev1alpha1.GoldenPathRepo{
+	repo := &repavev1beta1.GoldenPathRepo{
 		ObjectMeta: metav1.ObjectMeta{Name: "mod", Namespace: "default"},
-		Spec: repavev1alpha1.GoldenPathRepoSpec{
-			BlueprintRef: &repavev1alpha1.BlueprintRef{Name: "terraform-module-generic"},
-			DesiredPins: repavev1alpha1.DesiredPins{
+		Spec: repavev1beta1.GoldenPathRepoSpec{
+			BlueprintRef: &repavev1beta1.BlueprintRef{Name: "terraform-module-generic"},
+			DesiredPins: repavev1beta1.DesiredPins{
 				BlueprintName:    "terraform-module-generic",
 				BlueprintVersion: "ignored",
 				StandardSource:   "ignored",

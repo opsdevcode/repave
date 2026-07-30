@@ -22,4 +22,18 @@ resources:
   kind: Blueprint
   path: github.com/opsdevcode/repave/operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: repave.dev
+  kind: GoldenPathRepo
+  path: github.com/opsdevcode/repave/operator/api/v1beta1
+  version: v1beta1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: repave.dev
+  kind: Blueprint
+  path: github.com/opsdevcode/repave/operator/api/v1beta1
+  version: v1beta1
 version: "3"

@@ -1,4 +1,4 @@
-apiVersion: repave.dev/v1alpha1
+apiVersion: repave.dev/v1beta1
 kind: Blueprint
 metadata:
   name: terraform-module-generic

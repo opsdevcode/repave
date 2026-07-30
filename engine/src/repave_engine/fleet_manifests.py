@@ -17,7 +17,7 @@ import yaml
 
 from repave_engine.fleet import FleetEntry, FleetError
 
-API_VERSION = "repave.dev/v1alpha1"
+API_VERSION = "repave.dev/v1beta1"
 KIND = "GoldenPathRepo"
 DEFAULT_NAMESPACE = "default"
 

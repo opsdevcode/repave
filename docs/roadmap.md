@@ -5,8 +5,8 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.97.0  
-**In progress:** slim operator image for e2e/co-install (Phase 3c).
-**Next up:** CRD `v1beta1` promotion, group B maintainability splits.
+**In progress:** CRD `repave.dev/v1beta1` promotion + conversion webhook (Phase 3d).  
+**Next up:** group B maintainability splits.
 Remaining **engine hardening** (maintainability group B). **Queryable audit** and
 **`repave doctor`** are **shipped** — see [Queryable audit history](#queryable-audit-history)
 and [`repave doctor`](#repave-doctor-toolchain-preflight). **Day-2 operability**
@@ -1610,9 +1610,10 @@ laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
 **Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
 bounded run-record snapshots, optional S3 artifact store.
-**Phase 3 (in progress):** `/api/v2` router and **Phase 3b** operator HTTP client
-shipped; **Phase 3c** drops `operator/Dockerfile.e2e` — e2e/co-install use slim
-operator + portal — see [`docs/api-v2.md`](api-v2.md). CRD `v1beta1` promotion follows.
+**Phase 3 (in progress):** `/api/v2`, operator HTTP client, and slim e2e operator
+shipped; **Phase 3d** promotes `GoldenPathRepo` / `Blueprint` to **`repave.dev/v1beta1`**
+(storage) with conversion webhook — see
+[`docs/operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts

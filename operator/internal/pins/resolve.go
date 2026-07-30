@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 )
 
@@ -17,14 +17,14 @@ import (
 func EffectiveDesired(
 	ctx context.Context,
 	c client.Reader,
-	repo *repavev1alpha1.GoldenPathRepo,
+	repo *repavev1beta1.GoldenPathRepo,
 ) (drift.PinSet, error) {
 	if repo.Spec.BlueprintRef == nil || repo.Spec.BlueprintRef.Name == "" {
 		return drift.PinsFromDesired(repo.Spec), nil
 	}
 
 	refName := repo.Spec.BlueprintRef.Name
-	var bp repavev1alpha1.Blueprint
+	var bp repavev1beta1.Blueprint
 	key := types.NamespacedName{Name: refName, Namespace: repo.Namespace}
 	if err := c.Get(ctx, key, &bp); err != nil {
 		if errors.IsNotFound(err) {

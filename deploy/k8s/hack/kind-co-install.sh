@@ -33,6 +33,7 @@ require kind
 require helm
 require kubectl
 require docker
+require openssl
 
 REPAVE_CLI="${ROOT}/engine/.venv/bin/repave"
 if [[ ! -x "${REPAVE_CLI}" ]]; then
@@ -89,10 +90,18 @@ helm upgrade --install repave "${CHART}" \
 kubectl -n "${PORTAL_NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"
 
 PORTAL_API_URL="http://repave.${PORTAL_NS}.svc.cluster.local:8088"
-echo "==> operator CRDs and manager (REPAVE_API_URL=${PORTAL_API_URL})"
-kubectl apply -f "${OPERATOR}/config/crd/bases/"
+echo "==> operator webhook TLS + CRDs (REPAVE_API_URL=${PORTAL_API_URL})"
 kubectl apply -f "${OPERATOR}/config/e2e/namespace.yaml"
+chmod +x "${OPERATOR}/hack/setup-webhook-certs.sh" "${OPERATOR}/hack/inject-crd-ca-bundle.sh"
+bash "${OPERATOR}/hack/setup-webhook-certs.sh"
+crd_tmp="$(mktemp -d)"
+bash "${OPERATOR}/hack/inject-crd-ca-bundle.sh" \
+  "${OPERATOR}/hack/webhook-certs/ca.crt" \
+  "${OPERATOR}/config/crd/bases" "${crd_tmp}"
+kubectl apply -f "${crd_tmp}/"
+rm -rf "${crd_tmp}"
 kubectl apply -f "${OPERATOR}/config/e2e/rbac.yaml"
+kubectl apply -f "${OPERATOR}/config/e2e/webhook-service.yaml"
 sed -e 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Never/' \
   -e "s|http://repave-portal:8088|${PORTAL_API_URL}|" \
   "${OPERATOR}/config/e2e/manager.yaml" | kubectl apply -f -

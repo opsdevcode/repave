@@ -3,13 +3,13 @@ package drift_test
 import (
 	"testing"
 
-	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
+	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 )
 
 func TestPinsDiffer(t *testing.T) {
-	desired := drift.PinsFromDesired(repavev1alpha1.GoldenPathRepoSpec{
-		DesiredPins: repavev1alpha1.DesiredPins{
+	desired := drift.PinsFromDesired(repavev1beta1.GoldenPathRepoSpec{
+		DesiredPins: repavev1beta1.DesiredPins{
 			BlueprintName:    "terraform-module-generic",
 			BlueprintVersion: "0.9.0",
 			StandardSource:   "standards/terraform-standards",
