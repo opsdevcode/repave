@@ -69,12 +69,14 @@ from repave_engine.bundle_portal import (
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models
+from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
     find_catalog_entity,
     observability_embed_url,
     read_entity_docs,
 )
 from repave_engine.estate_map import build_estate_tiles
+from repave_engine.execution_mode import ExecutionMode
 from repave_engine.fleet import FleetEntry, read_fleet
 from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
@@ -214,6 +216,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         raise RuntimeError(str(exc)) from exc
 
     durability_config = load_durability_config(repo_root)
+    durability_runtime = load_durability_runtime(repo_root)
+    worker_execution_mode = durability_runtime.execution_mode == ExecutionMode.WORKER
     run_queue: RunQueue | None = None
     if durability_config is not None:
         run_queue = build_run_queue(
@@ -301,6 +305,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
             "async_generation_enabled": run_queue is not None,
+            "async_generation_required": worker_execution_mode and run_queue is not None,
+            "worker_execution_mode": worker_execution_mode,
             "command_palette_items": command_palette_items(),
             **extra,
         }
@@ -937,6 +943,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             github_token = os.environ.get("GITHUB_TOKEN")
 
         if bundle_name:
+            if worker_execution_mode:
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "Bundle generation is not available when execution_mode=worker; "
+                        "use blueprint generation with async runs"
+                    ),
+                )
             bundle_dir = bundles_dir(repo_root) / bundle_name
             bundle = load_bundle(bundle_dir, repo_root)
             bundle_values: dict[str, str] = {}
@@ -980,7 +994,27 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         values = _blueprint_values_from_form(form, blueprint)
 
-        use_stream = _stream_from_form(form)
+        use_stream = _stream_from_form(form) or worker_execution_mode
+        if worker_execution_mode:
+            if run_queue is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Async generation is required in worker execution mode",
+                )
+            acting = user.subject if user else current_acting_user()
+            try:
+                record = run_queue.submit(
+                    blueprint_name=blueprint_name,
+                    inputs=values,
+                    dry_run=dry_run,
+                    acting_user=acting,
+                )
+            except RunQueueFullError as exc:
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            except RunQueueShuttingDownError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
+
         if use_stream and run_queue is not None:
             acting = user.subject if user else current_acting_user()
             try:

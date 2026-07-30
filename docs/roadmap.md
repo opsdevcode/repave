@@ -118,7 +118,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
 | **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
 | **Hosted durability** | partial (Phase 1–2 shipped) | Unified SQL store for audit/fleet/runs; async queue + DLQ/replay; external workers (Phase 3) |
-| **Service decomposition** | open | Portal, API, and gate-running worker as independent k8s workloads; operator as an API client |
+| **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
 | **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
 | **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
@@ -1610,7 +1610,9 @@ shape locks in the coupling.
 laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
 **Status (Phase 0–3):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
-bounded run-record snapshots, optional S3 artifact store.
+bounded run-record snapshots, optional S3 artifact store. **Phase 1 shipped on `main`** —
+Postgres claim queue, worker Deployment, `execution_mode: worker`, and API/portal enqueue-only
+(no in-request gate execution when worker mode is active).
 **Phase 3 (in progress):** `/api/v2`, operator HTTP client, and slim e2e operator
 shipped; **Phase 3d** promotes `GoldenPathRepo` / `Blueprint` to **`repave.dev/v1beta1`**
 (storage) with conversion webhook — see

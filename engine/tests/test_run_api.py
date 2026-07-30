@@ -54,8 +54,10 @@ def test_async_generate_returns_202(async_client) -> None:
         pytest.fail("run did not complete")
 
 
-def test_async_disabled_without_config(repo_root, output_config) -> None:
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+def test_async_disabled_without_config(tmp_path, output_config, monkeypatch) -> None:
+    monkeypatch.delenv("REPAVE_ASYNC_GENERATION", raising=False)
+    monkeypatch.delenv("REPAVE_RUNS_DB", raising=False)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
     response = client.post(
         "/api/v1/generate",
         json={"blueprint": "x", "inputs": {}, "async": True},

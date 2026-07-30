@@ -913,8 +913,8 @@
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
       {% if async_generation_enabled %}
       <label class="form-actions__stream hint">
-        <input type="checkbox" name="stream" value="1" />
-        Live run console (stream gate progress)
+        <input type="checkbox" name="stream" value="1"{% if async_generation_required %} checked{% endif %} />
+        {% if async_generation_required %}Live run console (required in worker mode){% else %}Live run console (stream gate progress){% endif %}
       </label>
       {% endif %}
       {% if form_stepper %}
@@ -957,8 +957,8 @@
       {% else %}
       {% if async_generation_enabled %}
       <label class="form-actions__stream hint">
-        <input type="checkbox" name="stream" value="1" />
-        Live run console (stream gate progress)
+        <input type="checkbox" name="stream" value="1"{% if async_generation_required %} checked{% endif %} />
+        {% if async_generation_required %}Live run console (required in worker mode){% else %}Live run console (stream gate progress){% endif %}
       </label>
       {% endif %}
       <div class="form-actions__buttons form-actions__buttons--stack">

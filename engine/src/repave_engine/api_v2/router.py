@@ -22,6 +22,10 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
+from repave_engine.execution_mode import (
+    SYNC_GENERATE_UNAVAILABLE_DETAIL,
+    worker_execution_mode_active,
+)
 from repave_engine.generate_api import run_generate_api
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
@@ -124,6 +128,9 @@ def build_api_v2_router(
                 record.to_public_dict(),
                 status_code=202 if record.status.value == "queued" else 200,
             )
+
+        if worker_execution_mode_active(repo_root):
+            raise HTTPException(status_code=409, detail=SYNC_GENERATE_UNAVAILABLE_DETAIL)
 
         github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
         try:

@@ -29,6 +29,10 @@ from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
 from repave_engine.estate_map import build_estate_tiles
+from repave_engine.execution_mode import (
+    SYNC_GENERATE_UNAVAILABLE_DETAIL,
+    worker_execution_mode_active,
+)
 from repave_engine.fleet import (
     FleetEntry,
     FleetError,
@@ -182,6 +186,9 @@ def build_api_v1_router(
                 record.to_public_dict(),
                 status_code=202 if record.status.value == "queued" else 200,
             )
+
+        if worker_execution_mode_active(repo_root):
+            raise HTTPException(status_code=409, detail=SYNC_GENERATE_UNAVAILABLE_DETAIL)
 
         github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
         try:
