@@ -34,7 +34,8 @@ durability:
   export_jsonl: true
 ```
 
-Hosted PostgreSQL (requires `uv sync --extra postgres` in the engine image):
+Hosted PostgreSQL (requires `uv sync --extra postgres` locally; included in published
+portal/worker images):
 
 ```yaml
 durability:
