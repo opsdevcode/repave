@@ -4,11 +4,13 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.104.0  
+**Current release:** v1.105.0  
+
 **In progress:** GitHub App authentication for publish and remediation.  
 **Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2 (including
-**SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4;
-decomposed chart CI smoke.
+**SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
+(including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
+per-run Kubernetes Jobs, decomposed chart CI smoke).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
