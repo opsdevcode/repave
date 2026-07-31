@@ -239,17 +239,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         from repave_engine.gate_toolchain import portal_runtime_info
 
         auth_user = session_user(request) if request is not None else None
-        presenter_mode = False
-        if request is not None:
-            raw_presenter = request.query_params.get("presenter", "").strip().lower()
-            presenter_mode = raw_presenter in ("1", "true", "yes")
         return {
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
             "local_toolchain_warning": local_portal_toolchain_warning(),
             "portal_runtime": portal_runtime_info(),
             "portal_density": portal_config.density,
-            "presenter_mode": presenter_mode,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
             "async_generation_enabled": run_queue is not None,

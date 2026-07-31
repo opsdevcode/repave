@@ -44,6 +44,7 @@ def test_blueprint_preflight_panel(repo_root, output_config) -> None:
     body = client.get("/blueprints/terraform-module-generic").text
 
     assert "preflight-panel" in body
+    assert "form-actions__preflight-details" in body
     assert "Example repo" in body
 
 
@@ -53,14 +54,6 @@ def test_bundle_topology_section(repo_root, output_config) -> None:
     body = client.get("/bundles/service-stack").text
 
     assert "bundle-topology" in body
-
-
-def test_presenter_mode_hides_nav(repo_root, output_config) -> None:
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-
-    body = client.get("/?presenter=1").text
-
-    assert "shell--presenter" in body
 
 
 def test_api_estate_json(repo_root, output_config, registry: Path) -> None:

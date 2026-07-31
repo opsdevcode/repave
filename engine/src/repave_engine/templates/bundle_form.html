@@ -118,28 +118,10 @@
 
     {% include "partials/bundle_topology.html" %}
 
-    <section class="form-section" aria-labelledby="bundle-delivery-heading">
-      <h2 class="form-section__title" id="bundle-delivery-heading">Delivery</h2>
-      <div class="segmented publish-toggle" role="radiogroup" aria-label="Delivery mode">
-        <label class="segmented__option">
-          <input type="radio" name="dry_run" value="true" checked />
-          Plan (validate only)
-        </label>
-        <label class="segmented__option">
-          <input type="radio" name="dry_run" value="false" />
-          Apply to modules root
-        </label>
-      </div>
-      <p class="hint">
-        <strong>Plan</strong> runs every member gate in memory.
-        <strong>Apply</strong> writes all repositories only when every member passes.
-      </p>
-    </section>
-
     <div class="form-actions form-actions--sticky">
-      <div class="form-actions__preflight">
-        {% include "partials/governance_preflight.html" %}
-      </div>
+      {% include "partials/governance_preflight_collapsible.html" %}
+      <div class="form-actions__toolbar">
+      {% include "partials/delivery_mode_toggle.html" %}
       <div class="form-actions__buttons form-actions__buttons--stack">
         <button
           type="submit"
@@ -154,6 +136,7 @@
           Dry run preview
         </button>
         <button class="btn btn--secondary" type="submit">Scaffold bundle</button>
+      </div>
       </div>
     </div>
   </form>

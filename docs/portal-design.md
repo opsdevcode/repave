@@ -243,6 +243,8 @@ Pick based on audience and hosting model (v1.25+).
 
 Further craft (illustration, stepper) is optional.
 
+Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activity live under **More** in the shell.
+
 | Enhancement | Notes |
 | --- | --- |
 | **Visual v2 follow-ups** | Optional stepper, illustration — not required for v1.18 close-out |

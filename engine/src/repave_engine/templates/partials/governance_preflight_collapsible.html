@@ -1,0 +1,12 @@
+<details class="form-actions__preflight-details">
+  <summary class="form-actions__preflight-summary">
+    <span class="form-actions__preflight-title">Preflight</span>
+    <span class="form-actions__preflight-meta muted">
+      {{ governance_preflight.gate_count }} gates · {{ governance_preflight.policy_profile }}
+      {%- if governance_preflight.tools_ready %} · toolchain ready{%- else %} · tools missing{%- endif -%}
+    </span>
+  </summary>
+  <div class="form-actions__preflight">
+    {% include "partials/governance_preflight.html" %}
+  </div>
+</details>
