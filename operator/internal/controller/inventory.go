@@ -2,8 +2,6 @@ package controller
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,9 +13,6 @@ import (
 	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
-
-// remoteFetchRetry backs off after a transient clone failure (network, auth, missing ref).
-const remoteFetchRetry = 2 * time.Minute
 
 // materializeWorkspace resolves the repo to a local path, cloning remotes. A nil workspace
 // with no error means the failure was recorded on status; retryAfter is non-zero when the
@@ -33,19 +28,11 @@ func materializeWorkspace(
 		return workspace, 0, nil
 	}
 
-	reason := status.ReasonProvenanceReadFailed
-	switch {
-	case errors.Is(err, inventory.ErrRemoteRepoNotSupported):
-		reason = status.ReasonRemoteRepoUnsupported
-	case errors.Is(err, inventory.ErrRemoteFetchFailed):
-		reason = status.ReasonRemoteFetchFailed
-		retryAfter = remoteFetchRetry
-	}
-
-	if patchErr := patchObservationFailure(ctx, c, repo, reason, err.Error()); patchErr != nil {
+	failure := inventory.ClassifyMaterializeError(err)
+	if patchErr := patchObservationFailure(ctx, c, repo, failure.Reason, failure.Message); patchErr != nil {
 		return nil, 0, patchErr
 	}
-	return nil, retryAfter, nil
+	return nil, failure.RetryAfter, nil
 }
 
 func patchObservationFailure(
@@ -93,63 +80,43 @@ func applyInventoryStatus(
 		return 0, nil
 	}
 
-	if inventory.EvaluateDesiredObserved(desired, observed) {
-		msg := fmt.Sprintf(
-			"observed pins differ from desired (blueprint %s@%s vs %s@%s)",
-			desired.BlueprintName,
-			desired.BlueprintVersion,
-			observed.BlueprintName,
-			observed.BlueprintVersion,
-		)
-		notifyDrift := repo.Status.Phase != repavev1beta1.GoldenPathRepoPhaseOutOfDate
-		patchErr := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			latest.Status.ObservedPins = observed.ToObserved()
-			latest.Status.Phase = repavev1beta1.GoldenPathRepoPhaseOutOfDate
-			latest.Status.Message = msg
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionDriftDetected,
-				Status:  metav1.ConditionTrue,
-				Reason:  status.ReasonPinsDrift,
-				Message: msg,
-			})
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionReady,
-				Status:  metav1.ConditionTrue,
-				Reason:  status.ReasonPinsDrift,
-				Message: "inventory complete; remediation pending",
-			})
-		})
-		if patchErr != nil {
-			return 0, patchErr
-		}
-		if notifyDrift {
-			cfg := notify.LoadConfig()
-			notify.Send(cfg, notify.EventDriftDetected, notify.Payload{
-				Namespace:  repo.Namespace,
-				Name:       repo.Name,
-				Repository: displayLocation(repo.Spec),
-				Message:    msg,
-			})
-		}
-		return 0, nil
-	}
-
-	msg := fmt.Sprintf("pins aligned for %q", displayLocation(repo.Spec))
-	return 0, patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-		latest.Status.ObservedPins = observed.ToObserved()
-		latest.Status.Phase = repavev1beta1.GoldenPathRepoPhaseReady
-		latest.Status.Message = msg
+	result := inventory.EvaluateObservation(repo.Spec, desired, observed, repo.Status.Phase)
+	patchErr := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+		latest.Status.ObservedPins = result.Observed.ToObserved()
+		latest.Status.Phase = result.Phase
+		latest.Status.Message = result.Message
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionDriftDetected,
-			Status:  metav1.ConditionFalse,
-			Reason:  status.ReasonPinsAligned,
-			Message: msg,
+			Status:  result.DriftDetected,
+			Reason:  result.DriftReason,
+			Message: result.Message,
 		})
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionReady,
 			Status:  metav1.ConditionTrue,
-			Reason:  status.ReasonPinsAligned,
-			Message: msg,
+			Reason:  result.ReadyReason,
+			Message: readyMessage(result),
 		})
 	})
+	if patchErr != nil {
+		return 0, patchErr
+	}
+	if result.NotifyDrift {
+		notify.SendGoldenPathRepoEvent(
+			notify.EventDriftDetected,
+			repo.ObjectMeta,
+			repo.Spec,
+			"",
+			"",
+			result.Message,
+		)
+	}
+	return 0, nil
+}
+
+func readyMessage(result inventory.ObservationResult) string {
+	if result.Phase == repavev1beta1.GoldenPathRepoPhaseOutOfDate {
+		return "inventory complete; remediation pending"
+	}
+	return result.Message
 }

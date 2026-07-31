@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,8 +12,6 @@ import (
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
-
-const maxUpgradePlanPaths = 20
 
 func applyUpgradePlanStatus(
 	ctx context.Context,
@@ -64,26 +61,9 @@ func applyUpgradePlanStatus(
 		})
 	}
 
-	summary := result.Summary
-	if summary == "" {
-		summary = fmt.Sprintf(
-			"%d file(s) differ for blueprint %s@%s",
-			result.ChangedFileCount,
-			result.BlueprintName,
-			result.BlueprintVersion,
-		)
-	}
-
+	plan, summary := repave.BuildUpgradePlan(result)
 	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-		latest.Status.UpgradePlan = &repavev1beta1.UpgradePlan{
-			ChangedFileCount: result.ChangedFileCount,
-			BlueprintName:    result.BlueprintName,
-			BlueprintVersion: result.BlueprintVersion,
-			Added:            truncatePaths(result.Added, maxUpgradePlanPaths),
-			Modified:         truncatePaths(result.Modified, maxUpgradePlanPaths),
-			Removed:          truncatePaths(result.Removed, maxUpgradePlanPaths),
-			Summary:          summary,
-		}
+		latest.Status.UpgradePlan = plan
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionUpgradePlanned,
 			Status:  metav1.ConditionTrue,
@@ -99,7 +79,7 @@ func clearUpgradePlanStatus(
 	repo *repavev1beta1.GoldenPathRepo,
 ) error {
 	if repo.Status.UpgradePlan == nil &&
-		!hasConditionType(repo.Status.Conditions, status.ConditionUpgradePlanned) {
+		!status.HasConditionType(repo.Status.Conditions, status.ConditionUpgradePlanned) {
 		return nil
 	}
 	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
@@ -111,20 +91,4 @@ func clearUpgradePlanStatus(
 			Message: "pins aligned; no upgrade plan",
 		})
 	})
-}
-
-func truncatePaths(paths []string, limit int) []string {
-	if len(paths) <= limit {
-		return paths
-	}
-	return paths[:limit]
-}
-
-func hasConditionType(conditions []metav1.Condition, condType string) bool {
-	for _, c := range conditions {
-		if c.Type == condType {
-			return true
-		}
-	}
-	return false
 }
