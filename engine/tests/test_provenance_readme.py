@@ -14,7 +14,7 @@ def test_provenance_section_markdown_includes_blueprint_and_repave_yaml(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,
@@ -37,7 +37,7 @@ def test_sync_readme_provenance_section_replaces_existing_block(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,
@@ -67,7 +67,7 @@ def test_sync_readme_provenance_section_appends_when_missing(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,

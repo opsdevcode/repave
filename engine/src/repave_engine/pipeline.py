@@ -386,7 +386,7 @@ def generate_from_path(
     github_token: str | None = None,
     staging_root: Path | None = None,
 ) -> GenerationResult:
-    blueprint = load_blueprint(blueprint_path, repo_root)
+    blueprint = load_blueprint(blueprint_path, repo_root=repo_root)
     return generate_from_blueprint(
         blueprint,
         values,
@@ -541,7 +541,7 @@ def generate_bundle_from_path(
     github_token: str | None = None,
     staging_root: Path | None = None,
 ) -> BundleGenerationResult:
-    bundle = load_bundle(bundle_path, repo_root)
+    bundle = load_bundle(bundle_path, repo_root=repo_root)
     return generate_from_bundle(
         bundle,
         values,

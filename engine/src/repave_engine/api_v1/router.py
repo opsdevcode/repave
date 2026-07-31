@@ -106,7 +106,7 @@ def build_api_v1_router(
     @router.get("/governance/annotations/{blueprint_name}")
     async def api_governance_annotations(blueprint_name: str, request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
         standards = standards_diff_for_pin(
             repo_root,
             standard_source=blueprint.standard_source,

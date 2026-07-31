@@ -54,7 +54,7 @@ func (c *HTTPClient) CreatePullRequest(
 		Base:  req.BaseBranch,
 	})
 	if err != nil {
-		return PullRequest{}, err
+		return PullRequest{}, fmt.Errorf("marshal pull request: %w", err)
 	}
 
 	url := fmt.Sprintf(
@@ -64,7 +64,7 @@ func (c *HTTPClient) CreatePullRequest(
 	)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
-		return PullRequest{}, err
+		return PullRequest{}, fmt.Errorf("build pull request: %w", err)
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+token)
 	httpReq.Header.Set("Accept", "application/vnd.github+json")
@@ -72,7 +72,7 @@ func (c *HTTPClient) CreatePullRequest(
 
 	resp, err := c.client().Do(httpReq)
 	if err != nil {
-		return PullRequest{}, err
+		return PullRequest{}, fmt.Errorf("GitHub API request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -83,7 +83,7 @@ func (c *HTTPClient) CreatePullRequest(
 
 	var parsed pullRequestResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
-		return PullRequest{}, err
+		return PullRequest{}, fmt.Errorf("decode pull request response: %w", err)
 	}
 	return PullRequest{
 		Number:  parsed.Number,

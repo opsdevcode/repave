@@ -302,7 +302,7 @@ def _render_upgrade_staging(
     old_policy = doc.get("spec", {}).get("policy") if isinstance(doc.get("spec"), dict) else None
     resolved_blueprint = (blueprint_name or blueprint_name_from_provenance(doc)).strip()
     blueprint_path = blueprint_dir(repo_root, resolved_blueprint)
-    blueprint = load_blueprint(blueprint_path, repo_root)
+    blueprint = load_blueprint(blueprint_path, repo_root=repo_root)
     gate_overrides = load_gate_overrides(repo_root)
     values = validate_inputs(
         blueprint,

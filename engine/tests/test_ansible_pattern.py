@@ -25,7 +25,9 @@ def test_resolve_default_role_pattern_mixed_prefers_linux() -> None:
 
 
 def test_normalize_platform_aware_default(repo_root: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-role-generic", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-role-generic", repo_root=repo_root
+    )
     normalized: dict[str, str] = {
         "role_name": "web",
         "namespace": "acme",
@@ -41,7 +43,9 @@ def test_normalize_platform_aware_default(repo_root: Path) -> None:
 
 
 def test_normalize_rejects_linux_pattern_on_windows_only(repo_root: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-role-generic", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-role-generic", repo_root=repo_root
+    )
     normalized: dict[str, str] = {
         "role_name": "web",
         "namespace": "acme",
@@ -66,7 +70,9 @@ def test_resolve_default_playbook_pattern_windows_only() -> None:
 
 
 def test_normalize_playbook_pattern_default(repo_root: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-playbook-project", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project", repo_root=repo_root
+    )
     normalized: dict[str, str] = {
         "project_name": "patch",
         "description": "Patch playbooks",
@@ -81,7 +87,9 @@ def test_normalize_playbook_pattern_default(repo_root: Path) -> None:
 
 
 def test_normalize_playbook_pinned_rollout_requires_roles(repo_root: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-playbook-project", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-playbook-project", repo_root=repo_root
+    )
     normalized: dict[str, str | list[dict[str, str]]] = {
         "project_name": "rollout",
         "description": "Role rollout",
@@ -97,7 +105,9 @@ def test_normalize_playbook_pinned_rollout_requires_roles(repo_root: Path) -> No
 
 
 def test_normalize_collection_sample_pattern_default(repo_root: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "ansible-collection-generic", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "ansible-collection-generic", repo_root=repo_root
+    )
     normalized: dict[str, str] = {
         "namespace": "acme",
         "collection_name": "platform",

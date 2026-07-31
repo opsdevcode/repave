@@ -12,7 +12,7 @@ from repave_engine.render import RenderResult
 def test_serialize_generation_result(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     render = RenderResult(output_dir=Path("/tmp/out"), values={})
     gates = [GateResult("terraform-fmt", True, False, "ok")]
@@ -40,7 +40,7 @@ def test_serialize_generation_result(repo_root: Path) -> None:
 def test_serialize_generation_result_persists_rendered_file_snapshot(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.render import RenderedFile
 

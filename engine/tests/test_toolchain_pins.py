@@ -59,7 +59,9 @@ def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint, repo_ro
     assert ci_toolchain.CONFTEST_VERSION in text
     assert ci_toolchain.CHECKOV_PIP_SPEC in text
 
-    helm_blueprint = load_blueprint(repo_root / "blueprints" / "helm-chart-generic", repo_root)
+    helm_blueprint = load_blueprint(
+        repo_root / "blueprints" / "helm-chart-generic", repo_root=repo_root
+    )
     helm_text = render_ci_workflow(helm_blueprint)
     assert ci_toolchain.HELM_VERSION in helm_text
 

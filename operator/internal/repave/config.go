@@ -1,6 +1,10 @@
 package repave
 
-import "strings"
+import (
+	"os"
+	"strings"
+	"time"
+)
 
 // Config locates the repave engine for upgrades (CLI checkout or HTTP API).
 type Config struct {
@@ -16,6 +20,25 @@ type Config struct {
 // HTTPMode reports whether upgrades should use /api/v2 HTTP instead of the CLI.
 func (c Config) HTTPMode() bool {
 	return strings.TrimSpace(c.APIURL) != ""
+}
+
+// RemoteResyncFromEnv reads REPAVE_OPERATOR_REMOTE_RESYNC (Go duration, for example 15m).
+// Invalid or unset values return 0 and, when raw was set but invalid, the raw string for logging.
+func RemoteResyncFromEnv() (time.Duration, string) {
+	raw := strings.TrimSpace(os.Getenv("REPAVE_OPERATOR_REMOTE_RESYNC"))
+	if raw == "" {
+		return 0, ""
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil || parsed <= 0 {
+		return 0, raw
+	}
+	return parsed, ""
+}
+
+// GitHubPATFromEnv reads GITHUB_TOKEN for PAT-based GitHub access.
+func GitHubPATFromEnv() string {
+	return strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))
 }
 
 // ConfigFromEnv reads REPAVE_REPO_ROOT, optional REPAVE_CLI, and REPAVE_API_URL.

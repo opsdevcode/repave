@@ -252,7 +252,7 @@ def test_render_ansible_collection_writes_layout(repo_root: Path, tmp_path: Path
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-collection-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,

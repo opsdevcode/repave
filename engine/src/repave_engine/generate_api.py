@@ -39,7 +39,7 @@ def run_generate_api(
     staging_root: Path | None = None,
     publish_idempotency: PublishIdempotencyContext | None = None,
 ) -> dict[str, Any]:
-    blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
+    blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
     values = {str(key): str(value) for key, value in inputs.items()}
     result = generate_from_blueprint(
         blueprint,
@@ -185,7 +185,7 @@ def generation_result_from_stored_run(
     if not isinstance(gates_raw, list) or not gates_raw:
         return None
 
-    blueprint = load_blueprint(blueprint_dir(repo_root, record.blueprint_name), repo_root)
+    blueprint = load_blueprint(blueprint_dir(repo_root, record.blueprint_name), repo_root=repo_root)
     inputs_raw = record.payload.get("inputs", {})
     if not isinstance(inputs_raw, dict):
         inputs_raw = {}

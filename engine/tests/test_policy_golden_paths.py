@@ -21,7 +21,7 @@ def _generate_policy(
 ):
     from repave_engine.blueprint import load_blueprint
 
-    blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root)
+    blueprint = load_blueprint(repo_root / "blueprints" / blueprint_name, repo_root=repo_root)
     staging = tmp_path / "staging"
     output_config = OutputConfig(
         github_org="example",

@@ -16,13 +16,22 @@ def load_provenance_document(path: Path) -> dict[str, Any]:
 def blueprint_name_from_provenance(doc: dict[str, Any]) -> str:
     spec = doc.get("spec")
     if not isinstance(spec, dict):
-        raise ValueError("provenance spec missing")
+        raise ValueError(
+            "provenance spec missing; expected a GoldenPathArtifact mapping with a "
+            "top-level 'spec' object (typically repave.yaml)"
+        )
     blueprint = spec.get("blueprint")
     if not isinstance(blueprint, dict):
-        raise ValueError("provenance spec.blueprint missing")
+        raise ValueError(
+            "provenance spec.blueprint missing; set spec.blueprint.name (and version) "
+            "in the provenance file"
+        )
     name = str(blueprint.get("name", "")).strip()
     if not name:
-        raise ValueError("provenance spec.blueprint.name is empty")
+        raise ValueError(
+            "provenance spec.blueprint.name is empty; set a non-empty blueprint name "
+            "under spec.blueprint.name"
+        )
     return name
 
 
@@ -51,7 +60,10 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
     """Build blueprint render inputs from an on-disk GoldenPathArtifact document."""
     spec = doc.get("spec")
     if not isinstance(spec, dict):
-        raise ValueError("provenance spec missing")
+        raise ValueError(
+            "provenance spec missing; expected a GoldenPathArtifact mapping with a "
+            "top-level 'spec' object (typically repave.yaml)"
+        )
 
     metadata = doc.get("metadata")
     artifact_name = "artifact"

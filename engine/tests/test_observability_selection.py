@@ -14,7 +14,7 @@ from repave_engine.observability_selection import (
 def test_blueprint_supports_observability_notifications(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint_supports_observability_notifications(blueprint)
 
@@ -22,7 +22,7 @@ def test_blueprint_supports_observability_notifications(repo_root: Path) -> None
 def test_observability_input_defaults(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     defaults = observability_input_defaults(blueprint, repo_root)
     assert defaults["notification_source"] == "repave-estate-oncall"
@@ -32,7 +32,7 @@ def test_observability_input_defaults(repo_root: Path) -> None:
 def test_normalize_observability_inputs_rejects_bad_target(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     with pytest.raises(ValueError, match="notification_target"):
         validate_inputs(
@@ -56,7 +56,7 @@ def test_normalize_observability_inputs_rejects_bad_target(repo_root: Path) -> N
 def test_normalize_observability_rejects_terraform_for_unsupported_backend(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -81,7 +81,7 @@ def test_normalize_observability_rejects_terraform_for_unsupported_backend(repo_
 def test_normalize_observability_terraform_grafana_backend(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -106,7 +106,7 @@ def test_normalize_observability_terraform_grafana_backend(repo_root: Path) -> N
 def test_normalize_observability_inputs_accepts_catalog_target(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,

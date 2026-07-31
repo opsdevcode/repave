@@ -13,24 +13,29 @@ func PushBranch(ctx context.Context, repoDir, repoURL, branch, token string) err
 	repoDir = strings.TrimSpace(repoDir)
 	branch = strings.TrimSpace(branch)
 	token = strings.TrimSpace(token)
-	if repoDir == "" || branch == "" {
-		return fmt.Errorf("repo directory and branch are required")
+	if repoDir == "" {
+		return fmt.Errorf("repo directory is required for git push")
+	}
+	if branch == "" {
+		return fmt.Errorf("branch is required for git push")
 	}
 	if token == "" {
-		return fmt.Errorf("git push requires a GitHub token")
+		return fmt.Errorf(
+			"git push requires a GitHub token; set GITHUB_TOKEN or configure GitHub App credentials",
+		)
 	}
 
 	ownerRepo, err := authenticatedRemote(repoURL, token)
 	if err != nil {
-		return err
+		return fmt.Errorf("configure git remote: %w", err)
 	}
 
 	if err := runGit(ctx, repoDir, "remote", "get-url", "origin"); err != nil {
 		if err := runGit(ctx, repoDir, "remote", "add", "origin", ownerRepo); err != nil {
-			return err
+			return fmt.Errorf("add git remote origin: %w", err)
 		}
 	} else if err := runGit(ctx, repoDir, "remote", "set-url", "origin", ownerRepo); err != nil {
-		return err
+		return fmt.Errorf("set git remote origin URL: %w", err)
 	}
 
 	return runGitSecret(ctx, repoDir, token, "push", "-u", "origin", branch)
@@ -39,7 +44,9 @@ func PushBranch(ctx context.Context, repoDir, repoURL, branch, token string) err
 func authenticatedRemote(repoURL, token string) (string, error) {
 	trimmed := strings.TrimSpace(repoURL)
 	if trimmed == "" {
-		return "", fmt.Errorf("repository URL is required for git push")
+		return "", fmt.Errorf(
+			"repository URL is required for git push; use a valid https://github.com/owner/repo URL",
+		)
 	}
 	trimmed = strings.TrimPrefix(trimmed, "https://")
 	trimmed = strings.TrimPrefix(trimmed, "http://")

@@ -87,7 +87,7 @@ def test_cmd_generate_uses_github_token_from_env_when_not_dry_run(
     captured: dict[str, object] = {}
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
 
     def fake_generate_from_path(*_args, **kwargs):
@@ -125,7 +125,7 @@ def test_cmd_generate_clears_github_token_on_dry_run(
     captured: dict[str, object] = {}
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
 
     def fake_generate_from_path(*_args, **kwargs):
@@ -163,7 +163,7 @@ def test_cmd_generate_prefers_cli_token_over_env(
     captured: dict[str, object] = {}
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
 
     def fake_generate_from_path(*_args, **kwargs):
@@ -207,7 +207,7 @@ def test_cmd_generate_exit_code_on_gate_failure(
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
 
     def fake_generate(*args, **kwargs):

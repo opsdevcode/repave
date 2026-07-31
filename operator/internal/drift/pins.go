@@ -32,16 +32,16 @@ func PinsDiffer(desired, observed PinSet) bool {
 // Validate ensures all pin fields are non-empty.
 func (p PinSet) Validate() error {
 	if p.BlueprintName == "" {
-		return fmt.Errorf("blueprint name is required")
+		return fmt.Errorf("blueprint name is required; set spec.desiredPins.blueprintName")
 	}
 	if p.BlueprintVersion == "" {
-		return fmt.Errorf("blueprint version is required")
+		return fmt.Errorf("blueprint version is required; set spec.desiredPins.blueprintVersion")
 	}
 	if p.StandardSource == "" {
-		return fmt.Errorf("standard source is required")
+		return fmt.Errorf("standard source is required; set spec.desiredPins.standardSource")
 	}
 	if p.StandardVersion == "" {
-		return fmt.Errorf("standard version is required")
+		return fmt.Errorf("standard version is required; set spec.desiredPins.standardVersion")
 	}
 	return nil
 }

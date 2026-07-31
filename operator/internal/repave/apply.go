@@ -48,7 +48,9 @@ func (CLIApplyUpgrader) ApplyUpgrade(
 	_ bool,
 ) (ApplyResult, error) {
 	if strings.TrimSpace(cfg.RepoRoot) == "" {
-		return ApplyResult{}, fmt.Errorf("repave repo root is not configured")
+		return ApplyResult{}, fmt.Errorf(
+			"repave repo root is not configured; set REPAVE_REPO_ROOT or Config.RepoRoot",
+		)
 	}
 	command := strings.TrimSpace(cfg.Command)
 	if command == "" {

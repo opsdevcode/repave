@@ -36,7 +36,7 @@ def test_diff_observed_vs_catalog_for_terraform_minimal_fixture(repo_root: Path)
     doc = load_provenance_document(fixture / "repave.yaml")
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     changes = diff_observed_vs_catalog_pins(doc, blueprint)
     fields = {row.field for row in changes}

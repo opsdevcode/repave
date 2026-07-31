@@ -16,7 +16,7 @@ from repave_engine.settings import GateOverrides
 def test_normalize_strict_profile_writes_selection(repo_root: Path, tmp_path: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,
@@ -37,7 +37,7 @@ def test_normalize_strict_profile_writes_selection(repo_root: Path, tmp_path: Pa
 def test_platform_cannot_skip_required_checkov(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     overrides = GateOverrides(checkov_skip_checks=("CKV2_REPAVE_1",))
     with pytest.raises(ValueError, match="required rule"):
@@ -91,7 +91,7 @@ def _monitors_custom_inputs(*, enable_policy: str = "false") -> dict[str, str]:
 def test_monitors_policy_disabled_skips_selection(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,
@@ -105,7 +105,7 @@ def test_monitors_policy_disabled_skips_selection(repo_root: Path) -> None:
 def test_monitors_policy_enabled_writes_selection(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     values = validate_inputs(
         blueprint,

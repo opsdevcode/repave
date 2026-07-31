@@ -171,7 +171,7 @@ def load_schema(repo_root: Path) -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(schema_path.read_text(encoding="utf-8")))
 
 
-def load_blueprint(blueprint_path: Path, repo_root: Path | None = None) -> Blueprint:
+def load_blueprint(blueprint_path: Path, *, repo_root: Path | None = None) -> Blueprint:
     blueprint_path = blueprint_path.resolve()
     if blueprint_path.is_dir():
         blueprint_file = blueprint_path / "blueprint.yaml"
@@ -613,7 +613,9 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
         return results
 
     for blueprint_file in sorted(blueprints_dir.glob("*/blueprint.yaml")):
-        results.append(load_blueprint(blueprint_file.parent, _find_repo_root(blueprints_dir)))
+        results.append(
+            load_blueprint(blueprint_file.parent, repo_root=_find_repo_root(blueprints_dir))
+        )
     return results
 
 

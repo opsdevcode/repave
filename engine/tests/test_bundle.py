@@ -38,7 +38,9 @@ def test_list_bundles_includes_service_stack(repo_root: Path) -> None:
 
 
 def test_load_service_stack_bundle(repo_root: Path) -> None:
-    bundle = load_bundle(repo_root / "blueprints" / "bundles" / "service-stack", repo_root)
+    bundle = load_bundle(
+        repo_root / "blueprints" / "bundles" / "service-stack", repo_root=repo_root
+    )
     assert bundle.name == "service-stack"
     assert len(bundle.members) == 3
     member_ids = {member.member_id for member in bundle.members}
@@ -49,7 +51,9 @@ def test_bundle_context_wires_cross_references(
     repo_root: Path,
     bundle_fixture_inputs: dict[str, str],
 ) -> None:
-    bundle = load_bundle(repo_root / "blueprints" / "bundles" / "service-stack", repo_root)
+    bundle = load_bundle(
+        repo_root / "blueprints" / "bundles" / "service-stack", repo_root=repo_root
+    )
     shared = validate_bundle_inputs(bundle, bundle_fixture_inputs)
     context = build_bundle_context(shared, github_org="acme")
     assert context["helm_chart_repo"] == "https://github.com/acme/helm-bundle-test"
@@ -71,7 +75,9 @@ def test_generate_service_stack_bundle_dry_run(
     output_config: OutputConfig,
     bundle_fixture_inputs: dict[str, str],
 ) -> None:
-    bundle = load_bundle(repo_root / "blueprints" / "bundles" / "service-stack", repo_root)
+    bundle = load_bundle(
+        repo_root / "blueprints" / "bundles" / "service-stack", repo_root=repo_root
+    )
     result = generate_from_bundle(
         bundle,
         bundle_fixture_inputs,

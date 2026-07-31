@@ -22,7 +22,7 @@ def test_opa_policy_plan_demo_fixture(
     plan_demo: str,
     expect_opa_pass: bool,
 ) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "opa-policy-generic", repo_root)
+    blueprint = load_blueprint(repo_root / "blueprints" / "opa-policy-generic", repo_root=repo_root)
     values = {
         "policy_name": "demo",
         "organization": "platform",

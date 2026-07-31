@@ -30,7 +30,7 @@ func EffectiveDesired(
 		if errors.IsNotFound(err) {
 			return drift.PinSet{}, fmt.Errorf("blueprint %q not found in namespace %q", refName, repo.Namespace)
 		}
-		return drift.PinSet{}, err
+		return drift.PinSet{}, fmt.Errorf("get Blueprint %q: %w", refName, err)
 	}
 
 	blueprintName := repo.Spec.DesiredPins.BlueprintName

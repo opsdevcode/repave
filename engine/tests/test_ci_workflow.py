@@ -18,7 +18,7 @@ def test_ci_workflow_path_for_terraform(terraform_blueprint) -> None:
 def test_ci_workflow_path_for_helm(repo_root) -> None:
     from repave_engine.blueprint import load_blueprint
 
-    blueprint = load_blueprint(repo_root / "blueprints" / "helm-chart-generic", repo_root)
+    blueprint = load_blueprint(repo_root / "blueprints" / "helm-chart-generic", repo_root=repo_root)
     assert ci_workflow_relpath(blueprint) == ".github/workflows/repave-gates.yml"
 
 

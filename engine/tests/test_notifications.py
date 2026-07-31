@@ -57,7 +57,7 @@ def test_notify_after_generation_posts_generic_webhook(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     config = NotificationsConfig(
         enabled=True,
@@ -100,7 +100,7 @@ def test_notify_after_generation_never_raises_on_http_error(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
 
     def boom(*args: object, **kwargs: object) -> None:

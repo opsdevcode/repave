@@ -57,7 +57,7 @@ def test_generate_terraform_module_resource_single_file(
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-resource",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -88,7 +88,7 @@ def test_generate_terraform_environment_stack_publishes_repo(
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-environment-stack",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -335,7 +335,7 @@ def test_generate_ansible_playbook_project_publishes_repo(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -366,7 +366,7 @@ def test_generate_ansible_playbook_linux_patch_pattern_dry_run(
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -396,7 +396,7 @@ def test_generate_ansible_playbook_pinned_roles_rollout_dry_run(
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     inputs = {
         **ansible_playbook_sample_inputs,
@@ -431,7 +431,7 @@ def test_generate_ansible_collection_publishes_repo(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-collection-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -470,7 +470,7 @@ def test_generate_ansible_collection_linux_service_sample_dry_run(
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-collection-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -617,7 +617,7 @@ def test_generate_helm_chart_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -661,7 +661,7 @@ def test_generate_app_service_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "app-service-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -703,7 +703,7 @@ def test_generate_app_service_go_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "app-service-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -741,7 +741,7 @@ def test_generate_observability_as_code_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -780,7 +780,7 @@ def test_generate_observability_datadog_native_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -818,7 +818,7 @@ def test_generate_observability_grafana_native_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -854,7 +854,7 @@ def test_observability_generate_vends_selected_opa_policies_only(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -895,7 +895,7 @@ def test_generate_observability_terraform_datadog_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -930,7 +930,7 @@ def test_generate_observability_terraform_grafana_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -965,7 +965,7 @@ def test_generate_dashboards_terraform_grafana_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -999,7 +999,7 @@ def test_generate_monitors_native_prometheus_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1035,7 +1035,7 @@ def test_generate_observability_policy_disabled_skips_opa_and_selection(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1072,7 +1072,7 @@ def test_generate_monitors_policy_disabled_skips_opa_and_selection(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1110,7 +1110,7 @@ def test_generate_monitors_policy_enabled_vends_selection(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1147,7 +1147,7 @@ def test_generate_monitors_prometheus_pack_materializes_community_rules(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1183,7 +1183,7 @@ def test_generate_monitors_terraform_datadog_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1219,7 +1219,7 @@ def test_generate_monitors_terraform_prometheus_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1255,7 +1255,7 @@ def test_generate_monitors_terraform_datadog_community_pack_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1294,7 +1294,7 @@ def test_generate_monitors_terraform_prometheus_community_pack_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1335,7 +1335,7 @@ def test_generate_observability_terraform_prometheus_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1371,7 +1371,7 @@ def test_generate_observability_terraform_otel_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1405,7 +1405,7 @@ def test_generate_dashboards_terraform_with_pack_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1442,7 +1442,7 @@ def test_generate_dashboards_as_code_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1490,7 +1490,7 @@ def test_generate_dashboards_with_community_pack(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
@@ -1529,7 +1529,7 @@ def test_generate_dashboards_as_code_datadog_dry_run(
 ) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     result = generate_from_blueprint(
         blueprint,
