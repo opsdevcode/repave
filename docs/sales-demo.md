@@ -90,7 +90,6 @@ Scope: [Operator GA](operator-ga.md) · [Operator overview](operator-overview.md
 | Symptom | Fix |
 | --- | --- |
 | Portal blank / no CSS | Hard refresh; for native `make serve`, ensure you hit the URL from the Makefile (8088). |
-| Nav feels crowded on a projector | Open **`/?presenter=1`** — demo nav + banner; persists in the browser for the session. |
 | Gate fails unexpectedly | Dry-run still shows failures — use it to explain “blocked by design.” |
 | OPA step skipped | Dry-run no longer skips missing Conftest — install it or use `deploy/local` compose. With tooling, a destructive plan demo shows **FAIL** on the `opa` gate. |
 | Compose slow first time | Pre-build before the meeting; keep the stack running. |

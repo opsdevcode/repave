@@ -340,6 +340,8 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "cloud_provider" in response.text
     assert "provider_services" in response.text
     assert "governance-card" in response.text
+    assert "governance-card__details" in response.text
+    assert "governance-card__summary-meta" in response.text
     assert "form-layout--split" in response.text
     assert "Plan (validate only)" in response.text
     assert "Apply to modules root" in response.text
@@ -348,6 +350,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "form-validation" in response.text
     assert "scope-resource-filter" in response.text
     assert "policy-rules-list" in response.text
+    assert 'id="policy-rules-advanced"' in response.text
+    assert 'id="policy-rules-advanced" class="policy-rules-advanced" open' not in response.text
+    assert "policy-compact-summary" in response.text
     assert "policy-catalog" in response.text
     assert "data-repave-busy-form" in response.text
     assert "form-actions--sticky" in response.text
@@ -716,6 +721,7 @@ def test_ansible_form_renders_split_governance(repo_root, output_config) -> None
 
     assert response.status_code == 200
     assert "governance-card governance-card--ansible" in response.text
+    assert "governance-card__details" in response.text
     assert "form-layout--split" in response.text
     assert "ansible-lint" in response.text or "ansible_lint" in response.text
     assert 'id="support_linux_cb"' in response.text

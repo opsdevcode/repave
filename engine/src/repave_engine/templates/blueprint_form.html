@@ -35,8 +35,24 @@
 </header>
 
 <div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'app') %} form-layout--split{% endif %}">
-  <aside class="governance-card governance-card--{{ bp_family }}" aria-labelledby="governance-heading">
+  {% set governance_collapsible = bp_family in ('terraform', 'ansible') %}
+  <aside class="governance-card governance-card--{{ bp_family }}"{% if not governance_collapsible %} aria-labelledby="governance-heading"{% endif %}>
+    {% if governance_collapsible %}
+    <details class="governance-card__details">
+      <summary class="governance-card__summary">
+        <span class="governance-card__summary-title" id="governance-heading">Controls &amp; lineage</span>
+        <span class="governance-card__summary-meta muted">
+          {{ blueprint.standard_source.rsplit('/', 1)[-1] }} @ {{ blueprint.standard_version -}}
+          {%- if blueprint.checkov_policies %} · Checkov{%- endif -%}
+          {%- if blueprint.opa_policies %} · OPA{%- endif -%}
+          {%- if blueprint.azure_policy_pack %} · Azure Policy{%- endif -%}
+          · {{ blueprint.gates|length }} gates
+        </span>
+      </summary>
+      <div class="governance-card__expand">
+    {% else %}
     <h2 class="governance-card__title" id="governance-heading">Controls &amp; lineage</h2>
+    {% endif %}
     <dl class="governance-card__list">
       <div>
         <dt>Domain standard</dt>
@@ -157,6 +173,10 @@
     <p class="governance-card__footnote muted">
       Pins are frozen on scaffold. Enable <code>audit</code> in config for fleet-wide activity.
     </p>
+    {% if governance_collapsible %}
+      </div>
+    </details>
+    {% endif %}
   </aside>
 
   <form
@@ -517,13 +537,21 @@
       </div>
       {% endif %}
       {% if (policy_customization or policy_customization_optional) and policy_catalog %}
-      <div
+      <details
         class="field-block policy-customization"
         id="policy-customization"
         {% if policy_customization_optional %}hidden{% endif %}
         {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
       >
-        <h3 class="form-section__subtitle" id="policy-heading">Policy</h3>
+        <summary class="policy-customization__summary">
+          <span class="policy-customization__title">Policy</span>
+          <span class="policy-customization__meta muted" id="policy-compact-summary">
+            {% set initial_profile = policy_defaults.policy_profile or 'estate-default' %}
+            {{ (policy_catalog.profiles.get(initial_profile) or {}).get('label') or initial_profile }}
+            profile
+          </span>
+        </summary>
+        <div class="policy-customization__body">
         <p class="hint">Choose a pack and profile; required catalog rules stay enforced. Titles match the policy catalog.</p>
         <label for="policy_pack_source">Policy pack source</label>
         <select class="select" id="policy_pack_source" name="policy_pack_source">
@@ -547,7 +575,7 @@
           {% endfor %}
         </select>
         <p class="policy-profile-summary hint" id="policy-profile-summary" aria-live="polite"></p>
-        <details id="policy-rules-advanced" class="policy-rules-advanced" open>
+        <details id="policy-rules-advanced" class="policy-rules-advanced">
           <summary>Individual rules</summary>
           <p class="hint policy-rules-hint" id="policy-rules-hint">
             {% if policy_defaults.policy_profile == 'custom' %}
@@ -581,7 +609,8 @@
           </div>
         </details>
         <input type="hidden" id="policy_rules" name="policy_rules" value="" />
-      </div>
+        </div>
+      </details>
       {% endif %}
       {% if blueprint.name == "dashboards-as-code-generic" %}
       <input type="hidden" name="observability_focus" value="dashboards" />
@@ -2229,14 +2258,26 @@
   }
 
   const profileSummary = document.getElementById("policy-profile-summary");
+  const policyCompactSummary = document.getElementById("policy-compact-summary");
 
   function updateProfileSummary() {
-    if (!profileSummary) return;
     const profile = profileSelect.value;
     const meta = (catalog.profiles || {})[profile] || {};
     const enabled = rulesForProfile(profile, profile === "custom" ? customSeedProfile : null);
     const desc = meta.description || meta.label || profile;
-    profileSummary.textContent = `${desc} — ${enabled.size} catalog rule(s) active for this profile.`;
+    if (profileSummary) {
+      profileSummary.textContent = `${desc} — ${enabled.size} catalog rule(s) active for this profile.`;
+    }
+    if (policyCompactSummary) {
+      const pack = (catalog.pack_sources || []).find((p) => p.id === packSelect?.value);
+      const packLabel = pack?.label || pack?.id || "";
+      const profileLabel = meta.label || profile;
+      const parts = [];
+      if (packLabel) parts.push(packLabel);
+      parts.push(profileLabel);
+      parts.push(`${enabled.size} rules`);
+      policyCompactSummary.textContent = parts.join(" · ");
+    }
   }
 
   function syncHiddenRules() {

@@ -55,36 +55,6 @@ def test_bundle_topology_section(repo_root, output_config) -> None:
     assert "bundle-topology" in body
 
 
-def test_presenter_mode_demo_nav(repo_root, output_config) -> None:
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-
-    body = client.get("/?presenter=1").text
-
-    assert "shell--presenter" in body
-    assert "presenter-banner" in body
-    assert "shell__nav--demo" in body
-    assert "Module demo" in body
-    assert "Policy demo" in body
-
-
-def test_presenter_mode_hides_demo_starter(repo_root, output_config) -> None:
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-
-    body = client.get("/?presenter=1").text
-
-    assert "demo-starter" not in body
-
-
-def test_home_demo_starter(repo_root, output_config) -> None:
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-
-    body = client.get("/").text
-
-    assert "demo-starter" in body
-    assert "Scaffold a Terraform module" in body
-    assert "Presenter mode" in body
-
-
 def test_api_estate_json(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))

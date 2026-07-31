@@ -243,12 +243,7 @@ Pick based on audience and hosting model (v1.25+).
 
 Further craft (illustration, stepper) is optional.
 
-### Demo UX (shipped)
-
-- **Live demo path** card on home links the seven-minute script (module → upgrade → policy).
-- **`?presenter=1`** enables presenter mode: demo nav, banner, hides quick menu and demo card;
-  persists in the browser session (`repave.js`).
-- Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activity live under **More**.
+Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activity live under **More** in the shell.
 
 | Enhancement | Notes |
 | --- | --- |
