@@ -118,7 +118,10 @@ repave generate --repo-root .. --blueprint blueprints/terraform-module-generic -
 
 - **Generate** Terraform, Ansible, policy, observability, Helm, and app-service golden paths ([`blueprints/`](blueprints/)).
 - **Portal + API** at `:8088` — forms, `/activity` audit view, [`POST /api/v1/generate`](docs/backstage.md).
-- **CLI** — `repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades),
+- **Import** an existing repository into a golden path layout via a reviewable PR — files move
+  byte-identically, scaffold fills the gaps ([`repave import`](docs/import.md)).
+- **CLI** — `repave generate`, `repave list`, `repave import` (adopt an existing repo),
+  `repave update` (plan/apply blueprint upgrades),
   `repave register` / `repave fleet` ([fleet registry](docs/fleet-registry.md)).
 - **Publish** — local git under `REPAVE_MODULES_ROOT` or GitHub with `GITHUB_TOKEN` ([module repos](docs/module-repositories.md)).
 - **Operator (GA)** — drift detection, upgrade plans, and remediation PRs ([overview](docs/operator-overview.md) · [GA scope](docs/operator-ga.md))
@@ -162,6 +165,7 @@ Optional **operator** loop (estate scale): [Operator overview](docs/operator-ove
 | Quickstart | [docs/quickstart.md](docs/quickstart.md) |
 | Concepts & provenance | [docs/concepts.md](docs/concepts.md) |
 | Engine & gates | [docs/engine-capabilities.md](docs/engine-capabilities.md) |
+| Import an existing repo | [docs/import.md](docs/import.md) |
 | Portal UX spec | [docs/portal-design.md](docs/portal-design.md) |
 | Roadmap | [docs/roadmap.md](docs/roadmap.md) |
 | Backstage & HTTP API | [docs/backstage.md](docs/backstage.md) |

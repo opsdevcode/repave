@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_LIMIT = 8
 _MAX_LINE_BYTES = 256_000
 _MAX_SCAN_ROWS = 10_000
-_GENERATION_EVENTS = frozenset({"generation", "bundle_generation"})
+_GENERATION_EVENTS = frozenset({"generation", "bundle_generation", "import"})
 
 
 @dataclass(frozen=True)

@@ -19,8 +19,9 @@ live in [`schemas/`](../schemas/).
 
 ## CLI
 
-`repave generate`, `repave list`, `repave update` (plan/apply blueprint upgrades
-from `repave.yaml`), gate execution, provenance in `repave.yaml`.
+`repave generate`, `repave list`, `repave import` (adopt an existing repo into a golden path
+layout — see [import.md](import.md)), `repave verify`, `repave update` (plan/apply blueprint
+upgrades from `repave.yaml`), gate execution, provenance in `repave.yaml`.
 
 ## Gates (blueprint-configured)
 

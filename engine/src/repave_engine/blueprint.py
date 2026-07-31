@@ -10,6 +10,7 @@ from typing import Any, cast
 import jsonschema
 import yaml
 
+from repave_engine.import_rules import ImportRuleSet, parse_import_rules
 from repave_engine.provider_catalog import (
     get_service_definition,
     load_provider_catalog,
@@ -131,6 +132,7 @@ class Blueprint:
     )
     terraform_layout: str = "generic"
     gate_config_raw: dict[str, Any] = dataclass_field(default_factory=dict)
+    import_rules: ImportRuleSet = dataclass_field(default_factory=ImportRuleSet)
 
     @property
     def template_dir(self) -> Path:
@@ -287,12 +289,18 @@ def load_blueprint(blueprint_path: Path, *, repo_root: Path | None = None) -> Bl
     if isinstance(terraform_module_spec, dict):
         terraform_layout = str(terraform_module_spec.get("layout", "generic"))
 
+    artifact_type = str(spec.get("artifactType", "terraform-module"))
+    import_rules = parse_import_rules(
+        spec.get("import"),
+        family=artifact_family(artifact_type),
+    )
+
     return Blueprint(
         path=blueprint_file.parent,
         name=metadata["name"],
         version=metadata["version"],
         description=metadata.get("description", ""),
-        artifact_type=str(spec.get("artifactType", "terraform-module")),
+        artifact_type=artifact_type,
         standard_source=spec["standard"]["source"],
         standard_version=spec["standard"]["version"],
         inputs=inputs,
@@ -316,6 +324,7 @@ def load_blueprint(blueprint_path: Path, *, repo_root: Path | None = None) -> Bl
         terraform_test_gate=terraform_test_gate,
         terraform_layout=terraform_layout,
         gate_config_raw=cast(dict[str, Any], gate_config) if isinstance(gate_config, dict) else {},
+        import_rules=import_rules,
     )
 
 

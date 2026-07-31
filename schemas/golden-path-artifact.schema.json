@@ -86,6 +86,35 @@
             "baseline_version": { "type": "string" }
           }
         },
+        "import": {
+          "type": "object",
+          "description": "Present when the repository was adopted by repave import rather than generated. The pre-import layout hash is the drift baseline for the original tree.",
+          "required": ["source", "imported_at", "pre_import_layout_hash"],
+          "additionalProperties": false,
+          "properties": {
+            "source": { "type": "string" },
+            "imported_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "pre_import_layout_hash": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "moved_files": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "scaffold_files": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "unmapped_files": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          }
+        },
         "ci": {
           "type": "object",
           "required": ["gates", "workflow", "toolchain"],

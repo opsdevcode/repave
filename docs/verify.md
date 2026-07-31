@@ -4,7 +4,11 @@ Score repositories repave did not necessarily generate: run the same gate regist
 generation time and compare provenance pins to the current catalog blueprint — without
 rendering, publishing, or modifying the tree.
 
-Related: [fleet registry](fleet-registry.md), [roadmap](roadmap.md).
+Related: [import](import.md), [fleet registry](fleet-registry.md), [roadmap](roadmap.md).
+
+A repository with no `repave.yaml` and a layout that does not match any golden path is an
+[import](import.md) candidate first: import rearranges it and adds the scaffold, after which
+`verify` has provenance to score against.
 
 ## CLI
 
