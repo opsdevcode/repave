@@ -46,20 +46,31 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "shell__atmosphere" in response.text
     assert "home-hero" in response.text
     assert "home-hero__wordmark" in response.text
-    assert "home-quicknav" in response.text
-    assert "data-home-quicknav" in response.text
-    assert "data-quicknav-toggle" in response.text
-    assert "<details" in response.text
-    assert "home-quicknav__summary" in response.text
     assert 'id="golden-paths"' in response.text
-    assert "catalog-grid" in response.text
-    assert "catalog-group__title" in response.text
+    assert "catalog-inventory__category" in response.text
+    assert "catalog-inventory__summary" in response.text
+    assert "<details" in response.text
+    assert "Golden paths" in response.text
+    assert 'href="/library"' in response.text
+    assert "Browse library" in response.text
+    assert "shell__nav--primary" in response.text
+    assert response.text.index("Library") < response.text.index("shell__nav-more")
     assert "Terraform" in response.text
     assert "Ansible" in response.text
-    assert 'class="catalog-group catalog-group--terraform"' in response.text
-    assert 'class="catalog-group catalog-group--ansible"' in response.text
-    assert 'class="catalog-group catalog-group--policy"' in response.text
-    assert 'class="catalog-group catalog-group--observability"' in response.text
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--terraform"'
+        in response.text
+    )
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--ansible"' in response.text
+    )
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--policy"' in response.text
+    )
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--observability"'
+        in response.text
+    )
     assert 'id="catalog-observability"' in response.text
     assert "Observability" in response.text
     assert "dashboards-as-code-generic" in response.text

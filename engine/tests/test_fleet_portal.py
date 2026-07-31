@@ -30,7 +30,7 @@ def registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return path
 
 
-def test_fleet_page_shows_operator_phase(
+def test_library_page_shows_operator_phase(
     output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     registry = tmp_path / "registry.jsonl"
@@ -53,29 +53,26 @@ def test_fleet_page_shows_operator_phase(
     monkeypatch.chdir(tmp_path)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
-    body = client.get("/fleet").text
+    body = client.get("/library").text
 
     assert "operator OutOfDate" in body
-    assert "pins differ" in body
-    assert "GitOps sync" in body
+    assert "terraform-module-generic@0.9.0" in body
 
 
-def test_fleet_page_lists_registered_repos(repo_root, output_config, registry: Path) -> None:
+def test_library_page_lists_registered_repos(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    response = client.get("/fleet")
+    response = client.get("/library")
 
     assert response.status_code == 200
     body = response.text
-    assert "https://github.com/acme/tf-vpc" in body
     assert "terraform-module-generic@0.9.0" in body
-    assert "standard 1.1.0" in body
     assert "platform" in body
-    assert "1 repository" in body
+    assert "1 artifact" in body
 
 
-def test_fleet_page_pluralizes_count(repo_root, output_config, registry: Path) -> None:
+def test_library_page_pluralizes_count(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     register_repo(
         registry,
@@ -87,58 +84,44 @@ def test_fleet_page_pluralizes_count(repo_root, output_config, registry: Path) -
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert "2 repositories" in client.get("/fleet").text
+    assert "2 artifacts" in client.get("/library").text
 
 
-def test_fleet_page_empty_state_points_at_register(
+def test_library_page_empty_state_points_at_register(
     repo_root, output_config, registry: Path
 ) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    response = client.get("/fleet")
+    response = client.get("/library")
 
     assert response.status_code == 200
-    assert "No repositories are registered yet" in response.text
+    assert "No artifacts in the library yet" in response.text
     assert "repave register" in response.text
 
 
-def test_fleet_page_explains_unconfigured_registry(
-    output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("REPAVE_FLEET_FILE", raising=False)
-    monkeypatch.chdir(tmp_path)
-    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+def test_fleet_redirects_to_library(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    response = client.get("/fleet")
+    response = client.get("/fleet", follow_redirects=False)
 
-    assert response.status_code == 200
-    assert "repave.config.yaml" in response.text
+    assert response.status_code == 302
+    assert response.headers["location"] == "/library"
 
 
-def test_fleet_page_survives_invalid_fleet_config(
-    repo_root, output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.delenv("REPAVE_FLEET_FILE", raising=False)
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "repave.config.yaml").write_text("fleet: not-a-mapping\n", encoding="utf-8")
-
-    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
-
-    assert client.get("/fleet").status_code == 200
-
-
-def test_nav_exposes_fleet_link(repo_root, output_config, registry: Path) -> None:
+def test_nav_exposes_library_link(repo_root, output_config, registry: Path) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     body = client.get("/").text
 
-    assert 'href="/fleet"' in body
-    assert "Fleet" in body
+    assert 'href="/library"' in body
+    assert "Library" in body
+    assert ">Fleet</a>" not in body
+    assert body.index("Library") < body.index("shell__nav-more")
 
 
-def test_fleet_page_marks_nav_current(repo_root, output_config, registry: Path) -> None:
+def test_library_page_marks_nav_current(repo_root, output_config, registry: Path) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get("/fleet").text
+    body = client.get("/library").text
 
-    assert 'href="/fleet" aria-current="page"' in body
+    assert 'href="/library" aria-current="page"' in body

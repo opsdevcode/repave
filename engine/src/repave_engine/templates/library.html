@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Library — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/">← Home</a>
+  ·
+  <a href="/#golden-paths">Golden paths</a>
+</p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Library</h1>
+    <p class="page-lead">
+      Governed repositories and local checkouts already on the platform — expand a category
+      to browse, open scorecards, and consume rendered docs.
+    </p>
+  </div>
+</header>
+
+{% if library_groups %}
+<div class="catalog-search" data-catalog-search>
+  <label class="catalog-search__label" for="library-search-input">Search library</label>
+  <input
+    class="catalog-search__input field__input"
+    type="search"
+    id="library-search-input"
+    placeholder="Name, blueprint, owner, or repo…"
+    autocomplete="off"
+    data-catalog-search-input
+  />
+  <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
+</div>
+
+<section
+  id="catalog-inventory"
+  class="catalog-inventory home-catalog"
+  aria-labelledby="library-inventory-heading"
+>
+  <header class="catalog-inventory__header">
+    <h2 id="library-inventory-heading" class="catalog-inventory__title">
+      {{ library_entity_count }} artifact{{ 's' if library_entity_count != 1 else '' }} available
+    </h2>
+    <p class="catalog-inventory__lead muted">
+      Registered repositories and <code>modules_root</code> checkouts with <code>repave.yaml</code>.
+    </p>
+  </header>
+
+  <div class="catalog-inventory__list">
+    {% for group in library_groups %}
+    <details
+      class="catalog-inventory__category catalog-inventory__category--{{ group.family }}"
+      id="library-{{ group.family }}"
+      data-catalog-group="{{ group.family }}"
+    >
+      <summary class="catalog-inventory__summary">
+        <span class="catalog-inventory__summary-main">
+          <span class="catalog-inventory__category-title">{{ group.title }}</span>
+          <span class="catalog-inventory__category-subtitle muted">{{ group.subtitle }}</span>
+        </span>
+        <span class="badge badge--{{ group.family }}">{{ group.entities | length }}</span>
+      </summary>
+      <ul class="catalog-inventory__items">
+        {% for entity in group.entities %}
+        <li class="catalog-inventory__row" data-catalog-item>
+          <a
+            class="catalog-inventory__item"
+            href="/services/{{ entity.entity_id }}"
+            data-catalog-card
+            data-search-text="{{ entity.display_name }} {{ entity.blueprint_name }} {{ entity.owner }} {{ entity.repo_url or '' }} {{ entity.source }} {{ entity.standard_version }}"
+          >
+            <span class="catalog-inventory__item-name">{{ entity.display_name }}</span>
+            <span class="catalog-inventory__item-desc muted">
+              {% if entity.blueprint_name %}
+              {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
+              {% endif %}
+              {% if entity.owner %} · {{ entity.owner }}{% endif %}
+              {% if entity.repo_url %} · repo{% elif entity.local_path %} · local{% endif %}
+            </span>
+            <span class="catalog-inventory__item-meta">
+              {% if entity.standard_version %}
+              <span class="badge badge--muted">std {{ entity.standard_version }}</span>
+              {% endif %}
+              {% if entity.operator_phase %}
+                {% if entity.operator_phase == 'Ready' %}
+              <span class="badge badge--pass">operator {{ entity.operator_phase }}</span>
+                {% elif entity.operator_phase == 'OutOfDate' %}
+              <span class="badge badge--fail">operator {{ entity.operator_phase }}</span>
+                {% else %}
+              <span class="badge badge--skip">operator {{ entity.operator_phase }}</span>
+                {% endif %}
+              {% endif %}
+              <span class="badge badge--muted">{{ entity.source }}</span>
+              {% for dim in entity.scorecard[:3] %}
+              <span
+                class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}"
+                title="{{ dim.detail }}"
+              >{{ dim.label }}</span>
+              {% endfor %}
+            </span>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
+  </div>
+
+  <div class="alert alert--info catalog-search-empty" id="catalog-search-empty" role="status" hidden>
+    No artifacts match your search. Clear the filter to see the full library.
+  </div>
+</section>
+{% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">
+      No artifacts in the library yet. Register repositories with
+      <code>repave register</code>, generate modules under
+      <code>modules_root</code>, or
+      <a href="/#golden-paths">scaffold from a golden path</a>.
+    </p>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

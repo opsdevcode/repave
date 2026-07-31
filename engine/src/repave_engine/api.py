@@ -70,14 +70,12 @@ from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
     find_catalog_entity,
+    group_catalog_entities,
     observability_embed_url,
     read_entity_docs,
 )
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
-from repave_engine.fleet import FleetEntry, read_fleet
-from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operator_status_file
-from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import generation_result_from_stored_run
 from repave_engine.github_auth import resolve_github_access_token
@@ -139,7 +137,6 @@ from repave_engine.settings import (
     OutputConfig,
     load_auth_config,
     load_durability_config,
-    load_fleet_config,
     load_output_config,
     load_portal_config,
     load_tracing_config,
@@ -257,10 +254,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     def command_palette_items() -> list[dict[str, str]]:
         items: list[dict[str, str]] = [
             {"kind": "nav", "label": "Catalog", "href": "/"},
+            {"kind": "nav", "label": "Library", "href": "/library"},
             {"kind": "nav", "label": "Upgrade repo", "href": "/update"},
             {"kind": "nav", "label": "Verify repo", "href": "/verify"},
-            {"kind": "nav", "label": "Fleet", "href": "/fleet"},
-            {"kind": "nav", "label": "Services", "href": "/services"},
             {"kind": "nav", "label": "Estate map", "href": "/estate"},
             {"kind": "nav", "label": "Activity", "href": "/activity"},
             {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
@@ -439,38 +435,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
-    @app.get("/fleet", response_class=HTMLResponse)
-    async def fleet_page(request: Request) -> HTMLResponse:
-        try:
-            fleet_cfg = load_fleet_config(repo_root)
-        except ValueError:
-            fleet_cfg = None
-        enabled = fleet_cfg is not None and fleet_cfg.enabled
-        entries: tuple[FleetEntry, ...] = ()
-        operator_by: dict[str, FleetOperatorStatus] = {}
-        gitops_namespace = "default"
-        if enabled and fleet_cfg is not None:
-            entries = read_fleet(fleet_cfg.file, repo_root=repo_root)
-            gitops_namespace = fleet_cfg.gitops_namespace
-            if fleet_cfg.operator_status_file is not None:
-                operator_by = load_operator_status_file(fleet_cfg.operator_status_file)
-        fleet_repos = build_fleet_rows(
-            entries,
-            operator_by_url=operator_by,
-            namespace=gitops_namespace,
-        )
-        return templates.TemplateResponse(
-            request,
-            "fleet.html",
-            page_context(
-                request,
-                nav_active="fleet",
-                fleet_enabled=enabled,
-                fleet_repos=fleet_repos,
-                fleet_operator_status_enabled=bool(operator_by),
-                fleet_gitops_namespace=gitops_namespace,
-            ),
-        )
+    @app.get("/fleet", response_class=RedirectResponse)
+    async def fleet_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/library", status_code=302)
 
     @app.get("/estate", response_class=HTMLResponse)
     async def estate_map_page(request: Request) -> HTMLResponse:
@@ -491,19 +458,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
-    @app.get("/services", response_class=HTMLResponse)
-    async def services_page(request: Request) -> HTMLResponse:
+    @app.get("/library", response_class=HTMLResponse)
+    async def library_page(request: Request) -> HTMLResponse:
         entities = build_portal_catalog_entities(repo_root, resolved_output)
+        blueprint_types = {
+            blueprint.name: blueprint.artifact_type
+            for blueprint in list_blueprints(blueprints_dir(repo_root))
+        }
+        library_groups = group_catalog_entities(
+            entities,
+            blueprint_artifact_types=blueprint_types,
+        )
         return templates.TemplateResponse(
             request,
-            "services.html",
+            "library.html",
             page_context(
                 request,
-                nav_active="services",
-                catalog_entities=entities,
+                nav_active="library",
+                library_groups=library_groups,
+                library_entity_count=len(entities),
                 observability_configured=bool(portal_config.observability_dashboard_url),
             ),
         )
+
+    @app.get("/services", response_class=RedirectResponse)
+    async def services_redirect() -> RedirectResponse:
+        return RedirectResponse(url="/library", status_code=302)
 
     @app.get("/services/{entity_id}", response_class=HTMLResponse)
     async def service_detail_page(request: Request, entity_id: str) -> HTMLResponse:
@@ -530,7 +510,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "service_detail.html",
             page_context(
                 request,
-                nav_active="services",
+                nav_active="library",
                 entity=entity,
                 readme_html=readme_html,
                 runbook_html=runbook_html,
@@ -541,7 +521,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/catalog/entities", response_class=RedirectResponse)
     async def catalog_entities_redirect() -> RedirectResponse:
-        return RedirectResponse(url="/services", status_code=302)
+        return RedirectResponse(url="/library", status_code=302)
 
     @app.get("/catalog/entities/{entity_id}", response_class=RedirectResponse)
     async def catalog_entity_redirect(entity_id: str) -> RedirectResponse:

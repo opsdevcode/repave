@@ -35,12 +35,13 @@ def test_services_page_lists_fleet_entity(repo_root, output_config, registry: Pa
     (entity_dir / "README.md").write_text("# VPC module\n\nHello.", encoding="utf-8")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    response = client.get("/services")
+    response = client.get("/library")
     body = response.text
 
     assert response.status_code == 200
-    assert "Service catalog" in body
-    assert "Pin freshness" in body
+    assert "Library" in body
+    assert "catalog-inventory__category" in body
+    assert "catalog-inventory__summary" in body
 
 
 def test_service_detail_renders_scorecard_and_readme(
@@ -74,19 +75,28 @@ def test_api_catalog_entities_json(repo_root, output_config, registry: Path) -> 
     assert payload["entities"][0]["entity_id"]
 
 
+def test_services_redirects_to_library(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    response = client.get("/services", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["location"] == "/library"
+
+
 def test_catalog_entities_redirect(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     response = client.get("/catalog/entities", follow_redirects=False)
 
     assert response.status_code == 302
-    assert response.headers["location"] == "/services"
+    assert response.headers["location"] == "/library"
 
 
-def test_nav_exposes_services_link(repo_root, output_config) -> None:
+def test_nav_exposes_library_link(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert 'href="/services"' in client.get("/").text
+    assert 'href="/library"' in client.get("/").text
 
 
 def test_observability_url_on_detail(

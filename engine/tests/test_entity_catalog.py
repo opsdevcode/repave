@@ -6,10 +6,13 @@ import yaml
 
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.entity_catalog import (
+    CatalogEntity,
+    ScorecardDimension,
     build_catalog_entities,
     build_scorecard,
     entity_id_for_repo_url,
     find_catalog_entity,
+    group_catalog_entities,
     observability_embed_url,
 )
 from repave_engine.fleet import FleetEntry
@@ -105,9 +108,46 @@ def test_build_catalog_merges_fleet_and_local(tmp_path: Path) -> None:
     assert matched.local_path == fleet_repo
 
 
-def test_observability_embed_url_formats_placeholders() -> None:
-    from repave_engine.entity_catalog import CatalogEntity, ScorecardDimension
+def test_group_catalog_entities_by_family() -> None:
+    def entity(name: str, blueprint: str, component_type: str = "") -> CatalogEntity:
+        return CatalogEntity(
+            entity_id=name,
+            display_name=name,
+            repo_url=f"https://github.com/acme/{name}",
+            local_path=None,
+            owner="platform",
+            blueprint_name=blueprint,
+            blueprint_version="1.0.0",
+            standard_source="standards/terraform-standards",
+            standard_version="1.0.0",
+            component_type=component_type,
+            lifecycle="production",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="",
+            manifest_namespace="",
+            source="fleet",
+            scorecard=(ScorecardDimension("pins", "Pins", "pass", ""),),
+        )
 
+    groups = group_catalog_entities(
+        [
+            entity("tf-vpc", "terraform-module-generic"),
+            entity("ansible-role", "ansible-role-generic"),
+            entity("my-svc", "", component_type="service"),
+        ],
+        blueprint_artifact_types={
+            "terraform-module-generic": "terraform-module",
+            "ansible-role-generic": "ansible-role",
+        },
+    )
+    families = [group.family for group in groups]
+    assert families == ["terraform", "ansible", "app"]
+    assert groups[0].entities[0].display_name == "tf-vpc"
+
+
+def test_observability_embed_url_formats_placeholders() -> None:
     entity = CatalogEntity(
         entity_id="acme-svc",
         display_name="acme-svc",
