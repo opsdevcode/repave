@@ -72,6 +72,12 @@ portal (not mockups).
 </table>
 
 <p align="center">
+  <img src="docs/images/portal/import-repo.png" alt="Import existing repository into a golden path" width="920" />
+  <br />
+  <sub>Import repo — adopt an existing repository into a golden path</sub>
+</p>
+
+<p align="center">
   <img src="docs/images/portal/generate-result.png" alt="Plan result — lineage, policy rules, and gate dashboard" width="920" />
   <br />
   <sub>Plan result — lineage, policy pack, gates (dry-run)</sub>
