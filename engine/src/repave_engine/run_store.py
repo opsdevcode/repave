@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 import threading
 import uuid
 from dataclasses import dataclass
@@ -18,6 +17,7 @@ from repave_engine.sql_store import (
     connect,
     database_config_for_runs_db,
     ensure_schema,
+    is_unique_constraint_error,
 )
 
 
@@ -112,21 +112,18 @@ class RunStore:
                     ),
                 )
                 conn.commit()
-            except sqlite3.IntegrityError as exc:
-                if client_request_id:
-                    existing = self.get_by_client_request_id(client_request_id)
-                    if existing is not None:
-                        return existing
-                raise exc
             except Exception as exc:
-                if client_request_id and "unique" in str(exc).lower():
+                if client_request_id and is_unique_constraint_error(exc):
                     existing = self.get_by_client_request_id(client_request_id)
                     if existing is not None:
                         return existing
                 raise
         row = self.get(run_id)
         if row is None:
-            raise RuntimeError(f"run row missing immediately after insert: {run_id}")
+            raise RuntimeError(
+                f"run row missing immediately after insert: {run_id}; "
+                "check database connectivity and schema"
+            )
         return row
 
     def get(self, run_id: str) -> RunRecord | None:

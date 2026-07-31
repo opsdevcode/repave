@@ -20,7 +20,9 @@ def test_pack_sources_filtered_for_azure_policy(repo_root: Path) -> None:
 
 
 def test_policy_input_defaults_from_blueprint(repo_root: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "checkov-policy-generic", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "checkov-policy-generic", repo_root=repo_root
+    )
     defaults = policy_input_defaults(blueprint)
     assert defaults["policy_pack_source"] == "repave-checkov-pack"
     assert defaults["policy_profile"] == "checkov-full"
@@ -29,7 +31,7 @@ def test_policy_input_defaults_from_blueprint(repo_root: Path) -> None:
 def test_observability_policy_input_defaults(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     defaults = policy_input_defaults(blueprint)
     assert defaults["policy_pack_source"] == "repave-observability-pack"

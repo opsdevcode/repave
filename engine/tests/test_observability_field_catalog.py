@@ -21,7 +21,7 @@ def test_catalog_has_field_options(repo_root) -> None:
 def test_validate_observability_catalog_fields_rejects_bad_team(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     with pytest.raises(ValueError, match="Invalid team"):
         validate_inputs(
@@ -48,7 +48,7 @@ def test_validate_observability_catalog_fields_rejects_bad_team(repo_root: Path)
 def test_recommended_mode_applies_catalog_defaults(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -69,7 +69,7 @@ def test_recommended_mode_applies_catalog_defaults(repo_root: Path) -> None:
 def test_recommended_mode_monitors_catalog_defaults(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -89,7 +89,7 @@ def test_recommended_mode_monitors_catalog_defaults(repo_root: Path) -> None:
 def test_monitor_pack_backend_mismatch_raises(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     with pytest.raises(ValueError, match="not valid for backend"):
         validate_inputs(

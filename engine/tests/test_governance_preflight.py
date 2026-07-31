@@ -8,7 +8,7 @@ from repave_engine.settings import OutputConfig
 def test_build_blueprint_preflight_observability_repo_template(repo_root) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     output = OutputConfig(github_org="acme", modules_root=repo_root / "modules")
     preflight = build_blueprint_preflight(blueprint, output_config=output)
@@ -19,7 +19,7 @@ def test_build_blueprint_preflight_observability_repo_template(repo_root) -> Non
 def test_build_blueprint_preflight_includes_repo_and_gates(repo_root) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     output = OutputConfig(github_org="acme", modules_root=repo_root / "modules")
     preflight = build_blueprint_preflight(blueprint, output_config=output)

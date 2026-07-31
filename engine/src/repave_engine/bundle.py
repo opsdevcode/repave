@@ -58,11 +58,11 @@ def list_bundles(repo_root: Path) -> list[Bundle]:
         return []
     results: list[Bundle] = []
     for bundle_file in sorted(bundles_root.glob("*/bundle.yaml")):
-        results.append(load_bundle(bundle_file.parent, repo_root))
+        results.append(load_bundle(bundle_file.parent, repo_root=repo_root))
     return results
 
 
-def load_bundle(bundle_dir: Path, repo_root: Path | None = None) -> Bundle:
+def load_bundle(bundle_dir: Path, *, repo_root: Path | None = None) -> Bundle:
     bundle_dir = bundle_dir.resolve()
     bundle_file = bundle_dir / "bundle.yaml"
     if not bundle_file.is_file():
@@ -170,7 +170,7 @@ def resolve_member_blueprint(
     member: BundleMember,
 ) -> Blueprint:
     path = blueprint_dir(repo_root, member.blueprint_name)
-    return load_blueprint(path, repo_root)
+    return load_blueprint(path, repo_root=repo_root)
 
 
 def prepare_member_values(

@@ -71,7 +71,7 @@ def test_materialize_dashboard_pack_writes_community_json(repo_root: Path, tmp_p
 def test_validate_inputs_rejects_grafana_pack_on_datadog_backend(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     with pytest.raises(ValueError, match="Dashboard pack"):
         validate_inputs(

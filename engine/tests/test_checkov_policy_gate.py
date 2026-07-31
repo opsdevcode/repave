@@ -22,7 +22,9 @@ def test_checkov_scan_dir_in_command(tmp_path: Path) -> None:
 
 
 def test_checkov_policy_generate_gate_passes(repo_root: Path, tmp_path: Path) -> None:
-    blueprint = load_blueprint(repo_root / "blueprints" / "checkov-policy-generic", repo_root)
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "checkov-policy-generic", repo_root=repo_root
+    )
     staging = tmp_path / "staging"
     output_config = OutputConfig(
         github_org="example",

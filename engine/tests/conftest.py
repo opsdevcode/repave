@@ -22,12 +22,14 @@ def repo_root() -> Path:
 
 @pytest.fixture
 def terraform_blueprint(repo_root: Path) -> Blueprint:
-    return load_blueprint(repo_root / "blueprints" / "terraform-module-generic", repo_root)
+    return load_blueprint(
+        repo_root / "blueprints" / "terraform-module-generic", repo_root=repo_root
+    )
 
 
 @pytest.fixture
 def ansible_blueprint(repo_root: Path) -> Blueprint:
-    return load_blueprint(repo_root / "blueprints" / "ansible-role-generic", repo_root)
+    return load_blueprint(repo_root / "blueprints" / "ansible-role-generic", repo_root=repo_root)
 
 
 @pytest.fixture

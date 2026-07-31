@@ -6,23 +6,25 @@ import json
 import os
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from repave_engine.gate_toolchain import gate_tool_status, portal_runtime_info
 
 
-@dataclass
+@dataclass(frozen=True)
 class ReadinessReport:
     ready: bool
-    checks: dict[str, bool] = field(default_factory=dict)
-    details: dict[str, Any] = field(default_factory=dict)
+    checks: Mapping[str, bool]
+    details: Mapping[str, Any]
 
     def to_payload(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "status": "ready" if self.ready else "not_ready",
-            "checks": self.checks,
+            "checks": dict(self.checks),
         }
         payload.update(self.details)
         return payload
@@ -149,4 +151,8 @@ def evaluate_readiness(
         details["run_queue_inflight"] = run_queue_depth
 
     ready = all(checks.values())
-    return ReadinessReport(ready=ready, checks=checks, details=details)
+    return ReadinessReport(
+        ready=ready,
+        checks=MappingProxyType(checks),
+        details=MappingProxyType(details),
+    )

@@ -190,7 +190,7 @@ def test_list_blueprints(repo_root: Path) -> None:
 def test_load_app_service_generic_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "app-service-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "app-service"
     assert "dockerfile-lint" in blueprint.gates
@@ -200,7 +200,7 @@ def test_load_app_service_generic_blueprint(repo_root: Path) -> None:
 def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "helm-chart"
     assert "helm-lint" in blueprint.gates
@@ -210,7 +210,7 @@ def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:
 def test_validate_helm_chart_requires_ingress_host_when_enabled(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     with pytest.raises(ValueError, match="ingress_host"):
         validate_inputs(
@@ -231,7 +231,7 @@ def test_build_provenance_document_helm_chart(repo_root: Path) -> None:
 
     blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     document = build_provenance_document(
         blueprint,
@@ -252,7 +252,7 @@ def test_build_provenance_document_helm_chart(repo_root: Path) -> None:
 def test_load_checkov_policy_generic_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "checkov-policy-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "checkov-policy"
     assert "checkov" in blueprint.gates
@@ -263,7 +263,7 @@ def test_load_checkov_policy_generic_blueprint(repo_root: Path) -> None:
 def test_load_opa_policy_generic_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "opa-policy-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "opa-policy"
     assert "opa" in blueprint.gates
@@ -274,7 +274,7 @@ def test_load_opa_policy_generic_blueprint(repo_root: Path) -> None:
 def test_load_azure_policy_generic_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "azure-policy-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "azure-policy"
     assert "azure-policy" in blueprint.gates
@@ -284,7 +284,7 @@ def test_load_azure_policy_generic_blueprint(repo_root: Path) -> None:
 def test_load_ansible_collection_generic_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-collection-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.name == "ansible-collection-generic"
     assert blueprint.artifact_type == "ansible-collection"
@@ -295,7 +295,7 @@ def test_load_ansible_collection_generic_blueprint(repo_root: Path) -> None:
 def test_build_provenance_document_ansible_collection(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-collection-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -316,7 +316,7 @@ def test_build_provenance_document_ansible_collection(repo_root: Path) -> None:
 def test_load_ansible_playbook_project_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.name == "ansible-playbook-project"
     assert blueprint.artifact_type == "ansible-playbook-project"
@@ -326,7 +326,7 @@ def test_load_ansible_playbook_project_blueprint(repo_root: Path) -> None:
 def test_build_provenance_document_ansible_playbook_project(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -346,7 +346,7 @@ def test_build_provenance_document_ansible_playbook_project(repo_root: Path) -> 
 def test_validate_ansible_playbook_pinned_roles(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -365,7 +365,7 @@ def test_validate_ansible_playbook_pinned_roles(repo_root: Path) -> None:
 def test_build_provenance_document_ansible_playbook_pinned_roles(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "ansible-playbook-project",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -393,7 +393,7 @@ def test_build_provenance_document_ansible_playbook_pinned_roles(repo_root: Path
 def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-resource",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.name == "terraform-module-resource"
     assert blueprint.version == "0.5.0"
@@ -408,7 +408,7 @@ def test_load_terraform_module_resource_blueprint(repo_root: Path) -> None:
 def test_validate_single_resource_inputs(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-module-resource",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -429,7 +429,7 @@ def test_validate_single_resource_inputs(repo_root: Path) -> None:
 def test_load_terraform_environment_stack_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-environment-stack",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.name == "terraform-environment-stack"
     assert blueprint.artifact_type == "terraform-environment-stack"
@@ -439,7 +439,7 @@ def test_load_terraform_environment_stack_blueprint(repo_root: Path) -> None:
 def test_build_provenance_document_environment_stack(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-environment-stack",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -464,7 +464,7 @@ def test_build_provenance_document_environment_stack(repo_root: Path) -> None:
 def test_validate_environment_stack_pinned_modules(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "terraform-environment-stack",
-        repo_root,
+        repo_root=repo_root,
     )
     normalized = validate_inputs(
         blueprint,
@@ -585,7 +585,7 @@ def test_list_blueprints_empty_dir(tmp_path: Path) -> None:
 
 def test_load_blueprint_missing_file(tmp_path: Path, repo_root: Path) -> None:
     with pytest.raises(FileNotFoundError, match="Blueprint not found"):
-        load_blueprint(tmp_path / "missing" / "blueprint.yaml", repo_root)
+        load_blueprint(tmp_path / "missing" / "blueprint.yaml", repo_root=repo_root)
 
 
 def test_validate_rejects_invalid_enum_value(tmp_path: Path) -> None:
@@ -623,7 +623,7 @@ def test_validate_rejects_empty_provider_services(terraform_blueprint) -> None:
 def test_load_observability_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "observability"
     assert "promtool" in blueprint.gates
@@ -641,7 +641,7 @@ def test_load_observability_blueprint(repo_root: Path) -> None:
 def test_build_provenance_document_observability(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "observability-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -671,7 +671,7 @@ def test_build_provenance_document_observability(repo_root: Path) -> None:
 def test_load_dashboards_as_code_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "observability"
     assert "grafana-dashboard" in blueprint.gates
@@ -682,7 +682,7 @@ def test_load_dashboards_as_code_blueprint(repo_root: Path) -> None:
 def test_build_provenance_document_dashboards(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "dashboards-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -712,7 +712,7 @@ def test_build_provenance_document_dashboards(repo_root: Path) -> None:
 def test_load_monitors_as_code_blueprint(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     assert blueprint.artifact_type == "observability"
     assert "promtool" in blueprint.gates
@@ -724,7 +724,7 @@ def test_load_monitors_as_code_blueprint(repo_root: Path) -> None:
 def test_build_provenance_document_monitors(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "monitors-as-code-generic",
-        repo_root,
+        repo_root=repo_root,
     )
     from repave_engine.provenance import build_provenance_document
 
@@ -773,4 +773,4 @@ def test_load_blueprint_rejects_invalid_schema(tmp_path: Path, repo_root: Path) 
     )
 
     with pytest.raises(jsonschema.ValidationError):
-        load_blueprint(blueprint_dir, repo_root)
+        load_blueprint(blueprint_dir, repo_root=repo_root)

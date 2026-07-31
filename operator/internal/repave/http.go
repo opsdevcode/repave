@@ -99,7 +99,7 @@ func postUpgradeJSON(
 ) error {
 	base := strings.TrimRight(strings.TrimSpace(baseURL), "/")
 	if base == "" {
-		return fmt.Errorf("repave API URL is not configured")
+		return fmt.Errorf("repave API URL is not configured; set REPAVE_API_URL")
 	}
 	payload, err := json.Marshal(body)
 	if err != nil {

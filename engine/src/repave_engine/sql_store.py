@@ -15,6 +15,17 @@ from urllib.parse import unquote, urlparse
 Dialect = Literal["sqlite", "postgresql"]
 
 
+def is_unique_constraint_error(exc: Exception) -> bool:
+    """True for SQLite IntegrityError or psycopg UniqueViolation (when installed)."""
+    if isinstance(exc, sqlite3.IntegrityError):
+        return True
+    try:
+        from psycopg.errors import UniqueViolation
+    except ImportError:
+        return False
+    return isinstance(exc, UniqueViolation)
+
+
 @dataclass(frozen=True)
 class DatabaseConfig:
     dialect: Dialect

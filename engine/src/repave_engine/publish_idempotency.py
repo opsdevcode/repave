@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import sqlite3
 import threading
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -17,6 +16,7 @@ from repave_engine.sql_store import (
     connect,
     database_config_for_runs_db,
     ensure_schema,
+    is_unique_constraint_error,
 )
 from repave_engine.target_repo import ModuleRepository
 
@@ -136,17 +136,16 @@ class PublishIdempotencyStore:
                     ),
                 )
                 conn.commit()
-            except sqlite3.IntegrityError:
-                conn.rollback()
             except Exception as exc:
                 conn.rollback()
-                if "unique" in str(exc).lower():
-                    pass
-                else:
+                if not is_unique_constraint_error(exc):
                     raise
         existing = self.get(publish_key)
         if existing is None:
-            raise RuntimeError(f"publish receipt missing after insert: {publish_key}")
+            raise RuntimeError(
+                f"publish receipt missing after insert for key {publish_key!r}; "
+                "retry the publish or inspect the runs database publish_receipts table"
+            )
         return existing
 
 

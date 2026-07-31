@@ -80,7 +80,7 @@ def test_generate_skips_github_publish_when_receipt_exists(
 
     blueprint = load_blueprint(
         blueprint_dir(repo_root, "terraform-module-generic"),
-        repo_root,
+        repo_root=repo_root,
     )
     output = OutputConfig(
         github_org="example-org",

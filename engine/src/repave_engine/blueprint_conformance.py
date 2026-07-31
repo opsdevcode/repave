@@ -220,7 +220,7 @@ def run_blueprint_conformance(
     if spec is None:
         raise FileNotFoundError(f"Missing {blueprint_dir / CONFORMANCE_FILE}")
 
-    blueprint = load_blueprint(blueprint_dir, repo_root)
+    blueprint = load_blueprint(blueprint_dir, repo_root=repo_root)
     values = {k: str(v) for k, v in spec.inputs.items()}
 
     prev_generated_at = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT")

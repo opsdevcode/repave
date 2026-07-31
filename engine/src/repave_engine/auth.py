@@ -84,7 +84,10 @@ async def fetch_oidc_discovery(issuer: str) -> dict[str, Any]:
         response.raise_for_status()
         data = response.json()
     if not isinstance(data, dict):
-        raise ValueError("Invalid OIDC discovery document")
+        raise ValueError(
+            f"invalid OIDC discovery document from {url}; "
+            "check REPAVE_OIDC_ISSUER points at a valid OpenID provider"
+        )
     return data
 
 

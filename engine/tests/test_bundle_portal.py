@@ -17,7 +17,9 @@ def test_bundle_member_previews_repo_names(
     repo_root: Path,
     output_config: OutputConfig,
 ) -> None:
-    bundle = load_bundle(repo_root / "blueprints" / "bundles" / "service-stack", repo_root)
+    bundle = load_bundle(
+        repo_root / "blueprints" / "bundles" / "service-stack", repo_root=repo_root
+    )
     shared = {
         "service_name": "payments-api",
         "description": "Payments API",
@@ -41,7 +43,9 @@ def test_bundle_provenance_document(
     repo_root: Path,
     output_config: OutputConfig,
 ) -> None:
-    bundle = load_bundle(repo_root / "blueprints" / "bundles" / "service-stack", repo_root)
+    bundle = load_bundle(
+        repo_root / "blueprints" / "bundles" / "service-stack", repo_root=repo_root
+    )
     inputs = {
         "service_name": "audit-svc",
         "description": "Audit test",
