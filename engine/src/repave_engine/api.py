@@ -63,12 +63,10 @@ from repave_engine.blueprint import (
 )
 from repave_engine.bundle import list_bundles, load_bundle
 from repave_engine.bundle_portal import (
-    build_bundle_result_portal_context,
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
-from repave_engine.diff_view import diff_view_models
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
     find_catalog_entity,
@@ -83,13 +81,11 @@ from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import generation_result_from_stored_run
 from repave_engine.github_auth import resolve_github_access_token
-from repave_engine.governance_annotations import build_governance_previews
-from repave_engine.governance_preflight import build_blueprint_preflight, build_bundle_preflight
+from repave_engine.governance_preflight import build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
 from repave_engine.observability_catalog import (
-    catalog_has_field_options,
     load_observability_catalog,
 )
 from repave_engine.observability_selection import (
@@ -100,7 +96,6 @@ from repave_engine.observability_selection import (
 from repave_engine.pipeline import generate_from_blueprint, generate_from_bundle
 from repave_engine.policy_catalog import (
     catalog_for_api,
-    enabled_rule_ids_for_profile,
     load_policy_catalog,
 )
 from repave_engine.policy_selection import (
@@ -108,6 +103,7 @@ from repave_engine.policy_selection import (
     blueprint_supports_policy_customization,
     policy_input_defaults,
 )
+from repave_engine.portal_blueprint_view import build_blueprint_form_extras
 from repave_engine.portal_context import (
     audit_file_or_http404,
     audit_portal_enabled,
@@ -115,14 +111,22 @@ from repave_engine.portal_context import (
     portal_fleet_context,
     portal_recent_activity,
 )
+from repave_engine.portal_generate import (
+    PortalGenerateRedirect,
+    run_portal_generate,
+)
+from repave_engine.portal_generate import (
+    dry_run_from_form as _dry_run_from_form,
+)
+from repave_engine.portal_generate import (
+    plan_preview_from_form as _plan_preview_from_form,
+)
 from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.run_queue import (
     RunQueue,
     RunQueueConfig,
-    RunQueueFullError,
-    RunQueueShuttingDownError,
     build_run_queue,
 )
 from repave_engine.run_store import RunStatus
@@ -141,68 +145,9 @@ from repave_engine.settings import (
     load_tracing_config,
 )
 from repave_engine.sql_session_middleware import SqlSessionMiddleware
-from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
-
-
-def _dry_run_from_form(form: object) -> bool:
-    """Parse dry_run from multipart form; last value wins when multiple are sent."""
-    getlist = getattr(form, "getlist", None)
-    if getlist is None:
-        get = getattr(form, "get", lambda _k, _d=None: "true")
-        return str(get("dry_run", "true")).lower() != "false"
-    raw = [str(item).lower() for item in getlist("dry_run") if str(item).strip()]
-    if not raw:
-        return True
-    return raw[-1] != "false"
-
-
-def _plan_preview_from_form(form: object) -> bool:
-    get = getattr(form, "get", lambda _k, _d=None: "")
-    return str(get("plan_preview", "")).strip() in ("1", "true", "yes")
-
-
-def _stream_from_form(form: object) -> bool:
-    get = getattr(form, "get", lambda _k, _d=None: "")
-    return str(get("stream", "")).strip() in ("1", "true", "yes")
-
-
-def _blueprint_values_from_form(form: object, blueprint: object) -> dict[str, str]:
-    from repave_engine.blueprint import Blueprint
-
-    if not isinstance(blueprint, Blueprint):
-        raise TypeError("blueprint must be Blueprint")
-    values: dict[str, str] = {}
-    get = getattr(form, "get", lambda _k, _d="": "")
-    getlist = getattr(form, "getlist", None)
-    for field in blueprint.inputs:
-        if field.name == "provider_services":
-            selected: list[str] = []
-            if getlist is not None:
-                selected = [str(item) for item in getlist("provider_services") if str(item).strip()]
-            if not selected and getlist is not None:
-                selected = [
-                    str(item) for item in getlist("provider_service_option") if str(item).strip()
-                ]
-            values[field.name] = ",".join(selected)
-            continue
-
-        if field.name == "provider_service_scope":
-            values[field.name] = str(get(field.name, ""))
-            continue
-
-        if field.enum and field.multi:
-            if getlist is None:
-                values[field.name] = str(get(field.name, ""))
-            else:
-                selected = [str(item) for item in getlist(field.name) if str(item).strip()]
-                values[field.name] = ",".join(selected)
-            continue
-
-        values[field.name] = str(get(field.name, ""))
-    return values
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
@@ -609,132 +554,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
     async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
-        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
-        policy_catalog: dict[str, object] | None = None
-        policy_defaults: dict[str, str] = {}
-        policy_enabled_rule_ids: set[str] = set()
-        if blueprint_supports_policy_customization(blueprint) or blueprint_supports_optional_policy(
-            blueprint
-        ):
-            policy_defaults = policy_input_defaults(blueprint)
-            catalog = load_policy_catalog(repo_root)
-            policy_catalog = catalog_for_api(
-                catalog,
-                blueprint.artifact_type,
-                defaults=policy_defaults,
-            )
-            profile = policy_defaults.get("policy_profile", "estate-default")
-            policy_enabled_rule_ids = enabled_rule_ids_for_profile(
-                catalog,
-                profile=profile,
-                artifact_type=blueprint.artifact_type,
-            )
-        observability_catalog: dict[str, object] | None = None
-        observability_defaults: dict[str, str] = {}
-        observability_field_catalog = False
-        obs_catalog_form = (
-            blueprint_supports_observability_notifications(blueprint)
-            or blueprint_supports_dashboard_packs(blueprint)
-            or blueprint_supports_observability_field_catalog(blueprint)
-        )
-        if obs_catalog_form:
-            observability_defaults = observability_input_defaults(blueprint, repo_root)
-            for field in blueprint.inputs:
-                if field.name == "backend" and field.default not in (None, ""):
-                    observability_defaults.setdefault("backend", str(field.default))
-            obs_cat, obs_catalog_service_ids = load_merged_observability_catalog(
-                repo_root,
-                resolved_output.modules_root,
-            )
-            observability_field_catalog = blueprint_supports_observability_field_catalog(
-                blueprint
-            ) and catalog_has_field_options(obs_cat)
-            observability_catalog = observability_catalog_for_api(
-                obs_cat,
-                defaults=observability_defaults,
-                backend=observability_defaults.get("backend", "grafana"),
-                blueprint_name=blueprint.name,
-                catalog_service_ids=obs_catalog_service_ids,
-            )
-        ansible_catalog: dict[str, object] | None = None
-        ansible_role_patterns = blueprint_supports_role_patterns(blueprint)
-        ansible_playbook_patterns = blueprint_supports_playbook_patterns(blueprint)
-        ansible_collection_sample_patterns = blueprint_supports_collection_sample_patterns(
-            blueprint
-        )
-        if ansible_role_patterns or ansible_playbook_patterns or ansible_collection_sample_patterns:
-            ansible_cat = load_ansible_catalog(repo_root)
-            ansible_catalog = ansible_catalog_for_api(
-                ansible_cat,
-                defaults=dict(ansible_cat.defaults),
-                support_linux=True,
-                support_windows=False,
-                blueprint_name=blueprint.name,
-            )
-        provider_catalog = load_provider_catalog(blueprint.path)
-        # Golden-path forms use a single scrollable page (no Back/Next stepper).
-        form_stepper = None
-        profile = policy_defaults.get("policy_profile", "estate-default")
-        standards = standards_diff_for_pin(
-            repo_root,
-            standard_source=blueprint.standard_source,
-            pinned_version=blueprint.standard_version,
-        )
-        try:
-            policy_catalog_obj = load_policy_catalog(repo_root)
-        except FileNotFoundError:
-            policy_catalog_obj = None
-        enabled_policy_ids = policy_enabled_rule_ids
-        if not enabled_policy_ids and policy_catalog_obj is not None:
-            enabled_policy_ids = enabled_rule_ids_for_profile(
-                policy_catalog_obj,
-                profile=profile,
-                artifact_type=blueprint.artifact_type,
-            )
-        policy_rules = (
-            tuple(rule for rule in policy_catalog_obj.rules if rule.id in enabled_policy_ids)
-            if policy_catalog_obj is not None
-            else ()
-        )
-        governance_previews = build_governance_previews(
-            repo_root,
-            standards,
-            policy_rules,
+        extras = build_blueprint_form_extras(
+            repo_root=repo_root,
+            blueprint_name=blueprint_name,
+            modules_root=resolved_output.modules_root,
+            output_config=resolved_output,
         )
         return templates.TemplateResponse(
             request,
             "blueprint_form.html",
             page_context(
                 request,
-                blueprint=blueprint,
-                provider_catalog=provider_catalog,
-                form_stepper=form_stepper,
-                standards_diff=standards,
-                standards_diff_views=diff_view_models(standards),
-                governance_previews=governance_previews,
-                governance_preflight=build_blueprint_preflight(
-                    blueprint,
-                    output_config=resolved_output,
-                    policy_profile=profile,
-                ),
-                recent_activity=portal_recent_activity(repo_root),
-                policy_customization=blueprint_supports_policy_customization(blueprint),
-                policy_customization_optional=blueprint_supports_optional_policy(blueprint),
-                policy_defaults=policy_defaults,
-                policy_catalog=policy_catalog,
-                policy_enabled_rule_ids=policy_enabled_rule_ids,
-                observability_notifications=blueprint_supports_observability_notifications(
-                    blueprint
-                ),
-                observability_dashboard_packs=blueprint_supports_dashboard_packs(blueprint),
-                observability_monitor_packs=blueprint_supports_monitor_packs(blueprint),
-                observability_field_catalog=observability_field_catalog,
-                observability_defaults=observability_defaults,
-                observability_catalog=observability_catalog,
-                ansible_role_patterns=ansible_role_patterns,
-                ansible_playbook_patterns=ansible_playbook_patterns,
-                ansible_collection_sample_patterns=ansible_collection_sample_patterns,
-                ansible_catalog=ansible_catalog,
+                **extras,
                 nav_active="catalog",
             ),
         )
@@ -950,126 +781,35 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         form = await request.form()
-        bundle_name = str(form.get("bundle_name", "")).strip()
         dry_run = _dry_run_from_form(form)
         require_run = dry_run or _plan_preview_from_form(form)
         github_token = None
         if not dry_run:
             github_token = resolve_github_access_token()
-
-        if bundle_name:
-            if worker_execution_mode:
-                raise HTTPException(
-                    status_code=503,
-                    detail=(
-                        "Bundle generation is not available when execution_mode=worker; "
-                        "use blueprint generation with async runs"
-                    ),
-                )
-            bundle_dir = bundles_dir(repo_root) / bundle_name
-            bundle = load_bundle(bundle_dir, repo_root=repo_root)
-            bundle_values: dict[str, str] = {}
-            for field in bundle.inputs:
-                if field.enum and field.multi:
-                    selected = [str(item) for item in form.getlist(field.name) if str(item).strip()]
-                    bundle_values[field.name] = ",".join(selected)
-                else:
-                    bundle_values[field.name] = str(form.get(field.name, ""))
-            bundle_result = generate_from_bundle(
-                bundle,
-                bundle_values,
-                repo_root=repo_root,
-                output_config=resolved_output,
-                dry_run=dry_run,
-                require_run=require_run,
-                github_token=github_token,
-            )
-            combined = bundle_result.combined_gates()
-            return templates.TemplateResponse(
-                request,
-                "bundle_result.html",
-                page_context(
-                    request,
-                    bundle_result=bundle_result,
-                    nav_active="catalog",
-                    gate_summary=gate_summary(combined),
-                    gates_ok=bundle_result.all_members_passed(),
-                    gate_toolchain_callout=gate_toolchain_callout(
-                        combined,
-                        dry_run=bundle_result.dry_run,
-                    ),
-                    result_portal=build_bundle_result_portal_context(
-                        bundle_result,
-                        shared_inputs=bundle_result.shared_inputs,
-                    ),
-                ),
-            )
-
-        blueprint_name = str(form.get("blueprint_name", ""))
-        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
-        values = _blueprint_values_from_form(form, blueprint)
-
-        use_stream = _stream_from_form(form) or worker_execution_mode
-        if worker_execution_mode:
-            if run_queue is None:
-                raise HTTPException(
-                    status_code=503,
-                    detail="Async generation is required in worker execution mode",
-                )
-            acting = user.subject if user else current_acting_user()
-            try:
-                record = run_queue.submit(
-                    blueprint_name=blueprint_name,
-                    inputs=values,
-                    dry_run=dry_run,
-                    acting_user=acting,
-                )
-            except RunQueueFullError as exc:
-                raise HTTPException(status_code=429, detail=str(exc)) from exc
-            except RunQueueShuttingDownError as exc:
-                raise HTTPException(status_code=503, detail=str(exc)) from exc
-            return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
-
-        if use_stream and run_queue is not None:
-            acting = user.subject if user else current_acting_user()
-            try:
-                record = run_queue.submit(
-                    blueprint_name=blueprint_name,
-                    inputs=values,
-                    dry_run=dry_run,
-                    acting_user=acting,
-                )
-            except RunQueueFullError:
-                pass
-            except RunQueueShuttingDownError:
-                pass
-            else:
-                return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
-
-        result = generate_from_blueprint(
-            blueprint,
-            values,
+        acting = user.subject if user else current_acting_user()
+        outcome = run_portal_generate(
+            form=form,
+            repo_root=repo_root,
             output_config=resolved_output,
+            worker_execution_mode=worker_execution_mode,
+            run_queue=run_queue,
+            acting_user=acting,
+            github_token=github_token,
             dry_run=dry_run,
             require_run=require_run,
-            github_token=github_token,
-            repo_root=repo_root,
+            gate_toolchain_callout=gate_toolchain_callout,
+            generate_from_blueprint_fn=generate_from_blueprint,
+            generate_from_bundle_fn=generate_from_bundle,
         )
-
+        if isinstance(outcome, PortalGenerateRedirect):
+            return RedirectResponse(outcome.url, status_code=outcome.status_code)
         return templates.TemplateResponse(
             request,
-            "result.html",
+            outcome.template_name,
             page_context(
                 request,
-                result=result,
                 nav_active="catalog",
-                gate_summary=gate_summary(result.gates),
-                gates_ok=all_gates_passed(result.gates),
-                gate_toolchain_callout=gate_toolchain_callout(
-                    result.gates,
-                    dry_run=result.dry_run,
-                ),
-                result_portal=build_result_portal_context(result, repo_root),
+                **outcome.context,
             ),
         )
 

@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
+	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/repave"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
 	"github.com/opsdevcode/repave/operator/internal/status"
@@ -413,7 +414,7 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 
 		result, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(result.RequeueAfter).To(Equal(remoteFetchRetry))
+		Expect(result.RequeueAfter).To(Equal(inventory.RemoteFetchRetry))
 
 		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
 		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseError))

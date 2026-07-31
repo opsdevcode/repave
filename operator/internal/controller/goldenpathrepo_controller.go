@@ -182,13 +182,6 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
-func displayLocation(spec repavev1beta1.GoldenPathRepoSpec) string {
-	if spec.LocalPath != "" {
-		return spec.LocalPath
-	}
-	return spec.RepoURL
-}
-
 // SetupWithManager registers the reconciler with the Manager.
 func (r *GoldenPathRepoReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).

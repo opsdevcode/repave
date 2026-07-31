@@ -9,12 +9,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-import yaml
-
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.fleet import FleetEntry, normalize_repo_url
 from repave_engine.fleet_operator_status import FleetOperatorStatus
 from repave_engine.fleet_view import build_fleet_rows
+from repave_engine.yaml_util import load_yaml_mapping_soft
 
 ScoreLevel = Literal["pass", "warn", "fail", "unknown"]
 
@@ -85,18 +84,8 @@ def entity_id_for_repo_url(repo_url: str) -> str:
     return f"entity-{digest}"
 
 
-def _load_yaml_mapping(path: Path) -> dict[str, Any] | None:
-    if not path.is_file():
-        return None
-    try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except yaml.YAMLError:
-        return None
-    return data if isinstance(data, dict) else None
-
-
 def _catalog_metadata(repo_dir: Path) -> dict[str, str]:
-    doc = _load_yaml_mapping(repo_dir / CATALOG_FILENAME)
+    doc = load_yaml_mapping_soft(repo_dir / CATALOG_FILENAME)
     if doc is None:
         return {}
     metadata = doc.get("metadata")
@@ -116,7 +105,7 @@ def _catalog_metadata(repo_dir: Path) -> dict[str, str]:
 
 
 def _repave_spec(repo_dir: Path) -> dict[str, Any] | None:
-    doc = _load_yaml_mapping(repo_dir / "repave.yaml")
+    doc = load_yaml_mapping_soft(repo_dir / "repave.yaml")
     if doc is None:
         return None
     spec = doc.get("spec")

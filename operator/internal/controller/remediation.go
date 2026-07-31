@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -11,8 +12,6 @@ import (
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
-	"github.com/opsdevcode/repave/operator/internal/git"
-	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
@@ -70,23 +69,13 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	workDir, workErr := remediationWorkDir(repo.Spec, workspace)
+	workDir, workErr := remediation.WorkDir(repo.Spec, workspace)
 	if workErr != nil {
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationSkipped,
-				Message: workErr.Error(),
-			})
-		})
+		return patchRemediationPRFailed(ctx, c, repo, status.ReasonRemediationSkipped, workErr.Error(), false)
 	}
 
 	desiredVersion := desired.BlueprintVersion
-	if repo.Status.RemediationPR != nil &&
-		repo.Status.RemediationPR.DesiredBlueprintVersion == desiredVersion &&
-		(repo.Status.RemediationPR.State == remediation.PRStateOpen ||
-			repo.Status.RemediationPR.State == remediation.PRStatePlanned) {
+	if remediation.PROpen(repo.Status.RemediationPR, desiredVersion) {
 		return nil
 	}
 
@@ -94,55 +83,30 @@ func applyRemediationPRStatus(
 		applier = repave.NewApplyUpgrader(repaveCfg)
 	}
 
-	branch := remediation.UpgradeBranchName(
-		repo.Spec.Remediation.BranchPrefix,
-		desired.BlueprintName,
-		desiredVersion,
-	)
-	title := remediation.PullRequestTitle(desired.BlueprintName, desiredVersion)
 	summary := ""
 	if repo.Status.UpgradePlan != nil {
 		summary = repo.Status.UpgradePlan.Summary
 	}
-	body := remediation.PullRequestBody(
-		summary,
-		desired.BlueprintName,
-		desiredVersion,
-		desired.StandardVersion,
-	)
-	commitMessage := title
+	prMeta := remediation.BuildPRMetadata(repo.Spec.Remediation, desired, summary)
 
-	pushRemote := repaveCfg.HTTPMode() && repo.Spec.RepoURL != "" && !repo.Spec.Remediation.DryRun
-	applyTarget := repave.UpgradeTarget(repo.Spec.RepoURL, repo.Spec.LocalPath, workDir, repaveCfg)
-
-	applyResult, err := applier.ApplyUpgrade(
-		ctx,
-		repaveCfg,
-		applyTarget,
-		desired.BlueprintName,
-		branch,
-		commitMessage,
-		repo.Spec.Remediation.PreserveLocal,
-		pushRemote,
-	)
+	applyResult, err := remediation.ApplyUpgradeChanges(ctx, remediation.ApplyInput{
+		Spec:      repo.Spec,
+		WorkDir:   workDir,
+		Desired:   desired,
+		Metadata:  prMeta,
+		Applier:   applier,
+		RepaveCfg: repaveCfg,
+	})
 	if err != nil {
-		msg := err.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			latest.Status.RemediationPR = nil
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationFailed,
-				Message: msg,
-			})
-		})
+		return patchRemediationPRFailed(ctx, c, repo, status.ReasonRemediationFailed, err.Error(), true)
 	}
 
 	if repo.Spec.Remediation.DryRun {
-		err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+		msg := fmt.Sprintf("dry-run remediation on branch %s", applyResult.GitBranch)
+		if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
 				Branch:                  applyResult.GitBranch,
-				Title:                   title,
+				Title:                   prMeta.Title,
 				State:                   remediation.PRStatePlanned,
 				DesiredBlueprintVersion: desiredVersion,
 			}
@@ -150,108 +114,47 @@ func applyRemediationPRStatus(
 				Type:    status.ConditionRemediationPR,
 				Status:  metav1.ConditionTrue,
 				Reason:  status.ReasonRemediationPlanned,
-				Message: fmt.Sprintf("dry-run remediation on branch %s", applyResult.GitBranch),
+				Message: msg,
 			})
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
-		sendOperatorNotify(notify.EventRemediationPRPlanned, repo, applyResult.GitBranch, "", title,
-			fmt.Sprintf("dry-run remediation on branch %s", applyResult.GitBranch))
+		notify.SendGoldenPathRepoEvent(
+			notify.EventRemediationPRPlanned,
+			repo.ObjectMeta,
+			repo.Spec,
+			applyResult.GitBranch,
+			"",
+			msg,
+		)
 		return nil
 	}
 
-	if repo.Spec.RepoURL == "" {
-		msg := "remediation PR requires spec.repoURL when dryRun is false"
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationSkipped,
-				Message: msg,
-			})
-		})
-	}
-
-	resolvedToken, resolveErr := github.ResolveAccessToken(githubToken)
-	if resolveErr != nil {
-		msg := resolveErr.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationFailed,
-				Message: msg,
-			})
-		})
-	}
-	if resolvedToken == "" {
-		msg := "set GITHUB_TOKEN or GitHub App credentials to push branch and open remediation PR"
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationPending,
-				Message: msg,
-			})
-		})
-	}
-	// Fresh token for push/PR (App installation tokens expire; do not reuse startup client).
-	prClient := &github.HTTPClient{Token: resolvedToken}
-
-	if !applyResult.Pushed {
-		if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, resolvedToken); err != nil {
-			msg := err.Error()
-			return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-				latest.Status.RemediationPR = nil
-				status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-					Type:    status.ConditionRemediationPR,
-					Status:  metav1.ConditionFalse,
-					Reason:  status.ReasonRemediationFailed,
-					Message: msg,
-				})
-			})
-		}
-	}
-
-	repository, err := github.ParseRepositoryURL(repo.Spec.RepoURL)
-	if err != nil {
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationFailed,
-				Message: err.Error(),
-			})
-		})
-	}
-
-	pr, err := prClient.CreatePullRequest(ctx, github.CreatePullRequestRequest{
-		Repository: repository,
-		Title:        title,
-		Body:         body,
-		HeadBranch:   applyResult.GitBranch,
-		BaseBranch:   remediation.BaseBranch(repo.Spec.Remediation.BaseBranch),
+	published, err := remediation.PublishPullRequest(ctx, remediation.PublishInput{
+		Spec:           repo.Spec,
+		WorkDir:        workDir,
+		Metadata:       prMeta,
+		ApplyResult:    applyResult,
+		DesiredVersion: desiredVersion,
+		GitHubToken:    githubToken,
 	})
 	if err != nil {
-		msg := err.Error()
-		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
-			latest.Status.RemediationPR = nil
-			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
-				Type:    status.ConditionRemediationPR,
-				Status:  metav1.ConditionFalse,
-				Reason:  status.ReasonRemediationFailed,
-				Message: msg,
-			})
-		})
+		switch {
+		case errors.Is(err, remediation.ErrGitHubTokenRequired):
+			return patchRemediationPRFailed(ctx, c, repo, status.ReasonRemediationPending, err.Error(), false)
+		case errors.Is(err, remediation.ErrRepoURLRequired):
+			return patchRemediationPRFailed(ctx, c, repo, status.ReasonRemediationSkipped, err.Error(), false)
+		default:
+			return patchRemediationPRFailed(ctx, c, repo, status.ReasonRemediationFailed, err.Error(), true)
+		}
 	}
 
 	if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 		latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
-			URL:                     pr.HTMLURL,
-			Number:                  pr.Number,
-			Branch:                  applyResult.GitBranch,
-			Title:                   pr.Title,
+			URL:                     published.URL,
+			Number:                  published.Number,
+			Branch:                  published.Branch,
+			Title:                   published.Title,
 			State:                   remediation.PRStateOpen,
 			DesiredBlueprintVersion: desiredVersion,
 		}
@@ -259,49 +162,40 @@ func applyRemediationPRStatus(
 			Type:    status.ConditionRemediationPR,
 			Status:  metav1.ConditionTrue,
 			Reason:  status.ReasonRemediationPROpen,
-			Message: pr.HTMLURL,
+			Message: published.URL,
 		})
 	}); err != nil {
 		return err
 	}
-	sendOperatorNotify(notify.EventRemediationPROpened, repo, applyResult.GitBranch, pr.HTMLURL, pr.Title,
-		fmt.Sprintf("Remediation PR opened: %s", pr.Title))
+	notify.SendGoldenPathRepoEvent(
+		notify.EventRemediationPROpened,
+		repo.ObjectMeta,
+		repo.Spec,
+		published.Branch,
+		published.URL,
+		fmt.Sprintf("Remediation PR opened: %s", published.Title),
+	)
 	return nil
 }
 
-func remediationWorkDir(
-	spec repavev1beta1.GoldenPathRepoSpec,
-	workspace *inventory.Workspace,
-) (string, error) {
-	if spec.LocalPath != "" {
-		return spec.LocalPath, nil
-	}
-	if workspace != nil && workspace.Path != "" {
-		return workspace.Path, nil
-	}
-	return "", fmt.Errorf("remediation requires spec.localPath or a materialized spec.repoURL clone")
-}
-
-func sendOperatorNotify(
-	event string,
+func patchRemediationPRFailed(
+	ctx context.Context,
+	c client.Client,
 	repo *repavev1beta1.GoldenPathRepo,
-	branch string,
-	prURL string,
-	_ string,
+	reason string,
 	message string,
-) {
-	repository := repo.Spec.RepoURL
-	if repository == "" {
-		repository = repo.Spec.LocalPath
-	}
-	cfg := notify.LoadConfig()
-	notify.Send(cfg, event, notify.Payload{
-		Namespace:  repo.Namespace,
-		Name:       repo.Name,
-		Repository: repository,
-		Message:    message,
-		PRURL:      prURL,
-		Branch:     branch,
+	clearPR bool,
+) error {
+	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+		if clearPR {
+			latest.Status.RemediationPR = nil
+		}
+		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+			Type:    status.ConditionRemediationPR,
+			Status:  metav1.ConditionFalse,
+			Reason:  reason,
+			Message: message,
+		})
 	})
 }
 
@@ -313,7 +207,7 @@ func clearRemediationPRStatus(
 	message string,
 ) error {
 	if repo.Status.RemediationPR == nil &&
-		!hasConditionType(repo.Status.Conditions, status.ConditionRemediationPR) {
+		!status.HasConditionType(repo.Status.Conditions, status.ConditionRemediationPR) {
 		return nil
 	}
 	return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
