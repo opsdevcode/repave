@@ -153,6 +153,14 @@ so portal and worker pods need no shared filesystem — see
 
 See [ADR 002](adr/002-v2-service-decomposition.md) and `.github/workflows/container.yml`.
 
+## Multi-replica Helm (day-2)
+
+Before `autoscaling.enabled` or `replicaCount` > 1, set `repave.durability.databaseUrl`
+(PostgreSQL recommended) and `secrets.sessionSecret`. The chart
+[`values-day2.yaml`](../deploy/k8s/chart/values-day2.yaml) overlay enables HPA, optional
+Prometheus Operator monitoring, and stricter readiness checks. Runbooks:
+[`docs/operations/README.md`](operations/README.md).
+
 ## API
 
 | Method | Path | Purpose |

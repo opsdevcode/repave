@@ -29,6 +29,23 @@ When opening PRs for this repository (including via `gh pr create`):
   do not conflict with release bumps.
 - Feature PRs may update **In progress**, **Shipped on `main`**, and section `**Status:**` only.
 
+## Roadmap housecleaning (same PR as shipped work)
+
+When a PR lands feature work, include doc housekeeping — **not** `make chart-validate`
+unless the diff also touches `deploy/k8s/chart/**`.
+
+Checklist:
+
+1. **Header** — **In progress** / **Shipped on `main`** reflect what merged.
+2. **Theme table + path tree** — open → shipped/partial where applicable.
+3. **Section status** — every touched theme has an accurate `**Status:**` line.
+4. **Stale text** — remove wrong branch names, `Not started`, superseded “blocked behind” notes.
+5. **Cross-links** — update `docs/durability.md`, `docs/verify.md`, operations runbooks,
+   and k8s READMEs when operators need the new paths.
+
+Docs-only housecleaning commits: skip the Python quality loop; see
+`.cursor/rules/pre-commit.mdc`.
+
 ## Merging to `main`
 
 After required checks pass, use the normal **Merge pull request** control on GitHub.

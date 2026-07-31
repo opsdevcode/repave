@@ -6,11 +6,13 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.106.0  
 
-**In progress:** GitHub App authentication for publish and remediation.  
-**Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2 (including
+**In progress:** multi-replica portal smoke in CI; operator production Helm chart.  
+**Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
-per-run Kubernetes Jobs, decomposed chart CI smoke).
+per-run Kubernetes Jobs, decomposed chart CI smoke); **GitHub App authentication** for
+publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
+PrometheusRule, runbooks).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -79,7 +81,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ v1.27–v1.28    service + SSO     authenticated single-tenant service via OIDC
   ├─ v1.31–v1.32    k8s artifacts     Helm chart + app-service golden paths (accelerated)
   ├─ v1.29–v1.34    operate + expand  conformance harness; observability; notifications; catalog
-  ├─ v1.35–v1.38    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks
+  ├─ v1.35–v1.38    operate in prod   health/HPA; alerts + SLOs; upgrade/rollback; runbooks (shipped)
   ├─ v1.39          policy-as-code    optional OPA/conftest gate on plan + manifests
   ├─ v1.40          observability     dashboards/alerts/monitors as code (Datadog/Grafana/Prom/OTel)
   ├─ v1.69–v1.70    ansible patterns  cross-platform role + pinned-roles rollout (shipped)
@@ -89,10 +91,10 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
-  ├─ k8s deploy      Helm chart for API/portal (shipped; day-2 + CI smoke follow-ups)
+  ├─ k8s deploy      Helm chart + day-2 operability (shipped; multi-replica smoke open)
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
-  ├─ supply chain    GitHub App auth instead of PATs; governed PR conventions
+  ├─ supply chain    GitHub App auth shipped; governed PR conventions open
   ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
   ├─ reach           repave verify (local + remote clone shipped); composite golden paths
@@ -114,13 +116,13 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Access and multi-user** | v1.27–v1.28 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
-| **In-cluster operations (Day-2)** | open (day-2 themes) | Chart on cluster; HPA/alerts/runbooks attach to [`deploy/k8s/chart/`](../deploy/k8s/chart/) |
+| **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
 | **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
 | **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
-| **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
-| **Hosted durability** | partial (Phase 1–2 shipped) | Unified SQL store for audit/fleet/runs; async queue + DLQ/replay; external workers (Phase 3) |
+| **Hardening** | shipped (group A) | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
+| **Hosted durability** | partial (Phase 1–3 shipped) | Unified SQL store for audit/fleet/runs/sessions; async queue + DLQ/replay; external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
-| **Supply chain** | open | GitHub App auth, digest-pinned actions and base images, governed PR conventions |
+| **Supply chain** | partial (GitHub App shipped) | Digest-pinned actions and base images, governed PR conventions |
 | **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
@@ -317,12 +319,22 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 - [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `chart-validate`,
   `chart-smoke`, and `chart-smoke-decomposed` required checks (path-gated skip on unrelated
   PRs; full smoke on `main`)
-- **Follow-ups:** day-2 themes (HPA, alerts, runbooks) in [Planned](#planned)
+- **Day-2 operability:** [`values-day2.yaml`](../deploy/k8s/chart/values-day2.yaml) (HPA,
+  ServiceMonitor, PrometheusRule), runbooks in [`docs/operations/`](../docs/operations/)
+- **Follow-ups:** multi-replica portal smoke in CI; operator production Helm chart
+
+### GitHub App authentication (engine v1.105+)
+
+- Engine `github_auth.py` + `resolve_github_access_token()`; operator installation-token cache;
+  Helm secret keys — see [`docs/github-app-auth.md`](github-app-auth.md)
+- PAT remains supported for local development and break-glass
+
+**Still open:** per-installation rate-limit backoff for fleet campaigns.
 
 ### `repave verify` — local path (engine v1.75+)
 
 - CLI, portal **Verify repo**, `POST /api/v1/verify` ([`docs/verify.md`](verify.md))
-- Local paths and shallow git clone for remote URLs (`GITHUB_TOKEN` for private HTTPS)
+- Local paths and shallow git clone for remote URLs (PAT or GitHub App for private HTTPS)
 
 ### v1.18 — Portal UX (theme)
 
@@ -586,10 +598,10 @@ teams want repave API/portal on-cluster alongside the future operator.
 **Done when:** `helm install` (or documented kustomize apply) serves the blueprint
 form on-cluster with dry-run generation working.
 
-**Status:** Not started. `deploy/k8s/` currently holds only observability starters
-(`prometheus-rules.yaml`, `grafana-dashboard-repave.json`) — no chart or Kustomize base
-for the API/portal. Scoped as [Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart); the
-day-2 entries are blocked behind it.
+**Status:** **Superseded** — implemented as
+[Kubernetes deploy path (Helm chart)](#kubernetes-deploy-path-helm-chart) with day-2
+operability on `main`. Historical note: `deploy/k8s/` held observability starters before the
+chart landed.
 
 ---
 
@@ -837,8 +849,10 @@ Engine and chart work for v1.35–v1.38:
 
 - **Service health** — [`readiness.py`](../engine/src/repave_engine/readiness.py),
   `/readyz` 503 with `checks`, queue drain via `REPAVE_SHUTDOWN_DRAIN_SECONDS`
-- **Alerts** — [`deploy/k8s/prometheus-rules.yaml`](../deploy/k8s/prometheus-rules.yaml)
-  (failure rate, latency, queue backlog, dead letter)
+- **Alerts** — chart `PrometheusRule` template + [`deploy/k8s/prometheus-rules.yaml`](../deploy/k8s/prometheus-rules.yaml)
+  (generation, async runs, queue backlog, dead letter, JSONL export)
+- **Monitoring overlay** — [`values-day2.yaml`](../deploy/k8s/chart/values-day2.yaml) (HPA,
+  ServiceMonitor, PrometheusRule, session secret + GitHub readiness)
 - **Upgrade/rollback** — [`docs/operations/upgrade-and-rollback.md`](operations/upgrade-and-rollback.md)
 - **Runbooks** — [`docs/operations/README.md`](operations/README.md)
 
@@ -1084,9 +1098,9 @@ flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`),
 
 *Planning label: v1.74 (roadmap numbering only).*
 
-**Problem:** Docker Compose is still the only first-class deploy story. `deploy/k8s/`
-contains observability starters but no chart, so the entire day-2 block (v1.35–v1.38) has
-nothing to attach to. Realizes [v1.26](#kubernetes-deploy-path-superseded).
+**Problem (resolved):** Docker Compose was the only first-class deploy story; day-2
+operability (v1.35–v1.38) needed a chart to attach probes, HPA, and monitoring CRs to.
+Realizes [v1.26](#kubernetes-deploy-path-superseded).
 
 **Approach:**
 
@@ -1110,9 +1124,7 @@ model itself belongs to that entry.
 working and probes gating traffic.
 
 **Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174).
-**Follow-ups in this entry:** day-2 operability (HPA, alerts, runbooks). Chart smoke is a
-required CI check; `INSTALL_GATE_TOOLCHAIN` build arg and `values-portal.yaml` document the
-portal-only image variant.
+**Follow-ups in this entry:** multi-replica portal smoke in CI; operator production Helm chart.
 
 ---
 
@@ -1288,6 +1300,8 @@ timeouts (`REPAVE_SUBPROCESS_TIMEOUT_SECONDS`, `REPAVE_GIT_TIMEOUT_SECONDS`), pr
 on expiry, git/inventory/upgrade paths migrated, `gate_outcome` returns `timeout`, per-gate
 `timeout_seconds` blueprint override supported via `gate_timeout_seconds`.
 
+### A3 — Coverage and required checks in CI
+
 **Problem:** `make test` enforces `--cov-fail-under=75`, but `.github/workflows/ci.yml` runs
 `uv run pytest` with no coverage flags, so the threshold is advisory on PRs. `operator-e2e` is
 not in the required-check list in `.github/rulesets/main-branch.json`, and the ruleset-sync step
@@ -1384,8 +1398,7 @@ OTEL env vars, [`docs/tracing.md`](tracing.md).
 | `.tmp-staging/` is not ignored, so rendered fixtures show up as untracked noise | `.gitignore` | **Shipped** — pattern in root `.gitignore` |
 | Broad `except Exception` around the provenance gate masks bugs as gate failures | `gate_runners.py` | Narrow the exception |
 
-**Done when (group A):** All six A entries closed, with A1, A2, and A4 landed before the hosted
-service carries real users.
+**Done when (group A):** All six A entries closed — **done on `main`**.
 
 ---
 
@@ -1460,9 +1473,10 @@ access in a Secret, and rate limits are shared across everything the token touch
 **Done when:** A publish and an operator remediation PR both succeed with no PAT present, and
 token material never appears in logs or error strings.
 
-**Status:** **In progress on `feat/github-app-auth`** — engine `github_auth.py` +
+**Status:** **Shipped on `main`** — engine `github_auth.py` +
 `resolve_github_access_token()`, operator installation-token cache, Helm secret keys; see
-[`docs/github-app-auth.md`](github-app-auth.md).
+[`docs/github-app-auth.md`](github-app-auth.md). **Follow-up:** per-installation rate-limit
+backoff for fleet campaigns.
 
 ---
 
@@ -1688,10 +1702,11 @@ generator.
 | Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) (shipped) |
 | Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) |
 | Module repos self-govern in CI | v1.23 |
-| On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) (shipped; day-2 follow-ups) |
+| On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) + [day-2 overlay](../deploy/k8s/chart/values-day2.yaml) (shipped) |
 | Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 |
 | Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
-| Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 |
+| Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 (shipped) |
+| GitHub App auth (publish/remediation) | [GitHub App authentication](#github-app-authentication-for-publish-and-remediation) (shipped) |
 | Durable multi-user service (SQL store, async runs) | [durability and concurrency](#durability-and-concurrency-for-hosted-use) |
 | Independently scaled portal / API / gate worker on k8s | [service decomposition](#service-decomposition-for-hosted-scale) |
 | Portal discovery surfaces (catalog, docs, scorecards, health) | [portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read) |

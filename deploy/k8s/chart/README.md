@@ -75,11 +75,26 @@ Probes use `GET /health` (liveness), `GET /readyz` (readiness), and an optional
 | `probes.*` | Liveness, readiness, and startup probe timings |
 
 **Scaling replicas:** default `replicaCount: 1`. Multiple replicas need shared session and
-run state — see roadmap **durability and concurrency** before enabling `autoscaling` in
-production.
+run state — set `repave.durability.databaseUrl` (PostgreSQL) and `secrets.sessionSecret`
+before enabling `autoscaling`. See [`values-day2.yaml`](values-day2.yaml) for a production
+overlay (HPA 2–5, monitoring hooks, `requireSessionSecret`, `readyRequireGithub`).
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  -f deploy/k8s/chart/values.yaml \
+  -f deploy/k8s/chart/values-day2.yaml \
+  --set repave.durability.databaseUrl=postgresql://... \
+  --set secrets.existingSecret=repave-secrets \
+  ...
+```
+
+Pair with [`values-decomposed.yaml`](values-decomposed.yaml) when workers run in a separate
+Deployment (`repave.durability.workerMode: external`).
 
 | `shutdown.drainSeconds` | Async run drain before exit (`REPAVE_SHUTDOWN_DRAIN_SECONDS`) |
 | `shutdown.readyRequireGithub` | Fail `/readyz` when GitHub API unreachable (publish clusters) |
+| `monitoring.serviceMonitor` | Prometheus Operator scrape of `/metrics` |
+| `monitoring.prometheusRules` | Alert rules with runbook URLs (generation, async, queue, JSONL) |
 | `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
 | `workerImage.*` | Gate-toolchain image for external worker Deployment or per-run Jobs (defaults to `repave-engine`) |
 | `repave.durability.workerMode` | `inline` (default), `external` (worker Deployment), or `job` (one Job per run — see `values-decomposed-job.yaml`) |
@@ -172,8 +187,15 @@ See [`deploy/k8s/hack/kind-co-install.sh`](../hack/kind-co-install.sh).
 
 ## Observability
 
-Scrape `GET /metrics` on the Service port. Starter Prometheus rules and a Grafana dashboard
-live in [`deploy/k8s/`](../README.md) (parent directory).
+Scrape `GET /metrics` on the Service port.
+
+| Mode | When to use |
+| --- | --- |
+| **Chart-managed** | `monitoring.serviceMonitor.enabled` and `monitoring.prometheusRules.enabled` (see `values-day2.yaml`) |
+| **Standalone** | Apply [`deploy/k8s/prometheus-rules.yaml`](../prometheus-rules.yaml) and import [`grafana-dashboard-repave.json`](../grafana-dashboard-repave.json) when not using the chart templates |
+
+Set `monitoring.prometheusRules.includeKubeStateAlerts: true` when kube-state-metrics is
+available (HPA-at-max alert).
 
 ## Validation
 
@@ -186,6 +208,6 @@ make chart-smoke-decomposed   # decomposed portal + worker + Postgres async run 
 ## Scaling
 
 Default `replicaCount: 1`. The chart ships **HPA**, **PDB**, resource defaults, rolling
-update strategy, startup probe, and graceful termination — see **Day-2 operability** above.
-Multiple replicas still require shared session and run state; enable autoscaling only after
-roadmap **durability and concurrency** (or for portal-only read paths).
+update strategy, startup probe, graceful termination, and optional **ServiceMonitor** /
+**PrometheusRule** — see **Day-2 operability** above. Enable autoscaling only after shared
+SQL durability (`databaseUrl`) and session secret are configured.

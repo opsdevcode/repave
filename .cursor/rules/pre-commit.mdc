@@ -5,13 +5,19 @@ alwaysApply: true
 
 # Pre-commit (repave)
 
-Run from **repo root** before every commit that touches runtime code (not docs-only).
+Run from **repo root** before every commit.
 
-## Standard loop
+## Standard loop (runtime code)
+
+When the diff touches **runtime code** (`engine/`, `operator/`, `scripts/**/*.py`,
+`deploy/k8s/chart/templates/**`, portal JS, workflows, etc.):
 
 ```bash
 make format && make quality && make test
 ```
+
+**Docs-only commits** (for example `docs/**`, `README.md`, roadmap housecleaning) skip
+the loop above unless the same commit also changes runtime paths.
 
 Before opening a PR that touches **any Python** (`**/*.py`), also run **`make security`**
 when the diff includes **`engine/`**; for **scripts-only** Python, run Ruff and Bandit
@@ -33,11 +39,45 @@ While editing Python, **`make test-fast`** skips `@pytest.mark.slow` and coverag
 | `operator/` | **`make operator-lint`** and **`make operator-test`**; follow `golang-standards.mdc` / `golang-security.mdc` |
 | `engine/pyproject.toml` deps | `make lock` and commit `engine/uv.lock` |
 | Any **`*.js` / `*.mjs` / `*.cjs`** | **`make js-lint`**; follow `javascript-standards.mdc` / `javascript-security.mdc` |
-| Helm chart | `make chart-validate` |
+| **`deploy/k8s/chart/**`** (templates, values, validate script) | **`make chart-validate`** |
+| **Roadmap + docs housecleaning** (see below) | Checklist only — **not** `chart-validate` unless chart paths are in the diff |
+
+## Roadmap and docs housecleaning
+
+When a PR **ships**, **supersedes**, or **closes** a roadmap theme, include doc
+housecleaning in the **same PR** (or an immediate follow-up). This is separate from
+Helm/chart validation — run `make chart-validate` only when chart files change.
+
+### `docs/roadmap.md` (feature PRs)
+
+- Do **not** edit **Current release** — Release owns it (`sync_doc_versions.py`).
+- Update **In progress** and **Shipped on `main`** at the top.
+- Update the theme table and path-to-v2 tree when status changes.
+- Set section `**Status:**` for every theme touched; remove stale branch names,
+  `Not started`, and “blocked behind” wording for shipped work.
+- Mark superseded entries (for example old k8s deploy path) as **Superseded** with
+  a link to the shipped replacement.
+
+### Related docs (housecleaning)
+
+- Cross-link new behavior from the doc that operators read (`docs/durability.md`,
+  `docs/verify.md`, `docs/operations/**`, chart README, `deploy/k8s/README.md`).
+- Align “still open” / follow-up bullets with the roadmap header — no contradictory
+  shipped vs open claims across files.
+
+### Pre-commit for docs-only work
+
+```bash
+# Optional: only if you edited version pointer lines Release normally owns
+make sync-doc-versions --check
+```
+
+No `make format`, `make quality`, `make test`, or `make chart-validate` for a
+docs-only roadmap/housecleaning commit.
 
 ## Commits and PRs
 
 - Conventional commits; PR titles validated by CI — see `.cursor/rules/pull-requests.mdc`.
 - Ship **tests in the same PR** as new engine behavior unless the change is docs-only.
 
-Details: `CONTRIBUTING.md`; Python: `.cursor/rules/python-standards.mdc`, security: `.cursor/rules/python-security.mdc`; JavaScript: `.cursor/rules/javascript-standards.mdc`, `.cursor/rules/javascript-security.mdc`; Go: `.cursor/rules/golang-standards.mdc`, `.cursor/rules/golang-security.mdc`.
+Details: `CONTRIBUTING.md`; Python: `.cursor/rules/python-standards.mdc`, security: `.cursor/rules/python-security.mdc`; JavaScript: `.cursor/rules/javascript-standards.mdc`, security: `.cursor/rules/javascript-security.mdc`; Go: `.cursor/rules/golang-standards.mdc`, security: `.cursor/rules/golang-security.mdc`.

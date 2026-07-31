@@ -24,7 +24,8 @@ blueprint. Exit `1` when gates fail or pins drift. Exit `2` for usage or clone e
 missing become failures when they would normally skip.
 
 Remote targets are shallow-cloned into a temporary directory (read-only). For private
-HTTPS remotes, set `GITHUB_TOKEN` (or pass a token through the API — see below).
+HTTPS remotes, configure a PAT (`GITHUB_TOKEN`) or GitHub App credentials (see
+[`github-app-auth.md`](github-app-auth.md)); you can also pass a token through the API — see below.
 
 ## Report
 
@@ -42,7 +43,8 @@ JSON output includes `"remote": true` when the target was cloned from a URL.
 
 **Verify repo** in the top navigation accepts a local path or git remote URL (optional
 blueprint override and **require-run** checkbox). Results show gate outcomes and pin drift
-vs the catalog. The portal process uses `GITHUB_TOKEN` for private HTTPS remotes when set.
+vs the catalog. The portal resolves GitHub credentials the same way as publish (PAT or
+GitHub App — see [`github-app-auth.md`](github-app-auth.md)).
 
 ## API
 

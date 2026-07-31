@@ -12,6 +12,12 @@ Assumes a single replica or shared run/session store when scaling — see
    CHART_SMOKE_IMAGE_TAG=your-tag make chart-smoke
    ```
 
+   For decomposed portal + worker + Postgres layouts, also run:
+
+   ```bash
+   make chart-smoke-decomposed
+   ```
+
 2. **Pin the image by digest** in production overlays (not only `:latest`).
 
 3. **Note the current revision** for rollback:

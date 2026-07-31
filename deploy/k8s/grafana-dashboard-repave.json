@@ -2,7 +2,7 @@
   "title": "Repave generation",
   "uid": "repave-gen",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 2,
   "panels": [
     {
       "type": "timeseries",
@@ -23,6 +23,28 @@
         {
           "expr": "histogram_quantile(0.95, sum(rate(repave_generation_seconds_bucket[5m])) by (le, blueprint))",
           "legendFormat": "{{blueprint}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Async run queue depth",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "repave_run_queue_inflight",
+          "legendFormat": "inflight"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Async runs per minute",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(rate(repave_async_runs_total[5m])) by (outcome)",
+          "legendFormat": "{{outcome}}"
         }
       ]
     }

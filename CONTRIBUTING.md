@@ -251,6 +251,30 @@ Feature PRs must **not** edit `docs/roadmap.md` **Current release** — Release 
 that line (keep a blank line after it so status edits merge cleanly). Update
 **In progress** / **Shipped on `main`** and section `**Status:**` lines only.
 
+### Roadmap and docs housecleaning (pre-commit)
+
+When shipping or closing a theme, include roadmap housecleaning in the same PR.
+This is **not** chart validation — do not run `make chart-validate` unless
+`deploy/k8s/chart/**` changed.
+
+**Roadmap (`docs/roadmap.md`):**
+
+- Refresh **In progress** and **Shipped on `main`** when status changes.
+- Update the theme table and path-to-v2 tree for shipped/partial themes.
+- Fix section `**Status:**` lines; remove stale `Not started`, wrong branch refs,
+  and “blocked behind” wording for work already on `main`.
+- Mark superseded sections with a link to the shipped replacement.
+
+**Related docs:**
+
+- Cross-link from operator-facing docs (`docs/durability.md`, `docs/verify.md`,
+  `docs/operations/**`, `deploy/k8s/**/README.md`) when behavior or runbooks change.
+- Keep “still open” / follow-up bullets consistent with the roadmap header.
+
+**Docs-only commits** skip `make format`, `make quality`, and `make test`. Optionally
+run `make sync-doc-versions --check` only if you touched version pointer lines Release
+normally owns (avoid editing **Current release** in feature PRs).
+
 ## Commit messages (Conventional Commits)
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/)

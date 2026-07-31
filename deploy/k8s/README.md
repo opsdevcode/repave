@@ -1,15 +1,18 @@
 # Kubernetes operability artifacts
 
-Starter manifests for hosted repave (roadmap v1.35–v1.36). Install the engine with the
-**Helm chart** under [`chart/`](chart/README.md), then wire these observability artifacts
-into your overlay.
+Starter manifests and chart hooks for hosted repave (roadmap v1.35–v1.38). Install the
+engine with the **Helm chart** under [`chart/`](chart/README.md), then wire observability
+via chart values or standalone manifests.
 
 | Path | Purpose |
 | --- | --- |
 | [`chart/`](chart/README.md) | Helm chart: Deployment, HPA, PDB, probes, resources, Ingress |
+| [`chart/values-day2.yaml`](chart/values-day2.yaml) | Production overlay: HPA, ServiceMonitor, PrometheusRule, session/GitHub readiness |
 | [`hack/kind-co-install.sh`](hack/kind-co-install.sh) | kind: portal + fleet registry + operator + `fleet-manifests` apply |
-| `prometheus-rules.yaml` | Alert on generation failure rate and p95 latency |
-| `grafana-dashboard-repave.json` | Dashboard for throughput and gate outcomes |
+| [`chart/templates/servicemonitor.yaml`](chart/templates/servicemonitor.yaml) | Optional Prometheus Operator scrape (when `monitoring.serviceMonitor.enabled`) |
+| [`chart/templates/prometheusrules.yaml`](chart/templates/prometheusrules.yaml) | Optional alert rules (when `monitoring.prometheusRules.enabled`) |
+| `prometheus-rules.yaml` | Standalone alert pack (same rules as chart template; no Prometheus Operator chart required) |
+| `grafana-dashboard-repave.json` | Dashboard: generation throughput, latency, async queue, run outcomes |
 
 Health endpoints on the engine:
 

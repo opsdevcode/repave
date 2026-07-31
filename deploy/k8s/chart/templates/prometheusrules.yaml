@@ -1,12 +1,13 @@
-# PrometheusRule for repave engine (v1.36+ day-2 pack).
-# Apply in the namespace where repave runs; pair with ServiceMonitor or PodMonitor on /metrics.
-# Helm chart: enable monitoring.prometheusRules.enabled (see values-day2.yaml).
+{{- if .Values.monitoring.prometheusRules.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: repave-alerts
+  name: {{ include "repave.fullname" . }}
   labels:
-    app.kubernetes.io/name: repave
+    {{- include "repave.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.prometheusRules.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   groups:
     - name: repave.generation
@@ -23,7 +24,7 @@ spec:
             severity: warning
           annotations:
             summary: Repave generation failure rate above 25%
-            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.generationFailures | quote }}
 
         - alert: RepaveGenerationLatencyHigh
           expr: |
@@ -36,7 +37,7 @@ spec:
             severity: warning
           annotations:
             summary: Repave p95 generation latency above 120s
-            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#slow-generations
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.slowGenerations | quote }}
 
         - alert: RepaveAsyncRunFailureRateHigh
           expr: |
@@ -50,7 +51,7 @@ spec:
             severity: warning
           annotations:
             summary: Repave async run failure rate above 25%
-            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.generationFailures | quote }}
 
         - alert: RepaveAsyncRunDeadLetterRate
           expr: |
@@ -60,16 +61,16 @@ spec:
             severity: warning
           annotations:
             summary: Repave async runs entering dead letter
-            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.generationFailures | quote }}
 
         - alert: RepaveRunQueueBacklogHigh
-          expr: repave_run_queue_inflight >= 28
+          expr: repave_run_queue_inflight >= {{ .Values.monitoring.prometheusRules.queueBacklogThreshold }}
           for: 10m
           labels:
             severity: warning
           annotations:
             summary: Repave async run queue depth is high
-            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#scale-out
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.scaleOut | quote }}
 
         - alert: RepaveJsonlAppendFailures
           expr: |
@@ -79,4 +80,21 @@ spec:
             severity: warning
           annotations:
             summary: Repave JSONL export mirror append failures
-            runbook_url: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#stuck-async-queue
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.durability | quote }}
+
+    {{- if .Values.monitoring.prometheusRules.includeKubeStateAlerts }}
+    - name: repave.kubernetes
+      rules:
+        - alert: RepaveHPAAtMaxReplicas
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{horizontalpodautoscaler=~"{{ include "repave.fullname" . }}.*"}
+            ==
+            kube_horizontalpodautoscaler_spec_max_replicas{horizontalpodautoscaler=~"{{ include "repave.fullname" . }}.*"}
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: Repave HPA at max replicas for 15m
+            runbook_url: {{ .Values.monitoring.prometheusRules.runbooks.scaleOut | quote }}
+    {{- end }}
+{{- end }}
