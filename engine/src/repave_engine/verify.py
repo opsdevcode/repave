@@ -123,7 +123,7 @@ def verify_repository(
     if not catalog_path.is_dir():
         raise VerifyError(f"unknown blueprint {resolved_name!r} under {blueprints_dir(repo_root)}")
 
-    catalog_blueprint = load_blueprint(catalog_path, repo_root)
+    catalog_blueprint = load_blueprint(catalog_path, repo_root=repo_root)
     if provenance_present:
         gate_blueprint = _gate_blueprint_from_repo(
             target_repo, catalog_blueprint, provenance_path=provenance_path
