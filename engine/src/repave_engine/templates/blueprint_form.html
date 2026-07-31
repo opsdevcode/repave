@@ -35,7 +35,7 @@
 </header>
 
 <div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'app') %} form-layout--split{% endif %}">
-  {% set governance_collapsible = bp_family in ('terraform', 'ansible') %}
+  {% set governance_collapsible = bp_family in ('terraform', 'ansible', 'observability', 'policy', 'helm', 'app') %}
   <aside class="governance-card governance-card--{{ bp_family }}"{% if not governance_collapsible %} aria-labelledby="governance-heading"{% endif %}>
     {% if governance_collapsible %}
     <details class="governance-card__details">

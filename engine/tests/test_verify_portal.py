@@ -14,6 +14,9 @@ def test_verify_form_page(repo_root, output_config) -> None:
     assert "Verify existing repository" in response.text
     assert 'name="target_repo"' in response.text
     assert "Verify repo" in response.text
+    assert "form-actions__toolbar" in response.text
+    assert "page-supplement" in response.text
+    assert "Strict gates" in response.text
 
 
 def test_verify_post_on_fixture(

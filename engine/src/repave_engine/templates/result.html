@@ -76,12 +76,16 @@
 {% endif %}
 
 {% if result_portal %}
-<section class="card result-lineage stack-gap" aria-labelledby="lineage-heading">
-  <div class="card__header">
-    <h2 id="lineage-heading">Lineage</h2>
-    <p class="muted card__subtitle">Platform template, domain standard, and controls baseline recorded in <code>{{ result_portal.provenance_filename }}</code>.</p>
-  </div>
-  <div class="card__body">
+<details class="result-collapsible card result-lineage stack-gap">
+  <summary class="result-collapsible__summary">
+    <span class="result-collapsible__title" id="lineage-heading">Lineage</span>
+    <span class="result-collapsible__meta muted">
+      {{ result.blueprint.name }}@{{ result.blueprint.version -}}
+      {%- if result_portal.policy_profile %} · {{ result_portal.policy_profile_label or result_portal.policy_profile }}{%- endif -%}
+      · {{ result_portal.provenance_filename }}
+    </span>
+  </summary>
+  <div class="result-collapsible__body card__body">
     <dl class="governance-card__list result-lineage__list">
       {% for row in result_portal.lineage %}
       <div>
@@ -90,7 +94,7 @@
       </div>
       {% endfor %}
     </dl>
-    <div class="presenter-receipt">
+    <div class="lineage-receipt">
       <button type="button" class="btn btn--secondary btn--sm" data-copy-lineage-receipt>
         Copy lineage summary
       </button>
@@ -104,7 +108,7 @@
     </div>
     {% if result_portal.policy_profile %}
     <div class="result-lineage__policy">
-      <h3 class="form-section__subtitle">Policy pack</h3>
+      <h3 class="form-section__subtitle form-section__subtitle--sm">Policy pack</h3>
       <p class="hint">
         Profile <strong>{{ result_portal.policy_profile_label or result_portal.policy_profile }}</strong>
         {% if result_portal.policy_pack_source %}
@@ -115,28 +119,36 @@
         {% endif %}
       </p>
       {% if result_portal.policy_rules %}
-      <ul class="result-lineage__rules" aria-label="Catalog rules in this generation">
-        {% for rule in result_portal.policy_rules %}
-        <li>
-          <span class="badge badge--muted">{{ rule.enforced_by }}</span>
-          {{ rule.title }}
-          <code class="muted">{{ rule.rule_id }}</code>
-        </li>
-        {% endfor %}
-      </ul>
+      <details class="result-collapsible result-collapsible--nested">
+        <summary class="result-collapsible__summary result-collapsible__summary--sm">
+          <span>{{ result_portal.policy_rules | length }} catalog rule(s)</span>
+        </summary>
+        <ul class="result-lineage__rules" aria-label="Catalog rules in this generation">
+          {% for rule in result_portal.policy_rules %}
+          <li>
+            <span class="badge badge--muted">{{ rule.enforced_by }}</span>
+            {{ rule.title }}
+            <code class="muted">{{ rule.rule_id }}</code>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
       {% endif %}
     </div>
     {% endif %}
   </div>
-</section>
+</details>
 
 {% if result_portal.backstage %}
-<section class="card stack-gap result-backstage" aria-labelledby="backstage-heading" data-backstage-highlight>
-  <div class="card__header">
-    <h2 id="backstage-heading">Backstage catalog entity</h2>
-    <p class="muted card__subtitle">Developer portal registration ships with the module — lineage in <code>metadata.annotations</code>.</p>
-  </div>
-  <div class="card__body">
+<details class="result-collapsible card stack-gap result-backstage" data-backstage-highlight>
+  <summary class="result-collapsible__summary">
+    <span class="result-collapsible__title" id="backstage-heading">Backstage catalog entity</span>
+    <span class="result-collapsible__meta muted">
+      <code>{{ result_portal.backstage.path }}</code>
+      {%- if result_portal.backstage.name %} · {{ result_portal.backstage.name }}{%- endif -%}
+    </span>
+  </summary>
+  <div class="result-collapsible__body card__body">
     <dl class="governance-card__list">
       <div>
         <dt>File</dt>
@@ -164,7 +176,7 @@
     {% endif %}
     <p class="hint">Open <code>catalog-info.yaml</code> in the file preview below for the full document.</p>
   </div>
-</section>
+</details>
 {% elif result_portal.backstage_expected and not result_portal.backstage %}
 <p class="alert alert--info stack-gap">
   Enable <strong>Include Backstage catalog</strong> on the form (and set owner) to generate <code>catalog-info.yaml</code>.
@@ -209,10 +221,13 @@
 {% endif %}
 
 {% if result.gates %}
-<section class="card" aria-labelledby="gates-heading" data-gate-dashboard>
-  <div class="card__header card__header--toolbar">
+<section class="card result-gates stack-gap" aria-labelledby="gates-heading" data-gate-dashboard>
+  <div class="card__header card__header--toolbar card__header--compact">
     <div>
-      <h2 id="gates-heading">Gates</h2>
+      <h2 id="gates-heading" class="card__title--sm">Gates</h2>
+      <p class="muted card__subtitle card__subtitle--inline">
+        {{ gate_summary.passed }} passed · {{ gate_summary.failed }} failed · {{ gate_summary.skipped }} skipped
+      </p>
     </div>
     <div class="gate-toolbar" data-gate-filter role="toolbar" aria-label="Filter gates">
       <button type="button" class="chip gate-filter is-active" data-gate-filter-value="all">All</button>
@@ -227,9 +242,9 @@
       <button type="button" class="btn btn--ghost btn--sm" data-copy-result-summary>Copy summary</button>
     </div>
   </div>
-  <div class="card__body">
-    <div class="gate-table-wrap">
-      <table class="gate-table">
+  <div class="card__body card__body--compact">
+    <div class="gate-table-wrap gate-table-wrap--compact">
+      <table class="gate-table gate-table--compact">
         <thead>
           <tr>
             <th scope="col">Gate</th>
