@@ -91,6 +91,7 @@ def evaluate_readiness(
     require_session_secret: bool,
     github_token_configured: bool,
     run_queue_depth: int | None = None,
+    sql_session_store_ok: bool | None = None,
 ) -> ReadinessReport:
     checks: dict[str, bool] = {}
     details: dict[str, Any] = {
@@ -113,6 +114,9 @@ def evaluate_readiness(
     if auth_service_enabled or require_session_secret:
         session_ok = bool(os.environ.get("REPAVE_SESSION_SECRET", "").strip())
     checks["session_secret"] = session_ok
+
+    if sql_session_store_ok is not None:
+        checks["session_store"] = sql_session_store_ok
 
     if gate_toolchain_required():
         tools = gate_tool_status()

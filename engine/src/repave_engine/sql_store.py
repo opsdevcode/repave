@@ -195,6 +195,17 @@ def _ensure_schema_sqlite(conn: SqlConnection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_publish_receipts_client_request "
         "ON publish_receipts(client_request_id)"
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id TEXT PRIMARY KEY,
+            data_json TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)")
 
 
 def _ensure_schema_postgres(conn: SqlConnection) -> None:
@@ -263,6 +274,67 @@ def _ensure_schema_postgres(conn: SqlConnection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_publish_receipts_client_request "
         "ON publish_receipts(client_request_id)"
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS sessions (
+            session_id TEXT PRIMARY KEY,
+            data_json TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)")
+
+
+def save_session(
+    conn: SqlConnection,
+    session_id: str,
+    data: dict[str, Any],
+    *,
+    expires_at: str,
+    updated_at: str,
+) -> None:
+    line = json.dumps(data, separators=(",", ":"))
+    conn.execute(
+        """
+        INSERT INTO sessions (session_id, data_json, expires_at, updated_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(session_id) DO UPDATE SET
+            data_json=excluded.data_json,
+            expires_at=excluded.expires_at,
+            updated_at=excluded.updated_at
+        """,
+        (session_id, line, expires_at, updated_at),
+    )
+
+
+def load_session(conn: SqlConnection, session_id: str, *, now: str) -> dict[str, Any] | None:
+    cur = conn.execute(
+        "SELECT data_json, expires_at FROM sessions WHERE session_id = ?",
+        (session_id,),
+    )
+    rows = cur.fetchall() if hasattr(cur, "fetchall") else list(cur)
+    if not rows:
+        return None
+    row = rows[0]
+    expires_at = row["expires_at"] if isinstance(row, dict) else row[1]
+    if expires_at < now:
+        delete_session(conn, session_id)
+        return None
+    raw = row["data_json"] if isinstance(row, dict) else row[0]
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        delete_session(conn, session_id)
+        return None
+    if not isinstance(payload, dict):
+        return None
+    return payload
+
+
+def delete_session(conn: SqlConnection, session_id: str) -> None:
+    conn.execute("DELETE FROM sessions WHERE session_id = ?", (session_id,))
 
 
 def append_audit_event(conn: SqlConnection, record: dict[str, Any], *, created_at: str) -> None:

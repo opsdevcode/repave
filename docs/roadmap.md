@@ -5,10 +5,10 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.104.0  
-**In progress:** (none — decomposition hardening closeout).  
+**In progress:** SQL sessions store (multi-replica portal).  
 **Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
 decomposition Phase 0–4 (including CRD `repave.dev/v1beta1` + conversion webhook,
-publish idempotency, per-run Kubernetes Jobs, **decomposed chart CI smoke**).
+publish idempotency, per-run Kubernetes Jobs, decomposed chart CI smoke).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1429,8 +1429,9 @@ status is visible while a run is in flight, and a killed worker's run is replaya
 **Status:** **Phase 1 shipped on `main`** — SQLite run store, in-process worker queue,
 `/api/v1/runs` + async `POST /api/v1/generate`, idempotency keys, replay for dead-letter runs,
 metrics — see [`docs/durability.md`](durability.md). **Phase 2 shipped on `main`** — unified SQL
-store (`database_url`) for audit, fleet, and runs with optional JSONL export mirrors; PostgreSQL
-via `repave-engine[postgres]` (included in portal/worker container images). **Phase 3 shipped on
+store (`database_url`) for audit, fleet, runs, and **OIDC sessions** (server-side when
+`database_url` is set) with optional JSONL export mirrors; PostgreSQL via
+`repave-engine[postgres]` (included in portal/worker container images). **Phase 3 shipped on
 `main`** — `repave run-worker`, Helm worker Deployment, and `REPAVE_EXTERNAL_WORKERS` /
 `worker_mode: external` for distributed execution.
 
