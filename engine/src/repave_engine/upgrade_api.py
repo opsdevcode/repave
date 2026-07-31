@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 from repave_engine.git_clone import CloneError, ephemeral_clone, is_http_remote, resolve_git_token
@@ -19,6 +20,28 @@ from repave_engine.upgrade_plan import (
 
 class UpgradeTargetError(ValueError):
     """Invalid upgrade target_repo / repo_url input."""
+
+
+@dataclass(frozen=True)
+class UpgradeTargetOutcome:
+    target: str | None
+    error: UpgradeTargetError | None
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None and self.target is not None
+
+
+def resolve_upgrade_target_outcome(
+    *,
+    target_repo: str,
+    repo_url: str | None = None,
+) -> UpgradeTargetOutcome:
+    try:
+        target = resolve_upgrade_target(target_repo=target_repo, repo_url=repo_url)
+    except UpgradeTargetError as exc:
+        return UpgradeTargetOutcome(target=None, error=exc)
+    return UpgradeTargetOutcome(target=target, error=None)
 
 
 def resolve_upgrade_target(*, target_repo: str, repo_url: str | None = None) -> str:

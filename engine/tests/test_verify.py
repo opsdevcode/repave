@@ -9,7 +9,7 @@ import pytest
 from repave_engine.blueprint import validate_inputs
 from repave_engine.cli import build_parser, cmd_verify
 from repave_engine.render import render_blueprint
-from repave_engine.verify import VerifyError, verify_repository
+from repave_engine.verify import VerifyError, verify_repository, verify_repository_outcome
 
 
 def test_parser_exposes_verify() -> None:
@@ -36,6 +36,17 @@ def test_verify_clone_fails_for_unreachable_host(capsys) -> None:
 def test_verify_requires_blueprint_without_provenance(tmp_path: Path, repo_root: Path) -> None:
     with pytest.raises(VerifyError, match=r"repave\.yaml is missing"):
         verify_repository(tmp_path, repo_root)
+
+
+def test_verify_repository_outcome_returns_error_without_raising(
+    tmp_path: Path,
+    repo_root: Path,
+) -> None:
+    outcome = verify_repository_outcome(tmp_path, repo_root)
+    assert not outcome.ok
+    assert outcome.error is not None
+    assert outcome.result is None
+    assert "repave.yaml is missing" in str(outcome.error)
 
 
 def test_verify_runs_gates_and_reports_pin_drift(

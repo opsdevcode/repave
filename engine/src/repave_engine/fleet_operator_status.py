@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from repave_engine.fleet import normalize_repo_url
 from repave_engine.subprocess_run import run_subprocess
@@ -128,10 +129,41 @@ def write_operator_status_snapshot(
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
 
+class KubectlRunner(Protocol):
+    def run(self, cmd: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]: ...
+
+
+class SubprocessKubectlRunner:
+    def run(self, cmd: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]:
+        return run_subprocess(cmd, check=False, timeout=timeout)
+
+
+@dataclass(frozen=True)
+class StaticKubectlRunner:
+    """In-package fake for kubectl list tests."""
+
+    payload: dict[str, Any] | None = None
+    returncode: int = 0
+    stderr: str = ""
+
+    def run(self, cmd: list[str], *, timeout: int) -> subprocess.CompletedProcess[str]:
+        stdout = json.dumps(self.payload) if self.payload is not None else ""
+        return subprocess.CompletedProcess(
+            args=cmd,
+            returncode=self.returncode,
+            stdout=stdout,
+            stderr=self.stderr,
+        )
+
+
+_default_kubectl_runner = SubprocessKubectlRunner()
+
+
 def kubectl_goldenpathrepo_list(
     *,
     namespace: str = "",
     all_namespaces: bool = False,
+    runner: KubectlRunner | None = None,
 ) -> dict[str, Any]:
     cmd = ["kubectl", "get", "goldenpathrepos"]
     if all_namespaces:
@@ -139,15 +171,25 @@ def kubectl_goldenpathrepo_list(
     elif namespace.strip():
         cmd.extend(["-n", namespace.strip()])
     cmd.extend(["-o", "json"])
-    result = run_subprocess(
-        cmd,
-        check=False,
-        timeout=120,
-    )
+    kubectl = runner if runner is not None else _default_kubectl_runner
+    result = kubectl.run(cmd, timeout=120)
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "kubectl failed").strip()
-        raise RuntimeError(detail)
-    payload = json.loads(result.stdout)
+        raise RuntimeError(
+            f"kubectl get goldenpathrepos failed: {detail}; "
+            "install kubectl, select a cluster context, and ensure RBAC can list "
+            "goldenpathrepos.repave.dev"
+        )
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "kubectl returned non-JSON stdout for goldenpathrepos; "
+            "run: kubectl get goldenpathrepos -o json"
+        ) from exc
     if not isinstance(payload, dict):
-        raise RuntimeError("kubectl returned unexpected JSON")
+        raise RuntimeError(
+            "kubectl goldenpathrepos JSON was not an object; "
+            "run: kubectl get goldenpathrepos -o json"
+        )
     return payload
