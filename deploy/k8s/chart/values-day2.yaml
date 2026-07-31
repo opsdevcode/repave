@@ -1,0 +1,27 @@
+# Day-2 production overlay: HPA, Prometheus Operator hooks, shared SQL durability.
+# Merge with your secrets overlay and set repave.durability.databaseUrl for multi-replica.
+#
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f values.yaml -f values-day2.yaml -f values-decomposed.yaml \
+#     --set repave.durability.databaseUrl=postgresql://...
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 65
+
+repave:
+  durability:
+    requireSessionSecret: true
+    exportJsonl: false
+    # workerMode: external  # uncomment with values-decomposed.yaml
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRules:
+    enabled: true
+
+shutdown:
+  readyRequireGithub: true

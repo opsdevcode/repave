@@ -177,6 +177,26 @@ shutdown:
   drainSeconds: 105
   readyRequireGithub: false
 
+# Prometheus Operator (optional). Standalone manifests also live in deploy/k8s/.
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+  prometheusRules:
+    enabled: false
+    labels: {}
+    queueBacklogThreshold: 28
+    # Requires kube-prometheus-stack / kube-state-metrics when true.
+    includeKubeStateAlerts: false
+    runbooks:
+      generationFailures: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#generation-failures
+      scaleOut: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#scale-out
+      slowGenerations: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#slow-generations
+      readiness: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#readiness-failures
+      github: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#github-publish-failures
+      durability: https://github.com/opsdevcode/repave/blob/main/docs/operations/README.md#stuck-async-queue
+
 secrets:
   # When true, chart creates a Secret from the values below (dev/kind only).
   create: false

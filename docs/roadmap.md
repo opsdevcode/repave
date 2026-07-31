@@ -114,7 +114,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Access and multi-user** | v1.27–v1.28 | Authenticated single-tenant service with OIDC SSO and role-based access |
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
-| **In-cluster operations (Day-2)** | open (day-2 themes) | Chart on cluster; HPA/alerts/runbooks attach to [`deploy/k8s/chart/`](../deploy/k8s/chart/) |
+| **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
 | **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
 | **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
 | **Hardening** | open | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
@@ -317,7 +317,8 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 - [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `chart-validate`,
   `chart-smoke`, and `chart-smoke-decomposed` required checks (path-gated skip on unrelated
   PRs; full smoke on `main`)
-- **Follow-ups:** day-2 themes (HPA, alerts, runbooks) in [Planned](#planned)
+- **Day-2 operability:** [`values-day2.yaml`](../deploy/k8s/chart/values-day2.yaml) (HPA,
+  ServiceMonitor, PrometheusRule), runbooks in [`docs/operations/`](../docs/operations/)
 
 ### `repave verify` — local path (engine v1.75+)
 
@@ -837,8 +838,10 @@ Engine and chart work for v1.35–v1.38:
 
 - **Service health** — [`readiness.py`](../engine/src/repave_engine/readiness.py),
   `/readyz` 503 with `checks`, queue drain via `REPAVE_SHUTDOWN_DRAIN_SECONDS`
-- **Alerts** — [`deploy/k8s/prometheus-rules.yaml`](../deploy/k8s/prometheus-rules.yaml)
-  (failure rate, latency, queue backlog, dead letter)
+- **Alerts** — chart `PrometheusRule` template + [`deploy/k8s/prometheus-rules.yaml`](../deploy/k8s/prometheus-rules.yaml)
+  (generation, async runs, queue backlog, dead letter, JSONL export)
+- **Monitoring overlay** — [`values-day2.yaml`](../deploy/k8s/chart/values-day2.yaml) (HPA,
+  ServiceMonitor, PrometheusRule, session secret + GitHub readiness)
 - **Upgrade/rollback** — [`docs/operations/upgrade-and-rollback.md`](operations/upgrade-and-rollback.md)
 - **Runbooks** — [`docs/operations/README.md`](operations/README.md)
 
@@ -1110,9 +1113,7 @@ model itself belongs to that entry.
 working and probes gating traffic.
 
 **Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174).
-**Follow-ups in this entry:** day-2 operability (HPA, alerts, runbooks). Chart smoke is a
-required CI check; `INSTALL_GATE_TOOLCHAIN` build arg and `values-portal.yaml` document the
-portal-only image variant.
+**Follow-ups in this entry:** multi-replica portal smoke in CI; operator production Helm chart.
 
 ---
 

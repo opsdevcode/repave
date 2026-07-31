@@ -13,14 +13,20 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 ## Dashboards and alerts
 
 - Import [`deploy/k8s/grafana-dashboard-repave.json`](../../deploy/k8s/grafana-dashboard-repave.json).
-- Apply [`deploy/k8s/prometheus-rules.yaml`](../../deploy/k8s/prometheus-rules.yaml) with Prometheus Operator.
+- **Chart-managed:** enable `monitoring.prometheusRules.enabled` and
+  `monitoring.serviceMonitor.enabled` (see [`values-day2.yaml`](../../deploy/k8s/chart/values-day2.yaml)).
+- **Standalone:** apply [`deploy/k8s/prometheus-rules.yaml`](../../deploy/k8s/prometheus-rules.yaml)
+  with Prometheus Operator.
 
 | Alert | Runbook |
 | --- | --- |
 | `RepaveGenerationFailureRateHigh` | [Generation failures](#generation-failures) |
 | `RepaveGenerationLatencyHigh` | [Slow generations](#slow-generations) |
-| `RepaveRunQueueBacklogHigh` | [Scale out](#scale-out) |
+| `RepaveAsyncRunFailureRateHigh` | [Generation failures](#generation-failures) |
 | `RepaveAsyncRunDeadLetterRate` | [Generation failures](#generation-failures) |
+| `RepaveRunQueueBacklogHigh` | [Scale out](#scale-out) |
+| `RepaveJsonlAppendFailures` | [Stuck async queue](#stuck-async-queue) |
+| `RepaveHPAAtMaxReplicas` | [Scale out](#scale-out) (requires kube-state-metrics) |
 
 ## Runbooks
 
@@ -35,9 +41,12 @@ See [Upgrade and rollback](upgrade-and-rollback.md) for Helm steps.
 
 ### Scale out
 
-1. Confirm shared session/run store if `autoscaling.enabled` or `replicaCount` > 1.
-2. Watch HPA: `kubectl get hpa -n repave`
-3. Dashboard: generation latency, CPU, and `repave_run_queue_inflight`.
+1. Configure shared SQL durability (`repave.durability.databaseUrl`) and
+   `secrets.sessionSecret` before `autoscaling.enabled` or `replicaCount` > 1.
+2. For decomposed deploys, use `values-decomposed.yaml` with an external worker Deployment
+   and Postgres; validate with `make chart-smoke-decomposed`.
+3. Watch HPA: `kubectl get hpa -n repave`
+4. Dashboard: generation latency, CPU, and `repave_run_queue_inflight`.
 
 ### Upgrade / rollback
 
@@ -49,9 +58,12 @@ digest, `helm upgrade --wait`, and `helm rollback`.
 1. `kubectl exec` → `curl -s localhost:8088/readyz | jq` and inspect `checks`.
 2. **`gate_tools: false`** — wrong image variant; use gate-toolchain build or `image.gateToolchain: true`.
 3. **`runs_db_writable: false`** — PVC mount or permissions on `/data/runs`.
-4. **`github_api: false`** (when `REPAVE_READY_REQUIRE_GITHUB=1`) — token scope/expiry; see
-   [GitHub publish failures](#github-publish-failures).
-5. **`session_secret: false`** — set `REPAVE_SESSION_SECRET` when auth or
+4. **`session_store: false`** — SQL session store unreachable when `databaseUrl` is set;
+   verify Postgres connectivity and credentials.
+5. **`github_api: false`** (when `REPAVE_READY_REQUIRE_GITHUB=1`) — PAT scope/expiry or
+   GitHub App credentials; see [GitHub publish failures](#github-publish-failures) and
+   [`docs/github-app-auth.md`](../github-app-auth.md).
+6. **`session_secret: false`** — set `REPAVE_SESSION_SECRET` when auth or
    `durability.require_session_secret` is enabled.
 
 ### Generation failures
@@ -75,9 +87,10 @@ digest, `helm upgrade --wait`, and `helm rollback`.
 
 ### GitHub publish failures
 
-1. Verify `GITHUB_TOKEN` scopes and expiry (`/readyz` reports presence; optional
-   `github_api_reachable` when a token is configured).
-2. See rate-limit guidance in engine logs.
+1. Verify PAT scopes and expiry, or GitHub App ID/installation ID/private key in the
+   release Secret (`/readyz` reports presence; optional `github_api_reachable` when
+   credentials are configured).
+2. See rate-limit guidance in engine logs and [`docs/github-app-auth.md`](../github-app-auth.md).
 
 ### Stuck async queue
 
@@ -88,6 +101,7 @@ digest, `helm upgrade --wait`, and `helm rollback`.
 ## Related
 
 - [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC and roles
+- [`docs/github-app-auth.md`](../github-app-auth.md) — GitHub App vs PAT for publish
 - [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
 - [`crd-conversion-recovery.md`](crd-conversion-recovery.md) — operator CRD conversion drill
