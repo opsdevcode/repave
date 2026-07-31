@@ -95,7 +95,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	githubToken := os.Getenv("GITHUB_TOKEN")
+	githubToken, err := github.ResolveAccessToken("")
+	if err != nil {
+		setupLog.Error(err, "unable to resolve GitHub access token")
+		os.Exit(1)
+	}
 	var ghClient github.Client
 	if githubToken != "" {
 		ghClient = &github.HTTPClient{Token: githubToken}
@@ -124,7 +128,7 @@ func main() {
 		GitHub:        ghClient,
 		RepaveConfig:  repaveCfg,
 		GitHubToken:   githubToken,
-		Fetcher:       inventory.GitFetcher{Token: githubToken},
+		Fetcher:       inventory.GitFetcher{},
 		RemoteResync:  remoteResyncFromEnv(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GoldenPathRepo")

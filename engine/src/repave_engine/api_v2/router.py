@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -27,6 +26,7 @@ from repave_engine.execution_mode import (
     worker_execution_mode_active,
 )
 from repave_engine.generate_api import run_generate_api
+from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.settings import OutputConfig
@@ -132,7 +132,7 @@ def build_api_v2_router(
         if worker_execution_mode_active(repo_root):
             raise HTTPException(status_code=409, detail=SYNC_GENERATE_UNAVAILABLE_DETAIL)
 
-        github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
+        github_token = None if dry_run else resolve_github_access_token()
         try:
             body = run_generate_api(
                 repo_root=repo_root,

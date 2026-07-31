@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import subprocess
 import tempfile
 from collections.abc import Iterator
@@ -10,6 +9,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from urllib.parse import quote, urlparse, urlunparse
 
+from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import _git_executable
 
@@ -107,5 +107,4 @@ def ephemeral_clone(
 
 
 def resolve_git_token(explicit: str | None = None) -> str | None:
-    raw = (explicit or os.environ.get("GITHUB_TOKEN", "")).strip()
-    return raw or None
+    return resolve_github_access_token(explicit)

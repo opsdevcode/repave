@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 
 import repave_engine.cli as _cli
 from repave_engine.blueprint import blueprints_dir, bundles_dir, list_blueprints
 from repave_engine.cli._common import _load_output_config_from_args, _parse_inputs
+from repave_engine.github_auth import resolve_github_access_token
 
 
 def cmd_generate(args: argparse.Namespace) -> int:
@@ -23,7 +23,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     output_config = _load_output_config_from_args(args)
     staging_root = Path(args.staging_root).resolve() if args.staging_root else None
 
-    github_token = args.github_token or os.environ.get("GITHUB_TOKEN")
+    github_token = resolve_github_access_token(getattr(args, "github_token", None))
     if args.dry_run:
         github_token = None
 

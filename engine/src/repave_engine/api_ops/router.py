@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import os
-
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from repave_engine.auth import AuthConfig
+from repave_engine.github_auth import github_credentials_configured, resolve_github_access_token
 from repave_engine.readiness import evaluate_readiness
 from repave_engine.session_store import SessionStore
 from repave_engine.settings import DurabilityConfig, OutputConfig
@@ -34,7 +33,8 @@ def build_ops_router(
 
     @router.get("/readyz")
     async def readyz(request: Request) -> JSONResponse:
-        token_ok = bool(os.environ.get("GITHUB_TOKEN", "").strip())
+        token_ok = github_credentials_configured()
+        probe_token = resolve_github_access_token() if token_ok else None
         queue = getattr(request.app.state, "run_queue", None)
         runs_db = durability_config.runs_db if durability_config is not None else None
         shutting_down = bool(getattr(request.app.state, "shutting_down", False))
@@ -47,6 +47,7 @@ def build_ops_router(
                 durability_config.require_session_secret if durability_config else False
             ),
             github_token_configured=token_ok,
+            github_probe_token=probe_token,
             run_queue_depth=queue.queue_depth() if queue is not None else None,
             sql_session_store_ok=session_store.ping() if session_store is not None else None,
         )

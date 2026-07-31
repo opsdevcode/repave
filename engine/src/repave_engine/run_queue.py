@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -19,6 +18,7 @@ from repave_engine.durability_store import (
 )
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.generate_api import run_generate_api
+from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
@@ -229,7 +229,7 @@ class RunQueue:
             def on_event(kind: str, payload: dict[str, Any]) -> None:
                 self._emit_event(run_id, kind, payload)
 
-            github_token = None if record.dry_run else os.environ.get("GITHUB_TOKEN")
+            github_token = None if record.dry_run else resolve_github_access_token()
             artifact_dir = self._artifact_store.local_staging_dir(self._repo_root, run_id)
             publish_ctx = PublishIdempotencyContext(
                 store=self._publish_store,

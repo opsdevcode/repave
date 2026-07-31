@@ -24,7 +24,9 @@ docker build -f deploy/local/Dockerfile -t ghcr.io/your-org/repave-engine:1.75.0
 
 ## Quick install (dry-run only)
 
-Dry-run generation does not need `GITHUB_TOKEN`. For **kind** (especially with the
+Dry-run generation does not need `GITHUB_TOKEN` or GitHub App credentials. For publish on
+hosted clusters, use a PAT (`secrets.githubToken`) or GitHub App keys — see
+[`docs/github-app-auth.md`](../../../docs/github-app-auth.md). For **kind** (especially with the
 operator), prefer [`values-kind.yaml`](values-kind.yaml): fleet registry on `emptyDir` and
 no module PVC:
 

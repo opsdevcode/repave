@@ -174,8 +174,20 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	if githubToken == "" {
-		msg := "set GITHUB_TOKEN to push branch and open remediation PR"
+	resolvedToken, resolveErr := github.ResolveAccessToken("")
+	if resolveErr != nil {
+		msg := resolveErr.Error()
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+				Type:    status.ConditionRemediationPR,
+				Status:  metav1.ConditionFalse,
+				Reason:  status.ReasonRemediationFailed,
+				Message: msg,
+			})
+		})
+	}
+	if resolvedToken == "" {
+		msg := "set GITHUB_TOKEN or GitHub App credentials to push branch and open remediation PR"
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
@@ -185,10 +197,8 @@ func applyRemediationPRStatus(
 			})
 		})
 	}
-
-	if gh == nil {
-		gh = &github.HTTPClient{Token: githubToken}
-	}
+	githubToken = resolvedToken
+	gh = &github.HTTPClient{Token: githubToken}
 
 	if !applyResult.Pushed {
 		if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {

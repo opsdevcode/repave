@@ -102,6 +102,36 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- end }}
 
+{{- define "repave.githubAuthEnv" -}}
+{{- $secretName := include "repave.secretName" . }}
+{{- if $secretName }}
+- name: GITHUB_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: github-token
+      optional: true
+- name: GITHUB_APP_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: github-app-id
+      optional: true
+- name: GITHUB_APP_INSTALLATION_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: github-app-installation-id
+      optional: true
+- name: GITHUB_APP_PRIVATE_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: github-app-private-key
+      optional: true
+{{- end }}
+{{- end }}
+
 {{- define "repave.secretName" -}}
 {{- if .Values.secrets.existingSecret }}
 {{- .Values.secrets.existingSecret }}
