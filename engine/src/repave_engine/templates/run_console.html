@@ -31,6 +31,15 @@
     </p>
   </div>
   <div class="card__body">
+    <div class="run-console__progress" data-run-progress>
+      <div class="run-console__progress-track" aria-hidden="true">
+        <div class="run-console__progress-bar" data-run-progress-bar style="width: 0%"></div>
+      </div>
+      <p class="run-console__progress-label hint" data-run-progress-label aria-live="polite">
+        Waiting for gates…
+      </p>
+    </div>
+
     <ol class="run-console__stages" aria-label="Pipeline stages">
       <li class="run-console__stage" data-stage="validate">Validate inputs</li>
       <li class="run-console__stage" data-stage="render">Render templates</li>

@@ -183,7 +183,7 @@
     method="post"
     action="/generate"
     id="generate-form"
-    class="form-panel{% if form_stepper %} form-panel--stepper{% endif %}"
+    class="form-panel form-panel--{{ bp_family }}{% if form_stepper %} form-panel--stepper{% endif %}"
     data-repave-busy-form
     data-repave-form-draft
     data-blueprint-id="{{ blueprint.name }}"
