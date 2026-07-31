@@ -791,7 +791,14 @@
     var emptyState = document.getElementById("catalog-search-empty");
     var cards = document.querySelectorAll("[data-catalog-card]");
     var groups = document.querySelectorAll("[data-catalog-group]");
-    var quickPaths = document.querySelectorAll("[data-quicknav-path]");
+
+    if (window.location.hash === "#golden-paths") {
+      var inventory = document.getElementById("catalog-inventory");
+      if (inventory) {
+        history.replaceState(null, "", "#catalog-inventory");
+        inventory.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
 
     function normalize(value) {
       return (value || "").toLowerCase().trim();
@@ -805,33 +812,33 @@
       cards.forEach(function (card) {
         var haystack = normalize(card.getAttribute("data-search-text"));
         var match =
-          terms.length === 0 || terms.every(function (term) {
+          terms.length === 0 ||
+          terms.every(function (term) {
             return haystack.indexOf(term) !== -1;
           });
-        card.hidden = !match;
+        var row = card.closest("[data-catalog-item]");
+        if (row) {
+          row.hidden = !match;
+        } else {
+          card.hidden = !match;
+        }
         if (match) {
           visibleCards += 1;
         }
       });
 
       groups.forEach(function (group) {
-        var sectionCards = group.querySelectorAll("[data-catalog-card]");
+        var items = group.querySelectorAll("[data-catalog-item]");
         var anyVisible = false;
-        sectionCards.forEach(function (card) {
-          if (!card.hidden) {
+        items.forEach(function (item) {
+          if (!item.hidden) {
             anyVisible = true;
           }
         });
         group.hidden = !anyVisible && terms.length > 0;
-      });
-
-      quickPaths.forEach(function (row) {
-        var haystack = normalize(row.getAttribute("data-search-text"));
-        var match =
-          terms.length === 0 || terms.every(function (term) {
-            return haystack.indexOf(term) !== -1;
-          });
-        row.hidden = !match;
+        if (terms.length > 0 && anyVisible && group.tagName === "DETAILS") {
+          group.open = true;
+        }
       });
 
       if (meta) {
@@ -841,8 +848,8 @@
           meta.hidden = false;
           meta.textContent =
             visibleCards === 1
-              ? "1 golden path matches"
-              : visibleCards + " golden paths match";
+              ? "1 artifact matches"
+              : visibleCards + " artifacts match";
         }
       }
       if (emptyState) {
