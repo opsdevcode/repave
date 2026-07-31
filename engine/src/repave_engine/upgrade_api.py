@@ -89,7 +89,10 @@ def run_apply_upgrade(
                 raise UpgradeTargetError("push requires repo_url or an http(s) target")
             token = resolve_git_token()
             if not token:
-                raise UpgradeTargetError("GITHUB_TOKEN is required to push after apply")
+                raise UpgradeTargetError(
+                    "GitHub credentials are required to push after apply "
+                    "(GITHUB_TOKEN or GitHub App credentials)"
+                )
             repository = resolve_module_repository_from_git(checkout)
             push_git_branch(
                 checkout,

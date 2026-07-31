@@ -47,7 +47,6 @@ func applyRemediationPRStatus(
 	repo *repavev1beta1.GoldenPathRepo,
 	workspace *inventory.Workspace,
 	applier repave.ApplyUpgrader,
-	gh github.Client,
 	repaveCfg repave.Config,
 	githubToken string,
 	desired drift.PinSet,
@@ -174,8 +173,20 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	if githubToken == "" {
-		msg := "set GITHUB_TOKEN to push branch and open remediation PR"
+	resolvedToken, resolveErr := github.ResolveAccessToken(githubToken)
+	if resolveErr != nil {
+		msg := resolveErr.Error()
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+				Type:    status.ConditionRemediationPR,
+				Status:  metav1.ConditionFalse,
+				Reason:  status.ReasonRemediationFailed,
+				Message: msg,
+			})
+		})
+	}
+	if resolvedToken == "" {
+		msg := "set GITHUB_TOKEN or GitHub App credentials to push branch and open remediation PR"
 		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 				Type:    status.ConditionRemediationPR,
@@ -185,13 +196,11 @@ func applyRemediationPRStatus(
 			})
 		})
 	}
-
-	if gh == nil {
-		gh = &github.HTTPClient{Token: githubToken}
-	}
+	// Fresh token for push/PR (App installation tokens expire; do not reuse startup client).
+	prClient := &github.HTTPClient{Token: resolvedToken}
 
 	if !applyResult.Pushed {
-		if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, githubToken); err != nil {
+		if err := git.PushBranch(ctx, workDir, repo.Spec.RepoURL, applyResult.GitBranch, resolvedToken); err != nil {
 			msg := err.Error()
 			return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 				latest.Status.RemediationPR = nil
@@ -217,7 +226,7 @@ func applyRemediationPRStatus(
 		})
 	}
 
-	pr, err := gh.CreatePullRequest(ctx, github.CreatePullRequestRequest{
+	pr, err := prClient.CreatePullRequest(ctx, github.CreatePullRequestRequest{
 		Repository: repository,
 		Title:        title,
 		Body:         body,

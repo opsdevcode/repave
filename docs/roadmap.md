@@ -5,10 +5,12 @@ one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
 **Current release:** v1.105.0  
-**In progress:** SQL sessions store (multi-replica portal).  
-**Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2; service
-decomposition Phase 0–4 (including CRD `repave.dev/v1beta1` + conversion webhook,
-publish idempotency, per-run Kubernetes Jobs, decomposed chart CI smoke).
+
+**In progress:** GitHub App authentication for publish and remediation.  
+**Shipped on `main`:** engine hardening group A (A1–A4); durability Phase 1–2 (including
+**SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
+(including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
+per-run Kubernetes Jobs, decomposed chart CI smoke).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -29,6 +31,8 @@ locally after bumping `engine` `__version__`.
 
 - Add **future state** items under [Planned](#planned) with enough context to
   estimate and implement (problem, approach, dependencies, acceptance signals).
+- Do **not** edit **Current release** in feature PRs (Release owns it; leave the blank
+  line after it). Update **In progress** / **Shipped on `main`** and section status only.
 - **Name open entries by theme, not by version.** Engine tags come from semantic-release
   and consume numbers as they merge (`v1.72.0` and `v1.73.0` already shipped while
   entries with those planning labels were still open). Shipped sections keep the number
@@ -1455,6 +1459,10 @@ access in a Secret, and rate limits are shared across everything the token touch
 
 **Done when:** A publish and an operator remediation PR both succeed with no PAT present, and
 token material never appears in logs or error strings.
+
+**Status:** **In progress on `feat/github-app-auth`** — engine `github_auth.py` +
+`resolve_github_access_token()`, operator installation-token cache, Helm secret keys; see
+[`docs/github-app-auth.md`](github-app-auth.md).
 
 ---
 

@@ -182,6 +182,9 @@ secrets:
   create: false
   existingSecret: ""
   githubToken: ""
+  githubAppId: ""
+  githubAppInstallationId: ""
+  githubAppPrivateKey: ""
   sessionSecret: ""
   oidcClientSecret: ""
 

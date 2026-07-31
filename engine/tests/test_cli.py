@@ -348,5 +348,5 @@ def test_cmd_update_open_pr_requires_token(repo_root) -> None:
         base_branch="main",
         github_token=None,
     )
-    with pytest.raises(SystemExit, match="GITHUB_TOKEN"):
+    with pytest.raises(SystemExit, match="--open-pr requires"):
         cmd_update(args)

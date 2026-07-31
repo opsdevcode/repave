@@ -90,6 +90,7 @@ def evaluate_readiness(
     auth_service_enabled: bool,
     require_session_secret: bool,
     github_token_configured: bool,
+    github_probe_token: str | None = None,
     run_queue_depth: int | None = None,
     sql_session_store_ok: bool | None = None,
 ) -> ReadinessReport:
@@ -131,12 +132,17 @@ def evaluate_readiness(
             "true",
             "yes",
         )
-        reachable, err = github_api_reachable(os.environ["GITHUB_TOKEN"].strip())
-        details["github_api_reachable"] = reachable
-        if err:
-            details["github_api_error"] = err
-        if require_github:
-            checks["github_api"] = reachable
+        probe_token = (github_probe_token or "").strip()
+        if probe_token:
+            reachable, err = github_api_reachable(probe_token)
+            details["github_api_reachable"] = reachable
+            if err:
+                details["github_api_error"] = err
+            if require_github:
+                checks["github_api"] = reachable
+        elif require_github:
+            checks["github_api"] = False
+            details["github_api_error"] = "GitHub credentials configured but token unavailable"
 
     if run_queue_depth is not None:
         details["async_generation"] = True

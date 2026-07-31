@@ -95,11 +95,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	githubToken := os.Getenv("GITHUB_TOKEN")
-	var ghClient github.Client
-	if githubToken != "" {
-		ghClient = &github.HTTPClient{Token: githubToken}
+	// Fail fast on invalid App config; do not cache installation tokens (they expire).
+	if _, err := github.ResolveAccessToken(""); err != nil {
+		setupLog.Error(err, "unable to resolve GitHub access token")
+		os.Exit(1)
 	}
+	// PAT only — empty means remediation/fetch resolve App tokens on demand.
+	githubToken := os.Getenv("GITHUB_TOKEN")
 
 	repaveCfg := repave.ConfigFromEnv(
 		os.Getenv("REPAVE_REPO_ROOT"),
@@ -121,10 +123,9 @@ func main() {
 		Scheme: mgr.GetScheme(),
 		PlanUpgrader:  repave.NewPlanUpgrader(repaveCfg),
 		ApplyUpgrader: repave.NewApplyUpgrader(repaveCfg),
-		GitHub:        ghClient,
 		RepaveConfig:  repaveCfg,
 		GitHubToken:   githubToken,
-		Fetcher:       inventory.GitFetcher{Token: githubToken},
+		Fetcher:       inventory.GitFetcher{},
 		RemoteResync:  remoteResyncFromEnv(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GoldenPathRepo")

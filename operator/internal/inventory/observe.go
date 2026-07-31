@@ -10,6 +10,7 @@ import (
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
+	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/provenance"
 )
 
@@ -32,7 +33,15 @@ type GitFetcher struct {
 
 // Fetch clones repoURL into dir.
 func (f GitFetcher) Fetch(ctx context.Context, repoURL, dir string) error {
-	return git.Clone(ctx, git.CloneOptions{RepoURL: repoURL, Dir: dir, Token: f.Token})
+	token := f.Token
+	if token == "" {
+		resolved, err := github.ResolveAccessToken("")
+		if err != nil {
+			return err
+		}
+		token = resolved
+	}
+	return git.Clone(ctx, git.CloneOptions{RepoURL: repoURL, Dir: dir, Token: token})
 }
 
 // Workspace is a filesystem view of a registered repository. Remote repos are cloned into

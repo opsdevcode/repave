@@ -82,6 +82,7 @@ from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operat
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import generation_result_from_stored_run
+from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.governance_preflight import build_blueprint_preflight, build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
@@ -909,7 +910,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "terraform-environment-stack":
             return {"repo_name": repo_name, "versions": []}
-        token = os.environ.get("GITHUB_TOKEN")
+        token = resolve_github_access_token()
         return inventory_versions_json(
             resolved_output.modules_root,
             repo_name,
@@ -935,7 +936,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root)
         if blueprint.artifact_type != "ansible-playbook-project":
             return {"repo_name": repo_name, "versions": []}
-        token = os.environ.get("GITHUB_TOKEN")
+        token = resolve_github_access_token()
         return inventory_role_versions_json(
             resolved_output.modules_root,
             repo_name,
@@ -954,7 +955,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         require_run = dry_run or _plan_preview_from_form(form)
         github_token = None
         if not dry_run:
-            github_token = os.environ.get("GITHUB_TOKEN")
+            github_token = resolve_github_access_token()
 
         if bundle_name:
             if worker_execution_mode:
@@ -1125,7 +1126,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 inputs_raw = {}
             values = {str(k): str(v) for k, v in inputs_raw.items()}
             require_run = dry_run
-            github_token = None if dry_run else os.environ.get("GITHUB_TOKEN")
+            github_token = None if dry_run else resolve_github_access_token()
             result = generate_from_blueprint(
                 blueprint,
                 values,

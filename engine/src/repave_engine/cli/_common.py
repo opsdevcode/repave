@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import argparse
-import os
 from pathlib import Path
 
+from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.settings import (
     OutputConfig,
     load_audit_config,
@@ -53,9 +53,11 @@ def _fleet_registry_path(args: argparse.Namespace) -> Path:
 
 
 def _github_token_from_args(args: argparse.Namespace) -> str:
-    token = getattr(args, "github_token", None) or os.environ.get("GITHUB_TOKEN")
+    token = resolve_github_access_token(getattr(args, "github_token", None))
     if not token:
-        raise SystemExit("--open-pr requires GITHUB_TOKEN or --github-token")
+        raise SystemExit(
+            "--open-pr requires GITHUB_TOKEN, --github-token, or GitHub App credentials"
+        )
     return token
 
 

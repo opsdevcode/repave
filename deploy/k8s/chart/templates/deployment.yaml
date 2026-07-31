@@ -131,12 +131,7 @@ spec:
             {{- end }}
             {{- $secretName := include "repave.secretName" . }}
             {{- if $secretName }}
-            - name: GITHUB_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $secretName }}
-                  key: github-token
-                  optional: true
+            {{- include "repave.githubAuthEnv" . | nindent 12 }}
             - name: REPAVE_SESSION_SECRET
               valueFrom:
                 secretKeyRef:

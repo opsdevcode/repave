@@ -43,6 +43,9 @@ def test_build_job_body_includes_run_id_command() -> None:
     assert container["command"][-2] == "run-123"
     assert body["metadata"]["labels"]["repave.dev/run-id"] == "run-123"
     assert body["spec"]["template"]["spec"]["initContainers"][0]["name"] == "corpus-init"
+    env_names = {item["name"] for item in container["env"]}
+    assert "GITHUB_TOKEN" in env_names
+    assert "GITHUB_APP_ID" in env_names
 
 
 def test_kubernetes_dispatcher_posts_job() -> None:

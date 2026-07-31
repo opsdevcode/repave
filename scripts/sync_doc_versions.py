@@ -13,6 +13,8 @@ RELEASE_URL = "https://github.com/opsdevcode/repave/releases/tag/v{version}"
 
 # (path relative to repo root, list of (compiled pattern, replacement template))
 # Replacement templates use {version} and {release_url}.
+# roadmap.md: only Current release / path "today" — keep a blank line after
+# Current release so feature edits to In progress / Shipped merge cleanly.
 DOC_TARGETS: tuple[tuple[str, tuple[tuple[re.Pattern[str], str], ...]], ...] = (
     (
         "docs/roadmap.md",
