@@ -954,6 +954,57 @@ pre {
   .result-hero--passed {
     animation: result-success-in 520ms ease-out both;
   }
+
+  .result-hero--passed .result-hero__count--pass dd {
+    animation: result-count-pop 680ms ease-out 120ms both;
+  }
+
+  .result-gates--animated .gate-table__row {
+    animation: gate-row-in 420ms ease-out both;
+  }
+
+  .result-gates--animated .gate-table__row--fail {
+    animation: gate-row-in 420ms ease-out both, gate-row-fail-pulse 900ms ease-out 420ms 1;
+  }
+
+  .result-gates--animated .gate-table__row--pass {
+    animation: gate-row-in 420ms ease-out both;
+  }
+}
+
+@keyframes result-count-pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.5;
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes gate-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes gate-row-fail-pulse {
+  0%,
+  100% {
+    background: transparent;
+  }
+  35% {
+    background: color-mix(in srgb, var(--error) 12%, transparent);
+  }
 }
 
 @keyframes result-success-in {
@@ -1373,14 +1424,56 @@ details.file-panel summary {
 .home-hero {
   position: relative;
   margin-bottom: var(--space-4);
-  padding: 0;
+  padding: var(--space-5) var(--space-4);
   text-align: left;
-  border: none;
-  background: none;
-  overflow: visible;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  border-radius: calc(var(--radius) + 4px);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  overflow: hidden;
+}
+
+.home-hero__mesh {
+  position: absolute;
+  inset: -40% -20%;
+  pointer-events: none;
+  opacity: 0.55;
+  background:
+    radial-gradient(
+      ellipse 55% 45% at 20% 30%,
+      color-mix(in srgb, var(--accent) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 85% 20%,
+      color-mix(in srgb, var(--accent-hover) 16%, transparent),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 60% 90%,
+      color-mix(in srgb, var(--family-terraform) 12%, transparent),
+      transparent 72%
+    );
+  filter: blur(2px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-hero__mesh {
+    animation: home-hero-mesh 18s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes home-hero-mesh {
+  from {
+    transform: translate3d(-2%, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2%, -1.5%, 0) scale(1.04);
+  }
 }
 
 .home-hero__layout {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -1932,8 +2025,12 @@ details.file-panel summary {
   }
 
   .catalog-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 32px color-mix(in srgb, #000 45%, transparent);
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--card-accent) 48%, var(--border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--card-accent) 32%, transparent),
+      0 18px 44px color-mix(in srgb, var(--card-accent) 16%, transparent),
+      0 8px 24px color-mix(in srgb, #000 35%, transparent);
   }
 }
 
@@ -2720,6 +2817,36 @@ details.file-panel summary {
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) + 2px);
   padding: var(--space-5);
+}
+
+.form-panel--terraform {
+  border-left: 3px solid var(--family-terraform);
+  background: color-mix(in srgb, var(--family-terraform) 4%, var(--surface-raised));
+}
+
+.form-panel--ansible {
+  border-left: 3px solid var(--family-ansible);
+  background: color-mix(in srgb, var(--family-ansible) 4%, var(--surface-raised));
+}
+
+.form-panel--observability {
+  border-left: 3px solid var(--family-observability);
+  background: color-mix(in srgb, var(--family-observability) 4%, var(--surface-raised));
+}
+
+.form-panel--policy {
+  border-left: 3px solid var(--family-policy);
+  background: color-mix(in srgb, var(--family-policy) 4%, var(--surface-raised));
+}
+
+.form-panel--helm {
+  border-left: 3px solid var(--family-helm);
+  background: color-mix(in srgb, var(--family-helm) 4%, var(--surface-raised));
+}
+
+.form-panel--app {
+  border-left: 3px solid var(--family-app);
+  background: color-mix(in srgb, var(--family-app) 4%, var(--surface-raised));
 }
 
 .form-section {
@@ -3957,6 +4084,48 @@ body.repave-busy {
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+
+.run-console__progress {
+  margin-bottom: var(--space-4);
+}
+
+.run-console__progress-track {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 80%, transparent);
+  overflow: hidden;
+}
+
+.run-console__progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent-hover) 85%, var(--accent))
+  );
+  transition: width 320ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .run-console__progress-bar {
+    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
+
+.run-console__progress-label {
+  margin: var(--space-2) 0 0;
+  font-size: 0.85rem;
+}
+
+.run-console__gate-table [data-run-gate-row].is-running {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.run-console__gate-table [data-run-gate-row].is-fail {
+  animation: gate-row-fail-pulse 900ms ease-out 1;
 }
 
 .run-console__stages {

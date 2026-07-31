@@ -1128,6 +1128,40 @@
     var logEl = document.getElementById("run-console-log");
     var completeActions = root.querySelector("[data-run-complete-actions]");
     var initialStatus = root.getAttribute("data-run-status") || "";
+    var progressBar = root.querySelector("[data-run-progress-bar]");
+    var progressLabel = root.querySelector("[data-run-progress-label]");
+    var gateRows = root.querySelectorAll("[data-run-gate-row]");
+    var totalGates = gateRows.length;
+    var finishedGates = 0;
+    var currentGate = "";
+
+    function updateProgressBar() {
+      if (!progressBar && !progressLabel) {
+        return;
+      }
+      var pct = 0;
+      if (totalGates > 0) {
+        pct = currentGate
+          ? Math.round(((finishedGates + 0.35) / totalGates) * 100)
+          : Math.round((finishedGates / totalGates) * 100);
+      }
+      pct = Math.max(0, Math.min(100, pct));
+      if (progressBar) {
+        progressBar.style.width = pct + "%";
+      }
+      if (progressLabel) {
+        if (currentGate) {
+          progressLabel.textContent =
+            "Running " + currentGate + " (" + finishedGates + " of " + totalGates + " complete)";
+        } else if (finishedGates >= totalGates && totalGates > 0) {
+          progressLabel.textContent = "All " + totalGates + " gates complete";
+        } else if (totalGates > 0) {
+          progressLabel.textContent = finishedGates + " of " + totalGates + " gates complete";
+        } else {
+          progressLabel.textContent = "Waiting for gates…";
+        }
+      }
+    }
 
     function appendLog(line) {
       if (!logEl) {
@@ -1163,15 +1197,22 @@
       if (status === "running") {
         badge.textContent = "Running";
         badge.classList.add("badge--muted");
+        row.classList.add("is-running");
       } else if (status === "passed") {
         badge.textContent = "Passed";
         badge.classList.add("badge--pass");
+        row.classList.remove("is-running");
+        row.classList.add("is-done", "is-pass");
       } else if (status === "skipped") {
         badge.textContent = "Skipped";
         badge.classList.add("badge--skip");
+        row.classList.remove("is-running");
+        row.classList.add("is-done", "is-skip");
       } else {
         badge.textContent = "Failed";
         badge.classList.add("badge--fail");
+        row.classList.remove("is-running");
+        row.classList.add("is-done", "is-fail");
       }
       if (message) {
         appendLog(gate + ": " + message);
@@ -1188,11 +1229,21 @@
       } else if (data.kind === "stage_finished") {
         setStage(data.stage, "done");
       } else if (data.kind === "gate_started") {
+        currentGate = data.gate || "";
         setGateRow(data.gate, "running", "");
+        updateProgressBar();
       } else if (data.kind === "gate_finished") {
         var status = data.skipped ? "skipped" : data.passed ? "passed" : "failed";
+        if (data.gate === currentGate) {
+          currentGate = "";
+        }
+        finishedGates += 1;
         setGateRow(data.gate, status, data.message || "");
+        updateProgressBar();
       } else if (data.kind === "run_finished") {
+        currentGate = "";
+        finishedGates = totalGates;
+        updateProgressBar();
         appendLog("Run complete.");
         if (completeActions) {
           completeActions.hidden = false;
@@ -1217,10 +1268,14 @@
         })
         .then(function (body) {
           if (body && body.status === "succeeded" && body.result && body.result.gates) {
+            finishedGates = 0;
             body.result.gates.forEach(function (gate) {
               var status = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
               setGateRow(gate.name, status, gate.message || "");
+              finishedGates += 1;
             });
+            currentGate = "";
+            updateProgressBar();
             if (completeActions) {
               completeActions.hidden = false;
             }
@@ -1251,6 +1306,19 @@
       source.close();
       pollStatus();
     };
+
+    updateProgressBar();
+  }
+
+  function initResultGateAnimations() {
+    var table = document.querySelector(".result-gates--animated .gate-table tbody");
+    if (!table) {
+      return;
+    }
+    var rows = table.querySelectorAll(".gate-table__row");
+    rows.forEach(function (row, index) {
+      row.style.animationDelay = index * 45 + "ms";
+    });
   }
 
   function fuzzyMatchScore(query, label) {
@@ -1449,6 +1517,7 @@
     initGateDashboard();
     initFormDraft();
     initRunConsole();
+    initResultGateAnimations();
     initCommandPalette();
   });
 })();

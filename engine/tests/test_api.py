@@ -101,6 +101,7 @@ def test_index_catalog_search(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "data-catalog-search" in response.text
     assert "data-catalog-card" in response.text
+    assert "home-hero__mesh" in response.text
 
 
 def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) -> None:
@@ -344,6 +345,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "governance-card__details" in response.text
     assert "governance-card__summary-meta" in response.text
     assert "form-layout--split" in response.text
+    assert "form-panel--terraform" in response.text
     assert "Plan (validate only)" in response.text
     assert "Apply to modules root" in response.text
     assert "chip" in response.text
@@ -972,6 +974,7 @@ def test_result_includes_lineage_and_policy_block(
     assert response.status_code == 200
     assert "Lineage" in response.text
     assert "result-collapsible" in response.text
+    assert "result-gates--animated" in response.text
     assert "Policy pack" in response.text
     assert "Estate default" in response.text
 
@@ -1164,6 +1167,7 @@ def test_run_console_page_when_async_enabled(
     page = client.get(f"/runs/{run_id}")
     assert page.status_code == 200
     assert "data-run-console" in page.text
+    assert "data-run-progress" in page.text
     assert "command-palette" in page.text
 
 
