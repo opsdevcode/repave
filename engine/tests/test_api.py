@@ -111,6 +111,7 @@ def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) ->
     assert "data-repave-form-draft" in response.text
     assert "Standard pin drift" in response.text
     assert "form-actions__preflight" in response.text
+    assert "form-actions__preflight-details" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -361,7 +362,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "form-actions__delivery" not in response.text
+    assert "form-actions__preflight-details" in response.text
+    assert "form-actions__toolbar" in response.text
+    assert "form-actions__delivery" in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
@@ -421,7 +424,8 @@ def test_ansible_role_form_single_page(repo_root, output_config) -> None:
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
     assert "Apply to modules root" in response.text
-    assert "form-actions__delivery" not in response.text
+    assert "form-actions__delivery" in response.text
+    assert "form-actions__toolbar" in response.text
     assert "governance-card__gates-details" not in response.text
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(

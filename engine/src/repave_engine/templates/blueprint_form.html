@@ -907,105 +907,55 @@
       {% endif %}
     </section>
 
+    {% if form_stepper %}
     <section
       class="form-section"
       aria-labelledby="publish-heading"
-      {% if form_stepper %}data-form-step="{{ publish_step }}" hidden{% endif %}
+      data-form-step="{{ publish_step }}"
+      hidden
     >
       <h2 class="form-section__title" id="publish-heading">Delivery</h2>
-      {% if not form_stepper %}
-      <div class="segmented publish-toggle" role="radiogroup" aria-label="Delivery mode">
-        <label class="segmented__option">
-          <input type="radio" name="dry_run" value="true" checked />
-          Plan (validate only)
-        </label>
-        <label class="segmented__option">
-          <input type="radio" name="dry_run" value="false" />
-          Apply to modules root
-        </label>
-      </div>
-      {% else %}
       <p class="hint">
         Choose <strong>Plan</strong> or <strong>Apply</strong> in the sticky actions below before you scaffold.
       </p>
-      {% endif %}
       <p class="hint">
         Apply writes the repository under <code>REPAVE_MODULES_ROOT</code>.
         Set <code>GITHUB_TOKEN</code> on the server to create and push the remote GitHub repo.
       </p>
     </section>
+    {% endif %}
 
     <div class="form-actions form-actions--sticky{% if form_stepper %} form-actions--stepper{% if publish_step == 0 %} form-actions--stepper-final{% endif %}{% endif %}">
-      <div class="form-actions__preflight">
-        {% include "partials/governance_preflight.html" %}
-      </div>
+      {% include "partials/governance_preflight_collapsible.html" %}
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
-      {% if async_generation_enabled %}
-      <label class="form-actions__stream hint">
-        <input type="checkbox" name="stream" value="1"{% if async_generation_required %} checked{% endif %} />
-        {% if async_generation_required %}Live run console (required in worker mode){% else %}Live run console (stream gate progress){% endif %}
-      </label>
-      {% endif %}
-      {% if form_stepper %}
-      <div class="form-actions__delivery-block">
-        <span class="form-actions__delivery-label">Delivery</span>
-        <div class="segmented publish-toggle form-actions__delivery" role="radiogroup" aria-label="Delivery mode">
-          <label class="segmented__option">
-            <input type="radio" name="dry_run" value="true" checked />
-            Plan (validate only)
-          </label>
-          <label class="segmented__option">
-            <input type="radio" name="dry_run" value="false" />
-            Apply to modules root
-          </label>
+      <div class="form-actions__toolbar">
+        {% if async_generation_enabled %}
+        <label class="form-actions__stream hint">
+          <input type="checkbox" name="stream" value="1"{% if async_generation_required %} checked{% endif %} />
+          {% if async_generation_required %}Stream gates (required){% else %}Stream gates{% endif %}
+        </label>
+        {% endif %}
+        {% include "partials/delivery_mode_toggle.html" %}
+        <div class="form-actions__buttons form-actions__buttons--stack">
+          <button
+            type="submit"
+            class="dry-run-submit"
+            data-dry-run-submit
+            tabindex="-1"
+            aria-hidden="true"
+          >
+            Dry run preview
+          </button>
+          <button type="button" class="btn btn--primary" data-dry-run-run>
+            Dry run preview
+          </button>
+          {% if form_stepper %}
+          <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
+          {% else %}
+          <button class="btn btn--secondary" type="submit">Scaffold repository</button>
+          {% endif %}
         </div>
-        <p class="hint form-actions__delivery-hint form-actions__delivery-hint--full">
-          <strong>Dry run preview</strong> runs every blueprint gate (missing tools fail, not skip) and shows generated files without writing to the modules root. Use <code>deploy/local</code> Docker compose for the full toolchain.
-          <strong>Scaffold repository</strong> uses the delivery mode above on the last step.
-        </p>
-        <p class="hint form-actions__delivery-hint form-actions__delivery-hint--short">
-          <strong>Plan</strong> validates in memory; <strong>Apply</strong> writes under
-          <code>REPAVE_MODULES_ROOT</code>.
-        </p>
       </div>
-      <div class="form-actions__buttons form-actions__buttons--stack">
-        <button
-          type="submit"
-          class="dry-run-submit"
-          data-dry-run-submit
-          tabindex="-1"
-          aria-hidden="true"
-        >
-          Dry run preview
-        </button>
-        <button type="button" class="btn btn--primary" data-dry-run-run>
-          Dry run preview
-        </button>
-        <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
-      </div>
-      {% else %}
-      {% if async_generation_enabled %}
-      <label class="form-actions__stream hint">
-        <input type="checkbox" name="stream" value="1"{% if async_generation_required %} checked{% endif %} />
-        {% if async_generation_required %}Live run console (required in worker mode){% else %}Live run console (stream gate progress){% endif %}
-      </label>
-      {% endif %}
-      <div class="form-actions__buttons form-actions__buttons--stack">
-        <button
-          type="submit"
-          class="dry-run-submit"
-          data-dry-run-submit
-          tabindex="-1"
-          aria-hidden="true"
-        >
-          Dry run preview
-        </button>
-        <button type="button" class="btn btn--primary" data-dry-run-run>
-          Dry run preview
-        </button>
-        <button class="btn btn--secondary" type="submit">Scaffold repository</button>
-      </div>
-      {% endif %}
     </div>
   </form>
 </div>

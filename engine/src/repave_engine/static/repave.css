@@ -2733,18 +2733,96 @@ details.file-panel summary {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: var(--space-3);
-  margin-top: var(--space-5);
-  padding: var(--space-4) 0;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding: var(--space-2) 0 max(var(--space-2), env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--border);
   background: linear-gradient(
     180deg,
     transparent 0%,
-    color-mix(in srgb, var(--bg) 85%, transparent) 28%,
-    color-mix(in srgb, var(--bg) 96%, transparent) 100%
+    color-mix(in srgb, var(--bg) 88%, transparent) 22%,
+    color-mix(in srgb, var(--bg) 97%, transparent) 100%
   );
   backdrop-filter: blur(6px);
   z-index: 3;
+}
+
+.form-actions--sticky .btn {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.92rem;
+}
+
+.form-actions__preflight-details {
+  width: 100%;
+  margin: 0;
+}
+
+.form-actions__preflight-summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.88rem;
+}
+
+.form-actions__preflight-summary::-webkit-details-marker {
+  display: none;
+}
+
+.form-actions__preflight-title {
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.form-actions__preflight-title::before {
+  content: "▸";
+  color: var(--accent);
+  font-size: 0.8rem;
+}
+
+.form-actions__preflight-details[open] .form-actions__preflight-title::before {
+  content: "▾";
+}
+
+.form-actions__preflight-meta {
+  font-size: 0.82rem;
+}
+
+.form-actions__preflight-details[open] .form-actions__preflight {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.form-actions__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-3);
+  width: 100%;
+}
+
+.form-actions__toolbar .form-actions__delivery {
+  flex: 1 1 auto;
+  min-width: min(100%, 18rem);
+  max-width: 26rem;
+}
+
+.form-actions__toolbar .form-actions__delivery .segmented__option {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.82rem;
+}
+
+.form-actions__toolbar .form-actions__buttons {
+  width: auto;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
 .form-actions__buttons {
@@ -3397,9 +3475,9 @@ body.repave-busy {
 }
 
 .form-actions__preflight {
-  margin: 0 0 var(--space-2);
+  margin: 0;
   width: 100%;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .form-draft-banner {
@@ -3502,11 +3580,26 @@ body.repave-busy {
     margin-right: calc(-1 * var(--space-3));
     padding-left: var(--space-3);
     padding-right: var(--space-3);
-    padding-bottom: max(var(--space-4), env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(var(--space-2), env(safe-area-inset-bottom, 0px));
+  }
+
+  .form-actions__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions__toolbar .form-actions__delivery {
+    max-width: none;
+    width: 100%;
+  }
+
+  .form-actions__toolbar .form-actions__buttons {
+    width: 100%;
+    margin-left: 0;
   }
 
   .form-actions__preflight {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
   }
 
   .form-actions__buttons--stack {
@@ -3806,8 +3899,10 @@ body.repave-busy {
 }
 
 .form-actions__stream {
-  display: block;
-  margin-bottom: var(--space-2);
+  margin: 0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  flex: 0 1 auto;
 }
 
 .estate-grid {
@@ -3899,19 +3994,32 @@ body.repave-busy {
 
 .preflight-panel {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
   margin: 0;
+}
+
+@media (min-width: 520px) {
+  .form-actions__preflight .preflight-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-4);
+  }
 }
 
 .preflight-panel__row {
   display: grid;
-  gap: var(--space-1);
-  grid-template-columns: 6rem 1fr;
+  gap: 0.15rem;
+  grid-template-columns: 5.5rem 1fr;
+  align-items: baseline;
 }
 
 .preflight-panel__row dt {
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.78rem;
+}
+
+.preflight-panel__row dd {
+  margin: 0;
+  font-size: 0.82rem;
 }
 
 .bundle-topology__graph {

@@ -44,6 +44,7 @@ def test_blueprint_preflight_panel(repo_root, output_config) -> None:
     body = client.get("/blueprints/terraform-module-generic").text
 
     assert "preflight-panel" in body
+    assert "form-actions__preflight-details" in body
     assert "Example repo" in body
 
 
