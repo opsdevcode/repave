@@ -13,7 +13,7 @@
         Pick a golden path, run the gates, and ship compliant automation—no CLI required.
       </p>
       <div class="home-hero__actions">
-        <a class="btn btn--primary btn--glow" href="#catalog-inventory">Browse catalog</a>
+        <a class="btn btn--primary btn--glow" href="/library">Browse library</a>
         <a class="btn btn--secondary" href="/update">Upgrade existing repo</a>
         <span id="home-resume-chip" class="home-resume-chip" hidden></span>
         {% if catalog_groups %}
@@ -57,7 +57,7 @@
   <ol class="demo-pipeline__steps">
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">1</span>
-      <span><strong>Select</strong> an artifact from the catalog inventory</span>
+      <span><strong>Select</strong> a golden path template to scaffold</span>
     </li>
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">2</span>
@@ -74,7 +74,7 @@
   <div class="home-layout__main">
 {% if catalog_groups or catalog_bundles %}
 <div class="catalog-search" data-catalog-search>
-  <label class="catalog-search__label" for="catalog-search-input">Search catalog inventory</label>
+  <label class="catalog-search__label" for="catalog-search-input">Search golden paths</label>
   <input
     class="catalog-search__input field__input"
     type="search"
@@ -101,14 +101,16 @@
 {% endif %}
 
 <section
-  id="catalog-inventory"
+  id="golden-paths"
   class="catalog-inventory home-catalog"
-  aria-labelledby="catalog-inventory-heading"
+  aria-labelledby="golden-paths-heading"
 >
   <header class="catalog-inventory__header">
-    <h2 id="catalog-inventory-heading" class="catalog-inventory__title">Catalog inventory</h2>
+    <h2 id="golden-paths-heading" class="catalog-inventory__title">Golden paths</h2>
     <p class="catalog-inventory__lead muted">
-      Artifacts grouped by family — expand a category to browse and open a golden path.
+      Platform templates grouped by family — expand a category to scaffold a new artifact.
+      Already created repos live in the
+      <a href="/library">library</a>.
     </p>
   </header>
 
@@ -197,7 +199,7 @@
   {% endif %}
 
   <div class="alert alert--info catalog-search-empty" id="catalog-search-empty" role="status" hidden>
-    No artifacts match your search. Clear the filter to see the full inventory.
+    No artifacts match your search. Clear the filter to see all golden paths.
   </div>
 </section>
   </div>

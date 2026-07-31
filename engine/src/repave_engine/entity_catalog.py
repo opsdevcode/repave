@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
 from repave_engine.audit_history import AuditHistoryEntry
+from repave_engine.blueprint import artifact_family
 from repave_engine.fleet import FleetEntry, normalize_repo_url
 from repave_engine.fleet_operator_status import FleetOperatorStatus
 from repave_engine.fleet_view import build_fleet_rows
@@ -440,3 +442,88 @@ def read_entity_docs(repo_dir: Path) -> dict[str, str]:
             out["runbook_label"] = candidate
         break
     return out
+
+
+@dataclass(frozen=True)
+class EntityLibraryGroup:
+    family: str
+    title: str
+    subtitle: str
+    entities: tuple[CatalogEntity, ...]
+
+
+_LIBRARY_FAMILY_META: dict[str, tuple[str, str]] = {
+    "terraform": ("Terraform", "Modules and environment stacks under governance"),
+    "ansible": ("Ansible", "Roles, collections, and automation projects"),
+    "policy": ("Policy", "Checkov, OPA, and Azure Policy repositories"),
+    "observability": ("Observability", "Dashboards, monitors, and telemetry repos"),
+    "helm": ("Kubernetes / Helm", "Charts and cluster delivery artifacts"),
+    "app": ("Application services", "Service repos with catalog metadata"),
+    "other": ("Other", "Registered or local artifacts"),
+}
+_LIBRARY_FAMILY_ORDER: tuple[str, ...] = (
+    "terraform",
+    "ansible",
+    "helm",
+    "app",
+    "policy",
+    "observability",
+    "other",
+)
+
+
+def infer_entity_family(
+    entity: CatalogEntity,
+    blueprint_artifact_types: Mapping[str, str],
+) -> str:
+    artifact_type = blueprint_artifact_types.get(entity.blueprint_name, "")
+    if artifact_type:
+        return artifact_family(artifact_type)
+    name = (entity.blueprint_name or "").lower()
+    if "terraform" in name or name.startswith("tf-"):
+        return "terraform"
+    if "ansible" in name:
+        return "ansible"
+    if "opa" in name or "checkov" in name or "policy" in name:
+        return "policy"
+    if "observ" in name or "monitor" in name or "dashboard" in name:
+        return "observability"
+    if "helm" in name:
+        return "helm"
+    component_type = (entity.component_type or "").lower()
+    if component_type in ("service", "website", "library"):
+        return "app"
+    return "other"
+
+
+def group_catalog_entities(
+    entities: Sequence[CatalogEntity],
+    *,
+    blueprint_artifact_types: Mapping[str, str] | None = None,
+) -> list[EntityLibraryGroup]:
+    """Group created artifacts for the portal library (fleet + modules_root)."""
+    types = blueprint_artifact_types or {}
+    buckets: dict[str, list[CatalogEntity]] = {}
+    for entity in entities:
+        family = infer_entity_family(entity, types)
+        buckets.setdefault(family, []).append(entity)
+
+    groups: list[EntityLibraryGroup] = []
+    for family in _LIBRARY_FAMILY_ORDER:
+        items = buckets.get(family)
+        if not items:
+            continue
+        title, subtitle = _LIBRARY_FAMILY_META.get(
+            family,
+            (family.replace("-", " ").title(), "Governed repositories"),
+        )
+        sorted_items = sorted(items, key=lambda item: item.display_name.lower())
+        groups.append(
+            EntityLibraryGroup(
+                family=family,
+                title=title,
+                subtitle=subtitle,
+                entities=tuple(sorted_items),
+            )
+        )
+    return groups

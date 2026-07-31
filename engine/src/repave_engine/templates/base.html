@@ -29,6 +29,9 @@
           <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>
             Catalog
           </a>
+          <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>
+            Library
+          </a>
           <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>
             Upgrade repo
           </a>
@@ -39,12 +42,6 @@
         <details class="shell__nav-more">
           <summary class="shell__nav-more__summary">More</summary>
           <nav class="shell__nav shell__nav--secondary" aria-label="More">
-            <a href="/fleet" {% if nav_active == "fleet" %}aria-current="page"{% endif %}>
-              Fleet
-            </a>
-            <a href="/services" {% if nav_active == "services" %}aria-current="page"{% endif %}>
-              Services
-            </a>
             <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>
               Estate
             </a>

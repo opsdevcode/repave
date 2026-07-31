@@ -793,10 +793,9 @@
     var groups = document.querySelectorAll("[data-catalog-group]");
 
     if (window.location.hash === "#golden-paths") {
-      var inventory = document.getElementById("catalog-inventory");
-      if (inventory) {
-        history.replaceState(null, "", "#catalog-inventory");
-        inventory.scrollIntoView({ behavior: "smooth", block: "start" });
+      var goldenPaths = document.getElementById("golden-paths");
+      if (goldenPaths) {
+        goldenPaths.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }
 
