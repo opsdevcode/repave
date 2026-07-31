@@ -744,6 +744,7 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert response.status_code == 200
     assert 'id="app-service-catalog"' in response.text
     assert "Backstage catalog" in response.text
+    assert "governance-card__details" in response.text
     assert "data-form-stepper" not in response.text
     assert "Plan (validate only)" in response.text
     assert "data-dry-run-run" in response.text
@@ -970,6 +971,7 @@ def test_result_includes_lineage_and_policy_block(
     )
     assert response.status_code == 200
     assert "Lineage" in response.text
+    assert "result-collapsible" in response.text
     assert "Policy pack" in response.text
     assert "Estate default" in response.text
 
@@ -982,6 +984,8 @@ def test_update_form_page(repo_root, output_config) -> None:
     assert "Upgrade existing repository" in response.text
     assert 'name="target_repo"' in response.text
     assert "Upgrade repo" in response.text
+    assert "form-actions__toolbar" in response.text
+    assert "page-supplement" in response.text
     assert "data-repave-busy-form" in response.text
     assert "data-busy-stages" in response.text
     assert "shell__main--golden-path" in response.text

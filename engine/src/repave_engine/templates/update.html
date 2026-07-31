@@ -6,7 +6,7 @@
 
 {% block content %}
 <p class="breadcrumb"><a href="/">← Catalog</a></p>
-<header class="form-hero">
+<header class="form-hero form-hero--compact">
   <div>
     <h1 class="page-title">Upgrade existing repository</h1>
     <p class="page-lead">
@@ -20,7 +20,7 @@
 {% endif %}
 
 <form
-  class="form-panel"
+  class="form-panel form-panel--compact"
   method="post"
   action="/update"
   data-repave-busy-form
@@ -63,8 +63,12 @@
     />
   </div>
 
-  <div class="form-panel__actions form-actions form-actions--sticky">
-    <button class="btn btn--primary" type="submit">Preview upgrade</button>
+  <div class="form-actions form-actions--sticky">
+    <div class="form-actions__toolbar form-actions__toolbar--solo">
+      <div class="form-actions__buttons">
+        <button class="btn btn--primary" type="submit">Preview upgrade</button>
+      </div>
+    </div>
   </div>
 </form>
 
@@ -82,29 +86,19 @@
 </script>
 {% endif %}
 
-<section class="card update-howto" aria-labelledby="howto-heading">
-  <div class="card__header">
-    <h2 id="howto-heading">Repave the estate</h2>
-  </div>
-  <div class="card__body">
+<details class="page-supplement card">
+  <summary class="page-supplement__summary">How upgrade works</summary>
+  <div class="page-supplement__body">
     <ol class="update-howto__steps">
       <li>Preview file diffs when blueprint or standard pins move forward.</li>
       <li>Apply on a branch locally, or open a remediation PR for reviewers.</li>
       <li>Operator mode (optional) watches the same pins across many repos.</li>
     </ol>
-  </div>
-</section>
-
-<section class="card" aria-labelledby="cli-heading">
-  <div class="card__header">
-    <h2 id="cli-heading">Apply from the CLI</h2>
-  </div>
-  <div class="card__body">
-    <p class="muted">
+    <p class="hint">
       After reviewing the diff, commit on a branch with
       <code>repave update --no-dry-run --git-branch … --path …</code>
       or add <code>--open-pr</code> when <code>GITHUB_TOKEN</code> is set.
     </p>
   </div>
-</section>
+</details>
 {% endblock %}

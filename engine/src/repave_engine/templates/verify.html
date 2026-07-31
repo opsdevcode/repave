@@ -6,7 +6,7 @@
 
 {% block content %}
 <p class="breadcrumb"><a href="/">← Catalog</a></p>
-<header class="form-hero">
+<header class="form-hero form-hero--compact">
   <div>
     <h1 class="page-title">Verify existing repository</h1>
     <p class="page-lead">
@@ -20,7 +20,7 @@
 {% endif %}
 
 <form
-  class="form-panel"
+  class="form-panel form-panel--compact"
   method="post"
   action="/verify"
   data-repave-busy-form
@@ -64,15 +64,16 @@
     />
   </div>
 
-  <div class="field field--checkbox">
-    <label class="field__checkbox">
-      <input type="checkbox" name="require_run" value="true" />
-      Treat missing gate tools as failures (dry-run parity)
-    </label>
-  </div>
-
-  <div class="form-panel__actions form-actions form-actions--sticky">
-    <button class="btn btn--primary" type="submit">Run verify</button>
+  <div class="form-actions form-actions--sticky">
+    <div class="form-actions__toolbar">
+      <label class="form-actions__stream hint">
+        <input type="checkbox" name="require_run" value="true" />
+        Strict gates (fail when tools missing)
+      </label>
+      <div class="form-actions__buttons">
+        <button class="btn btn--primary" type="submit">Run verify</button>
+      </div>
+    </div>
   </div>
 </form>
 
@@ -90,15 +91,13 @@
 </script>
 {% endif %}
 
-<section class="card" aria-labelledby="cli-heading">
-  <div class="card__header">
-    <h2 id="cli-heading">CLI equivalent</h2>
-  </div>
-  <div class="card__body">
-    <p class="muted">
+<details class="page-supplement card">
+  <summary class="page-supplement__summary">CLI equivalent</summary>
+  <div class="page-supplement__body">
+    <p class="hint">
       <code>repave verify /path/to/repo --format json</code> — exit code
       <code>0</code> when gates pass and pins match the catalog.
     </p>
   </div>
-</section>
+</details>
 {% endblock %}
