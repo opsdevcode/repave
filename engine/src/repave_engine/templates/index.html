@@ -10,7 +10,7 @@
     <div class="home-hero__primary">
       <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
       <p class="home-hero__tagline">
-        Internal developer platform templates—scaffold compliant repos without the CLI.
+        Pick a golden path, run the gates, and ship compliant automation—no CLI required.
       </p>
       <div class="home-hero__actions">
         <a class="btn btn--primary btn--glow" href="#golden-paths">Browse catalog</a>
@@ -69,6 +69,61 @@
     </li>
   </ol>
 </nav>
+
+{% if catalog_groups and not presenter_mode %}
+<section class="demo-starter card" aria-labelledby="demo-starter-heading">
+  <div class="card__header demo-starter__header">
+    <div>
+      <h2 id="demo-starter-heading" class="demo-starter__title">Live demo path</h2>
+      <p class="muted card__subtitle">
+        Three stops that show catalog → governed generate → existing estate → policy block.
+      </p>
+    </div>
+    <a
+      class="btn btn--ghost btn--sm"
+      href="/?presenter=1"
+      data-presenter-enter
+    >
+      Presenter mode
+    </a>
+  </div>
+  <div class="card__body">
+    <ol class="demo-starter__list">
+      <li class="demo-starter__item">
+        <span class="demo-starter__step">1</span>
+        <div>
+          <a class="demo-starter__link" href="/blueprints/terraform-module-generic">
+            Scaffold a Terraform module
+          </a>
+          <p class="hint demo-starter__desc">
+            Module <code>demo</code>, AWS <code>ec2</code> + <code>s3</code>, then <strong>Plan</strong>.
+          </p>
+        </div>
+      </li>
+      <li class="demo-starter__item">
+        <span class="demo-starter__step">2</span>
+        <div>
+          <a class="demo-starter__link" href="/update">Upgrade an existing repo</a>
+          <p class="hint demo-starter__desc">
+            Use the terraform-minimal fixture and preview pin drift.
+          </p>
+        </div>
+      </li>
+      <li class="demo-starter__item">
+        <span class="demo-starter__step">3</span>
+        <div>
+          <a class="demo-starter__link" href="/blueprints/opa-policy-generic">
+            Show a policy gate block
+          </a>
+          <p class="hint demo-starter__desc">
+            Set plan scenario to <code>destructive_delete</code> and run Plan.
+          </p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+{% endif %}
 
 <div class="home-layout" data-home-layout>
   {% if catalog_groups %}

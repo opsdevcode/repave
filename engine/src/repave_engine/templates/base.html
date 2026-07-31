@@ -25,7 +25,7 @@
           <span class="shell__mark" aria-hidden="true"></span>
           <span class="shell__wordmark">repave</span>
         </a>
-        <nav class="shell__nav" aria-label="Primary">
+        <nav class="shell__nav shell__nav--primary" aria-label="Primary">
           <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>
             Catalog
           </a>
@@ -35,18 +35,30 @@
           <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>
             Verify repo
           </a>
-          <a href="/fleet" {% if nav_active == "fleet" %}aria-current="page"{% endif %}>
-            Fleet
-          </a>
-          <a href="/services" {% if nav_active == "services" %}aria-current="page"{% endif %}>
-            Services
-          </a>
-          <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>
-            Estate
-          </a>
-          <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
-            Activity
-          </a>
+        </nav>
+        <details class="shell__nav-more">
+          <summary class="shell__nav-more__summary">More</summary>
+          <nav class="shell__nav shell__nav--secondary" aria-label="More">
+            <a href="/fleet" {% if nav_active == "fleet" %}aria-current="page"{% endif %}>
+              Fleet
+            </a>
+            <a href="/services" {% if nav_active == "services" %}aria-current="page"{% endif %}>
+              Services
+            </a>
+            <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>
+              Estate
+            </a>
+            <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
+              Activity
+            </a>
+          </nav>
+        </details>
+        <nav class="shell__nav shell__nav--demo" aria-label="Demo">
+          <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>Catalog</a>
+          <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>Upgrade</a>
+          <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>Verify</a>
+          <a href="/blueprints/terraform-module-generic">Module demo</a>
+          <a href="/blueprints/opa-policy-generic">Policy demo</a>
         </nav>
         <div class="shell__meta">
           {% if auth_enabled and auth_user %}
@@ -66,6 +78,21 @@
       {% if local_toolchain_warning %}
       <p class="shell__toolchain-warning hint" role="status">{{ local_toolchain_warning }}</p>
       {% endif %}
+
+      <div
+        id="presenter-banner"
+        class="presenter-banner"
+        role="status"
+        {% if not presenter_mode %}hidden{% endif %}
+      >
+        <span class="presenter-banner__label">Presenter mode</span>
+        <p class="presenter-banner__hint muted">
+          Focused nav for live demos · gates stay on · use Plan for dry-run
+        </p>
+        <button type="button" class="btn btn--ghost btn--sm" data-presenter-exit>
+          Exit presenter mode
+        </button>
+      </div>
 
       <div id="last-run-snippet" class="last-run-snippet shell__last-run" hidden></div>
 

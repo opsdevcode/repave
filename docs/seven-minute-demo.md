@@ -16,9 +16,9 @@ cd engine && uv run pytest tests/test_demo_acts.py -v
 
 ## Act 1 — Catalog (~1 min)
 
-1. Open **http://localhost:8088/**
+1. Open **http://localhost:8088/** (add **`?presenter=1`** for focused demo nav and banner).
 2. Confirm golden paths group by family (Terraform, Ansible, Policy, …).
-3. Use search or scroll to **terraform-module-generic** and open it.
+3. Use the **Live demo path** card, search, or scroll to **terraform-module-generic** and open it.
 
 **Say:** “Platform owns blueprints and pins; builders pick a golden path.”
 

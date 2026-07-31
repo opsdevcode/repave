@@ -1,5 +1,123 @@
 (function () {
   var STORAGE_KEY = "repave:lastRun";
+  var PRESENTER_KEY = "repave:presenter";
+
+  function isPresenterQuery() {
+    var params = new URLSearchParams(window.location.search);
+    var raw = (params.get("presenter") || "").trim().toLowerCase();
+    return raw === "1" || raw === "true" || raw === "yes";
+  }
+
+  function withPresenterHref(href) {
+    if (!href || href.charAt(0) !== "/" || href.indexOf("://") !== -1) {
+      return href;
+    }
+    try {
+      var url = new URL(href, window.location.origin);
+      url.searchParams.set("presenter", "1");
+      return url.pathname + url.search + url.hash;
+    } catch (_err) {
+      return href;
+    }
+  }
+
+  function setPresenterActive(active) {
+    var shell = document.querySelector(".shell");
+    var banner = document.getElementById("presenter-banner");
+    if (shell) {
+      shell.classList.toggle("shell--presenter", active);
+    }
+    if (banner) {
+      banner.hidden = !active;
+    }
+    try {
+      if (active) {
+        sessionStorage.setItem(PRESENTER_KEY, "1");
+      } else {
+        sessionStorage.removeItem(PRESENTER_KEY);
+      }
+    } catch (_err) {
+      /* ignore */
+    }
+  }
+
+  function initPresenterMode() {
+    var shell = document.querySelector(".shell");
+    if (!shell) {
+      return;
+    }
+
+    var active = false;
+    try {
+      active = isPresenterQuery() || sessionStorage.getItem(PRESENTER_KEY) === "1";
+    } catch (_err) {
+      active = isPresenterQuery();
+    }
+
+    if (isPresenterQuery()) {
+      try {
+        sessionStorage.setItem(PRESENTER_KEY, "1");
+      } catch (_err) {
+        /* ignore */
+      }
+    }
+
+    setPresenterActive(active);
+
+    document.querySelectorAll("[data-presenter-exit]").forEach(function (button) {
+      if (button.dataset.repavePresenterBound) {
+        return;
+      }
+      button.dataset.repavePresenterBound = "1";
+      button.addEventListener("click", function () {
+        setPresenterActive(false);
+        var url = new URL(window.location.href);
+        url.searchParams.delete("presenter");
+        window.history.replaceState({}, "", url.pathname + url.search + url.hash);
+        showToast("Presenter mode off");
+      });
+    });
+
+    document.querySelectorAll("[data-presenter-enter]").forEach(function (link) {
+      if (link.dataset.repavePresenterBound) {
+        return;
+      }
+      link.dataset.repavePresenterBound = "1";
+      link.addEventListener("click", function () {
+        try {
+          sessionStorage.setItem(PRESENTER_KEY, "1");
+        } catch (_err) {
+          /* ignore */
+        }
+      });
+    });
+
+    if (!active) {
+      return;
+    }
+
+    document.body.addEventListener(
+      "click",
+      function (event) {
+        var anchor = event.target.closest("a[href]");
+        if (!anchor || anchor.target === "_blank" || anchor.hasAttribute("download")) {
+          return;
+        }
+        if (anchor.hasAttribute("data-presenter-exit") || anchor.hasAttribute("data-presenter-enter")) {
+          return;
+        }
+        var href = anchor.getAttribute("href");
+        if (!href || href.charAt(0) !== "/" || href.indexOf("://") !== -1 || href.charAt(0) === "#") {
+          return;
+        }
+        var next = withPresenterHref(href);
+        if (next !== href) {
+          anchor.setAttribute("href", next);
+        }
+      },
+      true
+    );
+  }
 
   function readLastRun() {
     try {
@@ -1434,6 +1552,7 @@
   };
 
   document.addEventListener("DOMContentLoaded", function () {
+    initPresenterMode();
     renderLastRun();
     initHomeResumeChip();
     initCopyButtons();
