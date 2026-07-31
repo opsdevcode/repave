@@ -22,6 +22,13 @@ When opening PRs for this repository (including via `gh pr create`):
 - Summarize user-visible behavior and link operator/portal/docs impacts when relevant.
 - Test plan checklist; note if operator JSON contracts (`plan-upgrade`, `apply-upgrade`) are unchanged.
 
+## Roadmap header
+
+- Do **not** edit `docs/roadmap.md` **Current release** — Release/`sync_doc_versions.py` owns it.
+- Keep a blank line after **Current release** so feature edits to **In progress** / **Shipped**
+  do not conflict with release bumps.
+- Feature PRs may update **In progress**, **Shipped on `main`**, and section `**Status:**` only.
+
 ## Merging to `main`
 
 After required checks pass, use the normal **Merge pull request** control on GitHub.

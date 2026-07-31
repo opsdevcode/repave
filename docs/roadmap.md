@@ -31,6 +31,8 @@ locally after bumping `engine` `__version__`.
 
 - Add **future state** items under [Planned](#planned) with enough context to
   estimate and implement (problem, approach, dependencies, acceptance signals).
+- Do **not** edit **Current release** in feature PRs (Release owns it; leave the blank
+  line after it). Update **In progress** / **Shipped on `main`** and section status only.
 - **Name open entries by theme, not by version.** Engine tags come from semantic-release
   and consume numbers as they merge (`v1.72.0` and `v1.73.0` already shipped while
   entries with those planning labels were still open). Shipped sections keep the number

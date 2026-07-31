@@ -247,6 +247,10 @@ After each semver bump, Release runs `scripts/sync_doc_versions.py` so
 match the new engine tag. Locally: `make sync-doc-versions`
 (or `python3 scripts/sync_doc_versions.py --check` to verify).
 
+Feature PRs must **not** edit `docs/roadmap.md` **Current release** — Release owns
+that line (keep a blank line after it so status edits merge cleanly). Update
+**In progress** / **Shipped on `main`** and section `**Status:**` lines only.
+
 ## Commit messages (Conventional Commits)
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/)
