@@ -44,7 +44,8 @@ See [Upgrade and rollback](upgrade-and-rollback.md) for Helm steps.
 1. Configure shared SQL durability (`repave.durability.databaseUrl`) and
    `secrets.sessionSecret` before `autoscaling.enabled` or `replicaCount` > 1.
 2. For decomposed deploys, use `values-decomposed.yaml` with an external worker Deployment
-   and Postgres; validate with `make chart-smoke-decomposed`.
+   and Postgres; validate with `make chart-smoke-decomposed` or
+   `make chart-smoke-multi-replica` when scaling portal replicas.
 3. Watch HPA: `kubectl get hpa -n repave`
 4. Dashboard: generation latency, CPU, and `repave_run_queue_inflight`.
 

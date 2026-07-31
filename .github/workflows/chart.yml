@@ -143,3 +143,54 @@ jobs:
         run: |
           chmod +x deploy/k8s/hack/chart-smoke-decomposed.sh
           ./deploy/k8s/hack/chart-smoke-decomposed.sh
+
+  chart-smoke-multi-replica:
+    name: chart-smoke-multi-replica
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/chart-ci-paths
+        id: paths
+
+      - name: Unrelated change (skip multi-replica chart smoke)
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.paths.outputs.chart_needed != 'true'
+        run: echo "No chart or portal image paths; skipping multi-replica kind smoke."
+
+      - name: Install Helm
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.4
+
+      - uses: actions/setup-go@v5
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        with:
+          go-version-file: operator/go.mod
+          cache: false
+
+      - name: Install kind
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: go install sigs.k8s.io/kind@v0.27.0
+
+      - name: Add Go bin to PATH
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run multi-replica chart smoke (kind)
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: |
+          chmod +x deploy/k8s/hack/chart-smoke-multi-replica.sh
+          ./deploy/k8s/hack/chart-smoke-multi-replica.sh

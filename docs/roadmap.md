@@ -6,11 +6,12 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.107.1  
 
-**In progress:** multi-replica portal smoke in CI; operator production Helm chart.  
+**In progress:** operator production Helm chart.  
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
-per-run Kubernetes Jobs, decomposed chart CI smoke); **GitHub App authentication** for
+per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**);
+**GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
@@ -91,7 +92,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
-  ├─ k8s deploy      Helm chart + day-2 operability (shipped; multi-replica smoke open)
+  ├─ k8s deploy      Helm chart + day-2 operability (shipped; operator chart open)
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
   ├─ supply chain    GitHub App auth shipped; governed PR conventions open
@@ -317,11 +318,13 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 ### Kubernetes deploy — Helm chart (engine v1.74+)
 
 - [`deploy/k8s/chart/`](../deploy/k8s/chart/): portal/API on-cluster; `chart-validate`,
-  `chart-smoke`, and `chart-smoke-decomposed` required checks (path-gated skip on unrelated
-  PRs; full smoke on `main`)
+  `chart-smoke`, `chart-smoke-decomposed`, and `chart-smoke-multi-replica` required checks
+  (path-gated skip on unrelated PRs; full smoke on `main`)
 - **Day-2 operability:** [`values-day2.yaml`](../deploy/k8s/chart/values-day2.yaml) (HPA,
   ServiceMonitor, PrometheusRule), runbooks in [`docs/operations/`](../docs/operations/)
-- **Follow-ups:** multi-replica portal smoke in CI; operator production Helm chart
+- **Multi-replica smoke:** [`values-multi-replica-smoke.yaml`](../deploy/k8s/chart/values-multi-replica-smoke.yaml),
+  [`chart-smoke-multi-replica.sh`](../deploy/k8s/hack/chart-smoke-multi-replica.sh)
+- **Follow-ups:** operator production Helm chart
 
 ### GitHub App authentication (engine v1.105+)
 
@@ -1124,7 +1127,7 @@ model itself belongs to that entry.
 working and probes gating traffic.
 
 **Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174).
-**Follow-ups in this entry:** multi-replica portal smoke in CI; operator production Helm chart.
+**Follow-ups in this entry:** operator production Helm chart.
 
 ---
 
@@ -1641,7 +1644,9 @@ with conversion webhook, and e2e conversion assertions — see
 **Phase 4 shipped on `main`** — `worker_mode: job` spawns a Kubernetes Job per run; see
 [`values-decomposed-job.yaml`](../../deploy/k8s/chart/values-decomposed-job.yaml). **Decomposed
 chart CI smoke shipped on `main`** — `make chart-smoke-decomposed` /
-[`chart-smoke-decomposed.sh`](../../deploy/k8s/hack/chart-smoke-decomposed.sh).
+[`chart-smoke-decomposed.sh`](../../deploy/k8s/hack/chart-smoke-decomposed.sh). **Multi-replica
+portal chart smoke shipped on `main`** — `make chart-smoke-multi-replica` /
+[`chart-smoke-multi-replica.sh`](../../deploy/k8s/hack/chart-smoke-multi-replica.sh).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts

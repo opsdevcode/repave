@@ -203,6 +203,7 @@ available (HPA-at-max alert).
 make chart-validate           # helm lint + template smoke (CI: chart-validate)
 make chart-smoke              # kind install (CI: chart-smoke on chart/image paths)
 make chart-smoke-decomposed   # decomposed portal + worker + Postgres async run (CI: chart-smoke-decomposed)
+make chart-smoke-multi-replica   # two portal replicas + shared Postgres sessions/queue (CI: chart-smoke-multi-replica)
 ```
 
 ## Scaling
