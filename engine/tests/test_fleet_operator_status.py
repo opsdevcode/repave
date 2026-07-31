@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from repave_engine.fleet_operator_status import (
     FleetOperatorStatus,
+    StaticKubectlRunner,
+    kubectl_goldenpathrepo_list,
     load_operator_status_file,
     parse_kubectl_gpr_list,
     write_operator_status_snapshot,
@@ -45,3 +47,9 @@ def test_operator_status_snapshot_round_trip(tmp_path) -> None:
     loaded = load_operator_status_file(path)
     assert "https://github.com/acme/tf-vpc" in loaded
     assert loaded["https://github.com/acme/tf-vpc"].phase == "Ready"
+
+
+def test_kubectl_goldenpathrepo_list_uses_runner() -> None:
+    payload = {"items": []}
+    runner = StaticKubectlRunner(payload=payload)
+    assert kubectl_goldenpathrepo_list(runner=runner) == payload

@@ -1,20 +1,13 @@
 from __future__ import annotations
 
-import json
-import urllib.error
-import urllib.request
 from pathlib import Path
 from typing import Any
 
+from repave_engine.github_client import GitHubError, GitHubRestClient, UrllibGitHubRestClient
 from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import ModuleRepository, _git_executable, _run_git
 
-
-class GitHubError(RuntimeError):
-    def __init__(self, status: int, message: str) -> None:
-        super().__init__(message)
-        self.status = status
-        self.message = message
+_default_github_client: GitHubRestClient = UrllibGitHubRestClient()
 
 
 def ensure_github_repository(
@@ -152,7 +145,13 @@ def _create_user_repository(
     )
 
 
-def list_repository_tags(owner: str, repo: str, token: str) -> list[str]:
+def list_repository_tags(
+    owner: str,
+    repo: str,
+    token: str,
+    *,
+    client: GitHubRestClient | None = None,
+) -> list[str]:
     """Return tag names for a GitHub repository (API order, up to 500 tags)."""
     tags: list[str] = []
     page = 1
@@ -161,6 +160,7 @@ def list_repository_tags(owner: str, repo: str, token: str) -> list[str]:
             "GET",
             f"/repos/{owner}/{repo}/tags?per_page=100&page={page}",
             token,
+            client=client,
         )
         if not isinstance(payload, list) or not payload:
             break
@@ -180,31 +180,11 @@ def _github_json(
     path: str,
     token: str,
     body: dict[str, Any] | None = None,
+    *,
+    client: GitHubRestClient | None = None,
 ) -> Any:
-    url = f"https://api.github.com{path}"
-    payload = None if body is None else json.dumps(body).encode("utf-8")
-    request = urllib.request.Request(  # nosec B310
-        url,
-        data=payload,
-        method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-            "Content-Type": "application/json",
-            "User-Agent": "repave-engine",
-        },
-    )
-
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
-            raw = response.read().decode("utf-8")
-            if not raw:
-                return None
-            return json.loads(raw)
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise GitHubError(exc.code, detail) from exc
+    rest = client if client is not None else _default_github_client
+    return rest.request_json(method, path, token, body)
 
 
 def _github_request(
@@ -212,8 +192,10 @@ def _github_request(
     path: str,
     token: str,
     body: dict[str, Any] | None = None,
+    *,
+    client: GitHubRestClient | None = None,
 ) -> dict[str, Any]:
-    parsed = _github_json(method, path, token, body)
+    parsed = _github_json(method, path, token, body, client=client)
     return parsed if isinstance(parsed, dict) else {}
 
 

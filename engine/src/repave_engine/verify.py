@@ -91,6 +91,35 @@ def _gate_blueprint_from_repo(
         raise VerifyError(str(exc)) from exc
 
 
+@dataclass(frozen=True)
+class VerifyOutcome:
+    result: VerifyResult | None
+    error: VerifyError | None
+
+    @property
+    def ok(self) -> bool:
+        return self.error is None and self.result is not None
+
+
+def verify_repository_outcome(
+    target_repo: Path,
+    repo_root: Path,
+    *,
+    blueprint_name: str | None = None,
+    require_run: bool = False,
+) -> VerifyOutcome:
+    try:
+        result = verify_repository(
+            target_repo,
+            repo_root,
+            blueprint_name=blueprint_name,
+            require_run=require_run,
+        )
+    except VerifyError as exc:
+        return VerifyOutcome(result=None, error=exc)
+    return VerifyOutcome(result=result, error=None)
+
+
 def verify_repository(
     target_repo: Path,
     repo_root: Path,
