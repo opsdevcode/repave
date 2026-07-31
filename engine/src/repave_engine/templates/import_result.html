@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Import preview — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/import">← Import repository</a></p>
+
+<section
+  class="result-hero {% if plan.ok %}result-hero--passed{% else %}result-hero--failed{% endif %}"
+  aria-labelledby="import-heading"
+>
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">{{ plan.blueprint_name }}@{{ plan.blueprint_version }}</p>
+    <h1 id="import-heading" class="result-hero__title">Import preview</h1>
+    <p class="result-hero__banner">
+      <span class="badge badge--skip">Dry-run</span>
+      {{ plan.summary }}
+    </p>
+    {% if plan.detected and detection_evidence %}
+    <p class="hint">
+      Detected automatically at {{ detection_confidence }}% confidence — matched
+      {% for path in detection_evidence %}<code>{{ path }}</code>{% if not loop.last %}, {% endif %}{% endfor %}.
+    </p>
+    {% endif %}
+  </div>
+  <dl class="result-hero__counts" aria-label="Import summary">
+    <div class="result-hero__count">
+      <dt>Moved</dt>
+      <dd>{{ plan.renames|length }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Added</dt>
+      <dd>{{ plan.scaffold_added|length }}</dd>
+    </div>
+    <div class="result-hero__count {% if plan.conflicts %}result-hero__count--fail{% endif %}">
+      <dt>Conflicts</dt>
+      <dd>{{ plan.conflicts|length }}</dd>
+    </div>
+  </dl>
+</section>
+
+{% if plan.conflicts %}
+<div class="alert alert--fail" role="alert">
+  <p>Two or more files compete for the same destination. Resolve these before importing:</p>
+  <ul>
+    {% for line in plan.conflicts %}
+    <li>{{ line }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% elif plan.is_noop %}
+<div class="alert alert--info" role="status">
+  This repository already conforms to <code>{{ plan.blueprint_name }}</code> — nothing to move
+  and no scaffold missing, so there is no pull request to open.
+</div>
+{% endif %}
+
+<section class="card" aria-labelledby="import-target-heading">
+  <div class="card__header">
+    <h2 id="import-target-heading">Source</h2>
+  </div>
+  <div class="card__body">
+    <code>{{ plan.target }}</code>
+    {% if plan.remote %}<span class="badge badge--muted">remote</span>{% endif %}
+  </div>
+</section>
+
+{% if plan.scorecard.total %}
+<section class="card" aria-labelledby="import-scorecard-heading">
+  <div class="card__header card__header--toolbar">
+    <h2 id="import-scorecard-heading">Scorecard</h2>
+    <span class="badge {% if plan.scorecard.improved %}badge--pass{% else %}badge--muted{% endif %}">
+      {{ plan.scorecard.passing_before }} of {{ plan.scorecard.total }} today →
+      {{ plan.scorecard.passing_after }} of {{ plan.scorecard.total }} after this PR
+    </span>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table">
+      <thead>
+        <tr>
+          <th scope="col">Dimension</th>
+          <th scope="col">Today</th>
+          <th scope="col">After import</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in scorecard_rows %}
+        <tr>
+          <th scope="row">{{ row.label }}</th>
+          <td>
+            <span class="badge badge--{% if row.before_level == 'unknown' %}muted{% else %}{{ row.before_level }}{% endif %}"
+              title="{{ row.before_detail }}">{{ row.before_level }}</span>
+          </td>
+          <td>
+            <span class="badge badge--{% if row.after_level == 'unknown' %}muted{% else %}{{ row.after_level }}{% endif %}"
+              title="{{ row.after_detail }}">{{ row.after_level }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if plan.gates %}
+<section class="card" aria-labelledby="import-gates-heading">
+  <div class="card__header card__header--toolbar">
+    <h2 id="import-gates-heading">Gates on the reorganized tree</h2>
+    <span class="badge {% if plan.gates_passed %}badge--pass{% else %}badge--fail{% endif %}">
+      {{ gate_summary }}
+    </span>
+  </div>
+  <div class="card__body">
+    {% if not plan.gates_passed %}
+    <p class="hint muted">
+      Failing gates do not block the import — the pull request opens as a draft so you can
+      fix them on the branch.
+    </p>
+    {% endif %}
+    <ul class="upgrade-diff__list">
+      {% for gate in plan.gates %}
+      <li class="upgrade-diff__item">
+        <span class="badge badge--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}">
+          {{ gate.name }}
+        </span>
+        <span class="muted">{{ gate.message }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="import-plan-heading">
+  <div class="card__header card__header--toolbar">
+    <h2 id="import-plan-heading">File plan</h2>
+    <span class="badge badge--muted">
+      {{ plan.renames|length + plan.scaffold_added|length + plan.unmapped|length }} paths
+    </span>
+  </div>
+  <div class="card__body upgrade-diff">
+    {% if plan.renames %}
+    <div class="upgrade-diff__group">
+      <h3 class="upgrade-diff__label">Moved (content unchanged)</h3>
+      <ul class="upgrade-diff__list">
+        {% for move in plan.renames %}
+        <li class="upgrade-diff__item upgrade-diff__item--modified">
+          <code>{{ move.source }}</code> → <code>{{ move.destination }}</code>
+          <span class="muted">{{ move.reason }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if plan.scaffold_added %}
+    <div class="upgrade-diff__group">
+      <h3 class="upgrade-diff__label">Added scaffold</h3>
+      <ul class="upgrade-diff__list">
+        {% for path in plan.scaffold_added %}
+        <li class="upgrade-diff__item upgrade-diff__item--added"><code>{{ path }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if plan.unmapped %}
+    <div class="upgrade-diff__group">
+      <h3 class="upgrade-diff__label">Left in place (no rule matched)</h3>
+      <ul class="upgrade-diff__list">
+        {% for path in plan.unmapped %}
+        <li class="upgrade-diff__item"><code>{{ path }}</code></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+{% if plan.candidates|length > 1 %}
+<details class="page-supplement card">
+  <summary class="page-supplement__summary">Other golden paths this repository resembles</summary>
+  <div class="page-supplement__body">
+    <ul class="hint">
+      {% for candidate in plan.candidates[1:5] %}
+      <li>
+        <a href="/import?repo={{ plan.target | urlencode }}&amp;blueprint={{ candidate.blueprint_name }}">
+          {{ candidate.blueprint_name }}
+        </a>
+        — {{ candidate.percent }}% confidence
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</details>
+{% endif %}
+
+<section class="card" aria-labelledby="import-next-heading">
+  <div class="card__header">
+    <h2 id="import-next-heading">Next steps</h2>
+  </div>
+  <div class="card__body">
+    {% if plan.ok and not plan.is_noop %}
+    <form method="post" action="/import/apply" data-repave-busy-form data-busy-label="Opening pull request…">
+      <input type="hidden" name="target_repo" value="{{ plan.target }}" />
+      <input type="hidden" name="blueprint" value="{{ plan.blueprint_name }}" />
+      <input type="hidden" name="git_branch" value="{{ suggested_branch }}" />
+      <button class="btn btn--primary" type="submit">
+        Open pull request{% if not plan.gates_passed %} (draft){% endif %}
+      </button>
+      <p class="field__hint muted">
+        Pushes <code>{{ suggested_branch }}</code> to the source repository and opens a PR
+        against its default branch. Requires <code>GITHUB_TOKEN</code> with push access.
+      </p>
+    </form>
+    {% endif %}
+    <div class="copy-row">
+      <span class="copy-row__label muted">Preview from the CLI</span>
+      <code class="copy-row__value" id="import-cli-plan">{{ cli_plan_command }}</code>
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-target="#import-cli-plan">
+        Copy
+      </button>
+    </div>
+    <div class="copy-row">
+      <span class="copy-row__label muted">Open the PR from the CLI</span>
+      <code class="copy-row__value" id="import-cli-open-pr">{{ cli_open_pr_command }}</code>
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-target="#import-cli-open-pr">
+        Copy
+      </button>
+    </div>
+  </div>
+</section>
+{% endblock %}

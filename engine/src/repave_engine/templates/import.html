@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Import repository — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/">← Catalog</a> · <a href="/library">Library</a></p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Import existing repository</h1>
+    <p class="page-lead">
+      Rearrange an ungoverned repository into a golden path layout, fill in the missing
+      scaffold, and open a pull request. Your file contents are never rewritten — only moved.
+    </p>
+  </div>
+</header>
+
+{% if error_message %}
+<div class="alert alert--fail" role="alert">{{ error_message }}</div>
+{% endif %}
+
+{% if governed_message %}
+<div class="alert alert--info" role="status">
+  {{ governed_message }}
+  <a class="btn btn--secondary btn--sm" href="/update">Go to upgrade</a>
+</div>
+{% endif %}
+
+<form
+  class="form-panel form-panel--compact"
+  id="import-form"
+  method="post"
+  action="/import"
+  data-repave-busy-form
+  data-busy-label="Planning import…"
+  data-busy-stages="Cloning repository…|Detecting golden path…|Rendering reference layout…|Running gates…"
+>
+  <div class="field">
+    <label class="field__label" for="target_repo">Repository path or URL</label>
+    <input
+      class="field__input"
+      type="text"
+      id="target_repo"
+      name="target_repo"
+      required
+      placeholder="https://github.com/acme/legacy-vpc"
+      value="{{ target_repo or '' }}"
+      autocomplete="off"
+    />
+    <p class="field__hint muted">
+      Local checkout or git remote (<code>https://</code>, <code>git@</code>, <code>ssh://</code>).
+      Private HTTPS remotes use <code>GITHUB_TOKEN</code> on the server.
+      A repository that already has <code>repave.yaml</code> belongs in
+      <a href="/update">upgrade</a> instead.
+    </p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="import-category">Category</label>
+    <select class="field__input" id="import-category" name="category">
+      <option value="">Detect from the repository</option>
+      {% for group in catalog_groups %}
+      <option value="{{ group.family }}" {% if selected_family == group.family %}selected{% endif %}>
+        {{ group.title }}
+      </option>
+      {% endfor %}
+    </select>
+    <p class="field__hint muted">
+      Leave on <em>Detect</em> to let repave choose from the repository's marker files.
+    </p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="import-blueprint">Golden path</label>
+    <select class="field__input" id="import-blueprint" name="blueprint">
+      <option value="">Detect from the repository</option>
+    </select>
+    <p class="field__hint muted" id="import-blueprint-hint">
+      Populated from the selected category.
+    </p>
+  </div>
+
+  <div class="form-actions form-actions--sticky">
+    <div class="form-actions__toolbar">
+      <div class="form-actions__buttons">
+        <button class="btn btn--primary" type="submit">Preview import</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<script id="import-catalog" type="application/json">{{ catalog_json | tojson }}</script>
+<script>
+  (function () {
+    var node = document.getElementById("import-catalog");
+    var categorySelect = document.getElementById("import-category");
+    var blueprintSelect = document.getElementById("import-blueprint");
+    if (!node || !categorySelect || !blueprintSelect) return;
+
+    var catalog = JSON.parse(node.textContent);
+    var selectedBlueprint = {{ (selected_blueprint or '') | tojson }};
+
+    function fillSelect(select, options, placeholder) {
+      select.innerHTML = "";
+      var placeholderOption = document.createElement("option");
+      placeholderOption.value = "";
+      placeholderOption.textContent = placeholder;
+      select.appendChild(placeholderOption);
+      options.forEach(function (option) {
+        var el = document.createElement("option");
+        el.value = option.name;
+        el.textContent = option.label;
+        if (option.name === selectedBlueprint) {
+          el.selected = true;
+        }
+        select.appendChild(el);
+      });
+    }
+
+    function blueprintsFor(family) {
+      var group = catalog.filter(function (item) {
+        return item.family === family;
+      })[0];
+      return group ? group.blueprints : [];
+    }
+
+    function renderBlueprints() {
+      var family = categorySelect.value;
+      if (!family) {
+        fillSelect(blueprintSelect, [], "Detect from the repository");
+        return;
+      }
+      fillSelect(blueprintSelect, blueprintsFor(family), "Select a golden path…");
+    }
+
+    categorySelect.addEventListener("change", function () {
+      selectedBlueprint = "";
+      renderBlueprints();
+    });
+    renderBlueprints();
+  })();
+</script>
+
+<details class="page-supplement card">
+  <summary class="page-supplement__summary">How import stays safe</summary>
+  <div class="page-supplement__body">
+    <ul class="hint">
+      <li>Files move with <code>git mv</code>, so history follows them.</li>
+      <li>
+        The layout change lands as one commit with zero content edits; the scaffold lands
+        as a second commit you can review on its own.
+      </li>
+      <li>
+        Every moved file is SHA-256 checked before and after the move, and the move commit
+        is added to <code>.git-blame-ignore-revs</code>.
+      </li>
+      <li>
+        Your existing source files always win — import never grafts generated resource code
+        on top of code you already have.
+      </li>
+      <li>
+        Two files competing for the same destination fail the plan instead of one silently
+        overwriting the other.
+      </li>
+    </ul>
+    <p class="hint">
+      CLI equivalent:
+      <code>repave import https://github.com/acme/legacy-vpc --open-pr</code>
+    </p>
+  </div>
+</details>
+{% endblock %}

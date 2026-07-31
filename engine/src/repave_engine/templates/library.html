@@ -18,6 +18,9 @@
       to browse, open scorecards, and consume rendered docs.
     </p>
   </div>
+  <div class="form-hero__actions">
+    <a class="btn btn--secondary" href="/import">Import a repository</a>
+  </div>
 </header>
 
 {% if library_groups %}
@@ -116,7 +119,8 @@
 <section class="card">
   <div class="card__body">
     <p class="muted">
-      No artifacts in the library yet. Register repositories with
+      No artifacts in the library yet.
+      <a href="/import">Import an existing repository</a>, register repositories with
       <code>repave register</code>, generate modules under
       <code>modules_root</code>, or
       <a href="/#golden-paths">scaffold from a golden path</a>.

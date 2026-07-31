@@ -79,6 +79,7 @@ from repave_engine.execution_mode import ExecutionMode
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import generation_result_from_stored_run
 from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.github_client import GitHubError
 from repave_engine.governance_preflight import build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
@@ -122,6 +123,15 @@ from repave_engine.portal_generate import (
 from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.repo_import import (
+    AlreadyGovernedError,
+    ImportPlan,
+    RepoImportError,
+    import_repository,
+    plan_import,
+    record_import,
+    suggested_import_branch,
+)
 from repave_engine.run_queue import (
     RunQueue,
     RunQueueConfig,
@@ -255,6 +265,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         items: list[dict[str, str]] = [
             {"kind": "nav", "label": "Catalog", "href": "/"},
             {"kind": "nav", "label": "Library", "href": "/library"},
+            {"kind": "nav", "label": "Import repo", "href": "/import"},
             {"kind": "nav", "label": "Upgrade repo", "href": "/update"},
             {"kind": "nav", "label": "Verify repo", "href": "/verify"},
             {"kind": "nav", "label": "Estate map", "href": "/estate"},
@@ -937,6 +948,191 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 target_repo=resolved,
                 cli_apply_command=cli_apply,
                 cli_open_pr_command=cli_open_pr,
+            ),
+        )
+
+    def import_catalog_json() -> list[dict[str, object]]:
+        groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+        return [
+            {
+                "family": group.family,
+                "title": group.title,
+                "blueprints": [
+                    {
+                        "name": blueprint.name,
+                        "label": f"{blueprint.name} ({blueprint.artifact_type})",
+                    }
+                    for blueprint in group.blueprints
+                ],
+            }
+            for group in groups
+        ]
+
+    def import_form_context(request: Request, **extra: object) -> dict[str, object]:
+        groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+        return page_context(
+            request,
+            nav_active="import",
+            catalog_groups=groups,
+            catalog_json=import_catalog_json(),
+            **extra,
+        )
+
+    def import_scorecard_rows(plan: ImportPlan) -> list[dict[str, str]]:
+        after_by_key = {dim.key: dim for dim in plan.scorecard.after}
+        rows: list[dict[str, str]] = []
+        for before in plan.scorecard.before:
+            after = after_by_key.get(before.key, before)
+            rows.append(
+                {
+                    "label": before.label,
+                    "before_level": before.level,
+                    "before_detail": before.detail,
+                    "after_level": after.level,
+                    "after_detail": after.detail,
+                }
+            )
+        return rows
+
+    def import_result_context(request: Request, plan: ImportPlan) -> dict[str, object]:
+        branch = suggested_import_branch(plan)
+        top = plan.candidates[0] if plan.candidates else None
+        cli_plan = f"repave import {plan.target}"
+        return page_context(
+            request,
+            nav_active="import",
+            plan=plan,
+            suggested_branch=branch,
+            scorecard_rows=import_scorecard_rows(plan),
+            gate_summary=gate_summary(list(plan.gates)),
+            detection_evidence=list(top.evidence[:4]) if top and plan.detected else [],
+            detection_confidence=top.percent if top else 0,
+            cli_plan_command=cli_plan,
+            cli_open_pr_command=(
+                f"{cli_plan} --blueprint {plan.blueprint_name} --git-branch {branch} --open-pr"
+            ),
+        )
+
+    @app.get("/import", response_class=HTMLResponse)
+    async def import_form(request: Request) -> HTMLResponse:
+        requested_blueprint = str(request.query_params.get("blueprint", "")).strip()
+        family = ""
+        if requested_blueprint:
+            path = blueprint_dir(repo_root, requested_blueprint)
+            if path.is_dir():
+                family = artifact_family(load_blueprint(path, repo_root=repo_root).artifact_type)
+            else:
+                requested_blueprint = ""
+        return templates.TemplateResponse(
+            request,
+            "import.html",
+            import_form_context(
+                request,
+                target_repo=str(request.query_params.get("repo", "")).strip(),
+                selected_blueprint=requested_blueprint,
+                selected_family=family,
+            ),
+        )
+
+    @app.post("/import", response_class=HTMLResponse)
+    async def import_plan_preview(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        form = await request.form()
+        target_repo_raw = str(form.get("target_repo", "")).strip()
+        blueprint_override = str(form.get("blueprint", "")).strip() or None
+        family = str(form.get("category", "")).strip()
+
+        def form_error(message: str, *, governed: bool = False) -> HTMLResponse:
+            return templates.TemplateResponse(
+                request,
+                "import.html",
+                import_form_context(
+                    request,
+                    error_message="" if governed else message,
+                    governed_message=message if governed else "",
+                    target_repo=target_repo_raw,
+                    selected_blueprint=blueprint_override or "",
+                    selected_family=family,
+                ),
+            )
+
+        if not target_repo_raw:
+            return form_error("Repository path or URL is required.")
+
+        try:
+            plan = plan_import(
+                target_repo_raw,
+                repo_root,
+                blueprint_name=blueprint_override,
+            )
+        except AlreadyGovernedError as exc:
+            return form_error(str(exc), governed=True)
+        except (RepoImportError, FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
+            return form_error(str(exc))
+
+        return templates.TemplateResponse(
+            request,
+            "import_result.html",
+            import_result_context(request, plan),
+        )
+
+    @app.post("/import/apply", response_class=HTMLResponse)
+    async def import_apply(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        form = await request.form()
+        target_repo_raw = str(form.get("target_repo", "")).strip()
+        blueprint_override = str(form.get("blueprint", "")).strip() or None
+        branch = str(form.get("git_branch", "")).strip()
+
+        token = resolve_github_access_token(None)
+        if not token:
+            return templates.TemplateResponse(
+                request,
+                "import.html",
+                import_form_context(
+                    request,
+                    error_message=(
+                        "Opening an import pull request requires GITHUB_TOKEN or GitHub App "
+                        "credentials on the server."
+                    ),
+                    target_repo=target_repo_raw,
+                    selected_blueprint=blueprint_override or "",
+                ),
+            )
+
+        try:
+            result = import_repository(
+                target_repo_raw,
+                repo_root,
+                github_token=token,
+                blueprint_name=blueprint_override,
+                git_branch=branch,
+            )
+        except (RepoImportError, GitHubError, OSError, RuntimeError, ValueError) as exc:
+            return templates.TemplateResponse(
+                request,
+                "import.html",
+                import_form_context(
+                    request,
+                    error_message=str(exc),
+                    target_repo=target_repo_raw,
+                    selected_blueprint=blueprint_override or "",
+                ),
+            )
+
+        registered = record_import(repo_root, result, acting_user=current_acting_user())
+        return templates.TemplateResponse(
+            request,
+            "import_published.html",
+            page_context(
+                request,
+                nav_active="import",
+                result=result,
+                registered=registered,
             ),
         )
 

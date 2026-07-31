@@ -63,18 +63,60 @@ def create_github_pull_request(
     head: str,
     base: str,
     token: str,
+    draft: bool = False,
 ) -> dict[str, Any]:
-    return _github_request(
-        "POST",
-        f"/repos/{owner}/{repo}/pulls",
+    payload: dict[str, Any] = {
+        "title": title,
+        "body": body,
+        "head": head,
+        "base": base,
+    }
+    if draft:
+        payload["draft"] = True
+    return _github_request("POST", f"/repos/{owner}/{repo}/pulls", token, payload)
+
+
+def default_branch(owner: str, repo: str, token: str) -> str:
+    """Return the repository's default branch, falling back to main."""
+    payload = _github_request("GET", f"/repos/{owner}/{repo}", token)
+    return str(payload.get("default_branch") or "main")
+
+
+def can_push_to_repository(owner: str, repo: str, token: str) -> tuple[bool, str]:
+    """Pre-flight the token's push access so import fails fast instead of after cloning."""
+    try:
+        payload = _github_request("GET", f"/repos/{owner}/{repo}", token)
+    except GitHubError as exc:
+        if exc.status == 404:
+            return False, f"{owner}/{repo} not found, or the token cannot see it"
+        return False, f"GitHub returned {exc.status}: {exc.message}"
+    permissions = payload.get("permissions")
+    if not isinstance(permissions, dict):
+        # Fine-grained tokens may omit permissions; let the push itself be the check.
+        return True, ""
+    if permissions.get("push") or permissions.get("admin") or permissions.get("maintain"):
+        return True, ""
+    return False, f"token lacks push access to {owner}/{repo}"
+
+
+def find_open_pull_request(
+    owner: str,
+    repo: str,
+    token: str,
+    *,
+    head_branch: str,
+) -> dict[str, Any] | None:
+    """Return an existing open PR for head_branch so import does not duplicate it."""
+    payload = _github_json(
+        "GET",
+        f"/repos/{owner}/{repo}/pulls?state=open&head={owner}:{head_branch}",
         token,
-        {
-            "title": title,
-            "body": body,
-            "head": head,
-            "base": base,
-        },
     )
+    if isinstance(payload, list):
+        for item in payload:
+            if isinstance(item, dict):
+                return item
+    return None
 
 
 def _configure_git_origin(repo_dir: Path, owner: str, name: str, token: str) -> None:

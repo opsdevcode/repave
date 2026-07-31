@@ -5,7 +5,14 @@ from pathlib import Path
 
 import pytest
 
-from repave_engine.git_clone import CloneError, credential_remote, shallow_clone
+from repave_engine.git_clone import (
+    FULL_DEPTH,
+    CloneError,
+    credential_remote,
+    is_shallow_update_rejection,
+    shallow_clone,
+    unshallow,
+)
 from repave_engine.verify import verify_target
 
 
@@ -37,6 +44,82 @@ def test_shallow_clone_file_url(tmp_path: Path) -> None:
     dest = tmp_path / "clone"
     shallow_clone(remote, dest)
     assert (dest / "repave.yaml").is_file()
+
+
+def _clone_args(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
+    calls: list[list[str]] = []
+
+    def fake_run(cmd: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(cmd)
+        return subprocess.CompletedProcess(cmd, 0, "", "")
+
+    monkeypatch.setattr("repave_engine.git_clone.run_subprocess", fake_run)
+    return calls
+
+
+def test_shallow_clone_defaults_to_depth_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = _clone_args(monkeypatch)
+    shallow_clone("https://example.test/acme/mod.git", tmp_path / "dest")
+
+    cmd = calls[0]
+    assert "--depth" in cmd
+    assert cmd[cmd.index("--depth") + 1] == "1"
+    assert "--single-branch" in cmd
+    assert "--no-tags" in cmd
+
+
+def test_full_depth_omits_depth_flag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _clone_args(monkeypatch)
+    shallow_clone(
+        "https://example.test/acme/mod.git",
+        tmp_path / "dest",
+        depth=FULL_DEPTH,
+        single_branch=False,
+    )
+
+    cmd = calls[0]
+    assert "--depth" not in cmd
+    assert "--single-branch" not in cmd
+
+
+def test_full_depth_clone_has_history(tmp_path: Path) -> None:
+    remote = _git_fixture_remote(tmp_path)
+    dest = tmp_path / "clone"
+    shallow_clone(remote, dest, depth=FULL_DEPTH, single_branch=False)
+
+    assert (dest / "repave.yaml").is_file()
+    assert not (dest / ".git" / "shallow").exists()
+
+
+def test_unshallow_converts_shallow_clone(tmp_path: Path) -> None:
+    remote = _git_fixture_remote(tmp_path)
+    dest = tmp_path / "clone"
+    shallow_clone(remote, dest)
+    assert (dest / ".git" / "shallow").is_file()
+
+    unshallow(dest)
+
+    assert not (dest / ".git" / "shallow").exists()
+
+
+def test_unshallow_is_a_noop_on_full_clone(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    remote = _git_fixture_remote(tmp_path)
+    dest = tmp_path / "clone"
+    shallow_clone(remote, dest, depth=FULL_DEPTH, single_branch=False)
+    calls = _clone_args(monkeypatch)
+
+    unshallow(dest)
+
+    assert calls == []
+
+
+def test_is_shallow_update_rejection() -> None:
+    assert is_shallow_update_rejection(
+        "! [remote rejected] main -> main (shallow update not allowed)"
+    )
+    assert not is_shallow_update_rejection("! [rejected] main -> main (non-fast-forward)")
 
 
 def test_credential_remote_preserves_host() -> None:

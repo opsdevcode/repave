@@ -27,6 +27,14 @@ from repave_engine.execution_mode import (
 )
 from repave_engine.generate_api import run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.github_client import GitHubError
+from repave_engine.repo_import import (
+    AlreadyGovernedError,
+    RepoImportError,
+    import_repository,
+    plan_import,
+    record_import,
+)
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.settings import OutputConfig
@@ -46,6 +54,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/runs/{run_id}/events",
     "POST /api/v2/upgrades/plan",
     "POST /api/v2/upgrades/apply",
+    "POST /api/v2/imports/plan",
+    "POST /api/v2/imports/apply",
 )
 
 
@@ -315,6 +325,70 @@ def build_api_v2_router(
         body = result.to_json_dict()
         if pushed:
             body["pushed"] = True
+        return JSONResponse(body)
+
+    def _import_request(payload: dict[str, Any]) -> tuple[str, str | None, str | None, bool]:
+        target = str(payload.get("target_repo", "")).strip()
+        if not target:
+            raise HTTPException(status_code=400, detail="target_repo is required")
+        blueprint_name = str(payload.get("blueprint", "")).strip() or None
+        ref = str(payload.get("ref", "")).strip() or None
+        with_gates = bool(payload.get("with_gates", True))
+        return target, blueprint_name, ref, with_gates
+
+    @router.post("/imports/plan")
+    async def api_v2_imports_plan(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        target, blueprint_name, ref, with_gates = _import_request(payload)
+        try:
+            plan = plan_import(
+                target,
+                repo_root,
+                blueprint_name=blueprint_name,
+                values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                ref=ref,
+                with_gates=with_gates,
+            )
+        except AlreadyGovernedError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except (RepoImportError, FileNotFoundError, OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(plan.to_json_dict())
+
+    @router.post("/imports/apply")
+    async def api_v2_imports_apply(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        target, blueprint_name, ref, with_gates = _import_request(payload)
+        token = resolve_github_access_token(str(payload.get("github_token", "")).strip() or None)
+        if not token:
+            raise HTTPException(
+                status_code=400,
+                detail="a GitHub token is required to open an import pull request",
+            )
+        try:
+            result = import_repository(
+                target,
+                repo_root,
+                github_token=token,
+                blueprint_name=blueprint_name,
+                values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                ref=ref,
+                git_branch=str(payload.get("git_branch", "")).strip(),
+                base_branch=str(payload.get("base_branch", "")).strip(),
+                with_gates=with_gates,
+            )
+        except AlreadyGovernedError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except (RepoImportError, GitHubError, FileNotFoundError, OSError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        body = result.to_json_dict()
+        body["fleet_registered"] = record_import(
+            repo_root,
+            result,
+            acting_user=_acting_user(request),
+        )
         return JSONResponse(body)
 
     return router

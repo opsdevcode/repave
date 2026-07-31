@@ -18,6 +18,7 @@ from repave_engine.cli.fleet import (
     cmd_unregister,
 )
 from repave_engine.cli.generate import cmd_generate, cmd_list
+from repave_engine.cli.repo_import import cmd_import
 from repave_engine.cli.serve import cmd_run_worker, cmd_serve
 from repave_engine.cli.upgrade import cmd_apply_upgrade, cmd_plan_upgrade, cmd_update
 from repave_engine.cli.verify import cmd_gates, cmd_verify
@@ -248,6 +249,58 @@ def build_parser() -> argparse.ArgumentParser:
         help="Treat skipped gates as failures when tools are missing (dry-run parity)",
     )
     verify_cmd.set_defaults(func=cmd_verify)
+
+    import_cmd = sub.add_parser(
+        "import",
+        help="Rearrange an ungoverned repository into a golden path layout and open a PR",
+        parents=[common],
+    )
+    import_cmd.add_argument(
+        "path",
+        help="Local path or git remote URL (https, git@, ssh) of the repository to import",
+    )
+    import_cmd.add_argument(
+        "--ref",
+        default=None,
+        help="Git branch or tag when path is a remote URL",
+    )
+    import_cmd.add_argument(
+        "--blueprint",
+        default=None,
+        help="Golden path blueprint name (default: detect from the repository's marker files)",
+    )
+    import_cmd.add_argument(
+        "--format",
+        choices=["text", "json"],
+        default="text",
+        help="Report format (default: text)",
+    )
+    import_cmd.add_argument(
+        "--skip-gates",
+        action="store_true",
+        help="Skip running gates on the reorganized tree (faster preview)",
+    )
+    import_cmd.add_argument(
+        "--open-pr",
+        action="store_true",
+        help="Apply the plan on a branch, push it, and open a pull request on the source repo",
+    )
+    import_cmd.add_argument(
+        "--git-branch",
+        default="",
+        help="Branch for the import commits (default: repave/import/<blueprint>-<version>)",
+    )
+    import_cmd.add_argument(
+        "--base-branch",
+        default="",
+        help="Pull request base branch (default: the source repository's default branch)",
+    )
+    import_cmd.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token for --open-pr (falls back to GITHUB_TOKEN or GitHub App auth)",
+    )
+    import_cmd.set_defaults(func=cmd_import)
 
     gates_cmd = sub.add_parser(
         "gates",

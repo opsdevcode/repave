@@ -13,7 +13,8 @@ work, writing ADRs, and opening issues.
 per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**);
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
-PrometheusRule, runbooks).
+PrometheusRule, runbooks); **repo import to golden path** (`repave import`, `/import`,
+`/api/v2/imports/*`).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -98,7 +99,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ supply chain    GitHub App auth shipped; governed PR conventions open
   ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
-  ├─ reach           repave verify (local + remote clone shipped); composite golden paths
+  ├─ reach           repave verify (local + remote clone shipped); repo import (shipped); composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
   ├─ cost            Infracost estimate on plan; cloud cost actuals on catalog tiles
   │
@@ -119,7 +120,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
 | **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
 | **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
-| **Reach and usability** | verify shipped (local + remote clone) | Composite paths; `repave doctor`; audit queries |
+| **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
+| **Brownfield onboarding** | shipped (Phase 1) | `repave import` detects the golden path, moves files byte-identically, adds scaffold, opens a reviewable PR; per-file overrides and batch onboarding open |
 | **Hardening** | shipped (group A) | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
 | **Hosted durability** | partial (Phase 1–3 shipped) | Unified SQL store for audit/fleet/runs/sessions; async queue + DLQ/replay; external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
@@ -338,6 +340,40 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 - CLI, portal **Verify repo**, `POST /api/v1/verify` ([`docs/verify.md`](verify.md))
 - Local paths and shallow git clone for remote URLs (PAT or GitHub App for private HTTPS)
+
+### Repo import to golden path (Phase 1)
+
+**Status:** Shipped on `main` (`repave import`, portal `/import`, `/api/v2/imports/*`).
+Detail: [`docs/import.md`](import.md).
+
+Brownfield onboarding: adopt a repository repave did not generate by rearranging its files
+into a golden path layout, adding the governance scaffold it lacks, and opening a pull
+request on the source repo.
+
+- **Detection** — `detect_blueprint_candidates()` scores every catalog blueprint against the
+  repo's marker files (nesting-tolerant) and pre-selects the best match with the matched
+  paths as visible evidence
+- **Destination rules** — `spec.import` in `blueprint.yaml` (schema-validated) with
+  per-family defaults in `import_rules.py`, so all 14 blueprints import before any are
+  annotated
+- **Content safety** — files move via `git mv`; every move is SHA-256 verified; the repo's
+  own primary content always wins over generated resources; competing destinations fail the
+  plan
+- **Reviewable PR** — commit 1 is pure moves (`git show --numstat` reports `0 0`), commit 2
+  adds scaffold, and the move SHA lands in `.git-blame-ignore-revs`
+- **Preview shows the outcome** — before/after scorecard plus real gate results on the
+  reorganized tree; failing gates open the PR as a draft
+- **Pre-flight guards** — already-governed routes to `/update`; no-op, duplicate open PR, and
+  token push-permission checks run before any expensive work
+- **Closing the loop** — `import` audit event in `/activity`; remote targets registered in the
+  fleet so they land in the library; `spec.import.pre_import_layout_hash` recorded in
+  `repave.yaml` as a drift baseline
+- **Clone depth** — `git_clone.shallow_clone(depth=0)` now expresses a full clone, and the
+  import push path unshallows and retries once when a remote rejects a shallow update
+
+**Still open (Phase 2–3):** per-file destination overrides persisted to
+`spec.import.overrides`; building the plan from the GitHub trees API so preview needs no
+clone; batch import from a repo list or GitHub org/topic query.
 
 ### v1.18 — Portal UX (theme)
 

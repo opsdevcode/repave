@@ -42,6 +42,9 @@
         <details class="shell__nav-more">
           <summary class="shell__nav-more__summary">More</summary>
           <nav class="shell__nav shell__nav--secondary" aria-label="More">
+            <a href="/import" {% if nav_active == "import" %}aria-current="page"{% endif %}>
+              Import repo
+            </a>
             <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>
               Estate
             </a>
