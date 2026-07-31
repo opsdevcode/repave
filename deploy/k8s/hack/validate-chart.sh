@@ -19,7 +19,8 @@ decomposed_rendered="$(mktemp)"
 job_rendered="$(mktemp)"
 decomposed_smoke_rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}"' EXIT
+multi_replica_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${multi_replica_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -173,6 +174,23 @@ fi
 
 if ! grep -q 'RepaveAsyncRunFailureRateHigh' "${day2_rendered}"; then
   echo "PrometheusRule must include async run failure alert" >&2
+  exit 1
+fi
+
+helm template repave-multi-replica-smoke "${CHART}" \
+  --namespace repave-multi-replica-smoke \
+  -f "${CHART}/values-decomposed-smoke.yaml" \
+  -f "${CHART}/values-multi-replica-smoke.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${multi_replica_rendered}"
+
+if ! grep -q 'replicas: 2' "${multi_replica_rendered}"; then
+  echo "values-multi-replica-smoke.yaml must render portal Deployment with replicas: 2" >&2
+  exit 1
+fi
+
+if ! grep -q 'require_session_secret: true' "${multi_replica_rendered}"; then
+  echo "values-multi-replica-smoke.yaml must require session secret for multi-replica" >&2
   exit 1
 fi
 

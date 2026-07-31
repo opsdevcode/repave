@@ -1,0 +1,11 @@
+# kind / CI smoke overlay: two portal replicas on shared Postgres (sessions + run queue).
+# Base: values-decomposed-smoke.yaml — used with deploy/k8s/hack/chart-smoke-multi-replica.sh.
+
+replicaCount: 2
+
+repave:
+  durability:
+    requireSessionSecret: true
+
+secrets:
+  sessionSecret: chart-smoke-multi-replica-session

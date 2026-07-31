@@ -8,6 +8,7 @@ via chart values or standalone manifests.
 | --- | --- |
 | [`chart/`](chart/README.md) | Helm chart: Deployment, HPA, PDB, probes, resources, Ingress |
 | [`chart/values-day2.yaml`](chart/values-day2.yaml) | Production overlay: HPA, ServiceMonitor, PrometheusRule, session/GitHub readiness |
+| [`chart/values-multi-replica-smoke.yaml`](chart/values-multi-replica-smoke.yaml) | CI overlay: two portal replicas on shared Postgres |
 | [`hack/kind-co-install.sh`](hack/kind-co-install.sh) | kind: portal + fleet registry + operator + `fleet-manifests` apply |
 | [`chart/templates/servicemonitor.yaml`](chart/templates/servicemonitor.yaml) | Optional Prometheus Operator scrape (when `monitoring.serviceMonitor.enabled`) |
 | [`chart/templates/prometheusrules.yaml`](chart/templates/prometheusrules.yaml) | Optional alert rules (when `monitoring.prometheusRules.enabled`) |

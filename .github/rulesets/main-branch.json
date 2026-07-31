@@ -39,7 +39,8 @@
           {"context": "operator-e2e"},
           {"context": "chart-validate"},
           {"context": "chart-smoke"},
-          {"context": "chart-smoke-decomposed"}
+          {"context": "chart-smoke-decomposed"},
+          {"context": "chart-smoke-multi-replica"}
         ]
       }
     },
