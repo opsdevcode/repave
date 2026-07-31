@@ -2,6 +2,17 @@
 
 **Governed golden paths for everyone who builds platform automation.**
 
+## Why "repave"?
+
+Platform teams pave roads: a blessed way to stand up a module, a service, a policy pack. Those
+roads crack over time — a standard moves, a provider pin ages, a control changes — and the usual
+fix is hand-patching every repo that was built on the old surface.
+
+repave takes the immutable-infrastructure answer instead of the patch-in-place one: artifacts are
+**paved** once from a versioned blueprint and **repaved** from that blueprint whenever the standard
+moves forward. You never patch a pothole in one repo; you move the road and re-render everything
+that rides on it.
+
 Answer a short form (or call the API) and repave renders a **deterministic** artifact from
 versioned blueprints, runs **mandatory gates**, and publishes a **module repository on
 GitHub** — standards enforced by construction, not review theater.

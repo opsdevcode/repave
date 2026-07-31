@@ -1,5 +1,18 @@
 # repave concepts
 
+## Why "repave"
+
+The name is the product thesis. Platform teams pave roads — a blessed way to stand up a
+module, a service, a policy pack — and those roads crack as standards move, pins age, and
+controls change. repave answers that the immutable-infrastructure way rather than the
+patch-in-place way: an artifact is **paved** once from a versioned blueprint and **repaved**
+from that blueprint when the standard moves forward. Nobody patches a pothole in a single
+repo; the road moves and everything riding on it is re-rendered.
+
+Every other concept below follows from that: blueprints are the road, gates are what keeps
+the surface uniform, `repave.yaml` records which road an artifact was paved from, and the
+operator repaves the estate when it drifts.
+
 ## Golden path
 
 A versioned, opinionated way to produce a compliant artifact. In repave, a golden
