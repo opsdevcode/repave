@@ -1,0 +1,32 @@
+---
+description: Keep the "Why repave" naming rationale at the top of the README
+globs:
+  - README.md
+  - docs/concepts.md
+alwaysApply: false
+---
+
+# Naming rationale is load-bearing docs
+
+`README.md` must open with the naming rationale: title, tagline, then a
+**`## Why "repave"?`** section — before the pitch, the pipeline diagram, the version
+callout, or anything else. `docs/concepts.md` carries the longer form as its first
+section (**`## Why "repave"`**).
+
+## Rules
+
+- **Never drop or relocate it.** Docs cleanups, README restructures, and length trims keep
+ this section first. It has been lost once already and was not recoverable from git history.
+- **Do not bury it** under "Why teams use repave" (that section is about buyer value; this
+ one is about the name and the thesis behind it).
+- **Edit for wording, not for meaning.** The thesis is: platform teams pave roads; roads
+ crack as standards move; repave re-renders artifacts from a versioned blueprint instead of
+ patching each repo in place — pave once, repave when the standard moves.
+- Keep it to a short paragraph or two in the README; `docs/concepts.md` may go deeper and
+ should tie the other concepts (blueprints, gates, `repave.yaml`, operator) back to it.
+
+## Why this rule exists
+
+The name is the product thesis, not branding. A reader who does not get "repave" does not
+get why generation is deterministic, why gates cannot be bypassed, or why the operator
+opens upgrade PRs.
