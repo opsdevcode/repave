@@ -12,7 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
-	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/pins"
 	"github.com/opsdevcode/repave/operator/internal/repave"
@@ -26,9 +25,10 @@ type GoldenPathRepoReconciler struct {
 
 	PlanUpgrader  repave.PlanUpgrader
 	ApplyUpgrader repave.ApplyUpgrader
-	GitHub        github.Client
 	RepaveConfig  repave.Config
-	GitHubToken   string
+	// GitHubToken is an optional PAT. Leave empty when using GitHub App credentials so
+	// remediation can mint a fresh installation token per PR.
+	GitHubToken string
 
 	// Fetcher materializes spec.repoURL repos for inventory. Nil disables remote
 	// observation, leaving repoURL specs on RemoteRepoUnsupported.
@@ -168,7 +168,6 @@ func (r *GoldenPathRepoReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		&repo,
 		workspace,
 		applier,
-		r.GitHub,
 		r.RepaveConfig,
 		r.GitHubToken,
 		desired,
