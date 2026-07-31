@@ -134,6 +134,13 @@
 </section>
 {% endif %}
 
+{% if plan.preview_limited %}
+<div class="alert alert--info" role="status">
+  Preview built from the GitHub trees API without cloning. Scorecard and gates run when you
+  open the pull request (the apply step clones the repository).
+</div>
+{% endif %}
+
 <section class="card" aria-labelledby="import-plan-heading">
   <div class="card__header card__header--toolbar">
     <h2 id="import-plan-heading">File plan</h2>
@@ -142,7 +149,57 @@
     </span>
   </div>
   <div class="card__body upgrade-diff">
-    {% if plan.renames %}
+    {% if plan.renames or plan.unmapped %}
+    <form method="post" action="/import" class="form-panel form-panel--compact">
+      <input type="hidden" name="target_repo" value="{{ plan.target }}" />
+      <input type="hidden" name="blueprint" value="{{ plan.blueprint_name }}" />
+      <p class="field__hint muted">
+        Override a destination or mark a file <code>keep-in-place</code> / <code>quarantine</code>,
+        then update the preview.
+      </p>
+      {% if plan.renames %}
+      <div class="upgrade-diff__group">
+        <h3 class="upgrade-diff__label">Moved (content unchanged)</h3>
+        <ul class="upgrade-diff__list">
+          {% for move in plan.renames %}
+          <li class="upgrade-diff__item upgrade-diff__item--modified">
+            <code>{{ move.source }}</code> →
+            <input
+              class="field__input field__input--inline"
+              type="text"
+              name="override__{{ move.source | replace('/', '__') }}"
+              value="{{ plan.path_overrides.get(move.source, move.destination) }}"
+              aria-label="Destination for {{ move.source }}"
+            />
+            <span class="muted">{{ move.reason }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if plan.unmapped %}
+      <div class="upgrade-diff__group">
+        <h3 class="upgrade-diff__label">Left in place (no rule matched)</h3>
+        <ul class="upgrade-diff__list">
+          {% for path in plan.unmapped %}
+          <li class="upgrade-diff__item">
+            <code>{{ path }}</code>
+            <input
+              class="field__input field__input--inline"
+              type="text"
+              name="override__{{ path | replace('/', '__') }}"
+              placeholder="keep-in-place"
+              value="{{ plan.path_overrides.get(path, '') }}"
+              aria-label="Override for {{ path }}"
+            />
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      <button class="btn btn--secondary" type="submit">Update preview</button>
+    </form>
+    {% elif plan.renames %}
     <div class="upgrade-diff__group">
       <h3 class="upgrade-diff__label">Moved (content unchanged)</h3>
       <ul class="upgrade-diff__list">
@@ -161,16 +218,6 @@
       <ul class="upgrade-diff__list">
         {% for path in plan.scaffold_added %}
         <li class="upgrade-diff__item upgrade-diff__item--added"><code>{{ path }}</code></li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% endif %}
-    {% if plan.unmapped %}
-    <div class="upgrade-diff__group">
-      <h3 class="upgrade-diff__label">Left in place (no rule matched)</h3>
-      <ul class="upgrade-diff__list">
-        {% for path in plan.unmapped %}
-        <li class="upgrade-diff__item"><code>{{ path }}</code></li>
         {% endfor %}
       </ul>
     </div>
@@ -206,6 +253,7 @@
       <input type="hidden" name="target_repo" value="{{ plan.target }}" />
       <input type="hidden" name="blueprint" value="{{ plan.blueprint_name }}" />
       <input type="hidden" name="git_branch" value="{{ suggested_branch }}" />
+      <input type="hidden" name="path_overrides_json" value="{{ plan.path_overrides | tojson }}" />
       <button class="btn btn--primary" type="submit">
         Open pull request{% if not plan.gates_passed %} (draft){% endif %}
       </button>

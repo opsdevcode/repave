@@ -6,23 +6,49 @@ import sys
 from pathlib import Path
 
 from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.import_rules import parse_path_overrides
 from repave_engine.repo_import import (
     AlreadyGovernedError,
+    ImportBatchPlan,
     ImportPlan,
     RepoImportError,
     build_import_plan,
+    import_repository_batch,
     materialize_import_target,
     open_import_pull_request,
     plan_import,
+    plan_import_batch,
     record_import,
     suggested_import_branch,
 )
 
 
+def _load_overrides(raw: str | None) -> dict[str, str]:
+    if not raw:
+        return {}
+    text = raw.strip()
+    if Path(text).is_file():
+        text = Path(text).read_text(encoding="utf-8")
+    return parse_path_overrides(json.loads(text))
+
+
+def _load_batch_targets(path: str) -> list[str]:
+    file_path = Path(path)
+    if not file_path.is_file():
+        raise RepoImportError(f"batch file not found: {path}")
+    return [
+        line.strip() for line in file_path.read_text(encoding="utf-8").splitlines() if line.strip()
+    ]
+
+
 def _print_plan(plan: ImportPlan) -> None:
     print(f"Target: {plan.target}")
     if plan.remote:
-        print("Source: git clone (temporary)")
+        print(
+            "Source: git clone (temporary)"
+            if not plan.preview_limited
+            else "Source: GitHub trees API"
+        )
     label = "detected" if plan.detected else "requested"
     print(f"Golden path: {plan.blueprint_name}@{plan.blueprint_version} ({label})")
     if plan.detected and plan.candidates:
@@ -30,6 +56,10 @@ def _print_plan(plan: ImportPlan) -> None:
         evidence = ", ".join(top.evidence[:4])
         print(f"  {top.percent}% confidence — matched {evidence}")
     print(plan.summary)
+    if plan.path_overrides:
+        print("Overrides:")
+        for source, destination in sorted(plan.path_overrides.items()):
+            print(f"  {source} -> {destination}")
 
     if plan.conflicts:
         print("Conflicts (import blocked):")
@@ -61,10 +91,69 @@ def _print_plan(plan: ImportPlan) -> None:
             print(f"  [{status}] {gate.name}: {gate.message}")
 
 
+def _print_batch(batch: ImportBatchPlan) -> None:
+    print(f"Batch: {len(batch.items)} planned, {len(batch.failures)} failed")
+    for plan in batch.items:
+        print(f"- {plan.target}: {plan.summary}")
+    for target, error in batch.failures:
+        print(f"! {target}: {error}")
+
+
 def cmd_import(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo_root).resolve()
     raw_target = str(args.path).strip()
     with_gates = not args.skip_gates
+    overrides = _load_overrides(args.overrides)
+
+    if args.batch_file:
+        targets = _load_batch_targets(args.batch_file)
+        token = resolve_github_access_token(args.github_token)
+        try:
+            if args.open_pr:
+                if not token:
+                    print(
+                        "--open-pr requires GITHUB_TOKEN, --github-token, "
+                        "or GitHub App credentials",
+                        file=sys.stderr,
+                    )
+                    return 2
+                batch_result = import_repository_batch(
+                    targets,
+                    repo_root,
+                    github_token=token,
+                    blueprint_name=args.blueprint,
+                    org=args.org,
+                    topic=args.topic,
+                    with_gates=with_gates,
+                )
+                if args.format == "json":
+                    print(json.dumps(batch_result.to_json_dict(), indent=2))
+                else:
+                    for item in batch_result.items:
+                        _print_plan(item.apply.plan)
+                        print(f"Pull request: {item.pull_request_url}")
+                    for target, error in batch_result.failures:
+                        print(f"FAILED {target}: {error}", file=sys.stderr)
+                return 0 if batch_result.ok else 1
+
+            batch = plan_import_batch(
+                targets,
+                repo_root,
+                blueprint_name=args.blueprint,
+                path_overrides=overrides,
+                git_token=token,
+                org=args.org,
+                topic=args.topic,
+                with_gates=with_gates,
+            )
+        except (AlreadyGovernedError, RepoImportError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if args.format == "json":
+            print(json.dumps(batch.to_json_dict(), indent=2))
+        else:
+            _print_batch(batch)
+        return 0 if batch.ok else 1
 
     if not args.open_pr:
         try:
@@ -72,8 +161,10 @@ def cmd_import(args: argparse.Namespace) -> int:
                 raw_target,
                 repo_root,
                 blueprint_name=args.blueprint,
+                path_overrides=overrides,
                 ref=args.ref,
                 with_gates=with_gates,
+                force_clone=args.force_clone,
             )
         except (AlreadyGovernedError, RepoImportError) as exc:
             print(str(exc), file=sys.stderr)
@@ -103,6 +194,7 @@ def cmd_import(args: argparse.Namespace) -> int:
                 repo_root,
                 target=display,
                 blueprint_name=args.blueprint,
+                path_overrides=overrides,
                 remote=remote,
                 with_gates=with_gates,
             )

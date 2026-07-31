@@ -16,6 +16,8 @@ from posixpath import basename, join, normpath
 UNMAPPED_KEEP = "keep-in-place"
 UNMAPPED_QUARANTINE = "quarantine"
 QUARANTINE_DIR = ".repave/unmapped"
+OVERRIDE_KEEP = UNMAPPED_KEEP
+OVERRIDE_QUARANTINE = UNMAPPED_QUARANTINE
 
 
 @dataclass(frozen=True)
@@ -223,6 +225,41 @@ def parse_import_rules(spec_import: object, *, family: str) -> ImportRuleSet:
     return ImportRuleSet(rules=tuple(rules), keep=keep, unmapped=unmapped)
 
 
+def parse_path_overrides(raw: object) -> dict[str, str]:
+    """Parse ``spec.import.overrides`` or a preview payload into source → action."""
+    if not isinstance(raw, Mapping):
+        return {}
+    overrides: dict[str, str] = {}
+    for source, action in raw.items():
+        rel = str(source).strip().replace("\\", "/").lstrip("./")
+        if not rel:
+            continue
+        if isinstance(action, Mapping):
+            if action.get("keep") is True or action.get("keep-in-place") is True:
+                overrides[rel] = OVERRIDE_KEEP
+                continue
+            if action.get("quarantine") is True:
+                overrides[rel] = OVERRIDE_QUARANTINE
+                continue
+            destination = str(action.get("destination", "")).strip()
+            if destination:
+                overrides[rel] = destination
+            continue
+        text = str(action).strip()
+        if text:
+            overrides[rel] = text
+    return overrides
+
+
+def normalize_override_action(action: str) -> str:
+    lowered = action.strip().lower()
+    if lowered in ("keep", "keep-in-place", "leave", "unchanged"):
+        return OVERRIDE_KEEP
+    if lowered in ("quarantine", "unmapped"):
+        return OVERRIDE_QUARANTINE
+    return action.strip()
+
+
 @lru_cache(maxsize=512)
 def _glob_regex(pattern: str) -> re.Pattern[str]:
     """Translate a git-style glob into a regex anchored at the repo root."""
@@ -271,12 +308,36 @@ class Classification:
     kept: bool = field(default=False)
 
 
-def classify_path(rel_path: str, rules: ImportRuleSet) -> Classification:
+def classify_path(
+    rel_path: str,
+    rules: ImportRuleSet,
+    *,
+    path_overrides: Mapping[str, str] | None = None,
+) -> Classification:
     """Return where ``rel_path`` belongs under the golden path layout.
 
     A destination of ``None`` means the file is unmapped and the caller applies the
-    rule set's ``unmapped`` policy.
+    rule set's ``unmapped`` policy. Per-path overrides win over import rules.
     """
+    if path_overrides and rel_path in path_overrides:
+        action = normalize_override_action(path_overrides[rel_path])
+        if action == OVERRIDE_KEEP:
+            return Classification(
+                destination=rel_path,
+                reason="override: leave in place",
+                kept=True,
+            )
+        if action == OVERRIDE_QUARANTINE:
+            return Classification(
+                destination=quarantine_path(rel_path),
+                reason="override: quarantine",
+            )
+        destination = normpath(action)
+        return Classification(
+            destination=destination,
+            reason=f"override: move to `{destination}`",
+        )
+
     if matches_any(rel_path, rules.keep):
         return Classification(destination=rel_path, reason="kept in place by rule", kept=True)
 

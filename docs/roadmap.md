@@ -334,7 +334,9 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   Helm secret keys — see [`docs/github-app-auth.md`](github-app-auth.md)
 - PAT remains supported for local development and break-glass
 
-**Still open:** per-installation rate-limit backoff for fleet campaigns.
+**Still open:** per-installation rate-limit backoff for fleet campaigns — **shipped** for
+engine REST (`github_rate_limit.py`, 429 retry in `github_client.py`); operator HTTP client
+parity remains optional follow-up.
 
 ### `repave verify` — local path (engine v1.75+)
 
@@ -371,9 +373,8 @@ request on the source repo.
 - **Clone depth** — `git_clone.shallow_clone(depth=0)` now expresses a full clone, and the
   import push path unshallows and retries once when a remote rejects a shallow update
 
-**Still open (Phase 2–3):** per-file destination overrides persisted to
-`spec.import.overrides`; building the plan from the GitHub trees API so preview needs no
-clone; batch import from a repo list or GitHub org/topic query.
+**Still open (Phase 2–3):** none — overrides, trees-API preview, and batch import shipped in
+Phase 2–3.
 
 ### v1.18 — Portal UX (theme)
 

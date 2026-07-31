@@ -300,6 +300,31 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="GitHub token for --open-pr (falls back to GITHUB_TOKEN or GitHub App auth)",
     )
+    import_cmd.add_argument(
+        "--force-clone",
+        action="store_true",
+        help="Shallow-clone remote repos for preview (default: GitHub trees API for github.com)",
+    )
+    import_cmd.add_argument(
+        "--overrides",
+        default=None,
+        help="JSON object mapping source paths to destinations, keep-in-place, or quarantine",
+    )
+    import_cmd.add_argument(
+        "--batch-file",
+        default=None,
+        help="Path to a newline-separated list of repository URLs to plan as a batch",
+    )
+    import_cmd.add_argument(
+        "--org",
+        default="",
+        help="With --batch-file, also query repositories in this GitHub org",
+    )
+    import_cmd.add_argument(
+        "--topic",
+        default="",
+        help="With --batch-file, filter the org query by topic",
+    )
     import_cmd.set_defaults(func=cmd_import)
 
     gates_cmd = sub.add_parser(

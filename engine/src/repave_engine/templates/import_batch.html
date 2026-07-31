@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Batch import — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/import">← Import repository</a></p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Batch import</h1>
+    <p class="page-lead">
+      Plan imports for many repositories at once. Paste a list of URLs, or query an org and
+      topic on GitHub.
+    </p>
+  </div>
+</header>
+
+{% if error_message %}
+<div class="alert alert--fail" role="alert">{{ error_message }}</div>
+{% endif %}
+
+<form
+  class="form-panel form-panel--compact"
+  method="post"
+  action="/import/batch"
+  data-repave-busy-form
+  data-busy-label="Planning batch…"
+>
+  <div class="field">
+    <label class="field__label" for="targets">Repository URLs (one per line)</label>
+    <textarea class="field__input" id="targets" name="targets" rows="8" placeholder="https://github.com/acme/legacy-vpc&#10;https://github.com/acme/legacy-sg">{{ targets or '' }}</textarea>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="batch-org">GitHub org (optional)</label>
+    <input class="field__input" type="text" id="batch-org" name="org" value="{{ org or '' }}" placeholder="acme" />
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="batch-topic">Topic filter (optional)</label>
+    <input class="field__input" type="text" id="batch-topic" name="topic" value="{{ topic or '' }}" placeholder="terraform" />
+    <p class="field__hint muted">When org or topic is set, matching repositories are appended to the list above.</p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="batch-blueprint">Golden path (optional)</label>
+    <select class="field__input" id="batch-blueprint" name="blueprint">
+      <option value="">Detect per repository</option>
+      {% for group in catalog_groups %}
+        {% for blueprint in group.blueprints %}
+        <option value="{{ blueprint.name }}" {% if selected_blueprint == blueprint.name %}selected{% endif %}>
+          {{ blueprint.name }}
+        </option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit">Preview batch</button>
+  </div>
+</form>
+{% endblock %}

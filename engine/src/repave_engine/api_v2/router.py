@@ -28,11 +28,14 @@ from repave_engine.execution_mode import (
 from repave_engine.generate_api import run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
+from repave_engine.import_rules import parse_path_overrides
 from repave_engine.repo_import import (
     AlreadyGovernedError,
     RepoImportError,
     import_repository,
+    import_repository_batch,
     plan_import,
+    plan_import_batch,
     record_import,
 )
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
@@ -56,6 +59,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/upgrades/apply",
     "POST /api/v2/imports/plan",
     "POST /api/v2/imports/apply",
+    "POST /api/v2/imports/batch/plan",
+    "POST /api/v2/imports/batch/apply",
 )
 
 
@@ -327,28 +332,34 @@ def build_api_v2_router(
             body["pushed"] = True
         return JSONResponse(body)
 
-    def _import_request(payload: dict[str, Any]) -> tuple[str, str | None, str | None, bool]:
+    def _import_request(
+        payload: dict[str, Any],
+    ) -> tuple[str, str | None, str | None, bool, dict[str, str], bool]:
         target = str(payload.get("target_repo", "")).strip()
         if not target:
             raise HTTPException(status_code=400, detail="target_repo is required")
         blueprint_name = str(payload.get("blueprint", "")).strip() or None
         ref = str(payload.get("ref", "")).strip() or None
         with_gates = bool(payload.get("with_gates", True))
-        return target, blueprint_name, ref, with_gates
+        force_clone = bool(payload.get("force_clone", False))
+        overrides = parse_path_overrides(payload.get("overrides"))
+        return target, blueprint_name, ref, with_gates, overrides, force_clone
 
     @router.post("/imports/plan")
     async def api_v2_imports_plan(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
         payload = await _parse_json_object(request)
-        target, blueprint_name, ref, with_gates = _import_request(payload)
+        target, blueprint_name, ref, with_gates, overrides, force_clone = _import_request(payload)
         try:
             plan = plan_import(
                 target,
                 repo_root,
                 blueprint_name=blueprint_name,
                 values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                path_overrides=overrides,
                 ref=ref,
                 with_gates=with_gates,
+                force_clone=force_clone,
             )
         except AlreadyGovernedError as exc:
             raise HTTPException(status_code=409, detail=str(exc)) from exc
@@ -360,7 +371,7 @@ def build_api_v2_router(
     async def api_v2_imports_apply(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
         payload = await _parse_json_object(request)
-        target, blueprint_name, ref, with_gates = _import_request(payload)
+        target, blueprint_name, ref, with_gates, overrides, _force_clone = _import_request(payload)
         token = resolve_github_access_token(str(payload.get("github_token", "")).strip() or None)
         if not token:
             raise HTTPException(
@@ -374,6 +385,7 @@ def build_api_v2_router(
                 github_token=token,
                 blueprint_name=blueprint_name,
                 values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                path_overrides=overrides,
                 ref=ref,
                 git_branch=str(payload.get("git_branch", "")).strip(),
                 base_branch=str(payload.get("base_branch", "")).strip(),
@@ -389,6 +401,73 @@ def build_api_v2_router(
             result,
             acting_user=_acting_user(request),
         )
+        return JSONResponse(body)
+
+    @router.post("/imports/batch/plan")
+    async def api_v2_imports_batch_plan(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        targets_raw = payload.get("targets")
+        targets = (
+            [str(item).strip() for item in targets_raw if str(item).strip()]
+            if isinstance(targets_raw, list)
+            else [line.strip() for line in str(targets_raw or "").splitlines() if line.strip()]
+        )
+        org = str(payload.get("org", "")).strip()
+        topic = str(payload.get("topic", "")).strip()
+        blueprint_name = str(payload.get("blueprint", "")).strip() or None
+        with_gates = bool(payload.get("with_gates", True))
+        try:
+            batch = plan_import_batch(
+                targets,
+                repo_root,
+                blueprint_name=blueprint_name,
+                values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                path_overrides=parse_path_overrides(payload.get("overrides")),
+                git_token=resolve_github_access_token(
+                    str(payload.get("github_token", "")).strip() or None
+                ),
+                org=org,
+                topic=topic,
+                with_gates=with_gates,
+            )
+        except RepoImportError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(batch.to_json_dict())
+
+    @router.post("/imports/batch/apply")
+    async def api_v2_imports_batch_apply(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        targets_raw = payload.get("targets")
+        targets = (
+            [str(item).strip() for item in targets_raw if str(item).strip()]
+            if isinstance(targets_raw, list)
+            else [line.strip() for line in str(targets_raw or "").splitlines() if line.strip()]
+        )
+        token = resolve_github_access_token(str(payload.get("github_token", "")).strip() or None)
+        if not token:
+            raise HTTPException(
+                status_code=400, detail="a GitHub token is required for batch apply"
+            )
+        try:
+            batch_result = import_repository_batch(
+                targets,
+                repo_root,
+                github_token=token,
+                blueprint_name=str(payload.get("blueprint", "")).strip() or None,
+                values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                org=str(payload.get("org", "")).strip(),
+                topic=str(payload.get("topic", "")).strip(),
+                with_gates=bool(payload.get("with_gates", True)),
+            )
+        except RepoImportError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        body = batch_result.to_json_dict()
+        body["fleet_registered"] = [
+            record_import(repo_root, item, acting_user=_acting_user(request))
+            for item in batch_result.items
+        ]
         return JSONResponse(body)
 
     return router

@@ -4,10 +4,13 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.github_client import GitHubError, GitHubRestClient, UrllibGitHubRestClient
+from repave_engine.github_rate_limit import record_github_response_headers
 from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import ModuleRepository, _git_executable, _run_git
 
-_default_github_client: GitHubRestClient = UrllibGitHubRestClient()
+_default_github_client: GitHubRestClient = UrllibGitHubRestClient(
+    on_response=record_github_response_headers,
+)
 
 
 def ensure_github_repository(

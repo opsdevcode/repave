@@ -112,6 +112,11 @@
             "unmapped_files": {
               "type": "array",
               "items": { "type": "string" }
+            },
+            "overrides": {
+              "type": "object",
+              "description": "Per-file destination overrides applied at import time (source path to destination, keep-in-place, or quarantine).",
+              "additionalProperties": { "type": "string" }
             }
           }
         },
