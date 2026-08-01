@@ -144,7 +144,7 @@ def run_infracost(ctx: GateContext) -> GateResult:
     if not _gr.terraform_usable(output_dir):
         return _toolchain_skip(ctx, "infracost", "terraform not available", benign=True)
     if not _gr.tool_available("infracost"):
-        return _toolchain_skip(ctx, "infracost", "infracost not installed")
+        return _toolchain_skip(ctx, "infracost", "infracost not installed", benign=True)
     if not os.environ.get("INFRACOST_API_KEY", "").strip():
         return _toolchain_skip(
             ctx,

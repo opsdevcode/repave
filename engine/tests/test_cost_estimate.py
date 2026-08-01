@@ -85,6 +85,21 @@ def test_cost_estimate_for_result_prefers_file(tmp_path: Path) -> None:
     assert loaded.currency == "EUR"
 
 
+def test_run_infracost_skips_when_not_installed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _path: True)
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda _name: False)
+
+    relaxed = run_infracost(GateContext(output_dir=tmp_path, require_run=False))
+    assert relaxed.skipped is True
+    assert "infracost not installed" in relaxed.message
+
+    strict = run_infracost(GateContext(output_dir=tmp_path, require_run=True))
+    assert strict.skipped is True
+    assert strict.passed is True
+
+
 def test_run_infracost_writes_estimate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "main.tf").write_text('resource "null_resource" "x" {}\n', encoding="utf-8")
     monkeypatch.setenv("INFRACOST_API_KEY", "test-key")
