@@ -145,6 +145,47 @@ def test_observability_url_on_detail(
     assert "Provenance" in body
 
 
+def test_api_v2_entity_detail_includes_deployment_status(
+    output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, registry: Path
+) -> None:
+    register_repo(registry, PROVENANCE_ENTRY)
+    (tmp_path / "repave.config.yaml").write_text(
+        f"fleet:\n  enabled: true\n  file: {registry}\n"
+        "portal:\n  deployment_reader: url\n"
+        "  deployment_status_url: 'https://status.example/{name}'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {
+                "sync_status": "synced",
+                "health": "healthy",
+                "revision": "abc123",
+                "last_synced": "2026-08-01T12:00:00Z",
+            }
+
+    monkeypatch.setattr(
+        "repave_engine.deployment_status.httpx.get",
+        lambda *_args, **_kwargs: FakeResponse(),
+    )
+    entity_id = entity_id_for_repo_url(PROVENANCE_ENTRY.repo_url)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+
+    detail = client.get(f"/api/v2/catalog/entities/{entity_id}")
+    assert detail.status_code == 200
+    payload = detail.json()
+    assert payload["deployment_status"]["sync_status"] == "synced"
+    assert payload["deployment_status"]["health"] == "healthy"
+
+    list_body = client.get("/api/v2/catalog/entities").json()
+    assert "deployment_status" not in list_body["entities"][0]
+
+
 def test_library_fleet_scorecard_rollup(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     entity_dir = output_config.modules_root / "tf-vpc"

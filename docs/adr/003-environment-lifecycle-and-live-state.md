@@ -1,7 +1,8 @@
 # ADR 003: Environment lifecycle and how far repave reaches into live state
 
-**Status:** Accepted for **Phase 1** (deployment status, read-only). Phases 2–3 are
-directional — revisit this ADR before implementing either.  
+**Status:** Accepted for **Phase 1** (deployment status, read-only) — implemented via
+`portal.deployment_reader` and `deployment_status.py`. Phases 2–3 are directional —
+revisit this ADR before implementing either.  
 **Date:** 2026-08-01  
 **Scope:** engine catalog read models, portal, worker role, `repave.config.yaml`, blueprints
 (`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap.md#v200--platform-ga)

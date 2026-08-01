@@ -429,6 +429,20 @@ class CostAzureConfig:
 
 
 @dataclass(frozen=True)
+class DeploymentArgocdConfig:
+    base_url: str = ""
+    application: str = "{name}"
+
+
+@dataclass(frozen=True)
+class DeploymentFluxConfig:
+    api_server: str = ""
+    namespace: str = "default"
+    name: str = "{name}"
+    kind: str = "kustomization"
+
+
+@dataclass(frozen=True)
 class PortalConfig:
     density: str
     observability_dashboard_url: str = ""
@@ -437,6 +451,10 @@ class PortalConfig:
     cost_actuals_url: str = ""
     cost_aws: CostAwsConfig = field(default_factory=CostAwsConfig)
     cost_azure: CostAzureConfig = field(default_factory=CostAzureConfig)
+    deployment_reader: str = ""
+    deployment_status_url: str = ""
+    deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
+    deployment_flux: DeploymentFluxConfig = field(default_factory=DeploymentFluxConfig)
 
 
 def load_portal_config(repo_root: Path) -> PortalConfig:
@@ -473,6 +491,32 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         if isinstance(azure_block, dict)
         else "Service",
     )
+    deployment_status_url = str(block.get("deployment_status_url", "")).strip()
+    deployment_reader = str(block.get("deployment_reader", "")).strip().lower()
+    argocd_block = block.get("deployment_argocd", {})
+    flux_block = block.get("deployment_flux", {})
+    deployment_argocd = DeploymentArgocdConfig(
+        base_url=str(argocd_block.get("base_url", "")).strip()
+        if isinstance(argocd_block, dict)
+        else "",
+        application=str(argocd_block.get("application", "{name}")).strip() or "{name}"
+        if isinstance(argocd_block, dict)
+        else "{name}",
+    )
+    deployment_flux = DeploymentFluxConfig(
+        api_server=str(flux_block.get("api_server", "")).strip()
+        if isinstance(flux_block, dict)
+        else "",
+        namespace=str(flux_block.get("namespace", "default")).strip() or "default"
+        if isinstance(flux_block, dict)
+        else "default",
+        name=str(flux_block.get("name", "{name}")).strip() or "{name}"
+        if isinstance(flux_block, dict)
+        else "{name}",
+        kind=str(flux_block.get("kind", "kustomization")).strip().lower() or "kustomization"
+        if isinstance(flux_block, dict)
+        else "kustomization",
+    )
     env_obs = os.environ.get("REPAVE_OBSERVABILITY_DASHBOARD_URL", "").strip()
     if env_obs:
         obs_url = env_obs
@@ -485,8 +529,32 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     env_reader = os.environ.get("REPAVE_COST_READER", "").strip().lower()
     if env_reader:
         cost_reader = env_reader
+    env_deploy_url = os.environ.get("REPAVE_DEPLOYMENT_STATUS_URL", "").strip()
+    if env_deploy_url:
+        deployment_status_url = env_deploy_url
+    env_deploy_reader = os.environ.get("REPAVE_DEPLOYMENT_READER", "").strip().lower()
+    if env_deploy_reader:
+        deployment_reader = env_deploy_reader
+    env_argocd_base = os.environ.get("REPAVE_ARGOCD_BASE_URL", "").strip()
+    if env_argocd_base:
+        deployment_argocd = DeploymentArgocdConfig(
+            base_url=env_argocd_base,
+            application=deployment_argocd.application,
+        )
+    env_flux_server = os.environ.get("REPAVE_FLUX_API_SERVER", "").strip()
+    if env_flux_server:
+        deployment_flux = DeploymentFluxConfig(
+            api_server=env_flux_server,
+            namespace=deployment_flux.namespace,
+            name=deployment_flux.name,
+            kind=deployment_flux.kind,
+        )
     if cost_reader not in ("", "url", "aws", "azure"):
         raise ValueError("portal.cost_reader must be 'url', 'aws', or 'azure'")
+    if deployment_reader not in ("", "url", "argocd", "flux"):
+        raise ValueError("portal.deployment_reader must be 'url', 'argocd', or 'flux'")
+    if deployment_flux.kind not in ("kustomization", "helmrelease"):
+        raise ValueError("portal.deployment_flux.kind must be 'kustomization' or 'helmrelease'")
     return PortalConfig(
         density=density,
         observability_dashboard_url=obs_url,
@@ -495,6 +563,10 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         cost_actuals_url=cost_url,
         cost_aws=cost_aws,
         cost_azure=cost_azure,
+        deployment_reader=deployment_reader,
+        deployment_status_url=deployment_status_url,
+        deployment_argocd=deployment_argocd,
+        deployment_flux=deployment_flux,
     )
 
 

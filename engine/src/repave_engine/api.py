@@ -73,6 +73,7 @@ from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
+from repave_engine.deployment_status import fetch_entity_deployment_status_for_portal
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
@@ -594,6 +595,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             provenance_html = render_portal_markdown(f"```yaml\n{docs['provenance'].strip()}\n```")
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
         slo_summary = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
+        deployment_status = fetch_entity_deployment_status_for_portal(portal_config, entity)
         return templates.TemplateResponse(
             request,
             "service_detail.html",
@@ -610,6 +612,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 observability_url=obs_url,
                 slo_summary=slo_summary,
                 cost_actuals=cost_actuals,
+                deployment_status=deployment_status,
             ),
         )
 

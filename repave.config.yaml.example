@@ -33,8 +33,23 @@ output:
 #   #   scope: /subscriptions/00000000-0000-0000-0000-000000000000
 #   #   tag_key_owner: Owner
 #   #   tag_key_service: Service
+#   # Deployment status (ADR 003 Phase 1) — read-only GitOps enrichment on entity detail:
+#   # deployment_reader: url   # or argocd | flux
+#   # deployment_status_url: "https://status.example/v1/services/{name}"
+#   # # Response: sync_status, health, revision, last_synced, detail?, deep_link?
+#   # deployment_argocd:
+#   #   base_url: https://argocd.example.com
+#   #   application: "{name}"
+#   # deployment_flux:
+#   #   api_server: https://kubernetes.default.svc
+#   #   namespace: apps
+#   #   name: "{name}"
+#   #   kind: kustomization   # or helmrelease
 # Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL /
-# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER.
+# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER /
+# REPAVE_DEPLOYMENT_READER / REPAVE_DEPLOYMENT_STATUS_URL /
+# REPAVE_ARGOCD_BASE_URL / REPAVE_ARGOCD_TOKEN /
+# REPAVE_FLUX_API_SERVER / REPAVE_FLUX_TOKEN.
 
 # Optional hosted service authentication (OIDC). Local dev: leave disabled.
 # auth:

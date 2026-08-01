@@ -82,6 +82,47 @@
   </div>
 </section>
 
+{% if deployment_status %}
+<section class="card entity-deployment" aria-labelledby="deployment-heading">
+  <div class="card__header">
+    <h2 id="deployment-heading">Deployment</h2>
+    <p class="muted card__subtitle">Read-only GitOps status from portal configuration.</p>
+  </div>
+  <div class="card__body">
+    <p>
+      {% if deployment_status.sync_status == 'synced' %}
+      <span class="badge badge--pass">Synced</span>
+      {% elif deployment_status.sync_status == 'out_of_sync' %}
+      <span class="badge badge--fail">Out of sync</span>
+      {% else %}
+      <span class="badge badge--muted">Sync unknown</span>
+      {% endif %}
+      {% if deployment_status.health == 'healthy' %}
+      <span class="badge badge--pass">Healthy</span>
+      {% elif deployment_status.health == 'degraded' %}
+      <span class="badge badge--fail">Degraded</span>
+      {% elif deployment_status.health == 'progressing' %}
+      <span class="badge badge--warn">Progressing</span>
+      {% else %}
+      <span class="badge badge--muted">Health unknown</span>
+      {% endif %}
+      {% if deployment_status.revision %}
+      <span class="muted">· rev {{ deployment_status.revision[:12] }}</span>
+      {% endif %}
+      {% if deployment_status.last_synced %}
+      <span class="muted">· <time datetime="{{ deployment_status.last_synced }}">{{ deployment_status.last_synced[:19] }}</time></span>
+      {% endif %}
+    </p>
+    {% if deployment_status.detail %}
+    <p class="muted">{{ deployment_status.detail }}</p>
+    {% endif %}
+    {% if deployment_status.deep_link %}
+    <p><a class="btn btn--ghost btn--sm" href="{{ deployment_status.deep_link }}" rel="noreferrer noopener" target="_blank">Open in GitOps</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if slo_summary %}
 <section class="card entity-slo" aria-labelledby="slo-heading">
   <div class="card__header">

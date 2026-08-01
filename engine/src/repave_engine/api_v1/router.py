@@ -27,6 +27,7 @@ from repave_engine.auth import (
 from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
+from repave_engine.deployment_status import fetch_entity_deployment_status_for_portal
 from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import (
@@ -434,6 +435,9 @@ def build_api_v1_router(
         cost = fetch_entity_cost_actuals_for_portal(portal_config, entity)
         if cost is not None:
             body["cost_actuals"] = cost.to_public_dict()
+        deployment = fetch_entity_deployment_status_for_portal(portal_config, entity)
+        if deployment is not None:
+            body["deployment_status"] = deployment.to_public_dict()
         return JSONResponse(body)
 
     @router.get("/audit")
