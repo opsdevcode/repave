@@ -233,13 +233,15 @@ def build_api_v1_router(
         payload = await request.json()
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Expected JSON object")
-        try:
-            parse_run_target(payload)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        inputs_raw = payload.get("inputs", {})
-        if not isinstance(inputs_raw, dict):
-            raise HTTPException(status_code=400, detail="inputs must be an object")
+        kind = str(payload.get("kind", "")).strip()
+        if kind != "live_plan":
+            try:
+                parse_run_target(payload)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            inputs_raw = payload.get("inputs", {})
+            if not isinstance(inputs_raw, dict):
+                raise HTTPException(status_code=400, detail="inputs must be an object")
         client_request_id = str(payload.get("client_request_id", "")).strip() or None
         idempotency = request.headers.get("Idempotency-Key", "").strip() or None
         acting = user.subject if user else current_acting_user()
@@ -249,11 +251,14 @@ def build_api_v1_router(
                 payload=payload,
                 acting_user=acting,
                 client_request_id=client_request_id or idempotency,
+                repo_root=repo_root,
             )
         except RunQueueFullError as exc:
             raise HTTPException(status_code=429, detail=str(exc)) from exc
         except RunQueueShuttingDownError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(record.to_public_dict(), status_code=202)
 
     @router.get("/runs")

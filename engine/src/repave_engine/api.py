@@ -153,10 +153,12 @@ from repave_engine.repo_import import (
 from repave_engine.run_queue import (
     RunQueue,
     RunQueueConfig,
+    RunQueueFullError,
+    RunQueueShuttingDownError,
     build_run_queue,
 )
 from repave_engine.run_store import RunStatus
-from repave_engine.run_submit import is_bundle_run
+from repave_engine.run_submit import is_bundle_run, is_live_plan_run, submit_async_run
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -166,6 +168,7 @@ from repave_engine.settings import (
     OutputConfig,
     load_auth_config,
     load_durability_config,
+    load_live_plan_config,
     load_output_config,
     load_portal_config,
     load_tracing_config,
@@ -596,6 +599,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
         slo_summary = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
         deployment_status = fetch_entity_deployment_status_for_portal(portal_config, entity)
+        live_plan_cfg = load_live_plan_config(repo_root)
+        live_plan_available = bool(
+            run_queue is not None
+            and live_plan_cfg is not None
+            and live_plan_cfg.environment_for(entity.entity_id) is not None
+        )
         return templates.TemplateResponse(
             request,
             "service_detail.html",
@@ -613,8 +622,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 slo_summary=slo_summary,
                 cost_actuals=cost_actuals,
                 deployment_status=deployment_status,
+                live_plan_available=live_plan_available,
             ),
         )
+
+    @app.post("/services/{entity_id}/live-plan")
+    async def service_live_plan(request: Request, entity_id: str) -> RedirectResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        acting = user.subject if user else current_acting_user()
+        try:
+            record = submit_async_run(
+                run_queue,
+                payload={"kind": "live_plan", "entity_id": entity_id},
+                acting_user=acting,
+                repo_root=repo_root,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
 
     @app.get("/catalog/entities", response_class=RedirectResponse)
     async def catalog_entities_redirect() -> RedirectResponse:
@@ -946,6 +979,24 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         record = run_queue.get(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
+        if is_live_plan_run(record):
+            inputs = record.payload.get("inputs", {})
+            entity_id = ""
+            if isinstance(inputs, dict):
+                entity_id = str(inputs.get("entity_id", "")).strip()
+            return templates.TemplateResponse(
+                request,
+                "run_console.html",
+                page_context(
+                    request,
+                    nav_active="library",
+                    run_id=run_id,
+                    run_record=record,
+                    live_plan=True,
+                    live_plan_entity_id=entity_id,
+                    gate_names=["opa"],
+                ),
+            )
         if is_bundle_run(record):
             bundle_name = str(record.payload.get("bundle", "")).strip()
             bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
@@ -1001,6 +1052,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             raise HTTPException(status_code=404, detail="Run not found")
         if record.status != RunStatus.SUCCEEDED:
             raise HTTPException(status_code=400, detail="Run is not complete")
+        if is_live_plan_run(record):
+            summary = record.result if isinstance(record.result, dict) else {}
+            return templates.TemplateResponse(
+                request,
+                "live_plan_result.html",
+                page_context(
+                    request,
+                    nav_active="library",
+                    run_id=run_id,
+                    run_record=record,
+                    live_plan_summary=summary,
+                ),
+            )
         if is_bundle_run(record):
             bundle_name = str(record.payload.get("bundle", "")).strip()
             bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)

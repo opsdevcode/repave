@@ -20,6 +20,7 @@ from repave_engine.durability_store import (
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.live_plan import is_live_plan_run, run_live_plan
 from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
@@ -86,6 +87,10 @@ class RunQueue:
     @property
     def event_store(self) -> RunEventStore | None:
         return self._event_store
+
+    @property
+    def repo_root(self) -> Path:
+        return self._repo_root
 
     def _emit_event(self, run_id: str, kind: str, payload: dict[str, Any] | None = None) -> None:
         if self._event_store is None:
@@ -158,7 +163,13 @@ class RunQueue:
     def _dispatch_run(self, *, run_id: str, acting_user: str) -> None:
         if self._job_dispatcher is not None:
             try:
-                self._job_dispatcher.dispatch(run_id)
+                record = self._store.get(run_id)
+                secret_name = None
+                if record is not None:
+                    raw_secret = record.payload.get("live_plan_secret_name")
+                    if isinstance(raw_secret, str) and raw_secret.strip():
+                        secret_name = raw_secret.strip()
+                self._job_dispatcher.dispatch(run_id, live_plan_secret_name=secret_name)
             except Exception as exc:
                 logger.exception("failed to dispatch run Job for %s", run_id)
                 self._store.update_status(
@@ -180,13 +191,19 @@ class RunQueue:
         dry_run: bool,
         acting_user: str,
         client_request_id: str | None = None,
+        kind: str | None = None,
+        live_plan_secret_name: str | None = None,
     ) -> RunRecord:
         if not self._accepting:
             raise RunQueueShuttingDownError("async generation queue is shutting down")
 
-        if blueprint_name and bundle_name:
+        run_kind = (kind or "").strip()
+        if run_kind == "live_plan":
+            if not blueprint_name:
+                raise ValueError("live_plan runs require blueprint_name sentinel")
+        elif blueprint_name and bundle_name:
             raise ValueError("provide only one of blueprint_name or bundle_name")
-        if not blueprint_name and not bundle_name:
+        elif not blueprint_name and not bundle_name:
             raise ValueError("blueprint_name or bundle_name is required")
 
         if client_request_id:
@@ -200,8 +217,16 @@ class RunQueue:
             )
 
         target_name = bundle_name or blueprint_name or ""
-        if bundle_name:
+        if run_kind == "live_plan":
             payload: dict[str, Any] = {
+                "kind": "live_plan",
+                "inputs": inputs,
+                "dry_run": True,
+            }
+            if live_plan_secret_name:
+                payload["live_plan_secret_name"] = live_plan_secret_name
+        elif bundle_name:
+            payload = {
                 "bundle": bundle_name,
                 "inputs": inputs,
                 "dry_run": dry_run,
@@ -210,7 +235,7 @@ class RunQueue:
             payload = {"blueprint": blueprint_name, "inputs": inputs, "dry_run": dry_run}
         record = self._store.create_run(
             blueprint_name=target_name,
-            dry_run=dry_run,
+            dry_run=dry_run if run_kind != "live_plan" else True,
             payload=payload,
             acting_user=acting_user,
             client_request_id=client_request_id or None,
@@ -278,6 +303,7 @@ class RunQueue:
                 {
                     "blueprint": record.payload.get("blueprint") or None,
                     "bundle": record.payload.get("bundle") or None,
+                    "kind": record.payload.get("kind") or None,
                     "dry_run": record.dry_run,
                 },
             )
@@ -296,30 +322,56 @@ class RunQueue:
                 client_request_id=record.client_request_id,
             )
             try:
-                bundle_name = str(record.payload.get("bundle", "")).strip()
-                if bundle_name:
-                    result = run_bundle_api(
+                if is_live_plan_run(record.payload):
+                    entity_id = str(inputs_raw.get("entity_id", "")).strip()
+                    target = str(inputs_raw.get("target", "")).strip()
+                    policies_dir = str(
+                        inputs_raw.get("policies_dir", "policy/opa/policies")
+                    ).strip()
+                    use_backend = bool(inputs_raw.get("use_backend", True))
+                    on_event("live_plan_started", {"entity_id": entity_id, "target": target})
+                    summary = run_live_plan(
                         repo_root=self._repo_root,
-                        output_config=self._output_config,
-                        bundle_name=bundle_name,
-                        inputs=inputs_raw,
-                        dry_run=record.dry_run,
-                        github_token=github_token,
-                        on_event=on_event,
-                        staging_root=artifact_dir,
+                        target=target,
+                        entity_id=entity_id,
+                        policies_dir=policies_dir,
+                        use_backend=use_backend,
+                    )
+                    result = summary.to_public_dict()
+                    on_event(
+                        "live_plan_finished",
+                        {
+                            "gates_outcome": result.get("gates_outcome"),
+                            "resource_add": summary.resource_add,
+                            "resource_change": summary.resource_change,
+                            "resource_destroy": summary.resource_destroy,
+                        },
                     )
                 else:
-                    result = run_generate_api(
-                        repo_root=self._repo_root,
-                        output_config=self._output_config,
-                        blueprint_name=record.blueprint_name,
-                        inputs=inputs_raw,
-                        dry_run=record.dry_run,
-                        github_token=github_token,
-                        on_event=on_event,
-                        staging_root=artifact_dir,
-                        publish_idempotency=publish_ctx,
-                    )
+                    bundle_name = str(record.payload.get("bundle", "")).strip()
+                    if bundle_name:
+                        result = run_bundle_api(
+                            repo_root=self._repo_root,
+                            output_config=self._output_config,
+                            bundle_name=bundle_name,
+                            inputs=inputs_raw,
+                            dry_run=record.dry_run,
+                            github_token=github_token,
+                            on_event=on_event,
+                            staging_root=artifact_dir,
+                        )
+                    else:
+                        result = run_generate_api(
+                            repo_root=self._repo_root,
+                            output_config=self._output_config,
+                            blueprint_name=record.blueprint_name,
+                            inputs=inputs_raw,
+                            dry_run=record.dry_run,
+                            github_token=github_token,
+                            on_event=on_event,
+                            staging_root=artifact_dir,
+                            publish_idempotency=publish_ctx,
+                        )
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)
                 record = self._store.get(run_id)

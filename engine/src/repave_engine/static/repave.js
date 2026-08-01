@@ -1225,6 +1225,8 @@
       }
     }
 
+    var isLivePlan = root.getAttribute("data-live-plan") === "1";
+
     function handleEvent(data) {
       if (!data || !data.kind) {
         return;
@@ -1234,6 +1236,31 @@
         appendLog("Stage: " + data.stage);
       } else if (data.kind === "stage_finished") {
         setStage(data.stage, "done");
+      } else if (data.kind === "live_plan_started") {
+        setStage("live_plan", "active");
+        currentGate = "opa";
+        setGateRow("opa", "running", "");
+        appendLog("Live plan started for " + (data.entity_id || "entity"));
+        updateProgressBar();
+      } else if (data.kind === "live_plan_finished") {
+        setStage("live_plan", "done");
+        currentGate = "";
+        finishedGates = totalGates > 0 ? totalGates : 1;
+        var opaStatus =
+          data.gates_outcome === "passed" ? "passed" : "failed";
+        setGateRow("opa", opaStatus, "");
+        appendLog(
+          "Live plan finished: +" +
+            (data.resource_add || 0) +
+            " ~" +
+            (data.resource_change || 0) +
+            " -" +
+            (data.resource_destroy || 0) +
+            " (" +
+            (data.gates_outcome || "unknown") +
+            ")"
+        );
+        updateProgressBar();
       } else if (data.kind === "gate_started") {
         currentGate = data.gate || "";
         setGateRow(data.gate, "running", "");
@@ -1273,11 +1300,26 @@
           return res.json();
         })
         .then(function (body) {
-          if (body && body.status === "succeeded" && body.result && body.result.gates) {
+          if (!body || body.status !== "succeeded" || !body.result) {
+            return;
+          }
+          if (isLivePlan || body.kind === "live_plan") {
+            finishedGates = totalGates > 0 ? totalGates : 1;
+            var outcome = body.result.gates_outcome === "passed" ? "passed" : "failed";
+            setGateRow("opa", outcome, body.result.opa_detail || "");
+            setStage("live_plan", "done");
+            currentGate = "";
+            updateProgressBar();
+            if (completeActions) {
+              completeActions.hidden = false;
+            }
+            return;
+          }
+          if (body.result.gates) {
             finishedGates = 0;
             body.result.gates.forEach(function (gate) {
-              var status = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
-              setGateRow(gate.name, status, gate.message || "");
+              var gateStatus = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
+              setGateRow(gate.name, gateStatus, gate.message || "");
               finishedGates += 1;
             });
             currentGate = "";

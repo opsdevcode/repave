@@ -237,6 +237,87 @@ def load_fleet_config(repo_root: Path) -> FleetConfig | None:
 
 
 @dataclass(frozen=True)
+class LivePlanEnvironment:
+    """Per-entity live-plan target and optional Job credential secret."""
+
+    target: str
+    secret_name: str = ""
+    policies_dir: str = "policy/opa/policies"
+    use_backend: bool = True
+
+
+@dataclass(frozen=True)
+class LivePlanConfig:
+    enabled: bool
+    environments: dict[str, LivePlanEnvironment] = field(default_factory=dict)
+    policies_dir: str = "policy/opa/policies"
+
+    def environment_for(self, entity_id: str) -> LivePlanEnvironment | None:
+        key = entity_id.strip()
+        if key in self.environments:
+            return self.environments[key]
+        return self.environments.get("*")
+
+
+def load_live_plan_config(repo_root: Path) -> LivePlanConfig | None:
+    """Optional ADR 003 Phase 2 live terraform plan configuration."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("live_plan")
+    env_enabled = os.environ.get("REPAVE_LIVE_PLAN", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    if block is None and not env_enabled:
+        return None
+    if block is not None and not isinstance(block, dict):
+        raise ValueError("live_plan must be a mapping in repave.config.yaml")
+    enabled = env_enabled
+    policies_dir = "policy/opa/policies"
+    environments: dict[str, LivePlanEnvironment] = {}
+    if isinstance(block, dict):
+        enabled_raw = block.get("enabled", True)
+        if not isinstance(enabled_raw, bool):
+            raise ValueError("live_plan.enabled must be a boolean")
+        enabled = enabled_raw or env_enabled
+        policies_dir = str(block.get("policies_dir", policies_dir)).strip() or policies_dir
+        env_block = block.get("environments", {})
+        if env_block is not None and not isinstance(env_block, dict):
+            raise ValueError("live_plan.environments must be a mapping")
+        if isinstance(env_block, dict):
+            for raw_id, raw_cfg in env_block.items():
+                entity_id = str(raw_id).strip()
+                if not entity_id:
+                    continue
+                if isinstance(raw_cfg, str):
+                    environments[entity_id] = LivePlanEnvironment(target=raw_cfg.strip())
+                    continue
+                if not isinstance(raw_cfg, dict):
+                    raise ValueError(
+                        f"live_plan.environments.{entity_id} must be a string target or mapping"
+                    )
+                target = str(raw_cfg.get("target", "")).strip()
+                if not target:
+                    raise ValueError(f"live_plan.environments.{entity_id}.target is required")
+                use_backend_raw = raw_cfg.get("use_backend", True)
+                if not isinstance(use_backend_raw, bool):
+                    raise ValueError(
+                        f"live_plan.environments.{entity_id}.use_backend must be a boolean"
+                    )
+                environments[entity_id] = LivePlanEnvironment(
+                    target=target,
+                    secret_name=str(raw_cfg.get("secret_name", "")).strip(),
+                    policies_dir=str(raw_cfg.get("policies_dir", policies_dir)).strip()
+                    or policies_dir,
+                    use_backend=use_backend_raw,
+                )
+    if not enabled:
+        return None
+    return LivePlanConfig(enabled=True, environments=environments, policies_dir=policies_dir)
+
+
+@dataclass(frozen=True)
 class DurabilityConfig:
     async_generation: bool
     max_concurrent_runs: int

@@ -46,6 +46,15 @@ def test_build_job_body_includes_run_id_command() -> None:
     env_names = {item["name"] for item in container["env"]}
     assert "GITHUB_TOKEN" in env_names
     assert "GITHUB_APP_ID" in env_names
+    assert "envFrom" not in container
+
+    live_body = _build_job_body(
+        "run-456",
+        config,
+        live_plan_secret_name="env-prod-tf",
+    )
+    live_container = live_body["spec"]["template"]["spec"]["containers"][0]
+    assert live_container["envFrom"] == [{"secretRef": {"name": "env-prod-tf"}}]
 
 
 def test_kubernetes_dispatcher_posts_job() -> None:

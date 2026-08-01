@@ -1,8 +1,8 @@
 # ADR 003: Environment lifecycle and how far repave reaches into live state
 
-**Status:** Accepted for **Phase 1** (deployment status, read-only) — implemented via
-`portal.deployment_reader` and `deployment_status.py`. Phases 2–3 are directional —
-revisit this ADR before implementing either.  
+**Status:** Accepted — **Phase 1** shipped; **Phase 2** partial (`kind: live_plan` worker
+runs; PR body attachment still open). Phase 3 remains directional — revisit before
+vending.  
 **Date:** 2026-08-01  
 **Scope:** engine catalog read models, portal, worker role, `repave.config.yaml`, blueprints
 (`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap.md#v200--platform-ga)
@@ -72,11 +72,11 @@ path: an Argo outage degrades the entity to "unknown" and never fails a catalog 
 **repave does not write.** No sync, no rollback, no refresh trigger. Argo and Flux keep
 owning reconciliation; repave observes.
 
-### Phase 2 — Governed plan against live state — directional
+### Phase 2 — Governed plan against live state — partial on `main`
 
 Run a real `terraform plan` for a target repository or environment against a configured
 backend, evaluate OPA against the **plan JSON** rather than the source tree, and attach the
-plan summary plus policy verdict to the run record and the PR body.
+plan summary plus policy verdict to the run record (PR body attachment remains a follow-up).
 
 Boundaries that must hold if this is built:
 
@@ -141,11 +141,13 @@ a human on it.
   reports unknown status rather than erroring.
 - No repave code path writes to Argo CD or Flux.
 
-**Phase 2 (before implementation)**
+**Phase 2**
 
-- A plan runs in a worker Job with per-environment credentials, and a policy failure on plan
-  JSON blocks the PR the same way a gate failure does.
-- Plan JSON never appears in provenance, audit records, or logs.
+- [x] `POST /api/v2/runs` with `kind: live_plan` (and portal `POST /services/{id}/live-plan`)
+  enqueues a worker-only plan; per-environment K8s Secret via Job `envFrom`.
+- [x] OPA/conftest runs on plan JSON; summary + `gates_outcome` on the run result.
+- [x] Plan JSON is scrubbed after evaluation and never stored on the run record.
+- [ ] Plan summary attached to a PR body (follow-up; plan-only path ships first).
 
 **Phase 3 (before implementation)**
 

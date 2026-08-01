@@ -1,17 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Run — {% if bundle %}{{ bundle.name }}{% else %}{{ blueprint.name }}{% endif %} — repave{% endblock %}
+{% block title %}Run — {% if live_plan %}live plan{% elif bundle %}{{ bundle.name }}{% else %}{{ blueprint.name }}{% endif %} — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
 <p class="breadcrumb">
+  {% if live_plan %}
+  {% if live_plan_entity_id %}
+  <a href="/services/{{ live_plan_entity_id }}">← {{ live_plan_entity_id }}</a>
+  {% else %}
+  <a href="/library">← Library</a>
+  {% endif %}
+  {% else %}
   <a href="/">← Catalog</a>
   ·
   {% if bundle %}
   <a href="/bundles/{{ bundle.name }}">← {{ bundle.name }}</a>
   {% else %}
   <a href="/blueprints/{{ blueprint.name }}">← {{ blueprint.name }}</a>
+  {% endif %}
   {% endif %}
 </p>
 
@@ -21,21 +29,28 @@
   data-run-id="{{ run_id }}"
   data-run-status="{{ run_record.status.value }}"
   data-result-url="/runs/{{ run_id }}/result"
+  {% if live_plan %}data-live-plan="1"{% endif %}
   aria-labelledby="run-console-heading"
 >
   <div class="card__header">
     <h1 id="run-console-heading" class="card__title">Live run</h1>
     <p class="hint">
-      {% if bundle %}
+      {% if live_plan %}
+      Live plan against state
+      {% if live_plan_entity_id %}· {{ live_plan_entity_id }}{% endif %}
+      · <span class="badge badge--skip">Plan only</span>
+      {% elif bundle %}
       {{ bundle.name }}@{{ bundle.version }}
       · <span class="badge badge--muted">Bundle</span>
       {% else %}
       {{ blueprint.name }}@{{ blueprint.version }}
       {% endif %}
+      {% if not live_plan %}
       {% if run_record.dry_run %}
       · <span class="badge badge--skip">Plan</span>
       {% else %}
       · <span class="badge badge--pass">Apply</span>
+      {% endif %}
       {% endif %}
     </p>
   </div>
@@ -45,16 +60,22 @@
         <div class="run-console__progress-bar" data-run-progress-bar style="width: 0%"></div>
       </div>
       <p class="run-console__progress-label hint" data-run-progress-label aria-live="polite">
-        Waiting for gates…
+        {% if live_plan %}Waiting for live plan…{% else %}Waiting for gates…{% endif %}
       </p>
     </div>
 
+    {% if live_plan %}
+    <ol class="run-console__stages" aria-label="Pipeline stages">
+      <li class="run-console__stage" data-stage="live_plan">Terraform plan + OPA</li>
+    </ol>
+    {% else %}
     <ol class="run-console__stages" aria-label="Pipeline stages">
       <li class="run-console__stage" data-stage="validate">Validate inputs</li>
       <li class="run-console__stage" data-stage="render">Render templates</li>
       <li class="run-console__stage" data-stage="gates">Run gates</li>
       <li class="run-console__stage" data-stage="publish">Publish</li>
     </ol>
+    {% endif %}
 
     <div class="run-console__gates" aria-label="Gate progress">
       <table class="gate-table run-console__gate-table">

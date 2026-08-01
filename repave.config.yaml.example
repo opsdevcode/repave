@@ -109,6 +109,20 @@ gates:
 #   run_retry_base_seconds: 5
 # Or: REPAVE_EXECUTION_MODE=worker, REPAVE_DATABASE_URL=..., REPAVE_EXTERNAL_WORKERS=1
 
+# Optional governed live terraform plan (ADR 003 Phase 2). Worker/Job only; plan JSON
+# is ephemeral — run results keep resource counts + OPA verdict only.
+# live_plan:
+#   enabled: true
+#   policies_dir: policy/opa/policies
+#   environments:
+#     # entity_id from the catalog (or "*" fallback):
+#     github.com/acme/tf-app:
+#       target: https://github.com/acme/tf-app   # or local path
+#       secret_name: tf-creds-app                 # K8s Secret envFrom on run Jobs
+#       # policies_dir: policy/opa/policies
+#       # use_backend: true
+# Or: REPAVE_LIVE_PLAN=1
+
 # Optional OpenTelemetry trace export for pipeline spans (requires `uv sync --extra otel`).
 # tracing:
 #   enabled: true
