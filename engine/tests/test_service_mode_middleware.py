@@ -15,9 +15,10 @@ from repave_engine.api import create_app
 
 
 @pytest.fixture
-def service_mode(monkeypatch: pytest.MonkeyPatch) -> None:
+def service_mode(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     monkeypatch.setenv("REPAVE_SERVICE_MODE", "1")
     monkeypatch.setenv("REPAVE_SESSION_SECRET", "test-secret")
+    monkeypatch.setenv("REPAVE_DATABASE_URL", f"sqlite:///{tmp_path}/repave.sqlite")
     monkeypatch.setenv("REPAVE_OIDC_ISSUER", "https://idp.example.com")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 import secrets
 from dataclasses import dataclass, field
@@ -9,6 +10,11 @@ from typing import Any
 import yaml
 
 from repave_engine.auth import AuthConfig
+
+logger = logging.getLogger(__name__)
+
+CONFIG_API_VERSION = "repave.dev/v1"
+SUPPORTED_CONFIG_API_VERSIONS = frozenset({CONFIG_API_VERSION})
 
 
 @dataclass(frozen=True)
@@ -586,6 +592,23 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
     )
 
 
+def validate_hosted_service_config(
+    repo_root: Path,
+    *,
+    auth_config: AuthConfig | None,
+) -> None:
+    """Hosted service mode requires a unified SQL store (contract freeze at v2.0.0)."""
+    if auth_config is None or not auth_config.service_enabled:
+        return
+    from repave_engine.sql_store import load_database_config
+
+    if load_database_config(repo_root) is None:
+        raise ValueError(
+            "auth.service_mode requires durability.database_url or REPAVE_DATABASE_URL "
+            "(JSONL stores are export-only in hosted mode)"
+        )
+
+
 def _load_config_file(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
@@ -594,4 +617,18 @@ def _load_config_file(path: Path) -> dict[str, Any]:
         return {}
     if not isinstance(data, dict):
         raise ValueError(f"Expected mapping in {path}")
+    api_version = data.get("apiVersion")
+    if api_version is None:
+        logger.warning(
+            "%s is missing apiVersion; add %r (unversioned config is deprecated for v2)",
+            path.name,
+            CONFIG_API_VERSION,
+        )
+    else:
+        version = str(api_version).strip()
+        if version not in SUPPORTED_CONFIG_API_VERSIONS:
+            supported = ", ".join(sorted(SUPPORTED_CONFIG_API_VERSIONS))
+            raise ValueError(
+                f"Unsupported apiVersion {version!r} in {path.name} (supported: {supported})"
+            )
     return data

@@ -170,6 +170,7 @@ def test_api_fleet_requires_auth_in_service_mode(
 ) -> None:
     monkeypatch.setenv("REPAVE_SERVICE_MODE", "1")
     monkeypatch.setenv("REPAVE_SESSION_SECRET", "test-secret")
+    monkeypatch.setenv("REPAVE_DATABASE_URL", f"sqlite:///{registry_env.parent}/repave.sqlite")
     monkeypatch.setenv("REPAVE_OIDC_ISSUER", "https://idp.example.com")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
