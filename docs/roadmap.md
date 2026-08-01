@@ -6,8 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.130.0  
 
-**In progress:** [v2.0.0 Platform GA](#v200--platform-ga) — **conversational governed AI generation**
-(only remaining v2 must-have).
+**In progress:** [v2.1 — conversational governed AI](#conversational-and-governed-ai-generation)
+(post–Platform GA follow-on on the v2 line).
+**Next engine release:** **`v2.0.0`** when the contract-freeze alignment PR merges (`feat!:` → major bump via Release).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
@@ -58,9 +59,9 @@ locally after bumping `engine` `__version__`.
 - Do **not** edit **Current release** in feature PRs (Release owns it; leave the blank
   line after it). Update **In progress** / **Shipped on `main`** and section status only.
 - **Name open entries by theme, not by version.** Engine tags come from semantic-release
-  and consume numbers as they merge (`v1.72.0` and `v1.73.0` already shipped while
-  entries with those planning labels were still open). Shipped sections keep the number
-  they landed under; open sections carry a *Planning label* line only for traceability.
+  on `main` and **align with major roadmap milestones** — see
+  [Release mechanics](#release-mechanics) and [`docs/releases.md`](releases.md#roadmap-milestones-and-engine-semver).
+  Planning labels (v1.72, v2.0.0) describe themes; the tag on GitHub is authoritative.
 - Move items to [Shipped](#shipped) when they land on `main` and cut a release.
 - Keep speculative ideas in [Parking lot](#parking-lot) until there is a concrete
   next step.
@@ -125,7 +126,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ v2 contract     /api/v2 freeze, v1 migration docs, config v1, provenance-on-publish, blueprint schema (shipped)
   ├─ v2 resilience   Postgres DR runbook + `make postgres-dr-drill` (shipped)
   │
-  v2.0.0             platform GA       contract freeze + DR shipped; conversational AI open
+  v2.0.0             platform GA       contract freeze + DR → engine tag v2.0.0
+  │
+  v2.1+              governed AI       conversational generation on the v2 line
   │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane
 ```
@@ -153,7 +156,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
-| **v2.0.0 Platform GA** | in progress | Contract freeze + DR shipped; **conversational governed AI** is the last must-have |
+| **v2.0.0 Platform GA** | shipped (tag pending) | Contract freeze + DR on `main`; **`v2.0.0` engine tag** on next `feat!:` release |
+| **v2.1+ governed AI** | in progress | Conversational generation on the v2 semver line |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
 ---
@@ -1805,10 +1809,11 @@ killed worker's run is replayable and visible from a second portal replica, and
 **Target:** Repave as the **control plane for golden-path estates** — not only a
 generator.
 
-**Status:** **Contract freeze shipped on `main`** (all rows in the table below).
-**Postgres DR shipped on `main`**. **In progress:** [conversational governed AI generation](#conversational-and-governed-ai-generation)
-— the only remaining v2 must-have in the capabilities table. Pre-v3 follow-up: v2 read models for
-`/api/v1/estate` and `/api/v1/governance/annotations/*` ([`api-v1-migration.md`](api-v1-migration.md)).
+**Status:** **Contract freeze and Postgres DR shipped on `main`.** Engine semver moves to
+**`v2.0.0`** when the alignment PR merges (Release automation). **In progress on the v2 line:**
+[conversational governed AI generation](#conversational-and-governed-ai-generation) (roadmap **v2.1+**,
+ships as `v2.x` minors). Pre-v3 follow-up: v2 read models for `/api/v1/estate` and
+`/api/v1/governance/annotations/*` ([`api-v1-migration.md`](api-v1-migration.md)).
 
 **Planned capabilities (must-have for v2):**
 
@@ -1835,9 +1840,9 @@ generator.
 | Portal discovery surfaces (catalog, docs, scorecards, health) | [portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read) (shipped) |
 | Cost at generate time and in the catalog | [cost visibility](#cost-visibility) (shipped) |
 | Bounded fleet upgrade campaigns | [fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) (shipped) |
-| Contract freeze (HTTP, config, schema, provenance) | See table below (shipped) |
+| Contract freeze (HTTP, config, schema, provenance) | See table below (shipped → **`v2.0.0` tag**) |
 | Postgres backup/restore for hosted SQL | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md) (shipped) |
-| Conversational / governed AI generation | **Open** — see below |
+| Conversational / governed AI generation | **v2.1+** — see below (post–`v2.0.0` tag) |
 
 **Contract freeze at v2.0.0**
 
@@ -1905,7 +1910,7 @@ documented objective — see
    without referring to unreleased features. **Met** for shipped themes; conversational AI docs
    remain open.
 5. The conversational and form paths produce byte-identical gated output for the same
-   blueprint and inputs. **Open** — depends on conversational AI slice.
+   blueprint and inputs. **Open** — v2.1+ conversational AI theme.
 6. CRD conversion runs in a non-production cluster with no data loss, and a recovery drill
    meets the documented objective — see
    [`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md)
@@ -1916,7 +1921,9 @@ documented objective — see
 
 ### Conversational and governed AI generation
 
-**Status:** **Not started** — last v2 Platform GA must-have.
+**Status:** **Not started** — **v2.1+** on the engine semver line (after the **`v2.0.0`**
+contract-freeze tag). Still a Platform GA capability; it follows the major bump so semver
+matches the integrator-facing freeze first.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an
@@ -2063,7 +2070,14 @@ until someone owns them, since a v3 mention is not a commitment.
 ## Release mechanics
 
 Releases follow [Conventional Commits](https://www.conventionalcommits.org/) on
-`main` via python-semantic-release. See [README § Releases](../README.md#releases).
+`main` via python-semantic-release. See [README § Releases](../README.md#releases)
+and [`docs/releases.md`](releases.md#roadmap-milestones-and-engine-semver).
 
-Roadmap **version numbers** are planning labels; actual semver is driven by
-commit types at merge time (`feat` → minor, `fix` → patch).
+**Roadmap ↔ semver:** major roadmap themes map to engine **major** versions. **v2.0.0
+Platform GA** (contract freeze) → **`v2.0.0` tag** via `feat!:` / `BREAKING CHANGE:`.
+Follow-on Platform GA work (conversational AI) ships as **`v2.x` minors**. **v3.0.0** →
+**`v3.0.0` tag** when breaking removals land.
+
+Release automation updates **Current release** above and doc version pointers — feature
+PRs must not hand-edit them. Between milestones, `feat:` → minor and `fix:` → patch on
+the current major line.

@@ -49,7 +49,7 @@ is the front door; use this index when you need depth.
 
 | Doc | Contents |
 | --- | --- |
-| [Releases](releases.md) | semantic-release, Release workflow, maintainer tokens |
+| [Releases](releases.md) | semantic-release, roadmap ↔ semver alignment, Release workflow |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Commits, quality gate, local dev |
 
 ## Portal and CLI screenshots
