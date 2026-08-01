@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.129.0  
+**Current release:** v1.130.0  
 
 **In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (blueprint schema version policy, Postgres DR runbook).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
