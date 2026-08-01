@@ -62,7 +62,7 @@ Unauthenticated `/api/v2/*` requests receive `401` JSON.
 | --- | --- | --- | --- |
 | `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` |
 | `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities |
-| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + observability/cost enrichments |
+| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + observability/cost/deployment enrichments |
 | `GET` | `/api/v2/audit` | viewer+ | Query audit history (same filters as v1) |
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
@@ -78,6 +78,14 @@ Unauthenticated `/api/v2/*` requests receive `401` JSON.
 
 New integrations should use `/api/v2` only. Full migration guide:
 [`docs/api-v1-migration.md`](api-v1-migration.md).
+
+## Deployment status (optional)
+
+When `portal.deployment_reader` (or `deployment_status_url`) is set, entity detail includes
+`deployment_status` with sync state, health, revision, last-synced time, and a deep link.
+Readers: `url` (JSON template), `argocd` (Application API), `flux` (Kustomization/HelmRelease
+via the Kubernetes API). Unreachable backends return `sync_status`/`health` of `unknown`
+instead of failing the request. See [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
 ## Configuration
 

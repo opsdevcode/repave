@@ -6,11 +6,11 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.0.0  
 
-**In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phase 1 —
-deployment status ([ADR 003](adr/003-environment-lifecycle-and-live-state.md) accepted; implementation
-not started). [Conversational governed AI](#conversational-and-governed-ai-generation) also remains
-open on the v2 line.
-**Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
+**In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phases 2–3
+(directional); [conversational governed AI](#conversational-and-governed-ai-generation).
+**Shipped on `main`:** **deployment status** (`portal.deployment_reader` url/argocd/flux,
+[ADR 003](adr/003-environment-lifecycle-and-live-state.md) Phase 1); engine hardening group A (A1–A6)
+and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -159,7 +159,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
-| **v2.1+ environment lifecycle** | planned (Phase 1) | Deployment status in the catalog → gated plan on live state → environment vending ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
+| **v2.1+ environment lifecycle** | Phase 1 shipped | Deployment status in the catalog; gated plan / environment vending remain directional ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **v2.1+ governed AI** | open | Conversational generation on the v2 semver line |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
@@ -1809,9 +1809,9 @@ killed worker's run is replayable and visible from a second portal replica, and
 
 ### Environment lifecycle and deployment awareness
 
-**Status:** **Phase 1 planned** — [ADR 003](adr/003-environment-lifecycle-and-live-state.md)
-accepted for deployment status; Phases 2–3 directional. Promoted out of
-[lifecycle control plane](#lifecycle-control-plane) now that the v2 contract freeze shipped.
+**Status:** **Phase 1 shipped on `main`** — `portal.deployment_reader` (`url` / `argocd` / `flux`)
+enriches entity detail with read-only GitOps status ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)).
+Phases 2–3 remain directional.
 
 **Problem:** repave governs **repositories** and stops at the pull request. It cannot answer
 "is my change live", its policy runs against repo shape rather than the effect of a change,
@@ -1854,7 +1854,8 @@ generator.
 
 **Status:** **Shipped** — contract freeze and Postgres DR are on `main`, and the engine is
 tagged **`v2.0.0`**. Open on the v2.x line:
-[environment lifecycle](#environment-lifecycle-and-deployment-awareness) (Phase 1 planned) and
+[environment lifecycle](#environment-lifecycle-and-deployment-awareness) (Phase 1 shipped; 2–3
+directional) and
 [conversational governed AI generation](#conversational-and-governed-ai-generation). Pre-v3
 follow-up: v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
 ([`api-v1-migration.md`](api-v1-migration.md)).
