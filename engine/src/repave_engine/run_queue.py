@@ -17,6 +17,11 @@ from repave_engine.durability_store import (
     load_durability_store_settings,
     resolve_runs_database,
 )
+from repave_engine.environment_vend import (
+    DEFAULT_VEND_BLUEPRINT,
+    is_environment_vend_run,
+    run_environment_vend,
+)
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
@@ -195,6 +200,7 @@ class RunQueue:
         kind: str | None = None,
         live_plan_secret_name: str | None = None,
         pull_request: dict[str, Any] | None = None,
+        environment_vend: dict[str, Any] | None = None,
     ) -> RunRecord:
         if not self._accepting:
             raise RunQueueShuttingDownError("async generation queue is shutting down")
@@ -203,6 +209,9 @@ class RunQueue:
         if run_kind == "live_plan":
             if not blueprint_name:
                 raise ValueError("live_plan runs require blueprint_name sentinel")
+        elif run_kind == "environment_vend":
+            if not blueprint_name:
+                raise ValueError("environment_vend runs require blueprint_name sentinel")
         elif blueprint_name and bundle_name:
             raise ValueError("provide only one of blueprint_name or bundle_name")
         elif not blueprint_name and not bundle_name:
@@ -229,6 +238,14 @@ class RunQueue:
                 payload["live_plan_secret_name"] = live_plan_secret_name
             if pull_request:
                 payload["pull_request"] = pull_request
+        elif run_kind == "environment_vend":
+            payload = {
+                "kind": "environment_vend",
+                "inputs": inputs,
+                "dry_run": dry_run,
+            }
+            if environment_vend:
+                payload.update(environment_vend)
         elif bundle_name:
             payload = {
                 "bundle": bundle_name,
@@ -239,7 +256,7 @@ class RunQueue:
             payload = {"blueprint": blueprint_name, "inputs": inputs, "dry_run": dry_run}
         record = self._store.create_run(
             blueprint_name=target_name,
-            dry_run=dry_run if run_kind != "live_plan" else True,
+            dry_run=dry_run if run_kind not in ("live_plan",) else True,
             payload=payload,
             acting_user=acting_user,
             client_request_id=client_request_id or None,
@@ -318,7 +335,11 @@ class RunQueue:
             def on_event(kind: str, payload: dict[str, Any]) -> None:
                 self._emit_event(run_id, kind, payload)
 
-            github_token = None if record.dry_run else resolve_github_access_token()
+            github_token = (
+                resolve_github_access_token()
+                if is_environment_vend_run(record.payload) and not record.dry_run
+                else (None if record.dry_run else resolve_github_access_token())
+            )
             artifact_dir = self._artifact_store.local_staging_dir(self._repo_root, run_id)
             publish_ctx = PublishIdempotencyContext(
                 store=self._publish_store,
@@ -368,6 +389,41 @@ class RunQueue:
                             "resource_add": summary.resource_add,
                             "resource_change": summary.resource_change,
                             "resource_destroy": summary.resource_destroy,
+                        },
+                    )
+                elif is_environment_vend_run(record.payload):
+                    vend_blueprint = (
+                        str(record.payload.get("blueprint", DEFAULT_VEND_BLUEPRINT)).strip()
+                        or DEFAULT_VEND_BLUEPRINT
+                    )
+                    on_event(
+                        "environment_vend_started",
+                        {
+                            "blueprint": vend_blueprint,
+                            "gitops_path": str(record.payload.get("gitops_path", "")),
+                        },
+                    )
+                    vend_result = run_environment_vend(
+                        repo_root=self._repo_root,
+                        output_config=self._output_config,
+                        blueprint_name=vend_blueprint,
+                        inputs=inputs_raw,
+                        gitops_repo=str(record.payload.get("gitops_repo", "")),
+                        gitops_path=str(record.payload.get("gitops_path", "")),
+                        owner=str(record.payload.get("owner", "")),
+                        env_class=str(record.payload.get("class", "sandbox")),
+                        base_branch=str(record.payload.get("base_branch", "main")),
+                        git_branch=str(record.payload.get("git_branch", "")),
+                        dry_run=bool(record.payload.get("dry_run", record.dry_run)),
+                        github_token=github_token,
+                        on_event=on_event,
+                    )
+                    result = vend_result.to_public_dict()
+                    on_event(
+                        "environment_vend_finished",
+                        {
+                            "gates_outcome": result.get("gates_outcome"),
+                            "pull_request_url": result.get("pull_request_url"),
                         },
                     )
                 else:

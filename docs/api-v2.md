@@ -43,6 +43,35 @@ was updated. Plan JSON is never retained. Portal:
 `POST /services/{entity_id}/live-plan` redirects to the run console. See
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
+### Environment vending (`kind: environment_vend`)
+
+When `environment_vending.enabled` (or `REPAVE_ENVIRONMENT_VENDING=1`), render a governed
+`terraform-environment-stack` and open a pull request on a GitOps repository:
+
+```json
+{
+  "kind": "environment_vend",
+  "dry_run": false,
+  "inputs": {
+    "stack_name": "sandbox-alice",
+    "description": "Ephemeral platform sandbox",
+    "cloud_provider": "aws",
+    "environment": "dev"
+  },
+  "owner": "team-platform",
+  "class": "sandbox"
+}
+```
+
+Configure defaults under `environment_vending` (`gitops_repo`, `base_branch`, `path_prefix`).
+Optional overrides: `blueprint`, `gitops_repo`, `gitops_path`, `base_branch`, `git_branch`,
+`owner`, `class`, `dry_run`. Set `"dry_run": true` to evaluate gates without opening a PR.
+Requires `GITHUB_TOKEN` with push access to the GitOps repo when `dry_run` is false.
+
+The run result includes `gates_outcome`, `gitops_path`, and when not dry-run
+`pull_request_url` / `pull_request_number`. repave does not run `terraform apply`. See
+[ADR 003](adr/003-environment-lifecycle-and-live-state.md).
+
 ## Operator upgrades
 
 These endpoints mirror `repave plan-upgrade` / `apply-upgrade --format json` so the

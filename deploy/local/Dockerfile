@@ -6,6 +6,9 @@ ARG UV_SOURCE=registry
 
 FROM python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de AS base
 
+LABEL org.opencontainers.image.source=https://github.com/opsdevcode/repave
+LABEL org.opencontainers.image.licenses=MIT
+
 FROM ghcr.io/astral-sh/uv:0.11.33@sha256:77280f2f771df71f90786c314fe1bbc1e023feac652969bbf139c280babf2eb7 AS uv-bin
 
 FROM base AS uv-registry

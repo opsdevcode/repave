@@ -3,6 +3,9 @@
 # portal/worker deploys. Mount read-only via chart initContainer or pin by digest in CI.
 FROM alpine:3.21
 
+LABEL org.opencontainers.image.source=https://github.com/opsdevcode/repave
+LABEL org.opencontainers.image.licenses=MIT
+
 COPY schemas /app/schemas
 COPY blueprints /app/blueprints
 COPY standards /app/standards

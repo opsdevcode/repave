@@ -39,6 +39,9 @@ digest-pinned images to GHCR on `main` and semver tags:
 | `ghcr.io/opsdevcode/repave-engine` | Gate-toolchain worker |
 | `ghcr.io/opsdevcode/repave-engine-portal` | Portal/API (no gate CLIs) |
 | `ghcr.io/opsdevcode/repave-corpus` | Generation corpus OCI artifact |
+| `ghcr.io/opsdevcode/repave-operator` | Kubernetes reconciliation operator |
+
+Per-image documentation: [`deploy/packages/`](../deploy/packages/README.md).
 
 Each push publishes `type=sha` tags alongside semver tags so operators can pin by digest.
 

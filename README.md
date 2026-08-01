@@ -136,6 +136,21 @@ Gates, schemas, and CI detail: [Engine capabilities](docs/engine-capabilities.md
 
 ---
 
+## Published container images (`ghcr.io/opsdevcode`)
+
+| Package | Role |
+| --- | --- |
+| [`repave-engine`](deploy/packages/repave-engine/README.md) | Worker + gate toolchain (async runs, `live_plan`) |
+| [`repave-engine-portal`](deploy/packages/repave-engine-portal/README.md) | Portal/API only (no gate CLIs) |
+| [`repave-corpus`](deploy/packages/repave-corpus/README.md) | Blueprints, standards, policy, schemas (initContainer) |
+| [`repave-operator`](deploy/packages/repave-operator/README.md) | Kubernetes drift + remediation PRs |
+
+Built on `main` and semver tags — see [`deploy/packages/`](deploy/packages/README.md) and
+[`docs/supply-chain.md`](docs/supply-chain.md). GHCR shows a short description per image from
+OCI labels; full docs live in each package README above.
+
+---
+
 ## Try it in 60 seconds
 
 ```bash
