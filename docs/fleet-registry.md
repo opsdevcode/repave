@@ -129,8 +129,8 @@ Environment variables:
 | `REPAVE_FLEET_ENABLE_REMEDIATION` | Set `spec.remediation.enabled` on synced GPRs |
 
 The operator Helm chart exposes the same settings under `fleetSync.*` — mount a shared
-PVC or copy the registry file into the operator pod (see `values-kind.yaml` and
-`make kind-co-install`).
+PVC (`values-fleet-shared.yaml` on portal + operator in the **same namespace**) or copy the
+registry file into the operator pod for kind-only cross-namespace setups.
 
 ### GitOps manifests (engine)
 

@@ -15,7 +15,14 @@ repave:
   durability:
     requireSessionSecret: true
     exportJsonl: false
-    # workerMode: external  # uncomment with values-decomposed.yaml
+    workerMode: external
+    workerReplicas: 2
+
+workerAutoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 65
 
 monitoring:
   serviceMonitor:

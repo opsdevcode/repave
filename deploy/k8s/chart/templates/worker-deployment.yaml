@@ -7,7 +7,9 @@ metadata:
     {{- include "repave.labels" . | nindent 4 }}
     app.kubernetes.io/component: run-worker
 spec:
+  {{- if not .Values.workerAutoscaling.enabled }}
   replicas: {{ .Values.repave.durability.workerReplicas | default 1 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "repave.selectorLabels" . | nindent 6 }}

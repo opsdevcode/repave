@@ -1,0 +1,33 @@
+{{- if and .Values.repave.durability.enabled (eq .Values.repave.durability.workerMode "external") .Values.workerAutoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "repave.fullname" . }}-worker
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: run-worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "repave.fullname" . }}-worker
+  minReplicas: {{ .Values.workerAutoscaling.minReplicas }}
+  maxReplicas: {{ .Values.workerAutoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.workerAutoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.workerAutoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.workerAutoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.workerAutoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}

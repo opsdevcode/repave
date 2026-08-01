@@ -107,4 +107,22 @@ if ! grep -q 'path: /modules' "${kind_rendered}"; then
   exit 1
 fi
 
+fleet_shared_rendered="$(mktemp)"
+helm template repave-operator-fleet "${CHART}" \
+  --namespace repave \
+  -f "${CHART}/values-fleet-shared.yaml" \
+  --set repave.apiUrl=http://repave.repave.svc.cluster.local:8088 \
+  --set webhook.caBundle="${FAKE_CA}" \
+  >"${fleet_shared_rendered}"
+
+if ! grep -q 'REPAVE_FLEET_SYNC_ENABLED' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must enable fleet registry sync env" >&2
+  exit 1
+fi
+
+if ! grep -q 'claimName: repave-fleet' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must mount existingClaim repave-fleet" >&2
+  exit 1
+fi
+
 echo "OK: operator chart lint and template checks passed"

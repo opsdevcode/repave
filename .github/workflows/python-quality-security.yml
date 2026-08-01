@@ -43,6 +43,11 @@ jobs:
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv sync --extra dev --extra postgres --frozen
 
+      - name: Verify GitHub Action pins
+        if: steps.paths.outputs.ci_needed == 'true'
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/check-action-pins.py
+
       - name: Ruff lint
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run ruff check src tests

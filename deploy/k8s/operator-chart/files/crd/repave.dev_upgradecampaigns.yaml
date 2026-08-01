@@ -19,9 +19,10 @@ spec:
     strategy: Webhook
     webhook:
       clientConfig:
+        caBundle: {{ required "webhook.caBundle is required when crds.install=true" .Values.webhook.caBundle }}
         service:
-          name: repave-webhook-service
-          namespace: repave-system
+          name: {{ .Values.service.webhook.name }}
+          namespace: {{ .Release.Namespace }}
           path: /convert
           port: 443
       conversionReviewVersions:

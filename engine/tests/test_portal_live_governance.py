@@ -64,3 +64,38 @@ def test_api_estate_json(repo_root, output_config, registry: Path) -> None:
 
     assert response.status_code == 200
     assert response.json()["count"] == 1
+
+
+def test_run_console_contract(
+    repo_root, output_config, sample_inputs, tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    submit = client.post(
+        "/api/v1/runs",
+        json={
+            "blueprint": "terraform-module-generic",
+            "dry_run": True,
+            "inputs": sample_inputs,
+        },
+    )
+    assert submit.status_code == 202
+    run_id = submit.json()["run_id"]
+    page = client.get(f"/runs/{run_id}")
+    assert page.status_code == 200
+    body = page.text
+    assert "data-run-console" in body
+    assert "run-console__gate-table" in body
+    assert "run-console-log" in body
+    assert f"/api/v1/runs/{run_id}/events" not in body
+    assert 'data-run-id="' + run_id + '"' in body
+
+
+def test_command_palette_contract(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/").text
+    assert "command-palette" in body
+    assert "command-palette-data" in body
+    assert "Resume last run" in body
+    assert "terraform-module-generic" in body

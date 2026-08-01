@@ -98,6 +98,7 @@ Deployment (`repave.durability.workerMode: external`).
 | `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
 | `workerImage.*` | Gate-toolchain image for external worker Deployment or per-run Jobs (defaults to `repave-engine`) |
 | `repave.durability.workerMode` | `inline` (default), `external` (worker Deployment), or `job` (one Job per run — see `values-decomposed-job.yaml`) |
+| `workerAutoscaling.enabled` | HPA on the external worker Deployment (omit static `workerReplicas` when enabled) |
 | `corpus.*` | Mount digest-pinned corpus OCI artifact (Phase 2 decomposition) |
 | `repave.durability.artifactStoreUri` | Optional S3-compatible store for full staging-tree retention (previews default in run record) |
 | `persistence.runs` | PVC for `/data/runs` (use `emptyDir` when `enabled: false`) |
@@ -164,7 +165,9 @@ Share notification webhook URLs between `repave.config.yaml` and operator env va
 [`repave.config.yaml.example`](../../../repave.config.yaml.example)).
 
 Fleet registry manifests from `repave fleet-manifests` can target the same namespace as
-operator-managed `GoldenPathRepo` objects.
+operator-managed `GoldenPathRepo` objects, or enable **continuous sync** with a shared PVC
+([`values-fleet-shared.yaml`](values-fleet-shared.yaml) + operator
+[`values-fleet-shared.yaml`](../operator-chart/values-fleet-shared.yaml) in the same namespace).
 
 ### Full kind stack (portal + operator + fleet)
 

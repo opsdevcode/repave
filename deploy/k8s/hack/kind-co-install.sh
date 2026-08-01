@@ -18,6 +18,7 @@ FLEET_REGISTRY="${ROOT}/deploy/k8s/testdata/fleet-registry.jsonl"
 
 CLUSTER_NAME="${KIND_CLUSTER_NAME:-repave-local}"
 PORTAL_NS="${CO_INSTALL_PORTAL_NAMESPACE:-repave}"
+OPERATOR_NS="${CO_INSTALL_OPERATOR_NAMESPACE:-${PORTAL_NS}}"
 ENGINE_IMG="${CO_INSTALL_ENGINE_IMAGE:-repave-engine:local}"
 OPERATOR_IMG="${CO_INSTALL_OPERATOR_IMAGE:-repave-operator:dev}"
 TIMEOUT="${CO_INSTALL_TIMEOUT_SEC:-240}"
@@ -96,27 +97,22 @@ chmod +x "${OPERATOR}/hack/setup-webhook-certs.sh"
 bash "${OPERATOR}/hack/setup-webhook-certs.sh"
 CA_BUNDLE="$(base64 <"${OPERATOR}/hack/webhook-certs/ca.crt" | tr -d '\n')"
 helm upgrade --install repave-operator "${OPERATOR_CHART}" \
-  --namespace repave-system --create-namespace \
+  --namespace "${OPERATOR_NS}" --create-namespace \
   -f "${OPERATOR_CHART}/values-kind.yaml" \
+  -f "${OPERATOR_CHART}/values-fleet-shared.yaml" \
   --set "image.repository=${OPERATOR_IMG%%:*}" \
   --set "image.tag=${OPERATOR_IMG##*:}" \
   --set image.pullPolicy=Never \
   --set "repave.apiUrl=${PORTAL_API_URL}" \
   --set "webhook.caBundle=${CA_BUNDLE}" \
   --wait --timeout "${TIMEOUT}s"
-kubectl -n repave-system rollout status deployment/repave-operator --timeout="${TIMEOUT}s"
+kubectl -n "${OPERATOR_NS}" rollout status deployment/repave-operator --timeout="${TIMEOUT}s"
 
-echo "==> seed fleet registry in portal pod"
+echo "==> seed fleet registry in portal pod (shared PVC repave-fleet)"
 portal_pod="$(kubectl get pod -n "${PORTAL_NS}" -l app.kubernetes.io/name=repave \
   -o jsonpath='{.items[0].metadata.name}')"
 kubectl exec -n "${PORTAL_NS}" "${portal_pod}" -- mkdir -p /data/fleet
 kubectl cp "${FLEET_REGISTRY}" "${PORTAL_NS}/${portal_pod}:/data/fleet/registry.jsonl"
-
-echo "==> seed fleet registry in operator pod (continuous sync)"
-operator_pod="$(kubectl get pod -n repave-system -l app.kubernetes.io/name=repave-operator \
-  -o jsonpath='{.items[0].metadata.name}')"
-kubectl exec -n repave-system "${operator_pod}" -- mkdir -p /data/fleet
-kubectl cp "${FLEET_REGISTRY}" "repave-system/${operator_pod}:/data/fleet/registry.jsonl"
 
 echo "==> wait for operator fleet sync to create GoldenPathRepos"
 deadline=$((SECONDS + TIMEOUT))
