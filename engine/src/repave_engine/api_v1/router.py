@@ -44,7 +44,7 @@ from repave_engine.fleet import (
 )
 from repave_engine.fleet_operator_status import load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
-from repave_engine.generate_api import run_generate_api
+from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.observability_slo import fetch_entity_slo_summary
@@ -61,6 +61,7 @@ from repave_engine.portal_context import (
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
+from repave_engine.run_submit import parse_run_target, submit_async_run
 from repave_engine.settings import OutputConfig, load_fleet_config, load_portal_config
 from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.verify import VerifyError, verify_target
@@ -153,9 +154,10 @@ def build_api_v1_router(
         payload = await request.json()
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Expected JSON object")
-        blueprint_name = str(payload.get("blueprint", "")).strip()
-        if not blueprint_name:
-            raise HTTPException(status_code=400, detail="blueprint is required")
+        try:
+            blueprint_name, bundle_name = parse_run_target(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         dry_run = bool(payload.get("dry_run", True))
         inputs_raw = payload.get("inputs", {})
         if not isinstance(inputs_raw, dict):
@@ -174,10 +176,9 @@ def build_api_v1_router(
             key = client_request_id or idempotency
             acting = user.subject if user else current_acting_user()
             try:
-                record = queue.submit(
-                    blueprint_name=blueprint_name,
-                    inputs=inputs_raw,
-                    dry_run=dry_run,
+                record = submit_async_run(
+                    queue,
+                    payload=payload,
                     acting_user=acting,
                     client_request_id=key,
                 )
@@ -195,14 +196,24 @@ def build_api_v1_router(
 
         github_token = None if dry_run else resolve_github_access_token()
         try:
-            body = run_generate_api(
-                repo_root=repo_root,
-                output_config=output_config,
-                blueprint_name=blueprint_name,
-                inputs=inputs_raw,
-                dry_run=dry_run,
-                github_token=github_token,
-            )
+            if bundle_name:
+                body = run_bundle_api(
+                    repo_root=repo_root,
+                    output_config=output_config,
+                    bundle_name=bundle_name,
+                    inputs=inputs_raw,
+                    dry_run=dry_run,
+                    github_token=github_token,
+                )
+            else:
+                body = run_generate_api(
+                    repo_root=repo_root,
+                    output_config=output_config,
+                    blueprint_name=blueprint_name or "",
+                    inputs=inputs_raw,
+                    dry_run=dry_run,
+                    github_token=github_token,
+                )
         except (ValueError, FileNotFoundError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(body)
@@ -221,10 +232,10 @@ def build_api_v1_router(
         payload = await request.json()
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Expected JSON object")
-        blueprint_name = str(payload.get("blueprint", "")).strip()
-        if not blueprint_name:
-            raise HTTPException(status_code=400, detail="blueprint is required")
-        dry_run = bool(payload.get("dry_run", True))
+        try:
+            parse_run_target(payload)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         inputs_raw = payload.get("inputs", {})
         if not isinstance(inputs_raw, dict):
             raise HTTPException(status_code=400, detail="inputs must be an object")
@@ -232,10 +243,9 @@ def build_api_v1_router(
         idempotency = request.headers.get("Idempotency-Key", "").strip() or None
         acting = user.subject if user else current_acting_user()
         try:
-            record = queue.submit(
-                blueprint_name=blueprint_name,
-                inputs=inputs_raw,
-                dry_run=dry_run,
+            record = submit_async_run(
+                queue,
+                payload=payload,
                 acting_user=acting,
                 client_request_id=client_request_id or idempotency,
             )

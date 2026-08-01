@@ -139,17 +139,27 @@ def run_portal_generate(
     queue_user = acting_user or "portal"
 
     if bundle_name:
-        if worker_execution_mode:
-            raise HTTPException(
-                status_code=503,
-                detail=(
-                    "Bundle generation is not available when execution_mode=worker; "
-                    "use blueprint generation with async runs"
-                ),
-            )
         bundle_dir = bundles_dir(repo_root) / bundle_name
         bundle = load_bundle(bundle_dir, repo_root=repo_root)
         bundle_values = _bundle_values_from_form(form, bundle)
+        if worker_execution_mode:
+            if run_queue is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Async generation is required in worker execution mode",
+                )
+            try:
+                record = run_queue.submit(
+                    bundle_name=bundle_name,
+                    inputs=bundle_values,
+                    dry_run=dry_run,
+                    acting_user=queue_user,
+                )
+            except RunQueueFullError as exc:
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            except RunQueueShuttingDownError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            return PortalGenerateRedirect(url=f"/runs/{record.run_id}", status_code=303)
         bundle_result = generate_from_bundle_fn(
             bundle,
             bundle_values,

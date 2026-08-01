@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Run — {{ blueprint.name }} — repave{% endblock %}
+{% block title %}Run — {% if bundle %}{{ bundle.name }}{% else %}{{ blueprint.name }}{% endif %} — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
@@ -8,7 +8,11 @@
 <p class="breadcrumb">
   <a href="/">← Catalog</a>
   ·
+  {% if bundle %}
+  <a href="/bundles/{{ bundle.name }}">← {{ bundle.name }}</a>
+  {% else %}
   <a href="/blueprints/{{ blueprint.name }}">← {{ blueprint.name }}</a>
+  {% endif %}
 </p>
 
 <section
@@ -22,7 +26,12 @@
   <div class="card__header">
     <h1 id="run-console-heading" class="card__title">Live run</h1>
     <p class="hint">
+      {% if bundle %}
+      {{ bundle.name }}@{{ bundle.version }}
+      · <span class="badge badge--muted">Bundle</span>
+      {% else %}
       {{ blueprint.name }}@{{ blueprint.version }}
+      {% endif %}
       {% if run_record.dry_run %}
       · <span class="badge badge--skip">Plan</span>
       {% else %}
