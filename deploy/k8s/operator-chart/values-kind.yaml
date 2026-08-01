@@ -1,0 +1,34 @@
+# kind / local co-install with the portal chart (see deploy/k8s/chart/values-kind.yaml).
+#
+#   helm upgrade --install repave-operator ./deploy/k8s/operator-chart \
+#     -f values-kind.yaml \
+#     --set image.repository=repave-operator --set image.tag=dev --set image.pullPolicy=Never \
+#     --set repave.apiUrl=http://repave.repave.svc.cluster.local:8088 \
+#     --set webhook.caBundle="$CA_BUNDLE"
+
+replicaCount: 1
+
+manager:
+  leaderElect: false
+  metrics:
+    enabled: false
+
+modules:
+  hostPath:
+    enabled: true
+    path: /modules
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+podDisruptionBudget:
+  enabled: false
+
+secrets:
+  create: true
+  githubToken: kind-placeholder-token

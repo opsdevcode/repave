@@ -11,6 +11,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CHART="${ROOT}/deploy/k8s/chart"
+OPERATOR_CHART="${ROOT}/deploy/k8s/operator-chart"
 OPERATOR="${ROOT}/operator"
 MODULES_HOST="${OPERATOR}/testdata/modules"
 FLEET_REGISTRY="${ROOT}/deploy/k8s/testdata/fleet-registry.jsonl"
@@ -90,21 +91,19 @@ helm upgrade --install repave "${CHART}" \
 kubectl -n "${PORTAL_NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"
 
 PORTAL_API_URL="http://repave.${PORTAL_NS}.svc.cluster.local:8088"
-echo "==> operator webhook TLS + CRDs (REPAVE_API_URL=${PORTAL_API_URL})"
-kubectl apply -f "${OPERATOR}/config/e2e/namespace.yaml"
-chmod +x "${OPERATOR}/hack/setup-webhook-certs.sh" "${OPERATOR}/hack/inject-crd-ca-bundle.sh"
+echo "==> operator webhook TLS + Helm install (REPAVE_API_URL=${PORTAL_API_URL})"
+chmod +x "${OPERATOR}/hack/setup-webhook-certs.sh"
 bash "${OPERATOR}/hack/setup-webhook-certs.sh"
-crd_tmp="$(mktemp -d)"
-bash "${OPERATOR}/hack/inject-crd-ca-bundle.sh" \
-  "${OPERATOR}/hack/webhook-certs/ca.crt" \
-  "${OPERATOR}/config/crd/bases" "${crd_tmp}"
-kubectl apply -f "${crd_tmp}/"
-rm -rf "${crd_tmp}"
-kubectl apply -f "${OPERATOR}/config/e2e/rbac.yaml"
-kubectl apply -f "${OPERATOR}/config/e2e/webhook-service.yaml"
-sed -e 's/imagePullPolicy: IfNotPresent/imagePullPolicy: Never/' \
-  -e "s|http://repave-portal:8088|${PORTAL_API_URL}|" \
-  "${OPERATOR}/config/e2e/manager.yaml" | kubectl apply -f -
+CA_BUNDLE="$(base64 <"${OPERATOR}/hack/webhook-certs/ca.crt" | tr -d '\n')"
+helm upgrade --install repave-operator "${OPERATOR_CHART}" \
+  --namespace repave-system --create-namespace \
+  -f "${OPERATOR_CHART}/values-kind.yaml" \
+  --set "image.repository=${OPERATOR_IMG%%:*}" \
+  --set "image.tag=${OPERATOR_IMG##*:}" \
+  --set image.pullPolicy=Never \
+  --set "repave.apiUrl=${PORTAL_API_URL}" \
+  --set "webhook.caBundle=${CA_BUNDLE}" \
+  --wait --timeout "${TIMEOUT}s"
 kubectl -n repave-system rollout status deployment/repave-operator --timeout="${TIMEOUT}s"
 
 echo "==> seed fleet registry in portal pod"

@@ -1,0 +1,34 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "repave-operator.fullname" . }}
+  labels:
+    {{- include "repave-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["repave.dev"]
+    resources: ["blueprints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["repave.dev"]
+    resources: ["goldenpathrepos"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["repave.dev"]
+    resources: ["goldenpathrepos/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["repave.dev"]
+    resources: ["goldenpathrepos/finalizers"]
+    verbs: ["update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "repave-operator.fullname" . }}
+  labels:
+    {{- include "repave-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "repave-operator.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "repave-operator.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}

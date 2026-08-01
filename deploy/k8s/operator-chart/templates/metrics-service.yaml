@@ -1,0 +1,15 @@
+{{- if .Values.service.metrics.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "repave-operator.fullname" . }}-metrics
+  labels:
+    {{- include "repave-operator.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "repave-operator.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: metrics
+      port: {{ .Values.service.metrics.port }}
+      targetPort: metrics
+{{- end }}
