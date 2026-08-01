@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.116.0  
+**Current release:** v1.117.0  
 
 **In progress:** _(none — pick from [Planning horizon](#planning-horizon-v119--v200-platform-maturity--governed-estate-at-scale) or open follow-ups below)._
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
