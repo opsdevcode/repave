@@ -52,6 +52,17 @@ from repave_engine.github import (
     find_open_pull_request,
     push_git_branch,
 )
+from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.github_client import GitHubError
+from repave_engine.github_inventory import (
+    GitHubInventoryError,
+    fetch_github_file_text,
+    inventory_github_paths,
+    parse_github_repository,
+    remote_has_provenance,
+    resolve_batch_targets,
+)
+from repave_engine.github_rate_limit import wait_before_github_request
 from repave_engine.import_detect import (
     BlueprintCandidate,
     detect_blueprint_candidates,
@@ -61,6 +72,7 @@ from repave_engine.import_rules import (
     UNMAPPED_QUARANTINE,
     classify_path,
     matches_any,
+    parse_path_overrides,
     quarantine_path,
 )
 from repave_engine.provider_catalog import load_provider_catalog
@@ -166,9 +178,11 @@ class ImportPlan:
     scorecard: ScorecardDelta = field(default_factory=ScorecardDelta)
     gates: tuple[GateResult, ...] = ()
     values: dict[str, Any] = field(default_factory=dict)
+    path_overrides: dict[str, str] = field(default_factory=dict)
     remote: bool = False
     detected: bool = False
     source_layout_hash: str = ""
+    preview_limited: bool = False
 
     @property
     def renames(self) -> tuple[FileMove, ...]:
@@ -207,6 +221,8 @@ class ImportPlan:
             "is_noop": self.is_noop,
             "gates_passed": self.gates_passed,
             "summary": self.summary,
+            "path_overrides": dict(self.path_overrides),
+            "preview_limited": self.preview_limited,
             "moves": [move.to_json_dict() for move in self.renames],
             "unchanged": list(self.unchanged),
             "scaffold_added": list(self.scaffold_added),
@@ -387,6 +403,53 @@ _TF_PROVIDER_PREFIX = {
 MAX_INFERRED_SERVICES = 6
 
 
+def _terraform_resource_types_from_texts(texts: Mapping[str, str]) -> list[str]:
+    types: list[str] = []
+    for text in texts.values():
+        types.extend(_TF_RESOURCE.findall(text))
+    return types
+
+
+def infer_terraform_scope_from_texts(
+    blueprint: Blueprint,
+    texts: Mapping[str, str],
+) -> tuple[str, list[str]]:
+    """Guess cloud provider and services from fetched ``.tf`` file bodies."""
+    catalog = load_provider_catalog(blueprint.path)
+    if not catalog:
+        return "", []
+
+    hits: dict[str, list[str]] = {}
+    for resource_type in _terraform_resource_types_from_texts(texts):
+        prefix, _, remainder = resource_type.partition("_")
+        provider = _TF_PROVIDER_PREFIX.get(prefix)
+        if provider is None or provider not in catalog:
+            continue
+        for service, definition in catalog[provider].items():
+            if not remainder.startswith(f"{service}_"):
+                continue
+            if remainder[len(service) + 1 :] not in definition["resources"]:
+                continue
+            services = hits.setdefault(provider, [])
+            if service not in services:
+                services.append(service)
+
+    if hits:
+        provider = max(hits, key=lambda key: len(hits[key]))
+        return provider, sorted(hits[provider])[:MAX_INFERRED_SERVICES]
+
+    provider = next((key for key in ("aws", "azure", "gcp") if key in catalog), next(iter(catalog)))
+    fallback = next(
+        (
+            service
+            for service, definition in sorted(catalog[provider].items())
+            if definition["basic"]
+        ),
+        "",
+    )
+    return provider, [fallback] if fallback else []
+
+
 def _terraform_resource_types(repo_dir: Path, rel_paths: tuple[str, ...]) -> list[str]:
     types: list[str] = []
     for rel in rel_paths:
@@ -443,22 +506,41 @@ def infer_terraform_scope(
 
 def infer_import_values(
     blueprint: Blueprint,
-    repo_dir: Path,
+    repo_dir: Path | None,
     *,
     repo_name: str,
     rel_paths: tuple[str, ...] = (),
     overrides: Mapping[str, Any] | None = None,
+    file_texts: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Seed blueprint inputs from the source repo, letting caller overrides win."""
     inferred: dict[str, Any] = {}
     artifact_name = artifact_name_from_repo(repo_name)
-    description = _readme_summary(repo_dir) or f"Imported from {repo_name}"
+    description = _readme_summary(repo_dir) if repo_dir is not None else ""
+    if not description:
+        for rel in rel_paths:
+            if rel.lower().startswith("readme"):
+                if file_texts and rel in file_texts:
+                    for line in file_texts[rel].splitlines():
+                        stripped = line.strip().lstrip("#").strip()
+                        if stripped and not stripped.startswith(("!", "[", "<", "=", "-")):
+                            description = stripped[:160]
+                            break
+                elif repo_dir is not None:
+                    description = _readme_summary(repo_dir)
+                if description:
+                    break
+    if not description:
+        description = f"Imported from {repo_name}"
     input_names = {item.name for item in blueprint.inputs}
 
     provider = ""
     services: list[str] = []
     if {"cloud_provider", "provider_services"} <= input_names:
-        provider, services = infer_terraform_scope(blueprint, repo_dir, rel_paths)
+        if file_texts:
+            provider, services = infer_terraform_scope_from_texts(blueprint, file_texts)
+        elif repo_dir is not None:
+            provider, services = infer_terraform_scope(blueprint, repo_dir, rel_paths)
 
     for item in blueprint.inputs:
         if item.name in _NAME_INPUTS:
@@ -539,9 +621,20 @@ def layout_hash(repo_dir: Path, rel_paths: tuple[str, ...]) -> str:
     return digest.hexdigest()
 
 
+def path_only_layout_hash(rel_paths: tuple[str, ...]) -> str:
+    """Hash only path names when file content is unavailable (trees-API preview)."""
+    digest = hashlib.sha256()
+    for rel in sorted(rel_paths):
+        digest.update(rel.encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
 def _classify_sources(
     rel_paths: tuple[str, ...],
     blueprint: Blueprint,
+    *,
+    path_overrides: Mapping[str, str] | None = None,
 ) -> tuple[list[FileMove], list[str], list[str], list[str]]:
     rules = blueprint.import_rules
     moves: list[FileMove] = []
@@ -551,7 +644,7 @@ def _classify_sources(
     conflicts: list[str] = []
 
     for rel in rel_paths:
-        outcome = classify_path(rel, rules)
+        outcome = classify_path(rel, rules, path_overrides=path_overrides)
         destination = outcome.destination
         if destination is None:
             unmapped.append(rel)
@@ -660,41 +753,56 @@ def _score_tree(
 
 
 def build_import_plan(
-    repo_dir: Path,
+    repo_dir: Path | None,
     repo_root: Path,
     *,
     target: str,
     blueprint_name: str | None = None,
     values: Mapping[str, Any] | None = None,
+    rel_paths: tuple[str, ...] | None = None,
+    path_overrides: Mapping[str, str] | None = None,
+    file_texts: Mapping[str, str] | None = None,
     remote: bool = False,
     with_gates: bool = True,
+    preview_limited: bool = False,
 ) -> ImportPlan:
-    """Plan an import for an already-materialized checkout. Performs no writes to repo_dir."""
-    assert_not_governed(repo_dir)
+    """Plan an import. Performs no writes to repo_dir when it is present."""
+    if repo_dir is not None:
+        assert_not_governed(repo_dir)
 
-    rel_paths = inventory_relative_paths(repo_dir)
-    if not rel_paths:
+    normalized_overrides = parse_path_overrides(path_overrides or {})
+    paths = rel_paths if rel_paths is not None else inventory_relative_paths(repo_dir)  # type: ignore[arg-type]
+    if not paths:
         raise RepoImportError(f"{target} has no files to import")
 
     catalog = list_blueprints(blueprints_dir(repo_root))
-    candidates = detect_blueprint_candidates(repo_dir, catalog, rel_paths=rel_paths)
+    candidates = detect_blueprint_candidates(
+        repo_dir or Path("."),
+        catalog,
+        rel_paths=paths,
+    )
     blueprint, detected = resolve_import_blueprint(
         repo_root,
         blueprint_name=blueprint_name,
         candidates=candidates,
     )
 
-    repo_name = infer_repo_name(repo_dir, target)
+    repo_name = infer_repo_name(repo_dir or Path("."), target)
     inferred = infer_import_values(
         blueprint,
         repo_dir,
         repo_name=repo_name,
-        rel_paths=rel_paths,
+        rel_paths=paths,
         overrides=values,
+        file_texts=file_texts,
     )
     normalized = validate_inputs(blueprint, inferred, repo_root=repo_root)
 
-    moves, unchanged, unmapped, conflicts = _classify_sources(rel_paths, blueprint)
+    moves, unchanged, unmapped, conflicts = _classify_sources(
+        paths,
+        blueprint,
+        path_overrides=normalized_overrides,
+    )
 
     with tempfile.TemporaryDirectory(prefix="repave-import-ref-") as tmp:
         reference_dir = Path(tmp) / "reference"
@@ -704,6 +812,12 @@ def build_import_plan(
             reference_paths,
             occupied,
             family=artifact_family(blueprint.artifact_type),
+        )
+
+        layout = (
+            path_only_layout_hash(paths)
+            if preview_limited or repo_dir is None
+            else layout_hash(repo_dir, paths)
         )
 
         plan = ImportPlan(
@@ -719,12 +833,14 @@ def build_import_plan(
             conflicts=tuple(conflicts),
             candidates=candidates,
             values=normalized,
+            path_overrides=dict(normalized_overrides),
             remote=remote,
             detected=detected,
-            source_layout_hash=layout_hash(repo_dir, rel_paths),
+            source_layout_hash=layout,
+            preview_limited=preview_limited,
         )
 
-        if conflicts:
+        if conflicts or preview_limited or repo_dir is None:
             return plan
 
         with tempfile.TemporaryDirectory(prefix="repave-import-after-") as after_tmp:
@@ -772,18 +888,105 @@ def _gate_audit_entry(
     )
 
 
+def _fetch_terraform_texts(
+    owner: str,
+    repo: str,
+    rel_paths: tuple[str, ...],
+    token: str,
+    *,
+    ref: str | None,
+) -> dict[str, str]:
+    texts: dict[str, str] = {}
+    for rel in rel_paths:
+        if not rel.endswith(".tf"):
+            continue
+        text = fetch_github_file_text(owner, repo, rel, token, ref=ref)
+        if text:
+            texts[rel] = text
+    return texts
+
+
+def plan_import_remote(
+    raw_target: str,
+    repo_root: Path,
+    *,
+    blueprint_name: str | None = None,
+    values: Mapping[str, Any] | None = None,
+    path_overrides: Mapping[str, str] | None = None,
+    git_token: str | None = None,
+    ref: str | None = None,
+) -> ImportPlan:
+    """Plan a remote import from the GitHub trees API without cloning."""
+    token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
+    if not token:
+        raise RepoImportError(
+            "a GitHub token is required to preview a remote repository without cloning"
+        )
+    owner, name = parse_github_repository(raw_target)
+    display = normalize_repo_url(raw_target)
+    if remote_has_provenance(owner, name, token, ref=ref):
+        raise AlreadyGovernedError(
+            f"{PROVENANCE_FILENAME} already present — this repository is governed. "
+            "Use the upgrade flow (/update) to re-render it against a newer blueprint."
+        )
+    try:
+        rel_paths = inventory_github_paths(owner, name, token, ref=ref)
+    except GitHubInventoryError as exc:
+        raise RepoImportError(str(exc)) from exc
+    file_texts = _fetch_terraform_texts(owner, name, rel_paths, token, ref=ref)
+    return build_import_plan(
+        None,
+        repo_root,
+        target=display,
+        blueprint_name=blueprint_name,
+        values=values,
+        rel_paths=rel_paths,
+        path_overrides=path_overrides,
+        file_texts=file_texts,
+        remote=True,
+        with_gates=False,
+        preview_limited=True,
+    )
+
+
 def plan_import(
     raw_target: str,
     repo_root: Path,
     *,
     blueprint_name: str | None = None,
     values: Mapping[str, Any] | None = None,
+    path_overrides: Mapping[str, str] | None = None,
     git_token: str | None = None,
     ref: str | None = None,
     with_gates: bool = True,
+    force_clone: bool = False,
 ) -> ImportPlan:
-    """Plan an import for a local path or shallow-cloned remote URL."""
-    with materialize_import_target(raw_target, git_token=git_token, ref=ref) as (
+    """Plan an import for a local path or remote URL.
+
+    Remote HTTPS GitHub URLs use the trees API for preview by default; pass
+    ``force_clone=True`` to shallow-clone for a full scorecard and gate run.
+    Apply always clones regardless of how the plan was built.
+    """
+    text = raw_target.strip()
+    if looks_like_remote_url(text) and not force_clone:
+        token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
+        if token and "github.com" in text.lower():
+            try:
+                return plan_import_remote(
+                    text,
+                    repo_root,
+                    blueprint_name=blueprint_name,
+                    values=values,
+                    path_overrides=path_overrides,
+                    git_token=token,
+                    ref=ref,
+                )
+            except AlreadyGovernedError:
+                raise
+            except RepoImportError:
+                pass
+
+    with materialize_import_target(text, git_token=git_token, ref=ref) as (
         repo_dir,
         remote,
         display,
@@ -794,6 +997,7 @@ def plan_import(
             target=display,
             blueprint_name=blueprint_name,
             values=values,
+            path_overrides=path_overrides,
             remote=remote,
             with_gates=with_gates,
         )
@@ -805,13 +1009,23 @@ def plan_import_batch(
     *,
     blueprint_name: str | None = None,
     values: Mapping[str, Any] | None = None,
+    path_overrides: Mapping[str, str] | None = None,
     git_token: str | None = None,
+    org: str = "",
+    topic: str = "",
     with_gates: bool = True,
+    limit: int = 30,
 ) -> ImportBatchPlan:
     """Plan several imports, collecting per-target failures instead of aborting."""
+    token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
+    resolved = resolve_batch_targets(targets, org=org, topic=topic, token=token, limit=limit)
+    if not resolved:
+        raise RepoImportError("at least one repository target is required")
+
     items: list[ImportPlan] = []
     failures: list[tuple[str, str]] = []
-    for target in targets:
+    for target in resolved:
+        wait_before_github_request()
         try:
             items.append(
                 plan_import(
@@ -819,7 +1033,8 @@ def plan_import_batch(
                     repo_root,
                     blueprint_name=blueprint_name,
                     values=values,
-                    git_token=git_token,
+                    path_overrides=path_overrides,
+                    git_token=token,
                     with_gates=with_gates,
                 )
             )
@@ -1007,6 +1222,8 @@ def annotate_import_provenance(repo_dir: Path, plan: ImportPlan) -> None:
         "scaffold_files": len(plan.scaffold_added),
         "unmapped_files": list(plan.unmapped),
     }
+    if plan.path_overrides:
+        spec["import"]["overrides"] = dict(plan.path_overrides)
     path.write_text(
         yaml.safe_dump(document, sort_keys=False, default_flow_style=False, width=4096),
         encoding="utf-8",
@@ -1304,6 +1521,7 @@ def import_repository(
     github_token: str,
     blueprint_name: str | None = None,
     values: Mapping[str, Any] | None = None,
+    path_overrides: Mapping[str, str] | None = None,
     ref: str | None = None,
     git_branch: str = "",
     base_branch: str = "",
@@ -1321,6 +1539,7 @@ def import_repository(
             target=display,
             blueprint_name=blueprint_name,
             values=values,
+            path_overrides=path_overrides,
             remote=remote,
             with_gates=with_gates,
         )
@@ -1333,3 +1552,73 @@ def import_repository(
             git_branch=branch,
             base_branch=base_branch,
         )
+
+
+@dataclass(frozen=True)
+class ImportBatchPublishResult:
+    items: tuple[ImportPublishResult, ...] = ()
+    failures: tuple[tuple[str, str], ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        return not self.failures and bool(self.items)
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {
+            "count": len(self.items),
+            "ok": self.ok,
+            "items": [item.to_json_dict() for item in self.items],
+            "failures": [{"target": target, "error": error} for target, error in self.failures],
+        }
+
+
+def import_repository_batch(
+    targets: list[str],
+    repo_root: Path,
+    *,
+    github_token: str,
+    blueprint_name: str | None = None,
+    values: Mapping[str, Any] | None = None,
+    org: str = "",
+    topic: str = "",
+    with_gates: bool = True,
+    limit: int = 30,
+) -> ImportBatchPublishResult:
+    """Apply imports for many repositories, opening one pull request per repo."""
+    batch = plan_import_batch(
+        targets,
+        repo_root,
+        blueprint_name=blueprint_name,
+        values=values,
+        git_token=github_token,
+        org=org,
+        topic=topic,
+        with_gates=with_gates,
+        limit=limit,
+    )
+    published: list[ImportPublishResult] = []
+    failures = list(batch.failures)
+    for plan in batch.items:
+        if not plan.ok or plan.is_noop:
+            failures.append((plan.target, "nothing to import or plan has conflicts"))
+            continue
+        wait_before_github_request()
+        try:
+            published.append(
+                import_repository(
+                    plan.target,
+                    repo_root,
+                    github_token=github_token,
+                    blueprint_name=plan.blueprint_name,
+                    values=plan.values,
+                    path_overrides=plan.path_overrides,
+                    with_gates=with_gates,
+                    git_branch=suggested_import_branch(plan),
+                )
+            )
+        except (RepoImportError, GitHubError, OSError, ValueError) as exc:
+            failures.append((plan.target, str(exc)))
+    return ImportBatchPublishResult(
+        items=tuple(published),
+        failures=tuple(failures),
+    )

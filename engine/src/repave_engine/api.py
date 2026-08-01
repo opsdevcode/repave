@@ -7,6 +7,7 @@ import signal
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import (
@@ -81,6 +82,7 @@ from repave_engine.generate_api import generation_result_from_stored_run
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
 from repave_engine.governance_preflight import build_bundle_preflight
+from repave_engine.import_rules import parse_path_overrides
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
@@ -128,7 +130,9 @@ from repave_engine.repo_import import (
     ImportPlan,
     RepoImportError,
     import_repository,
+    import_repository_batch,
     plan_import,
+    plan_import_batch,
     record_import,
     suggested_import_branch,
 )
@@ -994,6 +998,25 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         return rows
 
+    def import_form_path_overrides(form: Any) -> dict[str, str]:
+        import json
+
+        raw_json = str(form.get("path_overrides_json", "")).strip()
+        try:
+            overrides = parse_path_overrides(json.loads(raw_json)) if raw_json else {}
+        except json.JSONDecodeError:
+            overrides = {}
+        prefix = "override__"
+        for key in form:
+            name = str(key)
+            if not name.startswith(prefix):
+                continue
+            source = name[len(prefix) :].replace("__", "/")
+            text = str(form.get(name, "")).strip()
+            if source and text:
+                overrides[source] = text
+        return overrides
+
     def import_result_context(request: Request, plan: ImportPlan) -> dict[str, object]:
         branch = suggested_import_branch(plan)
         top = plan.candidates[0] if plan.candidates else None
@@ -1066,6 +1089,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 target_repo_raw,
                 repo_root,
                 blueprint_name=blueprint_override,
+                path_overrides=import_form_path_overrides(form),
+                force_clone=str(form.get("force_clone", "")).lower() in {"1", "true", "on", "yes"},
             )
         except AlreadyGovernedError as exc:
             return form_error(str(exc), governed=True)
@@ -1110,6 +1135,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 repo_root,
                 github_token=token,
                 blueprint_name=blueprint_override,
+                path_overrides=import_form_path_overrides(form),
                 git_branch=branch,
             )
         except (RepoImportError, GitHubError, OSError, RuntimeError, ValueError) as exc:
@@ -1133,6 +1159,127 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="import",
                 result=result,
                 registered=registered,
+            ),
+        )
+
+    @app.get("/import/batch", response_class=HTMLResponse)
+    async def import_batch_form(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "import_batch.html",
+            import_form_context(request),
+        )
+
+    @app.post("/import/batch", response_class=HTMLResponse)
+    async def import_batch_preview(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        form = await request.form()
+        targets_raw = str(form.get("targets", "")).strip()
+        org = str(form.get("org", "")).strip()
+        topic = str(form.get("topic", "")).strip()
+        blueprint_override = str(form.get("blueprint", "")).strip() or None
+        targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
+
+        def batch_error(message: str) -> HTMLResponse:
+            return templates.TemplateResponse(
+                request,
+                "import_batch.html",
+                import_form_context(
+                    request,
+                    error_message=message,
+                    targets=targets_raw,
+                    org=org,
+                    topic=topic,
+                    selected_blueprint=blueprint_override or "",
+                ),
+            )
+
+        if not targets and not org and not topic:
+            return batch_error("Paste at least one repository URL or provide an org/topic query.")
+
+        try:
+            batch = plan_import_batch(
+                targets,
+                repo_root,
+                blueprint_name=blueprint_override,
+                org=org,
+                topic=topic,
+                git_token=resolve_github_access_token(None),
+            )
+        except RepoImportError as exc:
+            return batch_error(str(exc))
+
+        return templates.TemplateResponse(
+            request,
+            "import_batch_result.html",
+            page_context(
+                request,
+                nav_active="import",
+                batch=batch,
+                targets=targets_raw,
+                org=org,
+                topic=topic,
+                selected_blueprint=blueprint_override or "",
+            ),
+        )
+
+    @app.post("/import/batch/apply", response_class=HTMLResponse)
+    async def import_batch_apply(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        form = await request.form()
+        targets_raw = str(form.get("targets", "")).strip()
+        org = str(form.get("org", "")).strip()
+        topic = str(form.get("topic", "")).strip()
+        blueprint_override = str(form.get("blueprint", "")).strip() or None
+        targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
+
+        token = resolve_github_access_token(None)
+        if not token:
+            return templates.TemplateResponse(
+                request,
+                "import_batch.html",
+                import_form_context(
+                    request,
+                    error_message=(
+                        "Batch import requires GITHUB_TOKEN or GitHub App credentials "
+                        "on the server."
+                    ),
+                    targets=targets_raw,
+                    org=org,
+                    topic=topic,
+                ),
+            )
+
+        try:
+            batch_result = import_repository_batch(
+                targets,
+                repo_root,
+                github_token=token,
+                blueprint_name=blueprint_override,
+                org=org,
+                topic=topic,
+            )
+        except RepoImportError as exc:
+            return templates.TemplateResponse(
+                request,
+                "import_batch.html",
+                import_form_context(request, error_message=str(exc), targets=targets_raw),
+            )
+
+        for item in batch_result.items:
+            record_import(repo_root, item, acting_user=current_acting_user())
+
+        return templates.TemplateResponse(
+            request,
+            "import_batch_published.html",
+            page_context(
+                request,
+                nav_active="import",
+                batch_result=batch_result,
             ),
         )
 

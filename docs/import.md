@@ -176,6 +176,61 @@ The scaffolded `repave.yaml` records `spec.import` with the source, timestamp, a
 `pre_import_layout_hash` of the original tree, so later drift detection has a baseline that
 does not assume the tree was generated from the blueprint.
 
+## Per-file destination overrides
+
+When a single classification is wrong, fix it in the preview instead of abandoning the import.
+Each moved or unmapped file has an editable destination in the portal file plan. Values:
+
+- A destination path (for example `network/main.tf`)
+- `keep-in-place` — leave the file where it is
+- `quarantine` — move under `.repave/unmapped/`
+
+Overrides are persisted to `spec.import.overrides` in `repave.yaml` when the pull request
+merges, so a later re-import respects them.
+
+CLI:
+
+```bash
+repave import ./legacy-vpc --overrides '{"terraform/main.tf":"main.tf"}'
+```
+
+API: include an `overrides` object on `POST /api/v2/imports/plan` and `/apply`.
+
+## Remote preview without cloning
+
+For `github.com` HTTPS URLs, preview uses the GitHub trees API by default — no clone until
+apply. The preview is marked `preview_limited`: file moves and scaffold are shown, but
+scorecard and gates run when you open the pull request (apply shallow-clones the repo).
+
+Force a clone for preview (full scorecard and gates up front):
+
+```bash
+repave import https://github.com/acme/legacy-vpc --force-clone
+```
+
+## Batch import
+
+Plan or open pull requests for many repositories at once.
+
+Portal: [`/import/batch`](/import/batch) — paste URLs and optionally filter by GitHub org
+and topic.
+
+CLI:
+
+```bash
+repave import placeholder --batch-file repos.txt --org acme --topic terraform
+```
+
+(`placeholder` is ignored when `--batch-file` is set.)
+
+API:
+
+- `POST /api/v2/imports/batch/plan` — body: `{ "targets": ["..."], "org": "acme", "topic": "terraform" }`
+- `POST /api/v2/imports/batch/apply` — same fields plus `github_token`
+
+Batch planning respects GitHub rate limits: the engine tracks `X-RateLimit-*` headers per
+installation and backs off when quota is low or GitHub returns 429.
+
 ## Pre-flight guards
 
 All of these run before the expensive work:
@@ -185,10 +240,3 @@ All of these run before the expensive work:
 - **Duplicate** — an existing open PR on the import branch is reported rather than duplicated.
 - **Permission** — the resolved token's push access to the source repo is checked before
   anything is committed.
-
-## Not in this slice
-
-- Per-file destination overrides in the preview (planned; persisted to
-  `spec.import.overrides`)
-- Building the plan from the GitHub trees API so preview needs no clone
-- Batch import from a repo list or GitHub org/topic query
