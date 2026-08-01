@@ -23,6 +23,46 @@
   </div>
 </header>
 
+{% if fleet_scorecard_rollup and fleet_scorecard_rollup.entity_count %}
+<section class="card fleet-scorecard-rollup" aria-labelledby="fleet-scorecard-heading">
+  <div class="card__header">
+    <h2 id="fleet-scorecard-heading">Fleet scorecard</h2>
+    <p class="muted card__subtitle">
+      Roll-up across {{ fleet_scorecard_rollup.entity_count }} entit{{ 'y' if fleet_scorecard_rollup.entity_count == 1 else 'ies' }}
+      {% if library_owner_filter %} matching owner <code>{{ library_owner_filter }}</code>{% endif %}.
+    </p>
+  </div>
+  <div class="card__body">
+    <ul class="scorecard-strip">
+      {% for cell in fleet_scorecard_rollup.dimensions %}
+      <li>
+        <span class="badge badge--{% if cell.worst_level == 'unknown' %}muted{% else %}{{ cell.worst_level }}{% endif %}">{{ cell.label }}</span>
+        <span class="muted">{{ cell.pass_count }} pass · {{ cell.warn_count }} warn · {{ cell.fail_count }} fail</span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+<form class="catalog-owner-filter stack-gap" method="get" action="/library">
+  <label class="field__label" for="library-owner-filter">Filter by owner</label>
+  <div class="catalog-owner-filter__row">
+    <input
+      class="field__input"
+      type="search"
+      id="library-owner-filter"
+      name="owner"
+      value="{{ library_owner_filter or '' }}"
+      placeholder="team name or group:platform"
+    />
+    <button class="btn btn--secondary btn--sm" type="submit">Apply</button>
+    {% if library_owner_filter %}
+    <a class="btn btn--ghost btn--sm" href="/library">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
 {% if library_groups %}
 <div class="catalog-search" data-catalog-search>
   <label class="catalog-search__label" for="library-search-input">Search library</label>

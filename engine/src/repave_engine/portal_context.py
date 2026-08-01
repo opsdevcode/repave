@@ -16,6 +16,8 @@ from repave_engine.entity_catalog import (
     CatalogEntity,
     build_catalog_entities,
     build_catalog_from_fleet,
+    fetch_remote_entity_docs,
+    read_entity_docs,
 )
 from repave_engine.fleet import read_fleet
 from repave_engine.fleet_operator_status import load_operator_status_file
@@ -153,3 +155,15 @@ def build_portal_catalog_entities(
         operator_by_url={},
         audit_entries=audit_entries,
     )
+
+
+def resolve_entity_docs(entity: CatalogEntity, *, github_token: str | None) -> dict[str, str]:
+    if entity.local_path is not None:
+        return read_entity_docs(entity.local_path)
+    if entity.repo_url and github_token:
+        remote = fetch_remote_entity_docs(entity.repo_url, github_token)
+        if remote:
+            return remote
+    if entity.readme_preview:
+        return {"readme": entity.readme_preview}
+    return {}

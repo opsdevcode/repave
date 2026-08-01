@@ -54,6 +54,12 @@
     {% if entity.remediation_pr_url %}
     <p><a href="{{ entity.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">Remediation pull request</a></p>
     {% endif %}
+    {% if entity.last_generation_at %}
+    <p class="muted">
+      Last generation {{ entity.last_generation_outcome or 'unknown' }}
+      <time datetime="{{ entity.last_generation_at }}">{{ entity.last_generation_at }}</time>
+    </p>
+    {% endif %}
     {% if entity.manifest_name %}
     <p class="muted">GitOps manifest {{ entity.manifest_namespace }}/{{ entity.manifest_name }}</p>
     {% endif %}
@@ -76,6 +82,38 @@
   </div>
 </section>
 
+{% if slo_summary %}
+<section class="card entity-slo" aria-labelledby="slo-heading">
+  <div class="card__header">
+    <h2 id="slo-heading">Health summary</h2>
+    <p class="muted card__subtitle">Read-only SLO panel from portal configuration.</p>
+  </div>
+  <div class="card__body">
+    <p>
+      {% if slo_summary.status == 'healthy' %}
+      <span class="badge badge--pass">Healthy</span>
+      {% elif slo_summary.status == 'degraded' %}
+      <span class="badge badge--fail">Degraded</span>
+      {% else %}
+      <span class="badge badge--muted">Unknown</span>
+      {% endif %}
+      {% if slo_summary.slo_target %}
+      <span class="muted">target {{ slo_summary.slo_target }}</span>
+      {% endif %}
+      {% if slo_summary.slo_current %}
+      <span class="muted">· current {{ slo_summary.slo_current }}</span>
+      {% endif %}
+    </p>
+    {% if slo_summary.detail %}
+    <p class="muted">{{ slo_summary.detail }}</p>
+    {% endif %}
+    {% if slo_summary.source_url %}
+    <p><a class="btn btn--ghost btn--sm" href="{{ slo_summary.source_url }}" rel="noreferrer noopener" target="_blank">View SLO source</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if observability_url %}
 <section class="card entity-observability" aria-labelledby="obs-heading">
   <div class="card__header">
@@ -91,6 +129,29 @@
       loading="lazy"
       referrerpolicy="no-referrer"
     ></iframe>
+  </div>
+</section>
+{% endif %}
+
+{% if provenance_html %}
+<section class="card" aria-labelledby="provenance-heading">
+  <div class="card__header">
+    <h2 id="provenance-heading">Provenance</h2>
+    <p class="muted card__subtitle"><code>repave.yaml</code> from the repository checkout or GitHub.</p>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ provenance_html | safe }}
+  </div>
+</section>
+{% endif %}
+
+{% if upgrade_html %}
+<section class="card" aria-labelledby="upgrade-heading">
+  <div class="card__header">
+    <h2 id="upgrade-heading">{{ upgrade_label or 'Upgrade notes' }}</h2>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ upgrade_html | safe }}
   </div>
 </section>
 {% endif %}
