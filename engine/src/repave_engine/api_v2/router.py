@@ -215,7 +215,7 @@ def build_api_v2_router(
             )
         payload = await _parse_json_object(request)
         kind = str(payload.get("kind", "")).strip()
-        if kind != "live_plan":
+        if kind != "live_plan" and kind != "environment_vend":
             try:
                 parse_run_target(payload)
             except ValueError as exc:

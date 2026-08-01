@@ -318,6 +318,50 @@ def load_live_plan_config(repo_root: Path) -> LivePlanConfig | None:
 
 
 @dataclass(frozen=True)
+class EnvironmentVendingConfig:
+    enabled: bool
+    gitops_repo: str = ""
+    base_branch: str = "main"
+    path_prefix: str = "environments"
+
+
+def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig | None:
+    """Optional ADR 003 Phase 3 environment vending configuration."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("environment_vending")
+    env_enabled = os.environ.get("REPAVE_ENVIRONMENT_VENDING", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    if block is None and not env_enabled:
+        return None
+    if block is not None and not isinstance(block, dict):
+        raise ValueError("environment_vending must be a mapping in repave.config.yaml")
+    enabled = env_enabled
+    gitops_repo = ""
+    base_branch = "main"
+    path_prefix = "environments"
+    if isinstance(block, dict):
+        enabled_raw = block.get("enabled", True)
+        if not isinstance(enabled_raw, bool):
+            raise ValueError("environment_vending.enabled must be a boolean")
+        enabled = enabled_raw or env_enabled
+        gitops_repo = str(block.get("gitops_repo", "")).strip()
+        base_branch = str(block.get("base_branch", base_branch)).strip() or base_branch
+        path_prefix = str(block.get("path_prefix", path_prefix)).strip() or path_prefix
+    if not enabled:
+        return None
+    return EnvironmentVendingConfig(
+        enabled=True,
+        gitops_repo=gitops_repo,
+        base_branch=base_branch,
+        path_prefix=path_prefix,
+    )
+
+
+@dataclass(frozen=True)
 class DurabilityConfig:
     async_generation: bool
     max_concurrent_runs: int

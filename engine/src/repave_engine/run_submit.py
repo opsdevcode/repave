@@ -1,14 +1,18 @@
-"""Shared async run submission helpers (blueprint, bundle, or live_plan)."""
+"""Shared async run submission helpers (blueprint, bundle, live_plan, environment_vend)."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from repave_engine.environment_vend import (
+    ENVIRONMENT_VEND_BLUEPRINT_SENTINEL,
+    resolve_vend_request_fields,
+)
 from repave_engine.live_plan import LIVE_PLAN_BLUEPRINT_SENTINEL
 from repave_engine.live_plan_pr import parse_pull_request_ref
 from repave_engine.run_queue import RunQueue
 from repave_engine.run_store import RunRecord
-from repave_engine.settings import load_live_plan_config
+from repave_engine.settings import load_environment_vending_config, load_live_plan_config
 
 
 def parse_run_target(payload: dict[str, Any]) -> tuple[str | None, str | None]:
@@ -32,6 +36,14 @@ def submit_async_run(
     kind = str(payload.get("kind", "")).strip()
     if kind == "live_plan":
         return _submit_live_plan(
+            queue,
+            payload=payload,
+            acting_user=acting_user,
+            client_request_id=client_request_id,
+            repo_root=repo_root,
+        )
+    if kind == "environment_vend":
+        return _submit_environment_vend(
             queue,
             payload=payload,
             acting_user=acting_user,
@@ -109,9 +121,62 @@ def _submit_live_plan(
     )
 
 
+def _submit_environment_vend(
+    queue: RunQueue,
+    *,
+    payload: dict[str, Any],
+    acting_user: str,
+    client_request_id: str | None,
+    repo_root: Any | None,
+) -> RunRecord:
+    from pathlib import Path
+
+    root = Path(repo_root) if repo_root is not None else queue.repo_root
+    config = load_environment_vending_config(root)
+    if config is None or not config.enabled:
+        raise ValueError(
+            "environment_vending is not enabled; set environment_vending.enabled in "
+            "repave.config.yaml or REPAVE_ENVIRONMENT_VENDING=1"
+        )
+    (
+        blueprint,
+        gitops_repo,
+        gitops_path,
+        owner,
+        env_class,
+        base_branch,
+        dry_run,
+    ) = resolve_vend_request_fields(payload, config)
+    inputs_raw = payload.get("inputs", {})
+    if not isinstance(inputs_raw, dict):
+        raise ValueError("inputs must be an object")
+    git_branch = str(payload.get("git_branch", "")).strip()
+    return queue.submit(
+        blueprint_name=ENVIRONMENT_VEND_BLUEPRINT_SENTINEL,
+        inputs=dict(inputs_raw),
+        dry_run=dry_run,
+        acting_user=acting_user,
+        client_request_id=client_request_id,
+        kind="environment_vend",
+        environment_vend={
+            "blueprint": blueprint,
+            "gitops_repo": gitops_repo,
+            "gitops_path": gitops_path,
+            "owner": owner,
+            "class": env_class,
+            "base_branch": base_branch,
+            "git_branch": git_branch,
+        },
+    )
+
+
 def is_bundle_run(record: RunRecord) -> bool:
     return bool(record.payload.get("bundle"))
 
 
 def is_live_plan_run(record: RunRecord) -> bool:
     return str(record.payload.get("kind", "")).strip() == "live_plan"
+
+
+def is_environment_vend_run(record: RunRecord) -> bool:
+    return str(record.payload.get("kind", "")).strip() == "environment_vend"

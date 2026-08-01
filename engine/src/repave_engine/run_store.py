@@ -60,6 +60,10 @@ class RunRecord:
             body["kind"] = kind
         if self.payload.get("bundle"):
             body["bundle"] = str(self.payload["bundle"])
+        elif kind == "environment_vend":
+            vend_blueprint = str(self.payload.get("blueprint", "")).strip()
+            if vend_blueprint:
+                body["blueprint"] = vend_blueprint
         elif kind != "live_plan":
             body["blueprint"] = self.blueprint_name
         inputs = self.payload.get("inputs")
@@ -67,6 +71,9 @@ class RunRecord:
             entity_id = str(inputs.get("entity_id", "")).strip()
             if entity_id:
                 body["entity_id"] = entity_id
+            stack_name = str(inputs.get("stack_name", "")).strip()
+            if stack_name:
+                body["stack_name"] = stack_name
         if self.client_request_id:
             body["client_request_id"] = self.client_request_id
         if self.next_attempt_at:
