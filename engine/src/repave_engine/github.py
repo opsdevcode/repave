@@ -96,6 +96,38 @@ def add_pull_request_labels(
     )
 
 
+def get_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    token: str,
+) -> dict[str, Any]:
+    if pull_number <= 0:
+        raise ValueError(f"invalid pull request number: {pull_number}")
+    return _github_request(
+        "GET",
+        f"/repos/{owner}/{repo}/pulls/{pull_number}",
+        token,
+    )
+
+
+def update_pull_request_body(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    body: str,
+    token: str,
+) -> dict[str, Any]:
+    if pull_number <= 0:
+        raise ValueError(f"invalid pull request number: {pull_number}")
+    return _github_request(
+        "PATCH",
+        f"/repos/{owner}/{repo}/pulls/{pull_number}",
+        token,
+        {"body": body},
+    )
+
+
 def default_branch(owner: str, repo: str, token: str) -> str:
     """Return the repository's default branch, falling back to main."""
     payload = _github_request("GET", f"/repos/{owner}/{repo}", token)

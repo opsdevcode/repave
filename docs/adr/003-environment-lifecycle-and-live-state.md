@@ -147,7 +147,7 @@ a human on it.
   enqueues a worker-only plan; per-environment K8s Secret via Job `envFrom`.
 - [x] OPA/conftest runs on plan JSON; summary + `gates_outcome` on the run result.
 - [x] Plan JSON is scrubbed after evaluation and never stored on the run record.
-- [ ] Plan summary attached to a PR body (follow-up; plan-only path ships first).
+- [x] Plan summary attached to a PR body when `pull_request` / `pull_request_url` is set on submit.
 
 **Phase 3 (before implementation)**
 

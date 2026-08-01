@@ -28,12 +28,18 @@ entity, enqueue a worker-only terraform plan against live state:
 ```json
 {
   "kind": "live_plan",
-  "entity_id": "github.com/acme/tf-app"
+  "entity_id": "github.com/acme/tf-app",
+  "pull_request_url": "https://github.com/acme/tf-app/pull/42"
 }
 ```
 
-Optional overrides: `target`, `secret_name`. The run result includes resource add/change/destroy
-counts and the OPA verdict (`gates_outcome`); plan JSON is never retained. Portal:
+Optional overrides: `target`, `secret_name`. To attach the summary to a GitHub pull
+request body, include either `pull_request_url` or a `pull_request` object
+(`owner`, `repo`, `number`). Requires `GITHUB_TOKEN` with permission to edit the PR.
+
+The run result includes resource add/change/destroy counts and the OPA verdict
+(`gates_outcome`); when a PR was requested, `pr_attachment` reports whether the body
+was updated. Plan JSON is never retained. Portal:
 `POST /services/{entity_id}/live-plan` redirects to the run console. See
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
