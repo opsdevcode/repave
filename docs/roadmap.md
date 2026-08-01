@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.121.0  
 
-**In progress:** (none — pick next roadmap theme after portal Tier 2 merges).
+**In progress:** (none — pick next roadmap theme after developer portal surfaces merge).
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -24,7 +24,8 @@ fleet sync + GPR prune**; **durability retry/reclaim + run list API**; **supply 
 pins** (GitHub Actions SHAs, base images, chart `image.digest`); **portal day-2 follow-ups**
 (shared fleet PVC, worker HPA, CI action-pin gate); **portal live governance Tier 2**
 (estate map polish, upgrade unified diffs, governance preflight hardening, bundle topology on
-results, presenter mode).
+results, presenter mode); **developer portal surfaces** (library catalog, fleet scorecard
+rollup, remote GitHub docs, upgrade/provenance rendering, owner filter, SLO health panel).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -136,7 +137,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | partial (Phase 1–3 + retry/reclaim in progress) | Unified SQL store; async queue + DLQ/replay + list runs; external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
 | **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
-| **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
+| **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
@@ -1659,7 +1660,10 @@ discovery even though repave already holds the provenance that would populate it
 **Done when:** A developer finds a service they own in the catalog and sees its pins, gate status,
 scorecard, and a health panel without leaving the portal.
 
----
+**Status:** **Shipped on `main`** — `/library` grouped catalog with owner filter and fleet scorecard
+rollup; entity detail pages with pins, per-entity scorecard, last generation, README/runbook/
+upgrade/provenance docs (local checkout or GitHub fetch), Grafana dashboard embed, and optional
+JSON SLO health panel (`portal.observability_slo_url`).
 
 ### Cost visibility
 

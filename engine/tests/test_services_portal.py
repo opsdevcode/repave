@@ -106,13 +106,33 @@ def test_observability_url_on_detail(
     (tmp_path / "repave.config.yaml").write_text(
         f"fleet:\n  enabled: true\n  file: {registry}\n"
         "portal:\n  observability_dashboard_url: "
-        "'https://grafana.example/d/s?var-service={name}'\n",
+        "'https://grafana.example/d/s?var-service={name}'\n"
+        "  observability_slo_url: "
+        "'https://slo.example/v1/{name}'\n",
         encoding="utf-8",
     )
     monkeypatch.chdir(tmp_path)
+
+    class FakeResponse:
+        def raise_for_status(self) -> None:
+            return None
+
+        def json(self) -> dict[str, str]:
+            return {
+                "status": "healthy",
+                "slo_target": "99.9%",
+                "slo_current": "99.95%",
+                "detail": "All good",
+            }
+
+    monkeypatch.setattr(
+        "repave_engine.observability_slo.httpx.get",
+        lambda *_args, **_kwargs: FakeResponse(),
+    )
     entity_dir = output_config.modules_root / "tf-vpc"
     entity_dir.mkdir(parents=True)
     (entity_dir / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
+    (entity_dir / "UPGRADE.md").write_text("# Upgrade notes\n", encoding="utf-8")
     entity_id = entity_id_for_repo_url(PROVENANCE_ENTRY.repo_url)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
@@ -120,3 +140,29 @@ def test_observability_url_on_detail(
 
     assert "grafana.example" in body
     assert "Observability" in body
+    assert "Health summary" in body
+    assert "Upgrade notes" in body
+    assert "Provenance" in body
+
+
+def test_library_fleet_scorecard_rollup(repo_root, output_config, registry: Path) -> None:
+    register_repo(registry, PROVENANCE_ENTRY)
+    entity_dir = output_config.modules_root / "tf-vpc"
+    entity_dir.mkdir(parents=True)
+    (entity_dir / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    body = client.get("/library").text
+
+    assert "Fleet scorecard" in body
+    assert "fleet-scorecard-rollup" in body
+
+
+def test_library_owner_filter(repo_root, output_config, registry: Path) -> None:
+    register_repo(registry, PROVENANCE_ENTRY)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    body = client.get("/library", params={"owner": "platform"}).text
+
+    assert "matching owner" in body
+    assert "platform" in body

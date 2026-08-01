@@ -46,6 +46,7 @@ from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.governance_annotations import build_governance_previews
+from repave_engine.observability_slo import fetch_entity_slo_summary
 from repave_engine.policy_catalog import enabled_rule_ids_for_profile, load_policy_catalog
 from repave_engine.policy_selection import policy_input_defaults
 from repave_engine.portal_context import (
@@ -400,6 +401,9 @@ def build_api_v1_router(
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
         if obs_url:
             body["observability_url"] = obs_url
+        slo = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
+        if slo is not None:
+            body["slo_summary"] = slo.to_public_dict()
         return JSONResponse(body)
 
     @router.get("/audit")

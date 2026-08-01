@@ -22,6 +22,14 @@ ScoreLevel = Literal["pass", "warn", "fail", "unknown"]
 CATALOG_FILENAME = "catalog-info.yaml"
 README_FILENAME = "README.md"
 RUNBOOK_CANDIDATES = ("RUNBOOK.md", "docs/runbook.md", "docs/operations/README.md")
+UPGRADE_CANDIDATES = ("UPGRADE.md", "docs/UPGRADE.md", "docs/upgrade-notes.md")
+REMOTE_DOC_PATHS = (
+    CATALOG_FILENAME,
+    README_FILENAME,
+    "repave.yaml",
+    *RUNBOOK_CANDIDATES,
+    *UPGRADE_CANDIDATES,
+)
 
 
 @dataclass(frozen=True)
@@ -30,6 +38,87 @@ class ScorecardDimension:
     label: str
     level: ScoreLevel
     detail: str
+
+
+@dataclass(frozen=True)
+class ScorecardRollupCell:
+    key: str
+    label: str
+    pass_count: int
+    warn_count: int
+    fail_count: int
+    unknown_count: int
+
+    @property
+    def total(self) -> int:
+        return self.pass_count + self.warn_count + self.fail_count + self.unknown_count
+
+    @property
+    def worst_level(self) -> ScoreLevel:
+        if self.fail_count:
+            return "fail"
+        if self.warn_count:
+            return "warn"
+        if self.pass_count:
+            return "pass"
+        return "unknown"
+
+
+_LEVEL_RANK: tuple[ScoreLevel, ...] = ("fail", "warn", "unknown", "pass")
+
+
+@dataclass(frozen=True)
+class FleetScorecardRollup:
+    entity_count: int
+    dimensions: tuple[ScorecardRollupCell, ...]
+
+    @property
+    def overall_level(self) -> ScoreLevel:
+        if not self.dimensions:
+            return "unknown"
+        return min(
+            self.dimensions,
+            key=lambda cell: _LEVEL_RANK.index(cell.worst_level),
+        ).worst_level
+
+
+def rollup_fleet_scorecard(entities: Sequence[CatalogEntity]) -> FleetScorecardRollup:
+    if not entities:
+        return FleetScorecardRollup(entity_count=0, dimensions=())
+    keys: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for entity in entities:
+        for dim in entity.scorecard:
+            if dim.key not in seen:
+                seen.add(dim.key)
+                keys.append((dim.key, dim.label))
+    cells: list[ScorecardRollupCell] = []
+    for key, label in keys:
+        pass_count = warn_count = fail_count = unknown_count = 0
+        for entity in entities:
+            match = next((dim for dim in entity.scorecard if dim.key == key), None)
+            if match is None:
+                unknown_count += 1
+                continue
+            if match.level == "pass":
+                pass_count += 1
+            elif match.level == "warn":
+                warn_count += 1
+            elif match.level == "fail":
+                fail_count += 1
+            else:
+                unknown_count += 1
+        cells.append(
+            ScorecardRollupCell(
+                key=key,
+                label=label,
+                pass_count=pass_count,
+                warn_count=warn_count,
+                fail_count=fail_count,
+                unknown_count=unknown_count,
+            )
+        )
+    return FleetScorecardRollup(entity_count=len(entities), dimensions=tuple(cells))
 
 
 @dataclass(frozen=True)
@@ -53,6 +142,8 @@ class CatalogEntity:
     source: str
     scorecard: tuple[ScorecardDimension, ...] = field(default_factory=tuple)
     readme_preview: str = ""
+    last_generation_at: str = ""
+    last_generation_outcome: str = ""
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
@@ -69,6 +160,8 @@ class CatalogEntity:
             "lifecycle": self.lifecycle,
             "operator_phase": self.operator_phase,
             "source": self.source,
+            "last_generation_at": self.last_generation_at,
+            "last_generation_outcome": self.last_generation_outcome,
             "scorecard": [
                 {"key": dim.key, "label": dim.label, "level": dim.level, "detail": dim.detail}
                 for dim in self.scorecard
@@ -278,6 +371,8 @@ def _entity_from_fleet_row(
             audit=audit,
         ),
         readme_preview=_readme_excerpt(repo_dir) if repo_dir else "",
+        last_generation_at=audit.timestamp[:19] if audit else "",
+        last_generation_outcome=audit.gates_outcome if audit else "",
     )
 
 
@@ -337,6 +432,8 @@ def _discover_local_entities(
                 audit=audit,
             ),
             readme_preview=_readme_excerpt(entry),
+            last_generation_at=audit.timestamp[:19] if audit else "",
+            last_generation_outcome=audit.gates_outcome if audit else "",
         )
         found.append(entity)
     return found
@@ -426,8 +523,18 @@ def find_catalog_entity(
     return None
 
 
+def filter_entities_by_owner(
+    entities: Sequence[CatalogEntity],
+    owner: str,
+) -> list[CatalogEntity]:
+    needle = owner.strip().lower()
+    if not needle:
+        return list(entities)
+    return [item for item in entities if needle in item.owner.lower()]
+
+
 def read_entity_docs(repo_dir: Path) -> dict[str, str]:
-    """Load README and runbook markdown from a local entity checkout."""
+    """Load README, runbook, upgrade notes, and provenance from a local entity checkout."""
     out: dict[str, str] = {}
     readme = repo_dir / README_FILENAME
     if readme.is_file():
@@ -441,6 +548,52 @@ def read_entity_docs(repo_dir: Path) -> dict[str, str]:
             out["runbook"] = path.read_text(encoding="utf-8", errors="replace")
             out["runbook_label"] = candidate
         break
+    for candidate in UPGRADE_CANDIDATES:
+        path = repo_dir / candidate
+        if not path.is_file():
+            continue
+        with suppress(OSError):
+            out["upgrade"] = path.read_text(encoding="utf-8", errors="replace")
+            out["upgrade_label"] = candidate
+        break
+    provenance = repo_dir / "repave.yaml"
+    if provenance.is_file():
+        with suppress(OSError):
+            out["provenance"] = provenance.read_text(encoding="utf-8", errors="replace")
+    return out
+
+
+def fetch_remote_entity_docs(repo_url: str, token: str) -> dict[str, str]:
+    """Fetch catalog, docs, and provenance from GitHub when no local checkout exists."""
+    from repave_engine.github_inventory import (
+        GitHubInventoryError,
+        fetch_github_file_text,
+        parse_github_repository,
+    )
+
+    try:
+        owner, repo = parse_github_repository(repo_url)
+    except GitHubInventoryError:
+        return {}
+    out: dict[str, str] = {}
+    for rel_path in REMOTE_DOC_PATHS:
+        text = fetch_github_file_text(owner, repo, rel_path, token)
+        if not text.strip():
+            continue
+        if rel_path == README_FILENAME:
+            out["readme"] = text
+        elif rel_path == "repave.yaml":
+            out["provenance"] = text
+        elif rel_path in UPGRADE_CANDIDATES:
+            if "upgrade" not in out:
+                out["upgrade"] = text
+                out["upgrade_label"] = rel_path
+        elif rel_path in RUNBOOK_CANDIDATES:
+            if "runbook" not in out:
+                out["runbook"] = text
+                out["runbook_label"] = rel_path
+        elif rel_path == CATALOG_FILENAME:
+            out["catalog_info"] = text
     return out
 
 

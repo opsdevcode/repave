@@ -8,12 +8,17 @@ from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.entity_catalog import (
     CatalogEntity,
     ScorecardDimension,
+    ScoreLevel,
     build_catalog_entities,
     build_scorecard,
     entity_id_for_repo_url,
+    fetch_remote_entity_docs,
+    filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
     observability_embed_url,
+    read_entity_docs,
+    rollup_fleet_scorecard,
 )
 from repave_engine.fleet import FleetEntry
 from repave_engine.fleet_operator_status import FleetOperatorStatus
@@ -173,3 +178,117 @@ def test_observability_embed_url_formats_placeholders() -> None:
         entity,
     )
     assert url == "https://grafana/d/x?service=acme-svc&id=acme-svc"
+
+
+def test_read_entity_docs_includes_upgrade_and_provenance(tmp_path: Path) -> None:
+    repo = tmp_path / "svc"
+    repo.mkdir()
+    (repo / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
+    (repo / "UPGRADE.md").write_text("# Upgrade\n\nSteps.", encoding="utf-8")
+    docs = read_entity_docs(repo)
+    assert "upgrade" in docs
+    assert "provenance" in docs
+
+
+def test_rollup_fleet_scorecard_counts_levels() -> None:
+    def entity(levels: dict[str, ScoreLevel]) -> CatalogEntity:
+        scorecard = tuple(
+            ScorecardDimension(key, key.title(), level, "") for key, level in levels.items()
+        )
+        return CatalogEntity(
+            entity_id="x",
+            display_name="x",
+            repo_url=None,
+            local_path=None,
+            owner="platform",
+            blueprint_name="terraform-module-generic",
+            blueprint_version="1.0.0",
+            standard_source="",
+            standard_version="",
+            component_type="service",
+            lifecycle="",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="",
+            manifest_namespace="",
+            source="fleet",
+            scorecard=scorecard,
+        )
+
+    rollup = rollup_fleet_scorecard(
+        [
+            entity({"pins": "pass", "gates": "pass"}),
+            entity({"pins": "warn", "gates": "fail"}),
+        ]
+    )
+    assert rollup.entity_count == 2
+    pins = next(cell for cell in rollup.dimensions if cell.key == "pins")
+    assert pins.pass_count == 1
+    assert pins.warn_count == 1
+    assert rollup.overall_level == "fail"
+
+
+def test_filter_entities_by_owner() -> None:
+    entities = [
+        CatalogEntity(
+            entity_id="a",
+            display_name="a",
+            repo_url=None,
+            local_path=None,
+            owner="group:platform",
+            blueprint_name="",
+            blueprint_version="",
+            standard_source="",
+            standard_version="",
+            component_type="",
+            lifecycle="",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="",
+            manifest_namespace="",
+            source="fleet",
+            scorecard=(),
+        ),
+        CatalogEntity(
+            entity_id="b",
+            display_name="b",
+            repo_url=None,
+            local_path=None,
+            owner="group:payments",
+            blueprint_name="",
+            blueprint_version="",
+            standard_source="",
+            standard_version="",
+            component_type="",
+            lifecycle="",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="",
+            manifest_namespace="",
+            source="fleet",
+            scorecard=(),
+        ),
+    ]
+    filtered = filter_entities_by_owner(entities, "platform")
+    assert len(filtered) == 1
+    assert filtered[0].entity_id == "a"
+
+
+def test_fetch_remote_entity_docs(monkeypatch) -> None:
+    def fake_fetch(owner: str, repo: str, rel_path: str, token: str) -> str:
+        if rel_path == "README.md":
+            return "# Remote readme"
+        if rel_path == "repave.yaml":
+            return "spec:\n  blueprint: remote\n"
+        return ""
+
+    monkeypatch.setattr(
+        "repave_engine.github_inventory.fetch_github_file_text",
+        fake_fetch,
+    )
+    docs = fetch_remote_entity_docs("https://github.com/acme/tf-vpc", "token")
+    assert docs["readme"].startswith("# Remote")
+    assert "blueprint" in docs["provenance"]

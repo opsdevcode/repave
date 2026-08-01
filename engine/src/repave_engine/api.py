@@ -71,10 +71,11 @@ from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
+    filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
     observability_embed_url,
-    read_entity_docs,
+    rollup_fleet_scorecard,
 )
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
@@ -95,6 +96,7 @@ from repave_engine.observability_selection import (
     blueprint_supports_observability_notifications,
     observability_input_defaults,
 )
+from repave_engine.observability_slo import fetch_entity_slo_summary
 from repave_engine.pipeline import generate_from_blueprint, generate_from_bundle
 from repave_engine.policy_catalog import (
     catalog_for_api,
@@ -112,6 +114,7 @@ from repave_engine.portal_context import (
     build_portal_catalog_entities,
     portal_fleet_context,
     portal_recent_activity,
+    resolve_entity_docs,
 )
 from repave_engine.portal_generate import (
     PortalGenerateRedirect,
@@ -486,8 +489,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
 
     @app.get("/library", response_class=HTMLResponse)
-    async def library_page(request: Request) -> HTMLResponse:
+    async def library_page(request: Request, owner: str = "") -> HTMLResponse:
         entities = build_portal_catalog_entities(repo_root, resolved_output)
+        if owner.strip():
+            entities = filter_entities_by_owner(entities, owner)
         blueprint_types = {
             blueprint.name: blueprint.artifact_type
             for blueprint in list_blueprints(blueprints_dir(repo_root))
@@ -496,6 +501,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             entities,
             blueprint_artifact_types=blueprint_types,
         )
+        fleet_rollup = rollup_fleet_scorecard(entities)
         return templates.TemplateResponse(
             request,
             "library.html",
@@ -504,6 +510,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="library",
                 library_groups=library_groups,
                 library_entity_count=len(entities),
+                fleet_scorecard_rollup=fleet_rollup,
+                library_owner_filter=owner.strip(),
                 observability_configured=bool(portal_config.observability_dashboard_url),
             ),
         )
@@ -518,20 +526,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         entity = find_catalog_entity(entities, entity_id)
         if entity is None:
             raise HTTPException(status_code=404, detail="Entity not found")
-        docs: dict[str, str] = {}
-        readme_html = ""
-        runbook_html = ""
-        runbook_label = ""
-        if entity.local_path is not None:
-            docs = read_entity_docs(entity.local_path)
-            if docs.get("readme"):
-                readme_html = render_portal_markdown(docs["readme"])
-            if docs.get("runbook"):
-                runbook_html = render_portal_markdown(docs["runbook"])
-                runbook_label = docs.get("runbook_label", "Runbook")
-        elif entity.readme_preview:
-            readme_html = render_portal_markdown(entity.readme_preview)
+        token = resolve_github_access_token()
+        docs = resolve_entity_docs(entity, github_token=token)
+        readme_html = render_portal_markdown(docs["readme"]) if docs.get("readme") else ""
+        runbook_html = render_portal_markdown(docs["runbook"]) if docs.get("runbook") else ""
+        runbook_label = docs.get("runbook_label", "Runbook")
+        upgrade_html = render_portal_markdown(docs["upgrade"]) if docs.get("upgrade") else ""
+        upgrade_label = docs.get("upgrade_label", "Upgrade notes")
+        provenance_html = ""
+        if docs.get("provenance"):
+            provenance_html = render_portal_markdown(f"```yaml\n{docs['provenance'].strip()}\n```")
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
+        slo_summary = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
         return templates.TemplateResponse(
             request,
             "service_detail.html",
@@ -542,7 +548,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 readme_html=readme_html,
                 runbook_html=runbook_html,
                 runbook_label=runbook_label,
+                upgrade_html=upgrade_html,
+                upgrade_label=upgrade_label,
+                provenance_html=provenance_html,
                 observability_url=obs_url,
+                slo_summary=slo_summary,
             ),
         )
 

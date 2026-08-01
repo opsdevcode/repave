@@ -15,7 +15,9 @@ output:
 #   density: compact   # default | compact
 #   # Template for per-entity dashboard links ({name}, {service}, {entity_id}).
 #   observability_dashboard_url: "https://grafana.example.com/d/svc?var-service={name}"
-# Or set REPAVE_OBSERVABILITY_DASHBOARD_URL in the environment.
+#   # JSON SLO summary URL (same placeholders). Response: status, slo_target, slo_current, detail.
+#   observability_slo_url: "https://slo-api.example.com/v1/services/{name}/summary"
+# Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL in the environment.
 
 # Optional hosted service authentication (OIDC). Local dev: leave disabled.
 # auth:
