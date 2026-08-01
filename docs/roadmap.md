@@ -6,11 +6,11 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.2.1  
 
-**In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phase 2
-follow-ups (PR body attachment) and Phase 3 (directional); [conversational governed AI](#conversational-and-governed-ai-generation).
+**In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phase 3
+(directional); [conversational governed AI](#conversational-and-governed-ai-generation).
 **Shipped on `main`:** **deployment status** (`portal.deployment_reader` url/argocd/flux,
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md) Phase 1); **live plan** async run
-(`kind: live_plan`, worker/Job + OPA on plan JSON); engine hardening group A (A1–A6)
+(`kind: live_plan`, worker/Job + OPA on plan JSON, optional PR body attachment); engine hardening group A (A1–A6)
 and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
@@ -160,7 +160,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
-| **v2.1+ environment lifecycle** | Phase 1–2 partial | Deployment status + governed live plan (`kind: live_plan`); PR attachment and environment vending remain open ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
+| **v2.1+ environment lifecycle** | Phase 1–2 partial | Deployment status + governed live plan (`kind: live_plan`, PR body attachment); environment vending remains open ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **v2.1+ governed AI** | open | Conversational generation on the v2 semver line |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
@@ -1810,10 +1810,9 @@ killed worker's run is replayable and visible from a second portal replica, and
 
 ### Environment lifecycle and deployment awareness
 
-**Status:** **Phase 1 shipped; Phase 2 partial on `main`** — deployment status plus
-`kind: live_plan` worker runs (OPA on plan JSON, ephemeral plan artifacts)
-([ADR 003](adr/003-environment-lifecycle-and-live-state.md)). PR body attachment and Phase 3
-vending remain open.
+**Status:** **Phase 1–2 shipped on `main`** — deployment status plus `kind: live_plan`
+worker runs (OPA on plan JSON, ephemeral plan artifacts, optional PR body attachment)
+([ADR 003](adr/003-environment-lifecycle-and-live-state.md)). Phase 3 vending remains open.
 
 **Problem:** repave governs **repositories** and stops at the pull request. It cannot answer
 "is my change live", its policy runs against repo shape rather than the effect of a change,
@@ -1828,7 +1827,7 @@ one needs. Design and boundaries in [ADR 003](adr/003-environment-lifecycle-and-
 | Phase | Content | Risk added |
 | --- | --- | --- |
 | **1 — deployment status** | Read Argo CD / Flux state (sync, health, revision, last synced) into `CatalogEntity` via a `deployment_reader` following the existing cost/SLO enrichment pattern; optional snapshot for list views; portal and `/api/v2` detail | Read-only token; degrades to "unknown" on outage |
-| **2 — governed plan on live state** | Real `terraform plan` against a configured backend in a worker Job; OPA on **plan JSON**; summary + verdict on the run record (`POST /api/v2/runs` `kind: live_plan`, portal button); PR body attachment still open | State + cloud read credentials, scoped per environment; plan output treated as sensitive |
+| **2 — governed plan on live state** | Real `terraform plan` against a configured backend in a worker Job; OPA on **plan JSON**; summary + verdict on the run record (`POST /api/v2/runs` `kind: live_plan`, portal button); optional PR body attachment via `pull_request` / `pull_request_url` | State + cloud read credentials, scoped per environment; plan output treated as sensitive |
 | **3 — environment vending** | Request an environment from a governed blueprint; repave writes desired state to a **GitOps repo** and the existing CD toolchain applies it; environment records carry owner, class, TTL, cost, status; expiry reclaims sandboxes and opens decommission PRs elsewhere | Environment ownership and TTL enforcement; no apply credentials in repave |
 
 **Non-goals:** repave running `terraform apply` against production credentials; writing to
@@ -1850,7 +1849,8 @@ configured; an unreachable GitOps API renders unknown status instead of an error
 **Done when (Phase 2):** `kind: live_plan` runs in the async queue / Job with optional
 per-environment Secret `envFrom`; OPA failure surfaces as `gates_outcome: failed`; plan JSON
 never appears in the run result, provenance, or audit; portal offers **Plan against live state**
-when the entity is configured under `live_plan.environments`.
+when the entity is configured under `live_plan.environments`; optional `pull_request` /
+`pull_request_url` on submit merges summary + OPA verdict into the PR body.
 
 ---
 

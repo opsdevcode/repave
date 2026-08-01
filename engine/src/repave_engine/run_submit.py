@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from repave_engine.live_plan import LIVE_PLAN_BLUEPRINT_SENTINEL
+from repave_engine.live_plan_pr import parse_pull_request_ref
 from repave_engine.run_queue import RunQueue
 from repave_engine.run_store import RunRecord
 from repave_engine.settings import load_live_plan_config
@@ -90,6 +91,7 @@ def _submit_live_plan(
     secret_override = str(payload.get("secret_name", "")).strip()
     if secret_override:
         job_secret_ref = secret_override
+    pull_request = parse_pull_request_ref(payload)
     return queue.submit(
         blueprint_name=LIVE_PLAN_BLUEPRINT_SENTINEL,
         inputs={
@@ -103,6 +105,7 @@ def _submit_live_plan(
         client_request_id=client_request_id,
         kind="live_plan",
         live_plan_secret_name=job_secret_ref,
+        pull_request=pull_request.to_dict() if pull_request is not None else None,
     )
 
 

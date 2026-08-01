@@ -21,6 +21,7 @@ from repave_engine.execution_mode import ExecutionMode
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.live_plan import is_live_plan_run, run_live_plan
+from repave_engine.live_plan_pr import PullRequestRef, attach_live_plan_to_pull_request
 from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
@@ -193,6 +194,7 @@ class RunQueue:
         client_request_id: str | None = None,
         kind: str | None = None,
         live_plan_secret_name: str | None = None,
+        pull_request: dict[str, Any] | None = None,
     ) -> RunRecord:
         if not self._accepting:
             raise RunQueueShuttingDownError("async generation queue is shutting down")
@@ -225,6 +227,8 @@ class RunQueue:
             }
             if live_plan_secret_name:
                 payload["live_plan_secret_name"] = live_plan_secret_name
+            if pull_request:
+                payload["pull_request"] = pull_request
         elif bundle_name:
             payload = {
                 "bundle": bundle_name,
@@ -338,6 +342,25 @@ class RunQueue:
                         use_backend=use_backend,
                     )
                     result = summary.to_public_dict()
+                    pr_raw = record.payload.get("pull_request")
+                    if isinstance(pr_raw, dict):
+                        pr_ref = PullRequestRef.from_dict(pr_raw)
+                        if pr_ref is not None:
+                            pr_github_token = resolve_github_access_token()
+                            attachment = attach_live_plan_to_pull_request(
+                                pr_ref,
+                                summary,
+                                run_id=run_id,
+                                github_token=pr_github_token,
+                            )
+                            result["pr_attachment"] = attachment.to_public_dict()
+                            on_event(
+                                "live_plan_pr_attachment",
+                                {
+                                    "attached": attachment.attached,
+                                    "pull_request_url": attachment.pull_request_url,
+                                },
+                            )
                     on_event(
                         "live_plan_finished",
                         {

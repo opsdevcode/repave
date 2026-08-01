@@ -19,6 +19,7 @@ from repave_engine.live_plan import (
     run_live_plan,
     summarize_plan_json,
 )
+from repave_engine.live_plan_pr import LivePlanPrAttachmentResult
 from repave_engine.run_queue import RunQueue, RunQueueConfig
 from repave_engine.run_store import RunStatus, RunStore
 from repave_engine.run_submit import submit_async_run
@@ -169,6 +170,80 @@ live_plan:
         assert terminal.result is not None
         assert terminal.result["gates_outcome"] == "passed"
         assert "resource_changes" not in terminal.result
+    queue.close()
+
+
+def test_submit_live_plan_with_pull_request_attaches_to_pr(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        """
+live_plan:
+  enabled: true
+  environments:
+    entity-1:
+      target: /tmp/mod
+""",
+        encoding="utf-8",
+    )
+    store = RunStore(tmp_path / "runs.sqlite")
+    output = OutputConfig(github_org="example", modules_root=tmp_path / "modules")
+    queue = RunQueue(
+        repo_root=tmp_path,
+        output_config=output,
+        store=store,
+        config=RunQueueConfig(max_concurrent_runs=1, queue_max_depth=4),
+    )
+    fake = LivePlanSummary(
+        entity_id="entity-1",
+        target="/tmp/mod",
+        plan_ok=True,
+        opa_passed=True,
+        opa_skipped=False,
+        opa_detail="conftest passed",
+        resource_add=1,
+        resource_change=0,
+        resource_destroy=0,
+        detail="Plan: +1 ~0 -0; OPA passed",
+    )
+    attachment = LivePlanPrAttachmentResult(
+        attached=True,
+        pull_request_url="https://github.com/acme/tf-app/pull/42",
+        detail="live plan summary appended to pull request body",
+    )
+    with (
+        patch("repave_engine.run_queue.run_live_plan", return_value=fake),
+        patch(
+            "repave_engine.run_queue.attach_live_plan_to_pull_request",
+            return_value=attachment,
+        ) as attach,
+        patch("repave_engine.run_queue.resolve_github_access_token", return_value="ghp_test"),
+    ):
+        record = submit_async_run(
+            queue,
+            payload={
+                "kind": "live_plan",
+                "entity_id": "entity-1",
+                "pull_request_url": "https://github.com/acme/tf-app/pull/42",
+            },
+            acting_user="tester",
+            repo_root=tmp_path,
+        )
+        assert record.payload["pull_request"] == {
+            "owner": "acme",
+            "repo": "tf-app",
+            "number": 42,
+        }
+
+        deadline = time.time() + 5.0
+        terminal = None
+        while time.time() < deadline:
+            terminal = store.get(record.run_id)
+            if terminal and terminal.status == RunStatus.SUCCEEDED:
+                break
+            time.sleep(0.05)
+        assert terminal is not None
+        assert terminal.result is not None
+        assert terminal.result["pr_attachment"] == attachment.to_public_dict()
+        attach.assert_called_once()
     queue.close()
 
 
