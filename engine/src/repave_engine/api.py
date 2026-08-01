@@ -68,6 +68,7 @@ from repave_engine.bundle_portal import (
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
+from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models_from_files
@@ -504,6 +505,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
         if owner.strip():
             entities = filter_entities_by_owner(entities, owner)
+        entities = list(enrich_catalog_entities_with_cost(entities, portal_config))
         blueprint_types = {
             blueprint.name: blueprint.artifact_type
             for blueprint in list_blueprints(blueprints_dir(repo_root))

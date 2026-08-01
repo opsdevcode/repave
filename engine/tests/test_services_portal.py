@@ -166,3 +166,30 @@ def test_library_owner_filter(repo_root, output_config, registry: Path) -> None:
 
     assert "matching owner" in body
     assert "platform" in body
+
+
+def test_library_shows_cost_badge_from_local_estimate(
+    repo_root, output_config, registry: Path
+) -> None:
+    from repave_engine.cost_estimate import CostEstimate, write_cost_estimate_file
+
+    register_repo(registry, PROVENANCE_ENTRY)
+    entity_dir = output_config.modules_root / "tf-vpc"
+    entity_dir.mkdir(parents=True)
+    (entity_dir / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
+    write_cost_estimate_file(
+        entity_dir,
+        CostEstimate(
+            currency="USD",
+            monthly_cost="25.00",
+            hourly_cost="—",
+            resource_count=1,
+            detail="Estimated USD 25.00/month",
+        ),
+    )
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    body = client.get("/library").text
+
+    assert "catalog-inventory__cost-badge" in body
+    assert "Est USD 25.00/mo" in body
