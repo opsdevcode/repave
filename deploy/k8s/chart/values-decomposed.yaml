@@ -42,4 +42,10 @@ corpus:
   enabled: true
   repository: ghcr.io/opsdevcode/repave-corpus
 
+workerAutoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
 # Optional: set repave.durability.artifactStoreUri for full-tree retention in S3.

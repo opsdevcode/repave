@@ -1,0 +1,16 @@
+# Mount the portal chart fleet PVC (release repave → claim repave-fleet).
+# Pair with deploy/k8s/chart/values-fleet-shared.yaml on the portal release.
+# Portal and operator must share a namespace so the PVC claim is visible to both.
+#
+#   helm upgrade --install repave-operator ./deploy/k8s/operator-chart \
+#     -f values-fleet-shared.yaml \
+#     --set repave.apiUrl=http://repave.repave.svc.cluster.local:8088
+
+fleetSync:
+  enabled: true
+  registryPath: /data/fleet/registry.jsonl
+  mountPath: /data/fleet
+  intervalSeconds: 60
+
+fleetRegistry:
+  existingClaim: repave-fleet

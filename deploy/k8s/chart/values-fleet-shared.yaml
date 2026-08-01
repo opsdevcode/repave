@@ -1,0 +1,20 @@
+# Shared fleet registry PVC for portal + operator co-install.
+# Portal creates {{ release }}-fleet (default release name: repave → claim repave-fleet).
+# Install the operator with deploy/k8s/operator-chart/values-fleet-shared.yaml in the
+# same namespace so fleetSync reads the same JSONL file the portal writes.
+#
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f values.yaml -f values-fleet-shared.yaml ...
+#
+#   helm upgrade --install repave-operator ./deploy/k8s/operator-chart \
+#     -f values-fleet-shared.yaml \
+#     --set fleetRegistry.existingClaim=repave-fleet ...
+
+repave:
+  fleet:
+    enabled: true
+    file: /data/fleet/registry.jsonl
+
+persistence:
+  fleet:
+    enabled: true

@@ -19,6 +19,6 @@ persistence:
     # can read GoldenPathRepo spec.localPath targets (e.g. /modules/terraform-minimal).
     kindHostPath: /modules
   fleet:
-    enabled: false
+    enabled: true
   runs:
     enabled: false

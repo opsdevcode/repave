@@ -20,7 +20,9 @@ job_rendered="$(mktemp)"
 decomposed_smoke_rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
 multi_replica_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${multi_replica_rendered}"' EXIT
+worker_hpa_rendered="$(mktemp)"
+fleet_shared_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -186,6 +188,50 @@ helm template repave-multi-replica-smoke "${CHART}" \
 
 if ! grep -q 'replicas: 2' "${multi_replica_rendered}"; then
   echo "values-multi-replica-smoke.yaml must render portal Deployment with replicas: 2" >&2
+  exit 1
+fi
+
+worker_hpa_rendered="$(mktemp)"
+
+helm template repave-worker-hpa "${CHART}" \
+  --namespace repave-worker-hpa \
+  -f "${CHART}/values-decomposed.yaml" \
+  --set repave.output.githubOrg=example-org \
+  --set workerAutoscaling.enabled=true \
+  --set workerAutoscaling.minReplicas=2 \
+  --set workerAutoscaling.maxReplicas=6 \
+  >"${worker_hpa_rendered}"
+
+if ! grep -q 'kind: HorizontalPodAutoscaler' "${worker_hpa_rendered}"; then
+  echo "workerAutoscaling must render worker HorizontalPodAutoscaler" >&2
+  exit 1
+fi
+
+if ! grep -A2 'kind: HorizontalPodAutoscaler' "${worker_hpa_rendered}" | grep -q 'name: repave-worker-hpa-worker'; then
+  echo "workerAutoscaling HPA must target repave-worker-hpa-worker Deployment" >&2
+  exit 1
+fi
+
+if grep -A20 'name: repave-worker-hpa-worker' "${worker_hpa_rendered}" | grep -q '^  replicas:'; then
+  echo "worker HPA mode must omit worker Deployment.spec.replicas" >&2
+  exit 1
+fi
+
+fleet_shared_rendered="$(mktemp)"
+
+helm template repave-fleet-shared "${CHART}" \
+  --namespace repave \
+  -f "${CHART}/values-fleet-shared.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${fleet_shared_rendered}"
+
+if ! grep -q 'kind: PersistentVolumeClaim' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must render fleet PVC" >&2
+  exit 1
+fi
+
+if ! grep -q 'name: repave-fleet' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must name fleet claim repave-fleet" >&2
   exit 1
 fi
 

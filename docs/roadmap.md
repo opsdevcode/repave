@@ -6,8 +6,8 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.118.0  
 
-**In progress:** estate control continuous fleet sync; hosted durability retry/reclaim;
-supply chain digest pins (branch `feat/estate-durability-supply-chain`).
+**In progress:** day-2 follow-ups — shared fleet PVC, worker HPA, CI action-pin gate (branch
+`feat/portal-day2-followups`).
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -20,7 +20,9 @@ PrometheusRule, runbooks); **repo import to golden path** (`repave import`, `/im
 **operator fleet campaigns** (`UpgradeCampaign` CRD, Blueprint controller, bounded
 remediation PR concurrency, drift SLO metrics, campaign webhook summaries,
 GitHub rate-limit parity); **governed PR conventions** (`pull_requests` in
-`repave.config.yaml`, shared labels/branch prefixes, gate evidence checklist).
+`repave.config.yaml`, shared labels/branch prefixes, gate evidence checklist); **estate control
+fleet sync + GPR prune**; **durability retry/reclaim + run list API**; **supply chain digest
+pins** (GitHub Actions SHAs, base images, chart `image.digest`).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
