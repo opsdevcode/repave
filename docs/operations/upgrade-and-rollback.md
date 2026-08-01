@@ -21,7 +21,16 @@ Assumes a single replica or shared run/session store when scaling — see
 
    Production overlays: [`values-decomposed-day2.yaml`](../k8s/chart/values-decomposed-day2.yaml).
 
-2. **Pin the image by digest** in production overlays (not only `:latest`).
+2. **Pin the image by digest** in production overlays (not only `:latest`). Example:
+
+   ```bash
+   crane digest ghcr.io/opsdevcode/repave-engine:v1.126.0
+   helm upgrade repave ./deploy/k8s/chart \
+     -f deploy/k8s/chart/values-digest-pinned.yaml \
+     --set image.digest=sha256:...
+   ```
+
+   See [`docs/supply-chain.md`](../supply-chain.md).
 
 3. **Note the current revision** for rollback:
 

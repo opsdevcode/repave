@@ -182,6 +182,10 @@ run on every pull request. Unrelated diffs skip heavy steps via
 `.github/actions/chart-ci-paths/`; every push to **`main`** runs both jobs in full.
 Locally: `make chart-validate` and `make chart-smoke`.
 
+When bumping a third-party GitHub Action, update both the workflow `uses:` SHA and
+[`.github/action-pins.json`](.github/action-pins.json); run `python3 scripts/check-action-pins.py`.
+See [`docs/supply-chain.md`](docs/supply-chain.md).
+
 ### Branch ruleset (`main`)
 
 Repository ruleset **main branch** (see `.github/rulesets/main-branch.json`)

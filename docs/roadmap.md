@@ -111,7 +111,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ k8s deploy      Helm chart + day-2 operability (portal + operator charts shipped)
   ├─ durability      SQL store for audit/fleet/runs; async queue; DLQ + replay + portal /runs (shipped)
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
-  ├─ supply chain    GitHub App auth shipped; governed PR conventions shipped
+  ├─ supply chain    shipped — GitHub App auth, governed PR, digest-pinned CI/images/chart
   ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns + drift SLO metrics + rate-limit parity shipped
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
   ├─ reach           repave verify (local + remote clone shipped); repo import Phase 1–3 shipped; composite golden paths
@@ -140,7 +140,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hardening** | shipped (groups A–B) | Group A: toolchain pins, subprocess timeouts, coverage gate, docs; group B: gate_runners package, API/CLI splits, Python 3.12 floor |
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
-| **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
+| **Supply chain** | shipped | GitHub App auth, governed PR conventions, SHA-pinned Actions, digest-pinned base images, chart `image.digest` |
 | **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
@@ -1574,6 +1574,33 @@ organization's branch prefix, labels, and evidence checklist.
 **Status:** **Shipped on `main`** — `pull_requests` block in `repave.config.yaml`, engine
 `pr_conventions.py` (import/upgrade/generate paths, labels, evidence checklist), operator env
 parity (`REPAVE_PR_*`).
+
+---
+
+### Supply chain digest pins
+
+**Problem:** Mutable GitHub Action tags, floating container base images, and semver-only Helm
+deploys let supply-chain drift slip in between builds — especially on a shared cluster where
+publish credentials and generation images must be attributable and reproducible.
+
+**Approach:**
+
+- Pin marketplace Actions to commit SHAs in `.github/action-pins.json`; CI rejects drift via
+  `scripts/check-action-pins.py`
+- Pin Docker base images (`python:3.12-slim`, `uv`, `alpine`) by digest in `deploy/local/Dockerfile*`
+- Publish digest-tagged engine images from `.github/workflows/container.yml`
+- Helm `image.digest`, `workerImage.digest`, and `corpus.digest` render `repository@digest`
+- Short-lived GitHub App installation tokens for publish/remediation (see
+  [GitHub App authentication](#github-app-authentication-for-publish-and-remediation))
+
+**Dependencies:** [Engine hardening A1](#a1--one-source-of-truth-for-gate-toolchain-pins);
+[service decomposition](#service-decomposition-for-hosted-scale) split images.
+
+**Done when:** CI enforces action pins, production docs show digest-pinned Helm installs, and
+operators can deploy portal/worker/corpus without mutable `:latest` tags.
+
+**Status:** **Shipped on `main`** — see [`docs/supply-chain.md`](supply-chain.md),
+[`values-digest-pinned.yaml`](../../deploy/k8s/chart/values-digest-pinned.yaml).
 
 ---
 
