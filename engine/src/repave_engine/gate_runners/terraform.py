@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+import os
 from pathlib import Path
 
 import repave_engine.gate_runners as _gr
 from repave_engine.blueprint import TflintGateConfig
+from repave_engine.cost_estimate import parse_infracost_breakdown, write_cost_estimate_file
 from repave_engine.gate_registry import GateContext, GateResult
 from repave_engine.gate_runners._core import _toolchain_skip, tflint_config_args
 
@@ -134,3 +137,70 @@ def _terraform_plan_json(output_dir: Path, plan_subdir: str) -> Path | None:
         return None
     plan_json.write_text(show.stdout, encoding="utf-8")
     return plan_json
+
+
+def run_infracost(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if not _gr.terraform_usable(output_dir):
+        return _toolchain_skip(ctx, "infracost", "terraform not available", benign=True)
+    if not _gr.tool_available("infracost"):
+        return _toolchain_skip(ctx, "infracost", "infracost not installed", benign=True)
+    if not os.environ.get("INFRACOST_API_KEY", "").strip():
+        return _toolchain_skip(
+            ctx,
+            "infracost",
+            "INFRACOST_API_KEY not set",
+            benign=True,
+        )
+
+    plan_json = _terraform_plan_json(output_dir, ".repave/infracost-plan")
+    if plan_json is None:
+        return _toolchain_skip(ctx, "infracost", "terraform plan unavailable", benign=True)
+
+    result = _gr.run_command(
+        [
+            "infracost",
+            "breakdown",
+            "--path",
+            str(plan_json),
+            "--format",
+            "json",
+        ],
+        output_dir,
+        timeout=_gr.gate_timeout_seconds(ctx, "infracost"),
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip() or "infracost breakdown failed"
+        return GateResult("infracost", False, False, detail)
+
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return GateResult("infracost", False, False, "infracost returned invalid JSON")
+
+    estimate = parse_infracost_breakdown(payload)
+    if estimate is None:
+        return GateResult("infracost", True, False, "infracost returned no cost data")
+
+    write_cost_estimate_file(output_dir, estimate)
+    cfg = ctx.config("infracost")
+    max_raw = cfg.get("max_monthly_usd")
+    if max_raw not in (None, ""):
+        try:
+            max_monthly = float(max_raw)
+            monthly_value = float(estimate.monthly_cost)
+        except ValueError:
+            max_monthly = None
+            monthly_value = None
+        if max_monthly is not None and monthly_value is not None and monthly_value > max_monthly:
+            return GateResult(
+                "infracost",
+                False,
+                False,
+                (
+                    f"{estimate.detail}; exceeds configured limit "
+                    f"{estimate.currency} {max_monthly}/month"
+                ),
+            )
+
+    return GateResult("infracost", True, False, estimate.detail)

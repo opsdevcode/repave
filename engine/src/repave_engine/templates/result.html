@@ -57,6 +57,27 @@
   {% endif %}
 </section>
 
+{% if result_portal and result_portal.cost_estimate %}
+<section class="card result-cost-estimate" aria-labelledby="cost-estimate-heading">
+  <div class="card__header">
+    <h2 id="cost-estimate-heading">Cost estimate</h2>
+    <p class="muted card__subtitle">Infracost breakdown from the terraform plan (warn-only by default).</p>
+  </div>
+  <div class="card__body">
+    <p class="result-cost-estimate__amount">
+      <span class="badge badge--pass">{{ result_portal.cost_estimate.currency }} {{ result_portal.cost_estimate.monthly_cost }}/month</span>
+      {% if result_portal.cost_estimate.hourly_cost and result_portal.cost_estimate.hourly_cost != '—' %}
+      <span class="muted">· {{ result_portal.cost_estimate.hourly_cost }}/hour</span>
+      {% endif %}
+    </p>
+    <p class="muted">{{ result_portal.cost_estimate.detail }}</p>
+    {% if result_portal.cost_estimate.resource_count %}
+    <p class="hint">{{ result_portal.cost_estimate.resource_count }} priced resource(s) in breakdown.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if gate_toolchain_callout %}
 <section class="alert alert--warn result-toolchain-callout" aria-labelledby="toolchain-heading" role="status">
   <h2 id="toolchain-heading" class="form-section__subtitle">Gate toolchain</h2>

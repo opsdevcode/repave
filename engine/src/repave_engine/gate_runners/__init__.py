@@ -45,6 +45,7 @@ from repave_engine.gate_runners.policy import (
 )
 from repave_engine.gate_runners.terraform import (
     _terraform_plan_json,
+    run_infracost,
     run_terraform_fmt,
     run_terraform_test,
     run_terraform_validate,
@@ -77,6 +78,7 @@ __all__ = [
     "run_grafana_dashboard",
     "run_helm_lint",
     "run_helm_template",
+    "run_infracost",
     "run_molecule",
     "run_opa",
     "run_promtool",

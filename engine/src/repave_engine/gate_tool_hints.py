@@ -7,6 +7,7 @@ GATE_TOOL_HINTS: dict[str, tuple[str, ...]] = {
     "terraform-validate": ("terraform",),
     "terraform-test": ("terraform",),
     "tflint": ("tflint",),
+    "infracost": ("infracost",),
     "checkov": ("checkov",),
     "opa": ("conftest",),
     "azure-policy": ("conftest",),

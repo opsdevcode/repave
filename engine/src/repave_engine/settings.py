@@ -413,6 +413,7 @@ class PortalConfig:
     density: str
     observability_dashboard_url: str = ""
     observability_slo_url: str = ""
+    cost_actuals_url: str = ""
 
 
 def load_portal_config(repo_root: Path) -> PortalConfig:
@@ -425,16 +426,21 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         raise ValueError("portal.density must be 'default' or 'compact'")
     obs_url = str(block.get("observability_dashboard_url", "")).strip()
     slo_url = str(block.get("observability_slo_url", "")).strip()
+    cost_url = str(block.get("cost_actuals_url", "")).strip()
     env_obs = os.environ.get("REPAVE_OBSERVABILITY_DASHBOARD_URL", "").strip()
     if env_obs:
         obs_url = env_obs
     env_slo = os.environ.get("REPAVE_OBSERVABILITY_SLO_URL", "").strip()
     if env_slo:
         slo_url = env_slo
+    env_cost = os.environ.get("REPAVE_COST_ACTUALS_URL", "").strip()
+    if env_cost:
+        cost_url = env_cost
     return PortalConfig(
         density=density,
         observability_dashboard_url=obs_url,
         observability_slo_url=slo_url,
+        cost_actuals_url=cost_url,
     )
 
 

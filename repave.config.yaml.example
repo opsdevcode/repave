@@ -17,7 +17,9 @@ output:
 #   observability_dashboard_url: "https://grafana.example.com/d/svc?var-service={name}"
 #   # JSON SLO summary URL (same placeholders). Response: status, slo_target, slo_current, detail.
 #   observability_slo_url: "https://slo-api.example.com/v1/services/{name}/summary"
-# Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL in the environment.
+#   # JSON cost actuals URL (same placeholders). Response: currency, amount_30d, as_of, detail.
+#   cost_actuals_url: "https://cost-api.example.com/v1/services/{name}/summary"
+# Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL / REPAVE_COST_ACTUALS_URL.
 
 # Optional hosted service authentication (OIDC). Local dev: leave disabled.
 # auth:

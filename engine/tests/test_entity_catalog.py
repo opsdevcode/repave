@@ -64,6 +64,7 @@ def test_build_scorecard_passes_with_fleet_and_audit(tmp_path: Path) -> None:
     assert levels["provenance"] == "pass"
     assert levels["runbook"] == "pass"
     assert levels["gates"] == "pass"
+    assert levels["cost"] == "unknown"
 
 
 def test_build_catalog_merges_fleet_and_local(tmp_path: Path) -> None:

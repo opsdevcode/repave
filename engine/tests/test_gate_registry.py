@@ -43,6 +43,7 @@ def test_builtin_gates_are_registered() -> None:
     assert "amtool" in names
     assert "azure-policy" in names
     assert "opa" in names
+    assert "infracost" in names
 
 
 def test_get_gate_returns_spec_for_known_gate() -> None:

@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from repave_engine import __version__
+from repave_engine.cost_estimate import CostEstimate, cost_estimate_for_result
 from repave_engine.governance import GOVERNANCE_BASELINE_SOURCE, GOVERNANCE_BASELINE_VERSION
 from repave_engine.pipeline import GenerationResult
 from repave_engine.policy_catalog import load_policy_catalog, rules_for_artifact
@@ -155,6 +156,10 @@ def build_result_portal_context(result: GenerationResult, repo_root: Path) -> di
     }
     backstage_expected = blueprint.artifact_type == "app-service" or include_backstage_requested
 
+    cost_estimate: CostEstimate | None = None
+    if blueprint.artifact_type in {"terraform-module", "terraform-environment-stack"}:
+        cost_estimate = cost_estimate_for_result(result)
+
     return {
         "lineage": lineage,
         "policy_profile": policy_profile,
@@ -166,4 +171,5 @@ def build_result_portal_context(result: GenerationResult, repo_root: Path) -> di
         "provenance_filename": provenance_filename,
         "backstage": backstage,
         "backstage_expected": backstage_expected,
+        "cost_estimate": cost_estimate,
     }

@@ -121,6 +121,8 @@ def portal_fleet_context(
 def build_portal_catalog_entities(
     repo_root: Path,
     output_config: OutputConfig,
+    *,
+    cost_actuals_configured: bool = False,
 ) -> list[CatalogEntity]:
     audit_entries: tuple[AuditHistoryEntry, ...] = ()
     if audit_portal_enabled(repo_root):
@@ -148,12 +150,14 @@ def build_portal_catalog_entities(
             operator_by_url=operator_by,
             namespace=fleet_cfg.gitops_namespace,
             audit_entries=audit_entries,
+            cost_actuals_configured=cost_actuals_configured,
         )
     return build_catalog_entities(
         fleet_rows=[],
         modules_root=modules_root,
         operator_by_url={},
         audit_entries=audit_entries,
+        cost_actuals_configured=cost_actuals_configured,
     )
 
 
