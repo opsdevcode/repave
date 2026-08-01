@@ -118,7 +118,13 @@ def test_run_queue_dispatches_job_on_submit(tmp_path) -> None:
     dispatched: list[str] = []
 
     class FakeJobDispatcher:
-        def dispatch(self, run_id: str) -> None:
+        def dispatch(
+            self,
+            run_id: str,
+            *,
+            live_plan_secret_name: str | None = None,
+        ) -> None:
+            del live_plan_secret_name
             dispatched.append(run_id)
 
     queue = RunQueue(

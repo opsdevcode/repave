@@ -12,13 +12,30 @@ Stable JSON HTTP surface introduced for [service decomposition Phase 3](adr/002-
 | Method | Path | Role | Notes |
 | --- | --- | --- | --- |
 | `POST` | `/api/v2/generate` | generator, admin | Sync by default; pass `"async": true` to enqueue |
-| `POST` | `/api/v2/runs` | generator, admin | Async generation (202 + run record) |
+| `POST` | `/api/v2/runs` | generator, admin | Async generation or `kind: live_plan` (202 + run record) |
 | `GET` | `/api/v2/runs` | viewer+ | List recent runs (`status`, `limit` query params) |
 | `GET` | `/api/v2/runs/{run_id}` | viewer+ | Poll run status |
 | `GET` | `/api/v2/runs/{run_id}/events` | viewer+ | SSE progress stream |
 | `POST` | `/api/v2/runs/{run_id}/replay` | admin | Requeue failed/dead-letter runs |
 
 Async runs require `durability.async_generation` (or `REPAVE_ASYNC_GENERATION=1`).
+
+### Live plan (`kind: live_plan`)
+
+When `live_plan.enabled` (or `REPAVE_LIVE_PLAN=1`) and an environment is configured for the
+entity, enqueue a worker-only terraform plan against live state:
+
+```json
+{
+  "kind": "live_plan",
+  "entity_id": "github.com/acme/tf-app"
+}
+```
+
+Optional overrides: `target`, `secret_name`. The run result includes resource add/change/destroy
+counts and the OPA verdict (`gates_outcome`); plan JSON is never retained. Portal:
+`POST /services/{entity_id}/live-plan` redirects to the run console. See
+[ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
 ## Operator upgrades
 

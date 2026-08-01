@@ -22,7 +22,12 @@ _JOB_NAME_PREFIX = "repave-run-"
 
 
 class RunJobDispatcher(Protocol):
-    def dispatch(self, run_id: str) -> None: ...
+    def dispatch(
+        self,
+        run_id: str,
+        *,
+        live_plan_secret_name: str | None = None,
+    ) -> None: ...
 
 
 @dataclass(frozen=True)
@@ -108,7 +113,13 @@ def build_run_job_dispatcher(
 class _LoggingRunJobDispatcher:
     """Fallback when job mode is configured but in-cluster Job env is missing."""
 
-    def dispatch(self, run_id: str) -> None:
+    def dispatch(
+        self,
+        run_id: str,
+        *,
+        live_plan_secret_name: str | None = None,
+    ) -> None:
+        del live_plan_secret_name
         logger.warning(
             "worker_mode=job but Run Job config is incomplete; run %s remains queued "
             "(set REPAVE_RUN_JOBS and Job env vars or run repave run-worker manually)",
@@ -144,12 +155,26 @@ class KubernetesRunJobDispatcher:
     def __init__(self, config: RunJobConfig) -> None:
         self._config = config
 
-    def dispatch(self, run_id: str) -> None:
-        body = _build_job_body(run_id, self._config)
+    def dispatch(
+        self,
+        run_id: str,
+        *,
+        live_plan_secret_name: str | None = None,
+    ) -> None:
+        body = _build_job_body(
+            run_id,
+            self._config,
+            live_plan_secret_name=live_plan_secret_name,
+        )
         _create_namespaced_job(self._config.namespace, body)
 
 
-def _build_job_body(run_id: str, config: RunJobConfig) -> dict[str, Any]:
+def _build_job_body(
+    run_id: str,
+    config: RunJobConfig,
+    *,
+    live_plan_secret_name: str | None = None,
+) -> dict[str, Any]:
     name = job_name_for_run(run_id)
     env: list[dict[str, Any]] = [
         {"name": "REPAVE_IMAGE_GATE_TOOLCHAIN", "value": "1"},
@@ -204,27 +229,31 @@ def _build_job_body(run_id: str, config: RunJobConfig) -> dict[str, Any]:
                 }
             )
 
+    container: dict[str, Any] = {
+        "name": "run-worker",
+        "image": config.image,
+        "imagePullPolicy": config.image_pull_policy,
+        "command": [
+            "repave",
+            "run-worker",
+            "--repo-root",
+            "/app",
+            "--run-id",
+            run_id,
+            "--once",
+        ],
+        "env": env,
+        "volumeMounts": volume_mounts,
+    }
+    secret_name = (live_plan_secret_name or "").strip()
+    if secret_name:
+        # Per-environment cloud/backend credentials for ADR 003 live_plan Jobs.
+        container["envFrom"] = [{"secretRef": {"name": secret_name}}]
+
     pod_spec: dict[str, Any] = {
         "restartPolicy": "Never",
         "serviceAccountName": config.service_account_name,
-        "containers": [
-            {
-                "name": "run-worker",
-                "image": config.image,
-                "imagePullPolicy": config.image_pull_policy,
-                "command": [
-                    "repave",
-                    "run-worker",
-                    "--repo-root",
-                    "/app",
-                    "--run-id",
-                    run_id,
-                    "--once",
-                ],
-                "env": env,
-                "volumeMounts": volume_mounts,
-            }
-        ],
+        "containers": [container],
         "volumes": volumes,
     }
     if init_containers:

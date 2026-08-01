@@ -55,10 +55,18 @@ class RunRecord:
             "updated_at": self.updated_at,
             "attempt_count": self.attempt_count,
         }
+        kind = str(self.payload.get("kind", "")).strip()
+        if kind:
+            body["kind"] = kind
         if self.payload.get("bundle"):
             body["bundle"] = str(self.payload["bundle"])
-        else:
+        elif kind != "live_plan":
             body["blueprint"] = self.blueprint_name
+        inputs = self.payload.get("inputs")
+        if isinstance(inputs, dict):
+            entity_id = str(inputs.get("entity_id", "")).strip()
+            if entity_id:
+                body["entity_id"] = entity_id
         if self.client_request_id:
             body["client_request_id"] = self.client_request_id
         if self.next_attempt_at:

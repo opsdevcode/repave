@@ -123,6 +123,22 @@
 </section>
 {% endif %}
 
+{% if live_plan_available %}
+<section class="card entity-live-plan" aria-labelledby="live-plan-heading">
+  <div class="card__header">
+    <h2 id="live-plan-heading">Live plan</h2>
+    <p class="muted card__subtitle">
+      Run terraform plan against live state and evaluate OPA on plan JSON (plan only).
+    </p>
+  </div>
+  <div class="card__body">
+    <form method="post" action="/services/{{ entity.entity_id }}/live-plan">
+      <button class="btn btn--secondary btn--sm" type="submit">Plan against live state</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
 {% if slo_summary %}
 <section class="card entity-slo" aria-labelledby="slo-heading">
   <div class="card__header">

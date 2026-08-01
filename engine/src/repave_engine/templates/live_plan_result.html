@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Live plan — {{ live_plan_summary.entity_id or run_id }} — repave{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  {% if live_plan_summary.entity_id %}
+  <a href="/services/{{ live_plan_summary.entity_id }}">← {{ live_plan_summary.entity_id }}</a>
+  {% else %}
+  <a href="/library">← Library</a>
+  {% endif %}
+  ·
+  <a href="/runs/{{ run_id }}">Run console</a>
+</p>
+
+<section class="card" aria-labelledby="live-plan-heading">
+  <div class="card__header">
+    <h1 id="live-plan-heading" class="card__title">Live plan summary</h1>
+    <p class="muted card__subtitle">
+      Plan JSON is ephemeral and not retained. Only counts and the OPA verdict are stored.
+    </p>
+  </div>
+  <div class="card__body">
+    <p>
+      {% if live_plan_summary.gates_outcome == 'passed' %}
+      <span class="badge badge--pass">{{ live_plan_summary.gates_outcome }}</span>
+      {% else %}
+      <span class="badge badge--fail">{{ live_plan_summary.gates_outcome or 'failed' }}</span>
+      {% endif %}
+      {% if live_plan_summary.entity_id %}
+      <span class="muted">· {{ live_plan_summary.entity_id }}</span>
+      {% endif %}
+    </p>
+    <ul class="muted">
+      <li>Resources: +{{ live_plan_summary.resource_add or 0 }}
+        ~{{ live_plan_summary.resource_change or 0 }}
+        -{{ live_plan_summary.resource_destroy or 0 }}</li>
+      <li>OPA:
+        {% if live_plan_summary.opa_skipped %}skipped
+        {% elif live_plan_summary.opa_passed %}passed
+        {% else %}failed{% endif %}
+        {% if live_plan_summary.opa_detail %}
+        — {{ live_plan_summary.opa_detail }}
+        {% endif %}
+      </li>
+      {% if live_plan_summary.detail %}
+      <li>{{ live_plan_summary.detail }}</li>
+      {% endif %}
+      {% if live_plan_summary.target %}
+      <li>Target: <code>{{ live_plan_summary.target }}</code></li>
+      {% endif %}
+    </ul>
+  </div>
+</section>
+{% endblock %}
