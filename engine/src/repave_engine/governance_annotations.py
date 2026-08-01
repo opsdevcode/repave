@@ -173,6 +173,51 @@ def render_annotated_lines_html(lines: tuple[AnnotatedLine, ...]) -> str:
     return "\n".join(rows)
 
 
+def _previews_from_pinned_standard(
+    repo_root: Path,
+    standards: StandardsDiffResult,
+    policy_rules: tuple[PolicyRule, ...],
+    *,
+    max_lines: int,
+    max_files: int = 2,
+) -> list[GovernancePreview]:
+    standard_dir = repo_root / standards.standard_source.strip().strip("/")
+    if not standard_dir.is_dir():
+        return []
+    previews: list[GovernancePreview] = []
+    for path in sorted(standard_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in {".md", ".yaml", ".yml", ".rego"}:
+            continue
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        if not content.strip():
+            continue
+        relative = path.relative_to(repo_root).as_posix()
+        truncated = content
+        if len(content.splitlines()) > max_lines:
+            truncated = "\n".join(content.splitlines()[:max_lines]) + "\n…"
+        lines = annotate_file_lines(
+            truncated,
+            relative_path=relative,
+            policy_rules=policy_rules,
+        )
+        count = sum(1 for line in lines if line.markers)
+        previews.append(
+            GovernancePreview(
+                path=relative,
+                html=render_annotated_lines_html(lines),
+                annotation_count=count,
+            )
+        )
+        if len(previews) >= max_files:
+            break
+    return previews
+
+
 def _read_standard_file(
     repo_root: Path,
     standards: StandardsDiffResult,
@@ -199,29 +244,36 @@ def build_governance_previews(
     *,
     max_lines: int = 220,
 ) -> list[GovernancePreview]:
-    if not standards.available or not standards.has_changes:
+    if not standards.available:
         return []
-    previews: list[GovernancePreview] = []
-    for diff_file in standards.files:
-        if not diff_file.patch.strip():
-            continue
-        content = _read_standard_file(repo_root, standards, diff_file)
-        if not content.strip():
-            continue
-        truncated = content
-        if len(content.splitlines()) > max_lines:
-            truncated = "\n".join(content.splitlines()[:max_lines]) + "\n…"
-        lines = annotate_file_lines(
-            truncated,
-            relative_path=diff_file.path,
-            policy_rules=policy_rules,
-        )
-        count = sum(1 for line in lines if line.markers)
-        previews.append(
-            GovernancePreview(
-                path=diff_file.path,
-                html=render_annotated_lines_html(lines),
-                annotation_count=count,
+    if standards.has_changes:
+        previews: list[GovernancePreview] = []
+        for diff_file in standards.files:
+            if not diff_file.patch.strip():
+                continue
+            content = _read_standard_file(repo_root, standards, diff_file)
+            if not content.strip():
+                continue
+            truncated = content
+            if len(content.splitlines()) > max_lines:
+                truncated = "\n".join(content.splitlines()[:max_lines]) + "\n…"
+            lines = annotate_file_lines(
+                truncated,
+                relative_path=diff_file.path,
+                policy_rules=policy_rules,
             )
-        )
-    return previews
+            count = sum(1 for line in lines if line.markers)
+            previews.append(
+                GovernancePreview(
+                    path=diff_file.path,
+                    html=render_annotated_lines_html(lines),
+                    annotation_count=count,
+                )
+            )
+        return previews
+    return _previews_from_pinned_standard(
+        repo_root,
+        standards,
+        policy_rules,
+        max_lines=max_lines,
+    )

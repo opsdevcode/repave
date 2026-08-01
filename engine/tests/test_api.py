@@ -1027,6 +1027,7 @@ def test_update_plan_preview(repo_root, output_config) -> None:
     assert "pin-diff-table" in response.text
     assert "upgrade-diff" in response.text
     assert "upgrade-diff__item--" in response.text
+    assert "diff-viewer" in response.text or "Unified diffs" in response.text
     assert "repave update --no-dry-run" in response.text
 
 
@@ -1128,6 +1129,7 @@ def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) ->
     assert "Lineage" in response.text
     assert "data-bundle-member-tabs" in response.text
     assert "Repositories" in response.text
+    assert "bundle-topology" in response.text
 
 
 def test_generate_stream_redirects_when_async_enabled(

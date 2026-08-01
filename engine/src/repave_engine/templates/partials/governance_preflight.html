@@ -3,6 +3,12 @@
     <dt>Gates</dt>
     <dd>{{ governance_preflight.gate_count }} on scaffold</dd>
   </div>
+  {% if governance_preflight.gate_names %}
+  <div class="preflight-panel__row preflight-panel__row--wide">
+    <dt>Gate list</dt>
+    <dd><code>{{ governance_preflight.gate_names | join(', ') }}</code></dd>
+  </div>
+  {% endif %}
   <div class="preflight-panel__row">
     <dt>Standard</dt>
     <dd><code>{{ governance_preflight.standard_label }}</code></dd>
@@ -29,3 +35,8 @@
     </dd>
   </div>
 </dl>
+{% if not governance_preflight.tools_ready %}
+<p class="hint preflight-panel__doctor-hint">
+  Run <code>repave doctor</code> locally to verify gate toolchain pins and installed CLIs.
+</p>
+{% endif %}

@@ -94,7 +94,7 @@
       </div>
       {% endfor %}
     </dl>
-    <div class="lineage-receipt">
+    <div class="lineage-receipt{% if presenter_mode %} presenter-receipt{% endif %}">
       <button type="button" class="btn btn--secondary btn--sm" data-copy-lineage-receipt>
         Copy lineage summary
       </button>

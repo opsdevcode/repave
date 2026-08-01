@@ -8,6 +8,7 @@ import pytest
 from repave_engine.provenance_inputs import inputs_from_provenance, load_provenance_document
 from repave_engine.upgrade_plan import (
     apply_upgrade,
+    build_upgrade_file_diffs,
     build_upgrade_pull_request_body,
     build_upgrade_pull_request_title,
     diff_directories,
@@ -49,6 +50,24 @@ def test_diff_directories_detects_additions(tmp_path: Path) -> None:
     assert removed == []
 
 
+def test_build_upgrade_file_diffs_unified_patch(tmp_path: Path) -> None:
+    left = tmp_path / "left"
+    right = tmp_path / "right"
+    left.mkdir()
+    right.mkdir()
+    (left / "README.md").write_text("before\n", encoding="utf-8")
+    (right / "README.md").write_text("after\n", encoding="utf-8")
+    (right / "new.tf").write_text('resource "null_resource" "x" {}\n', encoding="utf-8")
+
+    diffs = build_upgrade_file_diffs(left, right, modified=("README.md",), added=("new.tf",))
+    paths = {item.path for item in diffs}
+    assert "README.md" in paths
+    assert "new.tf" in paths
+    readme = next(item for item in diffs if item.path == "README.md")
+    assert "-before" in readme.patch
+    assert "+after" in readme.patch
+
+
 def test_plan_upgrade_against_operator_fixture(repo_root: Path, tmp_path: Path) -> None:
     fixture = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
     assert fixture.is_dir(), f"missing fixture at {fixture}"
@@ -58,6 +77,7 @@ def test_plan_upgrade_against_operator_fixture(repo_root: Path, tmp_path: Path) 
     assert payload["blueprint_name"] == "terraform-module-generic"
     assert payload["changed_file_count"] > 0
     assert payload["pin_changes"]
+    assert payload["file_diffs"]
     assert any(row["field"] == "Blueprint version" for row in payload["pin_changes"])
     assert "repave.yaml" in payload["added"] or "repave.yaml" in payload["modified"]
 

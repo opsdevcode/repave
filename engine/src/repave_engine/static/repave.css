@@ -4640,3 +4640,68 @@ body.repave-busy {
   width: 100%;
 }
 
+.shell--presenter .shell__nav-more,
+.shell--presenter .shell__footer {
+  display: none;
+}
+
+.shell--presenter .shell__main {
+  margin-inline: auto;
+  max-width: 56rem;
+}
+
+.shell--presenter .result-hero__title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.shell--presenter .presenter-receipt .btn {
+  font-size: 1rem;
+  padding: 0.65rem 1.25rem;
+}
+
+.shell__presenter-banner {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  text-align: center;
+}
+
+.estate-tile--unknown {
+  border-color: var(--border-subtle);
+}
+
+.estate-tile__action {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.estate-tile__footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.estate-map-hint {
+  margin-top: var(--space-3);
+}
+
+.preflight-panel__row--wide {
+  grid-column: 1 / -1;
+}
+
+.preflight-panel__doctor-hint {
+  margin: var(--space-2) 0 0;
+}
+
+.bundle-topology__node {
+  color: inherit;
+  text-decoration: none;
+}
+
+.bundle-topology__node:hover {
+  border-color: var(--accent);
+}
+
+.diff-viewer__body .diff-line__text {
+  word-break: break-word;
+}

@@ -18,7 +18,7 @@
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <div class="shell{% if portal_density == 'compact' %} shell--compact{% endif %}">
+    <div class="shell{% if portal_density == 'compact' %} shell--compact{% endif %}{% if presenter_mode %} shell--presenter{% endif %}">
       <div class="shell__atmosphere" aria-hidden="true"></div>
       <header class="shell__bar">
         <a class="shell__brand" href="/" aria-label="repave home">
@@ -70,6 +70,12 @@
 
       {% if local_toolchain_warning %}
       <p class="shell__toolchain-warning hint" role="status">{{ local_toolchain_warning }}</p>
+      {% endif %}
+
+      {% if presenter_mode %}
+      <p class="shell__presenter-banner hint" role="status">
+        Presenter mode — simplified chrome for demos. Append <code>?presenter=1</code> to share this view.
+      </p>
       {% endif %}
 
       <div id="last-run-snippet" class="last-run-snippet shell__last-run" hidden></div>

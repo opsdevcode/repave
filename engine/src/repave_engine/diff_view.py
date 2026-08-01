@@ -73,8 +73,12 @@ def render_diff_file_html(diff_file: StandardsDiffFile) -> str:
 def diff_view_models(result: StandardsDiffResult) -> list[dict[str, str]]:
     if not result.available or not result.has_changes:
         return []
+    return diff_view_models_from_files(result.files)
+
+
+def diff_view_models_from_files(files: tuple[StandardsDiffFile, ...]) -> list[dict[str, str]]:
     models: list[dict[str, str]] = []
-    for item in result.files:
+    for item in files:
         if not item.patch.strip():
             continue
         models.append({"path": item.path, "html": render_diff_file_html(item)})

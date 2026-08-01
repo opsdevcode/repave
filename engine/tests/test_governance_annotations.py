@@ -1,7 +1,12 @@
 from __future__ import annotations
 
-from repave_engine.governance_annotations import annotate_file_lines, render_annotated_lines_html
+from repave_engine.governance_annotations import (
+    annotate_file_lines,
+    build_governance_previews,
+    render_annotated_lines_html,
+)
 from repave_engine.policy_catalog import PolicyRule
+from repave_engine.standards_diff import StandardsDiffResult
 
 
 def test_annotate_markdown_section_and_policy_keyword() -> None:
@@ -32,3 +37,17 @@ def test_annotate_markdown_section_and_policy_keyword() -> None:
     html = render_annotated_lines_html(lines)
     assert "gov-marker--policy" in html
     assert "locals.tf" in html
+
+
+def test_build_governance_previews_when_pin_matches_head(repo_root) -> None:
+    standards = StandardsDiffResult(
+        available=True,
+        pinned_version="1.1.0",
+        standard_source="standards/terraform-standards",
+        baseline_ref="abc123",
+        reason="",
+        files=(),
+    )
+    previews = build_governance_previews(repo_root, standards, ())
+    assert previews
+    assert any("standards/terraform-standards" in preview.path for preview in previews)

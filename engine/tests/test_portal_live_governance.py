@@ -36,6 +36,24 @@ def test_estate_map_page_lists_tiles(repo_root, output_config, registry: Path) -
     assert "Estate map" in response.text
     assert "tf-vpc" in response.text
     assert "estate-tile" in response.text
+    assert "/blueprints/terraform-module-generic" in response.text
+    assert "/update?target_repo=" in response.text
+
+
+def test_presenter_mode_shell(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/?presenter=1").text
+    assert "shell--presenter" in body
+    assert "Presenter mode" in body
+
+
+def test_update_form_prefills_target_repo(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get(
+        "/update",
+        params={"target_repo": "https://github.com/acme/tf-vpc"},
+    ).text
+    assert 'value="https://github.com/acme/tf-vpc"' in body
 
 
 def test_blueprint_preflight_panel(repo_root, output_config) -> None:
@@ -46,6 +64,7 @@ def test_blueprint_preflight_panel(repo_root, output_config) -> None:
     assert "preflight-panel" in body
     assert "form-actions__preflight-details" in body
     assert "Example repo" in body
+    assert "Gate list" in body
 
 
 def test_bundle_topology_section(repo_root, output_config) -> None:
@@ -54,6 +73,38 @@ def test_bundle_topology_section(repo_root, output_config) -> None:
     body = client.get("/bundles/service-stack").text
 
     assert "bundle-topology" in body
+
+
+def test_bundle_result_includes_topology(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "bundle_name": "service-stack",
+            "dry_run": "true",
+            "service_name": "portal-bundle",
+            "description": "Portal bundle dry-run test",
+            "owner": "group:platform",
+            "organization": "platform",
+            "team": "payments",
+            "port": "8080",
+            "runtime": "python",
+            "catalog_lifecycle": "experimental",
+        },
+    )
+    assert response.status_code == 200
+    assert "bundle-topology" in response.text
+
+
+def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:
+    fixture = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
+    if not fixture.is_dir():
+        pytest.skip("operator fixture not present")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post("/update", data={"target_repo": str(fixture)})
+    assert response.status_code == 200
+    body = response.text
+    assert "Unified diffs" in body or "diff-viewer" in body
 
 
 def test_api_estate_json(repo_root, output_config, registry: Path) -> None:

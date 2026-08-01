@@ -93,6 +93,10 @@
   </div>
 </section>
 
+{% if bundle_topology %}
+{% include "partials/bundle_topology.html" %}
+{% endif %}
+
 <section class="card stack-gap" aria-labelledby="bundle-repos-heading">
   <div class="card__header">
     <h2 id="bundle-repos-heading">Repositories</h2>

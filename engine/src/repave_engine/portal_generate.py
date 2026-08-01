@@ -11,7 +11,8 @@ from fastapi import HTTPException
 
 from repave_engine.blueprint import blueprint_dir, bundles_dir, load_blueprint
 from repave_engine.bundle import load_bundle
-from repave_engine.bundle_portal import build_bundle_result_portal_context
+from repave_engine.bundle_portal import build_bundle_result_portal_context, bundle_member_previews
+from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.pipeline import (
     BundleGenerationResult,
@@ -159,6 +160,13 @@ def run_portal_generate(
             github_token=github_token,
         )
         combined = bundle_result.combined_gates()
+        previews = bundle_member_previews(
+            bundle,
+            bundle_values,
+            repo_root=repo_root,
+            output_config=output_config,
+        )
+        topology_nodes, topology_edges = build_bundle_topology(bundle, previews)
         return PortalGenerateTemplate(
             template_name="bundle_result.html",
             context={
@@ -173,6 +181,7 @@ def run_portal_generate(
                     bundle_result,
                     shared_inputs=bundle_result.shared_inputs,
                 ),
+                "bundle_topology": topology_public(topology_nodes, topology_edges),
             },
         )
 
