@@ -6,21 +6,18 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.130.0  
 
-**In progress:** [v2.0.0 Platform GA](#v200--platform-ga) (conversational governed AI generation).
+**In progress:** [v2.0.0 Platform GA](#v200--platform-ga) — **conversational governed AI generation**
+(only remaining v2 must-have).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
 per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**,
-**bundle async in worker mode**); **v2 contract freeze slice 1** (`/api/v2` read-model parity,
-`/api/v1` deprecation headers, `repave.config.yaml` `apiVersion`, hosted SQL requirement);
-**provenance required on publish** (engine publish gate + operator `ProvenanceMissing` status);
-**blueprint schema + version policy** ([`docs/blueprint-versioning.md`](blueprint-versioning.md));
-**Postgres DR runbook** ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md),
-`make postgres-dr-drill`, [`docs/operations/dr-drill-log.md`](operations/dr-drill-log.md));
-**v2 contract freeze docs** ([`docs/api-v1-migration.md`](api-v1-migration.md),
-[`docs/repave-config-v1.md`](repave-config-v1.md));
-**GitHub App authentication** for
+**bundle async in worker mode**); **v2 contract freeze** (complete — `/api/v2` read models,
+[`docs/api-v1-migration.md`](api-v1-migration.md) sunset, [`docs/repave-config-v1.md`](repave-config-v1.md),
+hosted SQL requirement, **provenance required on publish**, [`docs/blueprint-versioning.md`](blueprint-versioning.md));
+**Postgres DR** ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md),
+`make postgres-dr-drill`); **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
 preview, batch import, rate-limit backoff — `repave import`, `/import`, `/import/batch`,
@@ -112,21 +109,23 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ v1.69–v1.70    ansible patterns  cross-platform role + pinned-roles rollout (shipped)
   ├─ v1.72–v1.73    remote inventory  operator observes and plans spec.repoURL repos (Phases A–B)
   │
-  │  open work below is named by theme; engine tags are assigned at merge time
+  │  theme status at Platform GA cut line (shipped unless noted open on v2.0.0)
   │
-  ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
-  ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
-  ├─ k8s deploy      Helm chart + day-2 operability (portal + operator charts shipped)
-  ├─ durability      SQL store for audit/fleet/runs; async queue; DLQ + replay + portal /runs (shipped)
-  ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
+  ├─ hardening       shipped — toolchain pin unification, subprocess timeouts, coverage in CI
+  ├─ estate control  shipped — fleet registry + `repave register`; remote inventory + remediation
+  ├─ k8s deploy      shipped — Helm chart + day-2 operability (portal + operator charts)
+  ├─ durability      shipped — SQL store; async queue; DLQ + replay + portal /runs
+  ├─ service split   shipped — portal / worker / corpus; operator on /api/v2 (portal/API split deferred)
   ├─ supply chain    shipped — GitHub App auth, governed PR, digest-pinned CI/images/chart
-  ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns + drift SLO metrics + rate-limit parity shipped
-  ├─ portal surfaces catalog, rendered docs, scorecards, observability read
-  ├─ reach           repave verify (local + remote clone shipped); repo import Phase 1–3 shipped; composite golden paths
-  ├─ usability       `repave doctor`; queryable audit history
-  ├─ cost            Infracost estimate + CI; URL/AWS/Azure actuals; library cost badges (shipped)
+  ├─ fleet scale     shipped — Blueprint controller; upgrade campaigns; drift SLO metrics
+  ├─ portal surfaces shipped — catalog, rendered docs, scorecards, observability read
+  ├─ reach           shipped — repave verify; repo import; composite golden paths
+  ├─ usability       shipped — `repave doctor`; queryable audit history
+  ├─ cost            shipped — Infracost + actuals readers; library cost badges
+  ├─ v2 contract     /api/v2 freeze, v1 migration docs, config v1, provenance-on-publish, blueprint schema (shipped)
+  ├─ v2 resilience   Postgres DR runbook + `make postgres-dr-drill` (shipped)
   │
-  v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
+  v2.0.0             platform GA       contract freeze + DR shipped; conversational AI open
   │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane
 ```
@@ -152,7 +151,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
-| **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
+| **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
+| **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
+| **v2.0.0 Platform GA** | in progress | Contract freeze + DR shipped; **conversational governed AI** is the last must-have |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
 ---
@@ -1804,6 +1805,11 @@ killed worker's run is replayable and visible from a second portal replica, and
 **Target:** Repave as the **control plane for golden-path estates** — not only a
 generator.
 
+**Status:** **Contract freeze shipped on `main`** (all rows in the table below).
+**Postgres DR shipped on `main`**. **In progress:** [conversational governed AI generation](#conversational-and-governed-ai-generation)
+— the only remaining v2 must-have in the capabilities table. Pre-v3 follow-up: v2 read models for
+`/api/v1/estate` and `/api/v1/governance/annotations/*` ([`api-v1-migration.md`](api-v1-migration.md)).
+
 **Planned capabilities (must-have for v2):**
 
 | Capability | Built in releases |
@@ -1815,23 +1821,28 @@ generator.
 | Multiple artifact types (Terraform, Ansible, Helm, app service, observability) | v1.13–v1.16, v1.20, v1.33–v1.34, v1.40 |
 | Blueprint conformance in CI | v1.29 |
 | Self-heal drift and version bumps | v1.17, v1.19, v1.24 |
-| Fleet visibility | v1.72–v1.73+ remote inventory + fleet registry (portal + manifests) → v2 operator GA |
+| Fleet visibility | v1.72–v1.73+ remote inventory + fleet registry (portal + manifests) → v2 operator GA (shipped) |
 | Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) (shipped) |
-| Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) |
+| Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) (shipped) |
 | Module repos self-govern in CI | v1.23 |
 | On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) + [day-2 overlay](../deploy/k8s/chart/values-day2.yaml) (shipped) |
-| Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 |
-| Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 |
+| Authenticated single-tenant service (OIDC SSO) | v1.26–v1.27 (shipped) |
+| Operability and audit (metrics, audit log, notifications, catalog) | v1.30–v1.32 (shipped) |
 | Day-2 operability (health, SLOs, upgrades, runbooks) | v1.35–v1.38 (shipped) |
 | GitHub App auth (publish/remediation) | [GitHub App authentication](#github-app-authentication-for-publish-and-remediation) (shipped) |
-| Durable multi-user service (SQL store, async runs) | [durability and concurrency](#durability-and-concurrency-for-hosted-use) |
-| Independently scaled portal / API / gate worker on k8s | [service decomposition](#service-decomposition-for-hosted-scale) |
-| Portal discovery surfaces (catalog, docs, scorecards, health) | [portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read) |
-| Cost at generate time and in the catalog | [cost visibility](#cost-visibility) |
-| Bounded fleet upgrade campaigns | [fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) |
-| Conversational / governed AI generation | v2 (see below) |
+| Durable multi-user service (SQL store, async runs) | [durability and concurrency](#durability-and-concurrency-for-hosted-use) (shipped) |
+| Independently scaled portal / API / gate worker on k8s | [service decomposition](#service-decomposition-for-hosted-scale) (shipped Phase 0–4) |
+| Portal discovery surfaces (catalog, docs, scorecards, health) | [portal surfaces](#developer-portal-surfaces-catalog-docs-scorecards-observability-read) (shipped) |
+| Cost at generate time and in the catalog | [cost visibility](#cost-visibility) (shipped) |
+| Bounded fleet upgrade campaigns | [fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) (shipped) |
+| Contract freeze (HTTP, config, schema, provenance) | See table below (shipped) |
+| Postgres backup/restore for hosted SQL | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md) (shipped) |
+| Conversational / governed AI generation | **Open** — see below |
 
 **Contract freeze at v2.0.0**
+
+**Status:** **Shipped on `main`** — integrators can build against the v2 line; v1 deprecation
+windows are published for v3 removals.
 
 v2 is the point where integrators can build against repave without expecting the ground
 to move. That means declaring what is stable and what it costs to migrate — and opening the
@@ -1886,19 +1897,26 @@ documented objective — see
 
 **Done when:**
 
-1. Operator opens remediation PRs for drift and standard bumps across registered repos.
-2. `repave update` upgrades an existing module repo via PR.
-3. At least two production golden paths ship with standards + lint/policy packs.
+1. Operator opens remediation PRs for drift and standard bumps across registered repos. **Met.**
+2. `repave update` upgrades an existing module repo via PR. **Met.**
+3. At least two production golden paths ship with standards + lint/policy packs. **Met** (Terraform,
+   Ansible, Helm, app-service, observability paths on `main`).
 4. Documentation describes fork → customize standards/blueprints → fleet reconcile
-   without referring to unreleased features.
+   without referring to unreleased features. **Met** for shipped themes; conversational AI docs
+   remain open.
 5. The conversational and form paths produce byte-identical gated output for the same
-   blueprint and inputs.
+   blueprint and inputs. **Open** — depends on conversational AI slice.
 6. CRD conversion runs in a non-production cluster with no data loss, and a recovery drill
    meets the documented objective — see
    [`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md)
-   (automated baseline in `make operator-e2e`).
+   (automated baseline in `make operator-e2e`). **Met.**
+7. Postgres backup/restore drill meets documented RPO/RTO — see
+   [`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md)
+   (`make postgres-dr-drill` baseline). **Met.**
 
 ### Conversational and governed AI generation
+
+**Status:** **Not started** — last v2 Platform GA must-have.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an
@@ -2000,7 +2018,7 @@ that makes those v2 decisions checkable.
 | --- | --- |
 | CRDs promoted to `repave.dev/v1`; `v1alpha1` removed | One-way upgrade job, deprecation announced at v2 |
 | Policy gates cannot be disabled on regulated blueprint families | Documented waiver process plus a blueprint pin bump |
-| `/api/v1` removed | Sunset announced with the v2 `/api/v2` freeze |
+| `/api/v1` removed | Sunset announced with the v2 `/api/v2` freeze — see [`docs/api-v1-migration.md`](api-v1-migration.md) (1 Aug 2027) |
 | Blueprint schema v2 | `repave migrate-blueprint` CLI; deprecation window opens during v2.x |
 
 **Done when:**
