@@ -54,6 +54,20 @@ type UpgradeCampaignStatus struct {
 	// +optional
 	OpenPRCount int32 `json:"openPRCount,omitempty"`
 
+	// OutOfDateCount is the number of matched GoldenPathRepos with pin drift.
+	// +optional
+	OutOfDateCount int32 `json:"outOfDateCount,omitempty"`
+
+	// OldestDriftAgeSeconds is the age in seconds of the longest-running drift
+	// among matched repos (zero when none are out of date).
+	// +optional
+	OldestDriftAgeSeconds int64 `json:"oldestDriftAgeSeconds,omitempty"`
+
+	// AverageRemediationMTTRSeconds is the mean time-to-resolve drift across matched
+	// repos that returned to Ready during the last reconcile window.
+	// +optional
+	AverageRemediationMTTRSeconds int64 `json:"averageRemediationMTTRSeconds,omitempty"`
+
 	// ConsecutiveGateFailures counts recent remediation failures while Active.
 	// +optional
 	ConsecutiveGateFailures int32 `json:"consecutiveGateFailures,omitempty"`
@@ -69,6 +83,8 @@ type UpgradeCampaignStatus struct {
 // +kubebuilder:resource:path=upgradecampaigns,shortName=uc
 // +kubebuilder:printcolumn:name="Phase",type=string,JSONPath=`.status.phase`
 // +kubebuilder:printcolumn:name="OpenPRs",type=integer,JSONPath=`.status.openPRCount`
+// +kubebuilder:printcolumn:name="OutOfDate",type=integer,JSONPath=`.status.outOfDateCount`
+// +kubebuilder:printcolumn:name="OldestDrift",type=integer,JSONPath=`.status.oldestDriftAgeSeconds`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // UpgradeCampaign bounds concurrent operator remediation PRs across a fleet slice.

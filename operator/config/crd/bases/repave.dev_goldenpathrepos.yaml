@@ -507,6 +507,11 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              driftDetectedAt:
+                description: DriftDetectedAt is set when the repo first enters OutOfDate
+                  and cleared when pins align.
+                format: date-time
+                type: string
               message:
                 description: Message is a human-readable detail string for the current
                   phase.
@@ -547,6 +552,11 @@ spec:
                     description: Number is the GitHub pull request number when State
                       is Open.
                     type: integer
+                  openedAt:
+                    description: OpenedAt records when the remediation PR was opened
+                      (or planned in dry-run).
+                    format: date-time
+                    type: string
                   state:
                     description: State is Open or Planned (dry-run without GitHub).
                     type: string

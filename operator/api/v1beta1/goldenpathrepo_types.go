@@ -131,6 +131,10 @@ type RemediationPRStatus struct {
 	// +optional
 	State string `json:"state,omitempty"`
 
+	// OpenedAt records when the remediation PR was opened (or planned in dry-run).
+	// +optional
+	OpenedAt *metav1.Time `json:"openedAt,omitempty"`
+
 	// DesiredBlueprintVersion is the spec pin this PR was created for (idempotency).
 	// +optional
 	DesiredBlueprintVersion string `json:"desiredBlueprintVersion,omitempty"`
@@ -194,6 +198,10 @@ type GoldenPathRepoStatus struct {
 	// RemediationPR holds the latest remediation pull request (slice 3+).
 	// +optional
 	RemediationPR *RemediationPRStatus `json:"remediationPR,omitempty"`
+
+	// DriftDetectedAt is set when the repo first enters OutOfDate and cleared when pins align.
+	// +optional
+	DriftDetectedAt *metav1.Time `json:"driftDetectedAt,omitempty"`
 }
 
 // +kubebuilder:object:root=true

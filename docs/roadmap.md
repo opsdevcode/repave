@@ -17,7 +17,7 @@ PrometheusRule, runbooks); **repo import to golden path** (`repave import`, `/im
 `/api/v2/imports/*`); **operator production Helm chart** (`deploy/k8s/operator-chart/`,
 `values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks);
 **operator fleet campaigns** (`UpgradeCampaign` CRD, Blueprint controller, bounded
-remediation PR concurrency); **governed PR conventions** (`pull_requests` in
+remediation PR concurrency, drift SLO metrics, campaign webhook summaries); **governed PR conventions** (`pull_requests` in
 `repave.config.yaml`, shared labels/branch prefixes, gate evidence checklist).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
@@ -101,7 +101,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
   ├─ supply chain    GitHub App auth shipped; governed PR conventions shipped
-  ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns; drift SLOs open
+  ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns + drift SLO metrics shipped; operator rate-limit parity open
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
   ├─ reach           repave verify (local + remote clone shipped); repo import (shipped); composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
@@ -1577,10 +1577,13 @@ operator remote inventory Phase C.
 **Done when:** A standard bump across a registry of repos opens a bounded set of remediation PRs,
 can be paused mid-flight, and reports drift MTTR.
 
-**Status:** **Partial on `main`** — `Blueprint` controller publishes `status.targetPins`;
-`UpgradeCampaign` CRD with pause, max concurrent open PRs, and stop-after-failures gate on
-remediation (label GPRs with `repave.dev/upgrade-campaign`). **Still open:** drift SLO metrics,
-campaign notification summaries, operator GitHub rate-limit parity.
+**Status:** **Shipped on `main`** — `Blueprint` controller publishes `status.targetPins`;
+`UpgradeCampaign` CRD with pause, max concurrent open PRs, stop-after-failures gate on
+remediation (label GPRs with `repave.dev/upgrade-campaign`), drift SLO status fields
+(`outOfDateCount`, `oldestDriftAgeSeconds`, `averageRemediationMTTRSeconds`), Prometheus
+metrics (`repave_fleet_*`, `repave_remediation_mttr_seconds`), and campaign webhook events
+(`campaign_summary`, `campaign_paused`, `campaign_stopped`, `campaign_capacity_reached`).
+**Still open:** operator GitHub rate-limit parity for fleet campaigns.
 
 ---
 
