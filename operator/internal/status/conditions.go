@@ -21,6 +21,7 @@ const (
 	ReasonPinsAligned           = "PinsAligned"
 	ReasonPinsDrift             = "PinsDrift"
 	ReasonProvenanceReadFailed  = "ProvenanceReadFailed"
+	ReasonProvenanceMissing     = "ProvenanceMissing"
 	ReasonRemoteRepoUnsupported = "RemoteRepoUnsupported"
 	ReasonRemoteFetchFailed     = "RemoteFetchFailed"
 	ReasonUpgradeDiffComputed   = "UpgradeDiffComputed"

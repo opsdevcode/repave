@@ -1,6 +1,7 @@
 package provenance_test
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,6 +37,9 @@ func TestReadPinsFromRepoRoot_missingFile(t *testing.T) {
 	_, err := provenance.ReadPinsFromRepoRoot(dir)
 	if err == nil {
 		t.Fatal("expected error for missing repave.yaml")
+	}
+	if !errors.Is(err, provenance.ErrProvenanceMissing) {
+		t.Fatalf("expected ErrProvenanceMissing, got %v", err)
 	}
 }
 

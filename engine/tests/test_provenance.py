@@ -125,3 +125,69 @@ def test_build_provenance_document_honors_fixed_generated_at(
         },
     )
     assert document["spec"]["generation"]["generated_at"] == "1970-01-01T00:00:00+00:00"
+
+
+def test_require_provenance_for_publish_missing_file(
+    tmp_path: Path, terraform_blueprint, repo_root: Path
+) -> None:
+    from repave_engine.provenance import require_provenance_for_publish
+
+    with pytest.raises(FileNotFoundError, match="Provenance file missing"):
+        require_provenance_for_publish(tmp_path, terraform_blueprint, repo_root=repo_root)
+
+
+def test_require_provenance_for_publish_validates_schema(
+    tmp_path: Path, terraform_blueprint, repo_root: Path
+) -> None:
+    from repave_engine.provenance import require_provenance_for_publish, write_provenance_file
+
+    values = {
+        "module_name": "example",
+        "description": "Example",
+        "cloud_provider": "aws",
+        "provider_services": "s3",
+    }
+    write_provenance_file(
+        tmp_path,
+        terraform_blueprint,
+        values,
+        filename=terraform_blueprint.provenance_file or "repave.yaml",
+    )
+    path = require_provenance_for_publish(tmp_path, terraform_blueprint, repo_root=repo_root)
+    assert path.name == "repave.yaml"
+
+
+def test_publish_after_gates_requires_provenance(
+    terraform_blueprint,
+    sample_inputs,
+    output_config,
+    staging_root,
+    repo_root: Path,
+) -> None:
+    from repave_engine.pipeline import _publish_after_gates
+    from repave_engine.render import RenderResult
+    from repave_engine.target_repo import resolve_module_repository
+
+    normalized = dict(sample_inputs)
+    module_name = normalized["module_name"]
+    module_repository = resolve_module_repository(
+        module_name=module_name,
+        config=output_config,
+        name_template=terraform_blueprint.output_repo_name_template,
+        template_values=normalized,
+    )
+    render_result = RenderResult(output_dir=staging_root, values=normalized)
+    (staging_root / "main.tf").write_text("# stub\n", encoding="utf-8")
+
+    with pytest.raises(FileNotFoundError, match="Provenance file missing"):
+        _publish_after_gates(
+            blueprint=terraform_blueprint,
+            render_result=render_result,
+            module_repository=module_repository,
+            normalized=normalized,
+            dry_run=False,
+            github_token=None,
+            on_event=None,
+            publish_idempotency=None,
+            repo_root=repo_root,
+        )

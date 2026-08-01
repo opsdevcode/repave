@@ -1,6 +1,7 @@
 package provenance
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +10,11 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/opsdevcode/repave/operator/internal/drift"
+)
+
+var (
+	// ErrProvenanceMissing is returned when repave.yaml is absent at the repo root.
+	ErrProvenanceMissing = errors.New("provenance file missing")
 )
 
 const (
@@ -39,7 +45,7 @@ func ReadPinsFromRepoRoot(repoRoot string) (drift.PinSet, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return drift.PinSet{}, fmt.Errorf("%s: %w", path, err)
+			return drift.PinSet{}, fmt.Errorf("%w: %s", ErrProvenanceMissing, path)
 		}
 		return drift.PinSet{}, fmt.Errorf("read provenance: %w", err)
 	}

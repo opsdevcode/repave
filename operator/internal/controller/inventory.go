@@ -74,8 +74,9 @@ func applyInventoryStatus(
 ) (retryAfter time.Duration, err error) {
 	observed, err := inventory.PinsFromWorkspace(workspace)
 	if err != nil {
+		failure := inventory.ClassifyProvenanceError(err)
 		if patchErr := patchObservationFailure(
-			ctx, c, repo, status.ReasonProvenanceReadFailed, err.Error(),
+			ctx, c, repo, failure.Reason, failure.Message,
 		); patchErr != nil {
 			return 0, patchErr
 		}
