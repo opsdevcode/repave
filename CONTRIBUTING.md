@@ -14,9 +14,11 @@ operator design.
   Clouds live only in `blueprints/`.
 - **The gates are not optional.** Do not add a code path that lets generated
   output skip its configured gates.
-- **Contracts are stable.** Changes to `schemas/blueprint.schema.json` or
-  `schemas/inputs.schema.json` are breaking and require a version bump and
-  discussion first.
+- **Contracts are stable.** JSON Schemas under `schemas/` are frozen for the v2
+  line; see [`docs/blueprint-versioning.md`](docs/blueprint-versioning.md) for
+  `metadata.version` bump rules and schema change policy. Incompatible schema
+  edits require discussion and a v3 migration plan — do not silently rename or
+  remove required fields during v2.
 - **Deterministic generation.** Rendering must be reproducible for the same
   inputs; avoid nondeterministic template logic.
 
@@ -55,7 +57,7 @@ make gate-doctor
 Every golden path under `blueprints/*/blueprint.yaml` must ship a sibling
 `conformance.yaml` with fixture `inputs` and `required_files`. CI runs
 `tests/test_blueprint_conformance.py` (render, gates, template hygiene). Optional `snapshot: true` enables `conformance.manifest.json`; refresh with
-`make blueprint-conformance-update` when blueprint output changes (not on every engine release — manifest hashes ignore pinned `repave-engine==` and provenance engine version lines).
+`make blueprint-conformance-update` when blueprint output changes (not on every engine release — manifest hashes ignore pinned `repave-engine==` and provenance engine version lines). Bump `metadata.version` per [`docs/blueprint-versioning.md`](docs/blueprint-versioning.md) when template output changes.
 
 Or from `engine/`:
 

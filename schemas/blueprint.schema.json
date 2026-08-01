@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://repave.dev/schemas/blueprint.schema.json",
   "title": "Repave Blueprint",
-  "description": "Declares a versioned golden path: inputs, standard reference, template, gates, and output contract.",
+  "description": "Declares a versioned golden path: inputs, standard reference, template, gates, and output contract. Schema frozen for repave v2 — see docs/blueprint-versioning.md.",
   "type": "object",
   "required": ["apiVersion", "kind", "metadata", "spec"],
   "additionalProperties": false,

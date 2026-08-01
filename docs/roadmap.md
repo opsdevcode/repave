@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.130.0  
 
-**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (blueprint schema version policy, Postgres DR runbook).
+**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (Postgres DR runbook).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
@@ -15,6 +15,7 @@ per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart
 **bundle async in worker mode**); **v2 contract freeze slice 1** (`/api/v2` read-model parity,
 `/api/v1` deprecation headers, `repave.config.yaml` `apiVersion`, hosted SQL requirement);
 **provenance required on publish** (engine publish gate + operator `ProvenanceMissing` status);
+**blueprint schema + version policy** ([`docs/blueprint-versioning.md`](blueprint-versioning.md));
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
@@ -1841,7 +1842,7 @@ rather than after it:
 | **`repave.yaml` provenance required** on every publish | Operator flags non-compliant repos instead of silently skipping them | **Shipped** — publish fails without valid `repave.yaml`; GPR `ProvenanceMissing` |
 | **`repave.config.yaml` gains `apiVersion`** | Config loader accepts the unversioned form for one minor with a warning | **Partial** — `repave.dev/v1` + warning shipped |
 | **Durable store required in service mode** (JSONL becomes export-only) | Documented external-database setup; local mode keeps the file store | **Partial** — startup validation shipped |
-| **Blueprint JSON Schema frozen** for the v2 line; `metadata.version` policy documented | Template breaking changes must bump blueprint minor/major | Open |
+| **Blueprint JSON Schema frozen** for the v2 line; `metadata.version` policy documented | Template breaking changes must bump blueprint minor/major | **Shipped** — [`docs/blueprint-versioning.md`](blueprint-versioning.md) |
 
 ### Resilience and disaster recovery
 
