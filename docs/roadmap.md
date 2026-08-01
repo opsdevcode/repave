@@ -6,7 +6,8 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.118.0  
 
-**In progress:** _(none — pick from [Planning horizon](#planning-horizon-v119--v200-platform-maturity--governed-estate-at-scale) or open follow-ups below)._
+**In progress:** estate control continuous fleet sync; hosted durability retry/reclaim;
+supply chain digest pins (branch `feat/estate-durability-supply-chain`).
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -124,13 +125,13 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Blueprint quality** | v1.29 | Every blueprint is rendered, gated, and snapshot-tested in CI |
 | **Operability and audit** | v1.30–v1.32 | Metrics, audit log, notifications, and developer-portal catalog registration |
 | **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
-| **Estate control plane** | v1.72–v1.73+ shipped (partial) | Remote observe/plan; fleet registry + portal + `fleet-manifests`; operator Phase C open |
+| **Estate control plane** | v1.72–v1.73+ shipped | Remote observe/plan/remediate; fleet registry; operator continuous fleet sync + GPR prune |
 | **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
 | **Brownfield onboarding** | shipped (Phase 1) | `repave import` detects the golden path, moves files byte-identically, adds scaffold, opens a reviewable PR; per-file overrides and batch onboarding open |
 | **Hardening** | shipped (group A) | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
-| **Hosted durability** | partial (Phase 1–3 shipped) | Unified SQL store for audit/fleet/runs/sessions; async queue + DLQ/replay; external workers |
+| **Hosted durability** | partial (Phase 1–3 + retry/reclaim in progress) | Unified SQL store; async queue + DLQ/replay + list runs; external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
-| **Supply chain** | partial (GitHub App shipped) | Digest-pinned actions and base images, governed PR conventions |
+| **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
 | **Developer portal surfaces** | partial | Service catalog, scorecards, in-portal docs, observability embed; cost and org-wide docs open |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
@@ -1137,7 +1138,8 @@ state, and the operator picks it up without hand-written CRs.
 **Status:** **Shipped on `main`** (store, CLI, API, portal **Fleet**, `fleet-manifests`,
 kind co-install). **Polish shipped:** portal operator status via snapshot file, GitOps bundle
 flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`), and
-`repave fleet-operator-snapshot`. Continuous in-cluster registry sync remains out of scope.
+`repave fleet-operator-snapshot`. **In progress:** operator continuous registry sync
+(`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`) with GPR prune on unregister.
 
 ---
 
@@ -1438,7 +1440,7 @@ OTEL env vars, [`docs/tracing.md`](tracing.md).
 | `cli.py` (576 lines) owns every command | `engine/src/repave_engine/cli/` | **Shipped** — `cli/` package with one module per command group |
 | Gate-outcome summarization implemented four times with drifting empty/passed/failed semantics | `generate_api.py`, `api.py`, `pipeline.py`, `notifications.py` | **Shipped** — `gate_summary` / `all_gates_passed` in `gates.py` |
 | Blueprint root `repo_root / "blueprints"` hardcoded in a dozen places | `api.py`, `cli.py`, `generate_api.py` | **Shipped** — `blueprints_dir()` helper |
-| Actions pinned to mutable tags; `uv:latest` in the portal image | `.github/workflows/*.yml`, `deploy/local/Dockerfile` | Pin by digest/SHA (deferred) |
+| Actions pinned to mutable tags; `uv:latest` in the portal image | `.github/workflows/*.yml`, `deploy/local/Dockerfile` | **Shipped** — `.github/action-pins.json`, SHA-pinned workflows, digest-pinned base images |
 | No tests for `generate_api`, `auth_context`, `tracing`, `gate_builtin` | `engine/tests/` | **Shipped** — focused unit tests under `engine/tests/` |
 | Operator apply integration test skips unconditionally | `operator/internal/repave/apply_test.go` | **Shipped** — dead skip test removed (e2e covers preserve-local) |
 | Python floor is 3.10 but CI only runs 3.12 | `engine/pyproject.toml`, CI workflows | Matrix 3.10 or raise the floor (deferred) |
@@ -1479,6 +1481,7 @@ decision made once, before four features encode the answer.
   retried submit does not double-publish
 - Retry with backoff and a dead-letter store with admin replay for runs that fail
   infrastructurally rather than on gates
+- Reclaim stale `running` runs after worker loss; list/filter runs via `GET /api/v1/runs`
 - Require an explicit session secret outside local mode; aggregate metrics across replicas
 
 **Dependencies:** [Engine hardening A2](#a2--subprocess-timeouts-on-every-gate-and-git-invocation)
@@ -1497,7 +1500,9 @@ store (`database_url`) for audit, fleet, runs, and **OIDC sessions** (server-sid
 `database_url` is set) with optional JSONL export mirrors; PostgreSQL via
 `repave-engine[postgres]` (included in portal/worker container images). **Phase 3 shipped on
 `main`** — `repave run-worker`, Helm worker Deployment, and `REPAVE_EXTERNAL_WORKERS` /
-`worker_mode: external` for distributed execution.
+`worker_mode: external` for distributed execution. **In progress on branch
+`feat/estate-durability-supply-chain`** — automatic retry/backoff before dead-letter, stale
+`running` reclaim, and `GET /api/v1/runs` list/filter.
 
 ---
 

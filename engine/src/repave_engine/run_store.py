@@ -6,7 +6,7 @@ import json
 import threading
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -42,6 +42,8 @@ class RunRecord:
     payload: dict[str, Any]
     result: dict[str, Any] | None = None
     error: str | None = None
+    attempt_count: int = 0
+    next_attempt_at: str | None = None
 
     def to_public_dict(self) -> dict[str, Any]:
         body: dict[str, Any] = {
@@ -52,9 +54,12 @@ class RunRecord:
             "acting_user": self.acting_user,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "attempt_count": self.attempt_count,
         }
         if self.client_request_id:
             body["client_request_id"] = self.client_request_id
+        if self.next_attempt_at:
+            body["next_attempt_at"] = self.next_attempt_at
         if self.result is not None:
             body["result"] = self.result
         if self.error:
@@ -64,6 +69,10 @@ class RunRecord:
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _parse_iso(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
 class RunStore:
@@ -96,8 +105,9 @@ class RunStore:
                         INSERT INTO runs (
                             run_id, client_request_id, status, blueprint_name,
                             dry_run, acting_user, created_at, updated_at,
-                            payload_json, result_json, error
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)
+                            payload_json, result_json, error, attempt_count,
+                            next_attempt_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, 0, NULL)
                         """,
                     (
                         run_id,
@@ -141,6 +151,36 @@ class RunStore:
             row = cur.fetchone()
         return _row_to_record(row) if row else None
 
+    def list_runs(
+        self,
+        *,
+        status: RunStatus | None = None,
+        limit: int = 50,
+    ) -> list[RunRecord]:
+        limit = max(1, min(limit, 200))
+        with self._lock, self._connect() as conn:
+            if status is None:
+                cur = conn.execute(
+                    """
+                    SELECT * FROM runs
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """,
+                    (limit,),
+                )
+            else:
+                cur = conn.execute(
+                    """
+                    SELECT * FROM runs
+                    WHERE status = ?
+                    ORDER BY created_at DESC
+                    LIMIT ?
+                    """,
+                    (status.value, limit),
+                )
+            rows = cur.fetchall() if hasattr(cur, "fetchall") else list(cur)
+        return [_row_to_record(row) for row in rows]
+
     def update_status(
         self,
         run_id: str,
@@ -148,19 +188,130 @@ class RunStore:
         *,
         result: dict[str, Any] | None = None,
         error: str | None = None,
+        next_attempt_at: str | None = None,
+        clear_next_attempt: bool = False,
     ) -> None:
         now = _now_iso()
         result_json = json.dumps(result, separators=(",", ":")) if result is not None else None
+        next_raw = None if clear_next_attempt else next_attempt_at
         with self._lock, self._connect() as conn:
             conn.execute(
                 """
                     UPDATE runs
-                    SET status = ?, updated_at = ?, result_json = ?, error = ?
+                    SET status = ?, updated_at = ?, result_json = ?, error = ?,
+                        next_attempt_at = ?
                     WHERE run_id = ?
                     """,
-                (status.value, now, result_json, error, run_id),
+                (status.value, now, result_json, error, next_raw, run_id),
             )
             conn.commit()
+
+    def reset_for_replay(self, run_id: str) -> None:
+        now = _now_iso()
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                """
+                    UPDATE runs
+                    SET status = ?, updated_at = ?, result_json = NULL, error = NULL,
+                        attempt_count = 0, next_attempt_at = NULL
+                    WHERE run_id = ?
+                    """,
+                (RunStatus.QUEUED.value, now, run_id),
+            )
+            conn.commit()
+
+    def schedule_retry(
+        self,
+        run_id: str,
+        *,
+        attempt_count: int,
+        error: str,
+        next_attempt_at: str,
+    ) -> None:
+        now = _now_iso()
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                """
+                    UPDATE runs
+                    SET status = ?, updated_at = ?, error = ?,
+                        attempt_count = ?, next_attempt_at = ?,
+                        result_json = NULL
+                    WHERE run_id = ?
+                    """,
+                (
+                    RunStatus.QUEUED.value,
+                    now,
+                    error,
+                    attempt_count,
+                    next_attempt_at,
+                    run_id,
+                ),
+            )
+            conn.commit()
+
+    def reclaim_stale_runs(
+        self,
+        *,
+        stale_after_seconds: int,
+        max_attempts: int,
+    ) -> int:
+        """Requeue or dead-letter runs stuck in running after worker loss."""
+        if stale_after_seconds <= 0:
+            return 0
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=stale_after_seconds)
+        cutoff_iso = cutoff.isoformat()
+        reclaimed = 0
+        with self._lock, self._connect() as conn:
+            cur = conn.execute(
+                """
+                SELECT run_id, attempt_count FROM runs
+                WHERE status = ? AND updated_at < ?
+                """,
+                (RunStatus.RUNNING.value, cutoff_iso),
+            )
+            rows = cur.fetchall() if hasattr(cur, "fetchall") else list(cur)
+            for row in rows:
+                run_id = row["run_id"] if isinstance(row, dict) else row[0]
+                attempts = int(row["attempt_count"] if isinstance(row, dict) else row[1])
+                next_attempt = attempts + 1
+                now = _now_iso()
+                if next_attempt >= max_attempts:
+                    conn.execute(
+                        """
+                        UPDATE runs
+                        SET status = ?, updated_at = ?, error = ?,
+                            attempt_count = ?, next_attempt_at = NULL
+                        WHERE run_id = ?
+                        """,
+                        (
+                            RunStatus.DEAD_LETTER.value,
+                            now,
+                            "stale running run exceeded retry budget",
+                            next_attempt,
+                            run_id,
+                        ),
+                    )
+                else:
+                    conn.execute(
+                        """
+                        UPDATE runs
+                        SET status = ?, updated_at = ?, error = ?,
+                            attempt_count = ?, next_attempt_at = ?
+                        WHERE run_id = ?
+                        """,
+                        (
+                            RunStatus.QUEUED.value,
+                            now,
+                            "reclaimed stale running run",
+                            next_attempt,
+                            now,
+                            run_id,
+                        ),
+                    )
+                reclaimed += 1
+            if reclaimed:
+                conn.commit()
+        return reclaimed
 
     def claim_next_queued(self) -> RunRecord | None:
         """Atomically move one queued run to running (external worker / Job mode)."""
@@ -170,17 +321,18 @@ class RunStore:
                 cur = conn.execute(
                     """
                     UPDATE runs
-                    SET status = ?, updated_at = ?
+                    SET status = ?, updated_at = ?, next_attempt_at = NULL
                     WHERE run_id = (
                         SELECT run_id FROM runs
                         WHERE status = ?
+                          AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
                         ORDER BY created_at ASC
                         FOR UPDATE SKIP LOCKED
                         LIMIT 1
                     )
                     RETURNING run_id
                     """,
-                    (RunStatus.RUNNING.value, now, RunStatus.QUEUED.value),
+                    (RunStatus.RUNNING.value, now, RunStatus.QUEUED.value, now),
                 )
                 row = cur.fetchone()
                 conn.commit()
@@ -194,10 +346,11 @@ class RunStore:
                 """
                 SELECT run_id FROM runs
                 WHERE status = ?
+                  AND (next_attempt_at IS NULL OR next_attempt_at <= ?)
                 ORDER BY created_at ASC
                 LIMIT 1
                 """,
-                (RunStatus.QUEUED.value,),
+                (RunStatus.QUEUED.value, now),
             )
             row = cur.fetchone()
             if not row:
@@ -205,7 +358,11 @@ class RunStore:
                 return None
             run_id = row["run_id"] if isinstance(row, dict) else row[0]
             conn.execute(
-                "UPDATE runs SET status = ?, updated_at = ? WHERE run_id = ?",
+                """
+                UPDATE runs
+                SET status = ?, updated_at = ?, next_attempt_at = NULL
+                WHERE run_id = ?
+                """,
                 (RunStatus.RUNNING.value, now, run_id),
             )
             conn.commit()
@@ -233,6 +390,8 @@ def _row_to_record(row: Any) -> RunRecord:
     result_raw = row["result_json"]
     result = json.loads(result_raw) if result_raw else None
     client_id = row["client_request_id"]
+    attempt_raw = _row_field(row, "attempt_count", 0)
+    next_attempt = _row_field(row, "next_attempt_at")
     return RunRecord(
         run_id=row["run_id"],
         status=RunStatus(row["status"]),
@@ -245,4 +404,13 @@ def _row_to_record(row: Any) -> RunRecord:
         payload=payload,
         result=result,
         error=row["error"],
+        attempt_count=int(attempt_raw or 0),
+        next_attempt_at=str(next_attempt) if next_attempt else None,
     )
+
+
+def _row_field(row: Any, key: str, default: Any = None) -> Any:
+    try:
+        return row[key]
+    except (KeyError, IndexError, TypeError):
+        return default

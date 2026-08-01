@@ -6,6 +6,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,9 @@ class RunQueueConfig:
     external_workers: bool = False
     enqueue_only: bool = False
     use_claim_workers: bool = False
+    max_attempts: int = 3
+    stale_run_seconds: int = 3600
+    retry_base_seconds: int = 5
 
 
 class RunQueueFullError(RuntimeError):
@@ -107,9 +111,38 @@ class RunQueue:
             self._executor.shutdown(wait=wait, cancel_futures=not wait)
 
     def _refresh_metrics(self) -> None:
+        self._reclaim_stale()
         queued = self._store.count_by_status(RunStatus.QUEUED)
         running = self._store.count_by_status(RunStatus.RUNNING)
         record_run_queue_depth(queued + running)
+
+    def _reclaim_stale(self) -> None:
+        if self._config.stale_run_seconds <= 0:
+            return
+        self._store.reclaim_stale_runs(
+            stale_after_seconds=self._config.stale_run_seconds,
+            max_attempts=self._config.max_attempts,
+        )
+
+    def _retry_delay_seconds(self, attempt_count: int) -> int:
+        base = max(1, self._config.retry_base_seconds)
+        exponent = max(0, attempt_count - 1)
+        return int(min(300, base * (2**exponent)))
+
+    def _schedule_retry(self, run_id: str, *, attempt_count: int, error: str) -> None:
+        delay = self._retry_delay_seconds(attempt_count)
+        next_at = (datetime.now(timezone.utc) + timedelta(seconds=delay)).isoformat()
+        self._store.schedule_retry(
+            run_id,
+            attempt_count=attempt_count,
+            error=error,
+            next_attempt_at=next_at,
+        )
+        self._emit_event(
+            run_id,
+            "run_retry_scheduled",
+            {"attempt_count": attempt_count, "next_attempt_at": next_at, "error": error},
+        )
 
     def _queue_depth(self) -> int:
         return self._store.count_by_status(RunStatus.QUEUED, RunStatus.RUNNING)
@@ -190,7 +223,7 @@ class RunQueue:
             raise KeyError(run_id)
         if record.status not in (RunStatus.FAILED, RunStatus.DEAD_LETTER):
             raise ValueError("only failed or dead_letter runs can be replayed")
-        self._store.update_status(run_id, RunStatus.QUEUED, result=None, error=None)
+        self._store.reset_for_replay(run_id)
         self._dispatch_run(run_id=run_id, acting_user=record.acting_user)
         self._refresh_metrics()
         updated = self._store.get(run_id)
@@ -200,6 +233,14 @@ class RunQueue:
 
     def get(self, run_id: str) -> RunRecord | None:
         return self._store.get(run_id)
+
+    def list_runs(
+        self,
+        *,
+        status: RunStatus | None = None,
+        limit: int = 50,
+    ) -> list[RunRecord]:
+        return self._store.list_runs(status=status, limit=limit)
 
     def queue_depth(self) -> int:
         return self._queue_depth()
@@ -250,13 +291,26 @@ class RunQueue:
                 )
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)
-                self._store.update_status(
-                    run_id,
-                    RunStatus.DEAD_LETTER,
-                    error=str(exc),
-                )
-                self._emit_event(run_id, "run_failed", {"error": str(exc)})
-                record_run_terminal("dead_letter", record.blueprint_name)
+                record = self._store.get(run_id)
+                attempt = (record.attempt_count if record else 0) + 1
+                if attempt >= self._config.max_attempts:
+                    self._store.update_status(
+                        run_id,
+                        RunStatus.DEAD_LETTER,
+                        error=str(exc),
+                        clear_next_attempt=True,
+                    )
+                    self._emit_event(run_id, "run_failed", {"error": str(exc)})
+                    record_run_terminal("dead_letter", record.blueprint_name if record else "")
+                else:
+                    self._schedule_retry(run_id, attempt_count=attempt, error=str(exc))
+                    if not self._enqueue_only and self._executor is not None:
+                        self._executor.submit(
+                            self._wait_and_retry,
+                            run_id,
+                            record.acting_user if record else acting_user,
+                            attempt,
+                        )
             else:
                 artifact_fields = self._artifact_store.persist_run_artifacts(run_id, artifact_dir)
                 merged = {**result, **artifact_fields}
@@ -275,6 +329,14 @@ class RunQueue:
         finally:
             reset_acting_user(token)
             self._refresh_metrics()
+
+    def _wait_and_retry(self, run_id: str, acting_user: str, attempt_count: int) -> None:
+        delay = self._retry_delay_seconds(attempt_count)
+        time.sleep(delay)
+        current = self._store.get(run_id)
+        if current is None or current.status != RunStatus.QUEUED:
+            return
+        self._run_worker(run_id, acting_user)
 
 
 def build_run_queue(
@@ -304,6 +366,9 @@ def build_run_queue(
         external_workers=enqueue_only,
         enqueue_only=enqueue_only,
         use_claim_workers=use_claim_workers,
+        max_attempts=config.max_attempts,
+        stale_run_seconds=config.stale_run_seconds,
+        retry_base_seconds=config.retry_base_seconds,
     )
     store = RunStore(db_cfg)
     event_store = build_run_event_store(db_cfg)

@@ -21,6 +21,7 @@ lifecycle:
 image:
   repository: ghcr.io/opsdevcode/repave-engine
   tag: "" # defaults to Chart.appVersion
+  digest: "" # when set, image is repository@digest instead of repository:tag
   pullPolicy: IfNotPresent
   # true: image built with INSTALL_GATE_TOOLCHAIN=1 (Plan/dry-run runs real gates).
   # false: portal-only image (INSTALL_GATE_TOOLCHAIN=0); set repository/tag to that build.
@@ -134,6 +135,7 @@ repave:
 workerImage:
   repository: ""
   tag: ""
+  digest: ""
   pullPolicy: ""
 
 # Digest-pinned generation corpus mounted read-only (Phase 2 decomposition).
@@ -141,6 +143,7 @@ corpus:
   enabled: false
   repository: ghcr.io/opsdevcode/repave-corpus
   tag: ""
+  digest: ""
   pullPolicy: IfNotPresent
 
 # Optional persistence for module staging, audit, and fleet JSONL sinks.

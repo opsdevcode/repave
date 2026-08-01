@@ -29,6 +29,14 @@ resources:
 podDisruptionBudget:
   enabled: false
 
+fleetSync:
+  enabled: true
+  registryPath: /data/fleet/registry.jsonl
+  mountPath: /data/fleet
+  intervalSeconds: 30
+  gitopsNamespace: default
+  enableRemediation: false
+
 secrets:
   create: true
   githubToken: kind-placeholder-token

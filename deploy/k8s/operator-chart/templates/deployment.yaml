@@ -74,10 +74,29 @@ spec:
             {{- end }}
             {{- include "repave-operator.githubAuthEnv" . | nindent 12 }}
             {{- include "repave-operator.notifyEnv" . | nindent 12 }}
+            {{- if .Values.fleetSync.enabled }}
+            - name: REPAVE_FLEET_SYNC_ENABLED
+              value: "true"
+            - name: REPAVE_FLEET_REGISTRY_PATH
+              value: {{ .Values.fleetSync.registryPath | quote }}
+            - name: REPAVE_FLEET_SYNC_INTERVAL
+              value: {{ .Values.fleetSync.intervalSeconds | quote }}
+            - name: REPAVE_FLEET_GITOPS_NAMESPACE
+              value: {{ .Values.fleetSync.gitopsNamespace | quote }}
+            {{- if .Values.fleetSync.enableRemediation }}
+            - name: REPAVE_FLEET_ENABLE_REMEDIATION
+              value: "true"
+            {{- end }}
+            {{- end }}
           volumeMounts:
             - name: webhook-certs
               mountPath: /tmp/k8s-webhook-server/serving-certs
               readOnly: true
+            {{- if .Values.fleetSync.enabled }}
+            - name: fleet-registry
+              mountPath: {{ .Values.fleetSync.mountPath | quote }}
+              readOnly: true
+            {{- end }}
             {{- if .Values.modules.hostPath.enabled }}
             - name: modules
               mountPath: /modules
@@ -98,6 +117,15 @@ spec:
           hostPath:
             path: {{ .Values.modules.hostPath.path }}
             type: Directory
+        {{- end }}
+        {{- if .Values.fleetSync.enabled }}
+        - name: fleet-registry
+          {{- if .Values.fleetRegistry.existingClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.fleetRegistry.existingClaim }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

@@ -48,19 +48,31 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{- define "repave.image" -}}
+{{- if .Values.image.digest }}
+{{- printf "%s@%s" .Values.image.repository .Values.image.digest }}
+{{- else }}
 {{- $tag := default .Chart.AppVersion .Values.image.tag -}}
 {{- printf "%s:%s" .Values.image.repository $tag }}
+{{- end }}
 {{- end }}
 
 {{- define "repave.workerImage" -}}
 {{- $repo := default "ghcr.io/opsdevcode/repave-engine" .Values.workerImage.repository -}}
+{{- if .Values.workerImage.digest }}
+{{- printf "%s@%s" $repo .Values.workerImage.digest }}
+{{- else }}
 {{- $tag := default (default .Chart.AppVersion .Values.image.tag) .Values.workerImage.tag -}}
 {{- printf "%s:%s" $repo $tag }}
 {{- end }}
+{{- end }}
 
 {{- define "repave.corpusImage" -}}
+{{- if .Values.corpus.digest }}
+{{- printf "%s@%s" .Values.corpus.repository .Values.corpus.digest }}
+{{- else }}
 {{- $tag := default .Chart.AppVersion .Values.corpus.tag -}}
 {{- printf "%s:%s" .Values.corpus.repository $tag }}
+{{- end }}
 {{- end }}
 
 {{- define "repave.corpusInitContainer" -}}

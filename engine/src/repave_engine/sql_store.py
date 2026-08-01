@@ -137,7 +137,29 @@ def ensure_schema(conn: SqlConnection) -> None:
         _ensure_schema_sqlite(conn)
     else:
         _ensure_schema_postgres(conn)
+    _migrate_runs_columns(conn)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_runs_next_attempt ON runs(status, next_attempt_at)"
+    )
     conn.commit()
+
+
+def _is_duplicate_column_error(exc: BaseException) -> bool:
+    message = str(exc).lower()
+    return "duplicate column" in message or "already exists" in message
+
+
+def _migrate_runs_columns(conn: SqlConnection) -> None:
+    """Add retry/reclaim columns to existing run stores."""
+    for name, decl in (
+        ("attempt_count", "INTEGER NOT NULL DEFAULT 0"),
+        ("next_attempt_at", "TEXT"),
+    ):
+        try:
+            conn.execute(f"ALTER TABLE runs ADD COLUMN {name} {decl}")
+        except Exception as exc:
+            if not _is_duplicate_column_error(exc):
+                raise
 
 
 def _ensure_schema_sqlite(conn: SqlConnection) -> None:
@@ -154,7 +176,9 @@ def _ensure_schema_sqlite(conn: SqlConnection) -> None:
             updated_at TEXT NOT NULL,
             payload_json TEXT NOT NULL,
             result_json TEXT,
-            error TEXT
+            error TEXT,
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            next_attempt_at TEXT
         )
         """
     )
@@ -233,7 +257,9 @@ def _ensure_schema_postgres(conn: SqlConnection) -> None:
             updated_at TEXT NOT NULL,
             payload_json TEXT NOT NULL,
             result_json TEXT,
-            error TEXT
+            error TEXT,
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            next_attempt_at TEXT
         )
         """
     )

@@ -15,7 +15,7 @@ jobs:
     name: chart-validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -30,7 +30,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
         with:
           version: v3.16.4
 
@@ -47,7 +47,7 @@ jobs:
     name: chart-smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -62,11 +62,11 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
         with:
           version: v3.16.4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
@@ -98,7 +98,7 @@ jobs:
     name: chart-smoke-decomposed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -113,11 +113,11 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
         with:
           version: v3.16.4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
@@ -149,7 +149,7 @@ jobs:
     name: chart-smoke-multi-replica
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -164,11 +164,11 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
         with:
           version: v3.16.4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
