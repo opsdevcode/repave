@@ -93,6 +93,13 @@ if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   install_bin "$tmp/conftest"
   rm -rf "$tmp"
   pip_install "$CHECKOV_PIP_SPEC"
+  tmp_ic="$(mktemp -d)"
+  "${CURL_GET[@]}" \
+    "https://github.com/infracost/cli/releases/download/v${INFRACOST_VERSION}/infracost-linux-${tf_arch}.tar.gz" \
+    -o "$tmp_ic/infracost.tgz"
+  tar xzf "$tmp_ic/infracost.tgz" -C "$tmp_ic" infracost
+  install_bin "$tmp_ic/infracost"
+  rm -rf "$tmp_ic"
 fi
 
 if [[ -z "${REPO_ROOT:-}" ]]; then
@@ -126,4 +133,4 @@ if [[ "$INSTALL_HELM" == "1" ]]; then
   rm -rf "$tmp_helm"
 fi
 
-echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION})."
+echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION})."

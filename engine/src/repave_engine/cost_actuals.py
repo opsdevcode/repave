@@ -122,3 +122,47 @@ def fetch_entity_cost_actuals(
     except (httpx.HTTPError, ValueError):
         return None
     return parse_cost_actuals_payload(payload, source_url=url, tag_coverage=coverage)
+
+
+CostReader = Literal["url", "aws", "azure"]
+
+
+def resolve_cost_reader(*, cost_reader: str, cost_actuals_url: str) -> CostReader | None:
+    explicit = cost_reader.strip().lower()
+    if explicit in ("url", "aws", "azure"):
+        return explicit  # type: ignore[return-value]
+    if cost_actuals_url.strip():
+        return "url"
+    return None
+
+
+def cost_reader_configured(*, cost_reader: str, cost_actuals_url: str) -> bool:
+    return (
+        resolve_cost_reader(cost_reader=cost_reader, cost_actuals_url=cost_actuals_url) is not None
+    )
+
+
+def fetch_entity_cost_actuals_for_portal(
+    portal_config: object,
+    entity: CostEntity,
+) -> CostActualsSummary | None:
+    """Dispatch to URL, AWS, or Azure cost reader based on portal config."""
+    from repave_engine.settings import PortalConfig
+
+    if not isinstance(portal_config, PortalConfig):
+        return None
+    reader = resolve_cost_reader(
+        cost_reader=portal_config.cost_reader,
+        cost_actuals_url=portal_config.cost_actuals_url,
+    )
+    if reader is None:
+        return None
+    if reader == "url":
+        return fetch_entity_cost_actuals(portal_config.cost_actuals_url, entity)
+    if reader == "aws":
+        from repave_engine.cost_actuals_aws import fetch_entity_cost_actuals_aws
+
+        return fetch_entity_cost_actuals_aws(portal_config.cost_aws, entity)
+    from repave_engine.cost_actuals_azure import fetch_entity_cost_actuals_azure
+
+    return fetch_entity_cost_actuals_azure(portal_config.cost_azure, entity)

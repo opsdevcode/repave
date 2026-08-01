@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from repave_engine.blueprint import artifact_family
-from repave_engine.ci_toolchain import TERRAFORM_VERSION
+from repave_engine.ci_toolchain import INFRACOST_VERSION, TERRAFORM_VERSION
 from repave_engine.ci_workflow import (
     build_ci_provenance_block,
     ci_workflow_relpath,
@@ -26,6 +26,7 @@ def test_build_ci_provenance_block_includes_gates(terraform_blueprint) -> None:
     block = build_ci_provenance_block(terraform_blueprint)
     assert "terraform-fmt" in block["gates"]
     assert block["toolchain"]["terraform"] == TERRAFORM_VERSION
+    assert block["toolchain"]["infracost"] == INFRACOST_VERSION
     assert block["workflow"] == ".github/workflows/terraform-gates.yml"
 
 
@@ -34,6 +35,9 @@ def test_render_ci_workflow_includes_repave_gates_command(terraform_blueprint) -
     assert "repave gates --path ." in text
     assert "hashicorp/setup-terraform" in text
     assert "setup-tflint" in text
+    assert "Install Infracost" in text
+    assert INFRACOST_VERSION in text
+    assert "INFRACOST_API_KEY" in text
 
 
 def test_snapshot_gate_config_merges_raw(terraform_blueprint) -> None:

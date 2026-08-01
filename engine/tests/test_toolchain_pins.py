@@ -48,6 +48,7 @@ def test_doctor_pin_map_matches_ci_toolchain() -> None:
     assert _PIN_BY_TOOL["checkov"] == ci_toolchain.CHECKOV_VERSION
     assert _PIN_BY_TOOL["conftest"] == ci_toolchain.CONFTEST_VERSION
     assert _PIN_BY_TOOL["helm"] == ci_toolchain.HELM_VERSION
+    assert _PIN_BY_TOOL["infracost"] == ci_toolchain.INFRACOST_VERSION
 
 
 def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint, repo_root: Path) -> None:
@@ -58,6 +59,7 @@ def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint, repo_ro
     assert ci_toolchain.TFLINT_VERSION in text
     assert ci_toolchain.CONFTEST_VERSION in text
     assert ci_toolchain.CHECKOV_PIP_SPEC in text
+    assert ci_toolchain.INFRACOST_VERSION in text
 
     helm_blueprint = load_blueprint(
         repo_root / "blueprints" / "helm-chart-generic", repo_root=repo_root

@@ -26,7 +26,7 @@ from repave_engine.auth import (
 )
 from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import blueprint_dir, load_blueprint
-from repave_engine.cost_actuals import fetch_entity_cost_actuals
+from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import (
@@ -383,7 +383,10 @@ def build_api_v1_router(
     @router.get("/catalog/entities")
     async def api_catalog_entities(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        cost_configured = bool(portal_config.cost_actuals_url)
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+        )
         entities = build_portal_catalog_entities(
             repo_root,
             output_config,
@@ -399,7 +402,10 @@ def build_api_v1_router(
     @router.get("/catalog/entities/{entity_id}")
     async def api_catalog_entity(request: Request, entity_id: str) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        cost_configured = bool(portal_config.cost_actuals_url)
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+        )
         entities = build_portal_catalog_entities(
             repo_root,
             output_config,
@@ -415,7 +421,7 @@ def build_api_v1_router(
         slo = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
         if slo is not None:
             body["slo_summary"] = slo.to_public_dict()
-        cost = fetch_entity_cost_actuals(portal_config.cost_actuals_url, entity)
+        cost = fetch_entity_cost_actuals_for_portal(portal_config, entity)
         if cost is not None:
             body["cost_actuals"] = cost.to_public_dict()
         return JSONResponse(body)

@@ -257,7 +257,7 @@ def _cost_scorecard_dimension(
             cost_detail = "Cost reader configured; open entity for spend fetch"
     else:
         cost_level = "unknown"
-        cost_detail = "Configure portal.cost_actuals_url for cloud spend"
+        cost_detail = "Configure portal.cost_reader or cost_actuals_url for cloud spend"
     return ScorecardDimension("cost", "Cloud spend", cost_level, cost_detail)
 
 

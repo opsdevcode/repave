@@ -26,6 +26,7 @@ _PIN_BY_TOOL: dict[str, str] = {
     "helm": ci_toolchain.HELM_VERSION,
     "hadolint": ci_toolchain.HADOLINT_VERSION,
     "go": ci_toolchain.GO_VERSION,
+    "infracost": ci_toolchain.INFRACOST_VERSION,
 }
 
 # Matches deploy/local/install-gate-toolchain.sh (CI, Compose, and Release).

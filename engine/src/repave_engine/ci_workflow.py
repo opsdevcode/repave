@@ -14,6 +14,7 @@ from repave_engine.ci_toolchain import (
     GO_VERSION,
     HADOLINT_VERSION,
     HELM_VERSION,
+    INFRACOST_VERSION,
     PYTHON_VERSION,
     TERRAFORM_VERSION,
     TFLINT_VERSION,
@@ -64,13 +65,16 @@ def snapshot_gate_config(blueprint: Blueprint) -> dict[str, object]:
 
 
 def build_ci_provenance_block(blueprint: Blueprint) -> dict[str, object]:
+    toolchain: dict[str, str] = {
+        "terraform": TERRAFORM_VERSION,
+        "tflint": TFLINT_VERSION,
+        "checkov": CHECKOV_PIP_SPEC,
+    }
+    if "infracost" in blueprint.gates:
+        toolchain["infracost"] = INFRACOST_VERSION
     return {
         "workflow": ci_workflow_relpath(blueprint),
-        "toolchain": {
-            "terraform": TERRAFORM_VERSION,
-            "tflint": TFLINT_VERSION,
-            "checkov": CHECKOV_PIP_SPEC,
-        },
+        "toolchain": toolchain,
         "gate_config": snapshot_gate_config(blueprint),
         "gates": list(blueprint.gates),
     }
@@ -80,10 +84,11 @@ def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str,
     gate_set = set(gates)
     return {
         "needs_terraform": bool(
-            gate_set & {"terraform-fmt", "terraform-validate", "terraform-test", "opa"}
+            gate_set & {"terraform-fmt", "terraform-validate", "terraform-test", "opa", "infracost"}
         ),
         "needs_tflint": "tflint" in gate_set,
         "needs_checkov": bool(gate_set & {"checkov", "secrets"}),
+        "needs_infracost": "infracost" in gate_set,
         "needs_yamllint": "yamllint" in gate_set,
         "needs_helm": bool(gate_set & _HELM_GATES),
         "needs_ansible": bool(gate_set & _ANSIBLE_GATES),
@@ -120,6 +125,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         conftest_version=CONFTEST_VERSION,
         hadolint_version=HADOLINT_VERSION,
         go_version=GO_VERSION,
+        infracost_version=INFRACOST_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,
         alertmanager_version=_ALERTMANAGER_VERSION,
         **needs,
