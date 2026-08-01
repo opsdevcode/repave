@@ -273,6 +273,20 @@ def test_plan_import_detects_moves_and_scaffold(repo_root: Path, tmp_path: Path)
     assert plan.source_layout_hash
 
 
+def test_plan_import_honours_path_overrides(repo_root: Path, tmp_path: Path) -> None:
+    repo = _write(tmp_path / "tf-legacy-assets", _LEGACY_TF)
+    plan = plan_import(
+        str(repo),
+        repo_root,
+        with_gates=False,
+        path_overrides={"terraform/main.tf": "network/main.tf"},
+    )
+
+    destinations = {move.source: move.destination for move in plan.renames}
+    assert destinations["terraform/main.tf"] == "network/main.tf"
+    assert plan.path_overrides["terraform/main.tf"] == "network/main.tf"
+
+
 def test_plan_import_never_grafts_generated_resource_code(repo_root: Path, tmp_path: Path) -> None:
     repo = _write(tmp_path / "tf-legacy", _LEGACY_TF)
     plan = plan_import(str(repo), repo_root, with_gates=False)
