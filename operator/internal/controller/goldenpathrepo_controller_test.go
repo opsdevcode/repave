@@ -51,6 +51,12 @@ func (failingFetcher) Fetch(_ context.Context, _ string, _ string) error {
 	return fmt.Errorf("dial tcp: connection refused")
 }
 
+type emptyWorkspaceFetcher struct{}
+
+func (emptyWorkspaceFetcher) Fetch(_ context.Context, _ string, dir string) error {
+	return os.MkdirAll(dir, 0o750)
+}
+
 var _ = Describe("GoldenPathRepo reconciler", func() {
 	const name = "reconcile-gpr"
 
@@ -394,6 +400,32 @@ var _ = Describe("GoldenPathRepo reconciler", func() {
 		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseOutOfDate))
 		Expect(repo.Status.ObservedPins.BlueprintVersion).To(Equal("0.9.0"))
 		Expect(meta.IsStatusConditionTrue(repo.Status.Conditions, status.ConditionDriftDetected)).To(BeTrue())
+	})
+
+	It("reports ProvenanceMissing when repave.yaml is absent", func() {
+		reconciler.Fetcher = emptyWorkspaceFetcher{}
+		repo := &repavev1beta1.GoldenPathRepo{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: "default"},
+			Spec: repavev1beta1.GoldenPathRepoSpec{
+				RepoURL: "https://github.com/example/module.git",
+				DesiredPins: repavev1beta1.DesiredPins{
+					BlueprintName:    "terraform-module-generic",
+					BlueprintVersion: "0.9.0",
+					StandardSource:   "standards/terraform-standards",
+					StandardVersion:  "1.1.0",
+				},
+			},
+		}
+		Expect(k8sClient.Create(ctx, repo)).To(Succeed())
+
+		_, err := reconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedName})
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(k8sClient.Get(ctx, typeNamespacedName, repo)).To(Succeed())
+		Expect(repo.Status.Phase).To(Equal(repavev1beta1.GoldenPathRepoPhaseError))
+		readyCondition := meta.FindStatusCondition(repo.Status.Conditions, status.ConditionReady)
+		Expect(readyCondition).NotTo(BeNil())
+		Expect(readyCondition.Reason).To(Equal(status.ReasonProvenanceMissing))
 	})
 
 	It("requeues with RemoteFetchFailed when the clone fails", func() {

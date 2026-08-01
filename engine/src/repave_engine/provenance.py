@@ -479,3 +479,21 @@ def validate_provenance_file(path: Path, repo_root: Path | None = None) -> None:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     schema = load_artifact_schema(repo_root)
     jsonschema.validate(instance=data, schema=schema)
+
+
+def provenance_filename(blueprint: Blueprint) -> str:
+    if blueprint.provenance_file:
+        return blueprint.provenance_file
+    return "repave.yaml"
+
+
+def require_provenance_for_publish(
+    output_dir: Path,
+    blueprint: Blueprint,
+    *,
+    repo_root: Path | None = None,
+) -> Path:
+    """Fail closed before publish when repave.yaml is absent or invalid."""
+    path = output_dir / provenance_filename(blueprint)
+    validate_provenance_file(path, repo_root=repo_root)
+    return path

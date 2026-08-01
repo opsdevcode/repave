@@ -33,6 +33,7 @@ from repave_engine.gates import (
 from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
 from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
+from repave_engine.provenance import require_provenance_for_publish
 from repave_engine.publish_idempotency import (
     PublishIdempotencyContext,
     build_publish_key,
@@ -170,6 +171,12 @@ def _publish_after_gates(
             pr_message = cached_message
             published_repository = module_repository
         else:
+            if not dry_run:
+                require_provenance_for_publish(
+                    render_result.output_dir,
+                    blueprint,
+                    repo_root=repo_root,
+                )
             publish_message = publish_to_module_repository(
                 render_result.output_dir,
                 module_repository,

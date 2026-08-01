@@ -8,6 +8,7 @@ import (
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
+	"github.com/opsdevcode/repave/operator/internal/provenance"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -50,6 +51,23 @@ func TestClassifyMaterializeError(t *testing.T) {
 				t.Fatalf("RetryAfter = %v, want %v", got.RetryAfter, tc.wantRetry)
 			}
 		})
+	}
+}
+
+func TestClassifyProvenanceError(t *testing.T) {
+	t.Parallel()
+
+	missing := ClassifyProvenanceError(provenance.ErrProvenanceMissing)
+	if missing.Reason != status.ReasonProvenanceMissing {
+		t.Fatalf("Reason = %q, want %q", missing.Reason, status.ReasonProvenanceMissing)
+	}
+	if missing.Message == "" {
+		t.Fatal("expected non-empty message for missing provenance")
+	}
+
+	other := ClassifyProvenanceError(errors.New("parse failed"))
+	if other.Reason != status.ReasonProvenanceReadFailed {
+		t.Fatalf("Reason = %q, want %q", other.Reason, status.ReasonProvenanceReadFailed)
 	}
 }
 

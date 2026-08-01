@@ -8,7 +8,7 @@ today and what remains intentionally out of scope.
 | Area | Status | Notes |
 | --- | --- | --- |
 | CRDs | GA | `GoldenPathRepo`, `Blueprint` — **`repave.dev/v1beta1` storage**; `v1alpha1` served with conversion webhook |
-| Inventory / drift | GA | `spec.localPath` or `spec.repoURL` (shallow clone) reads `repave.yaml` pins vs desired |
+| Inventory / drift | GA | `spec.localPath` or `spec.repoURL` (shallow clone) reads `repave.yaml` pins vs desired; missing `repave.yaml` sets `Ready=False` with reason **`ProvenanceMissing`** (no drift/remediation until fixed) |
 | Remote remediation | GA | `spec.repoURL` + token: apply-upgrade and PR from the inventory clone ([ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md)) |
 | Upgrade planning | GA | `POST /api/v2/upgrades/plan` when `REPAVE_API_URL` is set; local dev may still use `repave plan-upgrade` CLI |
 | Remediation | GA | `POST /api/v2/upgrades/apply`, optional GitHub PR, `preserveLocal` |

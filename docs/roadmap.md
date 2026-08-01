@@ -6,12 +6,15 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.129.0  
 
-**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (v2 read-model parity, `/api/v1` deprecation, config `apiVersion`, hosted SQL requirement, bundle async in worker mode).
+**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (blueprint schema version policy, Postgres DR runbook).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
-per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**);
+per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**,
+**bundle async in worker mode**); **v2 contract freeze slice 1** (`/api/v2` read-model parity,
+`/api/v1` deprecation headers, `repave.config.yaml` `apiVersion`, hosted SQL requirement);
+**provenance required on publish** (engine publish gate + operator `ProvenanceMissing` status);
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
@@ -1835,7 +1838,7 @@ rather than after it:
 | --- | --- | --- |
 | **`/api/v2`** is the stable HTTP surface; `/api/v1` deprecated with a published sunset | v1 clients get a documented deprecation window before removal | **Partial** — v2 read models shipped; v1 `Deprecation`/`Sunset` headers on `main` |
 | **`GoldenPathRepo` / `Blueprint`** promoted to `repave.dev/v1beta1` with frozen shapes | Conversion webhook plus a `kubectl`-level migration guide from `v1alpha1` | **Shipped** |
-| **`repave.yaml` provenance required** on every publish | Operator flags non-compliant repos instead of silently skipping them | Open |
+| **`repave.yaml` provenance required** on every publish | Operator flags non-compliant repos instead of silently skipping them | **Shipped** — publish fails without valid `repave.yaml`; GPR `ProvenanceMissing` |
 | **`repave.config.yaml` gains `apiVersion`** | Config loader accepts the unversioned form for one minor with a warning | **Partial** — `repave.dev/v1` + warning shipped |
 | **Durable store required in service mode** (JSONL becomes export-only) | Documented external-database setup; local mode keeps the file store | **Partial** — startup validation shipped |
 | **Blueprint JSON Schema frozen** for the v2 line; `metadata.version` policy documented | Template breaking changes must bump blueprint minor/major | Open |

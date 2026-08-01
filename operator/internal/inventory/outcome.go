@@ -9,6 +9,7 @@ import (
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/drift"
+	"github.com/opsdevcode/repave/operator/internal/provenance"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -37,6 +38,23 @@ func ClassifyMaterializeError(err error) MaterializeFailure {
 		Reason:     reason,
 		Message:    err.Error(),
 		RetryAfter: retryAfter,
+	}
+}
+
+// ClassifyProvenanceError maps provenance read failures to operator status reasons.
+func ClassifyProvenanceError(err error) MaterializeFailure {
+	if errors.Is(err, provenance.ErrProvenanceMissing) {
+		return MaterializeFailure{
+			Reason: status.ReasonProvenanceMissing,
+			Message: fmt.Sprintf(
+				"repository is missing required %s at repo root; regenerate with repave or run repave import",
+				provenance.DefaultFilename,
+			),
+		}
+	}
+	return MaterializeFailure{
+		Reason:  status.ReasonProvenanceReadFailed,
+		Message: err.Error(),
 	}
 }
 
