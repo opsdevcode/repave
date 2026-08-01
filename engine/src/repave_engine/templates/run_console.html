@@ -65,8 +65,10 @@
     </div>
 
     {% if live_plan %}
-    <ol class="run-console__stages" aria-label="Pipeline stages">
-      <li class="run-console__stage" data-stage="live_plan">Terraform plan + OPA</li>
+    <ol class="run-console__stages" aria-label="Live plan stages">
+      <li class="run-console__stage" data-stage="checkout">Checkout target</li>
+      <li class="run-console__stage" data-stage="plan">Terraform plan</li>
+      <li class="run-console__stage" data-stage="policy">Policy evaluation</li>
     </ol>
     {% else %}
     <ol class="run-console__stages" aria-label="Pipeline stages">
@@ -77,6 +79,7 @@
     </ol>
     {% endif %}
 
+    {% if not live_plan %}
     <div class="run-console__gates" aria-label="Gate progress">
       <table class="gate-table run-console__gate-table">
         <thead>
@@ -95,6 +98,7 @@
         </tbody>
       </table>
     </div>
+    {% endif %}
 
     <pre class="run-console__log" id="run-console-log" aria-live="polite" aria-label="Run log"></pre>
 

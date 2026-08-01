@@ -1141,31 +1141,78 @@
     var finishedGates = 0;
     var currentGate = "";
 
+    var isLivePlan = root.getAttribute("data-live-plan") === "1";
+    var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
+    var livePlanStageLabels = {
+      checkout: "Checkout target",
+      plan: "Terraform plan",
+      policy: "Policy evaluation",
+    };
+
+    function countLivePlanDone() {
+      return livePlanStages.filter(function (stage) {
+        var el = root.querySelector('[data-stage="' + stage + '"]');
+        return el && el.classList.contains("is-done");
+      }).length;
+    }
+
+    function livePlanActiveStage() {
+      var idx;
+      for (idx = 0; idx < livePlanStages.length; idx += 1) {
+        var stageEl = root.querySelector('[data-stage="' + livePlanStages[idx] + '"]');
+        if (stageEl && stageEl.classList.contains("is-active")) {
+          return livePlanStages[idx];
+        }
+      }
+      return "";
+    }
+
     function updateProgressBar() {
       if (!progressBar && !progressLabel) {
         return;
       }
       var pct = 0;
-      if (totalGates > 0) {
+      if (isLivePlan && livePlanStages.length) {
+        var doneStages = countLivePlanDone();
+        var activeStage = livePlanActiveStage();
+        pct = activeStage
+          ? Math.round(((doneStages + 0.35) / livePlanStages.length) * 100)
+          : Math.round((doneStages / livePlanStages.length) * 100);
+        if (progressLabel) {
+          if (activeStage) {
+            progressLabel.textContent =
+              livePlanStageLabels[activeStage] +
+              " (" +
+              doneStages +
+              " of " +
+              livePlanStages.length +
+              " complete)";
+          } else if (doneStages >= livePlanStages.length) {
+            progressLabel.textContent = "Live plan complete";
+          } else {
+            progressLabel.textContent = "Waiting for live plan…";
+          }
+        }
+      } else if (totalGates > 0) {
         pct = currentGate
           ? Math.round(((finishedGates + 0.35) / totalGates) * 100)
           : Math.round((finishedGates / totalGates) * 100);
+        if (progressLabel) {
+          if (currentGate) {
+            progressLabel.textContent =
+              "Running " + currentGate + " (" + finishedGates + " of " + totalGates + " complete)";
+          } else if (finishedGates >= totalGates) {
+            progressLabel.textContent = "All " + totalGates + " gates complete";
+          } else {
+            progressLabel.textContent = finishedGates + " of " + totalGates + " gates complete";
+          }
+        }
+      } else if (progressLabel) {
+        progressLabel.textContent = isLivePlan ? "Waiting for live plan…" : "Waiting for gates…";
       }
       pct = Math.max(0, Math.min(100, pct));
       if (progressBar) {
         progressBar.style.width = pct + "%";
-      }
-      if (progressLabel) {
-        if (currentGate) {
-          progressLabel.textContent =
-            "Running " + currentGate + " (" + finishedGates + " of " + totalGates + " complete)";
-        } else if (finishedGates >= totalGates && totalGates > 0) {
-          progressLabel.textContent = "All " + totalGates + " gates complete";
-        } else if (totalGates > 0) {
-          progressLabel.textContent = finishedGates + " of " + totalGates + " gates complete";
-        } else {
-          progressLabel.textContent = "Waiting for gates…";
-        }
       }
     }
 
@@ -1225,8 +1272,6 @@
       }
     }
 
-    var isLivePlan = root.getAttribute("data-live-plan") === "1";
-
     function handleEvent(data) {
       if (!data || !data.kind) {
         return;
@@ -1237,18 +1282,17 @@
       } else if (data.kind === "stage_finished") {
         setStage(data.stage, "done");
       } else if (data.kind === "live_plan_started") {
-        setStage("live_plan", "active");
-        currentGate = "opa";
-        setGateRow("opa", "running", "");
-        appendLog("Live plan started for " + (data.entity_id || "entity"));
+        setStage("checkout", "done");
+        setStage("plan", "active");
+        appendLog(
+          "Live plan started for " +
+            (data.entity_id || "entity") +
+            (data.target ? " → " + data.target : "")
+        );
         updateProgressBar();
       } else if (data.kind === "live_plan_finished") {
-        setStage("live_plan", "done");
-        currentGate = "";
-        finishedGates = totalGates > 0 ? totalGates : 1;
-        var opaStatus =
-          data.gates_outcome === "passed" ? "passed" : "failed";
-        setGateRow("opa", opaStatus, "");
+        setStage("plan", "done");
+        setStage("policy", "done");
         appendLog(
           "Live plan finished: +" +
             (data.resource_add || 0) +
@@ -1304,11 +1348,9 @@
             return;
           }
           if (isLivePlan || body.kind === "live_plan") {
-            finishedGates = totalGates > 0 ? totalGates : 1;
-            var outcome = body.result.gates_outcome === "passed" ? "passed" : "failed";
-            setGateRow("opa", outcome, body.result.opa_detail || "");
-            setStage("live_plan", "done");
-            currentGate = "";
+            setStage("checkout", "done");
+            setStage("plan", "done");
+            setStage("policy", "done");
             updateProgressBar();
             if (completeActions) {
               completeActions.hidden = false;
@@ -1385,6 +1427,98 @@
       return 0;
     }
     return q.length / Math.max(text.length, 1);
+  }
+
+  function initRelativeTimes() {
+    document.querySelectorAll("time[datetime]").forEach(function (el) {
+      var iso = el.getAttribute("datetime");
+      if (!iso) {
+        return;
+      }
+      var relative = formatRelativeTime(iso);
+      if (!relative) {
+        return;
+      }
+      if (!el.getAttribute("title")) {
+        el.setAttribute("title", iso);
+      }
+      el.textContent = relative;
+    });
+  }
+
+  function initSortableTables() {
+    document.querySelectorAll("table[data-sortable]").forEach(function (table) {
+      var tbody = table.querySelector("tbody");
+      var headers = table.querySelectorAll("th[data-sortable]");
+      if (!tbody || !headers.length) {
+        return;
+      }
+
+      function groupedRows() {
+        var groups = [];
+        tbody.querySelectorAll("tr").forEach(function (row) {
+          if (row.querySelector("td[colspan]")) {
+            if (groups.length) {
+              groups[groups.length - 1].extras.push(row);
+            }
+            return;
+          }
+          groups.push({ main: row, extras: [] });
+        });
+        return groups;
+      }
+
+      function cellValue(row, colIndex, sortType) {
+        var cell = row.cells[colIndex];
+        if (!cell) {
+          return "";
+        }
+        var raw = cell.getAttribute("data-sort-value");
+        if (raw === null) {
+          raw = cell.textContent || "";
+        }
+        if (sortType === "number") {
+          return parseFloat(raw) || 0;
+        }
+        if (sortType === "date") {
+          return Date.parse(raw) || 0;
+        }
+        return String(raw).trim().toLowerCase();
+      }
+
+      headers.forEach(function (th) {
+        th.setAttribute("role", "columnheader");
+        th.setAttribute("aria-sort", "none");
+        th.addEventListener("click", function () {
+          var colIndex = th.cellIndex;
+          var sortType = th.getAttribute("data-sort-type") || "text";
+          var current = th.getAttribute("aria-sort");
+          var ascending = current !== "ascending";
+          headers.forEach(function (other) {
+            other.setAttribute("aria-sort", "none");
+          });
+          th.setAttribute("aria-sort", ascending ? "ascending" : "descending");
+          var groups = groupedRows();
+          groups.sort(function (a, b) {
+            var av = cellValue(a.main, colIndex, sortType);
+            var bv = cellValue(b.main, colIndex, sortType);
+            if (av < bv) {
+              return ascending ? -1 : 1;
+            }
+            if (av > bv) {
+              return ascending ? 1 : -1;
+            }
+            return 0;
+          });
+          groups.forEach(function (group) {
+            tbody.appendChild(group.main);
+            group.extras.forEach(function (extra) {
+              tbody.appendChild(extra);
+            });
+          });
+        });
+      });
+    });
   }
 
   function initCommandPalette() {
@@ -1525,6 +1659,15 @@
     dialog.querySelectorAll("[data-command-palette-close]").forEach(function (el) {
       el.addEventListener("click", closePalette);
     });
+    document.querySelectorAll("[data-command-palette-open]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        openPalette();
+      });
+    });
+    document.querySelectorAll("[data-command-palette-kbd]").forEach(function (el) {
+      var isMac = navigator.platform.indexOf("Mac") === 0;
+      el.textContent = isMac ? "⌘K" : "Ctrl K";
+    });
   }
 
   window.repavePortal = {
@@ -1566,6 +1709,8 @@
     initFormDraft();
     initRunConsole();
     initResultGateAnimations();
+    initRelativeTimes();
+    initSortableTables();
     initCommandPalette();
   });
 })();

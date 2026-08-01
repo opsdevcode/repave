@@ -600,11 +600,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         slo_summary = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
         deployment_status = fetch_entity_deployment_status_for_portal(portal_config, entity)
         live_plan_cfg = load_live_plan_config(repo_root)
-        live_plan_available = bool(
-            run_queue is not None
-            and live_plan_cfg is not None
-            and live_plan_cfg.environment_for(entity.entity_id) is not None
+        live_plan_env = (
+            live_plan_cfg.environment_for(entity.entity_id) if live_plan_cfg is not None else None
         )
+        live_plan_available = bool(run_queue is not None and live_plan_env is not None)
         return templates.TemplateResponse(
             request,
             "service_detail.html",
@@ -623,6 +622,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 cost_actuals=cost_actuals,
                 deployment_status=deployment_status,
                 live_plan_available=live_plan_available,
+                live_plan_env=live_plan_env,
+                live_plan_policies_dir=(
+                    live_plan_env.policies_dir
+                    if live_plan_env is not None
+                    else (live_plan_cfg.policies_dir if live_plan_cfg else "")
+                ),
             ),
         )
 
@@ -994,7 +999,6 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     run_record=record,
                     live_plan=True,
                     live_plan_entity_id=entity_id,
-                    gate_names=["opa"],
                 ),
             )
         if is_bundle_run(record):

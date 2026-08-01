@@ -132,7 +132,25 @@
     </p>
   </div>
   <div class="card__body">
-    <form method="post" action="/services/{{ entity.entity_id }}/live-plan">
+    {% if live_plan_env %}
+    <dl class="preflight-panel" aria-label="Live plan configuration">
+      <div class="preflight-panel__row">
+        <dt>Target</dt>
+        <dd><code>{{ live_plan_env.target }}</code></dd>
+      </div>
+      <div class="preflight-panel__row">
+        <dt>Policy</dt>
+        <dd><code>{{ live_plan_policies_dir }}</code></dd>
+      </div>
+    </dl>
+    {% endif %}
+    <form
+      method="post"
+      action="/services/{{ entity.entity_id }}/live-plan"
+      data-repave-busy-form
+      data-busy-label="Planning against live state…"
+      data-busy-stages="Checking out target|Terraform plan|Evaluating policy"
+    >
       <button class="btn btn--secondary btn--sm" type="submit">Plan against live state</button>
     </form>
   </div>

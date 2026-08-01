@@ -44,15 +44,15 @@
   </div>
   <div class="card__body">
     {% if runs %}
-    <table class="pin-diff-table">
+    <table class="pin-diff-table" data-sortable>
       <thead>
         <tr>
-          <th>Blueprint</th>
-          <th>Status</th>
-          <th>User</th>
-          <th>Attempts</th>
-          <th>Updated</th>
-          <th></th>
+          <th scope="col" data-sortable data-sort-type="text">Blueprint</th>
+          <th scope="col" data-sortable data-sort-type="text">Status</th>
+          <th scope="col" data-sortable data-sort-type="text">User</th>
+          <th scope="col" data-sortable data-sort-type="number">Attempts</th>
+          <th scope="col" data-sortable data-sort-type="date">Updated</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
         </tr>
       </thead>
       <tbody>
@@ -65,8 +65,8 @@
             </span>
           </td>
           <td class="muted">{{ run.acting_user }}</td>
-          <td>{{ run.attempt_count }}</td>
-          <td class="muted"><time datetime="{{ run.updated_at }}">{{ run.updated_at }}</time></td>
+          <td data-sort-value="{{ run.attempt_count }}">{{ run.attempt_count }}</td>
+          <td class="muted"><time datetime="{{ run.updated_at }}" data-sort-value="{{ run.updated_at }}">{{ run.updated_at }}</time></td>
           <td>
             <a class="btn btn--ghost btn--sm" href="/runs/{{ run.run_id }}">Open</a>
             {% if can_replay_runs and run.status.value in ('failed', 'dead_letter') %}
