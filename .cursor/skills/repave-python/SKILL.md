@@ -2,7 +2,7 @@
 name: repave-python
 description: >-
   Python development anywhere in opsdevcode/repave: any .py path, engine package,
-  pytest, Ruff, mypy, Bandit, pip-audit, modern 3.10+ idioms, and security patterns.
+  pytest, Ruff, mypy, Bandit, pip-audit, modern 3.12+ idioms, and security patterns.
   Use when writing or editing Python in this repo, pyproject.toml, or fixing Python
   quality and security CI.
 ---

@@ -7,7 +7,8 @@ work, writing ADRs, and opening issues.
 **Current release:** v1.125.0  
 
 **In progress:** (none — pick next roadmap theme).
-**Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
+**Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
+package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
 per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**);
@@ -136,7 +137,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Estate control plane** | v1.72–v1.73+ shipped | Remote observe/plan/remediate; fleet registry; operator continuous fleet sync + GPR prune |
 | **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
 | **Brownfield onboarding** | shipped (Phase 1–3) | `repave import` + batch portal/API; per-file overrides; trees-API preview; GitHub rate-limit backoff for fleet-scale REST |
-| **Hardening** | shipped (group A) | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
+| **Hardening** | shipped (groups A–B) | Group A: toolchain pins, subprocess timeouts, coverage gate, docs; group B: gate_runners package, API/CLI splits, Python 3.12 floor |
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
 | **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
@@ -1456,9 +1457,11 @@ OTEL env vars, [`docs/tracing.md`](tracing.md).
 | Actions pinned to mutable tags; `uv:latest` in the portal image | `.github/workflows/*.yml`, `deploy/local/Dockerfile` | **Shipped** — `.github/action-pins.json`, SHA-pinned workflows, digest-pinned base images |
 | No tests for `generate_api`, `auth_context`, `tracing`, `gate_builtin` | `engine/tests/` | **Shipped** — focused unit tests under `engine/tests/` |
 | Operator apply integration test skips unconditionally | `operator/internal/repave/apply_test.go` | **Shipped** — dead skip test removed (e2e covers preserve-local) |
-| Python floor is 3.10 but CI only runs 3.12 | `engine/pyproject.toml`, CI workflows | Matrix 3.10 or raise the floor (deferred) |
+| Python floor is 3.10 but CI only runs 3.12 | `engine/pyproject.toml`, CI workflows | **Shipped** — `requires-python >=3.12`; mypy `python_version = 3.12`; CI runs 3.12 only |
 | `.tmp-staging/` is not ignored, so rendered fixtures show up as untracked noise | `.gitignore` | **Shipped** — pattern in root `.gitignore` |
-| Broad `except Exception` around the provenance gate masks bugs as gate failures | `gate_runners.py` | Narrow the exception |
+| Broad `except Exception` around the provenance gate masks bugs as gate failures | `gate_runners/drift.py` | **Shipped** — catch `FileNotFoundError`, `jsonschema.ValidationError`, `yaml.YAMLError`, `ValueError`, `OSError` only |
+
+**Done when (group B):** All maintainability table rows closed — **done on `main`** (this closeout aligns mypy/docs with the 3.12 floor and documents provenance exception narrowing).
 
 **Done when (group A):** All six A entries closed — **done on `main`**.
 

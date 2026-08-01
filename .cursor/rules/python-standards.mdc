@@ -12,7 +12,7 @@ Agent skill: **`.cursor/skills/repave-python/SKILL.md`**.
 
 ## Runtime and layout
 
-- **Python 3.10+**; package code lives under `engine/src/repave_engine/`, tests under `engine/tests/`.
+- **Python 3.12+**; package code lives under `engine/src/repave_engine/`, tests under `engine/tests/`.
 - Use **`uv`** from `engine/` (`make install` at repo root). Do not add cloud-specific logic to `engine/` — clouds belong in `blueprints/`.
 - **`scripts/`** and other standalone modules: same style and security rules; run Ruff against edited paths (see skill) even when CI only gates `engine/src` and `engine/tests`.
 
@@ -24,7 +24,7 @@ Agent skill: **`.cursor/skills/repave-python/SKILL.md`**.
 - Prefer **`from __future__ import annotations`** in new modules (matches existing engine code).
 - Use **pathlib.Path**, **dataclasses**, and explicit types on public functions; avoid bare `except` and unnecessary `# noqa`.
 
-## Modern Python (3.10+, community idioms)
+## Modern Python (3.12+, community idioms)
 
 - **Typing:** `X | None`, **`collections.abc`** (`Callable`, `Iterable`, `Mapping`); use **`typing.Protocol`** for pluggable interfaces; **`typing.Final`** / **`frozenset`** for immutable config (see `AuthConfig`).
 - **Dataclasses:** prefer **`@dataclass(frozen=True)`** for value objects; mutable aggregates only when lifecycle requires it.
