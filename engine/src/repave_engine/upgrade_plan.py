@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import hashlib
 import shutil
 import tempfile
@@ -25,11 +26,37 @@ from repave_engine.provenance_inputs import (
 )
 from repave_engine.render import render_blueprint
 from repave_engine.settings import load_gate_overrides
-from repave_engine.standards_diff import PinChange, diff_observed_vs_catalog_pins
+from repave_engine.standards_diff import PinChange, StandardsDiffFile, diff_observed_vs_catalog_pins
 from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import _git_executable, _run_git, resolve_module_repository_from_git
 
 _SKIP_DIR_NAMES = frozenset({".git", "__pycache__", ".terraform", ".pytest_cache", ".ruff_cache"})
+_MAX_UPGRADE_DIFF_FILES = 12
+_MAX_UPGRADE_DIFF_BYTES = 120_000
+_TEXT_DIFF_SUFFIXES = frozenset(
+    {
+        ".md",
+        ".yaml",
+        ".yml",
+        ".json",
+        ".tf",
+        ".hcl",
+        ".rego",
+        ".txt",
+        ".sh",
+        ".py",
+        ".toml",
+        ".ini",
+        ".tpl",
+        ".html",
+        ".css",
+        ".js",
+        ".mjs",
+        ".cjs",
+        ".xml",
+        ".properties",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -41,6 +68,7 @@ class UpgradePlanResult:
     blueprint_version: str
     policy_changes: tuple[str, ...] = ()
     pin_changes: tuple[PinChange, ...] = ()
+    file_diffs: tuple[StandardsDiffFile, ...] = ()
 
     @property
     def changed_file_count(self) -> int:
@@ -68,6 +96,7 @@ class UpgradePlanResult:
             "removed": list(self.removed),
             "policy_changes": list(self.policy_changes),
             "pin_changes": [row.to_dict() for row in self.pin_changes],
+            "file_diffs": [{"path": item.path, "patch": item.patch} for item in self.file_diffs],
             "summary": self.summary,
         }
 
@@ -229,6 +258,77 @@ def _file_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _is_text_diff_candidate(relative_path: str) -> bool:
+    suffix = Path(relative_path).suffix.lower()
+    if suffix in _TEXT_DIFF_SUFFIXES:
+        return True
+    name = Path(relative_path).name.lower()
+    return name in {"dockerfile", "makefile", "license", "readme"}
+
+
+def _read_text_file(path: Path, *, max_bytes: int = _MAX_UPGRADE_DIFF_BYTES) -> str:
+    try:
+        raw = path.read_bytes()
+    except OSError:
+        return ""
+    if len(raw) > max_bytes:
+        raw = raw[:max_bytes]
+    return raw.decode("utf-8", errors="replace")
+
+
+def _unified_file_diff(relative_path: str, before: str, after: str) -> StandardsDiffFile | None:
+    patch_lines = list(
+        difflib.unified_diff(
+            before.splitlines(keepends=True),
+            after.splitlines(keepends=True),
+            fromfile=f"a/{relative_path}",
+            tofile=f"b/{relative_path}",
+        )
+    )
+    if not patch_lines:
+        return None
+    return StandardsDiffFile(path=relative_path, patch="".join(patch_lines))
+
+
+def build_upgrade_file_diffs(
+    existing_root: Path,
+    rendered_root: Path,
+    *,
+    modified: tuple[str, ...],
+    added: tuple[str, ...],
+    max_files: int = _MAX_UPGRADE_DIFF_FILES,
+) -> tuple[StandardsDiffFile, ...]:
+    diffs: list[StandardsDiffFile] = []
+    for relative_path in modified:
+        if not _is_text_diff_candidate(relative_path):
+            continue
+        left = existing_root / relative_path
+        right = rendered_root / relative_path
+        if not left.is_file() or not right.is_file():
+            continue
+        item = _unified_file_diff(
+            relative_path,
+            _read_text_file(left),
+            _read_text_file(right),
+        )
+        if item is not None:
+            diffs.append(item)
+        if len(diffs) >= max_files:
+            return tuple(diffs)
+    for relative_path in added:
+        if not _is_text_diff_candidate(relative_path):
+            continue
+        right = rendered_root / relative_path
+        if not right.is_file():
+            continue
+        item = _unified_file_diff(relative_path, "", _read_text_file(right))
+        if item is not None:
+            diffs.append(item)
+        if len(diffs) >= max_files:
+            break
+    return tuple(diffs)
+
+
 def diff_directories(
     existing_root: Path,
     rendered_root: Path,
@@ -357,6 +457,12 @@ def _render_upgrade_staging(
         new_policy,
     )
     pin_changes = diff_observed_vs_catalog_pins(doc, blueprint)
+    file_diffs = build_upgrade_file_diffs(
+        target_repo,
+        staging_dir,
+        modified=tuple(modified),
+        added=tuple(added),
+    )
     result = UpgradePlanResult(
         added=tuple(added),
         modified=tuple(modified),
@@ -365,6 +471,7 @@ def _render_upgrade_staging(
         blueprint_version=blueprint.version,
         policy_changes=policy_changes,
         pin_changes=pin_changes,
+        file_diffs=file_diffs,
     )
     return result, staging_dir, temp_dir, owns_staging
 

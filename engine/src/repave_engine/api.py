@@ -68,6 +68,7 @@ from repave_engine.bundle_portal import (
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
+from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
     find_catalog_entity,
@@ -253,12 +254,20 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         from repave_engine.gate_toolchain import portal_runtime_info
 
         auth_user = session_user(request) if request is not None else None
+        presenter = False
+        if request is not None:
+            presenter = request.query_params.get("presenter", "").strip().lower() in (
+                "1",
+                "true",
+                "yes",
+            )
         return {
             "app_version": __version__,
             "env_badge": os.environ.get("REPAVE_ENV"),
             "local_toolchain_warning": local_portal_toolchain_warning(),
             "portal_runtime": portal_runtime_info(),
             "portal_density": portal_config.density,
+            "presenter_mode": presenter,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
             "async_generation_enabled": run_queue is not None,
@@ -889,6 +898,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/update", response_class=HTMLResponse)
     async def update_form(request: Request) -> HTMLResponse:
         demo_path = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
+        repo_prefill = request.query_params.get("repo_url", "").strip()
+        if not repo_prefill:
+            repo_prefill = request.query_params.get("target_repo", "").strip()
         return templates.TemplateResponse(
             request,
             "update.html",
@@ -896,6 +908,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="update",
                 demo_module_path=str(demo_path.resolve()) if demo_path.is_dir() else "",
+                target_repo=repo_prefill,
             ),
         )
 
@@ -955,6 +968,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 target_repo=resolved,
                 cli_apply_command=cli_apply,
                 cli_open_pr_command=cli_open_pr,
+                upgrade_diff_views=diff_view_models_from_files(plan.file_diffs),
             ),
         )
 

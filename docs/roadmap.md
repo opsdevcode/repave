@@ -6,8 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.120.0  
 
-**In progress:** day-2 follow-ups — shared fleet PVC, worker HPA, CI action-pin gate (branch
-`feat/portal-day2-followups`).
+**In progress:** (none — pick next roadmap theme after portal Tier 2 merges).
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -22,7 +21,10 @@ remediation PR concurrency, drift SLO metrics, campaign webhook summaries,
 GitHub rate-limit parity); **governed PR conventions** (`pull_requests` in
 `repave.config.yaml`, shared labels/branch prefixes, gate evidence checklist); **estate control
 fleet sync + GPR prune**; **durability retry/reclaim + run list API**; **supply chain digest
-pins** (GitHub Actions SHAs, base images, chart `image.digest`).
+pins** (GitHub Actions SHAs, base images, chart `image.digest`); **portal day-2 follow-ups**
+(shared fleet PVC, worker HPA, CI action-pin gate); **portal live governance Tier 2**
+(estate map polish, upgrade unified diffs, governance preflight hardening, bundle topology on
+results, presenter mode).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1623,13 +1625,13 @@ but no HTML route consumes it — so mandatory gates are only visible after the 
 (run queue, shipped); v1.18 portal shell; [fleet registry](#fleet-registry-and-repave-register)
 for the estate map; [queryable audit history](#queryable-audit-history) for server-side run history.
 
-**Done when:** Items 1–2 are on `main` with portal contract tests; items 3–8 remain specified here
-for promotion into owned issues.
+**Done when:** Items 1–8 are on `main` with portal contract tests covering run console, command
+palette, estate map, diff viewer, annotations, preflight, bundle topology, and presenter mode.
 
-**Status:** **Tier 1 on `main`** (live run console, command palette). **Tier 2** — estate
-map (`/estate`), standards diff viewer, **governance annotation previews** on blueprint forms,
-governance preflight panel, bundle topology graph, presenter mode (`?presenter=1`) with shareable
-lineage receipt.
+**Status:** **Shipped on `main`** — Tier 1 (live run console, command palette) and Tier 2 (estate
+map `/estate`, standards diff viewer on blueprint and upgrade preview, governance annotation
+previews, governance preflight panel, bundle topology graph on form and result, presenter mode
+`?presenter=1` with shareable lineage receipt).
 
 ---
 

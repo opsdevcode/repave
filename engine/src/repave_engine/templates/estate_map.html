@@ -23,13 +23,25 @@
   {% for tile in estate_tiles %}
   <article class="estate-tile estate-tile--{{ tile.freshness }}" title="{{ tile.freshness_detail }}">
     <header class="estate-tile__header">
-      <h3 class="estate-tile__title">{{ tile.title }}</h3>
+      <h3 class="estate-tile__title">
+        {% if tile.blueprint_name %}
+        <a href="/blueprints/{{ tile.blueprint_name }}">{{ tile.title }}</a>
+        {% else %}
+        {{ tile.title }}
+        {% endif %}
+      </h3>
       {% if tile.owner %}
       <p class="estate-tile__owner muted">{{ tile.owner }}</p>
       {% endif %}
     </header>
     <p class="estate-tile__blueprint">
+      {% if tile.freshness == 'fresh' %}
       <span class="badge badge--pass">{{ tile.blueprint_label }}</span>
+      {% elif tile.freshness in ('drift', 'error') %}
+      <span class="badge badge--fail">{{ tile.blueprint_label }}</span>
+      {% else %}
+      <span class="badge badge--muted">{{ tile.blueprint_label }}</span>
+      {% endif %}
     </p>
     {% if tile.operator_phase %}
     <p class="estate-tile__operator muted">operator {{ tile.operator_phase }}</p>
@@ -40,6 +52,7 @@
       {% endfor %}
     </div>
     <footer class="estate-tile__footer">
+      <a href="/update?target_repo={{ tile.repo_url | urlencode }}" class="estate-tile__action">Upgrade</a>
       <a href="{{ tile.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ tile.repo_url }}</code></a>
       {% if tile.registered_at %}
       <time class="muted" datetime="{{ tile.registered_at }}">{{ tile.registered_at[:19] }}</time>
@@ -48,6 +61,13 @@
   </article>
   {% endfor %}
 </section>
+{% if audit_sparklines_enabled %}
+<p class="hint estate-map-hint">
+  Sparkline legend: <span class="estate-spark estate-spark--pass" aria-hidden="true"></span> pass
+  · <span class="estate-spark estate-spark--fail" aria-hidden="true"></span> fail
+  · <span class="estate-spark estate-spark--empty" aria-hidden="true"></span> no data
+</p>
+{% endif %}
   {% else %}
 <section class="card">
   <div class="card__body">

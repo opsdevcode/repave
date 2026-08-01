@@ -33,4 +33,20 @@ def test_build_estate_tiles_freshness_and_sparkline() -> None:
     tiles = build_estate_tiles(rows, audit_entries=audit, sparkline_slots=4)
     assert len(tiles) == 1
     assert tiles[0].freshness == "fresh"
+    assert tiles[0].blueprint_name == "terraform-module-generic"
     assert 1 in tiles[0].sparkline
+
+
+def test_build_estate_tiles_unknown_operator_phase() -> None:
+    rows = [
+        {
+            "repo_url": "https://github.com/acme/tf-lambda",
+            "blueprint_name": "terraform-module-generic",
+            "blueprint_version": "1.0.0",
+            "owner": "platform",
+            "operator_phase": "",
+            "registered_at": "2026-01-01T00:00:00Z",
+        }
+    ]
+    tiles = build_estate_tiles(rows)
+    assert tiles[0].freshness == "unknown"

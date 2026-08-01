@@ -147,6 +147,7 @@
             </p>
             {% else %}
             <p class="muted governance-drift-ok">Pinned standard matches platform repo HEAD.</p>
+            {% include "partials/governance_annotations.html" %}
             {% endif %}
           {% else %}
             <p class="muted">{{ standards_diff.reason }}</p>

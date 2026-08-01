@@ -4,10 +4,14 @@
   <p class="hint">Cross-references between bundle members at example inputs.</p>
   <div class="bundle-topology__graph">
     {% for node in bundle_topology.nodes %}
-    <div class="bundle-topology__node bundle-topology__node--{{ node.role }}" id="topo-{{ node.id }}">
+    <a
+      class="bundle-topology__node bundle-topology__node--{{ node.role }}"
+      id="topo-{{ node.id }}"
+      href="/blueprints/{{ node.subtitle }}"
+    >
       <strong>{{ node.label }}</strong>
       <span class="muted">{{ node.subtitle }}</span>
-    </div>
+    </a>
     {% endfor %}
   </div>
   <ul class="bundle-topology__edges muted">

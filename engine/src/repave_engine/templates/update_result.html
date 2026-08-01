@@ -132,6 +132,19 @@
 <div class="alert alert--info">No file differences — the repo already matches the current blueprint render.</div>
 {% endif %}
 
+{% if upgrade_diff_views %}
+<section class="card" aria-labelledby="upgrade-diff-viewer-heading">
+  <div class="card__header">
+    <h2 id="upgrade-diff-viewer-heading">Unified diffs</h2>
+    <p class="muted card__subtitle">Split view of text file changes (up to {{ upgrade_diff_views|length }} paths).</p>
+  </div>
+  <div class="card__body">
+    {% set standards_diff_views = upgrade_diff_views %}
+    {% include "partials/diff_viewer.html" %}
+  </div>
+</section>
+{% endif %}
+
 <section class="card" aria-labelledby="next-heading">
   <div class="card__header">
     <h2 id="next-heading">Next steps</h2>

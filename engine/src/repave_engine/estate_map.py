@@ -18,6 +18,7 @@ class EstateTile:
     repo_url: str
     title: str
     owner: str
+    blueprint_name: str
     blueprint_label: str
     operator_phase: str
     freshness: FreshnessLevel
@@ -30,6 +31,7 @@ class EstateTile:
             "repo_url": self.repo_url,
             "title": self.title,
             "owner": self.owner,
+            "blueprint_name": self.blueprint_name,
             "blueprint_label": self.blueprint_label,
             "operator_phase": self.operator_phase,
             "freshness": self.freshness,
@@ -107,6 +109,7 @@ def build_estate_tiles(
                 repo_url=repo_url,
                 title=title,
                 owner=str(row.get("owner", "")).strip(),
+                blueprint_name=blueprint,
                 blueprint_label=label,
                 operator_phase=str(row.get("operator_phase", "")).strip(),
                 freshness=freshness,
