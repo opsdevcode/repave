@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.118.0  
+**Current release:** v1.119.0  
 
 **In progress:** estate control continuous fleet sync; hosted durability retry/reclaim;
 supply chain digest pins (branch `feat/estate-durability-supply-chain`).
