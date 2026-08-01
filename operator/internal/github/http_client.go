@@ -85,10 +85,55 @@ func (c *HTTPClient) CreatePullRequest(
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return PullRequest{}, fmt.Errorf("decode pull request response: %w", err)
 	}
+	if len(req.Labels) > 0 && parsed.Number > 0 {
+		if err := c.addIssueLabels(ctx, req.Repository, parsed.Number, req.Labels, token); err != nil {
+			return PullRequest{}, err
+		}
+	}
 	return PullRequest{
 		Number:  parsed.Number,
 		HTMLURL: parsed.HTMLURL,
 		Title:   parsed.Title,
 		State:   parsed.State,
 	}, nil
+}
+
+func (c *HTTPClient) addIssueLabels(
+	ctx context.Context,
+	repository Repository,
+	pullNumber int,
+	labels []string,
+	token string,
+) error {
+	if len(labels) == 0 {
+		return nil
+	}
+	payload, err := json.Marshal(map[string]any{"labels": labels})
+	if err != nil {
+		return fmt.Errorf("marshal labels: %w", err)
+	}
+	url := fmt.Sprintf(
+		"https://api.github.com/repos/%s/%s/issues/%d/labels",
+		repository.Owner,
+		repository.Name,
+		pullNumber,
+	)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("build label request: %w", err)
+	}
+	httpReq.Header.Set("Authorization", "Bearer "+token)
+	httpReq.Header.Set("Accept", "application/vnd.github+json")
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := c.client().Do(httpReq)
+	if err != nil {
+		return fmt.Errorf("GitHub label API request: %w", err)
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("GitHub label API %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+	return nil
 }

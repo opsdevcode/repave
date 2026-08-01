@@ -107,6 +107,22 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := (&controller.BlueprintReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Blueprint")
+		os.Exit(1)
+	}
+
+	if err := (&controller.UpgradeCampaignReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "UpgradeCampaign")
+		os.Exit(1)
+	}
+
 	if err := (&controller.GoldenPathRepoReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),

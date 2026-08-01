@@ -155,6 +155,7 @@ def test_open_upgrade_pull_request(repo_root: Path, tmp_path: Path) -> None:
     with (
         patch("repave_engine.upgrade_plan.push_git_branch") as push,
         patch("repave_engine.upgrade_plan.create_github_pull_request") as create_pr,
+        patch("repave_engine.upgrade_plan.add_pull_request_labels") as add_labels,
     ):
         create_pr.return_value = {
             "html_url": "https://github.com/example-org/tf-aws-demo/pull/42",
@@ -171,6 +172,7 @@ def test_open_upgrade_pull_request(repo_root: Path, tmp_path: Path) -> None:
 
     push.assert_called_once()
     create_pr.assert_called_once()
+    add_labels.assert_called_once()
     assert result.pull_request_number == 42
     assert "pull/42" in result.pull_request_url
     assert result.apply.plan.changed_file_count > 0

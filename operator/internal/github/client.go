@@ -8,10 +8,11 @@ import (
 // CreatePullRequestRequest is the input for opening a remediation PR.
 type CreatePullRequestRequest struct {
 	Repository Repository
-	Title        string
-	Body         string
-	HeadBranch   string
-	BaseBranch   string
+	Title      string
+	Body       string
+	HeadBranch string
+	BaseBranch string
+	Labels     []string
 }
 
 // PullRequest is a minimal view of a created GitHub pull request.

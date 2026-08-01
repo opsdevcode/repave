@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
+	"github.com/opsdevcode/repave/operator/internal/conventions"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/git"
 	"github.com/opsdevcode/repave/operator/internal/github"
@@ -44,6 +46,7 @@ type PRMetadata struct {
 	Title         string
 	Body          string
 	CommitMessage string
+	Labels        []string
 }
 
 // BuildPRMetadata constructs deterministic PR fields from remediation spec and desired pins.
@@ -52,19 +55,26 @@ func BuildPRMetadata(
 	desired drift.PinSet,
 	upgradePlanSummary string,
 ) PRMetadata {
-	branch := UpgradeBranchName(spec.BranchPrefix, desired.BlueprintName, desired.BlueprintVersion)
-	title := PullRequestTitle(desired.BlueprintName, desired.BlueprintVersion)
-	body := PullRequestBody(
+	defaults := conventions.LoadPullRequestDefaults()
+	prefix := strings.TrimSpace(spec.BranchPrefix)
+	if prefix == "" {
+		prefix = defaults.BranchPrefixUpgrade
+	}
+	branch := UpgradeBranchName(prefix, desired.BlueprintName, desired.BlueprintVersion)
+	title := conventions.UpgradeTitle(desired.BlueprintName, desired.BlueprintVersion)
+	body := conventions.UpgradeBody(
 		upgradePlanSummary,
 		desired.BlueprintName,
 		desired.BlueprintVersion,
 		desired.StandardVersion,
+		"",
 	)
 	return PRMetadata{
 		Branch:        branch,
 		Title:         title,
 		Body:          body,
 		CommitMessage: title,
+		Labels:        defaults.Labels,
 	}
 }
 
@@ -145,10 +155,11 @@ func PublishPullRequest(ctx context.Context, in PublishInput) (PublishedPR, erro
 
 	pr, err := prClient.CreatePullRequest(ctx, github.CreatePullRequestRequest{
 		Repository: repository,
-		Title:        in.Metadata.Title,
-		Body:         in.Metadata.Body,
-		HeadBranch:   in.ApplyResult.GitBranch,
-		BaseBranch:   BaseBranch(in.Spec.Remediation.BaseBranch),
+		Title:      in.Metadata.Title,
+		Body:       in.Metadata.Body,
+		HeadBranch: in.ApplyResult.GitBranch,
+		BaseBranch: BaseBranch(in.Spec.Remediation.BaseBranch),
+		Labels:     in.Metadata.Labels,
 	})
 	if err != nil {
 		return PublishedPR{}, err

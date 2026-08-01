@@ -79,6 +79,23 @@ def create_github_pull_request(
     return _github_request("POST", f"/repos/{owner}/{repo}/pulls", token, payload)
 
 
+def add_pull_request_labels(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    labels: tuple[str, ...] | list[str],
+    token: str,
+) -> None:
+    if not labels or pull_number <= 0:
+        return
+    _github_request(
+        "POST",
+        f"/repos/{owner}/{repo}/issues/{pull_number}/labels",
+        token,
+        {"labels": list(labels)},
+    )
+
+
 def default_branch(owner: str, repo: str, token: str) -> str:
     """Return the repository's default branch, falling back to main."""
     payload = _github_request("GET", f"/repos/{owner}/{repo}", token)

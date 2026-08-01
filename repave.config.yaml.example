@@ -93,3 +93,13 @@ gates:
 # Operator drift/remediation (set the same webhook URLs on the operator Deployment):
 #   REPAVE_OPERATOR_NOTIFY_ENABLED=true
 #   REPAVE_OPERATOR_NOTIFY_EVENTS=drift_detected,remediation_pr_opened,remediation_pr_planned
+
+# Optional governed pull request conventions for generation, import, upgrade, and operator PRs.
+# pull_requests:
+#   branch_prefix:
+#     generate: repave/bootstrap
+#     upgrade: repave/upgrade
+#     import: repave/import
+#   labels: [repave, governed]
+#   evidence_checklist: true
+# Operator env mirrors: REPAVE_PR_BRANCH_PREFIX_UPGRADE, REPAVE_PR_LABELS, REPAVE_PR_EVIDENCE_CHECKLIST

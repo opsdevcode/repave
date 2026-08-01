@@ -8,8 +8,16 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.blueprint import blueprint_dir, load_blueprint, validate_inputs
-from repave_engine.github import create_github_pull_request, push_git_branch
+from repave_engine.github import (
+    add_pull_request_labels,
+    create_github_pull_request,
+    push_git_branch,
+)
 from repave_engine.policy_selection import diff_policy_provenance
+from repave_engine.pr_conventions import (
+    load_pull_request_conventions,
+    upgrade_pull_request_title,
+)
 from repave_engine.provenance_inputs import (
     blueprint_name_from_provenance,
     inputs_from_provenance,
@@ -102,7 +110,7 @@ class UpgradePublishResult:
 
 
 def build_upgrade_pull_request_title(blueprint_name: str, blueprint_version: str) -> str:
-    return f"chore(repave): upgrade {blueprint_name} to {blueprint_version}"
+    return upgrade_pull_request_title(blueprint_name, blueprint_version)
 
 
 def build_upgrade_pull_request_body(plan: UpgradePlanResult) -> str:
@@ -183,6 +191,16 @@ def open_upgrade_pull_request(
         base=base_branch,
         token=github_token,
     )
+    conventions = load_pull_request_conventions(repo_root)
+    pr_number = int(pr.get("number", 0))
+    if pr_number and conventions.labels:
+        add_pull_request_labels(
+            repository.owner,
+            repository.name,
+            pr_number,
+            conventions.labels,
+            github_token,
+        )
     return UpgradePublishResult(
         apply=apply_result,
         pull_request_url=str(pr.get("html_url", "")),

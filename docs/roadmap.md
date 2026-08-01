@@ -15,7 +15,10 @@ per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (`repave import`, `/import`,
 `/api/v2/imports/*`); **operator production Helm chart** (`deploy/k8s/operator-chart/`,
-`values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks).
+`values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks);
+**operator fleet campaigns** (`UpgradeCampaign` CRD, Blueprint controller, bounded
+remediation PR concurrency); **governed PR conventions** (`pull_requests` in
+`repave.config.yaml`, shared labels/branch prefixes, gate evidence checklist).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -97,8 +100,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ k8s deploy      Helm chart + day-2 operability (portal + operator charts shipped)
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
-  ├─ supply chain    GitHub App auth shipped; governed PR conventions open
-  ├─ fleet scale     Blueprint controller; bounded upgrade campaigns; drift SLOs
+  ├─ supply chain    GitHub App auth shipped; governed PR conventions shipped
+  ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns; drift SLOs open
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
   ├─ reach           repave verify (local + remote clone shipped); repo import (shipped); composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
@@ -1546,6 +1549,10 @@ operator's PRs look nothing like the ones humans open.
 **Done when:** One config change makes every generated and remediation PR carry the
 organization's branch prefix, labels, and evidence checklist.
 
+**Status:** **Shipped on `main`** — `pull_requests` block in `repave.config.yaml`, engine
+`pr_conventions.py` (import/upgrade/generate paths, labels, evidence checklist), operator env
+parity (`REPAVE_PR_*`).
+
 ---
 
 ### Operator fleet campaigns and Blueprint controller
@@ -1569,6 +1576,11 @@ operator remote inventory Phase C.
 
 **Done when:** A standard bump across a registry of repos opens a bounded set of remediation PRs,
 can be paused mid-flight, and reports drift MTTR.
+
+**Status:** **Partial on `main`** — `Blueprint` controller publishes `status.targetPins`;
+`UpgradeCampaign` CRD with pause, max concurrent open PRs, and stop-after-failures gate on
+remediation (label GPRs with `repave.dev/upgrade-campaign`). **Still open:** drift SLO metrics,
+campaign notification summaries, operator GitHub rate-limit parity.
 
 ---
 

@@ -26,11 +26,33 @@ type BlueprintSpec struct {
 	Standard BlueprintStandardPins `json:"standard"`
 }
 
-// BlueprintStatus records the last observed spec generation.
+const BlueprintConditionReady = "Ready"
+
+// BlueprintStatus records the last observed spec generation and published pin target.
 type BlueprintStatus struct {
 	// ObservedGeneration reflects the metadata.generation last reconciled.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// TargetPins mirrors spec pin fields for fleet queries and kubectl columns.
+	// +optional
+	TargetPins *BlueprintTargetPins `json:"targetPins,omitempty"`
+
+	// Conditions describe operability of the Blueprint target.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
+// BlueprintTargetPins are the fleet-wide desired pins published by this Blueprint CR.
+type BlueprintTargetPins struct {
+	// Version is the semver of the blueprint template.
+	Version string `json:"version"`
+
+	// StandardSource is the in-repo or URI path to the standard corpus.
+	StandardSource string `json:"standardSource"`
+
+	// StandardVersion is the semver of the standard corpus.
+	StandardVersion string `json:"standardVersion"`
 }
 
 // +kubebuilder:object:root=true

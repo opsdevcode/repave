@@ -4,8 +4,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.github import GitHubError, ensure_github_repository, push_module_repository
+from repave_engine.gate_registry import GateResult
+from repave_engine.github import (
+    GitHubError,
+    ensure_github_repository,
+    push_module_repository,
+)
 from repave_engine.output_template import format_output_template
+from repave_engine.pr_conventions import (
+    PullRequestConventions,
+    append_evidence_section,
+    branch_name,
+    load_pull_request_conventions,
+)
 from repave_engine.target_repo import ModuleRepository
 
 
@@ -28,8 +39,19 @@ def plan_pull_request(
     files_root: Path,
     repository: ModuleRepository,
     module_values: dict[str, Any],
+    repo_root: Path | None = None,
+    gate_results: tuple[GateResult, ...] = (),
 ) -> PullRequestPlan:
-    branch = "main"
+    conventions = (
+        load_pull_request_conventions(repo_root)
+        if repo_root is not None
+        else PullRequestConventions()
+    )
+    branch = branch_name(
+        conventions.branch_prefix_generate,
+        str(module_values.get("module_name", blueprint_name)),
+        blueprint_version,
+    )
     title = format_output_template(title_template, module_values)
 
     summary_lines = [
@@ -53,7 +75,11 @@ def plan_pull_request(
             "Do not merge or delete the repository if this scaffold should be discarded.",
         ]
     )
-    body = "\n".join(summary_lines) + "\n"
+    body = append_evidence_section(
+        "\n".join(summary_lines) + "\n",
+        gate_results,
+        enabled=conventions.evidence_checklist,
+    )
     return PullRequestPlan(
         title=title,
         body=body,
