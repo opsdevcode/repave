@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://repave.dev/schemas/bundle.schema.json",
   "title": "Repave Bundle",
-  "description": "Composite golden path: shared inputs and member blueprints rendered together.",
+  "description": "Composite golden path: shared inputs and member blueprints rendered together. Schema frozen for repave v2 — see docs/blueprint-versioning.md.",
   "type": "object",
   "required": ["apiVersion", "kind", "metadata", "spec"],
   "additionalProperties": false,
