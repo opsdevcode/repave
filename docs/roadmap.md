@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.123.0  
+**Current release:** v1.124.0  
 
 **In progress:** **Cost visibility follow-ups** (Infracost in generated-repo CI, native AWS/Azure
 cost readers) on `feat/cost-native-and-ci`.
