@@ -1,0 +1,23 @@
+repave operator installed.
+
+Release: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+The operator reconciles GoldenPathRepo and Blueprint CRs and calls the portal at:
+  {{ .Values.repave.apiUrl }}
+
+Webhook TLS secret (must exist before pods become ready):
+  {{ include "repave-operator.webhookSecretName" . }}
+
+{{- if and .Values.crds.install (not .Values.webhook.caBundle) }}
+
+WARNING: crds.install=true but webhook.caBundle is empty. Conversion webhooks will fail
+until you set caBundle to the base64-encoded CA that signed the webhook serving cert.
+Generate certs with operator/hack/setup-webhook-certs.sh or cert-manager, then:
+
+  --set webhook.caBundle="$(base64 < ca.crt | tr -d '\n')"
+{{- end }}
+
+Verify:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl get goldenpathrepo -A

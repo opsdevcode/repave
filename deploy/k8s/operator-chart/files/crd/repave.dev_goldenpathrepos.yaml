@@ -1,0 +1,608 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: goldenpathrepos.repave.dev
+spec:
+  group: repave.dev
+  names:
+    kind: GoldenPathRepo
+    listKind: GoldenPathRepoList
+    plural: goldenpathrepos
+    shortNames:
+    - gpr
+    singular: goldenpathrepo
+  scope: Namespaced
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: {{ required "webhook.caBundle is required when crds.install=true" .Values.webhook.caBundle }}
+        service:
+          name: {{ .Values.service.webhook.name }}
+          namespace: {{ .Release.Namespace }}
+          path: /convert
+          port: 443
+      conversionReviewVersions:
+      - v1
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .spec.repoURL
+      name: Repo
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: GoldenPathRepo registers a generated repository for drift and
+          upgrade reconciliation.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: GoldenPathRepoSpec defines a generated golden-path repository
+              to reconcile.
+            properties:
+              blueprintRef:
+                description: BlueprintRef watches catalog pin changes via a Blueprint
+                  CR (v1.17 slice 4).
+                properties:
+                  name:
+                    description: Name is the Blueprint metadata.name in the same namespace
+                      as the GoldenPathRepo.
+                    minLength: 1
+                    type: string
+                required:
+                - name
+                type: object
+              desiredPins:
+                description: |-
+                  DesiredPins are the target blueprint and standard versions for this repo.
+                  When blueprintRef is set, blueprintVersion and standard* are taken from the Blueprint CR.
+                properties:
+                  blueprintName:
+                    description: BlueprintName is the golden path name (for example
+                      terraform-module-generic).
+                    minLength: 1
+                    type: string
+                  blueprintVersion:
+                    description: BlueprintVersion is the semver of the blueprint at
+                      generation or desired upgrade.
+                    minLength: 1
+                    type: string
+                  standardSource:
+                    description: StandardSource is the in-repo or URI path to the
+                      pinned standard corpus.
+                    minLength: 1
+                    type: string
+                  standardVersion:
+                    description: StandardVersion is the semver of the standard corpus.
+                    minLength: 1
+                    type: string
+                required:
+                - blueprintName
+                - blueprintVersion
+                - standardSource
+                - standardVersion
+                type: object
+              localPath:
+                description: LocalPath is an absolute filesystem path to a module
+                  repo (local dev and envtest).
+                maxLength: 4096
+                type: string
+              remediation:
+                description: Remediation configures governed pull requests for pin
+                  drift.
+                properties:
+                  baseBranch:
+                    description: BaseBranch is the merge target for remediation PRs
+                      (default main).
+                    maxLength: 256
+                    type: string
+                  branchPrefix:
+                    description: BranchPrefix is prepended to generated upgrade branch
+                      names.
+                    maxLength: 128
+                    type: string
+                  dryRun:
+                    description: DryRun applies the upgrade locally on a branch without
+                      opening a GitHub pull request.
+                    type: boolean
+                  enabled:
+                    description: Enabled requests a remediation PR when drift is detected
+                      and an upgrade plan exists.
+                    type: boolean
+                  preserveLocal:
+                    description: |-
+                      PreserveLocal skips overwriting modified scaffold files during apply-upgrade
+                      (same as repave apply-upgrade --preserve-local).
+                    type: boolean
+                type: object
+              repoURL:
+                description: RepoURL is the git remote (https or ssh). For local development
+                  use localPath instead.
+                maxLength: 2048
+                type: string
+            required:
+            - desiredPins
+            type: object
+            x-kubernetes-validations:
+            - message: either repoURL or localPath must be set
+              rule: (has(self.repoURL) && self.repoURL != '') || (has(self.localPath)
+                && self.localPath != '')
+          status:
+            description: GoldenPathRepoStatus defines the observed state of GoldenPathRepo.
+            properties:
+              conditions:
+                description: Conditions represent the latest available observations
+                  of reconciliation state.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              message:
+                description: Message is a human-readable detail string for the current
+                  phase.
+                type: string
+              observedGeneration:
+                description: ObservedGeneration reflects the metadata.generation last
+                  reconciled.
+                format: int64
+                type: integer
+              observedPins:
+                description: ObservedPins holds pins read from repave.yaml when inventory
+                  runs (slice 1+).
+                properties:
+                  blueprintName:
+                    type: string
+                  blueprintVersion:
+                    type: string
+                  standardSource:
+                    type: string
+                  standardVersion:
+                    type: string
+                type: object
+              phase:
+                description: Phase summarizes reconciliation state for kubectl columns.
+                type: string
+              remediationPR:
+                description: RemediationPR holds the latest remediation pull request
+                  (slice 3+).
+                properties:
+                  branch:
+                    description: Branch is the head branch for the remediation change.
+                    type: string
+                  desiredBlueprintVersion:
+                    description: DesiredBlueprintVersion is the spec pin this PR was
+                      created for (idempotency).
+                    type: string
+                  number:
+                    description: Number is the GitHub pull request number when State
+                      is Open.
+                    type: integer
+                  state:
+                    description: State is Open or Planned (dry-run without GitHub).
+                    type: string
+                  title:
+                    description: Title is the pull request title.
+                    type: string
+                  url:
+                    description: URL is the GitHub pull request URL when State is
+                      Open.
+                    type: string
+                type: object
+              upgradePlan:
+                description: UpgradePlan holds the latest dry-run diff when pins are
+                  out of date (slice 2+).
+                properties:
+                  added:
+                    description: Added lists new paths relative to the target repo
+                      (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  blueprintName:
+                    description: BlueprintName is the blueprint used for the plan
+                      render.
+                    type: string
+                  blueprintVersion:
+                    description: BlueprintVersion is the blueprint version from the
+                      repave checkout used for render.
+                    type: string
+                  changedFileCount:
+                    description: ChangedFileCount is added + modified + removed paths.
+                    type: integer
+                  modified:
+                    description: Modified lists changed paths relative to the target
+                      repo (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  removed:
+                    description: Removed lists paths present locally but absent from
+                      the render (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  summary:
+                    description: Summary is a single-line human summary for kubectl
+                      and events.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      status: {}
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Ready
+      type: string
+    - jsonPath: .status.phase
+      name: Phase
+      type: string
+    - jsonPath: .spec.repoURL
+      name: Repo
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: GoldenPathRepo registers a generated repository for drift and
+          upgrade reconciliation.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: GoldenPathRepoSpec defines a generated golden-path repository
+              to reconcile.
+            properties:
+              blueprintRef:
+                description: BlueprintRef watches catalog pin changes via a Blueprint
+                  CR (v1.17 slice 4).
+                properties:
+                  name:
+                    description: Name is the Blueprint metadata.name in the same namespace
+                      as the GoldenPathRepo.
+                    minLength: 1
+                    type: string
+                required:
+                - name
+                type: object
+              desiredPins:
+                description: |-
+                  DesiredPins are the target blueprint and standard versions for this repo.
+                  When blueprintRef is set, blueprintVersion and standard* are taken from the Blueprint CR.
+                properties:
+                  blueprintName:
+                    description: BlueprintName is the golden path name (for example
+                      terraform-module-generic).
+                    minLength: 1
+                    type: string
+                  blueprintVersion:
+                    description: BlueprintVersion is the semver of the blueprint at
+                      generation or desired upgrade.
+                    minLength: 1
+                    type: string
+                  standardSource:
+                    description: StandardSource is the in-repo or URI path to the
+                      pinned standard corpus.
+                    minLength: 1
+                    type: string
+                  standardVersion:
+                    description: StandardVersion is the semver of the standard corpus.
+                    minLength: 1
+                    type: string
+                required:
+                - blueprintName
+                - blueprintVersion
+                - standardSource
+                - standardVersion
+                type: object
+              localPath:
+                description: LocalPath is an absolute filesystem path to a module
+                  repo (local dev and envtest).
+                maxLength: 4096
+                type: string
+              remediation:
+                description: Remediation configures governed pull requests for pin
+                  drift.
+                properties:
+                  baseBranch:
+                    description: BaseBranch is the merge target for remediation PRs
+                      (default main).
+                    maxLength: 256
+                    type: string
+                  branchPrefix:
+                    description: BranchPrefix is prepended to generated upgrade branch
+                      names.
+                    maxLength: 128
+                    type: string
+                  dryRun:
+                    description: DryRun applies the upgrade locally on a branch without
+                      opening a GitHub pull request.
+                    type: boolean
+                  enabled:
+                    description: Enabled requests a remediation PR when drift is detected
+                      and an upgrade plan exists.
+                    type: boolean
+                  preserveLocal:
+                    description: |-
+                      PreserveLocal skips overwriting modified scaffold files during apply-upgrade
+                      (same as repave apply-upgrade --preserve-local).
+                    type: boolean
+                type: object
+              repoURL:
+                description: RepoURL is the git remote (https or ssh). For local development
+                  use localPath instead.
+                maxLength: 2048
+                type: string
+            required:
+            - desiredPins
+            type: object
+            x-kubernetes-validations:
+            - message: either repoURL or localPath must be set
+              rule: (has(self.repoURL) && self.repoURL != '') || (has(self.localPath)
+                && self.localPath != '')
+          status:
+            description: GoldenPathRepoStatus defines the observed state of GoldenPathRepo.
+            properties:
+              conditions:
+                description: Conditions represent the latest available observations
+                  of reconciliation state.
+                items:
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        lastTransitionTime is the last time the condition transitioned from one status to another.
+                        This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        message is a human readable message indicating details about the transition.
+                        This may be an empty string.
+                      maxLength: 32768
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        observedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      minimum: 0
+                      type: integer
+                    reason:
+                      description: |-
+                        reason contains a programmatic identifier indicating the reason for the condition's last transition.
+                        Producers of specific condition types may define expected values and meanings for this field,
+                        and whether the values are considered a guaranteed API.
+                        The value should be a CamelCase string.
+                        This field may not be empty.
+                      maxLength: 1024
+                      minLength: 1
+                      pattern: ^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$
+                      type: string
+                    status:
+                      description: status of the condition, one of True, False, Unknown.
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
+                      maxLength: 316
+                      pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - message
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              message:
+                description: Message is a human-readable detail string for the current
+                  phase.
+                type: string
+              observedGeneration:
+                description: ObservedGeneration reflects the metadata.generation last
+                  reconciled.
+                format: int64
+                type: integer
+              observedPins:
+                description: ObservedPins holds pins read from repave.yaml when inventory
+                  runs (slice 1+).
+                properties:
+                  blueprintName:
+                    type: string
+                  blueprintVersion:
+                    type: string
+                  standardSource:
+                    type: string
+                  standardVersion:
+                    type: string
+                type: object
+              phase:
+                description: Phase summarizes reconciliation state for kubectl columns.
+                type: string
+              remediationPR:
+                description: RemediationPR holds the latest remediation pull request
+                  (slice 3+).
+                properties:
+                  branch:
+                    description: Branch is the head branch for the remediation change.
+                    type: string
+                  desiredBlueprintVersion:
+                    description: DesiredBlueprintVersion is the spec pin this PR was
+                      created for (idempotency).
+                    type: string
+                  number:
+                    description: Number is the GitHub pull request number when State
+                      is Open.
+                    type: integer
+                  state:
+                    description: State is Open or Planned (dry-run without GitHub).
+                    type: string
+                  title:
+                    description: Title is the pull request title.
+                    type: string
+                  url:
+                    description: URL is the GitHub pull request URL when State is
+                      Open.
+                    type: string
+                type: object
+              upgradePlan:
+                description: UpgradePlan holds the latest dry-run diff when pins are
+                  out of date (slice 2+).
+                properties:
+                  added:
+                    description: Added lists new paths relative to the target repo
+                      (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  blueprintName:
+                    description: BlueprintName is the blueprint used for the plan
+                      render.
+                    type: string
+                  blueprintVersion:
+                    description: BlueprintVersion is the blueprint version from the
+                      repave checkout used for render.
+                    type: string
+                  changedFileCount:
+                    description: ChangedFileCount is added + modified + removed paths.
+                    type: integer
+                  modified:
+                    description: Modified lists changed paths relative to the target
+                      repo (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  removed:
+                    description: Removed lists paths present locally but absent from
+                      the render (capped when stored on status).
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  summary:
+                    description: Summary is a single-line human summary for kubectl
+                      and events.
+                    type: string
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

@@ -1,0 +1,31 @@
+# Day-2 production overlay: leader election, metrics, Prometheus Operator hooks, PDB.
+#
+#   helm upgrade --install repave-operator ./deploy/k8s/operator-chart \
+#     -f values.yaml -f values-day2.yaml \
+#     --set secrets.existingSecret=repave-operator-secrets \
+#     --set repave.apiUrl=http://repave.repave.svc.cluster.local:8088 \
+#     --set webhook.caBundle="$(base64 < ca.crt | tr -d '\n')"
+
+replicaCount: 2
+
+manager:
+  leaderElect: true
+  metrics:
+    enabled: true
+    bindAddress: ":8080"
+
+service:
+  metrics:
+    enabled: true
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 256Mi
+  limits:
+    cpu: "2"
+    memory: 1Gi

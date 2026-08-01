@@ -1,0 +1,112 @@
+# Default values for the repave operator chart.
+# Build from operator/Dockerfile:
+#   docker build -f operator/Dockerfile -t ghcr.io/opsdevcode/repave-operator:TAG operator/
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/opsdevcode/repave-operator
+  tag: "" # defaults to Chart.appVersion
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Portal /api/v2 base URL (required for plan/apply upgrades).
+repave:
+  apiUrl: http://repave.repave.svc.cluster.local:8088
+  # Optional: local repo root and CLI path for in-cluster remediation (rare).
+  repoRoot: ""
+  cli: ""
+  remoteResync: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+# Manager flags (controller-runtime).
+manager:
+  leaderElect: true
+  metrics:
+    enabled: false
+    bindAddress: ":8080"
+    secure: false
+  healthProbeBindAddress: ":8081"
+
+service:
+  webhook:
+    name: repave-webhook-service
+    port: 443
+  metrics:
+    enabled: false
+    port: 8080
+
+webhook:
+  # TLS secret mounted at /tmp/k8s-webhook-server/serving-certs (tls.crt, tls.key).
+  secretName: webhook-server-cert
+  existingSecret: ""
+  # Base64-encoded CA certificate for CRD conversion webhook caBundle (required when crds.install=true).
+  caBundle: ""
+
+crds:
+  # Install repave.dev CRDs from chart crds/ (requires webhook.caBundle when conversion webhook is used).
+  install: true
+
+modules:
+  # hostPath for kind/e2e module fixtures; disable on production clusters.
+  hostPath:
+    enabled: false
+    path: /modules
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 512Mi
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+monitoring:
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    labels: {}
+
+probes:
+  liveness:
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+secrets:
+  create: false
+  existingSecret: ""
+  githubToken: ""
+  githubAppId: ""
+  githubAppInstallationId: ""
+  githubAppPrivateKey: ""
+
+# Operator notification webhooks (optional; mirror portal notify settings).
+notify:
+  enabled: false
+  slackWebhookUrl: ""
+  teamsWebhookUrl: ""
+  genericWebhookUrl: ""
+  events: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

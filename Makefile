@@ -97,8 +97,9 @@ operator-e2e:
 	cd operator && $(MAKE) e2e
 
 chart-validate:
-	chmod +x deploy/k8s/hack/validate-chart.sh
+	chmod +x deploy/k8s/hack/validate-chart.sh deploy/k8s/hack/validate-operator-chart.sh
 	./deploy/k8s/hack/validate-chart.sh
+	./deploy/k8s/hack/validate-operator-chart.sh
 
 chart-smoke:
 	chmod +x deploy/k8s/hack/chart-smoke.sh

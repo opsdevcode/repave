@@ -157,7 +157,8 @@ Typical layout:
 
 - **Namespace:** `repave-system` (or split `repave-portal` / `repave-operator`)
 - **Portal:** this chart — serves catalog and generation
-- **Operator:** `operator/config/e2e` or your overlay — reconciles `GoldenPathRepo`
+- **Operator:** [`deploy/k8s/operator-chart/`](../operator-chart/) — reconciles `GoldenPathRepo`
+  and `Blueprint` CRs (conversion webhook, leader election, day-2 overlays)
 
 Share notification webhook URLs between `repave.config.yaml` and operator env vars (see
 [`repave.config.yaml.example`](../../../repave.config.yaml.example)).
@@ -175,8 +176,8 @@ kubectl port-forward svc/repave 8088:8088 -n repave
 ```
 
 This creates a kind cluster with operator module fixtures mounted at `/modules`, installs
-the portal (with the same `/modules` hostPath via `values-kind.yaml`) and slim operator
-(`REPAVE_API_URL` → portal Service), seeds
+the portal (with the same `/modules` hostPath via `values-kind.yaml`) and the operator Helm
+chart (`REPAVE_API_URL` → portal Service), seeds
 [`deploy/k8s/testdata/fleet-registry.jsonl`](../testdata/fleet-registry.jsonl), renders
 GPRs with `repave fleet-manifests`, applies them plus the local `e2e-drift` fixture. Remote
 `repoURL` entries show fetch errors until you point at reachable git; `e2e-drift` exercises

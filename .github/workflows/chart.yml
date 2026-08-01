@@ -39,8 +39,9 @@ jobs:
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
         run: |
-          chmod +x deploy/k8s/hack/validate-chart.sh
+          chmod +x deploy/k8s/hack/validate-chart.sh deploy/k8s/hack/validate-operator-chart.sh
           ./deploy/k8s/hack/validate-chart.sh
+          ./deploy/k8s/hack/validate-operator-chart.sh
 
   chart-smoke:
     name: chart-smoke

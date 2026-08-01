@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "repave-operator.fullname" . }}
+  labels:
+    {{- include "repave-operator.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "repave-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "repave-operator.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "repave-operator.serviceAccountName" . }}
+      {{- with .Values.podSecurityContext }}
+      securityContext:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: manager
+          image: {{ include "repave-operator.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - --leader-elect={{ .Values.manager.leaderElect }}
+            - --health-probe-bind-address={{ .Values.manager.healthProbeBindAddress }}
+            {{- if .Values.manager.metrics.enabled }}
+            - --metrics-bind-address={{ .Values.manager.metrics.bindAddress }}
+            - --metrics-secure={{ .Values.manager.metrics.secure }}
+            {{- else }}
+            - --metrics-bind-address=0
+            {{- end }}
+          ports:
+            - name: health
+              containerPort: 8081
+            - name: webhook-server
+              containerPort: 9443
+            {{- if .Values.manager.metrics.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.service.metrics.port }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: health
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          env:
+            - name: REPAVE_API_URL
+              value: {{ required "repave.apiUrl is required" .Values.repave.apiUrl | quote }}
+            {{- if .Values.repave.repoRoot }}
+            - name: REPAVE_REPO_ROOT
+              value: {{ .Values.repave.repoRoot | quote }}
+            {{- end }}
+            {{- if .Values.repave.cli }}
+            - name: REPAVE_CLI
+              value: {{ .Values.repave.cli | quote }}
+            {{- end }}
+            {{- if .Values.repave.remoteResync }}
+            - name: REPAVE_OPERATOR_REMOTE_RESYNC
+              value: {{ .Values.repave.remoteResync | quote }}
+            {{- end }}
+            {{- include "repave-operator.githubAuthEnv" . | nindent 12 }}
+            {{- include "repave-operator.notifyEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /tmp/k8s-webhook-server/serving-certs
+              readOnly: true
+            {{- if .Values.modules.hostPath.enabled }}
+            - name: modules
+              mountPath: /modules
+              readOnly: true
+            {{- end }}
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: {{ include "repave-operator.webhookSecretName" . }}
+        {{- if .Values.modules.hostPath.enabled }}
+        - name: modules
+          hostPath:
+            path: {{ .Values.modules.hostPath.path }}
+            type: Directory
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

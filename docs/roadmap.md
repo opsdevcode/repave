@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.114.0  
 
-**In progress:** operator production Helm chart.  
+**In progress:** _(none — pick from [Planning horizon](#planning-horizon-v119--v200-platform-maturity--governed-estate-at-scale) or open follow-ups below)._
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -14,7 +14,8 @@ per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (`repave import`, `/import`,
-`/api/v2/imports/*`).
+`/api/v2/imports/*`); **operator production Helm chart** (`deploy/k8s/operator-chart/`,
+`values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -93,7 +94,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
-  ├─ k8s deploy      Helm chart + day-2 operability (shipped; operator chart open)
+  ├─ k8s deploy      Helm chart + day-2 operability (portal + operator charts shipped)
   ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
   ├─ supply chain    GitHub App auth shipped; governed PR conventions open
@@ -326,7 +327,10 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   ServiceMonitor, PrometheusRule), runbooks in [`docs/operations/`](../docs/operations/)
 - **Multi-replica smoke:** [`values-multi-replica-smoke.yaml`](../deploy/k8s/chart/values-multi-replica-smoke.yaml),
   [`chart-smoke-multi-replica.sh`](../deploy/k8s/hack/chart-smoke-multi-replica.sh)
-- **Follow-ups:** operator production Helm chart
+- **Operator chart:** [`deploy/k8s/operator-chart/`](../deploy/k8s/operator-chart/) —
+  GoldenPathRepo/Blueprint reconciliation, conversion webhook TLS + CRD install,
+  `values-day2.yaml` (leader election, metrics, ServiceMonitor), `values-kind.yaml` for
+  `kind-co-install`; validated in `chart-validate` CI
 
 ### GitHub App authentication (engine v1.105+)
 
@@ -1163,8 +1167,8 @@ model itself belongs to that entry.
 **Done when:** `helm install` serves the blueprint form on-cluster with dry-run generation
 working and probes gating traffic.
 
-**Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174).
-**Follow-ups in this entry:** operator production Helm chart.
+**Status:** **Shipped on `main`** — see [Shipped — Helm chart](#kubernetes-deploy--helm-chart-engine-v174)
+and [operator chart](../deploy/k8s/operator-chart/README.md).
 
 ---
 
