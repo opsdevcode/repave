@@ -4725,3 +4725,13 @@ body.repave-busy {
 .entity-slo .badge {
   margin-right: var(--space-2);
 }
+
+.entity-cost__amount,
+.result-cost-estimate__amount {
+  margin: 0 0 var(--space-2);
+}
+
+.entity-cost__amount .badge,
+.result-cost-estimate__amount .badge {
+  margin-right: var(--space-2);
+}

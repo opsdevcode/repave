@@ -6,6 +6,7 @@ import secrets
 import signal
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -67,10 +68,12 @@ from repave_engine.bundle_portal import (
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
+from repave_engine.cost_actuals import fetch_entity_cost_actuals
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
+    apply_cost_to_scorecard,
     filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
@@ -490,7 +493,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/library", response_class=HTMLResponse)
     async def library_page(request: Request, owner: str = "") -> HTMLResponse:
-        entities = build_portal_catalog_entities(repo_root, resolved_output)
+        cost_configured = bool(portal_config.cost_actuals_url)
+        entities = build_portal_catalog_entities(
+            repo_root,
+            resolved_output,
+            cost_actuals_configured=cost_configured,
+        )
         if owner.strip():
             entities = filter_entities_by_owner(entities, owner)
         blueprint_types = {
@@ -522,10 +530,26 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/services/{entity_id}", response_class=HTMLResponse)
     async def service_detail_page(request: Request, entity_id: str) -> HTMLResponse:
-        entities = build_portal_catalog_entities(repo_root, resolved_output)
+        cost_configured = bool(portal_config.cost_actuals_url)
+        entities = build_portal_catalog_entities(
+            repo_root,
+            resolved_output,
+            cost_actuals_configured=cost_configured,
+        )
         entity = find_catalog_entity(entities, entity_id)
         if entity is None:
             raise HTTPException(status_code=404, detail="Entity not found")
+        cost_actuals = fetch_entity_cost_actuals(portal_config.cost_actuals_url, entity)
+        entity = replace(
+            entity,
+            scorecard=apply_cost_to_scorecard(
+                entity.scorecard,
+                owner=entity.owner,
+                display_name=entity.display_name,
+                cost_actuals=cost_actuals,
+                cost_actuals_configured=cost_configured,
+            ),
+        )
         token = resolve_github_access_token()
         docs = resolve_entity_docs(entity, github_token=token)
         readme_html = render_portal_markdown(docs["readme"]) if docs.get("readme") else ""
@@ -553,6 +577,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 provenance_html=provenance_html,
                 observability_url=obs_url,
                 slo_summary=slo_summary,
+                cost_actuals=cost_actuals,
             ),
         )
 

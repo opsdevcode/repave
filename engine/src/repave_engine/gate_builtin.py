@@ -17,6 +17,7 @@ from repave_engine.gate_runners import (
     run_grafana_dashboard,
     run_helm_lint,
     run_helm_template,
+    run_infracost,
     run_molecule,
     run_opa,
     run_promtool,
@@ -59,6 +60,14 @@ _OPA_GATE_ARTIFACT_TYPES = frozenset(
     {"terraform-module", "terraform-environment-stack", "opa-policy", "observability", "helm-chart"}
 )
 
+register_gate(
+    GateSpec(
+        name="infracost",
+        runner=run_infracost,
+        artifact_types=_TERRAFORM_ARTIFACT_TYPES,
+        artifact_paths=(".repave",),
+    )
+)
 register_gate(
     GateSpec(
         name="terraform-fmt",

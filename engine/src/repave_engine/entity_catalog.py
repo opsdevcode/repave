@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.blueprint import artifact_family
+from repave_engine.cost_actuals import CostActualsSummary, tag_coverage_for_fields
 from repave_engine.fleet import FleetEntry, normalize_repo_url
 from repave_engine.fleet_operator_status import FleetOperatorStatus
 from repave_engine.fleet_view import build_fleet_rows
@@ -235,12 +236,61 @@ def _latest_audit_for_name(
     return None
 
 
+def _cost_scorecard_dimension(
+    *,
+    owner: str,
+    display_name: str,
+    cost_actuals: CostActualsSummary | None,
+    cost_actuals_configured: bool,
+) -> ScorecardDimension:
+    if cost_actuals is not None:
+        cost_level: ScoreLevel = "pass" if cost_actuals.tag_coverage == "complete" else "warn"
+        as_of = cost_actuals.as_of[:19] if cost_actuals.as_of else "unknown"
+        cost_detail = f"L30D {cost_actuals.currency} {cost_actuals.amount_30d} as of {as_of}"
+    elif cost_actuals_configured:
+        coverage, cov_detail = tag_coverage_for_fields(owner, display_name)
+        if coverage == "missing":
+            cost_level = "warn"
+            cost_detail = cov_detail
+        else:
+            cost_level = "unknown"
+            cost_detail = "Cost reader configured; open entity for spend fetch"
+    else:
+        cost_level = "unknown"
+        cost_detail = "Configure portal.cost_actuals_url for cloud spend"
+    return ScorecardDimension("cost", "Cloud spend", cost_level, cost_detail)
+
+
+def apply_cost_to_scorecard(
+    scorecard: tuple[ScorecardDimension, ...],
+    *,
+    owner: str,
+    display_name: str,
+    cost_actuals: CostActualsSummary | None,
+    cost_actuals_configured: bool,
+) -> tuple[ScorecardDimension, ...]:
+    base = tuple(dim for dim in scorecard if dim.key != "cost")
+    return (
+        *base,
+        _cost_scorecard_dimension(
+            owner=owner,
+            display_name=display_name,
+            cost_actuals=cost_actuals,
+            cost_actuals_configured=cost_actuals_configured,
+        ),
+    )
+
+
 def build_scorecard(
     *,
     repo_dir: Path | None,
     fleet_entry: FleetEntry | None,
     operator: FleetOperatorStatus | None,
     audit: AuditHistoryEntry | None,
+    owner: str = "",
+    display_name: str = "",
+    cost_actuals: CostActualsSummary | None = None,
+    cost_actuals_configured: bool = False,
 ) -> tuple[ScorecardDimension, ...]:
     dims: list[ScorecardDimension] = []
 
@@ -305,6 +355,15 @@ def build_scorecard(
         gate_detail = f"Last generation {audit.gates_outcome} ({audit.timestamp[:19]})"
     dims.append(ScorecardDimension("gates", "Last generation", gate_level, gate_detail))
 
+    dims.append(
+        _cost_scorecard_dimension(
+            owner=owner,
+            display_name=display_name,
+            cost_actuals=cost_actuals,
+            cost_actuals_configured=cost_actuals_configured,
+        )
+    )
+
     return tuple(dims)
 
 
@@ -327,6 +386,7 @@ def _entity_from_fleet_row(
     repo_dir: Path | None,
     operator: FleetOperatorStatus | None,
     audit: AuditHistoryEntry | None,
+    cost_actuals_configured: bool = False,
 ) -> CatalogEntity:
     repo_url = str(row.get("repo_url", "")).strip() or None
     entity_id = entity_id_for_repo_url(repo_url) if repo_url else "unknown"
@@ -369,6 +429,9 @@ def _entity_from_fleet_row(
             fleet_entry=fleet_entry,
             operator=operator,
             audit=audit,
+            owner=str(row.get("owner") or meta.get("owner", "")).strip(),
+            display_name=display,
+            cost_actuals_configured=cost_actuals_configured,
         ),
         readme_preview=_readme_excerpt(repo_dir) if repo_dir else "",
         last_generation_at=audit.timestamp[:19] if audit else "",
@@ -382,6 +445,7 @@ def _discover_local_entities(
     known_urls: set[str],
     skip_dir_names: set[str] | None = None,
     audit_entries: tuple[AuditHistoryEntry, ...],
+    cost_actuals_configured: bool = False,
 ) -> list[CatalogEntity]:
     found: list[CatalogEntity] = []
     if not modules_root.is_dir():
@@ -430,6 +494,9 @@ def _discover_local_entities(
                 fleet_entry=None,
                 operator=None,
                 audit=audit,
+                owner=meta.get("owner", ""),
+                display_name=display,
+                cost_actuals_configured=cost_actuals_configured,
             ),
             readme_preview=_readme_excerpt(entry),
             last_generation_at=audit.timestamp[:19] if audit else "",
@@ -445,6 +512,7 @@ def build_catalog_entities(
     modules_root: Path,
     operator_by_url: dict[str, FleetOperatorStatus] | None,
     audit_entries: tuple[AuditHistoryEntry, ...] = (),
+    cost_actuals_configured: bool = False,
 ) -> list[CatalogEntity]:
     """Merge fleet registry rows with modules_root discoveries."""
     lookup = operator_by_url or {}
@@ -468,7 +536,13 @@ def build_catalog_entities(
         }
         audit = _latest_audit_for_name(audit_entries, names={n for n in names if n})
         entities.append(
-            _entity_from_fleet_row(row, repo_dir=repo_dir, operator=operator, audit=audit)
+            _entity_from_fleet_row(
+                row,
+                repo_dir=repo_dir,
+                operator=operator,
+                audit=audit,
+                cost_actuals_configured=cost_actuals_configured,
+            )
         )
 
     entities.extend(
@@ -477,6 +551,7 @@ def build_catalog_entities(
             known_urls=known_urls,
             skip_dir_names=linked_dir_names,
             audit_entries=audit_entries,
+            cost_actuals_configured=cost_actuals_configured,
         )
     )
     return sorted(entities, key=lambda item: item.display_name.lower())
@@ -503,6 +578,7 @@ def build_catalog_from_fleet(
     operator_by_url: dict[str, FleetOperatorStatus] | None = None,
     namespace: str = "default",
     audit_entries: tuple[AuditHistoryEntry, ...] = (),
+    cost_actuals_configured: bool = False,
 ) -> list[CatalogEntity]:
     rows = build_fleet_rows(entries, operator_by_url=operator_by_url, namespace=namespace)
     return build_catalog_entities(
@@ -510,6 +586,7 @@ def build_catalog_from_fleet(
         modules_root=modules_root,
         operator_by_url=operator_by_url,
         audit_entries=audit_entries,
+        cost_actuals_configured=cost_actuals_configured,
     )
 
 

@@ -66,6 +66,7 @@ spec:
     - terraform-test
     - tflint
     - checkov
+    - infracost
     - secrets
     - opa
     - docs-drift

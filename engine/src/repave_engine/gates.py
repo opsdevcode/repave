@@ -71,6 +71,8 @@ _DRY_RUN_SKIP_ALLOWED_FRAGMENTS = (
     "no go tests",
     "provenance not configured",
     "no helm chart found",
+    "infracost_api_key not set",
+    "infracost not installed",
 )
 
 # Gates the local Docker / CI toolchain installs; optional observability/app gates may still skip.

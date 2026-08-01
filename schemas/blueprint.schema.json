@@ -83,6 +83,7 @@
               "terraform-fmt",
               "terraform-validate",
               "terraform-test",
+              "infracost",
               "tflint",
               "checkov",
               "secrets",
@@ -294,6 +295,16 @@
                 "test_directory": {
                   "type": "string",
                   "description": "Directory containing .tftest.hcl files relative to module root."
+                }
+              }
+            },
+            "infracost": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "max_monthly_usd": {
+                  "type": "number",
+                  "description": "Optional monthly USD limit; infracost gate fails when estimate exceeds this value."
                 }
               }
             },

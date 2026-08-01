@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.122.0  
 
-**In progress:** (none — pick next roadmap theme after developer portal surfaces merge).
+**In progress:** (none — pick next roadmap theme after cost visibility merge).
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
@@ -26,6 +26,9 @@ pins** (GitHub Actions SHAs, base images, chart `image.digest`); **portal day-2 
 (estate map polish, upgrade unified diffs, governance preflight hardening, bundle topology on
 results, presenter mode); **developer portal surfaces** (library catalog, fleet scorecard
 rollup, remote GitHub docs, upgrade/provenance rendering, owner filter, SLO health panel).
+**Cost visibility** (Infracost gate on Terraform dry-run, `.repave/cost-estimate.json`, portal
+result card, pluggable `portal.cost_actuals_url` actuals on service detail, Cloud spend scorecard
+dimension) — **in progress** on `feat/cost-visibility`.
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -112,7 +115,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
   ├─ reach           repave verify (local + remote clone shipped); repo import (shipped); composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
-  ├─ cost            Infracost estimate on plan; cloud cost actuals on catalog tiles
+  ├─ cost            Infracost estimate on dry-run (partial); catalog actuals on service detail (partial)
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
   │
@@ -139,7 +142,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
 | **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
-| **Cost awareness** | open | Estimate at generate time; actual spend on catalog and scorecards |
+| **Cost awareness** | partial | Infracost estimate gate + portal result card; pluggable catalog actuals + scorecard dimension |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
@@ -1686,6 +1689,12 @@ requirements on Terraform blueprints.
 
 **Done when:** A Terraform dry-run shows a cost delta, and a catalog entity with complete tags
 shows last-30-day actual spend with its as-of time.
+
+**Status:** **Partial on `feat/cost-visibility`** — `infracost` gate writes
+`.repave/cost-estimate.json` and surfaces on generation result pages; optional
+`portal.cost_actuals_url` JSON fetch for service detail and **Cloud spend** scorecard dimension.
+Still open: Infracost in generated-repo CI, library tile cost badge, native provider cost APIs,
+in-cluster Kubernetes allocation.
 
 ---
 
