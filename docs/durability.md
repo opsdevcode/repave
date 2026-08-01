@@ -167,6 +167,7 @@ Prometheus Operator monitoring, and stricter readiness checks. Runbooks:
 | --- | --- | --- |
 | `POST` | `/api/v1/runs` | Enqueue a generation (202 + `run_id`) |
 | `GET` | `/api/v1/runs/{run_id}` | Poll status; `result` when `succeeded` |
+| `GET` | `/api/v1/runs?status=queued&limit=50` | List recent runs (optional status filter) |
 | `POST` | `/api/v1/runs/{run_id}/replay` | Requeue `failed` / `dead_letter` runs (admin) |
 | `POST` | `/api/v1/generate` | Pass `"async": true` when durability is enabled |
 
@@ -177,5 +178,11 @@ output for the same target repository, the engine reuses the stored `pr_message`
 again.
 
 **Metrics:** `repave_run_queue_inflight`, `repave_async_runs_total`.
+
+**Retry and reclaim:** infrastructure failures retry with exponential backoff before
+`dead_letter`. Stale `running` rows (worker loss) are reclaimed automatically.
+Tune with `max_run_attempts`, `run_stale_seconds`, and `run_retry_base_seconds` in
+`repave.config.yaml`, or `REPAVE_RUN_MAX_ATTEMPTS`, `REPAVE_RUN_STALE_SECONDS`, and
+`REPAVE_RUN_RETRY_BASE_SECONDS`.
 
 See [roadmap — durability](roadmap.md#durability-and-concurrency-for-hosted-use).

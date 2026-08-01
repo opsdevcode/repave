@@ -111,6 +111,29 @@ Run that on a schedule in CI or beside your GitOps apply job so the portal stays
 
 ## Operator sync
 
+### Continuous registry sync (operator)
+
+When `REPAVE_FLEET_SYNC_ENABLED=true`, the operator reads the same JSONL registry file
+on an interval and creates, updates, or **prunes** fleet-managed `GoldenPathRepo`
+objects (`repave.dev/managed-by: repave-fleet`). Unregistering a repository removes
+its GPR on the next sync cycle.
+
+Environment variables:
+
+| Variable | Purpose |
+| --- | --- |
+| `REPAVE_FLEET_SYNC_ENABLED` | `true` to enable periodic sync |
+| `REPAVE_FLEET_REGISTRY_PATH` / `REPAVE_FLEET_FILE` | Path to `registry.jsonl` |
+| `REPAVE_FLEET_SYNC_INTERVAL` | Seconds between sync passes (default 300) |
+| `REPAVE_FLEET_GITOPS_NAMESPACE` | Target namespace for GPRs (default `default`) |
+| `REPAVE_FLEET_ENABLE_REMEDIATION` | Set `spec.remediation.enabled` on synced GPRs |
+
+The operator Helm chart exposes the same settings under `fleetSync.*` — mount a shared
+PVC or copy the registry file into the operator pod (see `values-kind.yaml` and
+`make kind-co-install`).
+
+### GitOps manifests (engine)
+
 `repave fleet-manifests` renders one `GoldenPathRepo` per registered repository so the
 operator reconciles the same set the registry tracks:
 
@@ -154,13 +177,8 @@ required by the CRD — a partial apply set is worse than none. Re-register such
 `fleet_manifest_test.go`, so a field rename on either side fails in CI rather than at apply
 time. `test_fleet_manifests.py` asserts those fixtures still match the renderer.
 
-## Not in this slice
-
-- Continuous sync: the operator does not watch the registry, so re-run
-  `fleet-manifests` (or let GitOps do it) after registering or unregistering
-- Pruning: removing an entry does not delete an already-applied `GoldenPathRepo`
-
-**kind co-install:** `CO_INSTALL_KEEP_CLUSTER=1 make kind-co-install` seeds
+Use **either** continuous operator sync **or** GitOps-rendered manifests — not both for
+the same namespace unless you accept duplicate reconcile sources.
 [`deploy/k8s/testdata/fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl),
 copies it into the portal pod, and applies rendered GPRs — see
 [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md).

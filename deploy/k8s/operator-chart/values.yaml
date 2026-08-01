@@ -7,6 +7,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/opsdevcode/repave-operator
   tag: "" # defaults to Chart.appVersion
+  digest: "" # when set, image is repository@digest instead of repository:tag
   pullPolicy: IfNotPresent
 
 nameOverride: ""
@@ -19,6 +20,20 @@ repave:
   repoRoot: ""
   cli: ""
   remoteResync: ""
+
+# Continuous GoldenPathRepo sync from the fleet registry JSONL file.
+fleetSync:
+  enabled: false
+  registryPath: /data/fleet/registry.jsonl
+  mountPath: /data/fleet
+  intervalSeconds: 300
+  gitopsNamespace: default
+  enableRemediation: false
+
+# Volume backing registryPath when fleetSync is enabled (emptyDir or existing PVC claim).
+fleetRegistry:
+  emptyDir: true
+  existingClaim: ""
 
 serviceAccount:
   create: true

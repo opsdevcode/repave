@@ -237,6 +237,9 @@ class DurabilityConfig:
     queue_max_depth: int
     runs_db: Path
     require_session_secret: bool
+    max_run_attempts: int = 3
+    run_stale_seconds: int = 3600
+    run_retry_base_seconds: int = 5
 
 
 def load_durability_config(repo_root: Path) -> DurabilityConfig | None:
@@ -263,6 +266,9 @@ def load_durability_config(repo_root: Path) -> DurabilityConfig | None:
     queue_max = 32
     runs_db = repo_root / "data" / "runs.sqlite"
     require_secret = False
+    max_attempts = 3
+    stale_seconds = 3600
+    retry_base_seconds = 5
 
     if isinstance(block, dict):
         if block.get("max_concurrent_runs") is not None:
@@ -277,9 +283,18 @@ def load_durability_config(repo_root: Path) -> DurabilityConfig | None:
         if not isinstance(req, bool):
             raise ValueError("durability.require_session_secret must be a boolean")
         require_secret = req
+        if block.get("max_run_attempts") is not None:
+            max_attempts = int(block["max_run_attempts"])
+        if block.get("run_stale_seconds") is not None:
+            stale_seconds = int(block["run_stale_seconds"])
+        if block.get("run_retry_base_seconds") is not None:
+            retry_base_seconds = int(block["run_retry_base_seconds"])
 
     max_workers = max(1, min(max_workers, 16))
     queue_max = max(1, min(queue_max, 256))
+    max_attempts = max(1, min(max_attempts, 10))
+    stale_seconds = max(60, min(stale_seconds, 86_400))
+    retry_base_seconds = max(1, min(retry_base_seconds, 300))
 
     env_db = os.environ.get("REPAVE_RUNS_DB", "").strip()
     if env_db:
@@ -287,12 +302,27 @@ def load_durability_config(repo_root: Path) -> DurabilityConfig | None:
         if not runs_db.is_absolute():
             runs_db = (repo_root / runs_db).resolve()
 
+    env_attempts = os.environ.get("REPAVE_RUN_MAX_ATTEMPTS", "").strip()
+    if env_attempts:
+        max_attempts = max(1, min(int(env_attempts), 10))
+
+    env_stale = os.environ.get("REPAVE_RUN_STALE_SECONDS", "").strip()
+    if env_stale:
+        stale_seconds = max(60, min(int(env_stale), 86_400))
+
+    env_retry_base = os.environ.get("REPAVE_RUN_RETRY_BASE_SECONDS", "").strip()
+    if env_retry_base:
+        retry_base_seconds = max(1, min(int(env_retry_base), 300))
+
     return DurabilityConfig(
         async_generation=True,
         max_concurrent_runs=max_workers,
         queue_max_depth=queue_max,
         runs_db=runs_db,
         require_session_secret=require_secret,
+        max_run_attempts=max_attempts,
+        run_stale_seconds=stale_seconds,
+        run_retry_base_seconds=retry_base_seconds,
     )
 
 

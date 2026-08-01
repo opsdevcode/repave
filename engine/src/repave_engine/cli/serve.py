@@ -29,6 +29,9 @@ def cmd_run_worker(args: argparse.Namespace) -> int:
             queue_max_depth=durability.queue_max_depth,
             db_path=durability.runs_db,
             external_workers=True,
+            max_attempts=durability.max_run_attempts,
+            stale_run_seconds=durability.run_stale_seconds,
+            retry_base_seconds=durability.run_retry_base_seconds,
         ),
     )
     try:

@@ -112,12 +112,28 @@ portal_pod="$(kubectl get pod -n "${PORTAL_NS}" -l app.kubernetes.io/name=repave
 kubectl exec -n "${PORTAL_NS}" "${portal_pod}" -- mkdir -p /data/fleet
 kubectl cp "${FLEET_REGISTRY}" "${PORTAL_NS}/${portal_pod}:/data/fleet/registry.jsonl"
 
-echo "==> render GoldenPathRepo manifests from registry"
-export REPAVE_FLEET_FILE="${FLEET_REGISTRY}"
-"${REPAVE_CLI}" fleet-manifests --output "${MANIFESTS_DIR}" --namespace default
+echo "==> seed fleet registry in operator pod (continuous sync)"
+operator_pod="$(kubectl get pod -n repave-system -l app.kubernetes.io/name=repave-operator \
+  -o jsonpath='{.items[0].metadata.name}')"
+kubectl exec -n repave-system "${operator_pod}" -- mkdir -p /data/fleet
+kubectl cp "${FLEET_REGISTRY}" "repave-system/${operator_pod}:/data/fleet/registry.jsonl"
 
-echo "==> apply fleet GPRs + local drift fixture"
-kubectl apply -f "${MANIFESTS_DIR}/"
+echo "==> wait for operator fleet sync to create GoldenPathRepos"
+deadline=$((SECONDS + TIMEOUT))
+while (( SECONDS < deadline )); do
+  count="$(kubectl get goldenpathrepo -l repave.dev/managed-by=repave-fleet --no-headers 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "${count}" -ge 2 ]]; then
+    break
+  fi
+  sleep 3
+done
+if [[ "${count:-0}" -lt 2 ]]; then
+  echo "Timed out waiting for fleet-managed GoldenPathRepos" >&2
+  kubectl get goldenpathrepo -A
+  exit 1
+fi
+
+echo "==> apply local drift fixture"
 kubectl apply -f "${OPERATOR}/config/e2e/goldenpathrepo-drift.yaml"
 
 echo "==> assert CRD conversion (v1alpha1 apply → v1beta1 storage)"

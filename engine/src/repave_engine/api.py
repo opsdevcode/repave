@@ -186,6 +186,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 max_concurrent_runs=durability_config.max_concurrent_runs,
                 queue_max_depth=durability_config.queue_max_depth,
                 db_path=durability_config.runs_db,
+                max_attempts=durability_config.max_run_attempts,
+                stale_run_seconds=durability_config.run_stale_seconds,
+                retry_base_seconds=durability_config.run_retry_base_seconds,
             ),
         )
 

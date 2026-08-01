@@ -28,6 +28,7 @@ import (
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/controller"
 	_ "github.com/opsdevcode/repave/operator/internal/metrics"
+	"github.com/opsdevcode/repave/operator/internal/fleetsync"
 	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/repave"
@@ -136,6 +137,22 @@ func main() {
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GoldenPathRepo")
 		os.Exit(1)
+	}
+
+	fleetSyncCfg := fleetsync.LoadConfigFromEnv()
+	if fleetSyncCfg.Enabled {
+		if err := mgr.Add(&fleetsync.Runnable{
+			Client: mgr.GetClient(),
+			Config: fleetSyncCfg,
+		}); err != nil {
+			setupLog.Error(err, "unable to add fleet registry sync runnable")
+			os.Exit(1)
+		}
+		setupLog.Info(
+			"fleet registry sync enabled",
+			"path", fleetSyncCfg.RegistryPath,
+			"namespace", fleetSyncCfg.Namespace,
+		)
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
