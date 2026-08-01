@@ -20,6 +20,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "engine_version" in payload
     assert "POST /api/v2/upgrades/plan" in payload["endpoints"]
     assert "POST /api/v2/runs" in payload["endpoints"]
+    assert "GET /api/v2/runs" in payload["endpoints"]
 
 
 def test_api_v2_upgrades_plan(repo_root, output_config, tmp_path) -> None:
@@ -95,6 +96,38 @@ def test_api_v2_runs_submit(async_v2_client) -> None:
                 return
             time.sleep(0.05)
         pytest.fail("v2 run did not complete")
+
+
+def test_api_v2_runs_list_filters_by_status(async_v2_client) -> None:
+    fake = {
+        "blueprint": "terraform-module-generic",
+        "gates_outcome": "passed",
+        "gates_passed": True,
+        "gates": [],
+        "rendered_files": 0,
+        "output_dir": "/tmp/out",
+    }
+    with patch("repave_engine.run_queue.run_generate_api", return_value=fake):
+        submit = async_v2_client.post(
+            "/api/v2/runs",
+            json={
+                "blueprint": "terraform-module-generic",
+                "inputs": {"module_name": "demo"},
+                "dry_run": True,
+                "client_request_id": f"v2-list-{uuid.uuid4()}",
+            },
+        )
+        assert submit.status_code == 202
+        run_id = submit.json()["run_id"]
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            listed = async_v2_client.get("/api/v2/runs?status=succeeded&limit=10")
+            assert listed.status_code == 200
+            runs = listed.json()["runs"]
+            if any(item["run_id"] == run_id for item in runs):
+                return
+            time.sleep(0.05)
+        pytest.fail("v2 run did not appear in succeeded list")
 
 
 def test_api_v2_generate_async_matches_runs(async_v2_client) -> None:

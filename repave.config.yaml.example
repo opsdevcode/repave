@@ -85,6 +85,9 @@ gates:
 #   # Phase 3: API enqueues only; workers run `repave run-worker`:
 #   worker_mode: external
 #   execution_mode: worker
+#   max_run_attempts: 3
+#   run_stale_seconds: 3600
+#   run_retry_base_seconds: 5
 # Or: REPAVE_EXECUTION_MODE=worker, REPAVE_DATABASE_URL=..., REPAVE_EXTERNAL_WORKERS=1
 
 # Optional OpenTelemetry trace export for pipeline spans (requires `uv sync --extra otel`).

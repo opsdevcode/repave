@@ -51,6 +51,11 @@
             <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
               Activity
             </a>
+            {% if async_generation_enabled %}
+            <a href="/runs" {% if nav_active == "runs" %}aria-current="page"{% endif %}>
+              Async runs
+            </a>
+            {% endif %}
           </nav>
         </details>
         <div class="shell__meta">

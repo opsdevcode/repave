@@ -108,7 +108,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ hardening       toolchain pin unification, subprocess timeouts, coverage in CI
   ├─ estate control  fleet registry + `repave register`; remediation from a clone (Phase C)
   ├─ k8s deploy      Helm chart + day-2 operability (portal + operator charts shipped)
-  ├─ durability      SQL store for audit/fleet/runs; async run queue; DLQ + replay
+  ├─ durability      SQL store for audit/fleet/runs; async queue; DLQ + replay + portal /runs (shipped)
   ├─ service split   portal / api / worker roles as separate k8s workloads; operator on /api/v2
   ├─ supply chain    GitHub App auth shipped; governed PR conventions shipped
   ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns + drift SLO metrics + rate-limit parity shipped
@@ -137,7 +137,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
 | **Brownfield onboarding** | shipped (Phase 1–3) | `repave import` + batch portal/API; per-file overrides; trees-API preview; GitHub rate-limit backoff for fleet-scale REST |
 | **Hardening** | shipped (group A) | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
-| **Hosted durability** | partial (Phase 1–3 + retry/reclaim in progress) | Unified SQL store; async queue + DLQ/replay + list runs; external workers |
+| **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
 | **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
 | **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
@@ -1513,9 +1513,10 @@ store (`database_url`) for audit, fleet, runs, and **OIDC sessions** (server-sid
 `database_url` is set) with optional JSONL export mirrors; PostgreSQL via
 `repave-engine[postgres]` (included in portal/worker container images). **Phase 3 shipped on
 `main`** — `repave run-worker`, Helm worker Deployment, and `REPAVE_EXTERNAL_WORKERS` /
-`worker_mode: external` for distributed execution. **In progress on branch
-`feat/estate-durability-supply-chain`** — automatic retry/backoff before dead-letter, stale
-`running` reclaim, and `GET /api/v1/runs` list/filter.
+`worker_mode: external` for distributed execution. **Retry/reclaim shipped on `main`** (#363) —
+exponential backoff before `dead_letter`, stale `running` reclaim, `GET /api/v1/runs` and
+`GET /api/v2/runs` list/filter, portal **`/runs`** index with admin replay, Helm
+`maxRunAttempts` / `runStaleSeconds` / `runRetryBaseSeconds` values.
 
 ---
 

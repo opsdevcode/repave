@@ -63,4 +63,7 @@ data:
       {{- if .Values.repave.durability.artifactStoreUri }}
       artifact_store_uri: {{ .Values.repave.durability.artifactStoreUri | quote }}
       {{- end }}
+      max_run_attempts: {{ .Values.repave.durability.maxRunAttempts }}
+      run_stale_seconds: {{ .Values.repave.durability.runStaleSeconds }}
+      run_retry_base_seconds: {{ .Values.repave.durability.runRetryBaseSeconds }}
     {{- end }}
