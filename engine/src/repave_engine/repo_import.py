@@ -46,6 +46,7 @@ from repave_engine.git_clone import (
     unshallow,
 )
 from repave_engine.github import (
+    add_pull_request_labels,
     can_push_to_repository,
     create_github_pull_request,
     default_branch,
@@ -74,6 +75,12 @@ from repave_engine.import_rules import (
     matches_any,
     parse_path_overrides,
     quarantine_path,
+)
+from repave_engine.pr_conventions import (
+    PullRequestConventions,
+    branch_name,
+    import_pull_request_title,
+    load_pull_request_conventions,
 )
 from repave_engine.provider_catalog import load_provider_catalog
 from repave_engine.render import render_blueprint
@@ -1043,8 +1050,15 @@ def plan_import_batch(
     return ImportBatchPlan(items=tuple(items), failures=tuple(failures))
 
 
-def suggested_import_branch(plan: ImportPlan) -> str:
-    return f"repave/import/{plan.blueprint_name}-{plan.blueprint_version}"
+def suggested_import_branch(plan: ImportPlan, repo_root: Path | None = None) -> str:
+    conventions = (
+        load_pull_request_conventions(repo_root)
+        if repo_root is not None
+        else PullRequestConventions()
+    )
+    return branch_name(
+        conventions.branch_prefix_import, plan.blueprint_name, plan.blueprint_version
+    )
 
 
 def _file_digest(path: Path) -> str:
@@ -1256,7 +1270,7 @@ def _append_blame_ignore(repo_dir: Path, commit_sha: str) -> None:
 
 
 def build_import_pull_request_title(plan: ImportPlan) -> str:
-    return f"refactor(repave): adopt {plan.blueprint_name} golden path layout"
+    return import_pull_request_title(plan.blueprint_name, plan.blueprint_version)
 
 
 def build_import_pull_request_body(result: ImportApplyResult) -> str:
@@ -1442,6 +1456,16 @@ def open_import_pull_request(
         token=github_token,
         draft=draft,
     )
+    conventions = load_pull_request_conventions(repo_root)
+    pr_number = int(payload.get("number", 0))
+    if pr_number and conventions.labels:
+        add_pull_request_labels(
+            preflight.repository.owner,
+            preflight.repository.name,
+            pr_number,
+            conventions.labels,
+            github_token,
+        )
     return ImportPublishResult(
         apply=apply_result,
         pull_request_url=str(payload.get("html_url", "")),

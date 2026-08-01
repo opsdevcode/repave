@@ -145,6 +145,8 @@ def _publish_after_gates(
     github_token: str | None,
     on_event: RunEventCallback | None,
     publish_idempotency: PublishIdempotencyContext | None,
+    repo_root: Path | None = None,
+    gate_results: tuple[GateResult, ...] = (),
 ) -> tuple[str, ModuleRepository | None]:
     content_hash = compute_publish_content_hash(
         render_result.output_dir,
@@ -183,6 +185,8 @@ def _publish_after_gates(
                 files_root=module_repository.local_path,
                 repository=module_repository,
                 module_values=normalized,
+                repo_root=repo_root,
+                gate_results=gate_results,
             )
             if dry_run:
                 pr_body = create_pull_request(pr_plan, github_token=None)
@@ -294,6 +298,8 @@ def generate_from_blueprint(
                 github_token=github_token,
                 on_event=on_event,
                 publish_idempotency=publish_idempotency,
+                repo_root=repo_root,
+                gate_results=tuple(gate_results),
             )
             pr_plan = plan_pull_request(
                 blueprint_name=blueprint.name,
@@ -304,6 +310,8 @@ def generate_from_blueprint(
                 files_root=module_repository.local_path,
                 repository=module_repository,
                 module_values=normalized,
+                repo_root=repo_root,
+                gate_results=tuple(gate_results),
             )
         else:
             published_repository = None

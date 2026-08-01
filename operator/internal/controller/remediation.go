@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
+	"github.com/opsdevcode/repave/operator/internal/campaign"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/notify"
@@ -67,6 +68,14 @@ func applyRemediationPRStatus(
 				Message: "waiting for upgrade plan before opening remediation PR",
 			})
 		})
+	}
+
+	decision, err := campaign.EvaluateRemediation(ctx, c, repo)
+	if err != nil {
+		return err
+	}
+	if !decision.Allowed {
+		return patchRemediationPRFailed(ctx, c, repo, decision.Reason, decision.Message, false)
 	}
 
 	workDir, workErr := remediation.WorkDir(repo.Spec, workspace)

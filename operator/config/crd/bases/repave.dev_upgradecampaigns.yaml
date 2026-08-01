@@ -4,16 +4,16 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.17.2
-  name: blueprints.repave.dev
+  name: upgradecampaigns.repave.dev
 spec:
   group: repave.dev
   names:
-    kind: Blueprint
-    listKind: BlueprintList
-    plural: blueprints
+    kind: UpgradeCampaign
+    listKind: UpgradeCampaignList
+    plural: upgradecampaigns
     shortNames:
-    - bp
-    singular: blueprint
+    - uc
+    singular: upgradecampaign
   scope: Namespaced
   conversion:
     strategy: Webhook
@@ -28,96 +28,20 @@ spec:
       - v1
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.version
-      name: Version
+    - jsonPath: .status.phase
+      name: Phase
       type: string
-    - jsonPath: .spec.standard.version
-      name: Standard
-      type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: Blueprint mirrors repave catalog pin versions for fleet-wide
-          desired state.
-        properties:
-          apiVersion:
-            description: |-
-              APIVersion defines the versioned schema of this representation of an object.
-              Servers should convert recognized schemas to the latest internal value, and
-              may reject unrecognized values.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
-            type: string
-          kind:
-            description: |-
-              Kind is a string value representing the REST resource this object represents.
-              Servers may infer this from the endpoint the client submits requests to.
-              Cannot be updated.
-              In CamelCase.
-              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: BlueprintSpec defines catalog pin versions for a golden path
-              blueprint.
-            properties:
-              standard:
-                description: Standard pins the governance corpus applied at generation
-                  time.
-                properties:
-                  source:
-                    description: Source is the in-repo or URI path to the standard
-                      corpus.
-                    minLength: 1
-                    type: string
-                  version:
-                    description: Version is the semver of the standard corpus.
-                    minLength: 1
-                    type: string
-                required:
-                - source
-                - version
-                type: object
-              version:
-                description: Version is the semver of the blueprint template.
-                minLength: 1
-                type: string
-            required:
-            - standard
-            - version
-            type: object
-          status:
-            description: BlueprintStatus records the last observed spec generation.
-            properties:
-              observedGeneration:
-                description: ObservedGeneration reflects the metadata.generation last
-                  reconciled.
-                format: int64
-                type: integer
-            type: object
-        type: object
-    served: true
-    storage: false
-    subresources:
-      status: {}
-  - additionalPrinterColumns:
-    - jsonPath: .spec.version
-      name: Version
-      type: string
-    - jsonPath: .spec.standard.version
-      name: Standard
-      type: string
+    - jsonPath: .status.openPRCount
+      name: OpenPRs
+      type: integer
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
     name: v1beta1
     schema:
       openAPIV3Schema:
-        description: Blueprint mirrors repave catalog pin versions for fleet-wide
-          desired state.
+        description: UpgradeCampaign bounds concurrent operator remediation PRs across
+          a fleet slice.
         properties:
           apiVersion:
             description: |-
@@ -137,40 +61,83 @@ spec:
           metadata:
             type: object
           spec:
-            description: BlueprintSpec defines catalog pin versions for a golden path
-              blueprint.
+            description: UpgradeCampaignSpec defines a bounded fleet upgrade rollout.
             properties:
-              standard:
-                description: Standard pins the governance corpus applied at generation
-                  time.
-                properties:
-                  source:
-                    description: Source is the in-repo or URI path to the standard
-                      corpus.
-                    minLength: 1
-                    type: string
-                  version:
-                    description: Version is the semver of the standard corpus.
-                    minLength: 1
-                    type: string
-                required:
-                - source
-                - version
-                type: object
-              version:
-                description: Version is the semver of the blueprint template.
-                minLength: 1
+              blueprintName:
+                description: BlueprintName, when set, only matches repos whose desired
+                  blueprint name equals this value.
                 type: string
-            required:
-            - standard
-            - version
+              maxConcurrentPRs:
+                description: |-
+                  MaxConcurrentPRs caps open remediation PRs for matched GoldenPathRepos.
+                  Defaults to 5 when unset or zero.
+                format: int32
+                minimum: 1
+                type: integer
+              paused:
+                description: Paused stops opening new remediation PRs until cleared.
+                type: boolean
+              selector:
+                description: |-
+                  Selector limits GoldenPathRepos governed by this campaign (same namespace).
+                  An empty selector matches all GoldenPathRepos labeled with
+                  repave.dev/upgrade-campaign=<metadata.name>.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: |-
+                        A label selector requirement is a selector that contains values, a key, and an operator that
+                        relates the key and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: |-
+                            operator represents a key's relationship to a set of values.
+                            Valid operators are In, NotIn, Exists and DoesNotExist.
+                          type: string
+                        values:
+                          description: |-
+                            values is an array of string values. If the operator is In or NotIn,
+                            the values array must be non-empty. If the operator is Exists or DoesNotExist,
+                            the values array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                          x-kubernetes-list-type: atomic
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
+                      map is equivalent to an element of matchExpressions, whose key field is "key", the
+                      operator is "In", and the values array contains only "value". The requirements are ANDed.
+                    type: object
+                type: object
+                x-kubernetes-map-type: atomic
+              stopAfterConsecutiveGateFailures:
+                description: |-
+                  StopAfterConsecutiveGateFailures halts the campaign after this many consecutive
+                  remediation failures across matched repos. Zero disables the stop condition.
+                format: int32
+                type: integer
             type: object
           status:
-            description: BlueprintStatus records the last observed spec generation
-              and published pin target.
+            description: UpgradeCampaignStatus reports rollout progress for the campaign.
             properties:
               conditions:
-                description: Conditions describe operability of the Blueprint target.
+                description: Conditions describe operability of the campaign.
                 items:
                   description: Condition contains details for one aspect of the current
                     state of this API Resource.
@@ -226,30 +193,24 @@ spec:
                   - type
                   type: object
                 type: array
+              consecutiveGateFailures:
+                description: ConsecutiveGateFailures counts recent remediation failures
+                  while Active.
+                format: int32
+                type: integer
               observedGeneration:
                 description: ObservedGeneration reflects the metadata.generation last
                   reconciled.
                 format: int64
                 type: integer
-              targetPins:
-                description: TargetPins mirrors spec pin fields for fleet queries
-                  and kubectl columns.
-                properties:
-                  standardSource:
-                    description: StandardSource is the in-repo or URI path to the
-                      standard corpus.
-                    type: string
-                  standardVersion:
-                    description: StandardVersion is the semver of the standard corpus.
-                    type: string
-                  version:
-                    description: Version is the semver of the blueprint template.
-                    type: string
-                required:
-                - standardSource
-                - standardVersion
-                - version
-                type: object
+              openPRCount:
+                description: OpenPRCount is the number of matched GoldenPathRepos
+                  with open remediation PRs.
+                format: int32
+                type: integer
+              phase:
+                description: Phase is Active, Paused, or Stopped.
+                type: string
             type: object
         type: object
     served: true

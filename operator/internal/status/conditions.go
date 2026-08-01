@@ -34,6 +34,11 @@ const (
 	ReasonRemediationPROpen       = "RemediationPROpen"
 	ReasonRemediationFailed       = "RemediationFailed"
 	ReasonRemediationCleared        = "RemediationCleared"
+	ReasonRemediationCampaignPaused   = "RemediationCampaignPaused"
+	ReasonRemediationCampaignCapacity = "RemediationCampaignCapacity"
+	ReasonRemediationCampaignStopped  = "RemediationCampaignStopped"
+	ReasonCampaignPaused              = "CampaignPaused"
+	ReasonCampaignStopped             = "CampaignStopped"
 )
 
 // SetGoldenPathRepoCondition updates or inserts a condition on status.

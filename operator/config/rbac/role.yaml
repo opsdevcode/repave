@@ -8,31 +8,27 @@ rules:
   - repave.dev
   resources:
   - blueprints
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - repave.dev
-  resources:
   - goldenpathrepos
+  - upgradecampaigns
   verbs:
   - get
   - list
   - patch
   - update
   - watch
+- apiGroups:
+  - repave.dev
+  resources:
+  - blueprints/status
+  - goldenpathrepos/status
+  - upgradecampaigns/status
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - repave.dev
   resources:
   - goldenpathrepos/finalizers
   verbs:
-  - update
-- apiGroups:
-  - repave.dev
-  resources:
-  - goldenpathrepos/status
-  verbs:
-  - get
-  - patch
   - update
