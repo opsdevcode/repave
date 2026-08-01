@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from repave_engine import __version__
+from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
@@ -21,14 +22,33 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
+from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
+from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
 from repave_engine.execution_mode import (
     SYNC_GENERATE_UNAVAILABLE_DETAIL,
     worker_execution_mode_active,
 )
+from repave_engine.fleet import (
+    FleetEntry,
+    FleetError,
+    normalize_repo_url,
+    pins_from_repave_file,
+    read_fleet,
+    register_repo,
+    unregister_repo,
+)
+from repave_engine.fleet_operator_status import load_operator_status_file
+from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
 from repave_engine.import_rules import parse_path_overrides
+from repave_engine.observability_slo import fetch_entity_slo_summary
+from repave_engine.portal_context import (
+    audit_file_or_http404,
+    build_portal_catalog_entities,
+    fleet_registry_path_or_http404,
+)
 from repave_engine.repo_import import (
     AlreadyGovernedError,
     RepoImportError,
@@ -41,13 +61,14 @@ from repave_engine.repo_import import (
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
-from repave_engine.settings import OutputConfig
+from repave_engine.settings import OutputConfig, load_fleet_config, load_portal_config
 from repave_engine.upgrade_api import (
     UpgradeTargetError,
     resolve_upgrade_target,
     run_apply_upgrade,
     run_plan_upgrade,
 )
+from repave_engine.verify import VerifyError, verify_target
 
 V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2",
@@ -63,6 +84,13 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/imports/apply",
     "POST /api/v2/imports/batch/plan",
     "POST /api/v2/imports/batch/apply",
+    "POST /api/v2/verify",
+    "GET /api/v2/catalog/entities",
+    "GET /api/v2/catalog/entities/{entity_id}",
+    "GET /api/v2/audit",
+    "GET /api/v2/fleet",
+    "POST /api/v2/fleet",
+    "DELETE /api/v2/fleet",
 )
 
 
@@ -96,6 +124,7 @@ def build_api_v2_router(
 ) -> APIRouter:
     """Return the Phase 3 v2 router (mounted at ``/api/v2``)."""
     router = APIRouter(prefix="/api/v2", tags=["api-v2"])
+    portal_config = load_portal_config(repo_root)
 
     @router.get("")
     async def api_v2_metadata() -> JSONResponse:
@@ -501,5 +530,166 @@ def build_api_v2_router(
             for item in batch_result.items
         ]
         return JSONResponse(body)
+
+    @router.post("/verify")
+    async def api_v2_verify(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        path_raw = str(payload.get("path") or payload.get("repo_url") or "").strip()
+        if not path_raw:
+            raise HTTPException(status_code=400, detail="path or repo_url is required")
+        blueprint_override = str(payload.get("blueprint", "")).strip() or None
+        require_run = bool(payload.get("require_run", False))
+        ref = str(payload.get("ref", "")).strip() or None
+        try:
+            outcome = verify_target(
+                path_raw,
+                repo_root,
+                blueprint_name=blueprint_override,
+                require_run=require_run,
+                ref=ref,
+            )
+        except VerifyError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        body: dict[str, Any] = outcome.to_json_dict()
+        status = 200 if outcome.ok else 422
+        return JSONResponse(body, status_code=status)
+
+    @router.get("/catalog/entities")
+    async def api_v2_catalog_entities(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+        )
+        entities = build_portal_catalog_entities(
+            repo_root,
+            output_config,
+            cost_actuals_configured=cost_configured,
+        )
+        return JSONResponse(
+            {
+                "count": len(entities),
+                "entities": [item.to_public_dict() for item in entities],
+            }
+        )
+
+    @router.get("/catalog/entities/{entity_id}")
+    async def api_v2_catalog_entity(request: Request, entity_id: str) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+        )
+        entities = build_portal_catalog_entities(
+            repo_root,
+            output_config,
+            cost_actuals_configured=cost_configured,
+        )
+        entity = find_catalog_entity(entities, entity_id)
+        if entity is None:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        body = entity.to_public_dict()
+        obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
+        if obs_url:
+            body["observability_url"] = obs_url
+        slo = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
+        if slo is not None:
+            body["slo_summary"] = slo.to_public_dict()
+        cost = fetch_entity_cost_actuals_for_portal(portal_config, entity)
+        if cost is not None:
+            body["cost_actuals"] = cost.to_public_dict()
+        return JSONResponse(body)
+
+    @router.get("/audit")
+    async def api_v2_audit_query(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        audit_path = audit_file_or_http404(repo_root)
+        raw_filters = {key: str(value) for key, value in request.query_params.items()}
+        filters = audit_filters_from_mapping(raw_filters)
+        result = query_audit_entries(audit_path, filters, repo_root=repo_root)
+        return JSONResponse(
+            {
+                "total": result.total,
+                "limit": result.limit,
+                "offset": result.offset,
+                "entries": [entry.to_public_dict() for entry in result.entries],
+            }
+        )
+
+    @router.get("/fleet")
+    async def api_v2_fleet_list(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        fleet_cfg = load_fleet_config(repo_root)
+        if fleet_cfg is None or not fleet_cfg.enabled:
+            raise HTTPException(
+                status_code=404,
+                detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
+            )
+        entries = read_fleet(fleet_cfg.file, repo_root=repo_root)
+        operator_by = (
+            load_operator_status_file(fleet_cfg.operator_status_file)
+            if fleet_cfg.operator_status_file is not None
+            else {}
+        )
+        repos = build_fleet_rows(
+            entries,
+            operator_by_url=operator_by,
+            namespace=fleet_cfg.gitops_namespace,
+        )
+        return JSONResponse({"count": len(repos), "repos": repos})
+
+    @router.post("/fleet")
+    async def api_v2_fleet_register(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        repo_url = str(payload.get("repo_url", "")).strip()
+        if not repo_url:
+            raise HTTPException(status_code=400, detail="repo_url is required")
+        pins = {
+            "blueprint_name": str(payload.get("blueprint_name", "")).strip(),
+            "blueprint_version": str(payload.get("blueprint_version", "")).strip(),
+            "standard_source": str(payload.get("standard_source", "")).strip(),
+            "standard_version": str(payload.get("standard_version", "")).strip(),
+        }
+        local_path = str(payload.get("path", "")).strip()
+        try:
+            if local_path:
+                pins.update(pins_from_repave_file(Path(local_path).expanduser().resolve()))
+            if not pins["blueprint_name"]:
+                raise FleetError("blueprint_name is required when path is not supplied")
+            entry = register_repo(
+                fleet_registry_path_or_http404(repo_root),
+                FleetEntry(
+                    repo_url=repo_url,
+                    blueprint_name=pins["blueprint_name"],
+                    blueprint_version=pins["blueprint_version"],
+                    standard_source=pins["standard_source"],
+                    standard_version=pins["standard_version"],
+                    owner=str(payload.get("owner", "")).strip(),
+                    registered_by=current_acting_user(),
+                ),
+                repo_root=repo_root,
+            )
+        except FleetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse({"registered": entry.to_dict()}, status_code=201)
+
+    @router.delete("/fleet")
+    async def api_v2_fleet_unregister(request: Request, repo_url: str = "") -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        if not repo_url.strip():
+            raise HTTPException(status_code=400, detail="repo_url query parameter is required")
+        try:
+            removed = unregister_repo(
+                fleet_registry_path_or_http404(repo_root),
+                repo_url,
+                repo_root=repo_root,
+            )
+        except FleetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not removed:
+            raise HTTPException(status_code=404, detail=f"{repo_url} is not registered")
+        return JSONResponse({"unregistered": normalize_repo_url(repo_url)})
 
     return router

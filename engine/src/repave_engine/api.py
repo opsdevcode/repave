@@ -35,6 +35,7 @@ from repave_engine.ansible_role_inventory import (
     inventory_roles_json,
 )
 from repave_engine.api_auth import build_auth_router
+from repave_engine.api_deprecation import V1_DEPRECATION_HEADERS
 from repave_engine.api_ops import build_ops_router
 from repave_engine.api_v1 import build_api_v1_router
 from repave_engine.api_v2 import build_api_v2_router
@@ -162,6 +163,7 @@ from repave_engine.settings import (
     load_output_config,
     load_portal_config,
     load_tracing_config,
+    validate_hosted_service_config,
 )
 from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.tracing import configure_tracing
@@ -179,6 +181,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     portal_config = load_portal_config(repo_root)
     try:
         auth_config = load_auth_config(repo_root)
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
+    try:
+        validate_hosted_service_config(repo_root, auth_config=auth_config)
     except ValueError as exc:
         raise RuntimeError(str(exc)) from exc
 
@@ -238,6 +244,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     app = FastAPI(title="repave", version=__version__, lifespan=lifespan)
     app.state.run_queue = run_queue
     app.state.shutting_down = False
+
+    @app.middleware("http")
+    async def v1_deprecation_headers(request: Request, call_next):  # type: ignore[no-untyped-def]
+        response = await call_next(request)
+        if request.url.path.startswith("/api/v1"):
+            for key, value in V1_DEPRECATION_HEADERS.items():
+                response.headers[key] = value
+        return response
 
     configure_tracing(load_tracing_config(repo_root))
 

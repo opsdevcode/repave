@@ -56,8 +56,37 @@ CLI mode remains the default when `REPAVE_API_URL` is unset (`REPAVE_REPO_ROOT` 
 When `auth.service_enabled` is true, v2 routes use the same session roles as v1.
 Unauthenticated `/api/v2/*` requests receive `401` JSON.
 
+## Read models (v2.0.0 contract freeze)
+
+| Method | Path | Role | Notes |
+| --- | --- | --- | --- |
+| `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` |
+| `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities |
+| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + observability/cost enrichments |
+| `GET` | `/api/v2/audit` | viewer+ | Query audit history (same filters as v1) |
+| `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows |
+| `POST` | `/api/v2/fleet` | admin | Register a repository |
+| `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
+
+## `/api/v1` deprecation
+
+`/api/v1` remains available for existing integrations. Responses include:
+
+- `Deprecation: true`
+- `Sunset: Sat, 01 Aug 2027 00:00:00 GMT` (planned removal on the v3 line)
+- `Link: </docs/api-v2>; rel="successor-version"`
+
+New integrations should use `/api/v2` only.
+
+## Configuration
+
+Hosted service mode (`auth.service_mode: true`) requires `durability.database_url`
+(or `REPAVE_DATABASE_URL`). JSONL stores are export-only in that mode.
+
+`repave.config.yaml` accepts `apiVersion: repave.dev/v1`. Unversioned config files
+log a deprecation warning at load time.
+
 ## Follow-ups
 
-- Mirror remaining v1 read models (fleet, audit, catalog) under v2
-- Published `/api/v1` deprecation timeline
 - Service-to-service auth beyond optional `REPAVE_API_TOKEN` Bearer header
+- Conversational governed AI generation (v2 must-have — see roadmap)
