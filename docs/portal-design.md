@@ -229,8 +229,12 @@ diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity
 standards drift diff, staged generate labels, **home quick menu** (collapsible
 sidebar and families, count-sorted catalog, search, resume chip), **`/activity`**
 page, standards drift two-pane layout, form draft restore, result gate filters, and
-update busy stages shipped. White-label / compact density and light theme remain
-optional. **Compact density** (`portal.density: compact`) ships for
+update busy stages shipped. **Portal polish pass (2026-08):** semantic CSS token
+aliases (estate map, diff viewer, tables), `badge--warn`, live-plan result hero,
+entity live-plan preflight + busy overlay, command palette shell button, relative
+timestamps, sortable `/runs` table; `engine/tests/test_portal_css_tokens.py`
+guards undefined `var()` references. White-label / compact density and light theme
+remain optional. **Compact density** (`portal.density: compact`) ships for
 Backstage-adjacent layouts; **white-label** accents move to v2.
 
 Pick based on audience and hosting model (v1.25+).
@@ -251,6 +255,9 @@ Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activ
 | **Dark mode** | Night-ops is default; light theme / toggle only if needed later |
 | **Motion** | Expand/collapse on scope and gate rows; honor `prefers-reduced-motion` |
 | **Gate table** | Sticky header, scrollable body, expandable long skip/fail messages; toolchain alert on result |
+| **Command palette** | Cmd/Ctrl-K plus shell **Jump to…** button with platform shortcut hint |
+| **Async runs index** | Client-side column sort on `/runs`; relative `<time>` labels portal-wide |
+| **Live plan surfaces** | Entity preflight panel, busy overlay on submit, result hero with resource counts |
 | **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |

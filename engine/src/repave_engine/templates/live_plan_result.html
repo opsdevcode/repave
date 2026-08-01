@@ -2,6 +2,8 @@
 
 {% block title %}Live plan — {{ live_plan_summary.entity_id or run_id }} — repave{% endblock %}
 
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
 {% block content %}
 <p class="breadcrumb">
   {% if live_plan_summary.entity_id %}
@@ -13,43 +15,74 @@
   <a href="/runs/{{ run_id }}">Run console</a>
 </p>
 
-<section class="card" aria-labelledby="live-plan-heading">
-  <div class="card__header">
-    <h1 id="live-plan-heading" class="card__title">Live plan summary</h1>
-    <p class="muted card__subtitle">
-      Plan JSON is ephemeral and not retained. Only counts and the OPA verdict are stored.
-    </p>
-  </div>
-  <div class="card__body">
-    <p>
+<section
+  class="result-hero result-hero--{% if live_plan_summary.gates_outcome == 'passed' %}passed{% else %}failed{% endif %}"
+  aria-labelledby="live-plan-result-heading"
+>
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">Live plan</p>
+    <h1 id="live-plan-result-heading" class="result-hero__title">
       {% if live_plan_summary.gates_outcome == 'passed' %}
-      <span class="badge badge--pass">{{ live_plan_summary.gates_outcome }}</span>
+      Plan passed policy
       {% else %}
-      <span class="badge badge--fail">{{ live_plan_summary.gates_outcome or 'failed' }}</span>
+      Plan failed policy
+      {% endif %}
+    </h1>
+    <p class="result-hero__banner">
+      {% if live_plan_summary.gates_outcome == 'passed' %}
+      <span class="badge badge--pass">Passed</span>
+      {% else %}
+      <span class="badge badge--fail">Failed</span>
       {% endif %}
       {% if live_plan_summary.entity_id %}
       <span class="muted">· {{ live_plan_summary.entity_id }}</span>
       {% endif %}
-    </p>
-    <ul class="muted">
-      <li>Resources: +{{ live_plan_summary.resource_add or 0 }}
-        ~{{ live_plan_summary.resource_change or 0 }}
-        -{{ live_plan_summary.resource_destroy or 0 }}</li>
-      <li>OPA:
-        {% if live_plan_summary.opa_skipped %}skipped
-        {% elif live_plan_summary.opa_passed %}passed
-        {% else %}failed{% endif %}
-        {% if live_plan_summary.opa_detail %}
-        — {{ live_plan_summary.opa_detail }}
-        {% endif %}
-      </li>
-      {% if live_plan_summary.detail %}
-      <li>{{ live_plan_summary.detail }}</li>
-      {% endif %}
       {% if live_plan_summary.target %}
-      <li>Target: <code>{{ live_plan_summary.target }}</code></li>
+      <span class="muted">· <code>{{ live_plan_summary.target }}</code></span>
       {% endif %}
-    </ul>
+    </p>
+    {% if live_plan_summary.detail %}
+    <p class="muted">{{ live_plan_summary.detail }}</p>
+    {% endif %}
+  </div>
+  <dl class="result-hero__counts" aria-label="Plan resource changes">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Add</dt>
+      <dd>{{ live_plan_summary.resource_add or 0 }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--skip">
+      <dt>Change</dt>
+      <dd>{{ live_plan_summary.resource_change or 0 }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Destroy</dt>
+      <dd>{{ live_plan_summary.resource_destroy or 0 }}</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card stack-gap" aria-labelledby="live-plan-opa-heading">
+  <div class="card__header">
+    <h2 id="live-plan-opa-heading" class="card__title">Policy verdict</h2>
+  </div>
+  <div class="card__body">
+    <p>
+      OPA:
+      {% if live_plan_summary.opa_skipped %}
+      <span class="badge badge--skip">Skipped</span>
+      {% elif live_plan_summary.opa_passed %}
+      <span class="badge badge--pass">Passed</span>
+      {% else %}
+      <span class="badge badge--fail">Failed</span>
+      {% endif %}
+      {% if live_plan_summary.opa_detail %}
+      <span class="muted">· {{ live_plan_summary.opa_detail }}</span>
+      {% endif %}
+    </p>
+    <div class="alert alert--info" role="note">
+      Plan JSON is ephemeral and not retained. Only resource counts and the OPA verdict
+      are stored on the run record.
+    </div>
   </div>
 </section>
 {% endblock %}

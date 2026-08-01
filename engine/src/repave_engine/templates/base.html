@@ -59,6 +59,15 @@
           </nav>
         </details>
         <div class="shell__meta">
+          <button
+            type="button"
+            class="btn btn--ghost btn--sm shell__command-palette-trigger"
+            data-command-palette-open
+            aria-label="Open command palette"
+          >
+            Jump to…
+            <kbd class="shell__kbd" data-command-palette-kbd>⌘K</kbd>
+          </button>
           {% if auth_enabled and auth_user %}
           <span class="shell__user muted">{{ auth_user.email }}</span>
           <form class="shell__logout" method="post" action="/auth/logout">
