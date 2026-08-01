@@ -6,14 +6,15 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.125.0  
 
-**In progress:** (none — pick next roadmap theme after cost visibility closeout).
+**In progress:** (none — pick next roadmap theme).
 **Shipped on `main`:** engine hardening group A (A1–A6); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
 (including CRD `repave.dev/v1beta1` + conversion webhook, publish idempotency,
 per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart smoke**);
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
-PrometheusRule, runbooks); **repo import to golden path** (`repave import`, `/import`,
+PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
+preview, batch import, rate-limit backoff — `repave import`, `/import`, `/import/batch`,
 `/api/v2/imports/*`); **operator production Helm chart** (`deploy/k8s/operator-chart/`,
 `values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks);
 **operator fleet campaigns** (`UpgradeCampaign` CRD, Blueprint controller, bounded
@@ -27,7 +28,7 @@ pins** (GitHub Actions SHAs, base images, chart `image.digest`); **portal day-2 
 results, presenter mode); **developer portal surfaces** (library catalog, fleet scorecard
 rollup, remote GitHub docs, upgrade/provenance rendering, owner filter, SLO health panel);
 **cost visibility** (Infracost gate + CI, URL/AWS/Azure actuals, library tile badges, Cloud spend
-scorecard) — closeout on `feat/cost-visibility-closeout`.
+scorecard).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -112,9 +113,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ supply chain    GitHub App auth shipped; governed PR conventions shipped
   ├─ fleet scale     Blueprint controller shipped; bounded upgrade campaigns + drift SLO metrics + rate-limit parity shipped
   ├─ portal surfaces catalog, rendered docs, scorecards, observability read
-  ├─ reach           repave verify (local + remote clone shipped); repo import (shipped); composite golden paths
+  ├─ reach           repave verify (local + remote clone shipped); repo import Phase 1–3 shipped; composite golden paths
   ├─ usability       `repave doctor`; queryable audit history
-  ├─ cost            Infracost estimate + CI; URL/AWS/Azure actuals; library cost badges (partial)
+  ├─ cost            Infracost estimate + CI; URL/AWS/Azure actuals; library cost badges (shipped)
   │
   v2.0.0             platform GA       operator GA, stable contracts, fleet upgrades; conversational governed AI generation
   │
@@ -134,14 +135,14 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
 | **Estate control plane** | v1.72–v1.73+ shipped | Remote observe/plan/remediate; fleet registry; operator continuous fleet sync + GPR prune |
 | **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
-| **Brownfield onboarding** | shipped (Phase 1) | `repave import` detects the golden path, moves files byte-identically, adds scaffold, opens a reviewable PR; per-file overrides and batch onboarding open |
+| **Brownfield onboarding** | shipped (Phase 1–3) | `repave import` + batch portal/API; per-file overrides; trees-API preview; GitHub rate-limit backoff for fleet-scale REST |
 | **Hardening** | shipped (group A) | Single toolchain pin source, subprocess timeouts, coverage gate, honest changelog and docs |
 | **Hosted durability** | partial (Phase 1–3 + retry/reclaim in progress) | Unified SQL store; async queue + DLQ/replay + list runs; external workers |
 | **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
 | **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
 | **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
-| **Cost awareness** | partial | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
+| **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
 | **v2.0.0** | — | Closed loop: generate → govern → detect drift → remediate across the fleet |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
@@ -358,10 +359,10 @@ campaign deferral both track `X-RateLimit-*` and backoff on low quota / HTTP 429
 - CLI, portal **Verify repo**, `POST /api/v1/verify` ([`docs/verify.md`](verify.md))
 - Local paths and shallow git clone for remote URLs (PAT or GitHub App for private HTTPS)
 
-### Repo import to golden path (Phase 1)
+### Repo import to golden path
 
-**Status:** Shipped on `main` (`repave import`, portal `/import`, `/api/v2/imports/*`).
-Detail: [`docs/import.md`](import.md).
+**Status:** Shipped on `main` (Phase 1–3 — `repave import`, portal `/import` and `/import/batch`,
+`/api/v2/imports/*`). Detail: [`docs/import.md`](import.md).
 
 Brownfield onboarding: adopt a repository repave did not generate by rearranging its files
 into a golden path layout, adding the governance scaffold it lacks, and opening a pull
@@ -387,9 +388,14 @@ request on the source repo.
   `repave.yaml` as a drift baseline
 - **Clone depth** — `git_clone.shallow_clone(depth=0)` now expresses a full clone, and the
   import push path unshallows and retries once when a remote rejects a shallow update
-
-**Still open (Phase 2–3):** none — overrides, trees-API preview, and batch import shipped in
-Phase 2–3.
+- **Per-file overrides (Phase 2)** — fix a bad classification in the preview; overrides persist
+  to `spec.import.overrides` in `repave.yaml` (portal, CLI `--overrides`, API `overrides`)
+- **Trees-API preview (Phase 2)** — remote `github.com` URLs plan without cloning; apply
+  shallow-clones for scorecard and gates (`preview_limited`; `--force-clone` for full local preview)
+- **Batch import (Phase 3)** — plan or open PRs for many repos via `/import/batch`, CLI
+  `--batch-file`, or `/api/v2/imports/batch/*`; org/topic discovery on GitHub
+- **Rate-limit backoff** — per-installation `X-RateLimit-*` tracking for batch import and fleet
+  campaigns (429 retry with backoff)
 
 ### v1.18 — Portal UX (theme)
 
@@ -1689,10 +1695,10 @@ requirements on Terraform blueprints.
 **Done when:** A Terraform dry-run shows a cost delta, and a catalog entity with complete tags
 shows last-30-day actual spend with its as-of time.
 
-**Status:** **Partial on `main`; closeout on `feat/cost-visibility-closeout`** — `infracost`
-gate and generated-repo CI; `portal.cost_reader` (`url`, `aws`, `azure`); service detail and
-**library tile** cost badges (L30D actuals or local `.repave/cost-estimate.json`); **Cloud
-spend** scorecard dimension. Still open: in-cluster Kubernetes allocation (optional follow-up).
+**Status:** **Shipped on `main`** — `infracost` gate and generated-repo CI; `portal.cost_reader`
+(`url`, `aws`, `azure`); service detail and **library tile** cost badges (L30D actuals or local
+`.repave/cost-estimate.json`); **Cloud spend** scorecard dimension. Still open: in-cluster
+Kubernetes allocation (optional follow-up).
 
 ---
 

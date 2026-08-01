@@ -123,6 +123,45 @@ def test_import_preview_lists_unmapped_files(client: TestClient, legacy_repo: Pa
     assert "scripts/deploy.sh" in body
 
 
+def test_import_preview_accepts_path_overrides(client: TestClient, legacy_repo: Path) -> None:
+    body = client.post(
+        "/import",
+        data={
+            "target_repo": str(legacy_repo),
+            "override__terraform__main.tf": "network/main.tf",
+        },
+    ).text
+
+    assert "network/main.tf" in body
+    assert 'name="override__terraform__main.tf"' in body
+
+
+def test_import_batch_form_renders(client: TestClient) -> None:
+    body = client.get("/import/batch").text
+
+    assert "Batch import" in body
+    assert 'name="targets"' in body
+    assert 'action="/import/batch"' in body
+    assert "Preview batch" in body
+
+
+def test_import_batch_preview_plans_multiple_repos(client: TestClient, tmp_path: Path) -> None:
+    repo_a = _write(tmp_path / "tf-a", _LEGACY_TF)
+    repo_b = _write(tmp_path / "tf-b", _LEGACY_TF)
+
+    response = client.post(
+        "/import/batch",
+        data={"targets": f"{repo_a}\n{repo_b}"},
+    )
+    body = response.text
+
+    assert response.status_code == 200
+    assert "Batch import preview" in body
+    assert "2 planned" in body
+    assert str(repo_a) in body
+    assert str(repo_b) in body
+
+
 def test_import_preview_honours_an_explicit_blueprint(
     client: TestClient, legacy_repo: Path
 ) -> None:
@@ -187,6 +226,8 @@ def test_api_v2_advertises_the_import_endpoints(client: TestClient) -> None:
 
     assert "POST /api/v2/imports/plan" in payload["endpoints"]
     assert "POST /api/v2/imports/apply" in payload["endpoints"]
+    assert "POST /api/v2/imports/batch/plan" in payload["endpoints"]
+    assert "POST /api/v2/imports/batch/apply" in payload["endpoints"]
 
 
 def test_api_v2_import_plan_returns_the_plan(client: TestClient, legacy_repo: Path) -> None:
@@ -202,6 +243,25 @@ def test_api_v2_import_plan_returns_the_plan(client: TestClient, legacy_repo: Pa
     assert payload["ok"] is True
     assert any(move["destination"] == "main.tf" for move in payload["moves"])
     assert payload["scorecard"]["passing_after"] > payload["scorecard"]["passing_before"]
+
+
+def test_api_v2_import_plan_honours_overrides(client: TestClient, legacy_repo: Path) -> None:
+    response = client.post(
+        "/api/v2/imports/plan",
+        json={
+            "target_repo": str(legacy_repo),
+            "with_gates": False,
+            "overrides": {"terraform/main.tf": "network/main.tf"},
+        },
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert any(
+        move["source"] == "terraform/main.tf" and move["destination"] == "network/main.tf"
+        for move in payload["moves"]
+    )
+    assert payload["path_overrides"]["terraform/main.tf"] == "network/main.tf"
 
 
 def test_api_v2_import_plan_requires_a_target(client: TestClient) -> None:
