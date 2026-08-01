@@ -9,12 +9,20 @@ from repave_engine.artifact_store import resolve_artifact_store
 from repave_engine.blueprint import (
     Blueprint,
     blueprint_dir,
+    bundles_dir,
     load_blueprint,
     primary_publish_name,
     validate_inputs,
 )
+from repave_engine.bundle import Bundle, load_bundle
 from repave_engine.gates import GateResult, RunEventCallback, all_gates_passed, gate_outcome
-from repave_engine.pipeline import GenerationResult, generate_from_blueprint
+from repave_engine.pipeline import (
+    BundleGenerationResult,
+    BundleMemberResult,
+    GenerationResult,
+    generate_from_blueprint,
+    generate_from_bundle,
+)
 from repave_engine.publish_idempotency import PublishIdempotencyContext
 from repave_engine.render import RenderedFile, RenderResult, collect_rendered_files
 from repave_engine.run_store import RunRecord
@@ -104,6 +112,108 @@ def serialize_generation_result(
     return body
 
 
+def run_bundle_api(
+    *,
+    repo_root: Path,
+    output_config: OutputConfig,
+    bundle_name: str,
+    inputs: dict[str, Any],
+    dry_run: bool,
+    github_token: str | None,
+    on_event: RunEventCallback | None = None,
+    staging_root: Path | None = None,
+) -> dict[str, Any]:
+    bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+    values = {str(key): str(value) for key, value in inputs.items()}
+    if on_event is not None:
+        on_event("bundle_started", {"bundle": bundle.name, "member_count": len(bundle.members)})
+    result = generate_from_bundle(
+        bundle,
+        values,
+        repo_root=repo_root,
+        output_config=output_config,
+        dry_run=dry_run,
+        require_run=dry_run,
+        github_token=github_token,
+        staging_root=staging_root,
+    )
+    if on_event is not None:
+        on_event(
+            "bundle_finished",
+            {
+                "bundle": bundle.name,
+                "gates_outcome": gate_outcome(result.combined_gates()),
+            },
+        )
+    return serialize_bundle_result(
+        bundle,
+        result,
+        dry_run=dry_run,
+        persist_artifact=staging_root is not None,
+    )
+
+
+def serialize_bundle_result(
+    bundle: Bundle,
+    result: BundleGenerationResult,
+    *,
+    dry_run: bool,
+    persist_artifact: bool = False,
+) -> dict[str, Any]:
+    combined = result.combined_gates()
+    body: dict[str, Any] = {
+        "kind": "bundle",
+        "bundle": bundle.name,
+        "bundle_version": bundle.version,
+        "dry_run": dry_run,
+        "gates_outcome": gate_outcome(combined),
+        "gates_passed": all_gates_passed(combined),
+        "gates": [
+            {
+                "name": gate.name,
+                "passed": gate.passed,
+                "skipped": gate.skipped,
+                "message": gate.message,
+            }
+            for gate in combined
+        ],
+        "shared_inputs": dict(result.shared_inputs),
+        "members": [],
+    }
+    for member in result.members:
+        member_body: dict[str, Any] = {
+            "member_id": member.member_id,
+            "blueprint": member.result.blueprint.name,
+            "blueprint_version": member.result.blueprint.version,
+            "dry_run": member.result.dry_run,
+            "gates_outcome": gate_outcome(member.result.gates),
+            "gates_passed": all_gates_passed(member.result.gates),
+            "gates": [
+                {
+                    "name": gate.name,
+                    "passed": gate.passed,
+                    "skipped": gate.skipped,
+                    "message": gate.message,
+                }
+                for gate in member.result.gates
+            ],
+            "output_dir": str(member.result.render.output_dir),
+        }
+        if persist_artifact:
+            member_body["rendered_files"] = [
+                {
+                    "path": rendered.path,
+                    "content": rendered.content,
+                    "truncated": rendered.truncated,
+                }
+                for rendered in member.result.rendered_files
+            ]
+        else:
+            member_body["rendered_files"] = len(member.result.rendered_files)
+        body["members"].append(member_body)
+    return body
+
+
 def _rendered_files_from_snapshot(raw: object) -> tuple[RenderedFile, ...] | None:
     """Parse a persisted preview snapshot; return None when `raw` is a legacy count."""
     if isinstance(raw, int):
@@ -171,6 +281,96 @@ def _gates_from_stored_payload(rows: list[Any]) -> list[GateResult]:
     return gates
 
 
+def _member_generation_from_stored(
+    *,
+    repo_root: Path,
+    output_config: OutputConfig,
+    member_row: dict[str, Any],
+    dry_run: bool,
+    template_values: dict[str, str],
+) -> GenerationResult | None:
+    blueprint_name = str(member_row.get("blueprint", "")).strip()
+    if not blueprint_name:
+        return None
+    gates_raw = member_row.get("gates")
+    if not isinstance(gates_raw, list) or not gates_raw:
+        return None
+    blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
+    rendered_files = _rendered_files_from_snapshot(member_row.get("rendered_files"))
+    if isinstance(member_row.get("rendered_files"), list) and rendered_files is None:
+        return None
+    if rendered_files is None:
+        rendered_files = ()
+    output_dir = Path(str(member_row.get("output_dir", ".")))
+    module_name = primary_publish_name(blueprint, template_values)
+    module_repository = resolve_module_repository(
+        module_name=module_name,
+        config=output_config,
+        name_template=blueprint.output_repo_name_template,
+        template_values=template_values,
+    )
+    return GenerationResult(
+        blueprint=blueprint,
+        render=RenderResult(output_dir=output_dir, values={}),
+        gates=_gates_from_stored_payload(gates_raw),
+        module_repository=module_repository,
+        pr_plan=None,
+        pr_message="",
+        rendered_files=tuple(rendered_files),
+        dry_run=dry_run,
+        member_id=str(member_row.get("member_id", "")).strip() or None,
+    )
+
+
+def bundle_result_from_stored_run(
+    *,
+    record: RunRecord,
+    repo_root: Path,
+    output_config: OutputConfig,
+) -> BundleGenerationResult | None:
+    stored = record.result
+    if stored is None or stored.get("kind") != "bundle":
+        return None
+    bundle_name = str(stored.get("bundle") or record.payload.get("bundle") or "").strip()
+    if not bundle_name:
+        return None
+    bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+    members_raw = stored.get("members")
+    if not isinstance(members_raw, list):
+        return None
+    shared_raw = stored.get("shared_inputs", record.payload.get("inputs", {}))
+    shared_inputs = (
+        {str(key): str(value) for key, value in shared_raw.items()}
+        if isinstance(shared_raw, dict)
+        else {}
+    )
+    members: list[BundleMemberResult] = []
+    for row in members_raw:
+        if not isinstance(row, dict):
+            continue
+        generation = _member_generation_from_stored(
+            repo_root=repo_root,
+            output_config=output_config,
+            member_row=row,
+            dry_run=record.dry_run,
+            template_values=shared_inputs,
+        )
+        if generation is None:
+            return None
+        members.append(
+            BundleMemberResult(
+                member_id=str(row.get("member_id", "")).strip() or generation.member_id or "",
+                result=generation,
+            )
+        )
+    return BundleGenerationResult(
+        bundle=bundle,
+        members=tuple(members),
+        dry_run=record.dry_run,
+        shared_inputs=shared_inputs,
+    )
+
+
 def generation_result_from_stored_run(
     *,
     record: RunRecord,
@@ -180,6 +380,8 @@ def generation_result_from_stored_run(
     """Rebuild portal GenerationResult from a completed async run (no gate re-run)."""
     stored = record.result
     if stored is None:
+        return None
+    if stored.get("kind") == "bundle":
         return None
     gates_raw = stored.get("gates")
     if not isinstance(gates_raw, list) or not gates_raw:

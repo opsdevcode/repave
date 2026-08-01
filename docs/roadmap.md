@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.128.0  
 
-**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (v2 read-model parity, `/api/v1` deprecation, config `apiVersion`, hosted SQL requirement).
+**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (v2 read-model parity, `/api/v1` deprecation, config `apiVersion`, hosted SQL requirement, bundle async in worker mode).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4

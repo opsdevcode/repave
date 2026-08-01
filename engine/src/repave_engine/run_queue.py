@@ -18,7 +18,7 @@ from repave_engine.durability_store import (
     resolve_runs_database,
 )
 from repave_engine.execution_mode import ExecutionMode
-from repave_engine.generate_api import run_generate_api
+from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.metrics import (
     record_run_queue_depth,
@@ -174,7 +174,8 @@ class RunQueue:
     def submit(
         self,
         *,
-        blueprint_name: str,
+        blueprint_name: str | None = None,
+        bundle_name: str | None = None,
         inputs: dict[str, Any],
         dry_run: bool,
         acting_user: str,
@@ -182,6 +183,11 @@ class RunQueue:
     ) -> RunRecord:
         if not self._accepting:
             raise RunQueueShuttingDownError("async generation queue is shutting down")
+
+        if blueprint_name and bundle_name:
+            raise ValueError("provide only one of blueprint_name or bundle_name")
+        if not blueprint_name and not bundle_name:
+            raise ValueError("blueprint_name or bundle_name is required")
 
         if client_request_id:
             existing = self._store.get_by_client_request_id(client_request_id)
@@ -193,9 +199,17 @@ class RunQueue:
                 f"Queue full ({self._config.queue_max_depth} in-flight runs max)"
             )
 
-        payload = {"blueprint": blueprint_name, "inputs": inputs, "dry_run": dry_run}
+        target_name = bundle_name or blueprint_name or ""
+        if bundle_name:
+            payload: dict[str, Any] = {
+                "bundle": bundle_name,
+                "inputs": inputs,
+                "dry_run": dry_run,
+            }
+        else:
+            payload = {"blueprint": blueprint_name, "inputs": inputs, "dry_run": dry_run}
         record = self._store.create_run(
-            blueprint_name=blueprint_name,
+            blueprint_name=target_name,
             dry_run=dry_run,
             payload=payload,
             acting_user=acting_user,
@@ -261,7 +275,11 @@ class RunQueue:
             self._emit_event(
                 run_id,
                 "run_started",
-                {"blueprint": record.blueprint_name, "dry_run": record.dry_run},
+                {
+                    "blueprint": record.payload.get("blueprint") or None,
+                    "bundle": record.payload.get("bundle") or None,
+                    "dry_run": record.dry_run,
+                },
             )
             inputs_raw = record.payload.get("inputs", {})
             if not isinstance(inputs_raw, dict):
@@ -278,17 +296,30 @@ class RunQueue:
                 client_request_id=record.client_request_id,
             )
             try:
-                result = run_generate_api(
-                    repo_root=self._repo_root,
-                    output_config=self._output_config,
-                    blueprint_name=record.blueprint_name,
-                    inputs=inputs_raw,
-                    dry_run=record.dry_run,
-                    github_token=github_token,
-                    on_event=on_event,
-                    staging_root=artifact_dir,
-                    publish_idempotency=publish_ctx,
-                )
+                bundle_name = str(record.payload.get("bundle", "")).strip()
+                if bundle_name:
+                    result = run_bundle_api(
+                        repo_root=self._repo_root,
+                        output_config=self._output_config,
+                        bundle_name=bundle_name,
+                        inputs=inputs_raw,
+                        dry_run=record.dry_run,
+                        github_token=github_token,
+                        on_event=on_event,
+                        staging_root=artifact_dir,
+                    )
+                else:
+                    result = run_generate_api(
+                        repo_root=self._repo_root,
+                        output_config=self._output_config,
+                        blueprint_name=record.blueprint_name,
+                        inputs=inputs_raw,
+                        dry_run=record.dry_run,
+                        github_token=github_token,
+                        on_event=on_event,
+                        staging_root=artifact_dir,
+                        publish_idempotency=publish_ctx,
+                    )
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)
                 record = self._store.get(run_id)

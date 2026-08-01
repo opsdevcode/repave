@@ -66,6 +66,7 @@ from repave_engine.blueprint import (
 )
 from repave_engine.bundle import list_bundles, load_bundle
 from repave_engine.bundle_portal import (
+    build_bundle_result_portal_context,
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
@@ -85,7 +86,10 @@ from repave_engine.entity_catalog import (
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
-from repave_engine.generate_api import generation_result_from_stored_run
+from repave_engine.generate_api import (
+    bundle_result_from_stored_run,
+    generation_result_from_stored_run,
+)
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
 from repave_engine.governance_preflight import build_bundle_preflight
@@ -151,6 +155,7 @@ from repave_engine.run_queue import (
     build_run_queue,
 )
 from repave_engine.run_store import RunStatus
+from repave_engine.run_submit import is_bundle_run
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -938,6 +943,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         record = run_queue.get(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
+        if is_bundle_run(record):
+            bundle_name = str(record.payload.get("bundle", "")).strip()
+            bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+            gate_names: list[str] = []
+            seen_gates: set[str] = set()
+            for member in bundle.members:
+                member_blueprint = load_blueprint(
+                    blueprint_dir(repo_root, member.blueprint_name),
+                    repo_root=repo_root,
+                )
+                for gate in member_blueprint.gates:
+                    if gate not in seen_gates:
+                        seen_gates.add(gate)
+                        gate_names.append(gate)
+            return templates.TemplateResponse(
+                request,
+                "run_console.html",
+                page_context(
+                    request,
+                    nav_active="catalog",
+                    run_id=run_id,
+                    run_record=record,
+                    bundle=bundle,
+                    gate_names=gate_names,
+                ),
+            )
         blueprint = load_blueprint(
             blueprint_dir(repo_root, record.blueprint_name),
             repo_root=repo_root,
@@ -967,6 +998,58 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             raise HTTPException(status_code=404, detail="Run not found")
         if record.status != RunStatus.SUCCEEDED:
             raise HTTPException(status_code=400, detail="Run is not complete")
+        if is_bundle_run(record):
+            bundle_name = str(record.payload.get("bundle", "")).strip()
+            bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+            bundle_result = bundle_result_from_stored_run(
+                record=record,
+                repo_root=repo_root,
+                output_config=resolved_output,
+            )
+            if bundle_result is None:
+                inputs_raw = record.payload.get("inputs", {})
+                if not isinstance(inputs_raw, dict):
+                    inputs_raw = {}
+                bundle_values = {str(k): str(v) for k, v in inputs_raw.items()}
+                require_run = record.dry_run
+                github_token = None if record.dry_run else resolve_github_access_token()
+                bundle_result = generate_from_bundle(
+                    bundle,
+                    bundle_values,
+                    repo_root=repo_root,
+                    output_config=resolved_output,
+                    dry_run=record.dry_run,
+                    require_run=require_run,
+                    github_token=github_token,
+                )
+            combined = bundle_result.combined_gates()
+            previews = bundle_member_previews(
+                bundle,
+                bundle_result.shared_inputs,
+                repo_root=repo_root,
+                output_config=resolved_output,
+            )
+            topology_nodes, topology_edges = build_bundle_topology(bundle, previews)
+            return templates.TemplateResponse(
+                request,
+                "bundle_result.html",
+                page_context(
+                    request,
+                    bundle_result=bundle_result,
+                    nav_active="catalog",
+                    gate_summary=gate_summary(combined),
+                    gates_ok=bundle_result.all_members_passed(),
+                    gate_toolchain_callout=gate_toolchain_callout(
+                        combined,
+                        dry_run=bundle_result.dry_run,
+                    ),
+                    result_portal=build_bundle_result_portal_context(
+                        bundle_result,
+                        shared_inputs=bundle_result.shared_inputs,
+                    ),
+                    bundle_topology=topology_public(topology_nodes, topology_edges),
+                ),
+            )
         blueprint_name = record.blueprint_name
         blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
         dry_run = record.dry_run

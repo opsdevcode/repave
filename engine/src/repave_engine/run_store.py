@@ -49,13 +49,16 @@ class RunRecord:
         body: dict[str, Any] = {
             "run_id": self.run_id,
             "status": self.status.value,
-            "blueprint": self.blueprint_name,
             "dry_run": self.dry_run,
             "acting_user": self.acting_user,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "attempt_count": self.attempt_count,
         }
+        if self.payload.get("bundle"):
+            body["bundle"] = str(self.payload["bundle"])
+        else:
+            body["blueprint"] = self.blueprint_name
         if self.client_request_id:
             body["client_request_id"] = self.client_request_id
         if self.next_attempt_at:
