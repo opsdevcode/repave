@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v1.119.0  
+**Current release:** v1.120.0  
 
 **In progress:** day-2 follow-ups — shared fleet PVC, worker HPA, CI action-pin gate (branch
 `feat/portal-day2-followups`).
