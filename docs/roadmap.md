@@ -6,9 +6,10 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.0.0  
 
-**In progress:** [v2.1 — conversational governed AI](#conversational-and-governed-ai-generation)
-(post–Platform GA follow-on on the v2 line).
-**Next engine release:** **`v2.0.0`** when the contract-freeze alignment PR merges (`feat!:` → major bump via Release).
+**In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phase 1 —
+deployment status ([ADR 003](adr/003-environment-lifecycle-and-live-state.md) accepted; implementation
+not started). [Conversational governed AI](#conversational-and-governed-ai-generation) also remains
+open on the v2 line.
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
@@ -128,6 +129,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   v2.0.0             platform GA       contract freeze + DR → engine tag v2.0.0
   │
+  v2.1+              environments      deployment status → gated plan on live state → vending (ADR 003)
   v2.1+              governed AI       conversational generation on the v2 line
   │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane
@@ -156,8 +158,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
-| **v2.0.0 Platform GA** | shipped (tag pending) | Contract freeze + DR on `main`; **`v2.0.0` engine tag** on next `feat!:` release |
-| **v2.1+ governed AI** | in progress | Conversational generation on the v2 semver line |
+| **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
+| **v2.1+ environment lifecycle** | planned (Phase 1) | Deployment status in the catalog → gated plan on live state → environment vending ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
+| **v2.1+ governed AI** | open | Conversational generation on the v2 semver line |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
 ---
@@ -1804,16 +1807,57 @@ killed worker's run is replayable and visible from a second portal replica, and
 
 ---
 
+### Environment lifecycle and deployment awareness
+
+**Status:** **Phase 1 planned** — [ADR 003](adr/003-environment-lifecycle-and-live-state.md)
+accepted for deployment status; Phases 2–3 directional. Promoted out of
+[lifecycle control plane](#lifecycle-control-plane) now that the v2 contract freeze shipped.
+
+**Problem:** repave governs **repositories** and stops at the pull request. It cannot answer
+"is my change live", its policy runs against repo shape rather than the effect of a change,
+and "drift" means pin drift rather than infrastructure divergence. The
+`terraform-environment-stack` blueprint generates a repo that *describes* an environment;
+nothing requests, owns, bounds the cost of, or reclaims a real one. That is the gap between a
+governed generator and a platform.
+
+**Approach:** climb from read to plan to vend, so each rung earns the credentials the next
+one needs. Design and boundaries in [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
+
+| Phase | Content | Risk added |
+| --- | --- | --- |
+| **1 — deployment status** | Read Argo CD / Flux state (sync, health, revision, last synced) into `CatalogEntity` via a `deployment_reader` following the existing cost/SLO enrichment pattern; optional snapshot for list views; portal and `/api/v2` detail | Read-only token; degrades to "unknown" on outage |
+| **2 — governed plan on live state** | Real `terraform plan` against a configured backend in a worker Job; OPA evaluated on **plan JSON**; summary and verdict on the run record and PR | State + cloud read credentials, scoped per environment; plan output treated as sensitive |
+| **3 — environment vending** | Request an environment from a governed blueprint; repave writes desired state to a **GitOps repo** and the existing CD toolchain applies it; environment records carry owner, class, TTL, cost, status; expiry reclaims sandboxes and opens decommission PRs elsewhere | Environment ownership and TTL enforcement; no apply credentials in repave |
+
+**Non-goals:** repave running `terraform apply` against production credentials; writing to
+Argo CD or Flux (sync, rollback, refresh stay with the GitOps controller); estate-wide
+infrastructure drift detection (revisit after Phase 2 proves credential scoping); auto-merge
+of any environment change outside the sandbox class, which stays
+[v3 work](#autonomous-governed-remediation).
+
+**Dependencies:** catalog read model (`entity_catalog.py`, `portal_context.py`) and the
+enrichment precedents in `cost_actuals.py` / `observability_slo.py`; worker role and per-run
+Jobs from [service decomposition](#service-decomposition-for-hosted-scale) for Phase 2;
+`terraform-environment-stack` blueprint and standard for Phase 3.
+
+**Done when (Phase 1):** an entity backed by an Argo CD application shows sync state, health,
+deployed revision, and last-synced time in the portal and on
+`GET /api/v2/catalog/entities/{id}`; catalog responses are unchanged when no reader is
+configured; an unreachable GitOps API renders unknown status instead of an error.
+
+---
+
 ## v2.0.0 — Platform GA
 
 **Target:** Repave as the **control plane for golden-path estates** — not only a
 generator.
 
-**Status:** **Contract freeze and Postgres DR shipped on `main`.** Engine semver moves to
-**`v2.0.0`** when the alignment PR merges (Release automation). **In progress on the v2 line:**
-[conversational governed AI generation](#conversational-and-governed-ai-generation) (roadmap **v2.1+**,
-ships as `v2.x` minors). Pre-v3 follow-up: v2 read models for `/api/v1/estate` and
-`/api/v1/governance/annotations/*` ([`api-v1-migration.md`](api-v1-migration.md)).
+**Status:** **Shipped** — contract freeze and Postgres DR are on `main`, and the engine is
+tagged **`v2.0.0`**. Open on the v2.x line:
+[environment lifecycle](#environment-lifecycle-and-deployment-awareness) (Phase 1 planned) and
+[conversational governed AI generation](#conversational-and-governed-ai-generation). Pre-v3
+follow-up: v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
+([`api-v1-migration.md`](api-v1-migration.md)).
 
 **Planned capabilities (must-have for v2):**
 
@@ -2007,11 +2051,10 @@ that makes those v2 decisions checkable.
 
 ### Lifecycle control plane
 
-- **Environments as a service:** promote `terraform-environment-stack` into a governed
-  environment lifecycle — request, vend, promote, and decommission — instead of one-shot
-  generation
-- **Deployment health:** read GitOps application status (Argo CD or Flux) into the catalog
-  entity so "is my last change live?" is answerable in the portal (read-only)
+- **Environments as a service** and **deployment health** — **promoted** into
+  [environment lifecycle and deployment awareness](#environment-lifecycle-and-deployment-awareness)
+  on the v2.x line ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)); only the
+  autonomous tier below stays v3
 - **Graph-scoped planning:** blast-radius view and graph-scoped plan/apply for large state,
   surfaced as a registry tool rather than a repave-owned engine
 - **Cost showback:** budgets, multi-account rollups, chargeback exports, and anomaly alerts,
