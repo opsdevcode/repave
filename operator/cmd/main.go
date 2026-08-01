@@ -27,6 +27,7 @@ import (
 	repavev1alpha1 "github.com/opsdevcode/repave/operator/api/v1alpha1"
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/controller"
+	_ "github.com/opsdevcode/repave/operator/internal/metrics"
 	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
 	"github.com/opsdevcode/repave/operator/internal/repave"

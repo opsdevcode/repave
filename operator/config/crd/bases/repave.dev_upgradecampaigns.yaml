@@ -34,6 +34,12 @@ spec:
     - jsonPath: .status.openPRCount
       name: OpenPRs
       type: integer
+    - jsonPath: .status.outOfDateCount
+      name: OutOfDate
+      type: integer
+    - jsonPath: .status.oldestDriftAgeSeconds
+      name: OldestDrift
+      type: integer
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -136,6 +142,12 @@ spec:
           status:
             description: UpgradeCampaignStatus reports rollout progress for the campaign.
             properties:
+              averageRemediationMTTRSeconds:
+                description: |-
+                  AverageRemediationMTTRSeconds is the mean time-to-resolve drift across matched
+                  repos that returned to Ready during the last reconcile window.
+                format: int64
+                type: integer
               conditions:
                 description: Conditions describe operability of the campaign.
                 items:
@@ -203,9 +215,20 @@ spec:
                   reconciled.
                 format: int64
                 type: integer
+              oldestDriftAgeSeconds:
+                description: |-
+                  OldestDriftAgeSeconds is the age in seconds of the longest-running drift
+                  among matched repos (zero when none are out of date).
+                format: int64
+                type: integer
               openPRCount:
                 description: OpenPRCount is the number of matched GoldenPathRepos
                   with open remediation PRs.
+                format: int32
+                type: integer
+              outOfDateCount:
+                description: OutOfDateCount is the number of matched GoldenPathRepos
+                  with pin drift.
                 format: int32
                 type: integer
               phase:

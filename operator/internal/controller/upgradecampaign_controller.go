@@ -2,6 +2,8 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -12,7 +14,8 @@ import (
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/campaign"
-	"github.com/opsdevcode/repave/operator/internal/remediation"
+	fleetmetrics "github.com/opsdevcode/repave/operator/internal/metrics"
+	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
 
@@ -37,23 +40,31 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	openCount, failures, err := r.summarize(ctx, &uc)
+	now := time.Now()
+	summary, err := r.summarize(ctx, &uc, now)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
+	previousPhase := uc.Status.Phase
+	previousOutOfDate := uc.Status.OutOfDateCount
+	previousOpenPRs := uc.Status.OpenPRCount
 
 	phase := repavev1beta1.UpgradeCampaignPhaseActive
 	if uc.Spec.Paused {
 		phase = repavev1beta1.UpgradeCampaignPhasePaused
 	} else if uc.Spec.StopAfterConsecutiveGateFailures > 0 &&
-		failures >= uc.Spec.StopAfterConsecutiveGateFailures {
+		summary.ConsecutiveGateFailures >= uc.Spec.StopAfterConsecutiveGateFailures {
 		phase = repavev1beta1.UpgradeCampaignPhaseStopped
 	}
 
 	base := uc.DeepCopy()
 	uc.Status.ObservedGeneration = uc.Generation
-	uc.Status.OpenPRCount = openCount
-	uc.Status.ConsecutiveGateFailures = failures
+	uc.Status.OpenPRCount = summary.OpenPRCount
+	uc.Status.OutOfDateCount = summary.OutOfDateCount
+	uc.Status.OldestDriftAgeSeconds = summary.OldestDriftAgeSeconds
+	uc.Status.AverageRemediationMTTRSeconds = summary.AverageRemediationMTTRSeconds
+	uc.Status.ConsecutiveGateFailures = summary.ConsecutiveGateFailures
 	uc.Status.Phase = phase
 
 	ready := metav1.ConditionTrue
@@ -80,51 +91,98 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		logger.Error(err, "unable to update UpgradeCampaign status")
 		return ctrl.Result{}, err
 	}
+
+	fleetmetrics.RecordCampaignSnapshot(
+		uc.Namespace,
+		uc.Name,
+		summary.OutOfDateCount,
+		summary.OldestDriftAgeSeconds,
+		summary.OpenPRCount,
+	)
+	r.notifyCampaignChanges(&uc, summary, previousPhase, previousOutOfDate, previousOpenPRs)
+
 	return ctrl.Result{}, nil
 }
 
 func (r *UpgradeCampaignReconciler) summarize(
 	ctx context.Context,
 	uc *repavev1beta1.UpgradeCampaign,
-) (openCount int32, consecutiveFailures int32, err error) {
+	now time.Time,
+) (campaign.FleetSummary, error) {
 	var repos repavev1beta1.GoldenPathRepoList
 	if err := r.List(ctx, &repos, client.InNamespace(uc.Namespace)); err != nil {
-		return 0, 0, err
+		return campaign.FleetSummary{}, err
 	}
-
-	for i := range repos.Items {
-		repo := &repos.Items[i]
-		matched, matchErr := campaign.MatchGoldenPathRepo(uc, repo)
-		if matchErr != nil {
-			return 0, 0, matchErr
-		}
-		if !matched {
-			continue
-		}
-		if repo.Status.RemediationPR != nil && repo.Status.RemediationPR.State == remediation.PRStateOpen {
-			openCount++
-		}
-		if metaFailure, _ := latestRemediationFailure(repo); metaFailure {
-			consecutiveFailures++
-		}
-	}
-	return openCount, consecutiveFailures, nil
+	return campaign.SummarizeMatchedRepos(uc, repos.Items, now)
 }
 
-func latestRemediationFailure(repo *repavev1beta1.GoldenPathRepo) (bool, string) {
-	for _, cond := range repo.Status.Conditions {
-		if cond.Type != status.ConditionRemediationPR {
-			continue
-		}
-		if cond.Status == metav1.ConditionFalse && cond.Reason == status.ReasonRemediationFailed {
-			return true, cond.Message
-		}
+func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
+	uc *repavev1beta1.UpgradeCampaign,
+	summary campaign.FleetSummary,
+	previousPhase string,
+	previousOutOfDate int32,
+	previousOpenPRs int32,
+) {
+	switch {
+	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhasePaused &&
+		previousPhase != repavev1beta1.UpgradeCampaignPhasePaused:
+		notify.SendCampaignEvent(
+			notify.EventCampaignPaused,
+			uc,
+			summary,
+			"campaign paused; new remediation PRs will not open",
+		)
+	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhaseStopped &&
+		previousPhase != repavev1beta1.UpgradeCampaignPhaseStopped:
+		notify.SendCampaignEvent(
+			notify.EventCampaignStopped,
+			uc,
+			summary,
+			"campaign stopped after consecutive remediation gate failures",
+		)
+	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhaseActive &&
+		previousPhase == repavev1beta1.UpgradeCampaignPhasePaused:
+		notify.SendCampaignEvent(
+			notify.EventCampaignResumed,
+			uc,
+			summary,
+			"campaign resumed; remediation PRs may open again",
+		)
 	}
-	return false, ""
+
+	maxConcurrent := campaign.DefaultMaxConcurrentPRs
+	if uc.Spec.MaxConcurrentPRs != nil && *uc.Spec.MaxConcurrentPRs > 0 {
+		maxConcurrent = *uc.Spec.MaxConcurrentPRs
+	}
+	if summary.OpenPRCount >= maxConcurrent && previousOpenPRs < maxConcurrent {
+		notify.SendCampaignEvent(
+			notify.EventCampaignCapacityReached,
+			uc,
+			summary,
+			fmt.Sprintf("open remediation PRs reached cap (%d)", maxConcurrent),
+		)
+	}
+
+	if summary.OutOfDateCount != previousOutOfDate || summary.OpenPRCount != previousOpenPRs {
+		notify.SendCampaignEvent(
+			notify.EventCampaignSummary,
+			uc,
+			summary,
+			fmt.Sprintf(
+				"%d repos out of date, %d open remediation PRs",
+				summary.OutOfDateCount,
+				summary.OpenPRCount,
+			),
+		)
+	}
 }
 
 func (r *UpgradeCampaignReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&repavev1beta1.UpgradeCampaign{}).
+		Watches(
+			&repavev1beta1.GoldenPathRepo{},
+			upgradeCampaignWatchHandler(r),
+		).
 		Complete(r)
 }

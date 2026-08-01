@@ -112,11 +112,13 @@ func applyRemediationPRStatus(
 
 	if repo.Spec.Remediation.DryRun {
 		msg := fmt.Sprintf("dry-run remediation on branch %s", applyResult.GitBranch)
+		openedAt := metav1.Now()
 		if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 			latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
 				Branch:                  applyResult.GitBranch,
 				Title:                   prMeta.Title,
 				State:                   remediation.PRStatePlanned,
+				OpenedAt:                &openedAt,
 				DesiredBlueprintVersion: desiredVersion,
 			}
 			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
@@ -159,12 +161,14 @@ func applyRemediationPRStatus(
 	}
 
 	if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+		openedAt := metav1.Now()
 		latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
 			URL:                     published.URL,
 			Number:                  published.Number,
 			Branch:                  published.Branch,
 			Title:                   published.Title,
 			State:                   remediation.PRStateOpen,
+			OpenedAt:                &openedAt,
 			DesiredBlueprintVersion: desiredVersion,
 		}
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{

@@ -8,8 +8,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
+	"github.com/opsdevcode/repave/operator/internal/campaign"
 	"github.com/opsdevcode/repave/operator/internal/drift"
 	"github.com/opsdevcode/repave/operator/internal/inventory"
+	fleetmetrics "github.com/opsdevcode/repave/operator/internal/metrics"
 	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -81,10 +83,12 @@ func applyInventoryStatus(
 	}
 
 	result := inventory.EvaluateObservation(repo.Spec, desired, observed, repo.Status.Phase)
+	previousPhase := repo.Status.Phase
 	patchErr := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 		latest.Status.ObservedPins = result.Observed.ToObserved()
 		latest.Status.Phase = result.Phase
 		latest.Status.Message = result.Message
+		applyDriftTimestamps(latest, previousPhase, result.Phase)
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionDriftDetected,
 			Status:  result.DriftDetected,
@@ -119,4 +123,26 @@ func readyMessage(result inventory.ObservationResult) string {
 		return "inventory complete; remediation pending"
 	}
 	return result.Message
+}
+
+func applyDriftTimestamps(
+	repo *repavev1beta1.GoldenPathRepo,
+	previousPhase repavev1beta1.GoldenPathRepoPhase,
+	nextPhase repavev1beta1.GoldenPathRepoPhase,
+) {
+	switch {
+	case nextPhase == repavev1beta1.GoldenPathRepoPhaseOutOfDate &&
+		(previousPhase != repavev1beta1.GoldenPathRepoPhaseOutOfDate || repo.Status.DriftDetectedAt == nil):
+		now := metav1.Now()
+		repo.Status.DriftDetectedAt = &now
+	case nextPhase == repavev1beta1.GoldenPathRepoPhaseReady &&
+		previousPhase == repavev1beta1.GoldenPathRepoPhaseOutOfDate:
+		detectedAt := campaign.DriftDetectedTime(repo)
+		if !detectedAt.IsZero() {
+			mttr := time.Since(detectedAt).Seconds()
+			campaignName := repo.Labels[campaign.UpgradeCampaignLabel]
+			fleetmetrics.RecordRemediationMTTR(repo.Namespace, campaignName, mttr)
+		}
+		repo.Status.DriftDetectedAt = nil
+	}
 }

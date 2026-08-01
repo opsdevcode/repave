@@ -12,9 +12,14 @@ import (
 )
 
 const (
-	EventDriftDetected       = "drift_detected"
-	EventRemediationPROpened   = "remediation_pr_opened"
-	EventRemediationPRPlanned  = "remediation_pr_planned"
+	EventDriftDetected          = "drift_detected"
+	EventRemediationPROpened     = "remediation_pr_opened"
+	EventRemediationPRPlanned    = "remediation_pr_planned"
+	EventCampaignSummary         = "campaign_summary"
+	EventCampaignPaused          = "campaign_paused"
+	EventCampaignStopped         = "campaign_stopped"
+	EventCampaignResumed         = "campaign_resumed"
+	EventCampaignCapacityReached = "campaign_capacity_reached"
 )
 
 // Config holds webhook targets and enabled operator events (from environment).
@@ -42,8 +47,12 @@ func LoadConfig() Config {
 	events := parseEvents(os.Getenv("REPAVE_OPERATOR_NOTIFY_EVENTS"))
 	if len(events) == 0 {
 		events = map[string]struct{}{
-			EventDriftDetected:      {},
-			EventRemediationPROpened: {},
+			EventDriftDetected:           {},
+			EventRemediationPROpened:     {},
+			EventCampaignSummary:         {},
+			EventCampaignPaused:          {},
+			EventCampaignStopped:         {},
+			EventCampaignCapacityReached: {},
 		}
 	}
 
@@ -128,26 +137,62 @@ func formatSlackText(p Payload) string {
 
 func post(_ Config, url string, payload Payload, text string) {
 	for attempt := 0; attempt < 3; attempt++ {
-		body := encodeBody(url, payload, text)
-		req, err := http.NewRequest(http.MethodPost, url, body)
-		if err != nil {
-			log.Printf("operator notify: build request: %v", err)
+		if deliverOnce(url, encodeBody(url, payload, text)) {
 			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := httpClient.Do(req)
-		if err == nil && resp.StatusCode < 400 {
-			resp.Body.Close()
-			return
-		}
-		if resp != nil {
-			resp.Body.Close()
 		}
 		if attempt < 2 {
 			time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
 		}
 	}
 	log.Printf("operator notify: delivery failed for event %s", payload.Event)
+}
+
+// PostJSON delivers a JSON document to configured webhook targets (best-effort).
+func PostJSON(urls []string, document any, text string) {
+	for _, url := range urls {
+		for attempt := 0; attempt < 3; attempt++ {
+			if deliverOnce(url, encodeDocumentBody(url, document, text)) {
+				break
+			}
+			if attempt < 2 {
+				time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
+			}
+		}
+	}
+}
+
+func deliverOnce(url string, body io.Reader) bool {
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		log.Printf("operator notify: build request: %v", err)
+		return false
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
+	if err == nil && resp.StatusCode < 400 {
+		resp.Body.Close()
+		return true
+	}
+	if resp != nil {
+		resp.Body.Close()
+	}
+	return false
+}
+
+func encodeDocumentBody(url string, document any, text string) io.Reader {
+	switch {
+	case strings.Contains(url, "hooks.slack.com"):
+		return bytes.NewReader(mustJSON(map[string]string{"text": text}))
+	case strings.Contains(url, "webhook.office.com"):
+		return bytes.NewReader(mustJSON(map[string]string{
+			"@type":    "MessageCard",
+			"@context": "https://schema.org/extensions",
+			"summary":  "repave operator",
+			"text":     text,
+		}))
+	default:
+		return bytes.NewReader(mustJSON(document))
+	}
 }
 
 func encodeBody(url string, payload Payload, text string) io.Reader {
