@@ -136,6 +136,12 @@
                 {% endif %}
               {% endif %}
               <span class="badge badge--muted">{{ entity.source }}</span>
+              {% if entity.cost_badge %}
+              <span
+                class="badge badge--pass catalog-inventory__cost-badge"
+                title="{{ entity.cost_badge_detail }}"
+              >{{ entity.cost_badge }}</span>
+              {% endif %}
               {% for dim in entity.scorecard[:3] %}
               <span
                 class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}"

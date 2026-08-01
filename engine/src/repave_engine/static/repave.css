@@ -4732,6 +4732,7 @@ body.repave-busy {
 }
 
 .entity-cost__amount .badge,
-.result-cost-estimate__amount .badge {
+.result-cost-estimate__amount .badge,
+.catalog-inventory__cost-badge {
   margin-right: var(--space-2);
 }

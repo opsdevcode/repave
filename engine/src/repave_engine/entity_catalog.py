@@ -142,6 +142,8 @@ class CatalogEntity:
     manifest_namespace: str
     source: str
     scorecard: tuple[ScorecardDimension, ...] = field(default_factory=tuple)
+    cost_badge: str = ""
+    cost_badge_detail: str = ""
     readme_preview: str = ""
     last_generation_at: str = ""
     last_generation_outcome: str = ""
@@ -163,6 +165,8 @@ class CatalogEntity:
             "source": self.source,
             "last_generation_at": self.last_generation_at,
             "last_generation_outcome": self.last_generation_outcome,
+            "cost_badge": self.cost_badge,
+            "cost_badge_detail": self.cost_badge_detail,
             "scorecard": [
                 {"key": dim.key, "label": dim.label, "level": dim.level, "detail": dim.detail}
                 for dim in self.scorecard
