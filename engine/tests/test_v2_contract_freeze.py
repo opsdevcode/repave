@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import logging
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
-from repave_engine.api_deprecation import V1_DEPRECATION_HEADERS
+from repave_engine.api_deprecation import V1_DEPRECATION_HEADERS, V1_SUNSET_HTTP
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.settings import CONFIG_API_VERSION, _load_config_file
 
@@ -23,6 +24,13 @@ def test_api_v1_responses_include_deprecation_headers(repo_root, output_config) 
     assert v1.status_code == 200
     for key, value in V1_DEPRECATION_HEADERS.items():
         assert v1.headers.get(key) == value
+
+
+def test_v1_sunset_matches_published_migration_date() -> None:
+    sunset = parsedate_to_datetime(V1_SUNSET_HTTP)
+    assert sunset.year == 2027
+    assert sunset.month == 8
+    assert sunset.day == 1
 
 
 def test_api_v2_audit_query_parity(repo_root, output_config, tmp_path, monkeypatch) -> None:

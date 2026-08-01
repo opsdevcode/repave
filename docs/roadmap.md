@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.130.0  
 
-**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (conversational governed AI generation).
+**In progress:** [v2.0.0 Platform GA](#v200--platform-ga) (conversational governed AI generation).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
@@ -18,6 +18,8 @@ per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart
 **blueprint schema + version policy** ([`docs/blueprint-versioning.md`](blueprint-versioning.md));
 **Postgres DR runbook** ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md),
 `make postgres-dr-drill`, [`docs/operations/dr-drill-log.md`](operations/dr-drill-log.md));
+**v2 contract freeze docs** ([`docs/api-v1-migration.md`](api-v1-migration.md),
+[`docs/repave-config-v1.md`](repave-config-v1.md));
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
@@ -1839,11 +1841,11 @@ rather than after it:
 
 | Change | Migration | Status |
 | --- | --- | --- |
-| **`/api/v2`** is the stable HTTP surface; `/api/v1` deprecated with a published sunset | v1 clients get a documented deprecation window before removal | **Partial** — v2 read models shipped; v1 `Deprecation`/`Sunset` headers on `main` |
+| **`/api/v2`** is the stable HTTP surface; `/api/v1` deprecated with a published sunset | v1 clients get a documented deprecation window before removal | **Shipped** — [`docs/api-v1-migration.md`](api-v1-migration.md); v1 `Deprecation`/`Sunset` headers |
 | **`GoldenPathRepo` / `Blueprint`** promoted to `repave.dev/v1beta1` with frozen shapes | Conversion webhook plus a `kubectl`-level migration guide from `v1alpha1` | **Shipped** |
 | **`repave.yaml` provenance required** on every publish | Operator flags non-compliant repos instead of silently skipping them | **Shipped** — publish fails without valid `repave.yaml`; GPR `ProvenanceMissing` |
-| **`repave.config.yaml` gains `apiVersion`** | Config loader accepts the unversioned form for one minor with a warning | **Partial** — `repave.dev/v1` + warning shipped |
-| **Durable store required in service mode** (JSONL becomes export-only) | Documented external-database setup; local mode keeps the file store | **Partial** — startup validation shipped |
+| **`repave.config.yaml` gains `apiVersion`** | Config loader accepts the unversioned form for one minor with a warning | **Shipped** — [`docs/repave-config-v1.md`](repave-config-v1.md) |
+| **Durable store required in service mode** (JSONL becomes export-only) | Documented external-database setup; local mode keeps the file store | **Shipped** — [`docs/repave-config-v1.md`](repave-config-v1.md), startup validation |
 | **Blueprint JSON Schema frozen** for the v2 line; `metadata.version` policy documented | Template breaking changes must bump blueprint minor/major | **Shipped** — [`docs/blueprint-versioning.md`](blueprint-versioning.md) |
 
 ### Resilience and disaster recovery
