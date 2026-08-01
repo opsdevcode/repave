@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Run — {% if live_plan %}live plan{% elif bundle %}{{ bundle.name }}{% else %}{{ blueprint.name }}{% endif %} — repave{% endblock %}
+{% block title %}Run — {% if live_plan %}live plan{% elif environment_vend %}environment vend{% elif bundle %}{{ bundle.name }}{% else %}{{ blueprint.name }}{% endif %} — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
@@ -9,6 +9,12 @@
   {% if live_plan %}
   {% if live_plan_entity_id %}
   <a href="/services/{{ live_plan_entity_id }}">← {{ live_plan_entity_id }}</a>
+  {% else %}
+  <a href="/library">← Library</a>
+  {% endif %}
+  {% elif environment_vend %}
+  {% if environment_vend_entity_id %}
+  <a href="/services/{{ environment_vend_entity_id }}">← {{ environment_vend_entity_id }}</a>
   {% else %}
   <a href="/library">← Library</a>
   {% endif %}
@@ -30,6 +36,7 @@
   data-run-status="{{ run_record.status.value }}"
   data-result-url="/runs/{{ run_id }}/result"
   {% if live_plan %}data-live-plan="1"{% endif %}
+  {% if environment_vend %}data-environment-vend="1"{% endif %}
   aria-labelledby="run-console-heading"
 >
   <div class="card__header">
@@ -39,13 +46,21 @@
       Live plan against state
       {% if live_plan_entity_id %}· {{ live_plan_entity_id }}{% endif %}
       · <span class="badge badge--skip">Plan only</span>
+      {% elif environment_vend %}
+      Environment stack vend
+      {% if environment_vend_entity_id %}· {{ environment_vend_entity_id }}{% endif %}
+      {% if run_record.dry_run %}
+      · <span class="badge badge--skip">Gate preview</span>
+      {% else %}
+      · <span class="badge badge--pass">GitOps PR</span>
+      {% endif %}
       {% elif bundle %}
       {{ bundle.name }}@{{ bundle.version }}
       · <span class="badge badge--muted">Bundle</span>
       {% else %}
       {{ blueprint.name }}@{{ blueprint.version }}
       {% endif %}
-      {% if not live_plan %}
+      {% if not live_plan and not environment_vend %}
       {% if run_record.dry_run %}
       · <span class="badge badge--skip">Plan</span>
       {% else %}
@@ -60,7 +75,7 @@
         <div class="run-console__progress-bar" data-run-progress-bar style="width: 0%"></div>
       </div>
       <p class="run-console__progress-label hint" data-run-progress-label aria-live="polite">
-        {% if live_plan %}Waiting for live plan…{% else %}Waiting for gates…{% endif %}
+        {% if live_plan %}Waiting for live plan…{% elif environment_vend %}Waiting for environment vend…{% else %}Waiting for gates…{% endif %}
       </p>
     </div>
 
@@ -69,6 +84,13 @@
       <li class="run-console__stage" data-stage="checkout">Checkout target</li>
       <li class="run-console__stage" data-stage="plan">Terraform plan</li>
       <li class="run-console__stage" data-stage="policy">Policy evaluation</li>
+    </ol>
+    {% elif environment_vend %}
+    <ol class="run-console__stages" aria-label="Environment vend stages">
+      <li class="run-console__stage" data-stage="validate">Validate inputs</li>
+      <li class="run-console__stage" data-stage="render">Render stack</li>
+      <li class="run-console__stage" data-stage="gates">Run gates</li>
+      <li class="run-console__stage" data-stage="gitops">GitOps PR</li>
     </ol>
     {% else %}
     <ol class="run-console__stages" aria-label="Pipeline stages">

@@ -1142,29 +1142,53 @@
     var currentGate = "";
 
     var isLivePlan = root.getAttribute("data-live-plan") === "1";
+    var isEnvironmentVend = root.getAttribute("data-environment-vend") === "1";
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
+    var vendStages = isEnvironmentVend ? ["validate", "render", "gates", "gitops"] : [];
     var livePlanStageLabels = {
       checkout: "Checkout target",
       plan: "Terraform plan",
       policy: "Policy evaluation",
     };
+    var vendStageLabels = {
+      validate: "Validate inputs",
+      render: "Render stack",
+      gates: "Run gates",
+      gitops: "GitOps PR",
+    };
 
-    function countLivePlanDone() {
-      return livePlanStages.filter(function (stage) {
+    function countStagesDone(stages) {
+      return stages.filter(function (stage) {
         var el = root.querySelector('[data-stage="' + stage + '"]');
         return el && el.classList.contains("is-done");
       }).length;
     }
 
-    function livePlanActiveStage() {
+    function activeStageFrom(stages) {
       var idx;
-      for (idx = 0; idx < livePlanStages.length; idx += 1) {
-        var stageEl = root.querySelector('[data-stage="' + livePlanStages[idx] + '"]');
+      for (idx = 0; idx < stages.length; idx += 1) {
+        var stageEl = root.querySelector('[data-stage="' + stages[idx] + '"]');
         if (stageEl && stageEl.classList.contains("is-active")) {
-          return livePlanStages[idx];
+          return stages[idx];
         }
       }
       return "";
+    }
+
+    function countLivePlanDone() {
+      return countStagesDone(livePlanStages);
+    }
+
+    function livePlanActiveStage() {
+      return activeStageFrom(livePlanStages);
+    }
+
+    function countVendDone() {
+      return countStagesDone(vendStages);
+    }
+
+    function vendActiveStage() {
+      return activeStageFrom(vendStages);
     }
 
     function updateProgressBar() {
@@ -1193,6 +1217,27 @@
             progressLabel.textContent = "Waiting for live plan…";
           }
         }
+      } else if (isEnvironmentVend && vendStages.length) {
+        var vendDone = countVendDone();
+        var vendActive = vendActiveStage();
+        pct = vendActive
+          ? Math.round(((vendDone + 0.35) / vendStages.length) * 100)
+          : Math.round((vendDone / vendStages.length) * 100);
+        if (progressLabel) {
+          if (vendActive) {
+            progressLabel.textContent =
+              vendStageLabels[vendActive] +
+              " (" +
+              vendDone +
+              " of " +
+              vendStages.length +
+              " complete)";
+          } else if (vendDone >= vendStages.length) {
+            progressLabel.textContent = "Environment vend complete";
+          } else {
+            progressLabel.textContent = "Waiting for environment vend…";
+          }
+        }
       } else if (totalGates > 0) {
         pct = currentGate
           ? Math.round(((finishedGates + 0.35) / totalGates) * 100)
@@ -1208,7 +1253,11 @@
           }
         }
       } else if (progressLabel) {
-        progressLabel.textContent = isLivePlan ? "Waiting for live plan…" : "Waiting for gates…";
+        progressLabel.textContent = isLivePlan
+          ? "Waiting for live plan…"
+          : isEnvironmentVend
+            ? "Waiting for environment vend…"
+            : "Waiting for gates…";
       }
       pct = Math.max(0, Math.min(100, pct));
       if (progressBar) {
@@ -1281,6 +1330,10 @@
         appendLog("Stage: " + data.stage);
       } else if (data.kind === "stage_finished") {
         setStage(data.stage, "done");
+        if (isEnvironmentVend && data.stage === "gates") {
+          setStage("gitops", "active");
+          updateProgressBar();
+        }
       } else if (data.kind === "live_plan_started") {
         setStage("checkout", "done");
         setStage("plan", "active");
@@ -1303,6 +1356,26 @@
             " (" +
             (data.gates_outcome || "unknown") +
             ")"
+        );
+        updateProgressBar();
+      } else if (data.kind === "environment_vend_started") {
+        setStage("validate", "active");
+        appendLog(
+          "Environment vend started" +
+            (data.blueprint ? " (" + data.blueprint + ")" : "") +
+            (data.gitops_path ? " → " + data.gitops_path : "")
+        );
+        updateProgressBar();
+      } else if (data.kind === "environment_vend_finished") {
+        setStage("validate", "done");
+        setStage("render", "done");
+        setStage("gates", "done");
+        setStage("gitops", "done");
+        appendLog(
+          "Environment vend finished (" +
+            (data.gates_outcome || "unknown") +
+            ")" +
+            (data.pull_request_url ? " → " + data.pull_request_url : "")
         );
         updateProgressBar();
       } else if (data.kind === "gate_started") {
@@ -1351,6 +1424,19 @@
             setStage("checkout", "done");
             setStage("plan", "done");
             setStage("policy", "done");
+            updateProgressBar();
+            if (completeActions) {
+              completeActions.hidden = false;
+            }
+            return;
+          }
+          if (isEnvironmentVend || body.kind === "environment_vend") {
+            setStage("validate", "done");
+            setStage("render", "done");
+            setStage("gates", "done");
+            if (body.result && body.result.pull_request_url) {
+              setStage("gitops", "done");
+            }
             updateProgressBar();
             if (completeActions) {
               completeActions.hidden = false;
