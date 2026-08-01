@@ -62,7 +62,7 @@ def test_default_run_verifies_tls_for_every_downloader(tmp_path: Path) -> None:
 
     assert proc.returncode == 0, proc.stderr
     curl_calls = _lines(calls, "curl")
-    assert len(curl_calls) == 4  # terraform, tflint, conftest, helm
+    assert len(curl_calls) == 5  # terraform, tflint, conftest, infracost, helm
     assert all("-fsSL" in call for call in curl_calls)
     assert not any("--insecure" in call for call in curl_calls)
     assert _lines(calls, "ansible-galaxy")
@@ -82,6 +82,7 @@ def test_installer_download_urls_use_pins_file(tmp_path: Path) -> None:
     assert ci_toolchain.TFLINT_VERSION in curl_blob
     assert ci_toolchain.CONFTEST_VERSION in curl_blob
     assert ci_toolchain.HELM_VERSION in curl_blob
+    assert ci_toolchain.INFRACOST_VERSION in curl_blob
     uv_blob = "\n".join(_lines(calls, "uv"))
     assert ci_toolchain.CHECKOV_PIP_SPEC in uv_blob
 
@@ -91,7 +92,7 @@ def test_insecure_opt_in_relaxes_curl_galaxy_and_uv(tmp_path: Path) -> None:
 
     assert proc.returncode == 0, proc.stderr
     curl_calls = _lines(calls, "curl")
-    assert len(curl_calls) == 4
+    assert len(curl_calls) == 5
     assert all("--insecure" in call for call in curl_calls)
     assert all("--ignore-certs" in call for call in _lines(calls, "ansible-galaxy"))
     assert all("--allow-insecure-host" in call for call in _lines(calls, "uv"))

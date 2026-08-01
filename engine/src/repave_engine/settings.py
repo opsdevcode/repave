@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -409,11 +409,28 @@ def load_gate_overrides(repo_root: Path) -> GateOverrides:
 
 
 @dataclass(frozen=True)
+class CostAwsConfig:
+    tag_key_owner: str = "Owner"
+    tag_key_service: str = "Service"
+
+
+@dataclass(frozen=True)
+class CostAzureConfig:
+    subscription_id: str = ""
+    scope: str = ""
+    tag_key_owner: str = "Owner"
+    tag_key_service: str = "Service"
+
+
+@dataclass(frozen=True)
 class PortalConfig:
     density: str
     observability_dashboard_url: str = ""
     observability_slo_url: str = ""
+    cost_reader: str = ""
     cost_actuals_url: str = ""
+    cost_aws: CostAwsConfig = field(default_factory=CostAwsConfig)
+    cost_azure: CostAzureConfig = field(default_factory=CostAzureConfig)
 
 
 def load_portal_config(repo_root: Path) -> PortalConfig:
@@ -427,6 +444,29 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     obs_url = str(block.get("observability_dashboard_url", "")).strip()
     slo_url = str(block.get("observability_slo_url", "")).strip()
     cost_url = str(block.get("cost_actuals_url", "")).strip()
+    cost_reader = str(block.get("cost_reader", "")).strip().lower()
+    aws_block = block.get("cost_aws", {})
+    azure_block = block.get("cost_azure", {})
+    cost_aws = CostAwsConfig(
+        tag_key_owner=str(aws_block.get("tag_key_owner", "Owner")).strip() or "Owner"
+        if isinstance(aws_block, dict)
+        else "Owner",
+        tag_key_service=str(aws_block.get("tag_key_service", "Service")).strip() or "Service"
+        if isinstance(aws_block, dict)
+        else "Service",
+    )
+    cost_azure = CostAzureConfig(
+        subscription_id=str(azure_block.get("subscription_id", "")).strip()
+        if isinstance(azure_block, dict)
+        else "",
+        scope=str(azure_block.get("scope", "")).strip() if isinstance(azure_block, dict) else "",
+        tag_key_owner=str(azure_block.get("tag_key_owner", "Owner")).strip() or "Owner"
+        if isinstance(azure_block, dict)
+        else "Owner",
+        tag_key_service=str(azure_block.get("tag_key_service", "Service")).strip() or "Service"
+        if isinstance(azure_block, dict)
+        else "Service",
+    )
     env_obs = os.environ.get("REPAVE_OBSERVABILITY_DASHBOARD_URL", "").strip()
     if env_obs:
         obs_url = env_obs
@@ -436,11 +476,19 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     env_cost = os.environ.get("REPAVE_COST_ACTUALS_URL", "").strip()
     if env_cost:
         cost_url = env_cost
+    env_reader = os.environ.get("REPAVE_COST_READER", "").strip().lower()
+    if env_reader:
+        cost_reader = env_reader
+    if cost_reader not in ("", "url", "aws", "azure"):
+        raise ValueError("portal.cost_reader must be 'url', 'aws', or 'azure'")
     return PortalConfig(
         density=density,
         observability_dashboard_url=obs_url,
         observability_slo_url=slo_url,
+        cost_reader=cost_reader,
         cost_actuals_url=cost_url,
+        cost_aws=cost_aws,
+        cost_azure=cost_azure,
     )
 
 

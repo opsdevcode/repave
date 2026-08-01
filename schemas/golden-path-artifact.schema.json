@@ -145,7 +145,8 @@
               "properties": {
                 "terraform": { "type": "string" },
                 "tflint": { "type": "string" },
-                "checkov": { "type": "string" }
+                "checkov": { "type": "string" },
+                "infracost": { "type": "string" }
               }
             }
           }

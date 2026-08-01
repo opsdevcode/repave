@@ -17,9 +17,21 @@ output:
 #   observability_dashboard_url: "https://grafana.example.com/d/svc?var-service={name}"
 #   # JSON SLO summary URL (same placeholders). Response: status, slo_target, slo_current, detail.
 #   observability_slo_url: "https://slo-api.example.com/v1/services/{name}/summary"
-#   # JSON cost actuals URL (same placeholders). Response: currency, amount_30d, as_of, detail.
+#   # JSON cost actuals URL when cost_reader is url (same placeholders).
+#   # Response: currency, amount_30d, as_of, detail.
 #   cost_actuals_url: "https://cost-api.example.com/v1/services/{name}/summary"
-# Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL / REPAVE_COST_ACTUALS_URL.
+#   # Native readers (server-side, read-only; credentials from the host environment):
+#   # cost_reader: aws   # or azure | url (default url when cost_actuals_url is set)
+#   # cost_aws:
+#   #   tag_key_owner: Owner
+#   #   tag_key_service: Service
+#   # cost_azure:
+#   #   subscription_id: "00000000-0000-0000-0000-000000000000"
+#   #   scope: /subscriptions/00000000-0000-0000-0000-000000000000
+#   #   tag_key_owner: Owner
+#   #   tag_key_service: Service
+# Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL /
+# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER.
 
 # Optional hosted service authentication (OIDC). Local dev: leave disabled.
 # auth:

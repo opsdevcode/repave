@@ -68,7 +68,7 @@ from repave_engine.bundle_portal import (
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
-from repave_engine.cost_actuals import fetch_entity_cost_actuals
+from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
@@ -493,7 +493,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/library", response_class=HTMLResponse)
     async def library_page(request: Request, owner: str = "") -> HTMLResponse:
-        cost_configured = bool(portal_config.cost_actuals_url)
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+        )
         entities = build_portal_catalog_entities(
             repo_root,
             resolved_output,
@@ -530,7 +533,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/services/{entity_id}", response_class=HTMLResponse)
     async def service_detail_page(request: Request, entity_id: str) -> HTMLResponse:
-        cost_configured = bool(portal_config.cost_actuals_url)
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+        )
         entities = build_portal_catalog_entities(
             repo_root,
             resolved_output,
@@ -539,7 +545,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         entity = find_catalog_entity(entities, entity_id)
         if entity is None:
             raise HTTPException(status_code=404, detail="Entity not found")
-        cost_actuals = fetch_entity_cost_actuals(portal_config.cost_actuals_url, entity)
+        cost_actuals = fetch_entity_cost_actuals_for_portal(portal_config, entity)
         entity = replace(
             entity,
             scorecard=apply_cost_to_scorecard(

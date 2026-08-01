@@ -31,6 +31,13 @@ jobs:
 {% endif %}{% if needs_checkov %}
       - name: Install Checkov
         run: pip install "{{ checkov_spec }}"
+{% endif %}{% if needs_infracost %}
+      - name: Install Infracost
+        run: |
+          curl -sSL -o /tmp/infracost.tgz \
+            "https://github.com/infracost/cli/releases/download/v{{ infracost_version }}/infracost-linux-amd64.tar.gz"
+          tar xzf /tmp/infracost.tgz -C /usr/local/bin infracost
+          chmod +x /usr/local/bin/infracost
 {% endif %}{% if needs_yamllint %}
       - name: Install yamllint
         run: pip install yamllint
@@ -87,10 +94,16 @@ jobs:
 {% endif %}
       - name: Run golden path gates
         run: repave gates --path .
-{% if needs_datadog_api %}
+{% if needs_datadog_api or needs_infracost %}
         env:
+{% if needs_datadog_api %}
 {% raw %}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
 {% endraw %}
+{% endif %}{% if needs_infracost %}
+{% raw %}
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+{% endraw %}
+{% endif %}
 {% endif %}
