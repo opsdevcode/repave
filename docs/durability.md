@@ -28,6 +28,9 @@ When `database_url` is set, **audit**, **fleet**, **async runs**, and **OIDC ses
 share one database. JSONL paths remain optional **export mirrors** (`export_jsonl: true`,
 default).
 
+**Hosted service mode** (`auth.service_mode: true`) requires `database_url`; JSONL is
+export-only and must not be the sole store. See [`repave-config-v1.md`](repave-config-v1.md).
+
 With `database_url` configured, the portal stores auth session payloads in the `sessions`
 table and keeps only a signed session id in the browser cookie — so multiple portal
 replicas share login state without sticky sessions. `REPAVE_SESSION_SECRET` (or

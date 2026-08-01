@@ -14,6 +14,9 @@ is the front door; use this index when you need depth.
 | [Demo verification](demo-verification.md) | Maintainers / pre-release | Portal smoke checklist, screenshots, operator e2e |
 | [Concepts](concepts.md) | Everyone | Golden paths, blueprints, governance-by-construction, provenance |
 | [Blueprint versioning](blueprint-versioning.md) | Blueprint authors | v2 schema freeze, `metadata.version` semver policy |
+| [API v2](api-v2.md) | Integrators | Stable HTTP surface; v1 deprecation |
+| [API v1 migration](api-v1-migration.md) | Integrators | Sunset timeline and v1 → v2 endpoint map |
+| [repave.config v1](repave-config-v1.md) | Operators | Config `apiVersion`, hosted SQL, JSONL export mirrors |
 | [Module repositories](module-repositories.md) | Adopters | `REPAVE_MODULES_ROOT`, GitHub org, naming |
 | [Engine capabilities](engine-capabilities.md) | Platform engineers | Gates, CLI, blueprints, CI |
 | [Policy customization](../standards/policy/customization.md) | Platform / security | Profiles, catalog, portal, provenance, config floors |
@@ -46,7 +49,7 @@ is the front door; use this index when you need depth.
 
 | Doc | Contents |
 | --- | --- |
-| [Releases](releases.md) | semantic-release, Release workflow, maintainer tokens |
+| [Releases](releases.md) | semantic-release, roadmap ↔ semver alignment, Release workflow |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Commits, quality gate, local dev |
 
 ## Portal and CLI screenshots

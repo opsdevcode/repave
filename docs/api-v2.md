@@ -76,17 +76,21 @@ Unauthenticated `/api/v2/*` requests receive `401` JSON.
 - `Sunset: Sat, 01 Aug 2027 00:00:00 GMT` (planned removal on the v3 line)
 - `Link: </docs/api-v2>; rel="successor-version"`
 
-New integrations should use `/api/v2` only.
+New integrations should use `/api/v2` only. Full migration guide:
+[`docs/api-v1-migration.md`](api-v1-migration.md).
 
 ## Configuration
 
 Hosted service mode (`auth.service_mode: true`) requires `durability.database_url`
-(or `REPAVE_DATABASE_URL`). JSONL stores are export-only in that mode.
+(or `REPAVE_DATABASE_URL`). JSONL stores are export-only in that mode — see
+[`docs/repave-config-v1.md`](repave-config-v1.md).
 
 `repave.config.yaml` accepts `apiVersion: repave.dev/v1`. Unversioned config files
-log a deprecation warning at load time.
+log a deprecation warning at load time. Migration steps:
+[`docs/repave-config-v1.md`](repave-config-v1.md).
 
 ## Follow-ups
 
 - Service-to-service auth beyond optional `REPAVE_API_TOKEN` Bearer header
+- v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
 - Conversational governed AI generation (v2 must-have — see roadmap)

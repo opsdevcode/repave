@@ -76,6 +76,7 @@ gates:
 # Override path: REPAVE_FLEET_FILE, REPAVE_FLEET_OPERATOR_STATUS_FILE
 
 # Optional async generation queue (see docs/durability.md).
+# Hosted service mode (auth.service_mode) REQUIRES database_url — JSONL is export-only.
 # durability:
 #   async_generation: true
 #   max_concurrent_runs: 2

@@ -47,6 +47,12 @@ Authenticated identity is stored in the audit log (`acting_user`) via the sessio
 
 Public without auth: `/health`, `/readyz`, `/metrics`, `/static/*`, `/auth/*`.
 
+## Hosted mode requirements
+
+Service mode requires `durability.database_url` (or `REPAVE_DATABASE_URL`). JSONL audit
+and fleet paths are optional **export mirrors** when SQL is configured — not the primary
+store. Config shape and migration: [`repave-config-v1.md`](repave-config-v1.md).
+
 ## IdP examples
 
 **Okta / Auth0 / Entra:** set `issuer` to the issuer URL, map IdP groups to
