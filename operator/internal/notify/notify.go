@@ -20,6 +20,7 @@ const (
 	EventCampaignStopped         = "campaign_stopped"
 	EventCampaignResumed         = "campaign_resumed"
 	EventCampaignCapacityReached = "campaign_capacity_reached"
+	EventCampaignRateLimited     = "campaign_rate_limited"
 )
 
 // Config holds webhook targets and enabled operator events (from environment).
@@ -53,6 +54,7 @@ func LoadConfig() Config {
 			EventCampaignPaused:          {},
 			EventCampaignStopped:         {},
 			EventCampaignCapacityReached: {},
+			EventCampaignRateLimited:     {},
 		}
 	}
 

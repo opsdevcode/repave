@@ -72,6 +72,14 @@ type UpgradeCampaignStatus struct {
 	// +optional
 	ConsecutiveGateFailures int32 `json:"consecutiveGateFailures,omitempty"`
 
+	// GitHubRateLimitRemaining is the last observed REST quota for the installation.
+	// +optional
+	GitHubRateLimitRemaining *int32 `json:"githubRateLimitRemaining,omitempty"`
+
+	// GitHubRateLimitResetAt is when the REST quota resets (from X-RateLimit-Reset).
+	// +optional
+	GitHubRateLimitResetAt *metav1.Time `json:"githubRateLimitResetAt,omitempty"`
+
 	// Conditions describe operability of the campaign.
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`

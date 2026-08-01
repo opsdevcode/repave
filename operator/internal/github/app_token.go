@@ -164,6 +164,7 @@ func fetchInstallationToken(cfg *AppConfig) (string, time.Time, error) {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", time.Time{}, fmt.Errorf("GitHub API %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
+	DefaultRateLimitTracker().UpdateFromHeaders(resp.Header, cfg.InstallationID)
 	var parsed accessTokenResponse
 	if err := json.Unmarshal(body, &parsed); err != nil {
 		return "", time.Time{}, err

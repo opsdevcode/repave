@@ -210,6 +210,16 @@ spec:
                   while Active.
                 format: int32
                 type: integer
+              githubRateLimitRemaining:
+                description: GitHubRateLimitRemaining is the last observed REST quota
+                  for the installation.
+                format: int32
+                type: integer
+              githubRateLimitResetAt:
+                description: GitHubRateLimitResetAt is when the REST quota resets
+                  (from X-RateLimit-Reset).
+                format: date-time
+                type: string
               observedGeneration:
                 description: ObservedGeneration reflects the metadata.generation last
                   reconciled.

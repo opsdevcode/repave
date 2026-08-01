@@ -1,11 +1,9 @@
 package github
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -15,6 +13,15 @@ import (
 type HTTPClient struct {
 	Token      string
 	HTTPClient *http.Client
+	// BaseURL overrides the GitHub API host (tests only).
+	BaseURL string
+}
+
+func (c *HTTPClient) baseURL() string {
+	if strings.TrimSpace(c.BaseURL) != "" {
+		return strings.TrimRight(strings.TrimSpace(c.BaseURL), "/")
+	}
+	return "https://api.github.com"
 }
 
 func (c *HTTPClient) client() *http.Client {
@@ -32,10 +39,10 @@ type pullRequestPayload struct {
 }
 
 type pullRequestResponse struct {
-	Number int    `json:"number"`
+	Number  int    `json:"number"`
 	HTMLURL string `json:"html_url"`
-	Title  string `json:"title"`
-	State  string `json:"state"`
+	Title   string `json:"title"`
+	State   string `json:"state"`
 }
 
 func (c *HTTPClient) CreatePullRequest(
@@ -58,25 +65,15 @@ func (c *HTTPClient) CreatePullRequest(
 	}
 
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/%s/pulls",
+		"%s/repos/%s/%s/pulls",
+		c.baseURL(),
 		req.Repository.Owner,
 		req.Repository.Name,
 	)
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	resp, body, err := c.doGitHub(ctx, http.MethodPost, url, payload, token)
 	if err != nil {
-		return PullRequest{}, fmt.Errorf("build pull request: %w", err)
+		return PullRequest{}, err
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+token)
-	httpReq.Header.Set("Accept", "application/vnd.github+json")
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client().Do(httpReq)
-	if err != nil {
-		return PullRequest{}, fmt.Errorf("GitHub API request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return PullRequest{}, fmt.Errorf("GitHub API %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}
@@ -113,25 +110,16 @@ func (c *HTTPClient) addIssueLabels(
 		return fmt.Errorf("marshal labels: %w", err)
 	}
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/%s/issues/%d/labels",
+		"%s/repos/%s/%s/issues/%d/labels",
+		c.baseURL(),
 		repository.Owner,
 		repository.Name,
 		pullNumber,
 	)
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
+	resp, body, err := c.doGitHub(ctx, http.MethodPost, url, payload, token)
 	if err != nil {
-		return fmt.Errorf("build label request: %w", err)
+		return err
 	}
-	httpReq.Header.Set("Authorization", "Bearer "+token)
-	httpReq.Header.Set("Accept", "application/vnd.github+json")
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	resp, err := c.client().Do(httpReq)
-	if err != nil {
-		return fmt.Errorf("GitHub label API request: %w", err)
-	}
-	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("GitHub label API %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}

@@ -15,6 +15,7 @@ import (
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
 	"github.com/opsdevcode/repave/operator/internal/campaign"
 	fleetmetrics "github.com/opsdevcode/repave/operator/internal/metrics"
+	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/notify"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -49,6 +50,7 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	previousPhase := uc.Status.Phase
 	previousOutOfDate := uc.Status.OutOfDateCount
 	previousOpenPRs := uc.Status.OpenPRCount
+	previousRateLimitBlocked := campaignRateLimitBlocked(uc.Status.GitHubRateLimitRemaining)
 
 	phase := repavev1beta1.UpgradeCampaignPhaseActive
 	if uc.Spec.Paused {
@@ -66,6 +68,7 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	uc.Status.AverageRemediationMTTRSeconds = summary.AverageRemediationMTTRSeconds
 	uc.Status.ConsecutiveGateFailures = summary.ConsecutiveGateFailures
 	uc.Status.Phase = phase
+	rateLimitBlocked, rateLimitMessage, requeueAfter := applyGitHubRateLimitStatus(&uc.Status)
 
 	ready := metav1.ConditionTrue
 	reason := status.ReasonReconcileSuccess
@@ -79,6 +82,11 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		ready = metav1.ConditionFalse
 		reason = status.ReasonCampaignStopped
 		message = "campaign stopped after consecutive remediation failures"
+	}
+	if rateLimitBlocked && phase == repavev1beta1.UpgradeCampaignPhaseActive {
+		ready = metav1.ConditionFalse
+		reason = status.ReasonCampaignRateLimited
+		message = rateLimitMessage
 	}
 	status.SetGoldenPathRepoCondition(&uc.Status.Conditions, metav1.Condition{
 		Type:    repavev1beta1.UpgradeCampaignConditionReady,
@@ -99,9 +107,51 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		summary.OldestDriftAgeSeconds,
 		summary.OpenPRCount,
 	)
-	r.notifyCampaignChanges(&uc, summary, previousPhase, previousOutOfDate, previousOpenPRs)
+	r.notifyCampaignChanges(
+		&uc,
+		summary,
+		previousPhase,
+		previousOutOfDate,
+		previousOpenPRs,
+		rateLimitBlocked,
+		previousRateLimitBlocked,
+	)
 
+	if requeueAfter > 0 {
+		return ctrl.Result{RequeueAfter: requeueAfter}, nil
+	}
 	return ctrl.Result{}, nil
+}
+
+func applyGitHubRateLimitStatus(
+	status *repavev1beta1.UpgradeCampaignStatus,
+) (blocked bool, message string, requeueAfter time.Duration) {
+	installationID := github.CurrentInstallationID()
+	state, ok := github.DefaultRateLimitTracker().Snapshot(installationID)
+	if !ok {
+		status.GitHubRateLimitRemaining = nil
+		status.GitHubRateLimitResetAt = nil
+		return false, "", 0
+	}
+
+	remaining := int32(state.Remaining)
+	status.GitHubRateLimitRemaining = &remaining
+	resetAt := metav1.NewTime(state.ResetAt)
+	status.GitHubRateLimitResetAt = &resetAt
+
+	blocked, message = github.RateLimitGate()
+	if !blocked {
+		return false, "", 0
+	}
+	_, delay := github.DefaultRateLimitTracker().ShouldBackoff(installationID, github.MinRemainingFromEnv())
+	return true, message, delay
+}
+
+func campaignRateLimitBlocked(remaining *int32) bool {
+	if remaining == nil {
+		return false
+	}
+	return int(*remaining) < github.MinRemainingFromEnv()
 }
 
 func (r *UpgradeCampaignReconciler) summarize(
@@ -122,6 +172,8 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 	previousPhase string,
 	previousOutOfDate int32,
 	previousOpenPRs int32,
+	rateLimitBlocked bool,
+	previousRateLimitBlocked bool,
 ) {
 	switch {
 	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhasePaused &&
@@ -147,6 +199,15 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 			uc,
 			summary,
 			"campaign resumed; remediation PRs may open again",
+		)
+	}
+
+	if rateLimitBlocked && !previousRateLimitBlocked {
+		notify.SendCampaignEvent(
+			notify.EventCampaignRateLimited,
+			uc,
+			summary,
+			"GitHub REST rate limit low; deferring new remediation PRs",
 		)
 	}
 

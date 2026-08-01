@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
+	"github.com/opsdevcode/repave/operator/internal/github"
 	"github.com/opsdevcode/repave/operator/internal/remediation"
 	"github.com/opsdevcode/repave/operator/internal/status"
 )
@@ -33,6 +34,14 @@ func EvaluateRemediation(
 	c client.Client,
 	repo *repavev1beta1.GoldenPathRepo,
 ) (RemediationDecision, error) {
+	if blocked, message := github.RateLimitGate(); blocked {
+		return RemediationDecision{
+			Allowed: false,
+			Reason:  status.ReasonRemediationRateLimited,
+			Message: message,
+		}, nil
+	}
+
 	campaignName := strings.TrimSpace(repo.Labels[UpgradeCampaignLabel])
 	if campaignName == "" {
 		return RemediationDecision{Allowed: true}, nil
