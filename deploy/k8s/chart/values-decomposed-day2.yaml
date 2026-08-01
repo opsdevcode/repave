@@ -1,0 +1,65 @@
+# Production overlay: decomposed portal + worker + Postgres + day-2 operability.
+# Recommended hosted layout when gate execution runs on workers, not portal pods.
+#
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f values.yaml \
+#     -f values-decomposed-day2.yaml \
+#     --set repave.durability.databaseUrl=postgresql://... \
+#     --set secrets.existingSecret=repave-secrets
+#
+# Validate locally: make chart-validate (includes this overlay).
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 65
+
+repave:
+  durability:
+    enabled: true
+    databaseUrl: postgresql://repave:change-me@postgres.repave.svc:5432/repave
+    exportJsonl: false
+    workerMode: external
+    executionMode: worker
+    requireSessionSecret: true
+  audit:
+    enabled: true
+  auth:
+    serviceMode: true
+    oidc:
+      issuer: https://auth.example.com
+      clientId: repave
+      redirectUri: https://repave.example.com/auth/callback
+      groupsClaim: groups
+      roles:
+        admin: []
+        generator: []
+
+# Portal/API: no gate CLIs, no embedded corpus.
+image:
+  gateToolchain: false
+  repository: ghcr.io/opsdevcode/repave-engine-portal
+
+# Worker: gate toolchain image (corpus mounted separately).
+workerImage:
+  repository: ghcr.io/opsdevcode/repave-engine
+
+corpus:
+  enabled: true
+  repository: ghcr.io/opsdevcode/repave-corpus
+
+workerAutoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 65
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+  prometheusRules:
+    enabled: true
+
+shutdown:
+  readyRequireGithub: true

@@ -16,7 +16,10 @@ Assumes a single replica or shared run/session store when scaling — see
 
    ```bash
    make chart-smoke-decomposed
+   make chart-smoke-multi-replica
    ```
+
+   Production overlays: [`values-decomposed-day2.yaml`](../k8s/chart/values-decomposed-day2.yaml).
 
 2. **Pin the image by digest** in production overlays (not only `:latest`).
 

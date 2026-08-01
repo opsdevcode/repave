@@ -148,8 +148,9 @@ See [ADR 002](adr/002-v2-service-decomposition.md).
 previews rehydrate from **bounded `rendered_files` snapshots in `result_json`** (Postgres/SQLite)
 so portal and worker pods need no shared filesystem — see
 [ADR 002 addendum](adr/002-addendum-run-artifact-rehydrate.md). Optional S3-compatible storage
-(`durability.artifact_store_uri`) retains the full staging tree when configured. Example:
-[`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml).
+(`durability.artifact_store_uri`) retains the full staging tree when configured. Examples:
+[`values-decomposed.yaml`](../deploy/k8s/chart/values-decomposed.yaml) and the recommended
+production overlay [`values-decomposed-day2.yaml`](../deploy/k8s/chart/values-decomposed-day2.yaml).
 
 See [ADR 002](adr/002-v2-service-decomposition.md) and `.github/workflows/container.yml`.
 

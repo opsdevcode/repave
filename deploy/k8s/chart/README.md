@@ -89,7 +89,18 @@ helm upgrade --install repave ./deploy/k8s/chart \
 ```
 
 Pair with [`values-decomposed.yaml`](values-decomposed.yaml) when workers run in a separate
-Deployment (`repave.durability.workerMode: external`).
+Deployment (`repave.durability.workerMode: external`). For production hosted clusters, prefer
+[`values-decomposed-day2.yaml`](values-decomposed-day2.yaml) — it merges decomposed images,
+Postgres queue, worker HPA, monitoring hooks, and GitHub readiness checks.
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  -f deploy/k8s/chart/values.yaml \
+  -f deploy/k8s/chart/values-decomposed-day2.yaml \
+  --set repave.durability.databaseUrl=postgresql://... \
+  --set secrets.existingSecret=repave-secrets \
+  ...
+```
 
 | `shutdown.drainSeconds` | Async run drain before exit (`REPAVE_SHUTDOWN_DRAIN_SECONDS`) |
 | `shutdown.readyRequireGithub` | Fail `/readyz` when GitHub API unreachable (publish clusters) |

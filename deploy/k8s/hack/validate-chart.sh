@@ -19,10 +19,11 @@ decomposed_rendered="$(mktemp)"
 job_rendered="$(mktemp)"
 decomposed_smoke_rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
+decomposed_day2_rendered="$(mktemp)"
 multi_replica_rendered="$(mktemp)"
 worker_hpa_rendered="$(mktemp)"
 fleet_shared_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}"' EXIT
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -176,6 +177,37 @@ fi
 
 if ! grep -q 'RepaveAsyncRunFailureRateHigh' "${day2_rendered}"; then
   echo "PrometheusRule must include async run failure alert" >&2
+  exit 1
+fi
+
+helm template repave-decomposed-day2 "${CHART}" \
+  --namespace repave-decomposed-day2 \
+  -f "${CHART}/values-decomposed-day2.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${decomposed_day2_rendered}"
+
+if ! grep -q 'name: repave-decomposed-day2-worker' "${decomposed_day2_rendered}"; then
+  echo "values-decomposed-day2.yaml must render worker Deployment" >&2
+  exit 1
+fi
+
+if ! grep -q 'name: corpus-init' "${decomposed_day2_rendered}"; then
+  echo "values-decomposed-day2.yaml must render corpus initContainer" >&2
+  exit 1
+fi
+
+if ! grep -q 'repave.dev/gate-toolchain: "false"' "${decomposed_day2_rendered}"; then
+  echo "values-decomposed-day2.yaml must render portal without gate toolchain" >&2
+  exit 1
+fi
+
+if ! grep -q 'kind: ServiceMonitor' "${decomposed_day2_rendered}"; then
+  echo "values-decomposed-day2.yaml must render ServiceMonitor" >&2
+  exit 1
+fi
+
+if ! grep -q 'kind: HorizontalPodAutoscaler' "${decomposed_day2_rendered}"; then
+  echo "values-decomposed-day2.yaml must render portal and worker HPAs" >&2
   exit 1
 fi
 

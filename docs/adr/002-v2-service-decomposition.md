@@ -1,6 +1,6 @@
 # ADR 002: v2 service decomposition and repository strategy
 
-**Status:** Proposed (Phase 0–3 implemented; Phase 1 worker-mode contract enforced)
+**Status:** Accepted (Phase 0–4 implemented on `main`; optional portal/API Deployment split deferred)
 **Date:** 2026-07-29  
 **Scope:** engine, portal, operator, `deploy/k8s/chart` (v2.0.0 platform GA)
 
