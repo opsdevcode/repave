@@ -144,9 +144,18 @@ def ensure_schema(conn: SqlConnection) -> None:
     conn.commit()
 
 
-def _is_duplicate_column_error(exc: BaseException) -> bool:
-    message = str(exc).lower()
-    return "duplicate column" in message or "already exists" in message
+def _runs_column_exists(conn: SqlConnection, name: str) -> bool:
+    if conn.dialect == "sqlite":
+        rows = conn.execute("PRAGMA table_info(runs)").fetchall()
+        return any(row[1] == name for row in rows)
+    row = conn.execute(
+        """
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'runs' AND column_name = %s
+        """,
+        (name,),
+    ).fetchone()
+    return row is not None
 
 
 def _migrate_runs_columns(conn: SqlConnection) -> None:
@@ -155,11 +164,9 @@ def _migrate_runs_columns(conn: SqlConnection) -> None:
         ("attempt_count", "INTEGER NOT NULL DEFAULT 0"),
         ("next_attempt_at", "TEXT"),
     ):
-        try:
-            conn.execute(f"ALTER TABLE runs ADD COLUMN {name} {decl}")
-        except Exception as exc:
-            if not _is_duplicate_column_error(exc):
-                raise
+        if _runs_column_exists(conn, name):
+            continue
+        conn.execute(f"ALTER TABLE runs ADD COLUMN {name} {decl}")
 
 
 def _ensure_schema_sqlite(conn: SqlConnection) -> None:

@@ -162,6 +162,18 @@ Before `autoscaling.enabled` or `replicaCount` > 1, set `repave.durability.datab
 Prometheus Operator monitoring, and stricter readiness checks. Runbooks:
 [`docs/operations/README.md`](operations/README.md).
 
+## Backup and disaster recovery (PostgreSQL)
+
+When using PostgreSQL for hosted mode, back up the unified SQL store on a schedule and
+practice restore in non-production. Targets: **RPO ≤ 1 hour**, **RTO ≤ 4 hours** (see
+[postgres-backup-restore.md](operations/postgres-backup-restore.md)).
+
+- Logical backup: `pg_dump -Fc` against `REPAVE_DATABASE_URL`
+- Automated drill: `make postgres-dr-drill`
+- Record drills in [`docs/operations/dr-drill-log.md`](operations/dr-drill-log.md)
+
+JSONL export mirrors are optional; they do not replace database backup for recovery.
+
 ## API
 
 | Method | Path | Purpose |

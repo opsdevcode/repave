@@ -27,6 +27,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | `RepaveRunQueueBacklogHigh` | [Scale out](#scale-out) |
 | `RepaveJsonlAppendFailures` | [Stuck async queue](#stuck-async-queue) |
 | `RepaveHPAAtMaxReplicas` | [Scale out](#scale-out) (requires kube-state-metrics) |
+| Postgres data loss / restore | [postgres-backup-restore.md](postgres-backup-restore.md) |
 
 ## Runbooks
 
@@ -102,10 +103,18 @@ digest ([`docs/supply-chain.md`](../supply-chain.md)), `helm upgrade --wait`, an
 2. Avoid force-deleting pods during long runs; use graceful drain (see [Node drain](#node-drain--rollout)).
 3. After infra failure, replay from dead letter via the runs API.
 
+### Postgres backup and restore
+
+Follow [postgres-backup-restore.md](postgres-backup-restore.md): scheduled `pg_dump`,
+restore into a fresh database, update `databaseUrl`, and verify `/api/v1/runs` and audit APIs.
+Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md](dr-drill-log.md).
+
 ## Related
 
 - [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC and roles
 - [`docs/github-app-auth.md`](../github-app-auth.md) — GitHub App vs PAT for publish
 - [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
+- [`postgres-backup-restore.md`](postgres-backup-restore.md) — Postgres DR runbook
+- [`dr-drill-log.md`](dr-drill-log.md) — recorded backup/restore drills
 - [`crd-conversion-recovery.md`](crd-conversion-recovery.md) — operator CRD conversion drill

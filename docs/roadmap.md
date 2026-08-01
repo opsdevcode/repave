@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v1.130.0  
 
-**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (Postgres DR runbook).
+**In progress:** [v2.0.0 contract freeze](#v200--platform-ga) (conversational governed AI generation).
 **Shipped on `main`:** engine hardening group A (A1–A6) and **group B** maintainability (gate_runners
 package, API/CLI splits, gate helpers, Python 3.12 floor, provenance gate exceptions); durability Phase 1–3 (including
 **SQL OIDC sessions** when `database_url` is set); service decomposition Phase 0–4
@@ -16,6 +16,8 @@ per-run Kubernetes Jobs, decomposed chart CI smoke, **multi-replica portal chart
 `/api/v1` deprecation headers, `repave.config.yaml` `apiVersion`, hosted SQL requirement);
 **provenance required on publish** (engine publish gate + operator `ProvenanceMissing` status);
 **blueprint schema + version policy** ([`docs/blueprint-versioning.md`](blueprint-versioning.md));
+**Postgres DR runbook** ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md),
+`make postgres-dr-drill`, [`docs/operations/dr-drill-log.md`](operations/dr-drill-log.md));
 **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
 PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
@@ -1846,6 +1848,10 @@ rather than after it:
 
 ### Resilience and disaster recovery
 
+**Status:** **Shipped** on `main` — Postgres backup/restore runbook, automated local drill
+(`make postgres-dr-drill`), RPO/RTO targets, and [`docs/operations/dr-drill-log.md`](operations/dr-drill-log.md).
+Multi-region active/passive failover remains a follow-on.
+
 **Problem:** The hosted service has no documented recovery objective. The control plane
 (blueprints, standards, config, manifests) lives in git and is trivially re-deployable, but the
 durable store introduced for hosted mode is the first piece of state that can actually be lost.
@@ -1860,7 +1866,9 @@ durable store introduced for hosted mode is the first piece of state that can ac
 - Generated repos are unaffected by definition; recovery covers audit, fleet, and run history
 
 **Done when:** A recorded drill restores the service and its audit/fleet history within the
-documented objective.
+documented objective — see
+[`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md) and
+[`docs/operations/dr-drill-log.md`](operations/dr-drill-log.md) (`make postgres-dr-drill` baseline).
 
 **Non-goals for v2** — scoped in
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) or left in the
