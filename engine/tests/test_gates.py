@@ -360,3 +360,18 @@ def test_provenance_drift_fails_when_file_missing(tmp_path: Path, repo_root: Pat
 
     assert results[0].passed is False
     assert "Provenance file missing" in results[0].message
+
+
+def test_provenance_drift_fails_on_invalid_yaml(tmp_path: Path, repo_root: Path) -> None:
+    root = _seed_mini_repo(tmp_path, repo_root)
+    blueprint = make_blueprint(
+        root,
+        create_template=False,
+        provenance_file="repave.yaml",
+    )
+    (tmp_path / "repave.yaml").write_text("apiVersion: [\n", encoding="utf-8")
+
+    results = run_gates(tmp_path, ("provenance-drift",), blueprint=blueprint)
+
+    assert results[0].passed is False
+    assert results[0].skipped is False

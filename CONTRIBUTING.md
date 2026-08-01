@@ -87,7 +87,7 @@ Every **`.py`** file in this repository follows the same conventions — not onl
 
 | Resource | Purpose |
 | --- | --- |
-| [`.cursor/rules/python-standards.mdc`](.cursor/rules/python-standards.mdc) | Ruff, mypy, pytest, modern 3.10+ idioms |
+| [`.cursor/rules/python-standards.mdc`](.cursor/rules/python-standards.mdc) | Ruff, mypy, pytest, modern 3.12+ idioms |
 | [`.cursor/rules/python-security.mdc`](.cursor/rules/python-security.mdc) | Subprocess, secrets, safe parsing, HTTP, dependencies |
 | [`.cursor/skills/repave-python/SKILL.md`](.cursor/skills/repave-python/SKILL.md) | Local workflow, CI alignment, check commands |
 | [`.cursor/skills/repave-python/reference.md`](.cursor/skills/repave-python/reference.md) | Detailed patterns and checklists |
