@@ -13,6 +13,7 @@ Stable JSON HTTP surface introduced for [service decomposition Phase 3](adr/002-
 | --- | --- | --- | --- |
 | `POST` | `/api/v2/generate` | generator, admin | Sync by default; pass `"async": true` to enqueue |
 | `POST` | `/api/v2/runs` | generator, admin | Async generation (202 + run record) |
+| `GET` | `/api/v2/runs` | viewer+ | List recent runs (`status`, `limit` query params) |
 | `GET` | `/api/v2/runs/{run_id}` | viewer+ | Poll run status |
 | `GET` | `/api/v2/runs/{run_id}/events` | viewer+ | SSE progress stream |
 | `POST` | `/api/v2/runs/{run_id}/replay` | admin | Requeue failed/dead-letter runs |

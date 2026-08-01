@@ -95,3 +95,34 @@ def test_list_runs_filters_by_status(async_client) -> None:
                 return
             time.sleep(0.05)
         pytest.fail("run did not appear in succeeded list")
+
+
+def test_runs_index_lists_recent_runs(async_client) -> None:
+    fake = {
+        "blueprint": "terraform-module-generic",
+        "gates_outcome": "passed",
+        "gates_passed": True,
+        "gates": [],
+        "rendered_files": 0,
+        "output_dir": "/tmp/out",
+    }
+    with patch("repave_engine.run_queue.run_generate_api", return_value=fake):
+        submit = async_client.post(
+            "/api/v1/runs",
+            json={
+                "blueprint": "terraform-module-generic",
+                "inputs": {"module_name": "demo"},
+                "dry_run": True,
+                "client_request_id": f"portal-runs-{uuid.uuid4()}",
+            },
+        )
+        assert submit.status_code == 202
+        run_id = submit.json()["run_id"]
+        deadline = time.time() + 5.0
+        while time.time() < deadline:
+            body = async_client.get("/runs").text
+            if run_id in body and "Async runs" in body:
+                assert "terraform-module-generic" in body
+                return
+            time.sleep(0.05)
+        pytest.fail("run did not appear on /runs index")

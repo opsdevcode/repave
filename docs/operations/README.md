@@ -72,7 +72,7 @@ digest, `helm upgrade --wait`, and `helm rollback`.
 1. Check portal, `/api/v1/runs`, or audit JSONL for `gates_outcome=failed`.
 2. Open the result gate excerpt or re-run with `--dry-run` via CLI.
 3. Confirm gate tools exist in the image (`repave doctor --strict` in the container).
-4. Replay dead-letter runs: `POST /api/v1/runs/{id}/replay` (admin).
+4. Replay dead-letter runs: `POST /api/v1/runs/{id}/replay` (admin) or portal **`/runs`** → Replay.
 
 ### Slow generations
 

@@ -171,6 +171,9 @@ Prometheus Operator monitoring, and stricter readiness checks. Runbooks:
 | `POST` | `/api/v1/runs/{run_id}/replay` | Requeue `failed` / `dead_letter` runs (admin) |
 | `POST` | `/api/v1/generate` | Pass `"async": true` when durability is enabled |
 
+Portal: **`/runs`** lists recent async jobs with status filter and admin replay for
+dead-letter rows; **`/runs/{id}`** is the live run console.
+
 **Idempotency:** `client_request_id` or `Idempotency-Key` header dedupes run enqueue.
 Publish idempotency extends through GitHub publish: when a worker retries the same gated
 output for the same target repository, the engine reuses the stored `pr_message` from

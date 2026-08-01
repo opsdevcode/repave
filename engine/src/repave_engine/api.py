@@ -295,6 +295,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             {"kind": "nav", "label": "Activity", "href": "/activity"},
             {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
         ]
+        if run_queue is not None:
+            items.insert(
+                len(items) - 1,
+                {"kind": "nav", "label": "Async runs", "href": "/runs"},
+            )
         for blueprint in list_blueprints(blueprints_dir(repo_root)):
             items.append(
                 {
@@ -857,6 +862,57 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 **outcome.context,
             ),
         )
+
+    def _user_can_replay_runs(request: Request) -> bool:
+        if auth_config is None or not auth_config.service_enabled:
+            return True
+        user = session_user(request)
+        return user is not None and user.role == ROLE_ADMIN
+
+    @app.get("/runs", response_class=HTMLResponse)
+    async def runs_index(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        status_raw = request.query_params.get("status", "").strip().lower()
+        status_filter: RunStatus | None = None
+        if status_raw:
+            try:
+                status_filter = RunStatus(status_raw)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid status filter: {status_raw}",
+                ) from exc
+        runs = run_queue.list_runs(status=status_filter, limit=50)
+        return templates.TemplateResponse(
+            request,
+            "runs_index.html",
+            page_context(
+                request,
+                nav_active="runs",
+                runs=runs,
+                status_filter=status_raw,
+                can_replay_runs=_user_can_replay_runs(request),
+            ),
+        )
+
+    @app.post("/runs/{run_id}/replay")
+    async def runs_replay(run_id: str, request: Request) -> RedirectResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_ADMIN)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        try:
+            run_queue.replay(run_id)
+        except KeyError as exc:
+            raise HTTPException(status_code=404, detail="Run not found") from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return RedirectResponse(f"/runs/{run_id}", status_code=303)
 
     @app.get("/runs/{run_id}", response_class=HTMLResponse)
     async def run_console(run_id: str, request: Request) -> HTMLResponse:

@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from unittest.mock import patch
 
+import pytest
+
 from repave_engine.publish_idempotency import PublishIdempotencyStore
 from repave_engine.run_queue import RunQueue, RunQueueConfig
 from repave_engine.run_store import RunStatus, RunStore
@@ -138,4 +140,45 @@ def test_run_queue_dispatches_job_on_submit(tmp_path) -> None:
         acting_user="tester",
     )
     assert dispatched == [record.run_id]
+    queue.close()
+
+
+def test_run_queue_dead_letters_after_infrastructure_retries(tmp_path) -> None:
+    store = RunStore(tmp_path / "runs.sqlite")
+    output = OutputConfig(
+        github_org="example",
+        modules_root=tmp_path / "modules",
+    )
+    queue = RunQueue(
+        repo_root=tmp_path,
+        output_config=output,
+        store=store,
+        config=RunQueueConfig(
+            max_concurrent_runs=1,
+            queue_max_depth=4,
+            max_attempts=2,
+            retry_base_seconds=1,
+        ),
+    )
+
+    def boom(**kwargs):  # type: ignore[no-untyped-def]
+        raise RuntimeError("worker infra failure")
+
+    with patch("repave_engine.run_queue.run_generate_api", side_effect=boom):
+        record = queue.submit(
+            blueprint_name="terraform-module-generic",
+            inputs={"module_name": "demo"},
+            dry_run=True,
+            acting_user="tester",
+        )
+        run_id = record.run_id
+        deadline = time.time() + 10.0
+        while time.time() < deadline:
+            terminal = store.get(run_id)
+            if terminal is not None and terminal.status == RunStatus.DEAD_LETTER:
+                assert "worker infra failure" in (terminal.error or "")
+                break
+            time.sleep(0.05)
+        else:
+            pytest.fail("run did not reach dead_letter")
     queue.close()

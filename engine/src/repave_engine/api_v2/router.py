@@ -40,6 +40,7 @@ from repave_engine.repo_import import (
 )
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
+from repave_engine.run_store import RunStatus
 from repave_engine.settings import OutputConfig
 from repave_engine.upgrade_api import (
     UpgradeTargetError,
@@ -52,6 +53,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2",
     "POST /api/v2/generate",
     "POST /api/v2/runs",
+    "GET /api/v2/runs",
     "GET /api/v2/runs/{run_id}",
     "POST /api/v2/runs/{run_id}/replay",
     "GET /api/v2/runs/{run_id}/events",
@@ -193,6 +195,36 @@ def build_api_v2_router(
         except RunQueueShuttingDownError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         return JSONResponse(record.to_public_dict(), status_code=202)
+
+    @router.get("/runs")
+    async def api_v2_runs_list(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        queue = _run_queue(request)
+        if queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        status_raw = request.query_params.get("status", "").strip().lower()
+        limit_raw = request.query_params.get("limit", "50").strip()
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="limit must be an integer") from exc
+        status_filter: RunStatus | None = None
+        if status_raw:
+            try:
+                status_filter = RunStatus(status_raw)
+            except ValueError as exc:
+                valid = ", ".join(item.value for item in RunStatus)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"status must be one of: {valid}",
+                ) from exc
+        records = queue.list_runs(status=status_filter, limit=limit)
+        return JSONResponse(
+            {
+                "count": len(records),
+                "runs": [record.to_public_dict() for record in records],
+            }
+        )
 
     @router.get("/runs/{run_id}")
     async def api_v2_runs_get(run_id: str, request: Request) -> JSONResponse:

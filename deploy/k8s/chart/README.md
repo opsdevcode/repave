@@ -96,6 +96,7 @@ Deployment (`repave.durability.workerMode: external`).
 | `monitoring.serviceMonitor` | Prometheus Operator scrape of `/metrics` |
 | `monitoring.prometheusRules` | Alert rules with runbook URLs (generation, async, queue, JSONL) |
 | `repave.durability.*` | Async run queue + SQLite at `runsDb` (default **on** for chart) |
+| `repave.durability.maxRunAttempts` / `runStaleSeconds` / `runRetryBaseSeconds` | Retry backoff and stale-run reclaim (see `docs/durability.md`) |
 | `workerImage.*` | Gate-toolchain image for external worker Deployment or per-run Jobs (defaults to `repave-engine`) |
 | `repave.durability.workerMode` | `inline` (default), `external` (worker Deployment), or `job` (one Job per run — see `values-decomposed-job.yaml`) |
 | `workerAutoscaling.enabled` | HPA on the external worker Deployment (omit static `workerReplicas` when enabled) |
