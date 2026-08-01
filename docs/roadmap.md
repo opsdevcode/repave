@@ -139,7 +139,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Brownfield onboarding** | shipped (Phase 1–3) | `repave import` + batch portal/API; per-file overrides; trees-API preview; GitHub rate-limit backoff for fleet-scale REST |
 | **Hardening** | shipped (groups A–B) | Group A: toolchain pins, subprocess timeouts, coverage gate, docs; group B: gate_runners package, API/CLI splits, Python 3.12 floor |
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
-| **Service decomposition** | partial (Phase 1–2b shipped) | Split images, corpus mount, worker Deployment; sync generate blocked in worker mode |
+| **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
 | **Supply chain** | partial (GitHub App + governed PR shipped) | Digest-pinned GitHub Actions and base images; chart `image.digest` support |
 | **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
@@ -1720,26 +1720,16 @@ shape locks in the coupling.
 **Approach:** roles of one codebase, not separate codebases — the full loop must still run on a
 laptop. Design in [ADR 002](adr/002-v2-service-decomposition.md).
 
-**Status (Phase 0–4):** **Phase 0–2b shipped on `main`** — split portal/worker/corpus images,
-bounded run-record snapshots, optional S3 artifact store. **Phase 1 shipped on `main`** —
-Postgres claim queue, worker Deployment, `execution_mode: worker`, and API/portal enqueue-only
-(no in-request gate execution when worker mode is active). **Phase 3 shipped on `main`** —
-`/api/v2`, slim operator HTTP client (`REPAVE_API_URL`), **`repave.dev/v1beta1` storage**
-with conversion webhook, and e2e conversion assertions — see
-[`docs/operator-crd-v1beta1-migration.md`](operator-crd-v1beta1-migration.md) and
-[`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md).
-**Phase 4 shipped on `main`** — `worker_mode: job` spawns a Kubernetes Job per run; see
-[`values-decomposed-job.yaml`](../../deploy/k8s/chart/values-decomposed-job.yaml). **Decomposed
-chart CI smoke shipped on `main`** — `make chart-smoke-decomposed` /
-[`chart-smoke-decomposed.sh`](../../deploy/k8s/hack/chart-smoke-decomposed.sh). **Multi-replica
-portal chart smoke shipped on `main`** — `make chart-smoke-multi-replica` /
-[`chart-smoke-multi-replica.sh`](../../deploy/k8s/hack/chart-smoke-multi-replica.sh).
+**Status:** **Shipped on `main` (Phase 0–4)** — split portal/worker/corpus images,
+Postgres claim queue, worker Deployment and per-run Jobs, `/api/v2` operator HTTP,
+`repave.dev/v1beta1` CRDs, decomposed and multi-replica chart CI smoke. **Still open:**
+optional separate portal vs API Deployments when scaling profiles diverge (see Phase 4 note).
 
 - **Phase 0 (no split visible):** Postgres store for runs, audit, fleet, and sessions
   ([durability](#durability-and-concurrency-for-hosted-use) Phase 2); subprocess timeouts
   ([A2](#a2--subprocess-timeouts-on-every-gate-and-git-invocation)); unified toolchain pins
-  ([A1](#a1--one-source-of-truth-for-gate-toolchain-pins)); build and push digest-pinned images
-  from CI, which publishes wheels but **no container images** today
+  ([A1](#a1--one-source-of-truth-for-gate-toolchain-pins)); digest-pinned container images
+  published from CI ([`.github/workflows/container.yml`](../../.github/workflows/container.yml))
 - **Phase 1:** replace the in-process `ThreadPoolExecutor` in `run_queue.py` with a
   Postgres-backed queue (`FOR UPDATE SKIP LOCKED`); add a `worker` role and chart Deployment
   behind `execution.mode: inprocess | worker`; the API stops running gates in-request

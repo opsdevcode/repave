@@ -43,7 +43,8 @@ See [Upgrade and rollback](upgrade-and-rollback.md) for Helm steps.
 
 1. Configure shared SQL durability (`repave.durability.databaseUrl`) and
    `secrets.sessionSecret` before `autoscaling.enabled` or `replicaCount` > 1.
-2. For decomposed deploys, use `values-decomposed.yaml` with an external worker Deployment
+2. For decomposed deploys, use [`values-decomposed-day2.yaml`](../../deploy/k8s/chart/values-decomposed-day2.yaml)
+   (or `values-decomposed.yaml` for a slimmer overlay) with an external worker Deployment
    and Postgres; validate with `make chart-smoke-decomposed` or
    `make chart-smoke-multi-replica` when scaling portal replicas.
 3. Watch HPA: `kubectl get hpa -n repave`
@@ -57,7 +58,9 @@ digest, `helm upgrade --wait`, and `helm rollback`.
 ### Readiness failures
 
 1. `kubectl exec` → `curl -s localhost:8088/readyz | jq` and inspect `checks`.
-2. **`gate_tools: false`** — wrong image variant; use gate-toolchain build or `image.gateToolchain: true`.
+2. **`gate_tools: false`** on portal pods is expected when `image.gateToolchain: false`
+   (decomposed layout); workers carry the gate toolchain. On monolithic installs, use the
+   gate-toolchain image or `image.gateToolchain: true`.
 3. **`runs_db_writable: false`** — PVC mount or permissions on `/data/runs`.
 4. **`session_store: false`** — SQL session store unreachable when `databaseUrl` is set;
    verify Postgres connectivity and credentials.
