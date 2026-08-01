@@ -53,7 +53,7 @@ See [Upgrade and rollback](upgrade-and-rollback.md) for Helm steps.
 ### Upgrade / rollback
 
 Follow [upgrade-and-rollback.md](upgrade-and-rollback.md): pre-upgrade `make chart-smoke`, pinned
-digest, `helm upgrade --wait`, and `helm rollback`.
+digest ([`docs/supply-chain.md`](../supply-chain.md)), `helm upgrade --wait`, and `helm rollback`.
 
 ### Readiness failures
 

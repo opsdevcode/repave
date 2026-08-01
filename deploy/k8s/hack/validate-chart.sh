@@ -20,10 +20,11 @@ job_rendered="$(mktemp)"
 decomposed_smoke_rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
 decomposed_day2_rendered="$(mktemp)"
+digest_rendered="$(mktemp)"
 multi_replica_rendered="$(mktemp)"
 worker_hpa_rendered="$(mktemp)"
 fleet_shared_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}"' EXIT
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -208,6 +209,33 @@ fi
 
 if ! grep -q 'kind: HorizontalPodAutoscaler' "${decomposed_day2_rendered}"; then
   echo "values-decomposed-day2.yaml must render portal and worker HPAs" >&2
+  exit 1
+fi
+
+helm template repave-digest "${CHART}" \
+  --namespace repave-digest \
+  -f "${CHART}/values-decomposed.yaml" \
+  -f "${CHART}/values-digest-pinned.yaml" \
+  --set repave.output.githubOrg=example-org \
+  --set image.repository=ghcr.io/example/repave-engine-portal \
+  --set image.digest=sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+  --set workerImage.repository=ghcr.io/example/repave-engine \
+  --set workerImage.digest=sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb \
+  --set corpus.digest=sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc \
+  >"${digest_rendered}"
+
+if ! grep -q 'image: ghcr.io/example/repave-engine-portal@sha256:aaaaaaaa' "${digest_rendered}"; then
+  echo "image.digest must render portal image as repository@digest" >&2
+  exit 1
+fi
+
+if ! grep -q 'image: ghcr.io/example/repave-engine@sha256:bbbbbbbb' "${digest_rendered}"; then
+  echo "workerImage.digest must render worker image as repository@digest" >&2
+  exit 1
+fi
+
+if ! grep -q 'image: ghcr.io/opsdevcode/repave-corpus@sha256:cccccccc' "${digest_rendered}"; then
+  echo "corpus.digest must render corpus initContainer as repository@digest" >&2
   exit 1
 fi
 

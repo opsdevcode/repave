@@ -112,6 +112,7 @@ helm upgrade --install repave ./deploy/k8s/chart \
 | `repave.durability.workerMode` | `inline` (default), `external` (worker Deployment), or `job` (one Job per run — see `values-decomposed-job.yaml`) |
 | `workerAutoscaling.enabled` | HPA on the external worker Deployment (omit static `workerReplicas` when enabled) |
 | `corpus.*` | Mount digest-pinned corpus OCI artifact (Phase 2 decomposition) |
+| `image.digest` / `workerImage.digest` / `corpus.digest` | Render `repository@digest` instead of `:tag` — see [`values-digest-pinned.yaml`](values-digest-pinned.yaml) and [`docs/supply-chain.md`](../../../docs/supply-chain.md) |
 | `repave.durability.artifactStoreUri` | Optional S3-compatible store for full staging-tree retention (previews default in run record) |
 | `persistence.runs` | PVC for `/data/runs` (use `emptyDir` when `enabled: false`) |
 

@@ -1,0 +1,22 @@
+# Supply-chain overlay: pin portal, worker, and corpus images by digest.
+# When digest is set, tag is ignored (see templates/_helpers.tpl).
+#
+# Resolve digests from GHCR before deploy:
+#   crane digest ghcr.io/opsdevcode/repave-engine:v1.126.0
+#
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f values.yaml \
+#     -f values-decomposed-day2.yaml \
+#     -f values-digest-pinned.yaml \
+#     --set image.digest=sha256:... \
+#     --set workerImage.digest=sha256:... \
+#     --set corpus.digest=sha256:...
+
+image:
+  digest: "" # portal/API image — set via --set or secrets overlay
+
+workerImage:
+  digest: "" # gate-toolchain worker
+
+corpus:
+  digest: "" # generation corpus OCI artifact (when corpus.enabled)

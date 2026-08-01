@@ -33,6 +33,7 @@ is the front door; use this index when you need depth.
 | [Operator standards](operator-standards.md) | CRD and controller conventions |
 | [Operations](operations/README.md) | Metrics, audit, k8s starter manifests |
 | [Auth service mode](auth-service-mode.md) | OIDC, roles, session config |
+| [Supply chain](supply-chain.md) | SHA-pinned Actions, digest-pinned images, Helm `image.digest` |
 
 ## Integrations
 
