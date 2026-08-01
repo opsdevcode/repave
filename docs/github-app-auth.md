@@ -12,6 +12,7 @@ instead of a long-lived personal access token (PAT).
 | `GITHUB_APP_INSTALLATION_ID` | Installation ID for the target org/account |
 | `GITHUB_APP_PRIVATE_KEY` | PEM private key (`\\n` escapes allowed inline) |
 | `GITHUB_APP_PRIVATE_KEY_FILE` | Path to PEM file (alternative to inline key) |
+| `REPAVE_GITHUB_RATE_LIMIT_MIN_REMAINING` | Proactive REST backoff threshold (default `50`; matches engine) |
 
 **Precedence:** explicit CLI/API token → `GITHUB_TOKEN` → minted installation token.
 
@@ -47,3 +48,13 @@ Set the same env vars on the operator Deployment. Remediation and remote invento
 clone resolve a fresh installation token on each reconcile (cached until expiry).
 
 PAT remains supported for `make operator-e2e` and local development.
+
+## Rate-limit parity
+
+The operator tracks `X-RateLimit-*` headers on GitHub REST responses (installation
+token mint, pull request create, label attach). When remaining quota drops below
+`REPAVE_GITHUB_RATE_LIMIT_MIN_REMAINING`, remediation PRs defer and
+`UpgradeCampaign` status reports `githubRateLimitRemaining` / `githubRateLimitResetAt`
+with a `CampaignRateLimited` condition. HTTP `429` responses retry with
+`Retry-After` backoff (same spirit as the engine `github_rate_limit` module).
+Campaign webhooks emit `campaign_rate_limited` when the gate engages.
