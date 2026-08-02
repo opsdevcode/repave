@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from repave_engine.environment_record import (
     EnvironmentRecord,
@@ -25,7 +25,13 @@ from repave_engine.environment_registry import (
 )
 from repave_engine.environment_vend import _commit_gitops_tree
 from repave_engine.git_clone import FULL_DEPTH, CloneError, shallow_clone
-from repave_engine.github import add_pull_request_labels, create_github_pull_request
+from repave_engine.github import (
+    GitHubError,
+    add_pull_request_labels,
+    create_github_pull_request,
+    get_pull_request,
+)
+from repave_engine.github_inventory import GitHubInventoryError, parse_github_repository
 from repave_engine.pr_conventions import branch_name, load_pull_request_conventions
 from repave_engine.repo_import import preflight_import, push_import_branch
 from repave_engine.settings import EnvironmentVendingConfig
@@ -35,6 +41,9 @@ logger = logging.getLogger(__name__)
 
 MODE_AUTO_RECLAIM = "auto_reclaim"
 MODE_DECOMMISSION_REVIEW = "decommission_review"
+MODE_REGISTRY_FINALIZE = "registry_finalize"
+
+PullRequestMergeState = Literal["merged", "open", "closed", "unknown"]
 
 
 class EnvironmentReclaimError(RuntimeError):
@@ -90,6 +99,9 @@ class EnvironmentReclaimSummary:
                 1
                 for item in self.results
                 if item.mode == MODE_DECOMMISSION_REVIEW and not item.skipped
+            ),
+            "finalized": sum(
+                1 for item in self.results if item.mode == MODE_REGISTRY_FINALIZE and item.reclaimed
             ),
             "skipped": sum(1 for item in self.results if item.skipped),
             "results": [item.to_public_dict() for item in self.results],
@@ -197,6 +209,148 @@ def list_expired_environments_for_decommission_review(
             continue
         eligible.append(record)
     return tuple(sorted(eligible, key=lambda item: item.stack_name))
+
+
+def list_pending_decommission_reviews(
+    records: Sequence[EnvironmentRecord],
+    *,
+    stack_name: str | None = None,
+) -> tuple[EnvironmentRecord, ...]:
+    eligible: list[EnvironmentRecord] = []
+    for record in records:
+        if stack_name and record.stack_name != stack_name.strip():
+            continue
+        if has_open_decommission_review(record):
+            eligible.append(record)
+    return tuple(sorted(eligible, key=lambda item: item.stack_name))
+
+
+def resolve_decommission_pull_request_state(
+    record: EnvironmentRecord,
+    *,
+    github_token: str,
+) -> PullRequestMergeState:
+    if record.pull_request_number <= 0:
+        return "unknown"
+    gitops_repo = record.gitops_repo.strip()
+    if not gitops_repo:
+        return "unknown"
+    try:
+        owner, repo = parse_github_repository(gitops_repo)
+    except GitHubInventoryError:
+        return "unknown"
+    try:
+        payload = get_pull_request(owner, repo, record.pull_request_number, github_token)
+    except GitHubError:
+        return "unknown"
+    if payload.get("merged_at"):
+        return "merged"
+    state = str(payload.get("state", "")).strip().lower()
+    if state == "open":
+        return "open"
+    if state == "closed":
+        return "closed"
+    return "unknown"
+
+
+def finalize_merged_decommission(
+    record: EnvironmentRecord,
+    *,
+    registry_path: Path,
+    github_token: str,
+    dry_run: bool = False,
+) -> EnvironmentReclaimResult:
+    stack_name = record.stack_name
+    entity_id = record.entity_id
+    gitops_repo, path = _validate_record_fields(record)
+    merge_state = resolve_decommission_pull_request_state(record, github_token=github_token)
+
+    if merge_state == "open":
+        return EnvironmentReclaimResult(
+            stack_name=stack_name,
+            entity_id=entity_id,
+            mode=MODE_REGISTRY_FINALIZE,
+            reclaimed=False,
+            skipped=True,
+            skip_reason="decommission pull request is still open",
+            gitops_repo=gitops_repo,
+            gitops_path=path,
+            git_branch=record.git_branch,
+            pull_request_url=record.pull_request_url,
+            pull_request_number=record.pull_request_number,
+            draft=True,
+            detail=(
+                f"Decommission pull request #{record.pull_request_number} is still open; "
+                f"`{stack_name}` remains in the registry with status expired."
+            ),
+        )
+
+    if merge_state == "closed":
+        return EnvironmentReclaimResult(
+            stack_name=stack_name,
+            entity_id=entity_id,
+            mode=MODE_REGISTRY_FINALIZE,
+            reclaimed=False,
+            skipped=True,
+            skip_reason="decommission pull request closed without merge",
+            gitops_repo=gitops_repo,
+            gitops_path=path,
+            git_branch=record.git_branch,
+            pull_request_url=record.pull_request_url,
+            pull_request_number=record.pull_request_number,
+            draft=True,
+            detail=(
+                f"Decommission pull request #{record.pull_request_number} was closed without "
+                f"merge; `{stack_name}` remains expired in the registry for operator review."
+            ),
+        )
+
+    if merge_state != "merged":
+        raise EnvironmentReclaimError(
+            f"could not resolve merge state for decommission pull request "
+            f"#{record.pull_request_number} on `{gitops_repo}`; "
+            "check GITHUB_TOKEN access to the GitOps repository"
+        )
+
+    if dry_run:
+        return EnvironmentReclaimResult(
+            stack_name=stack_name,
+            entity_id=entity_id,
+            mode=MODE_REGISTRY_FINALIZE,
+            reclaimed=False,
+            skipped=False,
+            skip_reason="",
+            gitops_repo=gitops_repo,
+            gitops_path=path,
+            git_branch=record.git_branch,
+            pull_request_url=record.pull_request_url,
+            pull_request_number=record.pull_request_number,
+            draft=True,
+            detail=(
+                f"Dry-run: would remove `{stack_name}` from the registry after merged "
+                f"decommission pull request #{record.pull_request_number}."
+            ),
+        )
+
+    decommission_environment(registry_path, record)
+    return EnvironmentReclaimResult(
+        stack_name=stack_name,
+        entity_id=entity_id,
+        mode=MODE_REGISTRY_FINALIZE,
+        reclaimed=True,
+        skipped=False,
+        skip_reason="",
+        gitops_repo=gitops_repo,
+        gitops_path=path,
+        git_branch=record.git_branch,
+        pull_request_url=record.pull_request_url,
+        pull_request_number=record.pull_request_number,
+        draft=True,
+        detail=(
+            f"Removed `{stack_name}` from the registry after merged decommission pull request "
+            f"#{record.pull_request_number}."
+        ),
+    )
 
 
 def _execute_decommission_pr(
@@ -595,6 +749,50 @@ def reclaim_expired_environments(
         observed_classes=observed_classes,
     )
 
+    results: list[EnvironmentReclaimResult] = []
+    pending_reviews = list_pending_decommission_reviews(records, stack_name=stack_name)
+    if pending_reviews:
+        if not github_token:
+            for record in pending_reviews:
+                results.append(
+                    EnvironmentReclaimResult(
+                        stack_name=record.stack_name,
+                        entity_id=record.entity_id,
+                        mode=MODE_REGISTRY_FINALIZE,
+                        reclaimed=False,
+                        skipped=True,
+                        skip_reason="GITHUB_TOKEN is required to check decommission PR merge state",
+                        gitops_repo=record.gitops_repo,
+                        gitops_path=record.gitops_path,
+                        git_branch=record.git_branch,
+                        pull_request_url=record.pull_request_url,
+                        pull_request_number=record.pull_request_number,
+                        draft=True,
+                        detail=(
+                            f"Skipped registry finalize for `{record.stack_name}`; "
+                            "set GITHUB_TOKEN to detect merged decommission pull requests."
+                        ),
+                    )
+                )
+        else:
+            for record in pending_reviews:
+                try:
+                    results.append(
+                        finalize_merged_decommission(
+                            record,
+                            registry_path=config.file,
+                            github_token=github_token,
+                            dry_run=dry_run,
+                        )
+                    )
+                except EnvironmentReclaimError as exc:
+                    _append_result_on_error(
+                        results,
+                        record,
+                        mode=MODE_REGISTRY_FINALIZE,
+                        exc=exc,
+                    )
+
     auto_expired = list_expired_environments(
         records,
         reclaim_classes=auto_reclaim_classes,
@@ -609,7 +807,6 @@ def reclaim_expired_environments(
         stack_name=stack_name,
     )
 
-    results: list[EnvironmentReclaimResult] = []
     for record in auto_expired:
         try:
             results.append(

@@ -26,6 +26,7 @@ from repave_engine.auth import (
 )
 from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import blueprint_dir, load_blueprint
+from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.deployment_status import fetch_entity_deployment_status_for_portal
 from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
@@ -403,10 +404,15 @@ def build_api_v1_router(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
         )
-        entities = build_portal_catalog_entities(
-            repo_root,
-            output_config,
-            cost_actuals_configured=cost_configured,
+        entities = list(
+            enrich_catalog_entities_with_cost(
+                build_portal_catalog_entities(
+                    repo_root,
+                    output_config,
+                    cost_actuals_configured=cost_configured,
+                ),
+                portal_config,
+            )
         )
         return JSONResponse(
             {
