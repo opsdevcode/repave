@@ -157,12 +157,20 @@ def test_reclaim_environment_opens_pr_and_decommissions(
     record = _record()
     register_environment(registry, record)
 
+    work = tmp_path / "work"
+    gitops_root = work / "gitops"
+    (gitops_root / "environments" / "sandbox-alice").mkdir(parents=True)
+
     class _Repo:
         owner = "acme"
         name = "gitops"
         web_url = "https://github.com/acme/gitops"
 
     with (
+        patch(
+            "repave_engine.environment_reclaim.tempfile.TemporaryDirectory",
+            return_value=_FakeTempDir(work),
+        ),
         patch("repave_engine.environment_reclaim.shallow_clone"),
         patch("repave_engine.environment_reclaim.preflight_import") as preflight,
         patch("repave_engine.environment_reclaim._commit_gitops_tree", return_value=True),
@@ -176,8 +184,6 @@ def test_reclaim_environment_opens_pr_and_decommissions(
             return_value={"number": 42, "html_url": "https://github.com/acme/gitops/pull/42"},
         ),
         patch("repave_engine.environment_reclaim.add_pull_request_labels"),
-        patch("repave_engine.environment_reclaim.Path.exists", return_value=True),
-        patch("repave_engine.environment_reclaim.Path.is_dir", return_value=True),
         patch("repave_engine.environment_reclaim.shutil.rmtree"),
     ):
         preflight.return_value = type(
@@ -199,6 +205,17 @@ def test_reclaim_environment_opens_pr_and_decommissions(
     assert read_environments(registry) == ()
 
 
+class _FakeTempDir:
+    def __init__(self, path: Path) -> None:
+        self._path = path
+
+    def __enter__(self) -> str:
+        return str(self._path)
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+
 def test_reclaim_missing_gitops_path_decommissions_without_pr(
     repo_root: Path,
     tmp_path: Path,
@@ -207,10 +224,16 @@ def test_reclaim_missing_gitops_path_decommissions_without_pr(
     record = _record()
     register_environment(registry, record)
 
+    work = tmp_path / "work"
+    (work / "gitops").mkdir(parents=True)
+
     with (
+        patch(
+            "repave_engine.environment_reclaim.tempfile.TemporaryDirectory",
+            return_value=_FakeTempDir(work),
+        ),
         patch("repave_engine.environment_reclaim.shallow_clone"),
         patch("repave_engine.environment_reclaim.preflight_import") as preflight,
-        patch("repave_engine.environment_reclaim.Path.exists", return_value=False),
     ):
         preflight.return_value = type(
             "Preflight",
