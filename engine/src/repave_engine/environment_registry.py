@@ -148,6 +148,13 @@ def register_environment(path: Path, record: EnvironmentRecord) -> EnvironmentRe
     return stamped
 
 
+def decommission_environment(path: Path, record: EnvironmentRecord) -> None:
+    """Remove an environment from the registry (append-only decommission event)."""
+    if not record.stack_name:
+        raise EnvironmentRegistryError("stack_name is required to decommission an environment")
+    append_environment_event(path, record, EVENT_DECOMMISSION)
+
+
 def register_environment_from_vend(
     path: Path,
     *,

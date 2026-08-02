@@ -25,6 +25,7 @@ from repave_engine.auth_context import current_acting_user
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.deployment_status import fetch_entity_deployment_status_for_portal
 from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
+from repave_engine.environment_reclaim import EnvironmentReclaimError, reclaim_expired_environments
 from repave_engine.execution_mode import (
     SYNC_GENERATE_UNAVAILABLE_DETAIL,
     worker_execution_mode_active,
@@ -63,7 +64,12 @@ from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
 from repave_engine.run_submit import parse_run_target, submit_async_run
-from repave_engine.settings import OutputConfig, load_fleet_config, load_portal_config
+from repave_engine.settings import (
+    OutputConfig,
+    load_environment_vending_config,
+    load_fleet_config,
+    load_portal_config,
+)
 from repave_engine.upgrade_api import (
     UpgradeTargetError,
     resolve_upgrade_target,
@@ -93,6 +99,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/fleet",
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
+    "POST /api/v2/environments/reclaim",
 )
 
 
@@ -710,5 +717,35 @@ def build_api_v2_router(
         if not removed:
             raise HTTPException(status_code=404, detail=f"{repo_url} is not registered")
         return JSONResponse({"unregistered": normalize_repo_url(repo_url)})
+
+    @router.post("/environments/reclaim")
+    async def api_v2_environments_reclaim(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        vend_cfg = load_environment_vending_config(repo_root)
+        if vend_cfg is None:
+            raise HTTPException(
+                status_code=503,
+                detail="environment_vending is not enabled",
+            )
+        payload = await _parse_json_object(request)
+        dry_run = bool(payload.get("dry_run", False))
+        stack_name = str(payload.get("stack_name", "")).strip() or None
+        github_token = resolve_github_access_token(None) if not dry_run else None
+        if not dry_run and not github_token:
+            raise HTTPException(
+                status_code=503,
+                detail="GITHUB_TOKEN is required unless dry_run is true",
+            )
+        try:
+            summary = reclaim_expired_environments(
+                repo_root=repo_root,
+                config=vend_cfg,
+                github_token=github_token,
+                dry_run=dry_run,
+                stack_name=stack_name,
+            )
+        except EnvironmentReclaimError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(summary.to_public_dict())
 
     return router

@@ -326,6 +326,17 @@ class EnvironmentVendingConfig:
     file: Path = Path("data/environments/registry.jsonl")
     default_ttl_hours: int = 0
     ttl_hours_by_class: tuple[tuple[str, int], ...] = ()
+    auto_reclaim_classes: tuple[str, ...] = ("sandbox",)
+
+
+def _parse_reclaim_classes(block: dict[str, Any]) -> tuple[str, ...]:
+    raw = block.get("auto_reclaim_classes")
+    if raw is None:
+        return ("sandbox",)
+    if not isinstance(raw, list):
+        raise ValueError("environment_vending.auto_reclaim_classes must be a list of class names")
+    classes = tuple(str(item).strip() for item in raw if str(item).strip())
+    return classes if classes else ("sandbox",)
 
 
 def _parse_ttl_hours_by_class(block: dict[str, Any]) -> tuple[tuple[str, int], ...]:
@@ -362,6 +373,7 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
     registry_file = repo_root / "data" / "environments" / "registry.jsonl"
     default_ttl_hours = 0
     ttl_hours_by_class: tuple[tuple[str, int], ...] = ()
+    auto_reclaim_classes: tuple[str, ...] = ("sandbox",)
 
     def _resolve(value: str) -> Path:
         path = Path(value).expanduser()
@@ -386,6 +398,7 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
         if isinstance(ttl_raw, int) and ttl_raw >= 0:
             default_ttl_hours = ttl_raw
         ttl_hours_by_class = _parse_ttl_hours_by_class(block)
+        auto_reclaim_classes = _parse_reclaim_classes(block)
     if not enabled:
         return None
     return EnvironmentVendingConfig(
@@ -396,6 +409,7 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
         file=registry_file,
         default_ttl_hours=default_ttl_hours,
         ttl_hours_by_class=ttl_hours_by_class,
+        auto_reclaim_classes=auto_reclaim_classes,
     )
 
 

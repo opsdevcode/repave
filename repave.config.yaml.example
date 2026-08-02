@@ -133,6 +133,8 @@ gates:
 #   default_ttl_hours: 0
 #   ttl_hours_by_class:
 #     sandbox: 168
+#   auto_reclaim_classes:
+#     - sandbox
 # Or: REPAVE_ENVIRONMENT_VENDING=1, REPAVE_ENVIRONMENT_REGISTRY_FILE=...
 
 # Optional OpenTelemetry trace export for pipeline spans (requires `uv sync --extra otel`).

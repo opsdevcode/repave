@@ -83,6 +83,32 @@ appear in `GET /api/v2/catalog/entities` with `"source": "environment"` and an
 `environment` object (GitOps path, TTL, status, vend run id). Optional
 `default_ttl_hours` and `ttl_hours_by_class` set `expires_at` on registration.
 
+### Environment TTL reclaim
+
+When environments expire, **sandbox-class** stacks listed in
+`environment_vending.auto_reclaim_classes` (default `["sandbox"]`) can be reclaimed by
+opening a GitOps decommission pull request that removes the stack path. repave does not run
+`terraform apply`.
+
+CLI:
+
+```bash
+repave environments reclaim --dry-run
+repave environments reclaim --stack sandbox-alice
+```
+
+API (`admin` role):
+
+```json
+POST /api/v2/environments/reclaim
+{ "dry_run": false, "stack_name": "sandbox-alice" }
+```
+
+Response: `{ "count", "reclaimed", "skipped", "results": [...] }` with per-stack
+`pull_request_url` when a PR was opened. After a successful reclaim (or when the GitOps path
+is already absent), the environment is removed from the registry. Non-sandbox expiry is
+deferred to a human-reviewed decommission flow (future slice).
+
 ## Operator upgrades
 
 These endpoints mirror `repave plan-upgrade` / `apply-upgrade --format json` so the
@@ -130,6 +156,7 @@ Unauthenticated `/api/v2/*` requests receive `401` JSON.
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
+| `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
 
 ## `/api/v1` deprecation
 

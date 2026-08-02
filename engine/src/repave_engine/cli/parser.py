@@ -10,6 +10,7 @@ from repave_engine.cli._common import (
 )
 from repave_engine.cli.audit import cmd_audit_query
 from repave_engine.cli.doctor import cmd_doctor
+from repave_engine.cli.environments import cmd_environments_reclaim
 from repave_engine.cli.fleet import (
     cmd_fleet,
     cmd_fleet_manifests,
@@ -217,6 +218,35 @@ def build_parser() -> argparse.ArgumentParser:
         help="Query GoldenPathRepo resources in every namespace",
     )
     fleet_snapshot.set_defaults(func=cmd_fleet_operator_snapshot)
+
+    environments = sub.add_parser(
+        "environments",
+        help="Environment registry operations (ADR 003 Phase 3)",
+        parents=[common],
+    )
+    env_sub = environments.add_subparsers(dest="environments_command", required=True)
+    reclaim = env_sub.add_parser(
+        "reclaim",
+        help="Reclaim expired sandbox environments via GitOps decommission PRs",
+        parents=[common],
+    )
+    reclaim.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List expired environments without opening GitOps pull requests",
+    )
+    reclaim.add_argument(
+        "--stack",
+        default="",
+        help="Reclaim a single stack by name (must be expired and in auto_reclaim_classes)",
+    )
+    reclaim.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token (defaults to GITHUB_TOKEN)",
+    )
+    reclaim.add_argument("--format", choices=["text", "json"], default="text")
+    reclaim.set_defaults(func=cmd_environments_reclaim)
 
     verify_cmd = sub.add_parser(
         "verify",

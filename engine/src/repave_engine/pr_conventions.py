@@ -19,6 +19,7 @@ class PullRequestConventions:
     branch_prefix_upgrade: str = "repave/upgrade"
     branch_prefix_import: str = "repave/import"
     branch_prefix_vend: str = "repave/environment"
+    branch_prefix_reclaim: str = "repave/environment-reclaim"
     labels: tuple[str, ...] = ("repave", "governed")
     evidence_checklist: bool = True
 
@@ -38,6 +39,9 @@ def load_pull_request_conventions(repo_root: Path) -> PullRequestConventions:
             ),
             branch_prefix_vend=_env_prefix(
                 "REPAVE_PR_BRANCH_PREFIX_VEND", defaults.branch_prefix_vend
+            ),
+            branch_prefix_reclaim=_env_prefix(
+                "REPAVE_PR_BRANCH_PREFIX_RECLAIM", defaults.branch_prefix_reclaim
             ),
             branch_prefix_generate=_env_prefix(
                 "REPAVE_PR_BRANCH_PREFIX_GENERATE", defaults.branch_prefix_generate
@@ -82,6 +86,11 @@ def load_pull_request_conventions(repo_root: Path) -> PullRequestConventions:
             prefixes.get("vend") if isinstance(prefixes, dict) else None,
             "REPAVE_PR_BRANCH_PREFIX_VEND",
             "repave/environment",
+        ),
+        branch_prefix_reclaim=_resolve_prefix(
+            prefixes.get("reclaim") if isinstance(prefixes, dict) else None,
+            "REPAVE_PR_BRANCH_PREFIX_RECLAIM",
+            "repave/environment-reclaim",
         ),
         labels=_env_labels()
         or tuple(str(item).strip() for item in labels_raw if str(item).strip())
