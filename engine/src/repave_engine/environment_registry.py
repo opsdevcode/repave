@@ -155,6 +155,25 @@ def decommission_environment(path: Path, record: EnvironmentRecord) -> None:
     append_environment_event(path, record, EVENT_DECOMMISSION)
 
 
+def mark_environment_expired(
+    path: Path,
+    record: EnvironmentRecord,
+    *,
+    pull_request_url: str,
+    pull_request_number: int,
+    git_branch: str,
+) -> EnvironmentRecord:
+    """Keep the environment in the catalog with expired status and a decommission PR."""
+    updated = replace(
+        record,
+        status="expired",
+        pull_request_url=pull_request_url.strip(),
+        pull_request_number=pull_request_number,
+        git_branch=git_branch.strip() or record.git_branch,
+    )
+    return register_environment(path, updated)
+
+
 def register_environment_from_vend(
     path: Path,
     *,

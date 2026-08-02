@@ -327,16 +327,41 @@ class EnvironmentVendingConfig:
     default_ttl_hours: int = 0
     ttl_hours_by_class: tuple[tuple[str, int], ...] = ()
     auto_reclaim_classes: tuple[str, ...] = ("sandbox",)
+    decommission_review_classes: tuple[str, ...] = ()
+
+
+def _parse_class_name_list(
+    block: dict[str, Any],
+    key: str,
+    *,
+    default: tuple[str, ...],
+    label: str,
+) -> tuple[str, ...]:
+    raw = block.get(key)
+    if raw is None:
+        return default
+    if not isinstance(raw, list):
+        raise ValueError(f"environment_vending.{label} must be a list of class names")
+    classes = tuple(str(item).strip() for item in raw if str(item).strip())
+    return classes if classes else default
 
 
 def _parse_reclaim_classes(block: dict[str, Any]) -> tuple[str, ...]:
-    raw = block.get("auto_reclaim_classes")
-    if raw is None:
-        return ("sandbox",)
-    if not isinstance(raw, list):
-        raise ValueError("environment_vending.auto_reclaim_classes must be a list of class names")
-    classes = tuple(str(item).strip() for item in raw if str(item).strip())
-    return classes if classes else ("sandbox",)
+    return _parse_class_name_list(
+        block,
+        "auto_reclaim_classes",
+        default=("sandbox",),
+        label="auto_reclaim_classes",
+    )
+
+
+def _parse_decommission_review_classes(block: dict[str, Any]) -> tuple[str, ...]:
+    return _parse_class_name_list(
+        block,
+        "decommission_review_classes",
+        default=(),
+        label="decommission_review_classes",
+    )
 
 
 def _parse_ttl_hours_by_class(block: dict[str, Any]) -> tuple[tuple[str, int], ...]:
@@ -374,6 +399,7 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
     default_ttl_hours = 0
     ttl_hours_by_class: tuple[tuple[str, int], ...] = ()
     auto_reclaim_classes: tuple[str, ...] = ("sandbox",)
+    decommission_review_classes: tuple[str, ...] = ()
 
     def _resolve(value: str) -> Path:
         path = Path(value).expanduser()
@@ -399,6 +425,7 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
             default_ttl_hours = ttl_raw
         ttl_hours_by_class = _parse_ttl_hours_by_class(block)
         auto_reclaim_classes = _parse_reclaim_classes(block)
+        decommission_review_classes = _parse_decommission_review_classes(block)
     if not enabled:
         return None
     return EnvironmentVendingConfig(
@@ -410,6 +437,7 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
         default_ttl_hours=default_ttl_hours,
         ttl_hours_by_class=ttl_hours_by_class,
         auto_reclaim_classes=auto_reclaim_classes,
+        decommission_review_classes=decommission_review_classes,
     )
 
 

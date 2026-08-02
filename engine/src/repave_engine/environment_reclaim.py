@@ -1,4 +1,4 @@
-"""TTL reclaim for expired sandbox environments via GitOps decommission PR (ADR 003 Phase 3)."""
+"""TTL reclaim and decommission review for expired environments (ADR 003 Phase 3)."""
 
 from __future__ import annotations
 
@@ -13,10 +13,16 @@ from typing import Any
 
 from repave_engine.environment_record import (
     EnvironmentRecord,
+    has_open_decommission_review,
     is_environment_expired,
     is_reclaim_eligible_class,
+    resolve_decommission_review_classes,
 )
-from repave_engine.environment_registry import decommission_environment, read_environments
+from repave_engine.environment_registry import (
+    decommission_environment,
+    mark_environment_expired,
+    read_environments,
+)
 from repave_engine.environment_vend import _commit_gitops_tree
 from repave_engine.git_clone import FULL_DEPTH, CloneError, shallow_clone
 from repave_engine.github import add_pull_request_labels, create_github_pull_request
@@ -27,6 +33,9 @@ from repave_engine.target_repo import resolve_module_repository_from_git
 
 logger = logging.getLogger(__name__)
 
+MODE_AUTO_RECLAIM = "auto_reclaim"
+MODE_DECOMMISSION_REVIEW = "decommission_review"
+
 
 class EnvironmentReclaimError(RuntimeError):
     """Expected failure while reclaiming an environment (message names the fix)."""
@@ -36,6 +45,7 @@ class EnvironmentReclaimError(RuntimeError):
 class EnvironmentReclaimResult:
     stack_name: str
     entity_id: str
+    mode: str
     reclaimed: bool
     skipped: bool
     skip_reason: str
@@ -44,17 +54,20 @@ class EnvironmentReclaimResult:
     git_branch: str
     pull_request_url: str
     pull_request_number: int
+    draft: bool
     detail: str
 
     def to_public_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "stack_name": self.stack_name,
             "entity_id": self.entity_id,
+            "mode": self.mode,
             "reclaimed": self.reclaimed,
             "skipped": self.skipped,
             "gitops_repo": self.gitops_repo,
             "gitops_path": self.gitops_path,
             "git_branch": self.git_branch,
+            "draft": self.draft,
             "detail": self.detail,
         }
         if self.skip_reason:
@@ -73,26 +86,53 @@ class EnvironmentReclaimSummary:
         return {
             "count": len(self.results),
             "reclaimed": sum(1 for item in self.results if item.reclaimed),
+            "decommission_review": sum(
+                1
+                for item in self.results
+                if item.mode == MODE_DECOMMISSION_REVIEW and not item.skipped
+            ),
             "skipped": sum(1 for item in self.results if item.skipped),
             "results": [item.to_public_dict() for item in self.results],
         }
+
+
+@dataclass(frozen=True)
+class _DecommissionPrOutcome:
+    pull_request_url: str
+    pull_request_number: int
+    git_branch: str
+    path_already_absent: bool
+    repository_web_url: str
 
 
 def build_environment_reclaim_pull_request_title(*, stack_name: str, env_class: str) -> str:
     return f"chore(repave): reclaim expired {env_class} environment `{stack_name}`"
 
 
+def build_environment_decommission_review_pull_request_title(
+    *,
+    stack_name: str,
+    env_class: str,
+) -> str:
+    return f"chore(repave): decommission expired {env_class} environment `{stack_name}`"
+
+
 def build_environment_reclaim_pull_request_body(
     *,
     record: EnvironmentRecord,
     repo_root: Path,
+    requires_review: bool = False,
 ) -> str:
+    action = (
+        "is proposed for decommission by removing its GitOps path."
+        if requires_review
+        else "is reclaimed by removing its GitOps path."
+    )
     lines = [
         "## Summary",
         (
             f"Expired governed environment `{record.stack_name}` "
-            f"({record.environment_tier} on {record.cloud_provider}) is reclaimed by "
-            "removing its GitOps path."
+            f"({record.environment_tier} on {record.cloud_provider}) {action}"
         ),
         "",
         "### Environment",
@@ -104,6 +144,13 @@ def build_environment_reclaim_pull_request_body(
         "Review the diff before merging; CD applies desired state after merge.",
         "repave does not run `terraform apply`.",
     ]
+    if requires_review:
+        lines.extend(
+            [
+                "",
+                "This is a **draft** decommission pull request for human review.",
+            ]
+        )
     return "\n".join(lines) + "\n"
 
 
@@ -127,56 +174,45 @@ def list_expired_environments(
     return tuple(sorted(eligible, key=lambda item: item.stack_name))
 
 
-def reclaim_environment(
+def list_expired_environments_for_decommission_review(
+    records: Sequence[EnvironmentRecord],
+    *,
+    auto_reclaim_classes: frozenset[str],
+    review_classes: frozenset[str],
+    now: datetime | None = None,
+    stack_name: str | None = None,
+) -> tuple[EnvironmentRecord, ...]:
+    current = now or datetime.now(timezone.utc)
+    eligible: list[EnvironmentRecord] = []
+    for record in records:
+        if stack_name and record.stack_name != stack_name.strip():
+            continue
+        if is_reclaim_eligible_class(record.env_class, auto_reclaim_classes):
+            continue
+        if not is_reclaim_eligible_class(record.env_class, review_classes):
+            continue
+        if not is_environment_expired(record, now=current):
+            continue
+        if has_open_decommission_review(record):
+            continue
+        eligible.append(record)
+    return tuple(sorted(eligible, key=lambda item: item.stack_name))
+
+
+def _execute_decommission_pr(
     record: EnvironmentRecord,
     *,
     repo_root: Path,
-    registry_path: Path,
     base_branch: str,
-    github_token: str | None,
-    dry_run: bool = False,
-) -> EnvironmentReclaimResult:
+    github_token: str,
+    draft: bool,
+) -> _DecommissionPrOutcome:
     stack_name = record.stack_name
-    entity_id = record.entity_id
     gitops_repo = record.gitops_repo.strip()
     path = record.gitops_path.strip().strip("/")
-    if not gitops_repo:
-        raise EnvironmentReclaimError(
-            f"gitops_repo is missing on environment `{stack_name}`; "
-            "re-register after vending with gitops_repo set"
-        )
-    if not path:
-        raise EnvironmentReclaimError(
-            f"gitops_path is missing on environment `{stack_name}`; "
-            "re-register after vending with gitops_path set"
-        )
-
     conventions = load_pull_request_conventions(repo_root)
     branch = branch_name(conventions.branch_prefix_reclaim, stack_name, "reclaim")
     resolved_base = base_branch.strip() or "main"
-
-    if dry_run:
-        return EnvironmentReclaimResult(
-            stack_name=stack_name,
-            entity_id=entity_id,
-            reclaimed=False,
-            skipped=False,
-            skip_reason="",
-            gitops_repo=gitops_repo,
-            gitops_path=path,
-            git_branch=branch,
-            pull_request_url="",
-            pull_request_number=0,
-            detail=(
-                f"Dry-run: would open decommission PR removing `{path}` "
-                f"from {gitops_repo} (expired {record.expires_at})."
-            ),
-        )
-
-    if not github_token:
-        raise EnvironmentReclaimError(
-            "GITHUB_TOKEN is not configured; set it to open a GitOps decommission pull request"
-        )
 
     with tempfile.TemporaryDirectory(prefix="repave-env-reclaim-") as tmp:
         clone_root = Path(tmp) / "gitops"
@@ -200,22 +236,12 @@ def reclaim_environment(
 
         dest = clone_root / path
         if not dest.exists():
-            decommission_environment(registry_path, record)
-            return EnvironmentReclaimResult(
-                stack_name=stack_name,
-                entity_id=entity_id,
-                reclaimed=True,
-                skipped=False,
-                skip_reason="",
-                gitops_repo=gitops_repo,
-                gitops_path=path,
-                git_branch=branch,
+            return _DecommissionPrOutcome(
                 pull_request_url="",
                 pull_request_number=0,
-                detail=(
-                    f"GitOps path `{path}` already absent; removed `{stack_name}` "
-                    "from the environment registry."
-                ),
+                git_branch=branch,
+                path_already_absent=True,
+                repository_web_url=gitops_repo,
             )
 
         if dest.is_dir():
@@ -242,13 +268,16 @@ def reclaim_environment(
             branch=branch,
         )
 
-        title = build_environment_reclaim_pull_request_title(
-            stack_name=stack_name,
-            env_class=record.env_class,
+        title_builder = (
+            build_environment_decommission_review_pull_request_title
+            if draft
+            else build_environment_reclaim_pull_request_title
         )
+        title = title_builder(stack_name=stack_name, env_class=record.env_class)
         body = build_environment_reclaim_pull_request_body(
             record=record,
             repo_root=repo_root,
+            requires_review=draft,
         )
         resolved_base = resolved_base or preflight.base_branch
         pr_payload = create_github_pull_request(
@@ -259,7 +288,7 @@ def reclaim_environment(
             head=branch,
             base=resolved_base,
             token=github_token,
-            draft=False,
+            draft=draft,
         )
         pr_number = int(pr_payload.get("number", 0))
         if pr_number and conventions.labels:
@@ -271,24 +300,278 @@ def reclaim_environment(
                 github_token,
             )
 
-        pr_url = str(pr_payload.get("html_url", ""))
-        decommission_environment(registry_path, record)
-        detail = (
-            f"Opened decommission pull request for `{path}` on {repository.web_url}; "
-            f"removed `{stack_name}` from the environment registry."
+        return _DecommissionPrOutcome(
+            pull_request_url=str(pr_payload.get("html_url", "")),
+            pull_request_number=pr_number,
+            git_branch=branch,
+            path_already_absent=False,
+            repository_web_url=repository.web_url,
         )
+
+
+def _validate_record_fields(record: EnvironmentRecord) -> tuple[str, str]:
+    stack_name = record.stack_name
+    gitops_repo = record.gitops_repo.strip()
+    path = record.gitops_path.strip().strip("/")
+    if not gitops_repo:
+        raise EnvironmentReclaimError(
+            f"gitops_repo is missing on environment `{stack_name}`; "
+            "re-register after vending with gitops_repo set"
+        )
+    if not path:
+        raise EnvironmentReclaimError(
+            f"gitops_path is missing on environment `{stack_name}`; "
+            "re-register after vending with gitops_path set"
+        )
+    return gitops_repo, path
+
+
+def reclaim_environment(
+    record: EnvironmentRecord,
+    *,
+    repo_root: Path,
+    registry_path: Path,
+    base_branch: str,
+    github_token: str | None,
+    dry_run: bool = False,
+) -> EnvironmentReclaimResult:
+    stack_name = record.stack_name
+    entity_id = record.entity_id
+    gitops_repo, path = _validate_record_fields(record)
+    conventions = load_pull_request_conventions(repo_root)
+    branch = branch_name(conventions.branch_prefix_reclaim, stack_name, "reclaim")
+
+    if dry_run:
         return EnvironmentReclaimResult(
             stack_name=stack_name,
             entity_id=entity_id,
-            reclaimed=True,
+            mode=MODE_AUTO_RECLAIM,
+            reclaimed=False,
             skipped=False,
             skip_reason="",
             gitops_repo=gitops_repo,
             gitops_path=path,
             git_branch=branch,
-            pull_request_url=pr_url,
-            pull_request_number=pr_number,
-            detail=detail,
+            pull_request_url="",
+            pull_request_number=0,
+            draft=False,
+            detail=(
+                f"Dry-run: would open decommission PR removing `{path}` "
+                f"from {gitops_repo} (expired {record.expires_at})."
+            ),
+        )
+
+    if not github_token:
+        raise EnvironmentReclaimError(
+            "GITHUB_TOKEN is not configured; set it to open a GitOps decommission pull request"
+        )
+
+    outcome = _execute_decommission_pr(
+        record,
+        repo_root=repo_root,
+        base_branch=base_branch,
+        github_token=github_token,
+        draft=False,
+    )
+    if outcome.path_already_absent:
+        decommission_environment(registry_path, record)
+        return EnvironmentReclaimResult(
+            stack_name=stack_name,
+            entity_id=entity_id,
+            mode=MODE_AUTO_RECLAIM,
+            reclaimed=True,
+            skipped=False,
+            skip_reason="",
+            gitops_repo=gitops_repo,
+            gitops_path=path,
+            git_branch=outcome.git_branch,
+            pull_request_url="",
+            pull_request_number=0,
+            draft=False,
+            detail=(
+                f"GitOps path `{path}` already absent; removed `{stack_name}` "
+                "from the environment registry."
+            ),
+        )
+
+    decommission_environment(registry_path, record)
+    detail = (
+        f"Opened decommission pull request for `{path}` on {outcome.repository_web_url}; "
+        f"removed `{stack_name}` from the environment registry."
+    )
+    return EnvironmentReclaimResult(
+        stack_name=stack_name,
+        entity_id=entity_id,
+        mode=MODE_AUTO_RECLAIM,
+        reclaimed=True,
+        skipped=False,
+        skip_reason="",
+        gitops_repo=gitops_repo,
+        gitops_path=path,
+        git_branch=outcome.git_branch,
+        pull_request_url=outcome.pull_request_url,
+        pull_request_number=outcome.pull_request_number,
+        draft=False,
+        detail=detail,
+    )
+
+
+def request_decommission_review(
+    record: EnvironmentRecord,
+    *,
+    repo_root: Path,
+    registry_path: Path,
+    base_branch: str,
+    github_token: str | None,
+    dry_run: bool = False,
+) -> EnvironmentReclaimResult:
+    stack_name = record.stack_name
+    entity_id = record.entity_id
+    gitops_repo, path = _validate_record_fields(record)
+    conventions = load_pull_request_conventions(repo_root)
+    branch = branch_name(conventions.branch_prefix_reclaim, stack_name, "reclaim")
+
+    if dry_run:
+        return EnvironmentReclaimResult(
+            stack_name=stack_name,
+            entity_id=entity_id,
+            mode=MODE_DECOMMISSION_REVIEW,
+            reclaimed=False,
+            skipped=False,
+            skip_reason="",
+            gitops_repo=gitops_repo,
+            gitops_path=path,
+            git_branch=branch,
+            pull_request_url="",
+            pull_request_number=0,
+            draft=True,
+            detail=(
+                f"Dry-run: would open draft decommission PR removing `{path}` "
+                f"from {gitops_repo} (expired {record.expires_at})."
+            ),
+        )
+
+    if not github_token:
+        raise EnvironmentReclaimError(
+            "GITHUB_TOKEN is not configured; set it to open a GitOps decommission pull request"
+        )
+
+    outcome = _execute_decommission_pr(
+        record,
+        repo_root=repo_root,
+        base_branch=base_branch,
+        github_token=github_token,
+        draft=True,
+    )
+    if outcome.path_already_absent:
+        decommission_environment(registry_path, record)
+        return EnvironmentReclaimResult(
+            stack_name=stack_name,
+            entity_id=entity_id,
+            mode=MODE_DECOMMISSION_REVIEW,
+            reclaimed=True,
+            skipped=False,
+            skip_reason="",
+            gitops_repo=gitops_repo,
+            gitops_path=path,
+            git_branch=outcome.git_branch,
+            pull_request_url="",
+            pull_request_number=0,
+            draft=False,
+            detail=(
+                f"GitOps path `{path}` already absent; removed `{stack_name}` "
+                "from the environment registry."
+            ),
+        )
+
+    mark_environment_expired(
+        registry_path,
+        record,
+        pull_request_url=outcome.pull_request_url,
+        pull_request_number=outcome.pull_request_number,
+        git_branch=outcome.git_branch,
+    )
+    detail = (
+        f"Opened draft decommission pull request for `{path}` on "
+        f"{outcome.repository_web_url}; marked `{stack_name}` expired in the registry."
+    )
+    return EnvironmentReclaimResult(
+        stack_name=stack_name,
+        entity_id=entity_id,
+        mode=MODE_DECOMMISSION_REVIEW,
+        reclaimed=False,
+        skipped=False,
+        skip_reason="",
+        gitops_repo=gitops_repo,
+        gitops_path=path,
+        git_branch=outcome.git_branch,
+        pull_request_url=outcome.pull_request_url,
+        pull_request_number=outcome.pull_request_number,
+        draft=True,
+        detail=detail,
+    )
+
+
+def _append_result_on_error(
+    results: list[EnvironmentReclaimResult],
+    record: EnvironmentRecord,
+    *,
+    mode: str,
+    exc: EnvironmentReclaimError,
+) -> None:
+    logger.warning("Environment reclaim failed for %s: %s", record.stack_name, exc)
+    results.append(
+        EnvironmentReclaimResult(
+            stack_name=record.stack_name,
+            entity_id=record.entity_id,
+            mode=mode,
+            reclaimed=False,
+            skipped=True,
+            skip_reason=str(exc),
+            gitops_repo=record.gitops_repo,
+            gitops_path=record.gitops_path,
+            git_branch="",
+            pull_request_url="",
+            pull_request_number=0,
+            draft=mode == MODE_DECOMMISSION_REVIEW,
+            detail=str(exc),
+        )
+    )
+
+
+def _validate_stack_filter(
+    *,
+    stack_name: str | None,
+    records: tuple[EnvironmentRecord, ...],
+    auto_reclaim_classes: frozenset[str],
+    review_classes: frozenset[str],
+    now: datetime | None,
+) -> None:
+    if not stack_name:
+        return
+    needle = stack_name.strip()
+    match = next((item for item in records if item.stack_name == needle), None)
+    if match is None:
+        raise EnvironmentReclaimError(
+            f"environment `{needle}` is not registered; "
+            "check the registry file or omit --stack to scan all expired environments"
+        )
+    if not is_environment_expired(match, now=now):
+        raise EnvironmentReclaimError(
+            f"environment `{needle}` is not expired (expires_at={match.expires_at or 'none'})"
+        )
+    if has_open_decommission_review(match):
+        raise EnvironmentReclaimError(
+            f"environment `{needle}` already has decommission review pull request "
+            f"#{match.pull_request_number}"
+        )
+    auto = is_reclaim_eligible_class(match.env_class, auto_reclaim_classes)
+    review = is_reclaim_eligible_class(match.env_class, review_classes)
+    if not auto and not review:
+        raise EnvironmentReclaimError(
+            f"environment `{needle}` class `{match.env_class}` is not eligible for reclaim "
+            f"(auto_reclaim_classes={tuple(auto_reclaim_classes)}, "
+            f"decommission_review_classes={tuple(review_classes)})"
         )
 
 
@@ -301,16 +584,33 @@ def reclaim_expired_environments(
     stack_name: str | None = None,
     now: datetime | None = None,
 ) -> EnvironmentReclaimSummary:
-    reclaim_classes = frozenset(config.auto_reclaim_classes)
+    auto_reclaim_classes = frozenset(config.auto_reclaim_classes)
     records = read_environments(config.file)
-    expired = list_expired_environments(
+    observed_classes = frozenset(
+        item.env_class.strip().lower() for item in records if item.env_class.strip()
+    )
+    review_classes = resolve_decommission_review_classes(
+        auto_reclaim_classes=config.auto_reclaim_classes,
+        configured_review_classes=config.decommission_review_classes,
+        observed_classes=observed_classes,
+    )
+
+    auto_expired = list_expired_environments(
         records,
-        reclaim_classes=reclaim_classes,
+        reclaim_classes=auto_reclaim_classes,
         now=now,
         stack_name=stack_name,
     )
+    review_expired = list_expired_environments_for_decommission_review(
+        records,
+        auto_reclaim_classes=auto_reclaim_classes,
+        review_classes=review_classes,
+        now=now,
+        stack_name=stack_name,
+    )
+
     results: list[EnvironmentReclaimResult] = []
-    for record in expired:
+    for record in auto_expired:
         try:
             results.append(
                 reclaim_environment(
@@ -323,37 +623,39 @@ def reclaim_expired_environments(
                 )
             )
         except EnvironmentReclaimError as exc:
-            logger.warning("Environment reclaim failed for %s: %s", record.stack_name, exc)
+            _append_result_on_error(
+                results,
+                record,
+                mode=MODE_AUTO_RECLAIM,
+                exc=exc,
+            )
+
+    for record in review_expired:
+        try:
             results.append(
-                EnvironmentReclaimResult(
-                    stack_name=record.stack_name,
-                    entity_id=record.entity_id,
-                    reclaimed=False,
-                    skipped=True,
-                    skip_reason=str(exc),
-                    gitops_repo=record.gitops_repo,
-                    gitops_path=record.gitops_path,
-                    git_branch="",
-                    pull_request_url="",
-                    pull_request_number=0,
-                    detail=str(exc),
+                request_decommission_review(
+                    record,
+                    repo_root=repo_root,
+                    registry_path=config.file,
+                    base_branch=config.base_branch,
+                    github_token=github_token,
+                    dry_run=dry_run,
                 )
             )
-    if stack_name and not expired:
-        needle = stack_name.strip()
-        match = next((item for item in records if item.stack_name == needle), None)
-        if match is None:
-            raise EnvironmentReclaimError(
-                f"environment `{needle}` is not registered; "
-                f"check {config.file} or omit --stack to scan all expired environments"
+        except EnvironmentReclaimError as exc:
+            _append_result_on_error(
+                results,
+                record,
+                mode=MODE_DECOMMISSION_REVIEW,
+                exc=exc,
             )
-        if not is_reclaim_eligible_class(match.env_class, reclaim_classes):
-            raise EnvironmentReclaimError(
-                f"environment `{needle}` class `{match.env_class}` is not in "
-                f"auto_reclaim_classes {tuple(reclaim_classes)}"
-            )
-        if not is_environment_expired(match, now=now):
-            raise EnvironmentReclaimError(
-                f"environment `{needle}` is not expired (expires_at={match.expires_at or 'none'})"
-            )
+
+    if stack_name and not auto_expired and not review_expired:
+        _validate_stack_filter(
+            stack_name=stack_name,
+            records=records,
+            auto_reclaim_classes=auto_reclaim_classes,
+            review_classes=review_classes,
+            now=now,
+        )
     return EnvironmentReclaimSummary(results=tuple(results))

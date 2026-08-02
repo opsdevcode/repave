@@ -181,3 +181,25 @@ def is_reclaim_eligible_class(
         return False
     needle = env_class.strip().lower()
     return needle in {item.strip().lower() for item in reclaim_classes if item.strip()}
+
+
+def resolve_decommission_review_classes(
+    *,
+    auto_reclaim_classes: tuple[str, ...],
+    configured_review_classes: tuple[str, ...],
+    observed_classes: frozenset[str],
+) -> frozenset[str]:
+    auto = frozenset(item.strip().lower() for item in auto_reclaim_classes if item.strip())
+    if configured_review_classes:
+        return frozenset(
+            item.strip().lower()
+            for item in configured_review_classes
+            if item.strip() and item.strip().lower() not in auto
+        )
+    return frozenset(
+        item.strip().lower() for item in observed_classes if item.strip() and item not in auto
+    )
+
+
+def has_open_decommission_review(record: EnvironmentRecord) -> bool:
+    return record.status.strip().lower() == "expired" and record.pull_request_number > 0
