@@ -128,6 +128,10 @@ spec:
             {{- if .Values.repave.fleet.enabled }}
             - name: REPAVE_FLEET_FILE
               value: {{ .Values.repave.fleet.file | quote }}
+            {{- if .Values.repave.fleet.operatorStatusFile }}
+            - name: REPAVE_FLEET_OPERATOR_STATUS_FILE
+              value: {{ .Values.repave.fleet.operatorStatusFile | quote }}
+            {{- end }}
             {{- end }}
             {{- include "repave.environmentVendingEnv" . | nindent 12 }}
             {{- $secretName := include "repave.secretName" . }}

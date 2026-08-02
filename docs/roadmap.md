@@ -42,7 +42,8 @@ rollup, remote GitHub docs, upgrade/provenance rendering, owner filter, SLO heal
 **cost visibility** (Infracost gate + CI, URL/AWS/Azure actuals, library tile badges, Cloud spend
 scorecard).
 **Platform console** (admin `/platform/*`: fleet register/unregister, ops health, standards
-blast radius, operator campaign snapshot v2).
+blast radius, operator campaign snapshot v2); **Helm fleet operator snapshot CronJob**
+(`fleetOperatorSnapshot.cronJob`, `values-fleet-shared.yaml` — keeps `/platform/campaigns` fresh).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -1176,7 +1177,9 @@ kind co-install). **Polish shipped:** portal operator status via snapshot file, 
 flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`),
 `repave fleet-operator-snapshot` (v2 snapshot includes UpgradeCampaign rows), and admin
 **platform console** at `/platform/fleet`, `/platform/ops`, `/platform/standards`,
-`/platform/campaigns`. **In progress:** operator continuous registry sync
+`/platform/campaigns`. **Day-2:** Helm `fleetOperatorSnapshot.cronJob` on the shared fleet PVC
+(`values-fleet-shared.yaml`) refreshes the snapshot for the platform console without manual CLI.
+**In progress:** operator continuous registry sync
 (`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`) with GPR prune on unregister.
 
 ---

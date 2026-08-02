@@ -14,6 +14,12 @@ repave:
   fleet:
     enabled: true
     file: /data/fleet/registry.jsonl
+    operatorStatusFile: /data/fleet/operator-status.json
+
+fleetOperatorSnapshot:
+  cronJob:
+    enabled: true
+    schedule: "*/15 * * * *"
 
 persistence:
   fleet:

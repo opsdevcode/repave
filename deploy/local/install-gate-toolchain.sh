@@ -11,6 +11,7 @@ INSTALL_TERRAFORM="${INSTALL_TERRAFORM:-1}"
 INSTALL_ANSIBLE="${INSTALL_ANSIBLE:-1}"
 INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
+INSTALL_KUBECTL="${INSTALL_KUBECTL:-1}"
 DEST="${DEST:-/usr/local/bin}"
 GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 
@@ -51,12 +52,14 @@ case "$arch" in
     tflint_arch="amd64"
     conf_arch="x86_64"
     helm_arch="amd64"
+    kubectl_arch="amd64"
     ;;
   aarch64|arm64)
     tf_arch="arm64"
     tflint_arch="arm64"
     conf_arch="arm64"
     helm_arch="arm64"
+    kubectl_arch="arm64"
     ;;
   *)
     echo "unsupported architecture: $arch" >&2
@@ -133,4 +136,13 @@ if [[ "$INSTALL_HELM" == "1" ]]; then
   rm -rf "$tmp_helm"
 fi
 
-echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION})."
+if [[ "$INSTALL_KUBECTL" == "1" ]]; then
+  tmp_kubectl="$(mktemp -d)"
+  "${CURL_GET[@]}" \
+    "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${kubectl_arch}/kubectl" \
+    -o "$tmp_kubectl/kubectl"
+  install_bin "$tmp_kubectl/kubectl"
+  rm -rf "$tmp_kubectl"
+fi
+
+echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION})."

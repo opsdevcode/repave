@@ -1,0 +1,58 @@
+{{- if and .Values.fleetOperatorSnapshot.cronJob.enabled .Values.repave.fleet.enabled }}
+{{- $opNs := include "repave.fleetOperatorNamespace" . }}
+{{- if .Values.fleetOperatorSnapshot.cronJob.allNamespaces }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "repave.fullname" . }}-fleet-snapshot
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["repave.dev"]
+    resources: ["goldenpathrepos", "upgradecampaigns"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "repave.fullname" . }}-fleet-snapshot
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "repave.fullname" . }}-fleet-snapshot
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "repave.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- else }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "repave.fullname" . }}-fleet-snapshot
+  namespace: {{ $opNs }}
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+rules:
+  - apiGroups: ["repave.dev"]
+    resources: ["goldenpathrepos", "upgradecampaigns"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "repave.fullname" . }}-fleet-snapshot
+  namespace: {{ $opNs }}
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "repave.fullname" . }}-fleet-snapshot
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "repave.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- end }}
