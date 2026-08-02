@@ -18,6 +18,7 @@ from repave_engine.environment_vend import (
 )
 from repave_engine.fleet import FleetEntry, register_repo
 from repave_engine.gates import GateResult
+from repave_engine.portal_context import build_portal_catalog_entities
 from repave_engine.run_queue import RunQueue, RunQueueConfig
 from repave_engine.run_store import RunStatus, RunStore
 from repave_engine.run_submit import submit_async_run
@@ -43,6 +44,7 @@ environment_vending:
     assert config is not None
     assert config.gitops_repo == "https://github.com/acme/platform-gitops"
     assert config.path_prefix == "clusters/dev"
+    assert config.file == tmp_path / "data" / "environments" / "registry.jsonl"
 
 
 def test_resolve_vend_request_fields_uses_config_defaults(tmp_path: Path) -> None:
@@ -182,6 +184,128 @@ environment_vending:
         assert terminal.result is not None
         assert terminal.result["pull_request_url"] == fake.pull_request_url
     queue.close()
+
+
+def test_vend_run_registers_environment_record(tmp_path: Path) -> None:
+    registry = tmp_path / "data" / "environments" / "registry.jsonl"
+    (tmp_path / "repave.config.yaml").write_text(
+        """
+environment_vending:
+  enabled: true
+  gitops_repo: https://github.com/acme/gitops
+  path_prefix: environments
+  ttl_hours_by_class:
+    sandbox: 168
+""",
+        encoding="utf-8",
+    )
+    store = RunStore(tmp_path / "runs.sqlite")
+    output = OutputConfig(github_org="example", modules_root=tmp_path / "modules")
+    queue = RunQueue(
+        repo_root=tmp_path,
+        output_config=output,
+        store=store,
+        config=RunQueueConfig(max_concurrent_runs=1, queue_max_depth=4),
+    )
+    fake = EnvironmentVendResult(
+        kind="environment_vend",
+        blueprint="terraform-environment-stack",
+        blueprint_version="0.4.0",
+        gates_outcome="passed",
+        gates_passed=True,
+        gitops_repo="https://github.com/acme/gitops",
+        gitops_path="environments/sandbox-alice",
+        git_branch="repave/environment/sandbox-alice-dev",
+        owner="team-platform",
+        env_class="sandbox",
+        pull_request_url="https://github.com/acme/gitops/pull/7",
+        pull_request_number=7,
+        draft=False,
+        detail="Opened pull request",
+    )
+    with patch("repave_engine.run_queue.run_environment_vend", return_value=fake):
+        record = submit_async_run(
+            queue,
+            payload={
+                "kind": "environment_vend",
+                "dry_run": False,
+                "inputs": {
+                    "stack_name": "sandbox-alice",
+                    "description": "Alice sandbox",
+                    "cloud_provider": "aws",
+                    "environment": "dev",
+                },
+                "owner": "team-platform",
+                "class": "sandbox",
+            },
+            acting_user="tester",
+            repo_root=tmp_path,
+        )
+        deadline = time.time() + 5.0
+        terminal = None
+        while time.time() < deadline:
+            terminal = store.get(record.run_id)
+            if terminal and terminal.status == RunStatus.SUCCEEDED:
+                break
+            time.sleep(0.05)
+        assert terminal is not None
+        assert terminal.result is not None
+        assert terminal.result.get("catalog_entity_id") == "env-aws-sandbox-alice"
+    from repave_engine.environment_registry import read_environments
+
+    entries = read_environments(registry)
+    assert len(entries) == 1
+    assert entries[0].stack_name == "sandbox-alice"
+    assert entries[0].expires_at
+    queue.close()
+
+
+def test_portal_catalog_includes_vended_environment(tmp_path: Path, output_config) -> None:
+    registry = tmp_path / "data" / "environments" / "registry.jsonl"
+    (tmp_path / "repave.config.yaml").write_text(
+        """
+environment_vending:
+  enabled: true
+  gitops_repo: https://github.com/acme/gitops
+""",
+        encoding="utf-8",
+    )
+    from repave_engine.environment_record import EnvironmentRecord
+    from repave_engine.environment_registry import register_environment
+
+    register_environment(
+        registry,
+        EnvironmentRecord(
+            stack_name="sandbox-alice",
+            entity_id="env-aws-sandbox-alice",
+            cloud_provider="aws",
+            environment_tier="dev",
+            owner="platform",
+            env_class="sandbox",
+            blueprint_name="terraform-environment-stack",
+            blueprint_version="0.4.0",
+            gitops_repo="https://github.com/acme/gitops",
+            gitops_path="environments/sandbox-alice",
+            git_branch="repave/environment/sandbox-alice-dev",
+            pull_request_url="https://github.com/acme/gitops/pull/7",
+            pull_request_number=7,
+            gates_outcome="passed",
+            source_entity_id="acme-tf-live",
+            run_id="run-1",
+            vended_by="tester",
+            vended_at="2026-08-02T12:00:00+00:00",
+            expires_at="",
+            status="active",
+        ),
+    )
+    entities = build_portal_catalog_entities(
+        tmp_path,
+        output_config,
+        cost_actuals_configured=False,
+    )
+    match = [item for item in entities if item.entity_id == "env-aws-sandbox-alice"]
+    assert len(match) == 1
+    assert match[0].source == "environment"
 
 
 def _link_vend_test_repo(tmp_path: Path, repo_root: Path) -> None:

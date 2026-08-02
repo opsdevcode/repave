@@ -10,7 +10,10 @@
   <div>
     <h1 class="page-title">{{ entity.display_name }}</h1>
     <p class="page-lead">
-      {% if entity.repo_url %}
+      {% if entity.source == 'environment' %}
+      Vended environment · <code>{{ entity.cloud_provider }}</code> / {{ entity.environment_tier }}
+      {% if entity.env_class %} · class {{ entity.env_class }}{% endif %}
+      {% elif entity.repo_url %}
       <a href="{{ entity.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ entity.repo_url }}</code></a>
       {% else %}
       Local entity under <code>modules_root</code>
@@ -82,6 +85,61 @@
   </div>
 </section>
 
+{% if entity.source == 'environment' %}
+<section class="card" aria-labelledby="environment-meta-heading">
+  <div class="card__header">
+    <h2 id="environment-meta-heading">Environment</h2>
+    <p class="muted card__subtitle">Governed stack vended into GitOps.</p>
+  </div>
+  <div class="card__body">
+    <dl class="preflight-panel" aria-label="Environment metadata">
+      <div class="preflight-panel__row">
+        <dt>Status</dt>
+        <dd>
+          {% if entity.vend_status == 'active' %}
+          <span class="badge badge--pass">Active</span>
+          {% elif entity.vend_status == 'pending' %}
+          <span class="badge badge--skip">Pending</span>
+          {% else %}
+          <span class="badge badge--muted">{{ entity.vend_status or 'unknown' }}</span>
+          {% endif %}
+        </dd>
+      </div>
+      {% if entity.gitops_repo %}
+      <div class="preflight-panel__row">
+        <dt>GitOps repo</dt>
+        <dd><code>{{ entity.gitops_repo }}</code></dd>
+      </div>
+      {% endif %}
+      {% if entity.gitops_path %}
+      <div class="preflight-panel__row">
+        <dt>Path</dt>
+        <dd><code>{{ entity.gitops_path }}</code></dd>
+      </div>
+      {% endif %}
+      {% if entity.expires_at %}
+      <div class="preflight-panel__row">
+        <dt>Expires</dt>
+        <dd><time datetime="{{ entity.expires_at }}">{{ entity.expires_at[:19] }}</time></dd>
+      </div>
+      {% endif %}
+      {% if entity.source_entity_id %}
+      <div class="preflight-panel__row">
+        <dt>Requested from</dt>
+        <dd><a href="/services/{{ entity.source_entity_id }}">{{ entity.source_entity_id }}</a></dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% if entity.pull_request_url %}
+    <p><a class="btn btn--secondary btn--sm" href="{{ entity.pull_request_url }}" rel="noreferrer noopener" target="_blank">Open vend pull request</a></p>
+    {% endif %}
+    {% if entity.vend_run_id %}
+    <p><a class="btn btn--ghost btn--sm" href="/runs/{{ entity.vend_run_id }}">View vend run</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if deployment_status %}
 <section class="card entity-deployment" aria-labelledby="deployment-heading">
   <div class="card__header">
@@ -123,7 +181,7 @@
 </section>
 {% endif %}
 
-{% if live_plan_available %}
+{% if live_plan_available and entity.source != 'environment' %}
 <section class="card entity-live-plan" aria-labelledby="live-plan-heading">
   <div class="card__header">
     <h2 id="live-plan-heading">Live plan</h2>
@@ -157,7 +215,7 @@
 </section>
 {% endif %}
 
-{% if environment_vend_available %}
+{% if environment_vend_available and entity.source != 'environment' %}
 <section class="card entity-environment-vend" aria-labelledby="environment-vend-heading">
   <div class="card__header">
     <h2 id="environment-vend-heading">Request environment</h2>

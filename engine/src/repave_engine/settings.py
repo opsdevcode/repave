@@ -323,6 +323,22 @@ class EnvironmentVendingConfig:
     gitops_repo: str = ""
     base_branch: str = "main"
     path_prefix: str = "environments"
+    file: Path = Path("data/environments/registry.jsonl")
+    default_ttl_hours: int = 0
+    ttl_hours_by_class: tuple[tuple[str, int], ...] = ()
+
+
+def _parse_ttl_hours_by_class(block: dict[str, Any]) -> tuple[tuple[str, int], ...]:
+    raw = block.get("ttl_hours_by_class")
+    if not isinstance(raw, dict):
+        return ()
+    pairs: list[tuple[str, int]] = []
+    for key, value in raw.items():
+        class_name = str(key).strip()
+        if not class_name or not isinstance(value, int) or value <= 0:
+            continue
+        pairs.append((class_name, value))
+    return tuple(sorted(pairs))
 
 
 def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig | None:
@@ -343,6 +359,16 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
     gitops_repo = ""
     base_branch = "main"
     path_prefix = "environments"
+    registry_file = repo_root / "data" / "environments" / "registry.jsonl"
+    default_ttl_hours = 0
+    ttl_hours_by_class: tuple[tuple[str, int], ...] = ()
+
+    def _resolve(value: str) -> Path:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        return path
+
     if isinstance(block, dict):
         enabled_raw = block.get("enabled", True)
         if not isinstance(enabled_raw, bool):
@@ -351,6 +377,15 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
         gitops_repo = str(block.get("gitops_repo", "")).strip()
         base_branch = str(block.get("base_branch", base_branch)).strip() or base_branch
         path_prefix = str(block.get("path_prefix", path_prefix)).strip() or path_prefix
+        registry_env = os.environ.get("REPAVE_ENVIRONMENT_REGISTRY_FILE", "").strip()
+        if registry_env:
+            registry_file = _resolve(registry_env)
+        else:
+            registry_file = _resolve(str(block.get("file", "data/environments/registry.jsonl")))
+        ttl_raw = block.get("default_ttl_hours", 0)
+        if isinstance(ttl_raw, int) and ttl_raw >= 0:
+            default_ttl_hours = ttl_raw
+        ttl_hours_by_class = _parse_ttl_hours_by_class(block)
     if not enabled:
         return None
     return EnvironmentVendingConfig(
@@ -358,6 +393,9 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
         gitops_repo=gitops_repo,
         base_branch=base_branch,
         path_prefix=path_prefix,
+        file=registry_file,
+        default_ttl_hours=default_ttl_hours,
+        ttl_hours_by_class=ttl_hours_by_class,
     )
 
 

@@ -17,6 +17,10 @@ from repave_engine.durability_store import (
     load_durability_store_settings,
     resolve_runs_database,
 )
+from repave_engine.environment_registry import (
+    EnvironmentRegistryError,
+    register_environment_from_vend,
+)
 from repave_engine.environment_vend import (
     DEFAULT_VEND_BLUEPRINT,
     is_environment_vend_run,
@@ -35,7 +39,7 @@ from repave_engine.publish_idempotency import PublishIdempotencyContext, Publish
 from repave_engine.run_events import RunEventStore, build_run_event_store
 from repave_engine.run_job_dispatcher import RunJobDispatcher, build_run_job_dispatcher
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
-from repave_engine.settings import OutputConfig
+from repave_engine.settings import OutputConfig, load_environment_vending_config
 
 logger = logging.getLogger(__name__)
 
@@ -419,6 +423,26 @@ class RunQueue:
                         on_event=on_event,
                     )
                     result = vend_result.to_public_dict()
+                    if not record.dry_run:
+                        vend_cfg = load_environment_vending_config(self._repo_root)
+                        if vend_cfg is not None:
+                            try:
+                                env_record = register_environment_from_vend(
+                                    vend_cfg.file,
+                                    vend_result=vend_result,
+                                    payload=record.payload,
+                                    run_id=record.run_id,
+                                    acting_user=record.acting_user,
+                                    default_ttl_hours=vend_cfg.default_ttl_hours,
+                                    ttl_hours_by_class=vend_cfg.ttl_hours_by_class,
+                                )
+                                result["catalog_entity_id"] = env_record.entity_id
+                            except EnvironmentRegistryError as exc:
+                                logger.warning(
+                                    "environment registry write failed for run %s: %s",
+                                    record.run_id,
+                                    exc,
+                                )
                     on_event(
                         "environment_vend_finished",
                         {

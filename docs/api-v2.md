@@ -77,6 +77,12 @@ submits the same payload via `POST /services/{entity_id}/request-environment` (p
 or open GitOps PR). Run progress uses `/runs/{run_id}`; the result page is
 `/runs/{run_id}/result`.
 
+When a non–dry-run vend succeeds, repave appends an **environment registry** record
+(`environment_vending.file`, default `data/environments/registry.jsonl`). Vended environments
+appear in `GET /api/v2/catalog/entities` with `"source": "environment"` and an
+`environment` object (GitOps path, TTL, status, vend run id). Optional
+`default_ttl_hours` and `ttl_hours_by_class` set `expires_at` on registration.
+
 ## Operator upgrades
 
 These endpoints mirror `repave plan-upgrade` / `apply-upgrade --format json` so the

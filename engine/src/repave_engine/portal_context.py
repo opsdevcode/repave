@@ -15,16 +15,20 @@ from repave_engine.audit_history import (
 from repave_engine.entity_catalog import (
     CatalogEntity,
     build_catalog_entities,
+    build_catalog_from_environments,
     build_catalog_from_fleet,
     fetch_remote_entity_docs,
+    merge_catalog_entities,
     read_entity_docs,
 )
+from repave_engine.environment_registry import read_environments
 from repave_engine.fleet import read_fleet
 from repave_engine.fleet_operator_status import load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.settings import (
     OutputConfig,
     load_audit_config,
+    load_environment_vending_config,
     load_fleet_config,
 )
 
@@ -144,7 +148,7 @@ def build_portal_catalog_entities(
             if fleet_cfg.operator_status_file is not None
             else {}
         )
-        return build_catalog_from_fleet(
+        entities = build_catalog_from_fleet(
             entries,
             modules_root=modules_root,
             operator_by_url=operator_by,
@@ -152,13 +156,27 @@ def build_portal_catalog_entities(
             audit_entries=audit_entries,
             cost_actuals_configured=cost_actuals_configured,
         )
-    return build_catalog_entities(
-        fleet_rows=[],
-        modules_root=modules_root,
-        operator_by_url={},
-        audit_entries=audit_entries,
-        cost_actuals_configured=cost_actuals_configured,
-    )
+    else:
+        entities = build_catalog_entities(
+            fleet_rows=[],
+            modules_root=modules_root,
+            operator_by_url={},
+            audit_entries=audit_entries,
+            cost_actuals_configured=cost_actuals_configured,
+        )
+    try:
+        vend_cfg = load_environment_vending_config(repo_root)
+    except ValueError:
+        vend_cfg = None
+    if vend_cfg is not None:
+        env_records = read_environments(vend_cfg.file)
+        if env_records:
+            env_entities = build_catalog_from_environments(
+                env_records,
+                cost_actuals_configured=cost_actuals_configured,
+            )
+            entities = merge_catalog_entities(entities, env_entities)
+    return sorted(entities, key=lambda item: item.display_name.lower())
 
 
 def resolve_entity_docs(entity: CatalogEntity, *, github_token: str | None) -> dict[str, str]:

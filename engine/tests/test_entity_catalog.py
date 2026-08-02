@@ -10,16 +10,19 @@ from repave_engine.entity_catalog import (
     ScorecardDimension,
     ScoreLevel,
     build_catalog_entities,
+    build_catalog_from_environments,
     build_scorecard,
     entity_id_for_repo_url,
     fetch_remote_entity_docs,
     filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
+    merge_catalog_entities,
     observability_embed_url,
     read_entity_docs,
     rollup_fleet_scorecard,
 )
+from repave_engine.environment_record import EnvironmentRecord
 from repave_engine.fleet import FleetEntry
 from repave_engine.fleet_operator_status import FleetOperatorStatus
 
@@ -293,3 +296,106 @@ def test_fetch_remote_entity_docs(monkeypatch) -> None:
     docs = fetch_remote_entity_docs("https://github.com/acme/tf-vpc", "token")
     assert docs["readme"].startswith("# Remote")
     assert "blueprint" in docs["provenance"]
+
+
+def test_build_catalog_from_environments() -> None:
+    record = EnvironmentRecord(
+        stack_name="sandbox-alice",
+        entity_id="env-aws-sandbox-alice",
+        cloud_provider="aws",
+        environment_tier="dev",
+        owner="platform",
+        env_class="sandbox",
+        blueprint_name="terraform-environment-stack",
+        blueprint_version="0.4.0",
+        gitops_repo="https://github.com/acme/gitops",
+        gitops_path="environments/sandbox-alice",
+        git_branch="repave/environment/sandbox-alice-dev",
+        pull_request_url="https://github.com/acme/gitops/pull/7",
+        pull_request_number=7,
+        gates_outcome="passed",
+        source_entity_id="acme-tf-live",
+        run_id="run-1",
+        vended_by="tester",
+        vended_at="2026-08-02T12:00:00+00:00",
+        expires_at="2026-08-09T12:00:00+00:00",
+        status="active",
+    )
+    entities = build_catalog_from_environments((record,))
+    assert len(entities) == 1
+    entity = entities[0]
+    assert entity.source == "environment"
+    assert entity.component_type == "environment"
+    public = entity.to_public_dict()
+    assert public["environment"]["gitops_path"] == "environments/sandbox-alice"
+    assert public["environment"]["status"] == "active"
+
+
+def test_merge_catalog_entities_skips_duplicate_ids() -> None:
+    base = [
+        CatalogEntity(
+            entity_id="env-aws-sandbox-alice",
+            display_name="repo-a",
+            repo_url="https://github.com/acme/a",
+            local_path=None,
+            owner="platform",
+            blueprint_name="terraform-module-generic",
+            blueprint_version="1.0.0",
+            standard_source="",
+            standard_version="",
+            component_type="component",
+            lifecycle="",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="",
+            manifest_namespace="",
+            source="fleet",
+        )
+    ]
+    extra = [
+        CatalogEntity(
+            entity_id="env-aws-sandbox-alice",
+            display_name="sandbox-alice",
+            repo_url=None,
+            local_path=None,
+            owner="platform",
+            blueprint_name="terraform-environment-stack",
+            blueprint_version="0.4.0",
+            standard_source="",
+            standard_version="",
+            component_type="environment",
+            lifecycle="dev",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="sandbox-alice",
+            manifest_namespace="environments/sandbox-alice",
+            source="environment",
+        ),
+        CatalogEntity(
+            entity_id="env-aws-sandbox-bob",
+            display_name="sandbox-bob",
+            repo_url=None,
+            local_path=None,
+            owner="platform",
+            blueprint_name="terraform-environment-stack",
+            blueprint_version="0.4.0",
+            standard_source="",
+            standard_version="",
+            component_type="environment",
+            lifecycle="dev",
+            operator_phase="",
+            operator_message="",
+            remediation_pr_url="",
+            manifest_name="sandbox-bob",
+            manifest_namespace="environments/sandbox-bob",
+            source="environment",
+        ),
+    ]
+    merged = merge_catalog_entities(base, extra)
+    assert len(merged) == 2
+    assert {item.entity_id for item in merged} == {
+        "env-aws-sandbox-alice",
+        "env-aws-sandbox-bob",
+    }
