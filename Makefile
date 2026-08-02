@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica postgres-dr-drill kind-co-install gate-doctor
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending postgres-dr-drill kind-co-install gate-doctor
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -112,6 +112,10 @@ chart-smoke-decomposed:
 chart-smoke-multi-replica:
 	chmod +x deploy/k8s/hack/chart-smoke-multi-replica.sh
 	./deploy/k8s/hack/chart-smoke-multi-replica.sh
+
+chart-smoke-environment-vending:
+	chmod +x deploy/k8s/hack/chart-smoke-environment-vending.sh
+	./deploy/k8s/hack/chart-smoke-environment-vending.sh
 
 postgres-dr-drill:
 	chmod +x deploy/k8s/hack/postgres-dr-drill.sh

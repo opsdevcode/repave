@@ -140,8 +140,9 @@ Apply responses may include `"pushed": true` when the branch was pushed remotely
 
 Set `REPAVE_API_URL` on the operator Deployment (for example `http://repave-portal:8088`).
 When set, plan/apply call `/api/v2/upgrades/*` instead of exec'ing the CLI. Remote
-`spec.repoURL` repos use `repo_url` so the API clones server-side; optional
-`REPAVE_API_TOKEN` is sent as a Bearer token when service auth is enabled.
+`spec.repoURL` repos use `repo_url` so the API clones server-side. Set `REPAVE_API_TOKEN`
+(or chart `secrets.apiToken`) to the same value as the portal's configured `auth.api_token`
+when `auth.service_mode` is enabled.
 
 `make operator-e2e` deploys the slim distroless operator plus an in-cluster portal
 (`operator/config/e2e/portal.yaml`) with the same `/modules` hostPath as the operator
@@ -154,6 +155,10 @@ CLI mode remains the default when `REPAVE_API_URL` is unset (`REPAVE_REPO_ROOT` 
 
 When `auth.service_enabled` is true, v2 routes use the same session roles as v1.
 Unauthenticated `/api/v2/*` requests receive `401` JSON.
+
+Service callers (operator HTTP mode, environment reclaim CronJob with `invoke: http`) may
+authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
+`auth.api_token` is configured. Valid tokens receive the **admin** role for API authorization.
 
 ## Read models (v2.0.0 contract freeze)
 
@@ -199,6 +204,5 @@ log a deprecation warning at load time. Migration steps:
 
 ## Follow-ups
 
-- Service-to-service auth beyond optional `REPAVE_API_TOKEN` Bearer header
 - v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
 - Conversational governed AI generation (v2 must-have — see roadmap)

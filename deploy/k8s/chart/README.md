@@ -224,7 +224,7 @@ Phase 3) use `repave.environmentVending` in the ConfigMap and a shared
 | --- | --- |
 | `repave.environmentVending.*` | GitOps repo, TTL classes, auto-reclaim vs review classes |
 | `persistence.environments` | PVC for `registry.jsonl` (portal + reclaim CronJob) |
-| `environmentReclaim.cronJob` | Hourly `repave environments reclaim` Job |
+| `environmentReclaim.cronJob` | Scheduled TTL reclaim (`invoke: cli` or `http`) |
 
 Example overlay: [`values-environment-vending.yaml`](values-environment-vending.yaml).
 
@@ -236,9 +236,14 @@ helm upgrade --install repave ./deploy/k8s/chart \
   --set secrets.existingSecret=repave-secrets
 ```
 
-The CronJob runs the same CLI as `POST /api/v2/environments/reclaim` (sandbox auto-reclaim +
-draft decommission PRs for other classes). Requires `GITHUB_TOKEN` or GitHub App credentials on
-the chart Secret. Use `environmentReclaim.cronJob.dryRun: true` to preview without opening PRs.
+**CronJob invoke modes**
+
+| `invoke` | Behavior |
+| --- | --- |
+| `cli` (default) | Runs `repave environments reclaim` in-cluster; mounts the shared environments PVC and needs `GITHUB_TOKEN` (or GitHub App keys) on the Secret for GitOps PRs. |
+| `http` | `curl` POST to `/api/v2/environments/reclaim` on the portal Service; portal owns the registry PVC. When `auth.service_mode` is on, set `secrets.apiToken` (maps to `REPAVE_API_TOKEN`) on the portal and CronJob. |
+
+Use `environmentReclaim.cronJob.dryRun: true` to preview without opening PRs.
 
 Manual reclaim from a pod: `kubectl exec deploy/repave -n repave -- repave environments reclaim --dry-run`.
 
@@ -249,6 +254,7 @@ make chart-validate           # helm lint + template smoke (CI: chart-validate)
 make chart-smoke              # kind install (CI: chart-smoke on chart/image paths)
 make chart-smoke-decomposed   # decomposed portal + worker + Postgres async run (CI: chart-smoke-decomposed)
 make chart-smoke-multi-replica   # two portal replicas + shared Postgres sessions/queue (CI: chart-smoke-multi-replica)
+make chart-smoke-environment-vending   # environment vending PVC + reclaim CronJob (CI: chart-smoke-environment-vending)
 ```
 
 ## Scaling

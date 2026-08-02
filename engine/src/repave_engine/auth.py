@@ -18,6 +18,9 @@ ROLE_VIEWER = "viewer"
 ROLE_GENERATOR = "generator"
 ROLE_ADMIN = "admin"
 
+SERVICE_BEARER_SUBJECT = "repave:service-bearer"
+SERVICE_BEARER_EMAIL = "repave-service@internal.local"
+
 _PUBLIC_PREFIXES = ("/static", "/health", "/readyz", "/metrics", "/auth/")
 
 
@@ -32,6 +35,7 @@ class AuthUser:
 class AuthConfig:
     service_enabled: bool
     session_secret: str
+    api_token: str
     oidc_issuer: str
     oidc_client_id: str
     oidc_client_secret: str
@@ -56,6 +60,38 @@ def session_user(request: Request) -> AuthUser | None:
     email = str(payload.get("email", subject)).strip()
     role = str(payload.get("role", ROLE_VIEWER)).strip() or ROLE_VIEWER
     return AuthUser(subject=subject, email=email, role=role)
+
+
+def bearer_token_from_request(request: Request) -> str | None:
+    header = request.headers.get("Authorization", "").strip()
+    if not header.lower().startswith("bearer "):
+        return None
+    token = header[7:].strip()
+    return token or None
+
+
+def service_user_from_bearer(request: Request, config: AuthConfig) -> AuthUser | None:
+    if not config.service_enabled or not config.api_token:
+        return None
+    token = bearer_token_from_request(request)
+    if token is None:
+        return None
+    if not secrets.compare_digest(token, config.api_token):
+        return None
+    return AuthUser(
+        subject=SERVICE_BEARER_SUBJECT,
+        email=SERVICE_BEARER_EMAIL,
+        role=ROLE_ADMIN,
+    )
+
+
+def authenticated_user(request: Request, config: AuthConfig | None) -> AuthUser | None:
+    user = session_user(request)
+    if user is not None:
+        return user
+    if config is None:
+        return None
+    return service_user_from_bearer(request, config)
 
 
 def role_for_groups(groups: list[str], config: AuthConfig) -> str:

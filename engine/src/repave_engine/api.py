@@ -49,6 +49,7 @@ from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
     ROLE_VIEWER,
+    authenticated_user,
     is_public_path,
     require_role,
     session_user,
@@ -367,7 +368,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         path = request.url.path
         if is_public_path(path):
             return await call_next(request)
-        user = session_user(request)
+        user = authenticated_user(request, auth_config)
         if user is None:
             if request.method == "POST" and path in {
                 "/generate",

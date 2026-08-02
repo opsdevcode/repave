@@ -796,6 +796,11 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
     session_secret = os.environ.get("REPAVE_SESSION_SECRET", "").strip()
     if isinstance(block, dict) and block.get("session_secret"):
         session_secret = str(block.get("session_secret")).strip() or session_secret
+    api_token = os.environ.get("REPAVE_API_TOKEN", "").strip()
+    if isinstance(block, dict):
+        resolved = _resolve_secret(block.get("api_token"), api_token)
+        if resolved:
+            api_token = resolved
     if service_enabled and not session_secret:
         raise ValueError("auth.service_mode requires REPAVE_SESSION_SECRET or auth.session_secret")
 
@@ -845,6 +850,7 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
         return AuthConfig(
             service_enabled=False,
             session_secret=session_secret or secrets.token_hex(32),
+            api_token=api_token,
             oidc_issuer=issuer,
             oidc_client_id=client_id,
             oidc_client_secret=client_secret,
@@ -858,6 +864,7 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
     return AuthConfig(
         service_enabled=True,
         session_secret=session_secret,
+        api_token=api_token,
         oidc_issuer=issuer,
         oidc_client_id=client_id,
         oidc_client_secret=client_secret,

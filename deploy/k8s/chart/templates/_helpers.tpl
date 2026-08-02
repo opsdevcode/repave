@@ -144,6 +144,26 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- end }}
 
+{{- define "repave.apiTokenEnv" -}}
+{{- $secretName := include "repave.secretName" . }}
+{{- if $secretName }}
+- name: REPAVE_API_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: api-token
+      optional: true
+{{- end }}
+{{- end }}
+
+{{- define "repave.environmentReclaimApiBaseUrl" -}}
+{{- if .Values.environmentReclaim.cronJob.apiBaseUrl }}
+{{- .Values.environmentReclaim.cronJob.apiBaseUrl }}
+{{- else }}
+{{- printf "http://%s:%v" (include "repave.fullname" .) .Values.service.port }}
+{{- end }}
+{{- end }}
+
 {{- define "repave.secretName" -}}
 {{- if .Values.secrets.existingSecret }}
 {{- .Values.secrets.existingSecret }}

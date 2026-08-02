@@ -18,6 +18,7 @@ from repave_engine.auth import (
     ROLE_GENERATOR,
     ROLE_VIEWER,
     AuthConfig,
+    authenticated_user,
     require_role,
     session_user,
 )
@@ -107,7 +108,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
 def _require_roles(request: Request, auth_config: AuthConfig | None, *roles: str) -> None:
     if auth_config is None or not auth_config.service_enabled:
         return
-    require_role(session_user(request), *roles)
+    require_role(authenticated_user(request, auth_config), *roles)
 
 
 def _run_queue(request: Request) -> RunQueue | None:

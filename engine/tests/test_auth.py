@@ -32,10 +32,29 @@ def test_load_portal_config_observability_env(
     assert cfg.observability_dashboard_url == "https://from-env"
 
 
+def test_load_auth_config_reads_api_token_from_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from repave_engine.settings import load_auth_config
+
+    (tmp_path / "repave.config.yaml").write_text("auth:\n  service_mode: true\n", encoding="utf-8")
+    monkeypatch.setenv("REPAVE_SESSION_SECRET", "secret")
+    monkeypatch.setenv("REPAVE_API_TOKEN", "service-token")
+    monkeypatch.setenv("REPAVE_OIDC_ISSUER", "https://idp.example.com")
+    monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
+    monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "sec")
+    monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+
+    cfg = load_auth_config(tmp_path)
+    assert cfg is not None
+    assert cfg.api_token == "service-token"
+
+
 def test_role_for_groups() -> None:
     config = AuthConfig(
         service_enabled=True,
         session_secret="secret",
+        api_token="",
         oidc_issuer="https://idp.example.com",
         oidc_client_id="client",
         oidc_client_secret="sec",

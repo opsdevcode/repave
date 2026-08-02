@@ -159,6 +159,10 @@ repave:
 environmentReclaim:
   cronJob:
     enabled: false
+    # cli: run repave environments reclaim in-cluster (needs registry volume + GITHUB_TOKEN).
+    # http: POST /api/v2/environments/reclaim on the portal Service (needs REPAVE_API_TOKEN when auth.service_mode is on).
+    invoke: cli
+    apiBaseUrl: ""
     schedule: "0 * * * *"
     dryRun: false
     concurrencyPolicy: Forbid
@@ -258,6 +262,7 @@ secrets:
   githubAppPrivateKey: ""
   sessionSecret: ""
   oidcClientSecret: ""
+  apiToken: ""
 
 probes:
   liveness:
