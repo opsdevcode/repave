@@ -35,6 +35,13 @@ from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
 )
+from repave_engine.platform_runs import (
+    is_environment_reclaim_run,
+    is_fleet_drift_confirm_run,
+    load_environment_reclaim_config,
+    run_environment_reclaim,
+    run_fleet_drift_confirm,
+)
 from repave_engine.publish_idempotency import PublishIdempotencyContext, PublishIdempotencyStore
 from repave_engine.run_events import RunEventStore, build_run_event_store
 from repave_engine.run_job_dispatcher import RunJobDispatcher, build_run_job_dispatcher
@@ -216,6 +223,9 @@ class RunQueue:
         elif run_kind == "environment_vend":
             if not blueprint_name:
                 raise ValueError("environment_vend runs require blueprint_name sentinel")
+        elif run_kind in ("environment_reclaim", "fleet_drift_confirm"):
+            if not blueprint_name:
+                raise ValueError(f"{run_kind} runs require blueprint_name sentinel")
         elif blueprint_name and bundle_name:
             raise ValueError("provide only one of blueprint_name or bundle_name")
         elif not blueprint_name and not bundle_name:
@@ -250,6 +260,18 @@ class RunQueue:
             }
             if environment_vend:
                 payload.update(environment_vend)
+        elif run_kind == "environment_reclaim":
+            payload = {
+                "kind": "environment_reclaim",
+                "inputs": inputs,
+                "dry_run": dry_run,
+            }
+        elif run_kind == "fleet_drift_confirm":
+            payload = {
+                "kind": "fleet_drift_confirm",
+                "inputs": inputs,
+                "dry_run": True,
+            }
         elif bundle_name:
             payload = {
                 "bundle": bundle_name,
@@ -341,7 +363,10 @@ class RunQueue:
 
             github_token = (
                 resolve_github_access_token()
-                if is_environment_vend_run(record.payload) and not record.dry_run
+                if (
+                    (is_environment_vend_run(record.payload) and not record.dry_run)
+                    or (is_environment_reclaim_run(record.payload) and not record.dry_run)
+                )
                 else (None if record.dry_run else resolve_github_access_token())
             )
             artifact_dir = self._artifact_store.local_staging_dir(self._repo_root, run_id)
@@ -448,6 +473,47 @@ class RunQueue:
                         {
                             "gates_outcome": result.get("gates_outcome"),
                             "pull_request_url": result.get("pull_request_url"),
+                        },
+                    )
+                elif is_environment_reclaim_run(record.payload):
+                    on_event("environment_reclaim_started", {"dry_run": record.dry_run})
+                    config = load_environment_reclaim_config(self._repo_root)
+                    stack_name = str(inputs_raw.get("stack_name", "")).strip() or None
+                    result = run_environment_reclaim(
+                        self._repo_root,
+                        config=config,
+                        github_token=github_token,
+                        dry_run=record.dry_run,
+                        stack_name=stack_name,
+                    )
+                    on_event(
+                        "environment_reclaim_finished",
+                        {
+                            "reclaimed_count": result.get("reclaimed_count"),
+                            "skipped_count": result.get("skipped_count"),
+                        },
+                    )
+                elif is_fleet_drift_confirm_run(record.payload):
+                    repo_urls_raw = inputs_raw.get("repo_urls", [])
+                    repo_urls: list[str] = []
+                    if isinstance(repo_urls_raw, list):
+                        repo_urls = [
+                            str(item).strip() for item in repo_urls_raw if str(item).strip()
+                        ]
+                    on_event(
+                        "fleet_drift_confirm_started",
+                        {"repo_count": len(repo_urls)},
+                    )
+                    confirm = run_fleet_drift_confirm(
+                        self._repo_root,
+                        repo_urls=repo_urls,
+                    )
+                    result = confirm.to_public_dict()
+                    on_event(
+                        "fleet_drift_confirm_finished",
+                        {
+                            "confirmed_behind": confirm.confirmed_behind,
+                            "confirmed_current": confirm.confirmed_current,
                         },
                     )
                 else:

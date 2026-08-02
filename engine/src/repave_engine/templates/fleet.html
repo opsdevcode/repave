@@ -1,29 +1,78 @@
 {% extends "base.html" %}
 
-{% block title %}Fleet — repave{% endblock %}
+{% block title %}Platform fleet — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/">← Catalog</a></p>
+<p class="breadcrumb"><a href="/">← Catalog</a> · Platform</p>
+{% include "partials/platform_subnav.html" %}
 <header class="form-hero">
   <div>
     <h1 class="page-title">Governed repositories</h1>
     <p class="page-lead">
-      Repositories under repave governance, with blueprint pins, operator drift when
+      Register repositories under repave governance, with blueprint pins, operator drift when
       configured, and GitOps manifest names for each entry.
     </p>
   </div>
 </header>
 
+{% if fleet_message %}
+<div class="alert alert--{% if fleet_error %}error{% else %}info{% endif %}" role="status">{{ fleet_message }}</div>
+{% endif %}
+
 {% if fleet_enabled %}
+<section class="card" aria-labelledby="register-heading">
+  <div class="card__header">
+    <h2 id="register-heading">Register repository</h2>
+    <p class="muted card__subtitle">
+      Supply pins explicitly or point at a local checkout to read <code>repave.yaml</code>.
+    </p>
+  </div>
+  <form class="card__body" method="post" action="/platform/fleet/register">
+    <div class="activity-filters__grid">
+      <label class="field">
+        <span class="field__label">Repository URL</span>
+        <input class="field__input" name="repo_url" type="url" required placeholder="https://github.com/acme/tf-vpc" />
+      </label>
+      <label class="field">
+        <span class="field__label">Owner</span>
+        <input class="field__input" name="owner" type="text" placeholder="platform" />
+      </label>
+      <label class="field">
+        <span class="field__label">Blueprint</span>
+        <select class="field__input" name="blueprint_name">
+          <option value="">Read from local path or repave.yaml</option>
+          {% for blueprint in fleet_blueprints %}
+          <option value="{{ blueprint.name }}">{{ blueprint.name }}@{{ blueprint.version }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label">Blueprint version (optional)</span>
+        <input class="field__input" name="blueprint_version" type="text" />
+      </label>
+      <label class="field">
+        <span class="field__label">Standard version (optional)</span>
+        <input class="field__input" name="standard_version" type="text" />
+      </label>
+      <label class="field">
+        <span class="field__label">Local path (optional)</span>
+        <input class="field__input" name="local_path" type="text" placeholder="/path/to/checkout" />
+      </label>
+    </div>
+    <div class="card__footer form-actions">
+      <button type="submit" class="btn btn--primary">Register</button>
+    </div>
+  </form>
+</section>
+
   {% if fleet_repos %}
 <section class="card activity-card" aria-labelledby="fleet-heading">
   <div class="card__header">
     <h2 id="fleet-heading">{{ fleet_repos | length }} repositor{{ 'y' if fleet_repos | length == 1 else 'ies' }}</h2>
     <p class="muted card__subtitle">
-      Sorted by repository · register with <code>repave register</code>
-      · <a href="/library">library and scorecards</a>
+      Sorted by repository · <a href="/library">library and scorecards</a>
       {% if fleet_operator_status_enabled %} · operator status from snapshot{% endif %}
     </p>
   </div>
@@ -69,6 +118,10 @@
         {% if row.operator_message and row.operator_phase %}
         <p class="muted">{{ row.operator_message }}</p>
         {% endif %}
+        <form method="post" action="/platform/fleet/unregister" class="form-actions" onsubmit="return confirm('Remove {{ row.repo_url }} from the fleet registry?');">
+          <input type="hidden" name="repo_url" value="{{ row.repo_url }}" />
+          <button type="submit" class="btn btn--ghost btn--sm">Unregister</button>
+        </form>
       </li>
       {% endfor %}
     </ul>
@@ -99,7 +152,7 @@ kubectl apply -k ./fleet-manifests</code></pre>
 </section>
   {% else %}
 <div class="alert alert--info">
-  No repositories are registered yet. Add one with
+  No repositories are registered yet. Use the form above or
   <code>repave register &lt;repo-url&gt; --path &lt;local checkout&gt;</code>.
 </div>
   {% endif %}

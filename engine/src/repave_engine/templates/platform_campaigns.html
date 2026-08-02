@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Platform campaigns — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/platform/fleet">← Platform</a></p>
+{% include "partials/platform_subnav.html" %}
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Operator campaigns</h1>
+    <p class="page-lead">
+      UpgradeCampaign status and remediation PR queue from the operator snapshot
+      (<code>fleet.operator_status_file</code>).
+    </p>
+  </div>
+</header>
+
+{% if campaigns_page.snapshot %}
+<p class="muted">
+  Snapshot v{{ campaigns_page.snapshot.version }}
+  {% if campaigns_page.snapshot.updated_at %}· updated {{ campaigns_page.snapshot.updated_at[:19] }}{% endif %}
+</p>
+
+{% if campaigns_page.snapshot.campaigns %}
+<section class="card" aria-labelledby="campaigns-heading">
+  <div class="card__header">
+    <h2 id="campaigns-heading">{{ campaigns_page.snapshot.campaigns | length }} campaign(s)</h2>
+  </div>
+  <div class="card__body">
+    {% for campaign in campaigns_page.snapshot.campaigns %}
+    <article class="activity-list__item">
+      <h3><code>{{ campaign.namespace }}/{{ campaign.name }}</code></h3>
+      <div class="activity-list__meta">
+        <span class="badge badge--{% if campaign.phase == 'Active' %}pass{% elif campaign.phase == 'Paused' %}skip{% else %}muted{% endif %}">
+          {{ campaign.phase or 'unknown' }}
+        </span>
+        {% if campaign.paused %}<span class="badge badge--skip">paused</span>{% endif %}
+        {% if campaign.blueprint_name %}<span class="muted">· {{ campaign.blueprint_name }}</span>{% endif %}
+      </div>
+      <ul class="muted">
+        <li>{{ campaign.out_of_date_count }} out of date · {{ campaign.open_pr_count }} open PRs</li>
+        <li>Oldest drift {{ campaign.oldest_drift_age_seconds }}s · MTTR {{ campaign.average_remediation_mttr_seconds }}s</li>
+        {% if campaign.consecutive_gate_failures %}
+        <li>{{ campaign.consecutive_gate_failures }} consecutive gate failures</li>
+        {% endif %}
+        {% if campaign.github_rate_limit_remaining is not none %}
+        <li>GitHub rate limit remaining: {{ campaign.github_rate_limit_remaining }}</li>
+        {% endif %}
+      </ul>
+      <pre class="panel-code"><code>kubectl patch upgradecampaign {{ campaign.name }} -n {{ campaign.namespace or 'default' }} --type=merge -p '{"spec":{"paused":true}}'</code></pre>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% else %}
+<div class="alert alert--info">No UpgradeCampaign resources in the snapshot.</div>
+{% endif %}
+
+{% if campaigns_page.remediation_queue %}
+<section class="card" aria-labelledby="remediation-heading">
+  <div class="card__header">
+    <h2 id="remediation-heading">Remediation PR queue</h2>
+    <p class="muted card__subtitle">{{ campaigns_page.remediation_queue | length }} open remediation link(s)</p>
+  </div>
+  <div class="card__body">
+    <ul class="activity-list">
+      {% for row in campaigns_page.remediation_queue %}
+      <li class="activity-list__item">
+        <div class="activity-list__primary">
+          <code>{{ row.repo_url }}</code>
+          <span class="badge badge--{% if row.phase == 'OutOfDate' %}fail{% else %}skip{% endif %}">{{ row.phase }}</span>
+        </div>
+        <a href="{{ row.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">Remediation PR</a>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+{% if campaigns_page.snapshot.repos %}
+<section class="card" aria-labelledby="gpr-heading">
+  <div class="card__header">
+    <h2 id="gpr-heading">GoldenPathRepo status</h2>
+    <p class="muted card__subtitle">{{ campaigns_page.snapshot.repos | length }} repo(s) in snapshot</p>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Repository</th>
+          <th scope="col">Phase</th>
+          <th scope="col">Drift detected</th>
+          <th scope="col">Plan files</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in campaigns_page.snapshot.repos %}
+        <tr>
+          <td><code>{{ row.repo_url }}</code></td>
+          <td>{{ row.phase or '—' }}</td>
+          <td>{{ row.drift_detected_at[:19] if row.drift_detected_at else '—' }}</td>
+          <td>{{ row.upgrade_plan_changed_files if row.upgrade_plan_changed_files is not none else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% else %}
+<div class="alert alert--info">
+  Set <code>fleet.operator_status_file</code> and refresh with
+  <code>repave fleet-operator-snapshot</code> to populate campaign data.
+</div>
+<pre class="panel-code"><code>repave fleet-operator-snapshot \
+  --output ./operator-status.json \
+  --namespace {{ campaigns_page.fleet_cfg.gitops_namespace if campaigns_page.fleet_cfg else 'default' }}</code></pre>
+{% endif %}
+{% endblock %}

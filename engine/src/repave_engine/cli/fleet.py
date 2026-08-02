@@ -126,7 +126,24 @@ def cmd_fleet_operator_snapshot(args: argparse.Namespace) -> int:
         print(str(exc), file=sys.stderr)
         return 2
     statuses = parse_kubectl_gpr_list(payload)
+    campaigns: tuple = ()
+    try:
+        from repave_engine.fleet_operator_status import (
+            kubectl_upgradecampaign_list,
+            parse_kubectl_campaign_list,
+        )
+
+        campaign_payload = kubectl_upgradecampaign_list(
+            namespace=args.namespace,
+            all_namespaces=bool(args.all_namespaces),
+        )
+        campaigns = parse_kubectl_campaign_list(campaign_payload)
+    except RuntimeError:
+        campaigns = ()
     output = Path(args.output).expanduser().resolve()
-    write_operator_status_snapshot(output, statuses)
-    print(f"Wrote operator status for {len(statuses)} GoldenPathRepo(s) to {output}")
+    write_operator_status_snapshot(output, statuses, campaigns=campaigns)
+    print(
+        f"Wrote operator status for {len(statuses)} GoldenPathRepo(s) "
+        f"and {len(campaigns)} UpgradeCampaign(s) to {output}"
+    )
     return 0

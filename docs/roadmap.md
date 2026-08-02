@@ -41,6 +41,8 @@ results, presenter mode); **developer portal surfaces** (library catalog, fleet 
 rollup, remote GitHub docs, upgrade/provenance rendering, owner filter, SLO health panel);
 **cost visibility** (Infracost gate + CI, URL/AWS/Azure actuals, library tile badges, Cloud spend
 scorecard).
+**Platform console** (admin `/platform/*`: fleet register/unregister, ops health, standards
+blast radius, operator campaign snapshot v2).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -157,7 +159,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
 | **Supply chain** | shipped | GitHub App auth, governed PR conventions, SHA-pinned Actions, digest-pinned base images, chart `image.digest` |
-| **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel |
+| **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel; **platform console** (`/platform/fleet`, `/platform/ops`, `/platform/standards`, `/platform/campaigns`) |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
@@ -1171,8 +1173,10 @@ state, and the operator picks it up without hand-written CRs.
 
 **Status:** **Shipped on `main`** (store, CLI, API, portal **Fleet**, `fleet-manifests`,
 kind co-install). **Polish shipped:** portal operator status via snapshot file, GitOps bundle
-flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`), and
-`repave fleet-operator-snapshot`. **In progress:** operator continuous registry sync
+flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`),
+`repave fleet-operator-snapshot` (v2 snapshot includes UpgradeCampaign rows), and admin
+**platform console** at `/platform/fleet`, `/platform/ops`, `/platform/standards`,
+`/platform/campaigns`. **In progress:** operator continuous registry sync
 (`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`) with GPR prune on unregister.
 
 ---

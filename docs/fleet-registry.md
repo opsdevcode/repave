@@ -55,6 +55,9 @@ repave unregister https://github.com/acme/tf-vpc
 `unregister` exits non-zero when the repository was not registered, so scripts can tell
 "removed" from "was never there".
 
+In hosted deployments, admins can also register and unregister from the portal at
+`/platform/fleet` (same registry; requires `ROLE_ADMIN` when service mode is on).
+
 URL spellings collapse to one entry: `https://github.com/acme/tf-vpc.git`, the same URL
 with a trailing slash, and the bare form are one repository. Register and unregister
 therefore agree regardless of which form a caller uses.
