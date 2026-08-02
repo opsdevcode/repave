@@ -144,3 +144,40 @@ def expires_at_from_ttl(*, ttl_hours: int | None, vended_at: str) -> str:
     if start.tzinfo is None:
         start = start.replace(tzinfo=timezone.utc)
     return (start + timedelta(hours=ttl_hours)).isoformat()
+
+
+def parse_iso_timestamp(value: str) -> datetime | None:
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def is_environment_expired(
+    record: EnvironmentRecord,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    expires = parse_iso_timestamp(record.expires_at)
+    if expires is None:
+        return False
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    return current >= expires
+
+
+def is_reclaim_eligible_class(
+    env_class: str,
+    reclaim_classes: frozenset[str],
+) -> bool:
+    if not reclaim_classes:
+        return False
+    needle = env_class.strip().lower()
+    return needle in {item.strip().lower() for item in reclaim_classes if item.strip()}
