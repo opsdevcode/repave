@@ -5,7 +5,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from fastapi.testclient import TestClient
 
+from repave_engine.api import create_app
+from repave_engine.entity_catalog import entity_id_for_repo_url
 from repave_engine.environment_vend import (
     EnvironmentVendResult,
     build_environment_vend_pull_request_body,
@@ -13,6 +16,7 @@ from repave_engine.environment_vend import (
     is_environment_vend_run,
     resolve_vend_request_fields,
 )
+from repave_engine.fleet import FleetEntry, register_repo
 from repave_engine.gates import GateResult
 from repave_engine.run_queue import RunQueue, RunQueueConfig
 from repave_engine.run_store import RunStatus, RunStore
@@ -178,3 +182,154 @@ environment_vending:
         assert terminal.result is not None
         assert terminal.result["pull_request_url"] == fake.pull_request_url
     queue.close()
+
+
+def _link_vend_test_repo(tmp_path: Path, repo_root: Path) -> None:
+    for name in ("blueprints", "policy", "standards", "schemas"):
+        src = repo_root / name
+        if src.is_dir():
+            dest = tmp_path / name
+            if not dest.exists():
+                dest.symlink_to(src, target_is_directory=True)
+
+
+def test_service_detail_environment_vend_form(
+    tmp_path: Path, output_config, repo_root: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    registry = tmp_path / "registry.jsonl"
+    entry = FleetEntry(
+        repo_url="https://github.com/acme/tf-live",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.9.0",
+        standard_source="standards/terraform-standards",
+        standard_version="1.1.0",
+        owner="platform",
+        registered_by="tester@example.com",
+    )
+    register_repo(registry, entry)
+    entity_id = entity_id_for_repo_url(entry.repo_url)
+    entity_dir = output_config.modules_root / "tf-live"
+    entity_dir.mkdir(parents=True)
+    (entity_dir / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
+    _link_vend_test_repo(tmp_path, repo_root)
+    (tmp_path / "repave.config.yaml").write_text(
+        f"""
+fleet:
+  enabled: true
+  file: {registry}
+durability:
+  async_generation: true
+environment_vending:
+  enabled: true
+  gitops_repo: https://github.com/acme/gitops
+  path_prefix: environments
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+    try:
+        detail = client.get(f"/services/{entity_id}")
+        assert detail.status_code == 200
+        assert "Request environment" in detail.text
+        assert "Preview gates" in detail.text
+        assert "Open GitOps PR" in detail.text
+        assert "environments/tf-live" in detail.text or "tf-live" in detail.text
+    finally:
+        queue = client.app.state.run_queue
+        if queue is not None:
+            queue.close()
+
+
+def test_service_request_environment_preview(
+    tmp_path: Path, output_config, repo_root: Path, monkeypatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    registry = tmp_path / "registry.jsonl"
+    entry = FleetEntry(
+        repo_url="https://github.com/acme/tf-live",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.9.0",
+        standard_source="standards/terraform-standards",
+        standard_version="1.1.0",
+        owner="platform",
+        registered_by="tester@example.com",
+    )
+    register_repo(registry, entry)
+    entity_id = entity_id_for_repo_url(entry.repo_url)
+    entity_dir = output_config.modules_root / "tf-live"
+    entity_dir.mkdir(parents=True)
+    (entity_dir / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
+    _link_vend_test_repo(tmp_path, repo_root)
+    (tmp_path / "repave.config.yaml").write_text(
+        f"""
+fleet:
+  enabled: true
+  file: {registry}
+durability:
+  async_generation: true
+environment_vending:
+  enabled: true
+  gitops_repo: https://github.com/acme/gitops
+  path_prefix: environments
+""",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+    fake = EnvironmentVendResult(
+        kind="environment_vend",
+        blueprint="terraform-environment-stack",
+        blueprint_version="0.4.0",
+        gates_outcome="passed",
+        gates_passed=True,
+        gitops_repo="https://github.com/acme/gitops",
+        gitops_path="environments/sandbox-alice",
+        git_branch="repave/environment/sandbox-alice-dev",
+        owner="platform",
+        env_class="sandbox",
+        pull_request_url="",
+        pull_request_number=0,
+        draft=False,
+        detail="Dry-run: gates evaluated; GitOps PR not opened.",
+    )
+    try:
+        with patch("repave_engine.run_queue.run_environment_vend", return_value=fake):
+            response = client.post(
+                f"/services/{entity_id}/request-environment",
+                data={
+                    "action": "preview",
+                    "stack_name": "sandbox-alice",
+                    "description": "Alice sandbox",
+                    "cloud_provider": "aws",
+                    "environment": "dev",
+                    "owner": "platform",
+                    "class": "sandbox",
+                },
+                follow_redirects=False,
+            )
+            assert response.status_code == 303
+            run_url = response.headers["location"]
+            assert run_url.startswith("/runs/")
+            console = client.get(run_url)
+            assert console.status_code == 200
+            assert "data-environment-vend" in console.text
+            assert "Environment stack vend" in console.text
+
+            run_id = run_url.rstrip("/").split("/")[-1]
+            deadline = time.time() + 5.0
+            while time.time() < deadline:
+                result_page = client.get(f"/runs/{run_id}/result")
+                if result_page.status_code == 200:
+                    break
+                time.sleep(0.05)
+            assert result_page.status_code == 200
+            assert "Environment vend" in result_page.text
+            assert "Gate preview complete" in result_page.text
+    finally:
+        queue = client.app.state.run_queue
+        if queue is not None:
+            queue.close()

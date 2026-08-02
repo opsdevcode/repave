@@ -72,6 +72,11 @@ The run result includes `gates_outcome`, `gitops_path`, and when not dry-run
 `pull_request_url` / `pull_request_number`. repave does not run `terraform apply`. See
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
+Portal: on a library entity detail page (`/services/{entity_id}`), **Request environment**
+submits the same payload via `POST /services/{entity_id}/request-environment` (preview gates
+or open GitOps PR). Run progress uses `/runs/{run_id}`; the result page is
+`/runs/{run_id}/result`.
+
 ## Operator upgrades
 
 These endpoints mirror `repave plan-upgrade` / `apply-upgrade --format json` so the

@@ -151,6 +151,18 @@ def _submit_environment_vend(
     if not isinstance(inputs_raw, dict):
         raise ValueError("inputs must be an object")
     git_branch = str(payload.get("git_branch", "")).strip()
+    entity_id = str(payload.get("entity_id", "")).strip()
+    vend_meta: dict[str, str] = {
+        "blueprint": blueprint,
+        "gitops_repo": gitops_repo,
+        "gitops_path": gitops_path,
+        "owner": owner,
+        "class": env_class,
+        "base_branch": base_branch,
+        "git_branch": git_branch,
+    }
+    if entity_id:
+        vend_meta["entity_id"] = entity_id
     return queue.submit(
         blueprint_name=ENVIRONMENT_VEND_BLUEPRINT_SENTINEL,
         inputs=dict(inputs_raw),
@@ -158,15 +170,7 @@ def _submit_environment_vend(
         acting_user=acting_user,
         client_request_id=client_request_id,
         kind="environment_vend",
-        environment_vend={
-            "blueprint": blueprint,
-            "gitops_repo": gitops_repo,
-            "gitops_path": gitops_path,
-            "owner": owner,
-            "class": env_class,
-            "base_branch": base_branch,
-            "git_branch": git_branch,
-        },
+        environment_vend=vend_meta,
     )
 
 

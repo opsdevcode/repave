@@ -157,6 +157,107 @@
 </section>
 {% endif %}
 
+{% if environment_vend_available %}
+<section class="card entity-environment-vend" aria-labelledby="environment-vend-heading">
+  <div class="card__header">
+    <h2 id="environment-vend-heading">Request environment</h2>
+    <p class="muted card__subtitle">
+      Render a governed environment stack and open a GitOps pull request (or preview gates only).
+    </p>
+  </div>
+  <div class="card__body">
+    {% if environment_vend_cfg %}
+    <dl class="preflight-panel" aria-label="Environment vending configuration">
+      <div class="preflight-panel__row">
+        <dt>Blueprint</dt>
+        <dd><code>{{ environment_vend_blueprint }}</code></dd>
+      </div>
+      {% if environment_vend_cfg.gitops_repo %}
+      <div class="preflight-panel__row">
+        <dt>GitOps repo</dt>
+        <dd><code>{{ environment_vend_cfg.gitops_repo }}</code></dd>
+      </div>
+      {% endif %}
+      <div class="preflight-panel__row">
+        <dt>Path prefix</dt>
+        <dd><code>{{ environment_vend_cfg.path_prefix }}</code></dd>
+      </div>
+      <div class="preflight-panel__row">
+        <dt>Base branch</dt>
+        <dd><code>{{ environment_vend_cfg.base_branch }}</code></dd>
+      </div>
+      {% if default_vend_path %}
+      <div class="preflight-panel__row">
+        <dt>Default path</dt>
+        <dd><code>{{ default_vend_path }}</code></dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% endif %}
+    <form
+      method="post"
+      action="/services/{{ entity.entity_id }}/request-environment"
+      class="form-grid"
+      data-repave-busy-form
+      data-busy-label="Vending environment stack…"
+      data-busy-stages="Validating inputs|Rendering stack|Running gates|Opening GitOps PR"
+    >
+      <label class="form-field">
+        <span class="form-field__label">Stack name</span>
+        <input name="stack_name" type="text" required value="{{ default_stack_name }}" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">Description</span>
+        <input
+          name="description"
+          type="text"
+          required
+          value="Environment stack for {{ entity.display_name }}"
+        />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">Cloud provider</span>
+        <select name="cloud_provider">
+          <option value="aws" selected>aws</option>
+          <option value="azure">azure</option>
+          <option value="gcp">gcp</option>
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">Environment</span>
+        <select name="environment">
+          <option value="dev" selected>dev</option>
+          <option value="staging">staging</option>
+          <option value="prod">prod</option>
+        </select>
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">Owner</span>
+        <input name="owner" type="text" value="{{ entity.owner or '' }}" placeholder="team-platform" />
+      </label>
+      <label class="form-field">
+        <span class="form-field__label">Class</span>
+        <input name="class" type="text" value="sandbox" />
+      </label>
+      <div class="form-actions">
+        <button class="btn btn--secondary btn--sm" type="submit" name="action" value="preview">
+          Preview gates
+        </button>
+        <button
+          class="btn btn--primary btn--sm"
+          type="submit"
+          name="action"
+          value="open_pr"
+          {% if environment_vend_cfg and not environment_vend_cfg.gitops_repo %}disabled title="Set environment_vending.gitops_repo in repave.config.yaml"{% endif %}
+        >
+          Open GitOps PR
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
+
 {% if slo_summary %}
 <section class="card entity-slo" aria-labelledby="slo-heading">
   <div class="card__header">

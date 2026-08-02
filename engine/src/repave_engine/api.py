@@ -84,6 +84,7 @@ from repave_engine.entity_catalog import (
     observability_embed_url,
     rollup_fleet_scorecard,
 )
+from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
@@ -158,7 +159,12 @@ from repave_engine.run_queue import (
     build_run_queue,
 )
 from repave_engine.run_store import RunStatus
-from repave_engine.run_submit import is_bundle_run, is_live_plan_run, submit_async_run
+from repave_engine.run_submit import (
+    is_bundle_run,
+    is_environment_vend_run,
+    is_live_plan_run,
+    submit_async_run,
+)
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -168,6 +174,7 @@ from repave_engine.settings import (
     OutputConfig,
     load_auth_config,
     load_durability_config,
+    load_environment_vending_config,
     load_live_plan_config,
     load_output_config,
     load_portal_config,
@@ -178,6 +185,15 @@ from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
+
+
+def _default_environment_stack_name(entity_id: str, display_name: str) -> str:
+    slug = entity_id.rsplit("/", 1)[-1].strip() if entity_id else ""
+    if not slug:
+        slug = "".join(
+            ch if ch.isalnum() or ch == "-" else "-" for ch in display_name.lower()
+        ).strip("-")
+    return (slug or "stack")[:63]
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
@@ -604,6 +620,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             live_plan_cfg.environment_for(entity.entity_id) if live_plan_cfg is not None else None
         )
         live_plan_available = bool(run_queue is not None and live_plan_env is not None)
+        vend_cfg = load_environment_vending_config(repo_root)
+        environment_vend_available = bool(run_queue is not None and vend_cfg is not None)
+        default_stack_name = _default_environment_stack_name(entity.entity_id, entity.display_name)
+        default_vend_path = ""
+        if vend_cfg is not None:
+            prefix = vend_cfg.path_prefix.strip().strip("/")
+            default_vend_path = f"{prefix}/{default_stack_name}" if prefix else default_stack_name
         return templates.TemplateResponse(
             request,
             "service_detail.html",
@@ -628,6 +651,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     if live_plan_env is not None
                     else (live_plan_cfg.policies_dir if live_plan_cfg else "")
                 ),
+                environment_vend_available=environment_vend_available,
+                environment_vend_cfg=vend_cfg,
+                environment_vend_blueprint=DEFAULT_VEND_BLUEPRINT,
+                default_stack_name=default_stack_name,
+                default_vend_path=default_vend_path,
             ),
         )
 
@@ -643,6 +671,62 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             record = submit_async_run(
                 run_queue,
                 payload={"kind": "live_plan", "entity_id": entity_id},
+                acting_user=acting,
+                repo_root=repo_root,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
+
+    @app.post("/services/{entity_id}/request-environment")
+    async def service_request_environment(request: Request, entity_id: str) -> RedirectResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        form = await request.form()
+        action = str(form.get("action", "")).strip()
+        dry_run = action == "preview"
+        stack_name = str(form.get("stack_name", "")).strip()
+        description = str(form.get("description", "")).strip()
+        cloud_provider = str(form.get("cloud_provider", "aws")).strip() or "aws"
+        environment = str(form.get("environment", "dev")).strip() or "dev"
+        owner = str(form.get("owner", "")).strip()
+        env_class = str(form.get("class", "sandbox")).strip() or "sandbox"
+        if not description:
+            entities = build_portal_catalog_entities(
+                repo_root,
+                resolved_output,
+                cost_actuals_configured=False,
+            )
+            entity = find_catalog_entity(entities, entity_id)
+            description = (
+                f"Environment stack for {entity.display_name}"
+                if entity is not None
+                else f"Environment stack for {entity_id}"
+            )
+        acting = user.subject if user else current_acting_user()
+        try:
+            record = submit_async_run(
+                run_queue,
+                payload={
+                    "kind": "environment_vend",
+                    "dry_run": dry_run,
+                    "entity_id": entity_id,
+                    "owner": owner,
+                    "class": env_class,
+                    "inputs": {
+                        "stack_name": stack_name,
+                        "description": description,
+                        "cloud_provider": cloud_provider,
+                        "environment": environment,
+                    },
+                },
                 acting_user=acting,
                 repo_root=repo_root,
             )
@@ -1001,6 +1085,29 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     live_plan_entity_id=entity_id,
                 ),
             )
+        if is_environment_vend_run(record):
+            entity_id = str(record.payload.get("entity_id", "")).strip()
+            vend_blueprint_name = (
+                str(record.payload.get("blueprint", DEFAULT_VEND_BLUEPRINT)).strip()
+                or DEFAULT_VEND_BLUEPRINT
+            )
+            vend_blueprint = load_blueprint(
+                blueprint_dir(repo_root, vend_blueprint_name),
+                repo_root=repo_root,
+            )
+            return templates.TemplateResponse(
+                request,
+                "run_console.html",
+                page_context(
+                    request,
+                    nav_active="library",
+                    run_id=run_id,
+                    run_record=record,
+                    environment_vend=True,
+                    environment_vend_entity_id=entity_id,
+                    gate_names=vend_blueprint.gates,
+                ),
+            )
         if is_bundle_run(record):
             bundle_name = str(record.payload.get("bundle", "")).strip()
             bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
@@ -1067,6 +1174,22 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     run_id=run_id,
                     run_record=record,
                     live_plan_summary=summary,
+                ),
+            )
+        if is_environment_vend_run(record):
+            summary = record.result if isinstance(record.result, dict) else {}
+            entity_id = str(record.payload.get("entity_id", "")).strip()
+            if entity_id and not summary.get("entity_id"):
+                summary = {**summary, "entity_id": entity_id}
+            return templates.TemplateResponse(
+                request,
+                "environment_vend_result.html",
+                page_context(
+                    request,
+                    nav_active="library",
+                    run_id=run_id,
+                    run_record=record,
+                    environment_vend_summary=summary,
                 ),
             )
         if is_bundle_run(record):
