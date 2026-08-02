@@ -7,12 +7,14 @@ import re
 from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Literal
 
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.blueprint import artifact_family
 from repave_engine.cost_actuals import CostActualsSummary, tag_coverage_for_fields
+from repave_engine.environment_record import EnvironmentRecord
 from repave_engine.fleet import FleetEntry, normalize_repo_url
 from repave_engine.fleet_operator_status import FleetOperatorStatus
 from repave_engine.fleet_view import build_fleet_rows
@@ -147,9 +149,19 @@ class CatalogEntity:
     readme_preview: str = ""
     last_generation_at: str = ""
     last_generation_outcome: str = ""
+    cloud_provider: str = ""
+    environment_tier: str = ""
+    env_class: str = ""
+    gitops_repo: str = ""
+    gitops_path: str = ""
+    expires_at: str = ""
+    vend_status: str = ""
+    vend_run_id: str = ""
+    pull_request_url: str = ""
+    source_entity_id: str = ""
 
     def to_public_dict(self) -> dict[str, Any]:
-        return {
+        payload: dict[str, Any] = {
             "entity_id": self.entity_id,
             "display_name": self.display_name,
             "repo_url": self.repo_url,
@@ -172,6 +184,20 @@ class CatalogEntity:
                 for dim in self.scorecard
             ],
         }
+        if self.source == "environment":
+            payload["environment"] = {
+                "cloud_provider": self.cloud_provider,
+                "tier": self.environment_tier,
+                "class": self.env_class,
+                "gitops_repo": self.gitops_repo,
+                "gitops_path": self.gitops_path,
+                "expires_at": self.expires_at,
+                "status": self.vend_status,
+                "run_id": self.vend_run_id,
+                "pull_request_url": self.pull_request_url,
+                "source_entity_id": self.source_entity_id,
+            }
+        return payload
 
 
 def entity_id_for_repo_url(repo_url: str) -> str:
@@ -369,6 +395,122 @@ def build_scorecard(
     )
 
     return tuple(dims)
+
+
+def _ttl_scorecard_dimension(*, expires_at: str) -> ScorecardDimension:
+    if not expires_at.strip():
+        return ScorecardDimension("ttl", "TTL", "unknown", "No expiry configured")
+    try:
+        deadline = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+    except ValueError:
+        return ScorecardDimension("ttl", "TTL", "unknown", f"Invalid expiry {expires_at}")
+    if deadline.tzinfo is None:
+        deadline = deadline.replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    if deadline <= now:
+        return ScorecardDimension("ttl", "TTL", "fail", f"Expired {expires_at[:19]}")
+    remaining = deadline - now
+    if remaining <= timedelta(hours=24):
+        return ScorecardDimension(
+            "ttl",
+            "TTL",
+            "warn",
+            f"Expires {expires_at[:19]} ({int(remaining.total_seconds() // 3600)}h left)",
+        )
+    return ScorecardDimension("ttl", "TTL", "pass", f"Expires {expires_at[:19]}")
+
+
+def build_environment_scorecard(
+    record: EnvironmentRecord,
+    *,
+    cost_actuals_configured: bool,
+    owner: str = "",
+    display_name: str = "",
+) -> tuple[ScorecardDimension, ...]:
+    pin_level: ScoreLevel = "pass" if record.blueprint_version else "warn"
+    pin_detail = f"{record.blueprint_name}@{record.blueprint_version or 'unknown'}"
+    gate_level: ScoreLevel = "pass" if record.gates_outcome == "passed" else "fail"
+    return (
+        ScorecardDimension("pins", "Blueprint", pin_level, pin_detail),
+        _ttl_scorecard_dimension(expires_at=record.expires_at),
+        ScorecardDimension("gates", "Vend gates", gate_level, record.gates_outcome or "unknown"),
+        _cost_scorecard_dimension(
+            owner=owner or record.owner,
+            display_name=display_name or record.stack_name,
+            cost_actuals=None,
+            cost_actuals_configured=cost_actuals_configured,
+        ),
+    )
+
+
+def _entity_from_environment_record(
+    record: EnvironmentRecord,
+    *,
+    cost_actuals_configured: bool = False,
+) -> CatalogEntity:
+    display = record.stack_name
+    return CatalogEntity(
+        entity_id=record.entity_id,
+        display_name=display,
+        repo_url=None,
+        local_path=None,
+        owner=record.owner,
+        blueprint_name=record.blueprint_name,
+        blueprint_version=record.blueprint_version,
+        standard_source="",
+        standard_version="",
+        component_type="environment",
+        lifecycle=record.environment_tier,
+        operator_phase="",
+        operator_message="",
+        remediation_pr_url="",
+        manifest_name=record.stack_name,
+        manifest_namespace=record.gitops_path,
+        source="environment",
+        scorecard=build_environment_scorecard(
+            record,
+            cost_actuals_configured=cost_actuals_configured,
+            owner=record.owner,
+            display_name=display,
+        ),
+        last_generation_at=record.vended_at[:19] if record.vended_at else "",
+        last_generation_outcome=record.gates_outcome,
+        cloud_provider=record.cloud_provider,
+        environment_tier=record.environment_tier,
+        env_class=record.env_class,
+        gitops_repo=record.gitops_repo,
+        gitops_path=record.gitops_path,
+        expires_at=record.expires_at,
+        vend_status=record.status,
+        vend_run_id=record.run_id,
+        pull_request_url=record.pull_request_url,
+        source_entity_id=record.source_entity_id,
+    )
+
+
+def build_catalog_from_environments(
+    records: tuple[EnvironmentRecord, ...] | list[EnvironmentRecord],
+    *,
+    cost_actuals_configured: bool = False,
+) -> list[CatalogEntity]:
+    return [
+        _entity_from_environment_record(item, cost_actuals_configured=cost_actuals_configured)
+        for item in records
+    ]
+
+
+def merge_catalog_entities(
+    base: list[CatalogEntity],
+    extra: list[CatalogEntity],
+) -> list[CatalogEntity]:
+    seen = {item.entity_id for item in base}
+    merged = list(base)
+    for item in extra:
+        if item.entity_id in seen:
+            continue
+        merged.append(item)
+        seen.add(item.entity_id)
+    return merged
 
 
 def _match_local_dir(modules_root: Path, repo_url: str) -> Path | None:

@@ -123,13 +123,17 @@ gates:
 #       # use_backend: true
 # Or: REPAVE_LIVE_PLAN=1
 
-# Optional governed environment vending (ADR 003 Phase 3 slice 1).
+# Optional governed environment vending (ADR 003 Phase 3).
 # environment_vending:
 #   enabled: true
 #   gitops_repo: https://github.com/acme/platform-gitops
 #   base_branch: main
 #   path_prefix: environments
-# Or: REPAVE_ENVIRONMENT_VENDING=1
+#   file: data/environments/registry.jsonl
+#   default_ttl_hours: 0
+#   ttl_hours_by_class:
+#     sandbox: 168
+# Or: REPAVE_ENVIRONMENT_VENDING=1, REPAVE_ENVIRONMENT_REGISTRY_FILE=...
 
 # Optional OpenTelemetry trace export for pipeline spans (requires `uv sync --extra otel`).
 # tracing:
