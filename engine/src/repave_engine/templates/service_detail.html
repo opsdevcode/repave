@@ -100,6 +100,8 @@
           <span class="badge badge--pass">Active</span>
           {% elif entity.vend_status == 'pending' %}
           <span class="badge badge--skip">Pending</span>
+          {% elif entity.vend_status == 'expired' %}
+          <span class="badge badge--warn">Expired</span>
           {% else %}
           <span class="badge badge--muted">{{ entity.vend_status or 'unknown' }}</span>
           {% endif %}
@@ -131,7 +133,7 @@
       {% endif %}
     </dl>
     {% if entity.pull_request_url %}
-    <p><a class="btn btn--secondary btn--sm" href="{{ entity.pull_request_url }}" rel="noreferrer noopener" target="_blank">Open vend pull request</a></p>
+    <p><a class="btn btn--secondary btn--sm" href="{{ entity.pull_request_url }}" rel="noreferrer noopener" target="_blank">{% if entity.vend_status == 'expired' %}Open decommission pull request{% else %}Open vend pull request{% endif %}</a></p>
     {% endif %}
     {% if entity.vend_run_id %}
     <p><a class="btn btn--ghost btn--sm" href="/runs/{{ entity.vend_run_id }}">View vend run</a></p>

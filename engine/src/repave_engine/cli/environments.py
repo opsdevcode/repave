@@ -61,6 +61,13 @@ def cmd_environments_reclaim(args: argparse.Namespace) -> int:
         return 0
 
     for item in summary.results:
-        state = "reclaimed" if item.reclaimed else "skipped" if item.skipped else "dry-run"
+        if item.reclaimed:
+            state = "reclaimed"
+        elif item.skipped:
+            state = "skipped"
+        elif item.mode == "decommission_review":
+            state = "decommission-review"
+        else:
+            state = "dry-run"
         print(f"{item.stack_name}: {state} — {item.detail}")
     return 0

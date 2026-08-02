@@ -7,19 +7,26 @@ from unittest.mock import patch
 import pytest
 
 from repave_engine.environment_reclaim import (
+    MODE_AUTO_RECLAIM,
+    MODE_DECOMMISSION_REVIEW,
     EnvironmentReclaimError,
     build_environment_reclaim_pull_request_title,
     list_expired_environments,
+    list_expired_environments_for_decommission_review,
     reclaim_environment,
     reclaim_expired_environments,
+    request_decommission_review,
 )
 from repave_engine.environment_record import (
     EnvironmentRecord,
+    has_open_decommission_review,
     is_environment_expired,
     is_reclaim_eligible_class,
+    resolve_decommission_review_classes,
 )
 from repave_engine.environment_registry import (
     decommission_environment,
+    mark_environment_expired,
     read_environments,
     register_environment,
 )
@@ -201,6 +208,7 @@ def test_reclaim_environment_opens_pr_and_decommissions(
         )
 
     assert result.reclaimed is True
+    assert result.mode == MODE_AUTO_RECLAIM
     assert result.pull_request_number == 42
     assert read_environments(registry) == ()
 
@@ -283,3 +291,158 @@ environment_vending:
     config = load_environment_vending_config(tmp_path)
     assert config is not None
     assert config.auto_reclaim_classes == ("sandbox", "dev")
+
+
+def test_resolve_decommission_review_classes_defaults_to_non_auto() -> None:
+    classes = resolve_decommission_review_classes(
+        auto_reclaim_classes=("sandbox",),
+        configured_review_classes=(),
+        observed_classes=frozenset({"sandbox", "prod", "staging"}),
+    )
+    assert classes == frozenset({"prod", "staging"})
+
+
+def test_has_open_decommission_review() -> None:
+    assert has_open_decommission_review(_record(status="expired", pull_request_number=9))
+    assert not has_open_decommission_review(_record(status="active", pull_request_number=9))
+
+
+def test_list_expired_environments_for_decommission_review_skips_open_pr() -> None:
+    expired_prod = _record(
+        stack_name="prod-old",
+        env_class="prod",
+        expires_at="2020-01-01T00:00:00+00:00",
+    )
+    expired_with_pr = _record(
+        stack_name="prod-reviewed",
+        env_class="prod",
+        expires_at="2020-01-01T00:00:00+00:00",
+        status="expired",
+        pull_request_number=55,
+    )
+    now = datetime(2026, 8, 2, tzinfo=timezone.utc)
+    eligible = list_expired_environments_for_decommission_review(
+        (expired_prod, expired_with_pr),
+        auto_reclaim_classes=frozenset({"sandbox"}),
+        review_classes=frozenset({"prod"}),
+        now=now,
+    )
+    assert [item.stack_name for item in eligible] == ["prod-old"]
+
+
+def test_request_decommission_review_opens_draft_and_keeps_registry(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    registry = tmp_path / "registry.jsonl"
+    record = _record(
+        stack_name="prod-app",
+        entity_id="env-aws-prod-app",
+        env_class="prod",
+        gitops_path="environments/prod-app",
+    )
+    register_environment(registry, record)
+
+    work = tmp_path / "work"
+    (work / "gitops" / "environments" / "prod-app").mkdir(parents=True)
+
+    class _Repo:
+        owner = "acme"
+        name = "gitops"
+        web_url = "https://github.com/acme/gitops"
+
+    with (
+        patch(
+            "repave_engine.environment_reclaim.tempfile.TemporaryDirectory",
+            return_value=_FakeTempDir(work),
+        ),
+        patch("repave_engine.environment_reclaim.shallow_clone"),
+        patch("repave_engine.environment_reclaim.preflight_import") as preflight,
+        patch("repave_engine.environment_reclaim._commit_gitops_tree", return_value=True),
+        patch(
+            "repave_engine.environment_reclaim.resolve_module_repository_from_git",
+            return_value=_Repo(),
+        ),
+        patch("repave_engine.environment_reclaim.push_import_branch"),
+        patch(
+            "repave_engine.environment_reclaim.create_github_pull_request",
+            return_value={"number": 99, "html_url": "https://github.com/acme/gitops/pull/99"},
+        ) as create_pr,
+        patch("repave_engine.environment_reclaim.add_pull_request_labels"),
+        patch("repave_engine.environment_reclaim.shutil.rmtree"),
+    ):
+        preflight.return_value = type(
+            "Preflight",
+            (),
+            {"has_existing_pull_request": False, "base_branch": "main"},
+        )()
+        result = request_decommission_review(
+            record,
+            repo_root=repo_root,
+            registry_path=registry,
+            base_branch="main",
+            github_token="gh-test",
+            dry_run=False,
+        )
+
+    assert result.mode == MODE_DECOMMISSION_REVIEW
+    assert result.reclaimed is False
+    assert result.draft is True
+    assert result.pull_request_number == 99
+    create_pr.assert_called_once()
+    assert create_pr.call_args.kwargs["draft"] is True
+    entries = read_environments(registry)
+    assert len(entries) == 1
+    assert entries[0].status == "expired"
+    assert entries[0].pull_request_number == 99
+
+
+def test_reclaim_expired_environments_processes_prod_review_dry_run(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    registry = tmp_path / "registry.jsonl"
+    register_environment(
+        registry,
+        _record(
+            stack_name="prod-app",
+            entity_id="env-aws-prod-app",
+            env_class="prod",
+            gitops_path="environments/prod-app",
+        ),
+    )
+    config = EnvironmentVendingConfig(
+        enabled=True,
+        gitops_repo="https://github.com/acme/gitops",
+        file=registry,
+        auto_reclaim_classes=("sandbox",),
+        decommission_review_classes=("prod",),
+    )
+    now = datetime(2026, 8, 3, tzinfo=timezone.utc)
+    summary = reclaim_expired_environments(
+        repo_root=repo_root,
+        config=config,
+        github_token=None,
+        dry_run=True,
+        now=now,
+    )
+    assert len(summary.results) == 1
+    assert summary.results[0].mode == MODE_DECOMMISSION_REVIEW
+    assert summary.results[0].draft is True
+    assert read_environments(registry)[0].status == "active"
+
+
+def test_mark_environment_expired_updates_registry(tmp_path: Path) -> None:
+    registry = tmp_path / "registry.jsonl"
+    record = _record(env_class="prod")
+    register_environment(registry, record)
+    mark_environment_expired(
+        registry,
+        record,
+        pull_request_url="https://github.com/acme/gitops/pull/99",
+        pull_request_number=99,
+        git_branch="repave/environment-reclaim/prod-app-reclaim",
+    )
+    entry = read_environments(registry)[0]
+    assert entry.status == "expired"
+    assert entry.pull_request_number == 99
