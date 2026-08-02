@@ -142,6 +142,37 @@ repave:
         admin: []
         generator: []
 
+  environmentVending:
+    # Governed environment stacks (ADR 003 Phase 3). Requires GITHUB_TOKEN for reclaim/vend.
+    enabled: false
+    gitopsRepo: ""
+    baseBranch: main
+    pathPrefix: environments
+    file: /data/environments/registry.jsonl
+    defaultTtlHours: 0
+    ttlHoursByClass: {}
+    autoReclaimClasses:
+      - sandbox
+    decommissionReviewClasses: []
+
+# Scheduled TTL reclaim for vended environments (requires environmentVending.enabled).
+environmentReclaim:
+  cronJob:
+    enabled: false
+    schedule: "0 * * * *"
+    dryRun: false
+    concurrencyPolicy: Forbid
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 1
+    restartPolicy: OnFailure
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
 # Gate-toolchain worker image (external workerMode). Defaults to repave-engine when repository is empty.
 workerImage:
   repository: ""
@@ -180,6 +211,12 @@ persistence:
     size: 1Gi
     existingClaim: ""
   runs:
+    enabled: true
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    existingClaim: ""
+  environments:
     enabled: true
     storageClass: ""
     accessMode: ReadWriteOnce

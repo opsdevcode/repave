@@ -7,8 +7,11 @@ work, writing ADRs, and opening issues.
 **Current release:** v2.7.0  
 
 **In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phase 3
-(directional); [conversational governed AI](#conversational-and-governed-ai-generation).
-**Shipped on `main`:** **deployment status** (`portal.deployment_reader` url/argocd/flux,
+follow-ups (environment cost enrichment); [conversational governed AI](#conversational-and-governed-ai-generation).
+**Shipped on `main`:** **environment vending** (`kind: environment_vend`, portal request-environment,
+JSONL registry + catalog merge, sandbox TTL auto-reclaim, non-sandbox draft decommission PRs,
+`repave environments reclaim`, `POST /api/v2/environments/reclaim`, Helm reclaim CronJob —
+[ADR 003](adr/003-environment-lifecycle-and-live-state.md) Phase 3); **deployment status** (`portal.deployment_reader` url/argocd/flux,
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md) Phase 1); **live plan** async run
 (`kind: live_plan`, worker/Job + OPA on plan JSON, optional PR body attachment); engine hardening group A (A1–A6)
 and **group B** maintainability (gate_runners
@@ -160,7 +163,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
-| **v2.1+ environment lifecycle** | Phase 1–2 partial | Deployment status + governed live plan (`kind: live_plan`, PR body attachment); environment vending remains open ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
+| **v2.1+ environment lifecycle** | Phase 1–3 partial | Deployment status + live plan + environment vending/reclaim shipped; environment **cost** enrichment still open ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **v2.1+ governed AI** | open | Conversational generation on the v2 semver line |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
 
@@ -1810,9 +1813,11 @@ killed worker's run is replayable and visible from a second portal replica, and
 
 ### Environment lifecycle and deployment awareness
 
-**Status:** **Phase 1–2 shipped on `main`** — deployment status plus `kind: live_plan`
-worker runs (OPA on plan JSON, ephemeral plan artifacts, optional PR body attachment)
-([ADR 003](adr/003-environment-lifecycle-and-live-state.md)). Phase 3 vending remains open.
+**Status:** **Phase 1–3 shipped on `main` (partial)** — deployment status, `kind: live_plan`,
+environment vending (`environment_vend`), JSONL registry + catalog, sandbox TTL auto-reclaim,
+non-sandbox draft decommission PRs, CLI/API reclaim, and optional Helm reclaim CronJob
+([ADR 003](adr/003-environment-lifecycle-and-live-state.md)). **Still open:** per-environment
+**cost** scorecard fetch and post-merge registry cleanup when a decommission PR merges.
 
 **Problem:** repave governs **repositories** and stops at the pull request. It cannot answer
 "is my change live", its policy runs against repo shape rather than the effect of a change,
@@ -1851,6 +1856,12 @@ per-environment Secret `envFrom`; OPA failure surfaces as `gates_outcome: failed
 never appears in the run result, provenance, or audit; portal offers **Plan against live state**
 when the entity is configured under `live_plan.environments`; optional `pull_request` /
 `pull_request_url` on submit merges summary + OPA verdict into the PR body.
+
+**Done when (Phase 3):** an environment request opens a reviewable GitOps commit and the vended
+stack appears in the catalog with owner, class, TTL, and status; expired sandboxes are
+auto-reclaimed via decommission PR; expired non-sandbox classes open draft decommission PRs;
+operators can schedule reclaim via Helm CronJob or `repave environments reclaim`. **Still open:**
+cloud spend on environment entities and automatic registry removal after decommission PR merge.
 
 ---
 

@@ -214,6 +214,34 @@ Scrape `GET /metrics` on the Service port.
 Set `monitoring.prometheusRules.includeKubeStateAlerts: true` when kube-state-metrics is
 available (HPA-at-max alert).
 
+## Environment vending and TTL reclaim
+
+Governed environment stacks ([ADR 003](../../../docs/adr/003-environment-lifecycle-and-live-state.md)
+Phase 3) use `repave.environmentVending` in the ConfigMap and a shared
+`persistence.environments` volume for the JSONL registry.
+
+| Values path | Purpose |
+| --- | --- |
+| `repave.environmentVending.*` | GitOps repo, TTL classes, auto-reclaim vs review classes |
+| `persistence.environments` | PVC for `registry.jsonl` (portal + reclaim CronJob) |
+| `environmentReclaim.cronJob` | Hourly `repave environments reclaim` Job |
+
+Example overlay: [`values-environment-vending.yaml`](values-environment-vending.yaml).
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  -f deploy/k8s/chart/values-environment-vending.yaml \
+  --set repave.output.githubOrg=your-org \
+  --set repave.environmentVending.gitopsRepo=https://github.com/your-org/platform-gitops \
+  --set secrets.existingSecret=repave-secrets
+```
+
+The CronJob runs the same CLI as `POST /api/v2/environments/reclaim` (sandbox auto-reclaim +
+draft decommission PRs for other classes). Requires `GITHUB_TOKEN` or GitHub App credentials on
+the chart Secret. Use `environmentReclaim.cronJob.dryRun: true` to preview without opening PRs.
+
+Manual reclaim from a pod: `kubectl exec deploy/repave -n repave -- repave environments reclaim --dry-run`.
+
 ## Validation
 
 ```bash

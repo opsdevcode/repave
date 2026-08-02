@@ -129,6 +129,7 @@ spec:
             - name: REPAVE_FLEET_FILE
               value: {{ .Values.repave.fleet.file | quote }}
             {{- end }}
+            {{- include "repave.environmentVendingEnv" . | nindent 12 }}
             {{- $secretName := include "repave.secretName" . }}
             {{- if $secretName }}
             {{- include "repave.githubAuthEnv" . | nindent 12 }}
@@ -204,6 +205,7 @@ spec:
             - name: runs
               mountPath: /data/runs
             {{- end }}
+            {{- include "repave.environmentDataVolumeMount" . | nindent 12 }}
       volumes:
         - name: config
           configMap:
@@ -259,6 +261,7 @@ spec:
           emptyDir: {}
           {{- end }}
         {{- end }}
+        {{- include "repave.environmentDataVolume" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

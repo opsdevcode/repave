@@ -67,3 +67,22 @@ data:
       run_stale_seconds: {{ .Values.repave.durability.runStaleSeconds }}
       run_retry_base_seconds: {{ .Values.repave.durability.runRetryBaseSeconds }}
     {{- end }}
+    {{- if include "repave.environmentVendingEnabled" . }}
+    environment_vending:
+      enabled: true
+      gitops_repo: {{ .Values.repave.environmentVending.gitopsRepo | quote }}
+      base_branch: {{ .Values.repave.environmentVending.baseBranch | quote }}
+      path_prefix: {{ .Values.repave.environmentVending.pathPrefix | quote }}
+      file: {{ .Values.repave.environmentVending.file | quote }}
+      default_ttl_hours: {{ .Values.repave.environmentVending.defaultTtlHours }}
+      {{- if .Values.repave.environmentVending.ttlHoursByClass }}
+      ttl_hours_by_class:
+{{ toYaml .Values.repave.environmentVending.ttlHoursByClass | indent 8 }}
+      {{- end }}
+      auto_reclaim_classes:
+{{ toYaml .Values.repave.environmentVending.autoReclaimClasses | indent 8 }}
+      {{- if .Values.repave.environmentVending.decommissionReviewClasses }}
+      decommission_review_classes:
+{{ toYaml .Values.repave.environmentVending.decommissionReviewClasses | indent 8 }}
+      {{- end }}
+    {{- end }}
