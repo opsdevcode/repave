@@ -24,7 +24,8 @@ digest_rendered="$(mktemp)"
 multi_replica_rendered="$(mktemp)"
 worker_hpa_rendered="$(mktemp)"
 fleet_shared_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}"' EXIT
+env_vending_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -297,6 +298,35 @@ fi
 
 if ! grep -q 'require_session_secret: true' "${multi_replica_rendered}"; then
   echo "values-multi-replica-smoke.yaml must require session secret for multi-replica" >&2
+  exit 1
+fi
+
+env_vending_rendered="$(mktemp)"
+
+helm template repave-env-vending "${CHART}" \
+  --namespace repave-env-vending \
+  -f "${CHART}/values-environment-vending.yaml" \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  >"${env_vending_rendered}"
+
+if ! grep -q 'kind: CronJob' "${env_vending_rendered}"; then
+  echo "values-environment-vending.yaml must render environment reclaim CronJob" >&2
+  exit 1
+fi
+
+if ! grep -q 'kind: PersistentVolumeClaim' "${env_vending_rendered}"; then
+  echo "values-environment-vending.yaml must render environments PVC" >&2
+  exit 1
+fi
+
+if ! grep -q 'environment_vending:' "${env_vending_rendered}"; then
+  echo "values-environment-vending.yaml must render environment_vending config block" >&2
+  exit 1
+fi
+
+if ! grep -q '  - environments' "${env_vending_rendered}" || ! grep -q '  - reclaim' "${env_vending_rendered}"; then
+  echo "environment reclaim CronJob must invoke repave environments reclaim" >&2
   exit 1
 fi
 

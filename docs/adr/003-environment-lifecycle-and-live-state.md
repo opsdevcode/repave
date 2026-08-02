@@ -1,8 +1,8 @@
 # ADR 003: Environment lifecycle and how far repave reaches into live state
 
-**Status:** Accepted — **Phase 1** shipped; **Phase 2** partial (`kind: live_plan` worker
-runs; PR body attachment still open). Phase 3 remains directional — revisit before
-vending.  
+**Status:** Accepted — **Phase 1** shipped; **Phase 2** shipped (`kind: live_plan` worker runs;
+PR body attachment shipped). **Phase 3** shipped on `main` (vending, registry, TTL reclaim,
+decommission review); environment cost enrichment and post-merge registry cleanup remain open.  
 **Date:** 2026-08-01  
 **Scope:** engine catalog read models, portal, worker role, `repave.config.yaml`, blueprints
 (`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap.md#v200--platform-ga)
@@ -88,7 +88,7 @@ Boundaries that must hold if this is built:
   `repave.yaml` provenance or the audit record — only a summary and the policy verdict do.
 - **Plan only.** No apply on this rung, regardless of how convenient it becomes.
 
-### Phase 3 — Environment vending and sandboxes — directional
+### Phase 3 — Environment vending and sandboxes — shipped (partial)
 
 Request an environment from a governed environment blueprint, receive one with an owner, a
 TTL, a cost view, and a lifecycle.
@@ -149,12 +149,14 @@ a human on it.
 - [x] Plan JSON is scrubbed after evaluation and never stored on the run record.
 - [x] Plan summary attached to a PR body when `pull_request` / `pull_request_url` is set on submit.
 
-**Phase 3 (before implementation)**
+**Phase 3**
 
-- An environment request produces a reviewable commit in a GitOps repository, and the applied
-  environment appears as a catalog entity with owner, TTL, and cost.
-- A sandbox past its TTL is reclaimed inside the non-production boundary; a non-sandbox
-  environment expires into a decommission PR.
+- [x] An environment request produces a reviewable commit in a GitOps repository, and the applied
+  environment appears as a catalog entity with owner, TTL, and status.
+- [x] A sandbox past its TTL is reclaimed inside the non-production boundary via decommission PR.
+- [x] A non-sandbox environment expires into a draft decommission PR for human review.
+- [ ] Catalog entity shows cloud **cost** for vended environments (scorecard still generic).
+- [ ] Registry entry removed automatically when a decommission PR merges (today: operator merge + optional manual reclaim).
 
 ## References
 

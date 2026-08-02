@@ -113,6 +113,10 @@ is already absent), the environment is removed from the registry. Non-sandbox cl
 Configure `decommission_review_classes` explicitly (for example `prod`, `staging`); when
 omitted, every expired class **not** listed in `auto_reclaim_classes` uses the review path.
 
+**Helm:** enable `environmentReclaim.cronJob` with `repave.environmentVending` — see
+[`deploy/k8s/chart/values-environment-vending.yaml`](../../deploy/k8s/chart/values-environment-vending.yaml)
+and [`deploy/k8s/chart/README.md`](../../deploy/k8s/chart/README.md#environment-vending-and-ttl-reclaim).
+
 ## Operator upgrades
 
 These endpoints mirror `repave plan-upgrade` / `apply-upgrade --format json` so the

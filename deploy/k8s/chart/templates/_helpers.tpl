@@ -153,3 +153,43 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- "" }}
 {{- end }}
 {{- end }}
+
+{{- define "repave.environmentVendingEnabled" -}}
+{{- and .Values.repave.environmentVending.enabled .Values.repave.environmentVending.gitopsRepo }}
+{{- end }}
+
+{{- define "repave.environmentRegistryMountPath" -}}
+{{- $file := .Values.repave.environmentVending.file | default "/data/environments/registry.jsonl" -}}
+{{- dir $file -}}
+{{- end }}
+
+{{- define "repave.environmentDataVolumeMount" -}}
+{{- if include "repave.environmentVendingEnabled" . }}
+- name: environments
+  mountPath: {{ include "repave.environmentRegistryMountPath" . | quote }}
+{{- end }}
+{{- end }}
+
+{{- define "repave.environmentDataVolume" -}}
+{{- if include "repave.environmentVendingEnabled" . }}
+- name: environments
+  {{- if .Values.persistence.environments.existingClaim }}
+  persistentVolumeClaim:
+    claimName: {{ .Values.persistence.environments.existingClaim }}
+  {{- else if .Values.persistence.environments.enabled }}
+  persistentVolumeClaim:
+    claimName: {{ include "repave.fullname" . }}-environments
+  {{- else }}
+  emptyDir: {}
+  {{- end }}
+{{- end }}
+{{- end }}
+
+{{- define "repave.environmentVendingEnv" -}}
+{{- if include "repave.environmentVendingEnabled" . }}
+- name: REPAVE_ENVIRONMENT_VENDING
+  value: "1"
+- name: REPAVE_ENVIRONMENT_REGISTRY_FILE
+  value: {{ .Values.repave.environmentVending.file | quote }}
+{{- end }}
+{{- end }}

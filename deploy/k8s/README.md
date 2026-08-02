@@ -10,6 +10,7 @@ via chart values or standalone manifests.
 | [`chart/values-day2.yaml`](chart/values-day2.yaml) | Production overlay: HPA, ServiceMonitor, PrometheusRule, session/GitHub readiness |
 | [`chart/values-decomposed.yaml`](chart/values-decomposed.yaml) | Decomposed portal + worker + corpus (Phase 2) |
 | [`chart/values-decomposed-day2.yaml`](chart/values-decomposed-day2.yaml) | Recommended hosted production: decomposed + day-2 operability |
+| [`chart/values-environment-vending.yaml`](chart/values-environment-vending.yaml) | Environment vending registry PVC + TTL reclaim CronJob |
 | [`chart/values-digest-pinned.yaml`](chart/values-digest-pinned.yaml) | Supply-chain overlay: pin portal/worker/corpus by digest |
 | [`chart/values-multi-replica-smoke.yaml`](chart/values-multi-replica-smoke.yaml) | CI overlay: two portal replicas on shared Postgres |
 | [`hack/kind-co-install.sh`](hack/kind-co-install.sh) | kind: portal + fleet registry + operator + `fleet-manifests` apply |

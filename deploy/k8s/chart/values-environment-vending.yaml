@@ -1,0 +1,41 @@
+# Environment vending + scheduled TTL reclaim (ADR 003 Phase 3 closeout).
+# Requires GITHUB_TOKEN (or GitHub App keys) on the portal Secret for GitOps PRs.
+#
+# Validate: make chart-validate
+# Install:
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f deploy/k8s/chart/values-environment-vending.yaml \
+#     --set repave.output.githubOrg=your-org \
+#     --set repave.environmentVending.gitopsRepo=https://github.com/your-org/platform-gitops \
+#     --set secrets.create=true \
+#     --set secrets.githubToken="$GITHUB_TOKEN"
+
+repave:
+  environmentVending:
+    enabled: true
+    gitopsRepo: https://github.com/your-org/platform-gitops
+    baseBranch: main
+    pathPrefix: environments
+    file: /data/environments/registry.jsonl
+    ttlHoursByClass:
+      sandbox: 168
+      prod: 720
+    autoReclaimClasses:
+      - sandbox
+    decommissionReviewClasses:
+      - prod
+      - staging
+
+environmentReclaim:
+  cronJob:
+    enabled: true
+    schedule: "0 * * * *"
+    dryRun: false
+
+persistence:
+  environments:
+    enabled: true
+
+secrets:
+  create: false
+  existingSecret: repave-secrets

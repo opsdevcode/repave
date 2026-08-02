@@ -69,3 +69,21 @@ spec:
   storageClassName: {{ .Values.persistence.runs.storageClass | quote }}
   {{- end }}
 {{- end }}
+---
+{{- if and (include "repave.environmentVendingEnabled" .) .Values.persistence.environments.enabled (not .Values.persistence.environments.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "repave.fullname" . }}-environments
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.environments.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.environments.size }}
+  {{- if .Values.persistence.environments.storageClass }}
+  storageClassName: {{ .Values.persistence.environments.storageClass | quote }}
+  {{- end }}
+{{- end }}
