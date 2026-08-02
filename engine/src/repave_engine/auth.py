@@ -18,8 +18,8 @@ ROLE_VIEWER = "viewer"
 ROLE_GENERATOR = "generator"
 ROLE_ADMIN = "admin"
 
-SERVICE_API_TOKEN_SUBJECT = "service:api-token"
-SERVICE_API_TOKEN_EMAIL = "service@repave.internal"
+SERVICE_BEARER_SUBJECT = "repave:service-bearer"
+SERVICE_BEARER_EMAIL = "repave-service@internal.local"
 
 _PUBLIC_PREFIXES = ("/static", "/health", "/readyz", "/metrics", "/auth/")
 
@@ -79,8 +79,8 @@ def service_user_from_bearer(request: Request, config: AuthConfig) -> AuthUser |
     if not secrets.compare_digest(token, config.api_token):
         return None
     return AuthUser(
-        subject=SERVICE_API_TOKEN_SUBJECT,
-        email=SERVICE_API_TOKEN_EMAIL,
+        subject=SERVICE_BEARER_SUBJECT,
+        email=SERVICE_BEARER_EMAIL,
         role=ROLE_ADMIN,
     )
 
