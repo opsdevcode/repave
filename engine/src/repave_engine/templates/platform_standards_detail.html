@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ summary.blueprint_name }} — standards — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/platform/standards">← Standards</a></p>
+{% include "partials/platform_subnav.html" %}
+<header class="form-hero">
+  <div>
+    <h1 class="page-title"><code>{{ summary.blueprint_name }}</code></h1>
+    <p class="page-lead">
+      Catalog pins: <code>{{ summary.catalog_version }}</code> · standard
+      <code>{{ summary.catalog_standard_version }}</code> · estimate from registry.
+    </p>
+  </div>
+</header>
+
+<section class="card" aria-labelledby="behind-heading">
+  <div class="card__header">
+    <h2 id="behind-heading">{{ summary.behind_count }} repo(s) behind</h2>
+    <p class="muted card__subtitle">{{ summary.current_count }} current · {{ summary.governed_count }} governed</p>
+  </div>
+  <div class="card__body">
+    {% if summary.behind_repos %}
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Repository</th>
+          <th scope="col">Recorded pins</th>
+          <th scope="col">Drift fields</th>
+          <th scope="col">Upgrade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary.behind_repos %}
+        <tr>
+          <td><code>{{ row.repo_url }}</code></td>
+          <td>{{ row.blueprint_version }} / std {{ row.standard_version or '—' }}</td>
+          <td>{{ row.pin_fields | join(', ') }}</td>
+          <td><a href="/update?target_repo={{ row.repo_url | urlencode }}">Plan upgrade</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if async_generation_enabled and summary.behind_repos %}
+    <form method="post" action="/platform/standards/{{ summary.blueprint_name }}/confirm-drift" class="form-actions">
+      {% for row in summary.behind_repos %}
+      <input type="hidden" name="repo_urls" value="{{ row.repo_url }}" />
+      {% endfor %}
+      <button type="submit" class="btn btn--primary">Confirm drift (async verify)</button>
+    </form>
+    {% endif %}
+    {% else %}
+    <p class="muted">All governed repos match catalog pins in the registry estimate.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

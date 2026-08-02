@@ -10,9 +10,17 @@ from repave_engine.environment_vend import (
 )
 from repave_engine.live_plan import LIVE_PLAN_BLUEPRINT_SENTINEL
 from repave_engine.live_plan_pr import parse_pull_request_ref
+from repave_engine.platform_runs import (
+    ENVIRONMENT_RECLAIM_SENTINEL,
+    FLEET_DRIFT_CONFIRM_SENTINEL,
+    load_environment_reclaim_config,
+)
 from repave_engine.run_queue import RunQueue
 from repave_engine.run_store import RunRecord
-from repave_engine.settings import load_environment_vending_config, load_live_plan_config
+from repave_engine.settings import (
+    load_environment_vending_config,
+    load_live_plan_config,
+)
 
 
 def parse_run_target(payload: dict[str, Any]) -> tuple[str | None, str | None]:
@@ -49,6 +57,21 @@ def submit_async_run(
             acting_user=acting_user,
             client_request_id=client_request_id,
             repo_root=repo_root,
+        )
+    if kind == "environment_reclaim":
+        return _submit_environment_reclaim(
+            queue,
+            payload=payload,
+            acting_user=acting_user,
+            client_request_id=client_request_id,
+            repo_root=repo_root,
+        )
+    if kind == "fleet_drift_confirm":
+        return _submit_fleet_drift_confirm(
+            queue,
+            payload=payload,
+            acting_user=acting_user,
+            client_request_id=client_request_id,
         )
     blueprint_name, bundle_name = parse_run_target(payload)
     inputs_raw = payload.get("inputs", {})
@@ -184,3 +207,61 @@ def is_live_plan_run(record: RunRecord) -> bool:
 
 def is_environment_vend_run(record: RunRecord) -> bool:
     return str(record.payload.get("kind", "")).strip() == "environment_vend"
+
+
+def is_environment_reclaim_run(record: RunRecord) -> bool:
+    return str(record.payload.get("kind", "")).strip() == "environment_reclaim"
+
+
+def is_fleet_drift_confirm_run(record: RunRecord) -> bool:
+    return str(record.payload.get("kind", "")).strip() == "fleet_drift_confirm"
+
+
+def _submit_environment_reclaim(
+    queue: RunQueue,
+    *,
+    payload: dict[str, Any],
+    acting_user: str,
+    client_request_id: str | None,
+    repo_root: Any | None,
+) -> RunRecord:
+    from pathlib import Path
+
+    root = Path(repo_root) if repo_root is not None else queue.repo_root
+    load_environment_reclaim_config(root)
+    dry_run = bool(payload.get("dry_run", True))
+    stack_name = str(payload.get("stack_name", "")).strip()
+    inputs: dict[str, Any] = {}
+    if stack_name:
+        inputs["stack_name"] = stack_name
+    return queue.submit(
+        blueprint_name=ENVIRONMENT_RECLAIM_SENTINEL,
+        inputs=inputs,
+        dry_run=dry_run,
+        acting_user=acting_user,
+        client_request_id=client_request_id,
+        kind="environment_reclaim",
+    )
+
+
+def _submit_fleet_drift_confirm(
+    queue: RunQueue,
+    *,
+    payload: dict[str, Any],
+    acting_user: str,
+    client_request_id: str | None,
+) -> RunRecord:
+    repo_urls_raw = payload.get("repo_urls", [])
+    if not isinstance(repo_urls_raw, list) or not repo_urls_raw:
+        raise ValueError("repo_urls must be a non-empty list")
+    repo_urls = [str(item).strip() for item in repo_urls_raw if str(item).strip()]
+    if not repo_urls:
+        raise ValueError("repo_urls must include at least one repository URL")
+    return queue.submit(
+        blueprint_name=FLEET_DRIFT_CONFIRM_SENTINEL,
+        inputs={"repo_urls": repo_urls},
+        dry_run=True,
+        acting_user=acting_user,
+        client_request_id=client_request_id,
+        kind="fleet_drift_confirm",
+    )

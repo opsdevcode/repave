@@ -85,15 +85,17 @@ from repave_engine.entity_catalog import (
     observability_embed_url,
     rollup_fleet_scorecard,
 )
+from repave_engine.environment_reclaim import reclaim_expired_environments
 from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
+from repave_engine.fleet import FleetError
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import (
     bundle_result_from_stored_run,
     generation_result_from_stored_run,
 )
-from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.github_auth import github_credentials_configured, resolve_github_access_token
 from repave_engine.github_client import GitHubError
 from repave_engine.governance_preflight import build_bundle_preflight
 from repave_engine.import_rules import parse_path_overrides
@@ -139,6 +141,17 @@ from repave_engine.portal_generate import (
     plan_preview_from_form as _plan_preview_from_form,
 )
 from repave_engine.portal_markdown import render_portal_markdown
+from repave_engine.portal_platform import (
+    build_platform_campaigns_page,
+    build_platform_fleet_page,
+    build_platform_ops_page,
+    build_platform_standards_detail,
+    build_platform_standards_page,
+    platform_admin_visible,
+    register_fleet_entry_from_form,
+    require_platform_admin,
+    unregister_fleet_entry,
+)
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
 from repave_engine.repo_import import (
@@ -317,14 +330,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "presenter_mode": presenter,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
+            "platform_admin_visible": platform_admin_visible(auth_config, auth_user),
             "async_generation_enabled": run_queue is not None,
             "async_generation_required": worker_execution_mode and run_queue is not None,
             "worker_execution_mode": worker_execution_mode,
-            "command_palette_items": command_palette_items(),
+            "command_palette_items": command_palette_items(request),
             **extra,
         }
 
-    def command_palette_items() -> list[dict[str, str]]:
+    def command_palette_items(request: Request | None = None) -> list[dict[str, str]]:
         items: list[dict[str, str]] = [
             {"kind": "nav", "label": "Catalog", "href": "/"},
             {"kind": "nav", "label": "Library", "href": "/library"},
@@ -339,6 +353,16 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             items.insert(
                 len(items) - 1,
                 {"kind": "nav", "label": "Async runs", "href": "/runs"},
+            )
+        auth_user = session_user(request) if request is not None else None
+        if platform_admin_visible(auth_config, auth_user):
+            items.extend(
+                [
+                    {"kind": "nav", "label": "Platform fleet", "href": "/platform/fleet"},
+                    {"kind": "nav", "label": "Platform ops", "href": "/platform/ops"},
+                    {"kind": "nav", "label": "Platform standards", "href": "/platform/standards"},
+                    {"kind": "nav", "label": "Platform campaigns", "href": "/platform/campaigns"},
+                ]
             )
         for blueprint in list_blueprints(blueprints_dir(repo_root)):
             items.append(
@@ -1758,6 +1782,209 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 target_repo=outcome.target,
                 gate_summary=gate_summary(gates),
                 gates_ok=outcome.gates_passed,
+            ),
+        )
+
+    @app.get("/platform/fleet", response_class=HTMLResponse)
+    async def platform_fleet_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        page = build_platform_fleet_page(repo_root)
+        return templates.TemplateResponse(
+            request,
+            "fleet.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="fleet",
+                fleet_enabled=page.fleet_enabled,
+                fleet_repos=page.fleet_repos,
+                fleet_gitops_namespace=page.gitops_namespace,
+                fleet_operator_status_enabled=page.operator_status_enabled,
+                fleet_blueprints=page.blueprints,
+            ),
+        )
+
+    @app.post("/platform/fleet/register")
+    async def platform_fleet_register(request: Request) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        form = await request.form()
+        acting = user.email if user else current_acting_user()
+        try:
+            register_fleet_entry_from_form(
+                repo_root,
+                repo_url=str(form.get("repo_url", "")),
+                blueprint_name=str(form.get("blueprint_name", "")),
+                blueprint_version=str(form.get("blueprint_version", "")),
+                standard_source="",
+                standard_version=str(form.get("standard_version", "")),
+                owner=str(form.get("owner", "")),
+                local_path=str(form.get("local_path", "")),
+                acting_user=acting,
+            )
+        except FleetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return RedirectResponse(url="/platform/fleet", status_code=303)
+
+    @app.post("/platform/fleet/unregister")
+    async def platform_fleet_unregister(request: Request) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        form = await request.form()
+        repo_url = str(form.get("repo_url", "")).strip()
+        if not repo_url:
+            raise HTTPException(status_code=400, detail="repo_url is required")
+        try:
+            removed = unregister_fleet_entry(repo_root, repo_url)
+        except FleetError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not removed:
+            raise HTTPException(status_code=404, detail=f"{repo_url} is not registered")
+        return RedirectResponse(url="/platform/fleet", status_code=303)
+
+    @app.get("/platform/ops", response_class=HTMLResponse)
+    async def platform_ops_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        probe_token = resolve_github_access_token() if github_credentials_configured() else None
+        session_store = getattr(app.state, "session_store", None)
+        ops_page = build_platform_ops_page(
+            repo_root,
+            run_queue=run_queue,
+            modules_root=resolved_output.modules_root,
+            runs_db=durability_config.runs_db if durability_config is not None else None,
+            shutting_down=bool(getattr(app.state, "shutting_down", False)),
+            auth_service_enabled=auth_config is not None and auth_config.service_enabled,
+            require_session_secret=(
+                durability_config.require_session_secret if durability_config else False
+            ),
+            github_token_configured=github_credentials_configured(),
+            github_probe_token=probe_token,
+            sql_session_store_ok=session_store.ping() if session_store is not None else None,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_ops.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="ops",
+                ops_page=ops_page,
+            ),
+        )
+
+    @app.post("/platform/ops/reclaim")
+    async def platform_ops_reclaim(request: Request) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        form = await request.form()
+        dry_run = str(form.get("dry_run", "1")).strip().lower() in {"1", "true", "on", "yes"}
+        vend_cfg = load_environment_vending_config(repo_root)
+        if vend_cfg is None:
+            raise HTTPException(status_code=503, detail="environment_vending is not enabled")
+        acting = user.email if user else current_acting_user()
+        if not dry_run and run_queue is not None:
+            record = submit_async_run(
+                run_queue,
+                payload={"kind": "environment_reclaim", "dry_run": False},
+                acting_user=acting,
+                repo_root=repo_root,
+            )
+            return RedirectResponse(url=f"/runs/{record.run_id}", status_code=303)
+        github_token = None if dry_run else resolve_github_access_token()
+        if not dry_run and not github_token:
+            raise HTTPException(
+                status_code=503,
+                detail="GITHUB_TOKEN is required unless dry_run is true",
+            )
+        reclaim_expired_environments(
+            repo_root=repo_root,
+            config=vend_cfg,
+            github_token=github_token,
+            dry_run=dry_run,
+        )
+        return RedirectResponse(url="/platform/ops", status_code=303)
+
+    @app.get("/platform/standards", response_class=HTMLResponse)
+    async def platform_standards_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        standards_page = build_platform_standards_page(repo_root)
+        return templates.TemplateResponse(
+            request,
+            "platform_standards.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="standards",
+                standards_page=standards_page,
+            ),
+        )
+
+    @app.get("/platform/standards/{blueprint_name}", response_class=HTMLResponse)
+    async def platform_standards_detail_page(
+        request: Request,
+        blueprint_name: str,
+    ) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        summary = build_platform_standards_detail(repo_root, blueprint_name)
+        if summary is None:
+            raise HTTPException(status_code=404, detail=f"Blueprint {blueprint_name} not found")
+        return templates.TemplateResponse(
+            request,
+            "platform_standards_detail.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="standards",
+                summary=summary,
+            ),
+        )
+
+    @app.post("/platform/standards/{blueprint_name}/confirm-drift")
+    async def platform_standards_confirm_drift(
+        request: Request,
+        blueprint_name: str,
+    ) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        form = await request.form()
+        repo_urls = [
+            str(value).strip() for value in form.getlist("repo_urls") if str(value).strip()
+        ]
+        if not repo_urls:
+            summary = build_platform_standards_detail(repo_root, blueprint_name)
+            if summary is not None:
+                repo_urls = [row.repo_url for row in summary.behind_repos]
+        if not repo_urls:
+            raise HTTPException(
+                status_code=400, detail="No repositories selected for drift confirm"
+            )
+        acting = user.email if user else current_acting_user()
+        record = submit_async_run(
+            run_queue,
+            payload={"kind": "fleet_drift_confirm", "repo_urls": repo_urls},
+            acting_user=acting,
+        )
+        return RedirectResponse(url=f"/runs/{record.run_id}", status_code=303)
+
+    @app.get("/platform/campaigns", response_class=HTMLResponse)
+    async def platform_campaigns_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        campaigns_page = build_platform_campaigns_page(repo_root)
+        return templates.TemplateResponse(
+            request,
+            "platform_campaigns.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="campaigns",
+                campaigns_page=campaigns_page,
             ),
         )
 
