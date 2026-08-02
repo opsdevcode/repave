@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.6.0  
+**Current release:** v2.7.0  
 
 **In progress:** [environment lifecycle](#environment-lifecycle-and-deployment-awareness) Phase 3
 (directional); [conversational governed AI](#conversational-and-governed-ai-generation).
