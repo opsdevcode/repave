@@ -64,6 +64,7 @@ def format_cost_actuals_url(template: str, entity: CostEntity) -> str | None:
         return raw.format(
             name=entity.display_name,
             service=entity.display_name,
+            stack_name=entity.display_name,
             entity_id=entity.entity_id,
             owner=entity.owner or "",
         )

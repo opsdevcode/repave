@@ -2,7 +2,7 @@
 
 **Status:** Accepted — **Phase 1** shipped; **Phase 2** shipped (`kind: live_plan` worker runs;
 PR body attachment shipped). **Phase 3** shipped on `main` (vending, registry, TTL reclaim,
-decommission review); environment cost enrichment and post-merge registry cleanup remain open.  
+decommission review); environment cost badges and post-merge registry finalize shipped on `main`.  
 **Date:** 2026-08-01  
 **Scope:** engine catalog read models, portal, worker role, `repave.config.yaml`, blueprints
 (`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap.md#v200--platform-ga)
@@ -155,8 +155,8 @@ a human on it.
   environment appears as a catalog entity with owner, TTL, and status.
 - [x] A sandbox past its TTL is reclaimed inside the non-production boundary via decommission PR.
 - [x] A non-sandbox environment expires into a draft decommission PR for human review.
-- [ ] Catalog entity shows cloud **cost** for vended environments (scorecard still generic).
-- [ ] Registry entry removed automatically when a decommission PR merges (today: operator merge + optional manual reclaim).
+- [x] Catalog entity shows cloud **cost** for vended environments when `portal.cost_reader` is configured.
+- [x] Registry entry removed automatically when a decommission PR merges (reclaim pass checks GitHub merge state).
 
 ## References
 

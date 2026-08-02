@@ -9,13 +9,17 @@ import pytest
 from repave_engine.environment_reclaim import (
     MODE_AUTO_RECLAIM,
     MODE_DECOMMISSION_REVIEW,
+    MODE_REGISTRY_FINALIZE,
     EnvironmentReclaimError,
     build_environment_reclaim_pull_request_title,
+    finalize_merged_decommission,
     list_expired_environments,
     list_expired_environments_for_decommission_review,
+    list_pending_decommission_reviews,
     reclaim_environment,
     reclaim_expired_environments,
     request_decommission_review,
+    resolve_decommission_pull_request_state,
 )
 from repave_engine.environment_record import (
     EnvironmentRecord,
@@ -446,3 +450,109 @@ def test_mark_environment_expired_updates_registry(tmp_path: Path) -> None:
     entry = read_environments(registry)[0]
     assert entry.status == "expired"
     assert entry.pull_request_number == 99
+
+
+def test_list_pending_decommission_reviews() -> None:
+    active = _record(status="active", pull_request_number=0)
+    expired = _record(
+        env_class="prod",
+        status="expired",
+        pull_request_number=42,
+        pull_request_url="https://github.com/acme/gitops/pull/42",
+    )
+    pending = list_pending_decommission_reviews((active, expired))
+    assert [item.stack_name for item in pending] == ["sandbox-alice"]
+
+
+def test_resolve_decommission_pull_request_state_merged() -> None:
+    record = _record(
+        status="expired",
+        pull_request_number=42,
+        gitops_repo="https://github.com/acme/gitops",
+    )
+    with patch(
+        "repave_engine.environment_reclaim.get_pull_request",
+        return_value={"state": "closed", "merged_at": "2026-08-03T10:00:00Z"},
+    ):
+        assert resolve_decommission_pull_request_state(record, github_token="gh-test") == "merged"
+
+
+def test_finalize_merged_decommission_removes_registry(tmp_path: Path) -> None:
+    registry = tmp_path / "registry.jsonl"
+    record = _record(
+        env_class="prod",
+        status="expired",
+        pull_request_number=42,
+        pull_request_url="https://github.com/acme/gitops/pull/42",
+    )
+    register_environment(registry, record)
+    with patch(
+        "repave_engine.environment_reclaim.resolve_decommission_pull_request_state",
+        return_value="merged",
+    ):
+        result = finalize_merged_decommission(
+            record,
+            registry_path=registry,
+            github_token="gh-test",
+        )
+    assert result.mode == MODE_REGISTRY_FINALIZE
+    assert result.reclaimed is True
+    assert read_environments(registry) == ()
+
+
+def test_finalize_merged_decommission_skips_open_pr(tmp_path: Path) -> None:
+    registry = tmp_path / "registry.jsonl"
+    record = _record(
+        env_class="prod",
+        status="expired",
+        pull_request_number=42,
+    )
+    register_environment(registry, record)
+    with patch(
+        "repave_engine.environment_reclaim.resolve_decommission_pull_request_state",
+        return_value="open",
+    ):
+        result = finalize_merged_decommission(
+            record,
+            registry_path=registry,
+            github_token="gh-test",
+        )
+    assert result.skipped is True
+    assert read_environments(registry)[0].status == "expired"
+
+
+def test_reclaim_expired_environments_finalizes_merged_review(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    registry = tmp_path / "registry.jsonl"
+    register_environment(
+        registry,
+        _record(
+            env_class="prod",
+            status="expired",
+            pull_request_number=42,
+            pull_request_url="https://github.com/acme/gitops/pull/42",
+            expires_at="2020-01-01T00:00:00+00:00",
+        ),
+    )
+    config = EnvironmentVendingConfig(
+        enabled=True,
+        gitops_repo="https://github.com/acme/gitops",
+        file=registry,
+        auto_reclaim_classes=("sandbox",),
+        decommission_review_classes=("prod",),
+    )
+    with patch(
+        "repave_engine.environment_reclaim.resolve_decommission_pull_request_state",
+        return_value="merged",
+    ):
+        summary = reclaim_expired_environments(
+            repo_root=repo_root,
+            config=config,
+            github_token="gh-test",
+            dry_run=False,
+        )
+    assert summary.to_public_dict()["finalized"] == 1
+    assert read_environments(registry) == ()
+    assert summary.results[0].mode == MODE_REGISTRY_FINALIZE

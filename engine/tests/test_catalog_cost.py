@@ -85,3 +85,64 @@ def test_enrich_catalog_entities_with_cost_from_local_estimate(tmp_path) -> None
     enriched = enrich_catalog_entities_with_cost([entity], PortalConfig(density="default"))
     assert enriched[0].cost_badge == "Est USD 15.00/mo"
     assert enriched[0].cost_badge_detail
+
+
+def test_enrich_environment_entity_with_cost_url_reader() -> None:
+    from repave_engine.cost_actuals import CostActualsSummary
+    from repave_engine.entity_catalog import build_catalog_from_environments
+    from repave_engine.environment_record import EnvironmentRecord
+    from repave_engine.settings import PortalConfig
+
+    record = EnvironmentRecord(
+        stack_name="sandbox-alice",
+        entity_id="env-aws-sandbox-alice",
+        cloud_provider="aws",
+        environment_tier="dev",
+        owner="platform",
+        env_class="sandbox",
+        blueprint_name="terraform-environment-stack",
+        blueprint_version="0.4.0",
+        gitops_repo="https://github.com/acme/gitops",
+        gitops_path="environments/sandbox-alice",
+        git_branch="main",
+        pull_request_url="",
+        pull_request_number=0,
+        gates_outcome="passed",
+        source_entity_id="",
+        run_id="run-1",
+        vended_by="tester",
+        vended_at="2026-08-02T12:00:00+00:00",
+        expires_at="2026-08-09T12:00:00+00:00",
+        status="active",
+    )
+    entity = build_catalog_from_environments((record,))[0]
+    portal = PortalConfig(
+        density="default",
+        cost_reader="url",
+        cost_actuals_url="https://cost.example/{stack_name}",
+    )
+
+    def _fetch(_portal: object, cost_entity: object) -> CostActualsSummary | None:
+        assert cost_entity.display_name == "sandbox-alice"
+        return CostActualsSummary(
+            currency="USD",
+            amount_30d="12.50",
+            as_of="2026-08-02T00:00:00Z",
+            detail="ok",
+            tag_coverage="complete",
+            source_url="https://cost.example/sandbox-alice",
+        )
+
+    import repave_engine.catalog_cost as catalog_cost
+
+    original = catalog_cost.fetch_entity_cost_actuals_for_portal
+    catalog_cost.fetch_entity_cost_actuals_for_portal = _fetch
+    try:
+        enriched = enrich_catalog_entities_with_cost([entity], portal)[0]
+    finally:
+        catalog_cost.fetch_entity_cost_actuals_for_portal = original
+
+    assert enriched.cost_badge == "L30D USD 12.50"
+    cost_dim = next(dim for dim in enriched.scorecard if dim.key == "cost")
+    assert cost_dim.level == "pass"
+    assert "12.50" in cost_dim.detail

@@ -61,7 +61,9 @@ def cmd_environments_reclaim(args: argparse.Namespace) -> int:
         return 0
 
     for item in summary.results:
-        if item.reclaimed:
+        if item.mode == "registry_finalize" and item.reclaimed:
+            state = "finalized"
+        elif item.reclaimed:
             state = "reclaimed"
         elif item.skipped:
             state = "skipped"

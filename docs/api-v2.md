@@ -104,11 +104,13 @@ POST /api/v2/environments/reclaim
 { "dry_run": false, "stack_name": "sandbox-alice" }
 ```
 
-Response: `{ "count", "reclaimed", "decommission_review", "skipped", "results": [...] }`
-with per-stack `mode` (`auto_reclaim` or `decommission_review`), `draft`, and
-`pull_request_url` when a PR was opened. After sandbox auto-reclaim (or when the GitOps path
+Response: `{ "count", "reclaimed", "decommission_review", "finalized", "skipped", "results": [...] }`
+with per-stack `mode` (`auto_reclaim`, `decommission_review`, or `registry_finalize`), `draft`,
+and `pull_request_url` when a PR was opened. After sandbox auto-reclaim (or when the GitOps path
 is already absent), the environment is removed from the registry. Non-sandbox classes open a
-**draft** decommission PR and remain in the catalog with `status: expired` until merge.
+**draft** decommission PR and remain in the catalog with `status: expired` until merge; each
+reclaim pass also checks merged decommission PRs and removes finalized environments from the
+registry (`mode: registry_finalize`, `finalized` count in the summary).
 
 Configure `decommission_review_classes` explicitly (for example `prod`, `staging`); when
 omitted, every expired class **not** listed in `auto_reclaim_classes` uses the review path.
