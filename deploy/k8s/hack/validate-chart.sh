@@ -330,4 +330,24 @@ if ! grep -q '  - environments' "${env_vending_rendered}" || ! grep -q '  - recl
   exit 1
 fi
 
+env_vending_http_rendered="$(mktemp)"
+
+helm template repave-env-vending-http "${CHART}" \
+  --namespace repave-env-vending \
+  -f "${CHART}/values-environment-vending.yaml" \
+  --set repave.output.githubOrg=example-org \
+  --set environmentReclaim.cronJob.invoke=http \
+  --set persistence.modules.enabled=false \
+  >"${env_vending_http_rendered}"
+
+if ! grep -q '/api/v2/environments/reclaim' "${env_vending_http_rendered}"; then
+  echo "environmentReclaim.cronJob.invoke=http must POST /api/v2/environments/reclaim" >&2
+  exit 1
+fi
+
+if grep -q 'repave environments reclaim' "${env_vending_http_rendered}"; then
+  echo "http invoke must not shell out to repave environments reclaim CLI" >&2
+  exit 1
+fi
+
 echo "helm lint and template checks passed"

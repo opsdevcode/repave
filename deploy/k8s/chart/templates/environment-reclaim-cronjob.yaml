@@ -28,6 +28,29 @@ spec:
             - name: reclaim
               image: {{ include "repave.image" . }}
               imagePullPolicy: {{ .Values.image.pullPolicy }}
+              {{- if eq .Values.environmentReclaim.cronJob.invoke "http" }}
+              command:
+                - /bin/sh
+                - -ec
+                - |
+                  set -euo pipefail
+                  payload='{"dry_run":{{ ternary "true" "false" .Values.environmentReclaim.cronJob.dryRun }}}'
+                  curl_args=(
+                    -sfS
+                    -X POST
+                    "${REPAVE_API_BASE_URL}/api/v2/environments/reclaim"
+                    -H "Content-Type: application/json"
+                  )
+                  if [ -n "${REPAVE_API_TOKEN:-}" ]; then
+                    curl_args+=( -H "Authorization: Bearer ${REPAVE_API_TOKEN}" )
+                  fi
+                  curl_args+=( -d "${payload}" )
+                  curl "${curl_args[@]}"
+              env:
+                - name: REPAVE_API_BASE_URL
+                  value: {{ include "repave.environmentReclaimApiBaseUrl" . | quote }}
+                {{- include "repave.apiTokenEnv" . | nindent 16 }}
+              {{- else }}
               command:
                 - repave
                 - environments
@@ -44,16 +67,19 @@ spec:
                   value: {{ .Values.repave.env | quote }}
                 {{- include "repave.environmentVendingEnv" . | nindent 16 }}
                 {{- include "repave.githubAuthEnv" . | nindent 16 }}
-              resources:
-                {{- toYaml .Values.environmentReclaim.cronJob.resources | nindent 16 }}
               volumeMounts:
                 - name: config
                   mountPath: /app/repave.config.yaml
                   subPath: repave.config.yaml
                 {{- include "repave.environmentDataVolumeMount" . | nindent 16 }}
+              {{- end }}
+              resources:
+                {{- toYaml .Values.environmentReclaim.cronJob.resources | nindent 16 }}
+          {{- if ne .Values.environmentReclaim.cronJob.invoke "http" }}
           volumes:
             - name: config
               configMap:
                 name: {{ include "repave.fullname" . }}
             {{- include "repave.environmentDataVolume" . | nindent 12 }}
+          {{- end }}
 {{- end }}

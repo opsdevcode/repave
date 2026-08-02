@@ -145,6 +145,7 @@ spec:
                   name: {{ $secretName }}
                   key: oidc-client-secret
                   optional: true
+            {{- include "repave.apiTokenEnv" . | nindent 12 }}
             {{- end }}
           {{- if .Values.lifecycle.preStop.enabled }}
           lifecycle:
