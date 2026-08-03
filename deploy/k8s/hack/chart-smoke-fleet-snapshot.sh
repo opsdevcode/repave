@@ -75,6 +75,7 @@ helm upgrade --install repave "${CHART}" \
   --set image.pullPolicy=Never \
   --set repave.output.githubOrg=example-org \
   --set persistence.modules.enabled=false \
+  --set persistence.modules.kindHostPath="" \
   --wait --timeout "${TIMEOUT}s"
 
 kubectl -n "${NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"

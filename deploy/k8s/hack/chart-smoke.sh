@@ -54,6 +54,7 @@ helm upgrade --install repave "${CHART}" \
   --set image.tag="${IMG_TAG}" \
   --set image.pullPolicy=Never \
   --set repave.output.githubOrg=example-org \
+  --set persistence.modules.kindHostPath="" \
   --wait --timeout "${TIMEOUT}s"
 
 echo "==> port-forward and probe"

@@ -60,6 +60,7 @@ helm upgrade --install repave "${CHART}" \
   --set repave.output.githubOrg=example-org \
   --set environmentReclaim.cronJob.dryRun=true \
   --set persistence.modules.enabled=false \
+  --set persistence.modules.kindHostPath="" \
   --wait --timeout "${TIMEOUT}s"
 
 CRONJOB="repave-environment-reclaim"

@@ -39,6 +39,11 @@ app.kubernetes.io/name: {{ include "repave.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
+{{- define "repave.portalSelectorLabels" -}}
+{{- include "repave.selectorLabels" . }}
+app.kubernetes.io/component: portal
+{{- end }}
+
 {{- define "repave.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
 {{- default (include "repave.fullname" .) .Values.serviceAccount.name }}

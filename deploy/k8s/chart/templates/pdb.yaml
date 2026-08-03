@@ -14,5 +14,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "repave.selectorLabels" . | nindent 6 }}
+      {{- include "repave.portalSelectorLabels" . | nindent 6 }}
 {{- end }}

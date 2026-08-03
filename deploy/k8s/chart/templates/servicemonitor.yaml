@@ -11,7 +11,7 @@ metadata:
 spec:
   selector:
     matchLabels:
-      {{- include "repave.selectorLabels" . | nindent 6 }}
+      {{- include "repave.portalSelectorLabels" . | nindent 6 }}
   endpoints:
     - port: http
       path: /metrics
