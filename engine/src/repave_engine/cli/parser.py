@@ -8,6 +8,7 @@ from repave_engine.cli._common import (
     _add_upgrade_github_pr_options,
     _add_upgrade_target_options,
 )
+from repave_engine.cli.add import cmd_add
 from repave_engine.cli.audit import cmd_audit_query
 from repave_engine.cli.doctor import cmd_doctor
 from repave_engine.cli.environments import cmd_environments_reclaim
@@ -356,6 +357,59 @@ def build_parser() -> argparse.ArgumentParser:
         help="With --batch-file, filter the org query by topic",
     )
     import_cmd.set_defaults(func=cmd_import)
+
+    add_cmd = sub.add_parser(
+        "add",
+        help="Add a second golden-path component to a governed repository",
+        parents=[common],
+    )
+    add_cmd.add_argument(
+        "repo",
+        help="Local path to the governed repository",
+    )
+    add_cmd.add_argument(
+        "--blueprint",
+        required=True,
+        help="Blueprint to add (for example helm-chart-generic)",
+    )
+    add_cmd.add_argument(
+        "--component-id",
+        default="",
+        help="Component id recorded in repave.yaml (default: derived from blueprint)",
+    )
+    add_cmd.add_argument(
+        "--input",
+        action="append",
+        default=[],
+        help="Blueprint input as key=value (repeatable)",
+    )
+    add_cmd.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing files that differ from generated scaffold",
+    )
+    add_cmd.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Plan only; do not modify the repository",
+    )
+    add_cmd.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply the add plan locally (creates a git commit on a branch)",
+    )
+    add_cmd.add_argument(
+        "--branch",
+        default="",
+        help="Git branch for the add commit (default: repave/add/<component>-<version>)",
+    )
+    add_cmd.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format for plan/apply results",
+    )
+    add_cmd.set_defaults(func=cmd_add)
 
     gates_cmd = sub.add_parser(
         "gates",

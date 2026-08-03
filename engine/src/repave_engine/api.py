@@ -4,6 +4,7 @@ import logging
 import os
 import secrets
 import signal
+import tempfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import replace
@@ -123,6 +124,10 @@ from repave_engine.policy_selection import (
     policy_input_defaults,
 )
 from repave_engine.portal_blueprint_view import build_blueprint_form_extras
+from repave_engine.portal_components import (
+    build_component_add_context,
+    component_add_redirect_url,
+)
 from repave_engine.portal_context import (
     audit_file_or_http404,
     audit_portal_enabled,
@@ -155,7 +160,16 @@ from repave_engine.portal_platform import (
     unregister_fleet_entry,
 )
 from repave_engine.portal_result import build_result_portal_context
+from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.repo_add import (
+    NotGovernedError,
+    RepoAddError,
+    apply_add,
+    plan_add,
+    record_add_from_env,
+    suggested_add_branch,
+)
 from repave_engine.repo_import import (
     AlreadyGovernedError,
     ImportPlan,
@@ -654,6 +668,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if vend_cfg is not None:
             prefix = vend_cfg.path_prefix.strip().strip("/")
             default_vend_path = f"{prefix}/{default_stack_name}" if prefix else default_stack_name
+        add_status = str(request.query_params.get("add_status", "")).strip()
+        add_message = str(request.query_params.get("add_message", "")).strip()
+        component_add = build_component_add_context(
+            entity,
+            repo_root,
+            flash_status=add_status,
+            flash_message=add_message,
+        )
         return templates.TemplateResponse(
             request,
             "service_detail.html",
@@ -683,6 +705,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 environment_vend_blueprint=DEFAULT_VEND_BLUEPRINT,
                 default_stack_name=default_stack_name,
                 default_vend_path=default_vend_path,
+                **component_add.to_template_dict(),
             ),
         )
 
@@ -764,6 +787,112 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return RedirectResponse(f"/runs/{record.run_id}", status_code=303)
+
+    @app.post("/services/{entity_id}/add-component")
+    async def service_add_component(request: Request, entity_id: str) -> RedirectResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        entities = build_portal_catalog_entities(
+            repo_root,
+            resolved_output,
+            cost_actuals_configured=False,
+        )
+        entity = find_catalog_entity(entities, entity_id)
+        if entity is None:
+            raise HTTPException(status_code=404, detail="Entity not found")
+        if entity.local_path is None:
+            raise HTTPException(
+                status_code=400,
+                detail="add component requires a local modules_root checkout for this entity",
+            )
+        form = await request.form()
+        blueprint_name = str(form.get("blueprint", "")).strip()
+        action = str(form.get("action", "plan")).strip()
+        force = str(form.get("force", "")).strip().lower() in {"1", "true", "on", "yes"}
+        if not blueprint_name:
+            return RedirectResponse(
+                component_add_redirect_url(entity_id, status="error", message="Select a blueprint"),
+                status_code=303,
+            )
+        target = str(entity.local_path)
+        try:
+            plan = plan_add(
+                target,
+                repo_root,
+                blueprint_name=blueprint_name,
+                force=force,
+            )
+        except NotGovernedError as exc:
+            return RedirectResponse(
+                component_add_redirect_url(entity_id, status="error", message=str(exc)),
+                status_code=303,
+            )
+        except RepoAddError as exc:
+            return RedirectResponse(
+                component_add_redirect_url(entity_id, status="error", message=str(exc)),
+                status_code=303,
+            )
+
+        if action != "apply":
+            status = "ok" if plan.ok else "blocked"
+            message = plan.summary
+            if plan.conflicts:
+                message = f"{plan.summary}: {'; '.join(plan.conflicts[:3])}"
+            return RedirectResponse(
+                component_add_redirect_url(entity_id, status=status, message=message),
+                status_code=303,
+            )
+
+        if not plan.ok:
+            return RedirectResponse(
+                component_add_redirect_url(
+                    entity_id,
+                    status="blocked",
+                    message=plan.summary or "Unresolved conflicts",
+                ),
+                status_code=303,
+            )
+        if not (entity.local_path / ".git").is_dir():
+            return RedirectResponse(
+                component_add_redirect_url(
+                    entity_id,
+                    status="error",
+                    message="Apply requires a git repository in the local checkout",
+                ),
+                status_code=303,
+            )
+
+        conventions = load_pull_request_conventions(repo_root)
+        git_branch = suggested_add_branch(plan, conventions_prefix=conventions.branch_prefix_add)
+        commit_message = add_pull_request_title(plan.blueprint_name, plan.component_id)
+        try:
+            with tempfile.TemporaryDirectory(prefix="repave-add-portal-") as temp_name:
+                result = apply_add(
+                    entity.local_path,
+                    repo_root,
+                    plan,
+                    staging_dir=Path(temp_name),
+                    git_branch=git_branch,
+                    commit_message=commit_message,
+                )
+        except RepoAddError as exc:
+            return RedirectResponse(
+                component_add_redirect_url(entity_id, status="error", message=str(exc)),
+                status_code=303,
+            )
+        record_add_from_env(repo_root, result)
+        applied_message = (
+            f"Added {plan.blueprint_name} on {result.git_branch} ({len(plan.files_added)} files)"
+        )
+        return RedirectResponse(
+            component_add_redirect_url(
+                entity_id,
+                status="applied",
+                message=applied_message,
+            ),
+            status_code=303,
+        )
 
     @app.get("/catalog/entities", response_class=RedirectResponse)
     async def catalog_entities_redirect() -> RedirectResponse:

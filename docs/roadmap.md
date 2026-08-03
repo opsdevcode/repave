@@ -6,9 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.22.0  
 
-**In progress:** **Developer paved roads** — v1.81 reliability path (SLOs/runbooks as code —
-[v1.81](#v181--reliability-path-slos-as-code-and-runbooks)). v1.80 deploy pipeline shipped on
-`main`. v3 themes under
+**In progress:** **Developer paved roads** — v1.82 brownfield add (`repave add`,
+[multi-component provenance](#v182--repave-add-paved-roads-for-existing-repositories)).
+v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
 `Application` / Flux `HelmRelease`, `gitops` artifact family, exact-pin and sync-policy OPA
@@ -2146,7 +2146,9 @@ dimensions across the fleet, and the monitors and dashboards standards cross-lin
 
 *Planning label: v1.82 (roadmap numbering only).*
 
-**Status:** Not started.
+**Status:** In progress on `feat/v182-repave-add` — multi-component `repave.yaml`,
+`repave add` CLI, component plan/apply API, per-component verify, and portal add action
+([#453](https://github.com/opsdevcode/repave/pull/453)).
 
 **Problem:** [`repave import`](#repo-import-to-golden-path) adopts a whole repository into one
 golden path and `repave update` bumps its pins, but there is no way to add a *second* artifact

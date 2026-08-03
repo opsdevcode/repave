@@ -66,8 +66,69 @@
     {% if entity.manifest_name %}
     <p class="muted">GitOps manifest {{ entity.manifest_namespace }}/{{ entity.manifest_name }}</p>
     {% endif %}
+    {% if provenance_components %}
+    <ul class="muted">
+      {% for component in provenance_components %}
+      <li>
+        {% if component.primary %}Primary{% else %}Component{% endif %}
+        <code>{{ component.component_id }}</code>:
+        {{ component.blueprint_name }}@{{ component.blueprint_version }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
   </div>
 </section>
+
+{% if component_add_available %}
+<section class="card" aria-labelledby="add-component-heading">
+  <div class="card__header">
+    <h2 id="add-component-heading">Add component</h2>
+    <p class="muted card__subtitle">
+      Layer a second golden path onto this repository (local checkout:
+      <code>{{ component_add_local_path }}</code>).
+    </p>
+  </div>
+  <div class="card__body">
+    {% if component_add_flash_message %}
+    <p class="hint {% if component_add_flash_status == 'error' %}hint--error{% elif component_add_flash_status == 'blocked' %}hint--warn{% else %}hint--ok{% endif %}">
+      {{ component_add_flash_message }}
+    </p>
+    {% endif %}
+    {% if component_add_git_message %}
+    <p class="muted">{{ component_add_git_message }}</p>
+    {% endif %}
+    <form
+      method="post"
+      action="/services/{{ entity.entity_id }}/add-component"
+      class="form-grid"
+      data-repave-busy-form
+      data-busy-label="Planning component add…"
+    >
+      <label class="form-field">
+        <span class="form-field__label">Blueprint</span>
+        <select name="blueprint" required>
+          {% for blueprint in addable_blueprints %}
+          <option value="{{ blueprint.name }}">{{ blueprint.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="form-field form-field--checkbox">
+        <input type="checkbox" name="force" value="on" />
+        <span>Force overwrite when scaffold files differ</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn--secondary btn--sm" type="submit" name="action" value="plan">
+          Plan add
+        </button>
+        <button class="btn btn--primary btn--sm" type="submit" name="action" value="apply">
+          Apply locally
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
 
 <section class="card" aria-labelledby="scorecard-heading">
   <div class="card__header">

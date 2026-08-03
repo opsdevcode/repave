@@ -228,4 +228,65 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         _apply_policy_from_spec(spec, checkov_values)
         return checkov_values
 
+    if artifact_type == "helm-chart":
+        chart = spec.get("helmChart")
+        if not isinstance(chart, dict):
+            raise ValueError("helm-chart provenance missing spec.helmChart")
+        chart_name = str(chart.get("chart_name", artifact_name)).strip()
+        helm_values: dict[str, Any] = {
+            "chart_name": chart_name,
+            "app_name": str(chart.get("app_name", "")).strip(),
+            "description": f"Repave upgrade plan for {chart_name}",
+            "image_repository": str(chart.get("image_repository", "")).strip(),
+            "image_tag": str(chart.get("image_tag", "latest")).strip(),
+            "service_type": str(chart.get("service_type", "ClusterIP")).strip(),
+            "enable_ingress": str(chart.get("enable_ingress", "false")).strip(),
+        }
+        if chart.get("ingress_host"):
+            helm_values["ingress_host"] = str(chart["ingress_host"]).strip()
+        return helm_values
+
+    if artifact_type == "app-service":
+        app = spec.get("appService")
+        if not isinstance(app, dict):
+            raise ValueError("app-service provenance missing spec.appService")
+        service_name = str(app.get("service_name", artifact_name)).strip()
+        app_values: dict[str, Any] = {
+            "service_name": service_name,
+            "description": f"Repave upgrade plan for {service_name}",
+            "owner": str(app.get("owner", "")).strip(),
+            "port": str(app.get("port", "8080")).strip(),
+            "runtime": str(app.get("runtime", "python")).strip(),
+            "include_helm_reference": str(app.get("include_helm_reference", "false")).strip(),
+        }
+        if app.get("helm_chart_repo"):
+            app_values["helm_chart_repo"] = str(app["helm_chart_repo"]).strip()
+        return app_values
+
+    if artifact_type == "gitops-deployment":
+        deploy = spec.get("gitopsDeployment")
+        if not isinstance(deploy, dict):
+            raise ValueError("gitops-deployment provenance missing spec.gitopsDeployment")
+        service_name = str(deploy.get("service_name", artifact_name)).strip()
+        gitops_values: dict[str, Any] = {
+            "service_name": service_name,
+            "description": f"Repave upgrade plan for {service_name}",
+            "environment": str(deploy.get("environment", "dev")).strip(),
+            "gitops_engine": str(deploy.get("gitops_engine", "argocd")).strip(),
+            "chart_repo_url": str(deploy.get("chart_repo_url", "")).strip(),
+            "chart_name": str(deploy.get("chart_name", "")).strip(),
+            "chart_version": str(deploy.get("chart_version", "")).strip(),
+            "target_namespace": str(deploy.get("target_namespace", "")).strip(),
+            "sync_policy": str(deploy.get("sync_policy", "manual")).strip(),
+        }
+        if deploy.get("destination_server"):
+            gitops_values["destination_server"] = str(deploy["destination_server"]).strip()
+        if deploy.get("argocd_project"):
+            gitops_values["argocd_project"] = str(deploy["argocd_project"]).strip()
+        if deploy.get("flux_source_name"):
+            gitops_values["flux_source_name"] = str(deploy["flux_source_name"]).strip()
+        if deploy.get("flux_source_namespace"):
+            gitops_values["flux_source_namespace"] = str(deploy["flux_source_namespace"]).strip()
+        return gitops_values
+
     raise ValueError(f"unsupported artifactType {artifact_type!r}")
