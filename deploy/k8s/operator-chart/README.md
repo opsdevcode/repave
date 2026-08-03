@@ -47,8 +47,8 @@ See [`docs/github-app-auth.md`](../../../docs/github-app-auth.md).
 ## kind co-install
 
 The repo [`kind-co-install.sh`](../hack/kind-co-install.sh) (`make kind-co-install`) installs
-both charts, seeds a fleet registry, and runs the drift fixture. Operator values come from
-[`values-kind.yaml`](values-kind.yaml) (single replica, modules `hostPath`, placeholder GitHub token).
+both charts, seeds a fleet registry for operator fleetSync, and runs the drift fixture. Operator
+values come from [`values-kind.yaml`](values-kind.yaml) and [`values-fleet-shared.yaml`](values-fleet-shared.yaml).
 
 ## Configuration
 
@@ -62,6 +62,8 @@ both charts, seeds a fleet registry, and runs the drift fixture. Operator values
 | `webhook.secretName` / `webhook.existingSecret` | Webhook serving cert Secret |
 | `crds.install` | Render and apply `repave.dev` CRDs from chart (default **true**) |
 | `modules.hostPath` | Mount test/module fixtures (kind only) |
+| `fleetSync.*` | Continuous GPR sync from shared fleet registry JSONL (see [`values-fleet-shared.yaml`](values-fleet-shared.yaml)) |
+| `fleetRegistry.*` | PVC or emptyDir backing `fleetSync.registryPath` |
 | `secrets.existingSecret` | GitHub PAT or App credentials |
 | `podDisruptionBudget` | Voluntary disruption budget |
 | `monitoring.serviceMonitor` | Prometheus Operator scrape of `/metrics` |

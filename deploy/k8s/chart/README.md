@@ -195,10 +195,10 @@ kubectl port-forward svc/repave 8088:8088 -n repave
 This creates a kind cluster with operator module fixtures mounted at `/modules`, installs
 the portal (with the same `/modules` hostPath via `values-kind.yaml`) and the operator Helm
 chart (`REPAVE_API_URL` → portal Service), seeds
-[`deploy/k8s/testdata/fleet-registry.jsonl`](../testdata/fleet-registry.jsonl), renders
-GPRs with `repave fleet-manifests`, applies them plus the local `e2e-drift` fixture. Remote
-`repoURL` entries show fetch errors until you point at reachable git; `e2e-drift` exercises
-plan-only drift on `/modules/terraform-minimal`.
+[`deploy/k8s/testdata/fleet-registry.jsonl`](../testdata/fleet-registry.jsonl) on the shared
+fleet PVC, and waits for operator **fleetSync** to create GPRs before applying the local
+`e2e-drift` fixture. Remote `repoURL` entries show fetch errors until you point at reachable
+git; `e2e-drift` exercises plan-only drift on `/modules/terraform-minimal`.
 
 Reuse an existing cluster or images: `CO_INSTALL_SKIP_CLUSTER=1`, `CO_INSTALL_SKIP_BUILD=1`.
 See [`deploy/k8s/hack/kind-co-install.sh`](../hack/kind-co-install.sh).
@@ -295,7 +295,7 @@ make chart-smoke              # kind install (CI: chart-smoke on chart/image pat
 make chart-smoke-decomposed   # decomposed portal + worker + Postgres async run (CI: chart-smoke-decomposed)
 make chart-smoke-multi-replica   # two portal replicas + shared Postgres sessions/queue (CI: chart-smoke-multi-replica)
 make chart-smoke-environment-vending   # environment vending PVC + reclaim CronJob (CI: chart-smoke-environment-vending)
-make chart-smoke-fleet-snapshot   # fleet PVC + operator snapshot CronJob + platform fleet overlay (CI: chart-smoke-fleet-snapshot)
+make chart-smoke-fleet-snapshot   # fleet PVC + fleetSync prune + snapshot CronJob (CI: chart-smoke-fleet-snapshot)
 ```
 
 ## Scaling

@@ -99,3 +99,38 @@ func TestSyncGoldenPathReposCreatesUpdatesPrunes(t *testing.T) {
 		}
 	}
 }
+
+func TestSyncGoldenPathReposPreservesNonFleetGPR(t *testing.T) {
+	scheme := runtime.NewScheme()
+	if err := repavev1beta1.AddToScheme(scheme); err != nil {
+		t.Fatal(err)
+	}
+
+	manual := &repavev1beta1.GoldenPathRepo{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "manual-repo",
+			Namespace: "default",
+		},
+		Spec: repavev1beta1.GoldenPathRepoSpec{
+			RepoURL: "https://github.com/acme/manual",
+		},
+	}
+	c := fake.NewClientBuilder().WithScheme(scheme).WithObjects(manual).Build()
+	cfg := Config{Namespace: "default"}
+
+	created, updated, pruned, err := SyncGoldenPathRepos(context.Background(), c, cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if created != 0 || updated != 0 || pruned != 0 {
+		t.Fatalf("created=%d updated=%d pruned=%d", created, updated, pruned)
+	}
+
+	var list repavev1beta1.GoldenPathRepoList
+	if err := c.List(context.Background(), &list); err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Items) != 1 || list.Items[0].Name != "manual-repo" {
+		t.Fatalf("non-fleet GPR should remain: %#v", list.Items)
+	}
+}

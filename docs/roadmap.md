@@ -348,12 +348,11 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
 
 - JSONL fleet store, `repave register` / `unregister` / `fleet list`, REST API, portal
   **Fleet** route ([`docs/fleet-registry.md`](fleet-registry.md))
-- `repave fleet-manifests` renders `GoldenPathRepo` YAML for GitOps (operator does not
-  read the registry — re-run after register/unregister)
+- `repave fleet-manifests` renders `GoldenPathRepo` YAML for GitOps (optional when
+  continuous operator sync is enabled — see [`docs/fleet-registry.md`](fleet-registry.md))
 - kind co-install: `make kind-co-install`, [`values-kind.yaml`](../deploy/k8s/chart/values-kind.yaml),
-  sample [`fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl)
-
-**Still open:** optional continuous sync beyond `fleet-manifests`.
+  sample [`fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl),
+  `make chart-smoke-fleet-snapshot` for register→sync→unregister→GPR prune in CI
 
 ### Kubernetes deploy — Helm chart (engine v1.74+)
 
@@ -1179,8 +1178,8 @@ flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`),
 **platform console** at `/platform/fleet`, `/platform/ops`, `/platform/standards`,
 `/platform/campaigns`. **Day-2:** Helm `fleetOperatorSnapshot.cronJob` on the shared fleet PVC
 (`values-fleet-shared.yaml`) refreshes the snapshot for the platform console without manual CLI.
-**In progress:** operator continuous registry sync
-(`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`) with GPR prune on unregister.
+**Shipped:** operator continuous registry sync (`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`)
+with GPR prune on unregister — validated by `make chart-smoke-fleet-snapshot`.
 
 ---
 
