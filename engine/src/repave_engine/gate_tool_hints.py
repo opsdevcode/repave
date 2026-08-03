@@ -15,6 +15,7 @@ GATE_TOOL_HINTS: dict[str, tuple[str, ...]] = {
     "helm-template": ("helm",),
     "yamllint": ("yamllint",),
     "dockerfile-lint": ("hadolint",),
+    "actionlint": ("actionlint",),
     "ansible-lint": ("ansible-lint",),
     "ansible-syntax-check": ("ansible-playbook",),
     "molecule": ("molecule",),

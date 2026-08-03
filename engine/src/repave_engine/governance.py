@@ -60,17 +60,20 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         "yamllint",
         "helm-lint",
         "helm-template",
+        "actionlint",
         *_BASELINE_GATES,
     ),
     "app-service": (
         "dockerfile-lint",
         "python-lint",
         "python-test",
+        "actionlint",
         *_BASELINE_GATES,
     ),
     "gitops-deployment": (
         "yamllint",
         "opa",
+        "actionlint",
         *_BASELINE_GATES,
     ),
 }

@@ -14,5 +14,6 @@ Governed application repositories from the `app-service-generic` golden path.
 
 ## CI
 
-Generated repos run the same gates as generate time via GitHub Actions (`repave gates`).
-Toolchain versions align with `deploy/local/Dockerfile` where applicable.
+Generated repos run the same gates as generate time via GitHub Actions (`repave gates`),
+including `actionlint` on `.github/workflows/` to catch invalid workflow YAML before merge.
+Toolchain versions align with `deploy/local/gate-toolchain-pins.env`.

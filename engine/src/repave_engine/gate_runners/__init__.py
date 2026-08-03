@@ -22,6 +22,7 @@ from repave_engine.gate_runners.app import (
     run_python_lint,
     run_python_test,
 )
+from repave_engine.gate_runners.ci import run_actionlint
 from repave_engine.gate_runners.drift import (
     run_docs_drift,
     run_provenance_drift,
@@ -62,6 +63,7 @@ __all__ = [
     "gate_result_from_command",
     "gate_timeout_seconds",
     "httpx",
+    "run_actionlint",
     "run_amtool",
     "run_ansible_lint",
     "run_ansible_syntax_check",

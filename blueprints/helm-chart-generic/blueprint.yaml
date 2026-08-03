@@ -93,6 +93,7 @@ spec:
     - helm-lint
     - helm-template
     - opa
+    - actionlint
     - secrets
     - docs-drift
     - provenance-drift

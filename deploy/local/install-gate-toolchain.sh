@@ -12,6 +12,7 @@ INSTALL_ANSIBLE="${INSTALL_ANSIBLE:-1}"
 INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
 INSTALL_KUBECTL="${INSTALL_KUBECTL:-1}"
+INSTALL_ACTIONLINT="${INSTALL_ACTIONLINT:-1}"
 DEST="${DEST:-/usr/local/bin}"
 GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 
@@ -145,4 +146,23 @@ if [[ "$INSTALL_KUBECTL" == "1" ]]; then
   rm -rf "$tmp_kubectl"
 fi
 
-echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION})."
+if [[ "$INSTALL_ACTIONLINT" == "1" ]]; then
+  case "$OSTYPE" in
+    linux-*) al_os=linux ;;
+    darwin*) al_os=darwin ;;
+    *)
+      echo "actionlint install skipped: unsupported OS ${OSTYPE}" >&2
+      al_os=""
+      ;;
+  esac
+  if [[ -n "$al_os" ]]; then
+    tmp_al="$(mktemp -d)"
+    "${CURL_GET[@]}" \
+      "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${al_os}_${kubectl_arch}.tar.gz" \
+      | tar xz -C "$tmp_al" actionlint
+    install_bin "$tmp_al/actionlint"
+    rm -rf "$tmp_al"
+  fi
+fi
+
+echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION}, actionlint=${ACTIONLINT_VERSION})."

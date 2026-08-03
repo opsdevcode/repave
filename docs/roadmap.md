@@ -174,7 +174,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **Developer paved roads** | Partial (v1.79 shipped; v1.80–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Partial (v1.79–v1.80 partial; v1.81–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -2076,7 +2076,8 @@ member ([composite paved roads](#v184--composite-paved-roads)).
 
 *Planning label: v1.80 (roadmap numbering only).*
 
-**Status:** Not started.
+**Status:** Partial — `actionlint` gate shipped (pin, installer, doctor, runner, app/helm/gitops
+blueprints); deploy workflow generation, delivery inputs, and cloud OIDC trust still open.
 
 **Problem:** Generated repos gate themselves ([v1.24](#v124--generated-module-ci-template)) but
 ship no delivery pipeline. Teams write their own, and the recurring failure is a long-lived
@@ -2092,7 +2093,8 @@ eliminating everywhere else.
 - Deploy step updates the v1.79 GitOps manifest rather than invoking `helm upgrade` directly,
   so promotion stays a reviewable commit
 - New gate `actionlint` with a pin in `deploy/local/gate-toolchain-pins.env` and a
-  `repave doctor` entry
+  `repave doctor` entry — **shipped** on `helm-chart-generic`, `app-service-generic`, and
+  `gitops-deployment-generic`
 - Policy rules: SHA-pinned actions, least-privilege `permissions:`, no static cloud
   credentials in workflow files
 

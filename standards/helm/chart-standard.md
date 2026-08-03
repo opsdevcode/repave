@@ -34,5 +34,5 @@ All workloads MUST include standard labels from `_helpers.tpl`:
 
 ## Validation
 
-Charts run `helm lint`, `helm template`, `yamllint`, `secrets`, `docs-drift`, and
+Charts run `helm lint`, `helm template`, `yamllint`, `actionlint`, `secrets`, `docs-drift`, and
 `provenance-drift` gates. Tools skip cleanly when not installed.

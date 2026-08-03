@@ -9,6 +9,17 @@ def test_core_gate_tools_match_installer() -> None:
     assert CORE_GATE_TOOLS == ("terraform", "tflint", "checkov", "conftest", "helm")
 
 
+def test_tools_for_helm_blueprint_includes_actionlint(repo_root) -> None:
+    from repave_engine.blueprint import load_blueprint
+    from repave_engine.doctor import tools_for_blueprint
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "helm-chart-generic",
+        repo_root=repo_root,
+    )
+    assert "actionlint" in tools_for_blueprint(blueprint)
+
+
 def test_doctor_exit_code_strict_missing() -> None:
     results = (
         ToolCheckResult(

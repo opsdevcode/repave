@@ -40,6 +40,8 @@ def test_install_script_sources_pins_file() -> None:
     assert "gate-toolchain-pins.env" in script
     assert re.search(r"source.*gate-toolchain-pins\.env", script)
     assert 'CHECKOV_PIP_SPEC="${CHECKOV_PIP_SPEC:-checkov==${CHECKOV_VERSION}}"' in script
+    assert "ACTIONLINT_VERSION" in script
+    assert "INSTALL_ACTIONLINT" in script
 
 
 def test_doctor_pin_map_matches_ci_toolchain() -> None:
@@ -49,6 +51,7 @@ def test_doctor_pin_map_matches_ci_toolchain() -> None:
     assert _PIN_BY_TOOL["conftest"] == ci_toolchain.CONFTEST_VERSION
     assert _PIN_BY_TOOL["helm"] == ci_toolchain.HELM_VERSION
     assert _PIN_BY_TOOL["infracost"] == ci_toolchain.INFRACOST_VERSION
+    assert _PIN_BY_TOOL["actionlint"] == ci_toolchain.ACTIONLINT_VERSION
 
 
 def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint, repo_root: Path) -> None:
@@ -66,6 +69,8 @@ def test_render_ci_workflow_embeds_pinned_toolchain(terraform_blueprint, repo_ro
     )
     helm_text = render_ci_workflow(helm_blueprint)
     assert ci_toolchain.HELM_VERSION in helm_text
+    assert ci_toolchain.ACTIONLINT_VERSION in helm_text
+    assert "Install actionlint" in helm_text
 
 
 def test_load_pin_file_rejects_missing_required_key(tmp_path: Path) -> None:

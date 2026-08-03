@@ -83,6 +83,12 @@ jobs:
           curl -sSL -o /usr/local/bin/hadolint \
             "https://github.com/hadolint/hadolint/releases/download/v{{ hadolint_version }}/hadolint-Linux-x86_64"
           chmod +x /usr/local/bin/hadolint
+{% endif %}{% if needs_actionlint %}
+      - name: Install actionlint
+        run: |
+          curl -sSL \
+            "https://github.com/rhysd/actionlint/releases/download/v{{ actionlint_version }}/actionlint_{{ actionlint_version }}_linux_amd64.tar.gz" \
+            | tar xz -C /usr/local/bin actionlint
 {% endif %}{% if needs_go %}
       - name: Set up Go
         uses: {{ actions['actions/setup-go'].ref }}  # {{ actions['actions/setup-go'].tag }}
