@@ -45,6 +45,24 @@ Per-image documentation: [`deploy/packages/`](../deploy/packages/README.md).
 
 Each push publishes `type=sha` tags alongside semver tags so operators can pin by digest.
 
+## Published Helm charts
+
+[`.github/workflows/chart-publish.yml`](../.github/workflows/chart-publish.yml) packages and
+pushes both charts to GHCR on semver tags (`v*.*.*` only — not every `main` push):
+
+| Chart | OCI reference |
+| --- | --- |
+| Portal / API | `oci://ghcr.io/opsdevcode/charts/repave` |
+| Operator | `oci://ghcr.io/opsdevcode/charts/repave-operator` |
+
+`helm package` sets `--version` and `--app-version` to the release semver (without the `v`
+prefix), so chart version and default image tags stay aligned with engine tags. Release
+automation syncs `Chart.yaml` via [`scripts/sync_chart_versions.py`](../scripts/sync_chart_versions.py).
+
+```bash
+helm upgrade --install repave oci://ghcr.io/opsdevcode/charts/repave --version 2.15.0
+```
+
 Resolve a digest before deploy:
 
 ```bash

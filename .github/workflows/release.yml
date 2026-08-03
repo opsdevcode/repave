@@ -175,6 +175,7 @@ jobs:
 
           VERSION="$(read_version)"
           python3 scripts/sync_doc_versions.py "${VERSION}"
+          python3 scripts/sync_chart_versions.py "${VERSION}"
           # Paths must match DOC_TARGET_PATHS in scripts/sync_doc_versions.py
           SYNC_DOC_PATHS=(
             docs/roadmap.md
@@ -183,9 +184,17 @@ jobs:
             docs/demo-verification.md
             docs/operator-ga.md
           )
+          CHART_PATHS=(
+            deploy/k8s/chart/Chart.yaml
+            deploy/k8s/operator-chart/Chart.yaml
+          )
           if ! git diff --quiet "${SYNC_DOC_PATHS[@]}"; then
             git add "${SYNC_DOC_PATHS[@]}"
             git commit -m "chore(release): sync doc version pointers"
+          fi
+          if ! git diff --quiet "${CHART_PATHS[@]}"; then
+            git add "${CHART_PATHS[@]}"
+            git commit -m "chore(release): sync chart version to ${VERSION}"
           fi
 
           # Re-lock so the tracked uv.lock records the released version. This cannot be a

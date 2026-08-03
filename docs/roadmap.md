@@ -369,6 +369,9 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   GoldenPathRepo/Blueprint reconciliation, conversion webhook TLS + CRD install,
   `values-day2.yaml` (leader election, metrics, ServiceMonitor), `values-kind.yaml` for
   `kind-co-install`; validated in `chart-validate` CI
+- **OCI publish:** [`chart-publish.yml`](../.github/workflows/chart-publish.yml) pushes
+  `oci://ghcr.io/opsdevcode/charts/repave` and `repave-operator` on semver tags; chart
+  `version` and `appVersion` match the engine release
 
 ### GitHub App authentication (engine v1.105+)
 

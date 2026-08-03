@@ -1,0 +1,35 @@
+name: Helm chart publish
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: chart-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  chart-publish:
+    name: chart-publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        with:
+          version: v3.16.4
+
+      - name: Log in to GHCR
+        run: helm registry login ghcr.io -u "${{ github.actor }}" -p "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Package and push charts
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          chmod +x deploy/k8s/hack/publish-charts.sh
+          ./deploy/k8s/hack/publish-charts.sh "${VERSION}"

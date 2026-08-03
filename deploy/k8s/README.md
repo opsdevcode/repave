@@ -1,8 +1,9 @@
 # Kubernetes operability artifacts
 
 Starter manifests and chart hooks for hosted repave (roadmap v1.35–v1.38). Install the
-engine with the **Helm chart** under [`chart/`](chart/README.md), then wire observability
-via chart values or standalone manifests.
+engine with the **Helm chart** under [`chart/`](chart/README.md) (local path or
+`oci://ghcr.io/opsdevcode/charts/repave` on semver tags), then wire observability via chart
+values or standalone manifests.
 
 | Path | Purpose |
 | --- | --- |
