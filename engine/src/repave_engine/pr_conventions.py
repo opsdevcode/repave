@@ -18,6 +18,7 @@ class PullRequestConventions:
     branch_prefix_generate: str = "repave/bootstrap"
     branch_prefix_upgrade: str = "repave/upgrade"
     branch_prefix_import: str = "repave/import"
+    branch_prefix_add: str = "repave/add"
     branch_prefix_vend: str = "repave/environment"
     branch_prefix_reclaim: str = "repave/environment-reclaim"
     labels: tuple[str, ...] = ("repave", "governed")
@@ -36,6 +37,9 @@ def load_pull_request_conventions(repo_root: Path) -> PullRequestConventions:
             ),
             branch_prefix_import=_env_prefix(
                 "REPAVE_PR_BRANCH_PREFIX_IMPORT", defaults.branch_prefix_import
+            ),
+            branch_prefix_add=_env_prefix(
+                "REPAVE_PR_BRANCH_PREFIX_ADD", defaults.branch_prefix_add
             ),
             branch_prefix_vend=_env_prefix(
                 "REPAVE_PR_BRANCH_PREFIX_VEND", defaults.branch_prefix_vend
@@ -82,6 +86,11 @@ def load_pull_request_conventions(repo_root: Path) -> PullRequestConventions:
             "REPAVE_PR_BRANCH_PREFIX_IMPORT",
             "repave/import",
         ),
+        branch_prefix_add=_resolve_prefix(
+            prefixes.get("add") if isinstance(prefixes, dict) else None,
+            "REPAVE_PR_BRANCH_PREFIX_ADD",
+            "repave/add",
+        ),
         branch_prefix_vend=_resolve_prefix(
             prefixes.get("vend") if isinstance(prefixes, dict) else None,
             "REPAVE_PR_BRANCH_PREFIX_VEND",
@@ -113,6 +122,10 @@ def upgrade_pull_request_title(blueprint_name: str, blueprint_version: str) -> s
 
 def import_pull_request_title(blueprint_name: str, blueprint_version: str) -> str:
     return f"refactor(repave): adopt {blueprint_name}@{blueprint_version} golden path"
+
+
+def add_pull_request_title(blueprint_name: str, component_id: str) -> str:
+    return f"feat(repave): add {blueprint_name} component ({component_id})"
 
 
 def render_evidence_checklist(gates: Sequence[GateResult]) -> str:

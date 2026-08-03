@@ -58,6 +58,15 @@ from repave_engine.portal_context import (
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
 )
+from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
+from repave_engine.repo_add import (
+    NotGovernedError,
+    RepoAddError,
+    apply_add,
+    plan_add,
+    record_add,
+    suggested_add_branch,
+)
 from repave_engine.repo_import import (
     AlreadyGovernedError,
     RepoImportError,
@@ -99,6 +108,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/imports/apply",
     "POST /api/v2/imports/batch/plan",
     "POST /api/v2/imports/batch/apply",
+    "POST /api/v2/components/plan",
+    "POST /api/v2/components/apply",
     "POST /api/v2/verify",
     "GET /api/v2/catalog/entities",
     "GET /api/v2/catalog/entities/{entity_id}",
@@ -578,6 +589,83 @@ def build_api_v2_router(
             record_import(repo_root, item, acting_user=_acting_user(request))
             for item in batch_result.items
         ]
+        return JSONResponse(body)
+
+    @router.post("/components/plan")
+    async def api_v2_components_plan(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        target = str(payload.get("target_repo", "")).strip()
+        blueprint_name = str(payload.get("blueprint", "")).strip()
+        if not target:
+            raise HTTPException(status_code=400, detail="target_repo is required")
+        if not blueprint_name:
+            raise HTTPException(status_code=400, detail="blueprint is required")
+        try:
+            plan = plan_add(
+                target,
+                repo_root,
+                blueprint_name=blueprint_name,
+                values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                component_id=str(payload.get("component_id", "")).strip() or None,
+                force=bool(payload.get("force", False)),
+            )
+        except NotGovernedError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except RepoAddError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(plan.to_json_dict())
+
+    @router.post("/components/apply")
+    async def api_v2_components_apply(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        target = str(payload.get("target_repo", "")).strip()
+        blueprint_name = str(payload.get("blueprint", "")).strip()
+        if not target:
+            raise HTTPException(status_code=400, detail="target_repo is required")
+        if not blueprint_name:
+            raise HTTPException(status_code=400, detail="blueprint is required")
+        try:
+            plan = plan_add(
+                target,
+                repo_root,
+                blueprint_name=blueprint_name,
+                values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
+                component_id=str(payload.get("component_id", "")).strip() or None,
+                force=bool(payload.get("force", False)),
+            )
+        except NotGovernedError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        except RepoAddError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if not plan.ok:
+            raise HTTPException(status_code=409, detail={"conflicts": list(plan.conflicts)})
+        conventions = load_pull_request_conventions(repo_root)
+        git_branch = str(payload.get("git_branch", "")).strip() or suggested_add_branch(
+            plan, conventions_prefix=conventions.branch_prefix_add
+        )
+        commit_message = add_pull_request_title(plan.blueprint_name, plan.component_id)
+        import tempfile
+
+        with tempfile.TemporaryDirectory(prefix="repave-add-apply-") as temp_name:
+            try:
+                result = apply_add(
+                    Path(target).expanduser().resolve(),
+                    repo_root,
+                    plan,
+                    staging_dir=Path(temp_name),
+                    git_branch=git_branch,
+                    commit_message=commit_message,
+                )
+            except RepoAddError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+        body = {
+            "git_branch": result.git_branch,
+            "commit_sha": result.commit_sha,
+            "plan": plan.to_json_dict(),
+        }
+        record_add(repo_root, result, acting_user=_acting_user(request))
         return JSONResponse(body)
 
     @router.post("/verify")

@@ -121,6 +121,168 @@
             }
           }
         },
+        "components": {
+          "type": "array",
+          "description": "Additional golden-path artifacts layered onto this repository via repave add.",
+          "items": {
+            "type": "object",
+            "required": ["id", "artifactType", "blueprint", "standard", "generation"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "artifactType": {
+                "type": "string",
+                "enum": [
+                  "terraform-module",
+                  "terraform-environment-stack",
+                  "ansible-role",
+                  "ansible-playbook-project",
+                  "ansible-collection",
+                  "checkov-policy",
+                  "opa-policy",
+                  "azure-policy",
+                  "observability",
+                  "helm-chart",
+                  "app-service",
+                  "gitops-deployment"
+                ]
+              },
+              "blueprint": {
+                "type": "object",
+                "required": ["name", "version"],
+                "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" }
+                }
+              },
+              "standard": {
+                "type": "object",
+                "required": ["source", "version"],
+                "additionalProperties": false,
+                "properties": {
+                  "source": { "type": "string" },
+                  "version": { "type": "string" }
+                }
+              },
+              "generation": {
+                "type": "object",
+                "required": ["engine_version", "generated_at"],
+                "additionalProperties": false,
+                "properties": {
+                  "engine_version": { "type": "string" },
+                  "generated_at": { "type": "string", "format": "date-time" }
+                }
+              },
+              "addedAt": { "type": "string", "format": "date-time" },
+              "policy": {
+                "type": "object",
+                "required": ["profile", "pack_source", "enabled_rules"],
+                "additionalProperties": false,
+                "properties": {
+                  "profile": { "type": "string" },
+                  "pack_source": { "type": "string" },
+                  "enabled_rules": {
+                    "type": "array",
+                    "items": { "type": "string" }
+                  }
+                }
+              },
+              "helmChart": {
+                "type": "object",
+                "required": [
+                  "chart_name",
+                  "app_name",
+                  "image_repository",
+                  "image_tag",
+                  "service_type",
+                  "enable_ingress"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "chart_name": { "type": "string", "minLength": 1 },
+                  "app_name": { "type": "string", "minLength": 1 },
+                  "image_repository": { "type": "string", "minLength": 1 },
+                  "image_tag": { "type": "string" },
+                  "service_type": { "type": "string" },
+                  "enable_ingress": { "type": "string" },
+                  "ingress_host": { "type": "string" }
+                }
+              },
+              "appService": {
+                "type": "object",
+                "required": [
+                  "service_name",
+                  "owner",
+                  "port",
+                  "runtime",
+                  "include_helm_reference"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "service_name": { "type": "string", "minLength": 1 },
+                  "owner": { "type": "string", "minLength": 1 },
+                  "port": { "type": "string" },
+                  "runtime": { "type": "string" },
+                  "include_helm_reference": { "type": "string" },
+                  "helm_chart_repo": { "type": "string" }
+                }
+              },
+              "gitopsDeployment": {
+                "type": "object",
+                "required": [
+                  "service_name",
+                  "environment",
+                  "gitops_engine",
+                  "chart_repo_url",
+                  "chart_name",
+                  "chart_version",
+                  "target_namespace",
+                  "sync_policy"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "service_name": { "type": "string", "minLength": 1 },
+                  "environment": { "type": "string", "minLength": 1 },
+                  "gitops_engine": { "type": "string", "enum": ["argocd", "flux"] },
+                  "chart_repo_url": { "type": "string", "minLength": 1 },
+                  "chart_name": { "type": "string", "minLength": 1 },
+                  "chart_version": { "type": "string", "minLength": 1 },
+                  "target_namespace": { "type": "string", "minLength": 1 },
+                  "sync_policy": { "type": "string", "enum": ["manual", "automated"] },
+                  "destination_server": { "type": "string" },
+                  "argocd_project": { "type": "string" },
+                  "flux_source_name": { "type": "string" },
+                  "flux_source_namespace": { "type": "string" }
+                }
+              },
+              "observability": {
+                "type": "object",
+                "required": [
+                  "service_name",
+                  "organization",
+                  "team",
+                  "backend",
+                  "output_mode"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "service_name": { "type": "string", "minLength": 1 },
+                  "organization": { "type": "string", "minLength": 1 },
+                  "team": { "type": "string", "minLength": 1 },
+                  "backend": { "type": "string" },
+                  "output_mode": { "type": "string" },
+                  "environment": { "type": "string" },
+                  "notification_source": { "type": "string" },
+                  "notification_target": { "type": "string" },
+                  "runbook_url": { "type": "string" },
+                  "slo_target_percent": { "type": "string" },
+                  "focus": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
         "ci": {
           "type": "object",
           "required": ["gates", "workflow", "toolchain"],

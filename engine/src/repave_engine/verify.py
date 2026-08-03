@@ -14,7 +14,14 @@ from repave_engine.fleet import normalize_repo_url
 from repave_engine.gate_registry import GateResult
 from repave_engine.gates import all_gates_passed, run_gates
 from repave_engine.git_clone import CloneError, ephemeral_clone, resolve_git_token
-from repave_engine.provenance_inputs import blueprint_name_from_provenance, load_provenance_document
+from repave_engine.provenance_components import (
+    component_doc_for_inputs,
+    list_provenance_components,
+)
+from repave_engine.provenance_inputs import (
+    blueprint_name_from_provenance,
+    load_provenance_document,
+)
 from repave_engine.settings import load_gate_overrides
 from repave_engine.standards_diff import PinChange, diff_observed_vs_catalog_pins
 
@@ -28,14 +35,12 @@ class VerifyCloneError(VerifyError):
 
 
 @dataclass(frozen=True)
-class VerifyResult:
-    target: str
+class ComponentVerifyResult:
+    component_id: str
     catalog_blueprint_name: str
     catalog_blueprint_version: str
-    provenance_present: bool
     gates: tuple[GateResult, ...]
     pin_changes: tuple[PinChange, ...]
-    remote: bool = False
 
     @property
     def gates_passed(self) -> bool:
@@ -51,6 +56,52 @@ class VerifyResult:
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
+            "component_id": self.component_id,
+            "catalog_blueprint_name": self.catalog_blueprint_name,
+            "catalog_blueprint_version": self.catalog_blueprint_version,
+            "ok": self.ok,
+            "gates_passed": self.gates_passed,
+            "pins_aligned": self.pins_aligned,
+            "gates": [
+                {
+                    "name": gate.name,
+                    "passed": gate.passed,
+                    "skipped": gate.skipped,
+                    "message": gate.message,
+                }
+                for gate in self.gates
+            ],
+            "pin_changes": [row.to_dict() for row in self.pin_changes],
+        }
+
+
+@dataclass(frozen=True)
+class VerifyResult:
+    target: str
+    catalog_blueprint_name: str
+    catalog_blueprint_version: str
+    provenance_present: bool
+    gates: tuple[GateResult, ...]
+    pin_changes: tuple[PinChange, ...]
+    remote: bool = False
+    components: tuple[ComponentVerifyResult, ...] = ()
+
+    @property
+    def gates_passed(self) -> bool:
+        return all_gates_passed(list(self.gates))
+
+    @property
+    def pins_aligned(self) -> bool:
+        return not self.pin_changes
+
+    @property
+    def ok(self) -> bool:
+        if self.components and not all(item.ok for item in self.components):
+            return False
+        return self.gates_passed and self.pins_aligned
+
+    def to_json_dict(self) -> dict[str, Any]:
+        payload = {
             "target": self.target,
             "remote": self.remote,
             "catalog_blueprint_name": self.catalog_blueprint_name,
@@ -70,6 +121,9 @@ class VerifyResult:
             ],
             "pin_changes": [row.to_dict() for row in self.pin_changes],
         }
+        if self.components:
+            payload["components"] = [item.to_json_dict() for item in self.components]
+        return payload
 
 
 def _looks_like_remote_url(raw: str) -> bool:
@@ -173,6 +227,39 @@ def verify_repository(
         )
     )
 
+    component_results: list[ComponentVerifyResult] = []
+    if provenance_present and blueprint_name is None:
+        try:
+            for component in list_provenance_components(doc):
+                if component.primary:
+                    continue
+                comp_catalog_path = blueprint_dir(repo_root, component.blueprint_name)
+                if not comp_catalog_path.is_dir():
+                    continue
+                comp_catalog = load_blueprint(comp_catalog_path, repo_root=repo_root)
+                comp_doc = component_doc_for_inputs(component)
+                comp_pins = diff_observed_vs_catalog_pins(comp_doc, comp_catalog)
+                comp_gates = tuple(
+                    run_gates(
+                        target_repo,
+                        comp_catalog.gates,
+                        blueprint=comp_catalog,
+                        gate_overrides=gate_overrides,
+                        require_run=require_run,
+                    )
+                )
+                component_results.append(
+                    ComponentVerifyResult(
+                        component_id=component.id,
+                        catalog_blueprint_name=comp_catalog.name,
+                        catalog_blueprint_version=comp_catalog.version,
+                        gates=comp_gates,
+                        pin_changes=comp_pins,
+                    )
+                )
+        except ValueError:
+            component_results = []
+
     return VerifyResult(
         target=str(target_repo),
         catalog_blueprint_name=catalog_blueprint.name,
@@ -180,6 +267,7 @@ def verify_repository(
         provenance_present=provenance_present,
         gates=gates,
         pin_changes=pin_changes,
+        components=tuple(component_results),
     )
 
 
