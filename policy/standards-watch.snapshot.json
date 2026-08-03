@@ -1,23 +1,23 @@
 {
   "version": "1.0.0",
-  "updated_at": "2026-07-27T16:52:07.229570+00:00",
+  "updated_at": "2026-08-03T17:03:04.093819+00:00",
   "sources": {
     "checkov-latest-release": {
       "url": "https://api.github.com/repos/bridgecrewio/checkov/releases/latest",
-      "sha256": "bdfc6e58b2dbc92f97dd850320dde955cd97b3d21338cd65f4bb10b57fb730cf",
+      "sha256": "af5e2245aee591eaaa905e6f6edd60943f3a1a6d9f17bdfda55facdbef193c28",
       "http_status": 200,
-      "extracted": "3.3.8",
+      "extracted": "3.3.9",
       "error": null,
-      "checked_at": "2026-07-27T16:52:07.229570+00:00",
+      "checked_at": "2026-08-03T17:03:04.093819+00:00",
       "notes": "Upstream Checkov release tag; bump blueprint checkov policy_version when adopting new scanner features."
     },
     "conftest-latest-release": {
       "url": "https://api.github.com/repos/open-policy-agent/conftest/releases/latest",
-      "sha256": "683b532df8ed89d3f17b03c2e60972011d62ce9e10a612f167e83f9ba3290aad",
+      "sha256": "679bdf34d5c5d870dffcd8f1cca84d1cf006367f490f18b0214d6203e4535d97",
       "http_status": 200,
-      "extracted": "v0.68.2",
+      "extracted": "v0.69.0",
       "error": null,
-      "checked_at": "2026-07-27T16:52:07.229570+00:00",
+      "checked_at": "2026-08-03T17:03:04.093819+00:00",
       "notes": "Conftest release used by the opa gate."
     },
     "terraform-latest-release": {
@@ -26,7 +26,7 @@
       "http_status": 200,
       "extracted": "v1.15.8",
       "error": null,
-      "checked_at": "2026-07-27T16:52:07.229570+00:00",
+      "checked_at": "2026-08-03T17:03:04.093819+00:00",
       "notes": "Upstream Terraform release tag (version constraint guidance for modules)."
     },
     "azure-policy-github-readme": {
@@ -35,7 +35,7 @@
       "http_status": 200,
       "extracted": "# Azure Policy Samples\n\nThis repository contains the direct representation of built-in definitions published to Azure. For easy search of all built-in  with descriptions, see [Policy samples](https://docs.microsoft.com/azure/governance/policy/samples/) on docs.microsoft.com.\n\nFor custom policy samples, check out our Community repo! (https://github.com/Azure/Community-Policy)\n\n## Contributing\n\nTo contribute, please submit your policies to our Community repo! (https://github.com/Azure/Community-Policy)\n\n## Re",
       "error": null,
-      "checked_at": "2026-07-27T16:52:07.229570+00:00",
+      "checked_at": "2026-08-03T17:03:04.093819+00:00",
       "notes": "Azure Policy sample repository index."
     },
     "opa-conftest-readme": {
@@ -44,7 +44,7 @@
       "http_status": 200,
       "extracted": "# Conftest\n\n[![Go Report Card](https://goreportcard.com/badge/open-policy-agent/opa)](https://goreportcard.com/report/open-policy-agent/conftest) [![Netlify](https://api.netlify.com/api/v1/badges/2d928746-3380-4123-b0eb-1fd74ba390db/deploy-status)](https://app.netlify.com/sites/vibrant-villani-65041c/deploys)\n\nConftest helps you write tests against structured configuration data. Using Conftest you can\nwrite tests for your Kubernetes configuration, Tekton pipeline definitions, Terraform code,\nServerless conf",
       "error": null,
-      "checked_at": "2026-07-27T16:52:07.229570+00:00",
+      "checked_at": "2026-08-03T17:03:04.093819+00:00",
       "notes": "Conftest usage and policy layout conventions."
     }
   }
