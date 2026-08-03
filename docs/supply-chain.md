@@ -5,17 +5,39 @@ Complements [GitHub App authentication](github-app-auth.md) for short-lived publ
 
 ## GitHub Actions
 
-Workflows under `.github/workflows/` reference marketplace actions by **commit SHA**, not
-mutable tags. Allowed SHAs live in [`.github/action-pins.json`](../.github/action-pins.json).
+Workflows under `.github/workflows/` and local composite actions under `.github/actions/*`
+reference marketplace actions by **commit SHA**, not mutable tags. Allowed SHAs live in
+[`.github/action-pins.json`](../.github/action-pins.json).
 
 CI runs [`scripts/check-action-pins.py`](../scripts/check-action-pins.py) in the Python quality
 job. When bumping an action:
 
 1. Resolve the target tag's commit SHA (for example from the action's release page).
-2. Update the workflow `uses:` line **and** the matching entry in `action-pins.json`.
+2. Update the `uses:` line **and** the matching entry in `action-pins.json`.
 3. Run `python3 scripts/check-action-pins.py` locally before pushing.
 
-Local composite actions (`.github/actions/*`) are exempt from the pin file.
+Composite actions are covered because they run third-party actions the same way a workflow
+does; only local `./` references are exempt.
+
+### Generated repository CI
+
+The workflow repave writes into every generated repository
+([`repave-gates.yml.jinja`](../engine/src/repave_engine/templates/ci/repave-gates.yml.jinja))
+pins its actions from the **same** `action-pins.json`, loaded by
+[`ci_action_pins.py`](../engine/src/repave_engine/ci_action_pins.py). A generated repo therefore
+inherits this repository's pinning posture instead of a floating tag that the action owner could
+change after generation.
+
+Each `uses:` line carries the tag as a trailing comment so a reader of the generated repo can
+tell what version a SHA corresponds to:
+
+```yaml
+- uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+```
+
+Bumping a pin in `action-pins.json` updates this repository's CI and all future generated
+repositories together. Existing generated repos pick the change up the next time `repave update`
+regenerates their workflow.
 
 ## Container base images
 

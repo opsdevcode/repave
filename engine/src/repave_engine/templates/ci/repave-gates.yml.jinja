@@ -11,21 +11,21 @@ jobs:
   gates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: {{ actions['actions/checkout'].ref }}  # {{ actions['actions/checkout'].tag }}
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: {{ actions['actions/setup-python'].ref }}  # {{ actions['actions/setup-python'].tag }}
         with:
           python-version: "{{ python_version }}"
       - name: Install repave-engine
         run: pip install "repave-engine=={{ engine_version }}"
 {% if needs_terraform %}
       - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: {{ actions['hashicorp/setup-terraform'].ref }}  # {{ actions['hashicorp/setup-terraform'].tag }}
         with:
           terraform_version: "{{ terraform_version }}"
 {% endif %}{% if needs_tflint %}
       - name: Set up TFLint
-        uses: terraform-linters/setup-tflint@v4
+        uses: {{ actions['terraform-linters/setup-tflint'].ref }}  # {{ actions['terraform-linters/setup-tflint'].tag }}
         with:
           tflint_version: "{{ tflint_version }}"
 {% endif %}{% if needs_checkov %}
@@ -43,7 +43,7 @@ jobs:
         run: pip install yamllint
 {% endif %}{% if needs_helm %}
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: {{ actions['azure/setup-helm'].ref }}  # {{ actions['azure/setup-helm'].tag }}
         with:
           version: "{{ helm_version }}"
 {% endif %}{% if needs_ansible %}
@@ -85,7 +85,7 @@ jobs:
           chmod +x /usr/local/bin/hadolint
 {% endif %}{% if needs_go %}
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: {{ actions['actions/setup-go'].ref }}  # {{ actions['actions/setup-go'].tag }}
         with:
           go-version: "{{ go_version }}"
 {% endif %}{% if needs_python %}
