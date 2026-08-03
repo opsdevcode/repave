@@ -141,7 +141,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   v2.1+              environments      deployment status → gated plan on live state → vending (ADR 003)
   │
-  v2.18–v2.23        paved roads       GitOps delivery + deploy pipeline; SLOs/runbooks; `repave add`; runtimes; bundles
+  v1.79–v1.84        paved roads       GitOps delivery + deploy pipeline; SLOs/runbooks; `repave add`; runtimes; bundles
   │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
 ```
@@ -171,7 +171,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **v2.18+ developer paved roads** | Not started | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Not started (v1.79–v1.84) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -2002,10 +2002,14 @@ documented objective — see
 
 ## Developer paved roads (v2.x)
 
-**Target (v2.18–v2.23):** repave paves the creation of an artifact and stops there. A developer
-receives a repo with a Dockerfile, tests, gate CI, and a Backstage entry — then hand-writes
-everything that makes the service actually run: the deploy pipeline, the GitOps wiring, the SLOs,
-the runbook they will be paged against. This cluster finishes the journey, then widens it.
+**Target (planning labels v1.79–v1.84, on the v2.x line):** repave paves the creation of an
+artifact and stops there. A developer receives a repo with a Dockerfile, tests, gate CI, and a
+Backstage entry — then hand-writes everything that makes the service actually run: the deploy
+pipeline, the GitOps wiring, the SLOs, the runbook they will be paged against. This cluster
+finishes the journey, then widens it.
+
+Planning labels continue the roadmap sequence from v1.78 and are **not** engine tags; engine
+versions come from semantic-release and are already on the 2.x line.
 
 Two structural gaps set the order below.
 
@@ -2023,9 +2027,9 @@ Critical path is the delivery path → deploy pipeline → composite bundles. Re
 
 ---
 
-### v2.18 — GitOps delivery golden path
+### v1.79 — GitOps delivery golden path
 
-*Planning label: v2.18 (roadmap numbering only).*
+*Planning label: v1.79 (roadmap numbering only).*
 
 **Status:** Not started.
 
@@ -2056,9 +2060,9 @@ deploys it, and `docs/module-repositories.md` documents the repository naming co
 
 ---
 
-### v2.19 — Deploy pipeline path
+### v1.80 — Deploy pipeline path
 
-*Planning label: v2.19 (roadmap numbering only).*
+*Planning label: v1.80 (roadmap numbering only).*
 
 **Status:** Not started.
 
@@ -2073,14 +2077,14 @@ eliminating everywhere else.
   and `helm-chart-generic`
 - Generates a reusable GitHub Actions deploy workflow, environment protection and approval
   configuration, and the cloud trust-policy snippet an operator applies once
-- Deploy step updates the v2.18 GitOps manifest rather than invoking `helm upgrade` directly,
+- Deploy step updates the v1.79 GitOps manifest rather than invoking `helm upgrade` directly,
   so promotion stays a reviewable commit
 - New gate `actionlint` with a pin in `deploy/local/gate-toolchain-pins.env` and a
   `repave doctor` entry
 - Policy rules: SHA-pinned actions, least-privilege `permissions:`, no static cloud
   credentials in workflow files
 
-**Dependencies:** v2.18 delivery path; [supply chain](#supply-chain-digest-pins) pinning
+**Dependencies:** v1.79 delivery path; [supply chain](#supply-chain-digest-pins) pinning
 conventions; v1.13 gate registry.
 
 **Done when:** Generated workflows pass `actionlint` and the new policy pack, `repave doctor`
@@ -2088,9 +2092,9 @@ reports the new gate, and a runbook covers wiring the cloud trust relationship.
 
 ---
 
-### v2.20 — Reliability path: SLOs as code and runbooks
+### v1.81 — Reliability path: SLOs as code and runbooks
 
-*Planning label: v2.20 (roadmap numbering only).*
+*Planning label: v1.81 (roadmap numbering only).*
 
 **Status:** Not started.
 
@@ -2119,9 +2123,9 @@ dimensions across the fleet, and the monitors and dashboards standards cross-lin
 
 ---
 
-### v2.21 — `repave add`: paved roads for existing repositories
+### v1.82 — `repave add`: paved roads for existing repositories
 
-*Planning label: v2.21 (roadmap numbering only).*
+*Planning label: v1.82 (roadmap numbering only).*
 
 **Status:** Not started.
 
@@ -2151,9 +2155,9 @@ independently.
 
 ---
 
-### v2.22 — Runtime and archetype breadth
+### v1.83 — Runtime and archetype breadth
 
-*Planning label: v2.22 (roadmap numbering only).*
+*Planning label: v1.83 (roadmap numbering only).*
 
 **Status:** Not started.
 
@@ -2170,7 +2174,7 @@ entirely, and `gate_builtin.py` has no linters or test runners outside Python, G
   `layout: single-resource`: `http-api` (default), `worker` (queue consumer with dead-letter
   handling, idempotency, graceful drain), `scheduled-job` (CronJob with backoff and a
   missed-run alert), `grpc` (proto, `buf-lint`, generated stubs)
-- Each layout composes with the v2.18–v2.20 delivery and reliability paths
+- Each layout composes with the v1.79–v1.81 delivery and reliability paths
 
 **Dependencies:** v1.32 app-service path; v1.13 gate registry; v1.29 conformance harness for
 per-layout snapshots.
@@ -2180,9 +2184,9 @@ conformance harness and carries its own delivery, SLO, and runbook artifacts.
 
 ---
 
-### v2.23 — Composite paved roads
+### v1.84 — Composite paved roads
 
-*Planning label: v2.23 (roadmap numbering only).*
+*Planning label: v1.84 (roadmap numbering only).*
 
 **Status:** Not started.
 
@@ -2198,7 +2202,7 @@ offers one.
   monitors, and SLO, sharing service name, owner, tags, and one provenance lineage
 - Portal preset chips for common bundles (see [`portal-design.md`](portal-design.md) Phase 5)
 
-**Dependencies:** v2.18 delivery path; v2.20 reliability path; existing bundle schema and
+**Dependencies:** v1.79 delivery path; v1.81 reliability path; existing bundle schema and
 `blueprint_conformance.py`.
 
 **Done when:** One portal request registers every member in the fleet registry under a single
