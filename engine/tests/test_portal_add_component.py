@@ -15,6 +15,18 @@ from repave_engine.render import render_blueprint
 
 def _init_git(repo: Path) -> None:
     subprocess.run(["git", "init"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@repave.dev"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "repave test"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
     subprocess.run(
         ["git", "commit", "-m", "initial"],
