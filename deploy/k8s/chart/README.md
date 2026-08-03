@@ -16,10 +16,25 @@ is smaller and suits catalog/auth-only deployments; dry-run gates report missing
 
 - Kubernetes 1.26+
 - Helm 3.10+
-- An image built and pushed (or loaded into kind) from the monorepo root:
+- An image built and pushed (or loaded into kind) from the monorepo root, **or** install from
+  the published OCI chart (semver tags only):
 
 ```bash
-docker build -f deploy/local/Dockerfile -t ghcr.io/your-org/repave-engine:1.75.0 .
+helm upgrade --install repave oci://ghcr.io/opsdevcode/charts/repave \
+  --version 2.15.0 \
+  --namespace repave --create-namespace \
+  -f deploy/k8s/chart/values-day2.yaml \
+  --set repave.output.githubOrg=your-org
+```
+
+Chart `version` and `appVersion` both match the engine release tag (for example `2.15.0`), so
+unpinned installs pull matching GHCR images. Override with `image.tag` or pin by digest — see
+[`values-digest-pinned.yaml`](values-digest-pinned.yaml).
+
+Local build example:
+
+```bash
+docker build -f deploy/local/Dockerfile -t ghcr.io/your-org/repave-engine:2.15.0 .
 ```
 
 ## Quick install (dry-run only)

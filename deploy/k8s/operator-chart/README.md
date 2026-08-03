@@ -11,6 +11,19 @@ alongside the [portal chart](../chart/). Image builds from [`operator/Dockerfile
 - Webhook TLS Secret (`webhook.secretName`, default `webhook-server-cert`) before pods become ready
 - Base64-encoded webhook CA in `webhook.caBundle` when `crds.install=true`
 
+Install from the published OCI chart (semver tags only):
+
+```bash
+helm upgrade --install repave-operator oci://ghcr.io/opsdevcode/charts/repave-operator \
+  --version 2.15.0 \
+  --namespace repave-system --create-namespace \
+  -f deploy/k8s/operator-chart/values-day2.yaml \
+  --set repave.apiUrl=http://repave.repave.svc.cluster.local:8088
+```
+
+Chart `version` and `appVersion` match the engine release tag, so unpinned installs pull
+`ghcr.io/opsdevcode/repave-operator:<release>`.
+
 ## Quick install (with portal)
 
 Typical layout:
