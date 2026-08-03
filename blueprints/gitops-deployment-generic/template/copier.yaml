@@ -1,0 +1,50 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+  - "{% if gitops_engine != 'flux' %}apps/kustomization.yaml{% endif %}"
+
+service_name:
+  type: str
+
+environment:
+  type: str
+  default: dev
+
+gitops_engine:
+  type: str
+  default: argocd
+
+chart_repo_url:
+  type: str
+
+chart_name:
+  type: str
+
+chart_version:
+  type: str
+  default: "0.1.0"
+
+target_namespace:
+  type: str
+  default: default
+
+sync_policy:
+  type: str
+  default: manual
+
+destination_server:
+  type: str
+  default: https://kubernetes.default.svc
+
+argocd_project:
+  type: str
+  default: platform
+
+flux_source_name:
+  type: str
+  default: ""
+
+flux_source_namespace:
+  type: str
+  default: flux-system

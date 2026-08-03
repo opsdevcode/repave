@@ -1,0 +1,68 @@
+{% if gitops_engine == 'argocd' -%}
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ service_name }}-{{ environment }}
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: {{ service_name }}
+    app.kubernetes.io/instance: {{ service_name }}-{{ environment }}
+    app.kubernetes.io/managed-by: repave
+    repave.dev/environment: {{ environment }}
+spec:
+  project: {{ argocd_project }}
+  source:
+    repoURL: {{ chart_repo_url }}
+    chart: {{ chart_name }}
+    targetRevision: "{{ chart_version }}"
+  destination:
+    server: {{ destination_server }}
+    namespace: {{ target_namespace }}
+  syncPolicy:
+{%- if sync_policy == 'automated' %}
+    automated:
+      prune: true
+      selfHeal: true
+{%- endif %}
+    syncOptions:
+      - CreateNamespace=false
+      - ApplyOutOfSyncOnly=true
+{%- else -%}
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: {{ service_name }}-{{ environment }}
+  namespace: {{ flux_source_namespace }}
+  labels:
+    app.kubernetes.io/name: {{ service_name }}
+    app.kubernetes.io/instance: {{ service_name }}-{{ environment }}
+    app.kubernetes.io/managed-by: repave
+    repave.dev/environment: {{ environment }}
+spec:
+  interval: 10m
+  targetNamespace: {{ target_namespace }}
+  storageNamespace: {{ target_namespace }}
+  chart:
+    spec:
+      chart: {{ chart_name }}
+      version: "{{ chart_version }}"
+      sourceRef:
+        kind: HelmRepository
+        name: {{ flux_source_name }}
+        namespace: {{ flux_source_namespace }}
+  install:
+    createNamespace: false
+{%- if sync_policy == 'automated' %}
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+{%- else %}
+  upgrade:
+    remediation:
+      retries: 0
+  suspend: false
+{%- endif %}
+{%- endif %}

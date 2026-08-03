@@ -96,6 +96,14 @@ _ARTIFACT_SIGNALS: dict[str, tuple[Signal, ...]] = {
         Signal("**/templates/**", weight=2),
         Signal("**/.helmignore"),
     ),
+    "gitops-deployment": (
+        Signal("**/application.y*ml", weight=4),
+        Signal("**/kustomization.y*ml", weight=4),
+        Signal("**/helmrelease.y*ml", weight=4),
+        Signal("**/apps/**", weight=2),
+        Signal("**/clusters/**", weight=2),
+        Signal("**/Chart.yaml", weight=3, negative=True),
+    ),
     "app-service": (
         Signal("**/Dockerfile", weight=3),
         Signal("**/pyproject.toml", weight=2),

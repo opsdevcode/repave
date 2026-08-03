@@ -834,6 +834,7 @@ _LIBRARY_FAMILY_META: dict[str, tuple[str, str]] = {
     "policy": ("Policy", "Checkov, OPA, and Azure Policy repositories"),
     "observability": ("Observability", "Dashboards, monitors, and telemetry repos"),
     "helm": ("Kubernetes / Helm", "Charts and cluster delivery artifacts"),
+    "gitops": ("GitOps delivery", "Argo CD and Flux manifests pinned to a chart version"),
     "app": ("Application services", "Service repos with catalog metadata"),
     "other": ("Other", "Registered or local artifacts"),
 }
@@ -841,6 +842,7 @@ _LIBRARY_FAMILY_ORDER: tuple[str, ...] = (
     "terraform",
     "ansible",
     "helm",
+    "gitops",
     "app",
     "policy",
     "observability",
@@ -864,6 +866,8 @@ def infer_entity_family(
         return "policy"
     if "observ" in name or "monitor" in name or "dashboard" in name:
         return "observability"
+    if "gitops" in name:
+        return "gitops"
     if "helm" in name:
         return "helm"
     component_type = (entity.component_type or "").lower()

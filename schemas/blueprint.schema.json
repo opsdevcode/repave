@@ -124,7 +124,8 @@
             "azure-policy",
             "observability",
             "helm-chart",
-            "app-service"
+            "app-service",
+            "gitops-deployment"
           ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
@@ -335,11 +336,16 @@
                   "type": "string",
                   "description": "Workspace for terraform plan JSON when evaluating modules."
                 },
-                "native_globs": {
-                  "type": "array",
-                  "items": { "type": "string" },
-                  "description": "Glob patterns for native observability files when running conftest without Terraform."
-                },
+              "native_globs": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Glob patterns for native observability files when running conftest without Terraform."
+              },
+              "manifest_globs": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Glob patterns for GitOps manifests evaluated by conftest (gitops-deployment artifact)."
+              },
                 "helm_release_name": {
                   "type": "string",
                   "description": "Helm release name when rendering charts for conftest (helm-chart artifact)."

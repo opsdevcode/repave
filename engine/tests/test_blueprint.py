@@ -185,6 +185,7 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "checkov-policy-generic" in names
     assert "helm-chart-generic" in names
     assert "app-service-generic" in names
+    assert "gitops-deployment-generic" in names
 
 
 def test_load_app_service_generic_blueprint(repo_root: Path) -> None:

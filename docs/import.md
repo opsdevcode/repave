@@ -52,6 +52,7 @@ the best match, with the matched paths shown as evidence:
 | `ansible-collection` | `galaxy.yml`, `plugins/`, `meta/runtime.yml` |
 | `ansible-playbook-project` | `ansible.cfg`, `playbooks/`, `inventory/` |
 | `helm-chart` | `Chart.yaml` + `values.yaml` + `templates/` |
+| `gitops-deployment` | `application.yaml`, `kustomization.yaml`, `helmrelease.yaml`, `apps/`, `clusters/`; no `Chart.yaml` |
 | `app-service` | `Dockerfile`, `pyproject.toml`, `package.json`, `go.mod` |
 | `opa-policy` | `*.rego` |
 | `checkov-policy` | `checks/`, `.checkov.yml` |

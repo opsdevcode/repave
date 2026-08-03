@@ -119,21 +119,29 @@ def _opa_native_globs(ctx: GateContext) -> list[str]:
     ]
 
 
-def _run_opa_native_observability(
+def _opa_gitops_globs(ctx: GateContext) -> list[str]:
+    raw = ctx.config("opa")
+    configured = raw.get("manifest_globs")
+    if isinstance(configured, list) and configured:
+        return [str(item) for item in configured]
+    return ["*.y*ml", "apps/*.y*ml"]
+
+
+def _run_conftest_over_files(
     ctx: GateContext,
     policies_dir: Path,
     output_dir: Path,
+    *,
+    patterns: list[str],
+    empty_detail: str,
+    passed_detail: str,
 ) -> GateResult:
+    """Evaluate conftest per file for artifacts with no plan or rendered manifest."""
     targets: list[Path] = []
-    for pattern in _opa_native_globs(ctx):
+    for pattern in patterns:
         targets.extend(sorted(output_dir.glob(pattern)))
     if not targets:
-        return GateResult(
-            "opa",
-            True,
-            True,
-            "no native observability files for opa; skipped",
-        )
+        return GateResult("opa", True, True, empty_detail)
 
     errors: list[str] = []
     for path in targets:
@@ -154,11 +162,36 @@ def _run_opa_native_observability(
 
     if errors:
         return GateResult("opa", False, False, "; ".join(errors))
-    return GateResult(
-        "opa",
-        True,
-        False,
-        f"conftest passed for {len(targets)} native file(s)",
+    return GateResult("opa", True, False, passed_detail.format(count=len(targets)))
+
+
+def _run_opa_native_observability(
+    ctx: GateContext,
+    policies_dir: Path,
+    output_dir: Path,
+) -> GateResult:
+    return _run_conftest_over_files(
+        ctx,
+        policies_dir,
+        output_dir,
+        patterns=_opa_native_globs(ctx),
+        empty_detail="no native observability files for opa; skipped",
+        passed_detail="conftest passed for {count} native file(s)",
+    )
+
+
+def _run_opa_gitops(
+    ctx: GateContext,
+    policies_dir: Path,
+    output_dir: Path,
+) -> GateResult:
+    return _run_conftest_over_files(
+        ctx,
+        policies_dir,
+        output_dir,
+        patterns=_opa_gitops_globs(ctx),
+        empty_detail="no GitOps manifests for opa; skipped",
+        passed_detail="conftest passed for {count} GitOps manifest(s)",
     )
 
 
@@ -224,6 +257,8 @@ def run_opa(ctx: GateContext) -> GateResult:
                 )
     elif artifact == "helm-chart":
         return _run_opa_helm_chart(ctx, policies_dir, output_dir)
+    elif artifact == "gitops-deployment":
+        return _run_opa_gitops(ctx, policies_dir, output_dir)
     else:
         return GateResult("opa", True, True, "opa gate not applicable to this artifact type")
 

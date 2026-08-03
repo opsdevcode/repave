@@ -382,6 +382,35 @@ def _build_app_service_spec(
     return spec, service_name
 
 
+def _build_gitops_deployment_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    service_name = str(values.get("service_name", blueprint.name))
+    engine = str(values.get("gitops_engine", "argocd")).strip()
+    deployment: dict[str, Any] = {
+        "service_name": service_name,
+        "environment": str(values.get("environment", "dev")).strip(),
+        "gitops_engine": engine,
+        "chart_repo_url": str(values.get("chart_repo_url", "")).strip(),
+        "chart_name": str(values.get("chart_name", "")).strip(),
+        "chart_version": str(values.get("chart_version", "")).strip(),
+        "target_namespace": str(values.get("target_namespace", "")).strip(),
+        "sync_policy": str(values.get("sync_policy", "manual")).strip(),
+    }
+    if engine == "argocd":
+        deployment["destination_server"] = str(values.get("destination_server", "")).strip()
+        project = str(values.get("argocd_project", "")).strip()
+        if project:
+            deployment["argocd_project"] = project
+    else:
+        deployment["flux_source_name"] = str(values.get("flux_source_name", "")).strip()
+        namespace = str(values.get("flux_source_namespace", "")).strip()
+        if namespace:
+            deployment["flux_source_namespace"] = namespace
+    return {"artifactType": "gitops-deployment", "gitopsDeployment": deployment}, service_name
+
+
 def _provenance_generated_at() -> str:
     fixed = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT", "").strip()
     if fixed:
@@ -410,6 +439,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_helm_chart_spec(blueprint, values)
     elif blueprint.artifact_type == "app-service":
         artifact_spec, metadata_name = _build_app_service_spec(blueprint, values)
+    elif blueprint.artifact_type == "gitops-deployment":
+        artifact_spec, metadata_name = _build_gitops_deployment_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

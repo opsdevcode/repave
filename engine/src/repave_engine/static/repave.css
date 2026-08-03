@@ -28,6 +28,8 @@
   --family-observability-text: #ffe8c8;
   --family-helm: #326ce5;
   --family-helm-text: #c8d8ff;
+  --family-gitops: #ef7b4d;
+  --family-gitops-text: #ffd7c4;
   --family-app: #34a853;
   --family-app-text: #c8f0d4;
   --radius: 8px;
@@ -2557,6 +2559,12 @@ details.file-panel summary {
   background: color-mix(in srgb, var(--family-helm) 22%, transparent);
   color: var(--family-helm-text);
   border-color: color-mix(in srgb, var(--family-helm) 45%, transparent);
+}
+
+.badge--gitops {
+  background: color-mix(in srgb, var(--family-gitops) 22%, transparent);
+  color: var(--family-gitops-text);
+  border-color: color-mix(in srgb, var(--family-gitops) 45%, transparent);
 }
 
 .badge--app {

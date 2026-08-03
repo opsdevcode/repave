@@ -1,0 +1,16 @@
+inputs:
+  service_name: conformance-api
+  environment: dev
+  gitops_engine: argocd
+  chart_repo_url: https://charts.example.com
+  chart_name: conformance-api
+  chart_version: "1.0.0"
+  target_namespace: conformance
+  sync_policy: manual
+  destination_server: https://kubernetes.default.svc
+  argocd_project: platform
+required_files:
+  - repave.yaml
+  - README.md
+  - apps/release.yaml
+snapshot: false

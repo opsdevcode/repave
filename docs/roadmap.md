@@ -8,7 +8,10 @@ work, writing ADRs, and opening issues.
 
 **In progress:** _(none — v2.x stabilization; next major themes under
 [v3.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane))._
-**Shipped on `main`:** **environment lifecycle Phase 3 follow-ups** (catalog/API cost badges for
+**Shipped on `main`:** **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
+`Application` / Flux `HelmRelease`, `gitops` artifact family, exact-pin and sync-policy OPA
+rules — [v1.79](#v179--gitops-delivery-golden-path)); **environment lifecycle Phase 3
+follow-ups** (catalog/API cost badges for
 vended environments, post-merge registry finalize on reclaim); **environment vending** (`kind: environment_vend`, portal request-environment,
 JSONL registry + catalog merge, sandbox TTL auto-reclaim, non-sandbox draft decommission PRs,
 `repave environments reclaim`, `POST /api/v2/environments/reclaim`, Helm reclaim CronJob —
@@ -171,7 +174,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **Developer paved roads** | Not started (v1.79–v1.84) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Partial (v1.79 shipped; v1.80–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -2031,7 +2034,12 @@ Critical path is the delivery path → deploy pipeline → composite bundles. Re
 
 *Planning label: v1.79 (roadmap numbering only).*
 
-**Status:** Not started.
+**Status:** **Shipped on `main`** — `blueprints/gitops-deployment-generic/` (Argo CD
+`Application` and Flux `HelmRelease`), `gitops-deployment` artifact type and `gitops` family,
+`standards/gitops/deployment-standard.md`, and `policy/opa/policies/gitops_deployment.rego`
+enforcing exact chart pins, explicit prune/self-heal, and scoped destinations.
+`helm-template` against the referenced chart is **deferred** — it needs network access to the
+chart repository from the gate runner.
 
 **Problem:** [Helm chart](#v131--helm-chart-golden-path-accelerated-was-v133) and
 [app-service](#v132--application-service-scaffold-golden-path-accelerated-was-v134) paths emit
@@ -2049,14 +2057,18 @@ path enforces is absent exactly where a bad pin reaches production.
 - New standards pack `standards/gitops/deployment-standard.md`
 - Policy rules: no `targetRevision: HEAD` or floating tag, automated sync requires an explicit
   prune and self-heal decision, destination and project must be scoped
-- Gates: `yamllint`, `helm-template` against the referenced chart, `opa`, `secrets`,
-  `docs-drift`, `provenance-drift`
+- Gates: `yamllint`, `opa`, `secrets`, `docs-drift`, `provenance-drift`; `helm-template`
+  against the referenced chart is a follow-on (needs chart-repository network access)
 
 **Dependencies:** v1.31 Helm path; `deployment_status.py` readers (environment lifecycle
 Phase 1); v1.39 OPA gate.
 
 **Done when:** A generated manifest round-trips through `deployment_status.py`, kind smoke
 deploys it, and `docs/module-repositories.md` documents the repository naming convention.
+
+**Follow-ons:** `helm-template` against `chart_repo_url`; kind smoke that applies the generated
+manifest to a cluster running Argo CD; `gitops-deployment` as a `microservice-full` bundle
+member ([composite paved roads](#v184--composite-paved-roads)).
 
 ---
 

@@ -131,6 +131,17 @@ _DEFAULT_IMPORT_RULES: dict[str, ImportRuleSet] = {
         ),
         keep=_COMMON_KEEP,
     ),
+    "gitops": ImportRuleSet(
+        rules=(
+            _README_RULE,
+            ImportRule(
+                match=("apps/**", "clusters/**", "environments/**", "overlays/**"),
+                preserve_tree=True,
+            ),
+            ImportRule(match=("*.yml", "*.yaml"), destination="."),
+        ),
+        keep=_COMMON_KEEP,
+    ),
     "app": ImportRuleSet(
         rules=(
             _README_RULE,
