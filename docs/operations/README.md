@@ -28,6 +28,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | `RepaveJsonlAppendFailures` | [Stuck async queue](#stuck-async-queue) |
 | `RepaveHPAAtMaxReplicas` | [Scale out](#scale-out) (requires kube-state-metrics) |
 | Postgres data loss / restore | [postgres-backup-restore.md](postgres-backup-restore.md) |
+| Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
 
 ## Runbooks
 

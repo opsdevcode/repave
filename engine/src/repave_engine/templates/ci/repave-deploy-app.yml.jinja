@@ -1,0 +1,33 @@
+name: repave deploy
+on:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  id-token: write
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    environment: {{ deploy_environment }}
+    steps:
+      - name: Checkout
+        uses: {{ actions['actions/checkout'].ref }}  # {{ actions['actions/checkout'].tag }}
+      - name: Set up Docker Buildx
+        uses: {{ actions['docker/setup-buildx-action'].ref }}  # {{ actions['docker/setup-buildx-action'].tag }}
+      - name: Log in to container registry
+        uses: {{ actions['docker/login-action'].ref }}  # {{ actions['docker/login-action'].tag }}
+        with:
+          registry: {{ container_registry.split('/')[0] }}
+          username: {% raw %}${{ github.actor }}{% endraw %}
+          password: {% raw %}${{ secrets.GITHUB_TOKEN }}{% endraw %}
+      - name: Build and push
+        uses: {{ actions['docker/build-push-action'].ref }}  # {{ actions['docker/build-push-action'].tag }}
+        with:
+          context: .
+          push: true
+          tags: |
+            {{ container_registry }}/{{ service_name }}:{% raw %}${{ github.sha }}{% endraw %}
+            {{ container_registry }}/{{ service_name }}:latest

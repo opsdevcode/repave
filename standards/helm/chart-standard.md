@@ -36,3 +36,8 @@ All workloads MUST include standard labels from `_helpers.tpl`:
 
 Charts run `helm lint`, `helm template`, `yamllint`, `actionlint`, `secrets`, `docs-drift`, and
 `provenance-drift` gates. Tools skip cleanly when not installed.
+
+When `enable_deploy_pipeline` is true, generated repos include `repave-deploy.yml`, which opens
+a GitOps promotion PR (v1.79 manifest bump) instead of running `helm upgrade` in CI. Operators
+wire `REPAVE_GITOPS_APP_TOKEN` and environment protection once — see
+`docs/operations/deploy-pipeline-oidc.md` in the repave monorepo.

@@ -1,0 +1,21 @@
+# Shared delivery inputs for app-service-generic and helm-chart-generic (v1.80).
+#
+# Copy the block below into blueprint spec.inputs when extending either path.
+# Set enable_deploy_pipeline to "true" to emit .github/workflows/repave-deploy.yml
+# and docs/DEPLOY-OIDC.md in generated repositories.
+#
+# Recommended defaults:
+#
+# app-service-generic:
+#   enable_deploy_pipeline: "false"
+#   deploy_environment: dev
+#   container_registry: ghcr.io/<org>
+#   gitops_repo: ""                    # optional; helm-chart path uses this for promotion
+#
+# helm-chart-generic:
+#   enable_deploy_pipeline: "false"
+#   deploy_environment: dev
+#   gitops_repo: org/gitops-dev-api    # required when deploy pipeline enabled
+#   gitops_manifest_path: apps/release.yaml
+#   gitops_engine: argocd              # argocd | flux
+#   service_name: ""                   # defaults to chart_name when empty

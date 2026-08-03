@@ -1,0 +1,75 @@
+name: repave deploy
+on:
+  workflow_dispatch:
+    inputs:
+      chart_version:
+        description: Chart version to promote to GitOps (defaults to Chart.yaml version)
+        required: false
+        type: string
+  push:
+    branches: [main, master]
+    paths:
+      - Chart.yaml
+      - values.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  promote-gitops:
+    runs-on: ubuntu-latest
+    environment: {{ deploy_environment }}
+    steps:
+      - name: Checkout chart repository
+        uses: {{ actions['actions/checkout'].ref }}  # {{ actions['actions/checkout'].tag }}
+      - name: Read chart version
+        id: chart
+        run: |
+          version=$(grep '^version:' Chart.yaml | awk '{print $2}' | tr -d '"')
+          if [ -n "{% raw %}${{ github.event.inputs.chart_version }}{% endraw %}" ]; then
+            version="{% raw %}${{ github.event.inputs.chart_version }}{% endraw %}"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+      - name: Checkout GitOps repository
+        uses: {{ actions['actions/checkout'].ref }}  # {{ actions['actions/checkout'].tag }}
+        with:
+          repository: {{ gitops_repo }}
+          token: {% raw %}${{ secrets.REPAVE_GITOPS_APP_TOKEN }}{% endraw %}
+          path: gitops
+      - name: Install yq
+        run: |
+          curl -sSL -o /usr/local/bin/yq \
+            "https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64"
+          chmod +x /usr/local/bin/yq
+      - name: Bump GitOps manifest chart version
+        working-directory: gitops
+        env:
+          CHART_VERSION: {% raw %}${{ steps.chart.outputs.version }}{% endraw %}
+          MANIFEST: {{ gitops_manifest_path }}
+          GITOPS_ENGINE: {{ gitops_engine }}
+        run: |
+          set -euo pipefail
+          if [ "$GITOPS_ENGINE" = "argocd" ]; then
+            yq -i '.spec.source.targetRevision = strenv(CHART_VERSION)' "$MANIFEST"
+          else
+            yq -i '.spec.chart.spec.version = strenv(CHART_VERSION)' "$MANIFEST"
+          fi
+      - name: Open GitOps promotion PR
+        working-directory: gitops
+        env:
+          GH_TOKEN: {% raw %}${{ secrets.REPAVE_GITOPS_APP_TOKEN }}{% endraw %}
+          CHART_VERSION: {% raw %}${{ steps.chart.outputs.version }}{% endraw %}
+        run: |
+          set -euo pipefail
+          git config user.name "repave deploy"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="promote/{{ chart_name }}-${CHART_VERSION}-{% raw %}${{ github.run_id }}{% endraw %}"
+          git checkout -b "$branch"
+          git add {{ gitops_manifest_path }}
+          git commit -m "Promote {{ chart_name }} chart ${CHART_VERSION} to {{ deploy_environment }}"
+          git push origin "$branch"
+          gh pr create \
+            --base main \
+            --head "$branch" \
+            --title "Promote {{ chart_name }} ${CHART_VERSION} ({{ deploy_environment }})" \
+            --body "Automated GitOps promotion from {% raw %}${{ github.repository }}@${{ github.sha }}{% endraw %}."

@@ -6,8 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.20.0  
 
-**In progress:** **Developer paved roads** — v1.80 deploy pipeline path (delivery workflow
-generation; `actionlint` gate shipped — [v1.80](#v180--deploy-pipeline-path)). v3 themes under
+**In progress:** **Developer paved roads** — v1.81 reliability path (SLOs/runbooks as code —
+[v1.81](#v181--reliability-path-slos-as-code-and-runbooks)). v1.80 deploy pipeline shipped on
+`main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
 `Application` / Flux `HelmRelease`, `gitops` artifact family, exact-pin and sync-policy OPA
@@ -175,7 +176,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **Developer paved roads** | Partial (v1.79–v1.80 partial; v1.81–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Partial (v1.80 shipped; v1.81–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -2076,8 +2077,10 @@ member ([composite paved roads](#v184--composite-paved-roads)).
 
 *Planning label: v1.80 (roadmap numbering only).*
 
-**Status:** Partial — `actionlint` gate shipped (pin, installer, doctor, runner, app/helm/gitops
-blueprints); deploy workflow generation, delivery inputs, and cloud OIDC trust still open.
+**Status:** **Shipped on `main` (partial)** — `actionlint` gate shipped; deploy workflow
+generation (`repave-deploy.yml`), delivery inputs, OIDC trust docs, and GitOps promotion PR
+path shipped for `helm-chart-generic` and container build/push for `app-service-generic`.
+Cloud OIDC trust runbook: [`docs/operations/deploy-pipeline-oidc.md`](operations/deploy-pipeline-oidc.md).
 
 **Problem:** Generated repos gate themselves ([v1.24](#v124--generated-module-ci-template)) but
 ship no delivery pipeline. Teams write their own, and the recurring failure is a long-lived
