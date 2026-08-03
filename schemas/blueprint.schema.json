@@ -110,6 +110,8 @@
               "go-test",
               "node-lint",
               "node-test",
+              "java-build",
+              "dotnet-test",
               "actionlint"
             ]
           }
@@ -506,6 +508,26 @@
                 "test_directory": {
                   "type": "string",
                   "description": "Directory containing node test files."
+                }
+              }
+            },
+            "java-build": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_file": {
+                  "type": "string",
+                  "description": "Maven project manifest (pom.xml) for java-build gate."
+                }
+              }
+            },
+            "dotnet-test": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "test_project": {
+                  "type": "string",
+                  "description": "Path to the xUnit test project (.csproj) for dotnet-test gate."
                 }
               }
             },

@@ -99,6 +99,18 @@ jobs:
         uses: {{ actions['actions/setup-node'].ref }}  # {{ actions['actions/setup-node'].tag }}
         with:
           node-version: "{{ node_version }}"
+{% endif %}{% if needs_java %}
+      - name: Set up Java
+        uses: {{ actions['actions/setup-java'].ref }}  # {{ actions['actions/setup-java'].tag }}
+        with:
+          distribution: temurin
+          java-version: "{{ java_version }}"
+          cache: maven
+{% endif %}{% if needs_dotnet %}
+      - name: Set up .NET
+        uses: {{ actions['actions/setup-dotnet'].ref }}  # {{ actions['actions/setup-dotnet'].tag }}
+        with:
+          dotnet-version: "{{ dotnet_version }}"
 {% endif %}{% if needs_python %}
       - name: Install service dev dependencies
         run: pip install -e ".[dev]"

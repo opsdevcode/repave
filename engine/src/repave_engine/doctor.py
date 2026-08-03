@@ -27,6 +27,8 @@ _PIN_BY_TOOL: dict[str, str] = {
     "hadolint": ci_toolchain.HADOLINT_VERSION,
     "go": ci_toolchain.GO_VERSION,
     "node": ci_toolchain.NODE_VERSION,
+    "java": ci_toolchain.JAVA_VERSION,
+    "dotnet": ci_toolchain.DOTNET_VERSION,
     "infracost": ci_toolchain.INFRACOST_VERSION,
     "actionlint": ci_toolchain.ACTIONLINT_VERSION,
 }
@@ -83,6 +85,11 @@ def _detect_version(tool: str) -> str | None:
         if argv_prefix is None:
             return None
         argv = [*argv_prefix, "--version"]
+    elif tool == "mvn":
+        binary = resolve_tool("mvn")
+        if not binary:
+            return None
+        argv = [binary, "-version"]
     else:
         binary = resolve_tool(tool)
         if not binary:

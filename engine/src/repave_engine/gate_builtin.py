@@ -13,12 +13,14 @@ from repave_engine.gate_runners import (
     run_datadog_monitor,
     run_dockerfile_lint,
     run_docs_drift,
+    run_dotnet_test,
     run_go_lint,
     run_go_test,
     run_grafana_dashboard,
     run_helm_lint,
     run_helm_template,
     run_infracost,
+    run_java_build,
     run_molecule,
     run_node_lint,
     run_node_test,
@@ -234,6 +236,20 @@ register_gate(
     GateSpec(
         name="node-test",
         runner=run_node_test,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="java-build",
+        runner=run_java_build,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="dotnet-test",
+        runner=run_dotnet_test,
         artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
     )
 )

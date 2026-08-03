@@ -1,0 +1,11 @@
+{% if runtime == 'dotnet' -%}
+{% set dotnet_project = service_name.replace('-', ' ')|title|replace(' ', '') -%}
+namespace Repave.{{ dotnet_project }};
+
+public static class Health
+{
+    public static HealthStatus Payload() => new("ok");
+}
+
+public record HealthStatus(string Status);
+{% endif %}

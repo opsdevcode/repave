@@ -25,6 +25,8 @@ GATE_TOOL_HINTS: dict[str, tuple[str, ...]] = {
     "go-test": ("go",),
     "node-lint": ("node", "npm"),
     "node-test": ("node", "npm"),
+    "java-build": ("mvn", "java"),
+    "dotnet-test": ("dotnet",),
     "promtool": ("promtool",),
     "amtool": ("amtool",),
 }
