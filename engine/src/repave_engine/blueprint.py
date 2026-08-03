@@ -716,6 +716,7 @@ class BlueprintCatalogGroup:
 _OBSERVABILITY_BLUEPRINT_ORDER: tuple[str, ...] = (
     "dashboards-as-code-generic",
     "monitors-as-code-generic",
+    "slo-as-code-generic",
     "observability-as-code-generic",
 )
 

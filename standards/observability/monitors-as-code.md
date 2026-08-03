@@ -39,7 +39,10 @@ and include a provider-appropriate stub (`pagerduty_configs`, `slack_configs`, o
 ## SLOs
 
 When `slo_target_percent` is set on generate, the repo includes a starter SLO recording
-rule and burn-rate alert under `prometheus/rules/` (Prometheus native mode).
+rule and burn-rate alert under `prometheus/rules/` (Prometheus native mode). For dedicated
+SLO repos with multi-window burn alerts and `RUNBOOK.md`, use
+[`slo-as-code-generic`](../../blueprints/slo-as-code-generic/) and
+[`slos-as-code.md`](slos-as-code.md).
 
 ## Monitor packs
 

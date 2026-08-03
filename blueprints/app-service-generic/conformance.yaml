@@ -12,4 +12,5 @@ required_files:
   - README.md
   - Dockerfile
   - catalog-info.yaml
+  - RUNBOOK.md
 snapshot: false

@@ -147,6 +147,7 @@ def test_group_blueprints_observability_lists_split_paths_first() -> None:
         [
             _bp("observability-as-code-generic", "observability"),
             _bp("monitors-as-code-generic", "observability"),
+            _bp("slo-as-code-generic", "observability"),
             _bp("dashboards-as-code-generic", "observability"),
         ]
     )
@@ -154,6 +155,7 @@ def test_group_blueprints_observability_lists_split_paths_first() -> None:
     assert [bp.name for bp in obs.blueprints] == [
         "dashboards-as-code-generic",
         "monitors-as-code-generic",
+        "slo-as-code-generic",
         "observability-as-code-generic",
     ]
 

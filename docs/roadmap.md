@@ -2113,7 +2113,9 @@ reports the new gate, and a runbook covers wiring the cloud trust relationship.
 
 *Planning label: v1.81 (roadmap numbering only).*
 
-**Status:** Not started.
+**Status:** In progress on `feat/v181-slo-runbooks` — `slo-as-code-generic` blueprint,
+`RUNBOOK.md` templates for app/helm/SLO paths, `docs-drift` section enforcement, and
+scorecard `has-slo` / `has-runbook` dimensions.
 
 **Problem:** [Dashboards and monitors](#v140--observability-as-code-golden-path) are paved, but
 the objective those alerts defend is not, so alert thresholds are picked by hand and drift from

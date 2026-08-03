@@ -88,6 +88,68 @@ def test_docs_drift_fails_without_provenance_section(tmp_path: Path) -> None:
     assert "missing Provenance section" in results[0].message
 
 
+def _runbook_sections() -> str:
+    return (
+        "## Owner\n\nTeam platform.\n\n"
+        "## Escalation\n\nPage on-call.\n\n"
+        "## Dashboards\n\nGrafana link.\n\n"
+        "## Rollback procedure\n\nRevert PR.\n\n"
+        "## Game-day checklist\n\n- [ ] Drill done\n"
+    )
+
+
+def test_docs_drift_requires_runbook_for_app_service(tmp_path: Path) -> None:
+    blueprint = make_blueprint(
+        tmp_path / "bp",
+        name="app-service-generic",
+        artifact_type="app-service",
+    )
+    (tmp_path / "README.md").write_text(
+        "# svc\n\n## Usage\n\nUse.\n\n## Provenance\n\nSee `repave.yaml`.\n",
+        encoding="utf-8",
+    )
+
+    results = run_gates(tmp_path, ("docs-drift",), blueprint=blueprint)
+
+    assert results[0].passed is False
+    assert "RUNBOOK.md missing" in results[0].message
+
+
+def test_docs_drift_validates_runbook_sections(tmp_path: Path) -> None:
+    blueprint = make_blueprint(
+        tmp_path / "bp",
+        name="slo-as-code-generic",
+        artifact_type="observability",
+    )
+    (tmp_path / "README.md").write_text(
+        "# svc\n\n## Usage\n\nUse.\n\n## Provenance\n\nSee `repave.yaml`.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "RUNBOOK.md").write_text("# Run\n\n## Owner\n\nOnly owner.\n", encoding="utf-8")
+
+    results = run_gates(tmp_path, ("docs-drift",), blueprint=blueprint)
+
+    assert results[0].passed is False
+    assert "missing sections" in results[0].message
+
+
+def test_docs_drift_passes_with_complete_runbook(tmp_path: Path) -> None:
+    blueprint = make_blueprint(
+        tmp_path / "bp",
+        name="slo-as-code-generic",
+        artifact_type="observability",
+    )
+    (tmp_path / "README.md").write_text(
+        "# svc\n\n## Usage\n\nUse.\n\n## Provenance\n\nSee `repave.yaml`.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "RUNBOOK.md").write_text(_runbook_sections(), encoding="utf-8")
+
+    results = run_gates(tmp_path, ("docs-drift",), blueprint=blueprint)
+
+    assert results[0].passed is True
+
+
 def test_unknown_gate_fails(tmp_path: Path) -> None:
     results = run_gates(tmp_path, ("not-a-real-gate",))
 

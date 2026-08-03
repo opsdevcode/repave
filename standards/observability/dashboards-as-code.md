@@ -125,6 +125,12 @@ Other packs **add** vendored community forks alongside the baseline (for example
 Do not vendor multi-megabyte upstream exports; maintain a **reviewable fork** with attribution
 and queries adapted to your metric model.
 
+## Related paths
+
+- [`monitors-as-code-generic`](../../blueprints/monitors-as-code-generic/) — symptom alerts
+- [`slo-as-code-generic`](../../blueprints/slo-as-code-generic/) — error-budget burn-rate rules
+  ([`slos-as-code.md`](slos-as-code.md))
+
 ## References
 
 - [Grafana: Best practices for dashboards][grafana-best]
