@@ -33,7 +33,7 @@
           <th scope="col">Governed</th>
           <th scope="col">Current</th>
           <th scope="col">Behind</th>
-          <th scope="col">Detail</th>
+          <th scope="col">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -50,7 +50,17 @@
             <span class="badge badge--pass">0</span>
             {% endif %}
           </td>
-          <td><a href="/platform/standards/{{ summary.blueprint_name }}">View repos</a></td>
+          <td>
+            <a href="/platform/standards/{{ summary.blueprint_name }}">View repos</a>
+            {% if async_generation_enabled and summary.behind_repos %}
+            <form method="post" action="/platform/standards/{{ summary.blueprint_name }}/confirm-drift" class="inline-form">
+              {% for row in summary.behind_repos %}
+              <input type="hidden" name="repo_urls" value="{{ row.repo_url }}" />
+              {% endfor %}
+              <button type="submit" class="btn btn--secondary btn--sm">Confirm drift</button>
+            </form>
+            {% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

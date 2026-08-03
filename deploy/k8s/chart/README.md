@@ -274,7 +274,9 @@ helm upgrade --install repave ./deploy/k8s/chart \
 When the portal and operator run in different namespaces, set
 `fleetOperatorSnapshot.cronJob.operatorNamespace` to the operator install namespace. The chart
 creates a **Role** (or **ClusterRole** when `allNamespaces: true`) so the portal
-ServiceAccount can list `repave.dev/goldenpathrepos` and `upgradecampaigns`.
+ServiceAccount can list `repave.dev/goldenpathrepos` and `get`/`list`/`patch`
+`upgradecampaigns` (snapshot refresh plus in-portal campaign pause/resume on
+`/platform/campaigns`).
 
 Manual refresh from a pod:
 

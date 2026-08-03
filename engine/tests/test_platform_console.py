@@ -21,6 +21,7 @@ from repave_engine.fleet_operator_status import (
 from repave_engine.portal_platform import (
     build_platform_fleet_page,
     build_platform_standards_page,
+    find_campaign_in_snapshot,
     platform_admin_visible,
 )
 
@@ -201,6 +202,106 @@ def test_platform_campaigns_page_without_snapshot(repo_root, output_config) -> N
     body = client.get("/platform/campaigns").text
     assert "Operator campaigns" in body
     assert "fleet-operator-snapshot" in body
+
+
+def test_find_campaign_in_snapshot() -> None:
+    from repave_engine.fleet_operator_status import OperatorStatusSnapshot
+
+    page_snapshot = OperatorStatusSnapshot(
+        version=2,
+        updated_at="2026-08-02T12:00:00Z",
+        repos=(),
+        campaigns=(
+            UpgradeCampaignStatus(
+                name="platform-rollout",
+                namespace="repave-system",
+                phase="Active",
+                paused=False,
+            ),
+        ),
+    )
+    found = find_campaign_in_snapshot(
+        page_snapshot,
+        namespace="repave-system",
+        name="platform-rollout",
+    )
+    assert found is not None
+    assert found.phase == "Active"
+    assert (
+        find_campaign_in_snapshot(page_snapshot, namespace="repave-system", name="missing") is None
+    )
+
+
+def test_platform_campaign_pause_action(
+    repo_root,
+    output_config,
+    registry: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    status_file = tmp_path / "operator-status.json"
+    write_operator_status_snapshot(
+        status_file,
+        [],
+        campaigns=[
+            UpgradeCampaignStatus(
+                name="platform-rollout",
+                namespace="repave-system",
+                phase="Active",
+                paused=False,
+            )
+        ],
+    )
+    monkeypatch.setenv("REPAVE_FLEET_FILE", str(registry))
+    monkeypatch.setenv("REPAVE_FLEET_OPERATOR_STATUS_FILE", str(status_file))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    calls: list[tuple[str, str, bool]] = []
+
+    def fake_patch(name: str, namespace: str, *, paused: bool) -> None:
+        calls.append((name, namespace, paused))
+
+    monkeypatch.setattr(
+        "repave_engine.api.patch_upgrade_campaign_paused",
+        fake_patch,
+    )
+    response = client.post(
+        "/platform/campaigns/repave-system/platform-rollout/paused",
+        data={"paused": "1"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/platform/campaigns"
+    assert calls == [("platform-rollout", "repave-system", True)]
+    body = client.get("/platform/campaigns").text
+    assert "Pause campaign" in body
+    assert "Resume campaign" not in body or "platform-rollout" in body
+
+
+def test_platform_standards_confirm_drift_submits_run(
+    repo_root,
+    output_config,
+    registry: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    register_repo(registry, PROVENANCE_ENTRY)
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    try:
+        body = client.get("/platform/standards").text
+        assert "Confirm drift" in body
+        response = client.post(
+            "/platform/standards/terraform-module-generic/confirm-drift",
+            data={"repo_urls": PROVENANCE_ENTRY.repo_url},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+        assert response.headers["location"].startswith("/runs/")
+    finally:
+        queue = client.app.state.run_queue
+        if queue is not None:
+            queue.close()
 
 
 def test_nav_shows_platform_link(repo_root, output_config) -> None:

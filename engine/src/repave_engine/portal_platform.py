@@ -24,6 +24,7 @@ from repave_engine.fleet import (
 from repave_engine.fleet_drift import BlueprintDriftSummary, estimate_fleet_drift
 from repave_engine.fleet_operator_status import (
     OperatorStatusSnapshot,
+    UpgradeCampaignStatus,
     load_operator_status_snapshot,
 )
 from repave_engine.portal_context import fleet_registry_path_or_http404, portal_fleet_context
@@ -267,3 +268,20 @@ def build_platform_campaigns_page(repo_root: Path) -> PlatformCampaignsPage:
         fleet_cfg=fleet_cfg,
         remediation_queue=tuple(remediation),
     )
+
+
+def find_campaign_in_snapshot(
+    snapshot: OperatorStatusSnapshot | None,
+    *,
+    namespace: str,
+    name: str,
+) -> UpgradeCampaignStatus | None:
+    if snapshot is None:
+        return None
+    target_ns = namespace.strip() or "default"
+    target_name = name.strip()
+    for campaign in snapshot.campaigns:
+        row_ns = campaign.namespace.strip() or "default"
+        if campaign.name == target_name and row_ns == target_ns:
+            return campaign
+    return None

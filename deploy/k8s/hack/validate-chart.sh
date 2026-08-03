@@ -321,6 +321,11 @@ if ! grep -q 'goldenpathrepos' "${fleet_shared_rendered}"; then
   exit 1
 fi
 
+if ! grep -q 'verbs: \["get", "list", "patch"\]' "${fleet_shared_rendered}"; then
+  echo "fleet snapshot RBAC must grant patch on upgradecampaigns for campaign actions" >&2
+  exit 1
+fi
+
 if ! grep -q 'require_session_secret: true' "${multi_replica_rendered}"; then
   echo "values-multi-replica-smoke.yaml must require session secret for multi-replica" >&2
   exit 1

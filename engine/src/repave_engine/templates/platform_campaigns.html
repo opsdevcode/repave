@@ -49,7 +49,20 @@
         <li>GitHub rate limit remaining: {{ campaign.github_rate_limit_remaining }}</li>
         {% endif %}
       </ul>
-      <pre class="panel-code"><code>kubectl patch upgradecampaign {{ campaign.name }} -n {{ campaign.namespace or 'default' }} --type=merge -p '{"spec":{"paused":true}}'</code></pre>
+      <div class="form-actions">
+        {% if campaign.paused %}
+        <form method="post" action="/platform/campaigns/{{ campaign.namespace or 'default' }}/{{ campaign.name }}/paused">
+          <input type="hidden" name="paused" value="0" />
+          <button type="submit" class="btn btn--secondary">Resume campaign</button>
+        </form>
+        {% else %}
+        <form method="post" action="/platform/campaigns/{{ campaign.namespace or 'default' }}/{{ campaign.name }}/paused">
+          <input type="hidden" name="paused" value="1" />
+          <button type="submit" class="btn btn--primary">Pause campaign</button>
+        </form>
+        {% endif %}
+      </div>
+      <p class="hint muted">Snapshot refreshes on the fleet operator snapshot schedule; re-run snapshot to see phase updates.</p>
     </article>
     {% endfor %}
   </div>
