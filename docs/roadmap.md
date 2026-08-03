@@ -6,7 +6,8 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.17.1  
 
-**In progress:** [conversational governed AI](#conversational-and-governed-ai-generation).
+**In progress:** _(none — v2.x stabilization; next major themes under
+[v3.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane))._
 **Shipped on `main`:** **environment lifecycle Phase 3 follow-ups** (catalog/API cost badges for
 vended environments, post-merge registry finalize on reclaim); **environment vending** (`kind: environment_vend`, portal request-environment,
 JSONL registry + catalog merge, sandbox TTL auto-reclaim, non-sandbox draft decommission PRs,
@@ -139,9 +140,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   v2.0.0             platform GA       contract freeze + DR → engine tag v2.0.0
   │
   v2.1+              environments      deployment status → gated plan on live state → vending (ADR 003)
-  v2.1+              governed AI       conversational generation on the v2 line
   │
-  v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane
+  v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
 ```
 
 | Theme | Releases | Outcome |
@@ -169,8 +169,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **v2.1+ governed AI** | open | Conversational generation on the v2 semver line |
-| **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, and estate lifecycle control |
+| **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
 
@@ -1889,9 +1888,9 @@ generator.
 **Status:** **Shipped** — contract freeze and Postgres DR are on `main`, and the engine is
 tagged **`v2.0.0`**. Open on the v2.x line:
 [environment lifecycle](#environment-lifecycle-and-deployment-awareness) (Phase 1 shipped; Phase 2
-partial; Phase 3 directional) and
-[conversational governed AI generation](#conversational-and-governed-ai-generation). Pre-v3
-follow-up: v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
+partial; Phase 3 directional). [Conversational governed AI](#conversational-and-governed-ai-generation)
+is deferred to **v3.0.0** (see [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)).
+Pre-v3 follow-up: v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
 ([`api-v1-migration.md`](api-v1-migration.md)).
 
 **Planned capabilities (must-have for v2):**
@@ -1921,7 +1920,6 @@ follow-up: v2 read models for `/api/v1/estate` and `/api/v1/governance/annotatio
 | Bounded fleet upgrade campaigns | [fleet campaigns](#operator-fleet-campaigns-and-blueprint-controller) (shipped) |
 | Contract freeze (HTTP, config, schema, provenance) | See table below (shipped → **`v2.0.0` tag**) |
 | Postgres backup/restore for hosted SQL | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md) (shipped) |
-| Conversational / governed AI generation | **v2.1+** — see below (post–`v2.0.0` tag) |
 
 **Contract freeze at v2.0.0**
 
@@ -1986,10 +1984,9 @@ documented objective — see
 3. At least two production golden paths ship with standards + lint/policy packs. **Met** (Terraform,
    Ansible, Helm, app-service, observability paths on `main`).
 4. Documentation describes fork → customize standards/blueprints → fleet reconcile
-   without referring to unreleased features. **Met** for shipped themes; conversational AI docs
-   remain open.
+   without referring to unreleased features. **Met** for shipped v2 themes.
 5. The conversational and form paths produce byte-identical gated output for the same
-   blueprint and inputs. **Open** — v2.1+ conversational AI theme.
+   blueprint and inputs. **Deferred to v3.0.0** — [conversational governed AI](#conversational-and-governed-ai-generation).
 6. CRD conversion runs in a non-production cluster with no data loss, and a recovery drill
    meets the documented objective — see
    [`docs/operations/crd-conversion-recovery.md`](operations/crd-conversion-recovery.md)
@@ -1997,50 +1994,6 @@ documented objective — see
 7. Postgres backup/restore drill meets documented RPO/RTO — see
    [`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md)
    (`make postgres-dr-drill` baseline). **Met.**
-
-### Conversational and governed AI generation
-
-**Status:** **Not started** — **v2.1+** on the engine semver line (after the **`v2.0.0`**
-contract-freeze tag). Still a Platform GA capability; it follows the major bump so semver
-matches the integrator-facing freeze first.
-
-**Problem:** Users want to describe intent in natural language ("generate a script,
-module, or dashboard to do X") and receive a compliant artifact — without an
-ungoverned AI that bypasses repave's guarantees.
-
-**Approach:**
-
-- Natural-language front-end (chat) over the engine: intent → LLM draft → the draft
-  is treated as **candidate** output and must pass the same non-negotiable gates
-  (lint, security scan, Checkov, OPA policy from v1.39) before it is ever returned
-  or published — governance-by-construction still holds, with no bypass
-- Ground drafts in existing blueprint inputs and standards so generation starts from
-  governed scaffolds rather than free-form text
-- Preferred flow is **intent → validated blueprint inputs → the existing deterministic
-  pipeline**, with the user confirming the resolved inputs before generate; free-form
-  artifact drafting is the narrow fallback, not the default
-- Retrieval over the in-repo standards, policy packs, and blueprint docs with **citations
-  required** on every answer, filtered by the caller's role so chat cannot surface what the
-  portal would deny
-- A **service registry** describing what the assistant may read and call — knowledge corpora
-  paths and read-only tools (fleet state, drift, gate history, cost summary) — so capabilities
-  are configuration rather than hardcoded integrations
-- Record provenance (v1.14) and an audit entry (v1.30) for every AI-assisted
-  generation — model id, prompt hash, confirmed inputs, and gate results — and explain which
-  gate/policy blocked an output when it fails; the PR body carries the same footer
-- Guardrails for prompt injection, secret leakage, cost/rate limits, and
-  reproducibility
-- **Hard-blocked:** AI evaluating gate or policy outcomes, and autonomous merge to a
-  protected branch
-
-**Dependencies:** v1.13 gate registry; v1.14 provenance; v1.30 audit log; v1.39 OPA
-policy gate; a broad golden-path/standard library (v1.15, v1.33, v1.34, v1.40).
-
-**Why v2:** its safety depends on the mature v1 governance plumbing, so it layers on
-top rather than shipping as a v1 golden path.
-
-**Done when:** A user can describe intent conversationally and only receive artifacts
-that passed every configured gate and policy, with full provenance and audit trail.
 
 ---
 
@@ -2097,6 +2050,51 @@ that makes those v2 decisions checkable.
 - Optional promotions from the parking lot: **multi-tenant** config namespacing and an **OCI
   blueprint registry**
 
+### Conversational and governed AI generation
+
+**Status:** **Not started — v3.0.0** (moved from v2.1+; ships with the next major, not as a
+v2.x minor).
+
+**Problem:** Users want to describe intent in natural language ("generate a script,
+module, or dashboard to do X") and receive a compliant artifact — without an
+ungoverned AI that bypasses repave's guarantees.
+
+**Approach:**
+
+- Natural-language front-end (chat) over the engine: intent → LLM draft → the draft
+  is treated as **candidate** output and must pass the same non-negotiable gates
+  (lint, security scan, Checkov, OPA policy from v1.39) before it is ever returned
+  or published — governance-by-construction still holds, with no bypass
+- Ground drafts in existing blueprint inputs and standards so generation starts from
+  governed scaffolds rather than free-form text
+- Preferred flow is **intent → validated blueprint inputs → the existing deterministic
+  pipeline**, with the user confirming the resolved inputs before generate; free-form
+  artifact drafting is the narrow fallback, not the default
+- Retrieval over the in-repo standards, policy packs, and blueprint docs with **citations
+  required** on every answer, filtered by the caller's role so chat cannot surface what the
+  portal would deny
+- A **service registry** describing what the assistant may read and call — knowledge corpora
+  paths and read-only tools (fleet state, drift, gate history, cost summary) — so capabilities
+  are configuration rather than hardcoded integrations
+- Record provenance (v1.14) and an audit entry (v1.30) for every AI-assisted
+  generation — model id, prompt hash, confirmed inputs, and gate results — and explain which
+  gate/policy blocked an output when it fails; the PR body carries the same footer
+- Guardrails for prompt injection, secret leakage, cost/rate limits, and
+  reproducibility
+- **Hard-blocked:** AI evaluating gate or policy outcomes, and autonomous merge to a
+  protected branch
+
+**Dependencies:** v2 contract freeze and shipped governance plumbing (gates, provenance,
+audit, OPA opt-in); v3 **mandatory policy** tier for regulated families before autonomous
+merge and conversational publish share a trust model.
+
+**Why v3:** conversational generation and low-risk auto-merge both need the same bar —
+gated output, audit trail, and policy enforcement at estate scale — so they ship together on
+the v3 major rather than as v2.x follow-ons.
+
+**Done when:** A user can describe intent conversationally and only receive artifacts
+that passed every configured gate and policy, with full provenance and audit trail.
+
 ### Breaking at v3.0.0
 
 | Change | Migration |
@@ -2112,6 +2110,8 @@ that makes those v2 decisions checkable.
 2. The fleet SLO dashboard holds green for a sustained window in production.
 3. A graph-scoped plan is demonstrated for one large state boundary.
 4. `/api/v1` is removed and every known integrator has migrated.
+5. Conversational and form paths produce byte-identical gated output for the same blueprint
+   and inputs — see [conversational governed AI](#conversational-and-governed-ai-generation).
 
 ---
 
@@ -2141,7 +2141,7 @@ until someone owns them, since a v3 mention is not a commitment.
 - **License/policy pack** — optional LICENSE and compliance metadata generation
   (revisit v1.5 license UI with standards-driven templates)
 - **Chat-platform parity** — Slack/Teams bot over the same governed generation flow as the
-  v2 portal assistant, if portal chat proves out
+  v3 portal assistant, if portal chat proves out
 
 ---
 
@@ -2153,8 +2153,9 @@ and [`docs/releases.md`](releases.md#roadmap-milestones-and-engine-semver).
 
 **Roadmap ↔ semver:** major roadmap themes map to engine **major** versions. **v2.0.0
 Platform GA** (contract freeze) → **`v2.0.0` tag** via `feat!:` / `BREAKING CHANGE:`.
-Follow-on Platform GA work (conversational AI) ships as **`v2.x` minors**. **v3.0.0** →
-**`v3.0.0` tag** when breaking removals land.
+v2.x minors ship stabilization and lifecycle follow-ons (environment vending, platform
+console, fleet ops). **v3.0.0** → **`v3.0.0` tag** when breaking removals land and v3
+themes (autonomous remediation, mandatory policy, [conversational governed AI](#conversational-and-governed-ai-generation)) ship.
 
 Release automation updates **Current release** above and doc version pointers — feature
 PRs must not hand-edit them. Between milestones, `feat:` → minor and `fix:` → patch on
