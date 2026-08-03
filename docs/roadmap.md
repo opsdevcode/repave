@@ -1893,8 +1893,8 @@ tagged **`v2.0.0`**. Open on the v2.x line:
 [environment lifecycle](#environment-lifecycle-and-deployment-awareness) (Phase 1 shipped; Phase 2
 partial; Phase 3 directional). [Conversational governed AI](#conversational-and-governed-ai-generation)
 is deferred to **v3.0.0** (see [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)).
-Pre-v3 follow-up: v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
-([`api-v1-migration.md`](api-v1-migration.md)).
+**Shipped:** v2 read models for `/api/v2/estate` and `/api/v2/governance/annotations/*`
+(parity with legacy v1 JSON).
 
 **Planned capabilities (must-have for v2):**
 
