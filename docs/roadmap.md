@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.22.0  
+**Current release:** v2.23.0  
 
 **In progress:** **Developer paved roads** — v1.83 runtime and archetype breadth
 ([Node/Java runtimes, worker/grpc layouts](#v183--runtime-and-archetype-breadth)).
