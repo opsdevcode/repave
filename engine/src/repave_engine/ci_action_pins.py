@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -57,12 +58,16 @@ def load_action_pins(path: Path | None = None) -> dict[str, ActionPin]:
     return pins
 
 
-_PINS = load_action_pins()
+@lru_cache(maxsize=1)
+def _pins() -> dict[str, ActionPin]:
+    # Loaded on first use, not at import: `repave gates` and `repave doctor` never render a
+    # workflow, and must keep working where .github/ is absent (published images, pip installs).
+    return load_action_pins()
 
 
 def action_pin(repository: str) -> ActionPin:
     try:
-        return _PINS[repository]
+        return _pins()[repository]
     except KeyError:
         raise KeyError(
             f"unknown action pin {repository!r}; add it to .github/action-pins.json"
@@ -70,7 +75,7 @@ def action_pin(repository: str) -> ActionPin:
 
 
 def action_pins() -> dict[str, ActionPin]:
-    return dict(_PINS)
+    return dict(_pins())
 
 
 __all__ = [
