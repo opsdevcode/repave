@@ -6,11 +6,14 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.22.0  
 
-**In progress:** **Developer paved roads** — v1.82 brownfield add (`repave add`,
-[multi-component provenance](#v182--repave-add-paved-roads-for-existing-repositories)).
-v1.81 reliability path shipped on `main`. v3 themes under
+**In progress:** **Developer paved roads** — v1.83 runtime and archetype breadth
+([Node/Java runtimes, worker/grpc layouts](#v183--runtime-and-archetype-breadth)).
+v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
+**Shipped on `main`:** **Multi-component brownfield add** (`repave add`, `spec.components[]`
+in provenance, per-component verify, portal add action on service detail,
+`POST /api/v2/components/plan|apply` — [v1.82](#v182--repave-add-paved-roads-for-existing-repositories),
+[`docs/add.md`](add.md)); **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
 `Application` / Flux `HelmRelease`, `gitops` artifact family, exact-pin and sync-policy OPA
 rules — [v1.79](#v179--gitops-delivery-golden-path)); **environment lifecycle Phase 3
 follow-ups** (catalog/API cost badges for
@@ -136,7 +139,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ supply chain    shipped — GitHub App auth, governed PR, digest-pinned CI/images/chart
   ├─ fleet scale     shipped — Blueprint controller; upgrade campaigns; drift SLO metrics
   ├─ portal surfaces shipped — catalog, rendered docs, scorecards, observability read
-  ├─ reach           shipped — repave verify; repo import; composite golden paths
+  ├─ reach           shipped — repave verify; repo import; repave add; composite golden paths
   ├─ usability       shipped — `repave doctor`; queryable audit history
   ├─ cost            shipped — Infracost + actuals readers; library cost badges
   ├─ v2 contract     /api/v2 freeze, v1 migration docs, config v1, provenance-on-publish, blueprint schema (shipped)
@@ -146,7 +149,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   v2.1+              environments      deployment status → gated plan on live state → vending (ADR 003)
   │
-  v1.79–v1.84        paved roads       GitOps delivery + deploy pipeline; SLOs/runbooks; `repave add`; runtimes; bundles
+  v1.79–v1.84        paved roads       GitOps delivery + deploy pipeline; SLOs/runbooks shipped; `repave add` shipped; runtimes; bundles
   │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
 ```
@@ -176,7 +179,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **Developer paved roads** | Partial (v1.80 shipped; v1.81–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Partial (v1.79–v1.82 shipped; v1.83–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -431,6 +434,30 @@ request on the source repo.
   `--batch-file`, or `/api/v2/imports/batch/*`; org/topic discovery on GitHub
 - **Rate-limit backoff** — per-installation `X-RateLimit-*` tracking for batch import and fleet
   campaigns (429 retry with backoff)
+
+### `repave add` — multi-component brownfield (engine v1.82+)
+
+**Status:** Shipped on `main` ([#453](https://github.com/opsdevcode/repave/pull/453)).
+Detail: [`docs/add.md`](add.md).
+
+Layer a second (or third) golden-path artifact onto a repository that already carries
+`repave.yaml` — the brownfield counterpart to generate-time bundles.
+
+- **Governed repos only** — missing `repave.yaml` routes to [`repave import`](#repo-import-to-golden-path)
+- **Multi-component provenance** — primary blueprint stays top-level in `repave.yaml`; added
+  artifacts append to `spec.components[]` with their own pins and CI gates
+- **Plan/apply** — conflict detection for paths the new blueprint would write; `--force` for
+  scaffold overwrites; shared governance files (`README.md`, `RUNBOOK.md`, gate workflow) are
+  skipped when already present
+- **Input inference** — helm/gitops components derive names from an app-service primary when
+  inputs are omitted
+- **Verify** — JSON report includes a `components[]` array with per-component gate and pin
+  results (primary remains in the top-level gate list)
+- **Surfaces** — `repave add`, `POST /api/v2/components/plan|apply`, portal **Add component**
+  on `/services/{entity_id}` (local checkout under `REPAVE_MODULES_ROOT`)
+
+**Still open:** remote `--open-pr` publish; per-component `plan-upgrade` / `update`; fleet library
+multi-blueprint pin display.
 
 ### v1.18 — Portal UX (theme)
 
@@ -1913,6 +1940,7 @@ is deferred to **v3.0.0** (see [beyond v2.0.0](#beyond-v200--autonomous-estate-a
 | Self-heal drift and version bumps | v1.17, v1.19, v1.24 |
 | Fleet visibility | v1.72–v1.73+ remote inventory + fleet registry (portal + manifests) → v2 operator GA (shipped) |
 | Govern repos repave did not generate | [`repave verify`](#repave-verify-for-existing-repositories) (shipped) |
+| Add a second blueprint to a governed repo | [`repave add`](#repave-add--multi-component-brownfield-engine-v182) (shipped) |
 | Composite multi-artifact paths | [composite golden paths](#composite-golden-paths-bundles) (shipped) |
 | Module repos self-govern in CI | v1.23 |
 | On-cluster deploy | [Helm chart](#kubernetes-deploy-path-helm-chart) + [day-2 overlay](../deploy/k8s/chart/values-day2.yaml) (shipped) |
@@ -2022,9 +2050,11 @@ Two structural gaps set the order below.
    (`environment_vend.py`). The write side for services is the missing half, and it stays
    git-only — no new credential surface against the
    [ADR 003](adr/003-environment-lifecycle-and-live-state.md) boundary.
-2. **Every road is generate-time only.** `generate`, `import`, `update`, and `verify` cannot
-   answer "add a Helm chart to this existing service." Bundles compose at creation only. Since
-   few developers start from zero, this caps adoption of all 14 shipped blueprints.
+2. **Every road is generate-time only (partially addressed).** `generate`, `import`, and
+   `update` still assume one blueprint per repository for upgrades, but **`repave add`**
+   ([v1.82](#v182--repave-add-paved-roads-for-existing-repositories)) layers additional
+   components onto governed repos and `verify` scores each component independently.
+   Bundles still compose only at creation time.
 
 Critical path is the delivery path → deploy pipeline → composite bundles. Reliability,
 `repave add`, and runtime breadth are independently shippable and can be reordered.
@@ -2113,9 +2143,9 @@ reports the new gate, and a runbook covers wiring the cloud trust relationship.
 
 *Planning label: v1.81 (roadmap numbering only).*
 
-**Status:** In progress on `feat/v181-slo-runbooks` — `slo-as-code-generic` blueprint,
+**Status:** **Shipped on `main`** — `slo-as-code-generic` blueprint,
 `RUNBOOK.md` templates for app/helm/SLO paths, `docs-drift` section enforcement, and
-scorecard `has-slo` / `has-runbook` dimensions.
+scorecard `has-slo` / `has-runbook` dimensions ([#450](https://github.com/opsdevcode/repave/pull/450)).
 
 **Problem:** [Dashboards and monitors](#v140--observability-as-code-golden-path) are paved, but
 the objective those alerts defend is not, so alert thresholds are picked by hand and drift from
@@ -2146,9 +2176,13 @@ dimensions across the fleet, and the monitors and dashboards standards cross-lin
 
 *Planning label: v1.82 (roadmap numbering only).*
 
-**Status:** In progress on `feat/v182-repave-add` — multi-component `repave.yaml`,
-`repave add` CLI, component plan/apply API, per-component verify, and portal add action
-([#453](https://github.com/opsdevcode/repave/pull/453)).
+**Status:** **Shipped on `main`** — multi-component `repave.yaml` (`spec.components[]`),
+`repave add` CLI, `POST /api/v2/components/plan|apply`, per-component verify, and portal
+add action on service detail ([#453](https://github.com/opsdevcode/repave/pull/453)).
+Operator doc: [`docs/add.md`](add.md).
+
+**Follow-ons:** remote `--open-pr` publish (parity with `repave import --open-pr`); per-component
+`plan-upgrade` / `update` selector; fleet/catalog multi-blueprint pins in library UI.
 
 **Problem:** [`repave import`](#repo-import-to-golden-path) adopts a whole repository into one
 golden path and `repave update` bumps its pins, but there is no way to add a *second* artifact
@@ -2157,7 +2191,7 @@ effect is that every blueprint is available only to greenfield work.
 
 **Approach:**
 
-- `repave add <blueprint> --repo <path|url>`, `POST /api/v2/repos/{id}/components`, and a
+- `repave add <repo> --blueprint <name>`, `POST /api/v2/components/plan|apply`, and a
   portal action on the repository detail page
 - Reuses `repo_import.py` and `import_rules.py` for overlay and conflict reporting, and the
   `apply-upgrade` branch-and-commit path for publishing
@@ -2171,8 +2205,8 @@ effect is that every blueprint is available only to greenfield work.
 [governed PR conventions](#governed-pr-conventions).
 
 **Done when:** Adding `helm-chart-generic` to an existing app-service repository produces a
-clean PR that passes that repository's gates, and `verify` reports on both components
-independently.
+local branch commit with both components' scaffold, and `verify` reports on each component
+independently. Remote governed PR publish is a follow-on (see **Follow-ons** above).
 
 ---
 

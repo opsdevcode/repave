@@ -136,6 +136,18 @@ after commit (used by the operator in HTTP mode).
 Response shapes match the CLI JSON documents (`UpgradePlanResult`, `ApplyUpgradeResult`).
 Apply responses may include `"pushed": true` when the branch was pushed remotely.
 
+## Component add (multi-blueprint repos)
+
+Layer a second golden path onto a governed repository ([`docs/add.md`](add.md)):
+
+| Method | Path | Role | Body |
+| --- | --- | --- | --- |
+| `POST` | `/api/v2/components/plan` | generator, admin | `{ "target_repo", "blueprint", "component_id"?, "inputs"?, "force"? }` |
+| `POST` | `/api/v2/components/apply` | generator, admin | same; optional `"git_branch"` |
+
+Plan returns file lists and conflicts; apply commits on a local checkout and records a
+`component_add` audit event. HTTP `409` when the repo is not governed or conflicts remain.
+
 ## Operator (Phase 3b–3c)
 
 Set `REPAVE_API_URL` on the operator Deployment (for example `http://repave-portal:8088`).

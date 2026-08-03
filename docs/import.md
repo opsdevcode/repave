@@ -5,9 +5,10 @@ add the governance scaffold it is missing, and open a pull request on the source
 
 Import is the brownfield counterpart to generate. Use it once per repository; after the PR
 merges the repo carries `repave.yaml` and moves to [`verify`](verify.md) and
-[`update`](../README.md#update-an-existing-repository) like any generated artifact.
+[`update`](../README.md#update-an-existing-repository) like any generated artifact. To layer a
+second golden path onto that repository later, use [`repave add`](add.md).
 
-Related: [verify](verify.md), [fleet registry](fleet-registry.md), [roadmap](roadmap.md).
+Related: [verify](verify.md), [add](add.md), [fleet registry](fleet-registry.md), [roadmap](roadmap.md).
 
 ## What import does and does not change
 

@@ -4,7 +4,7 @@ Score repositories repave did not necessarily generate: run the same gate regist
 generation time and compare provenance pins to the current catalog blueprint — without
 rendering, publishing, or modifying the tree.
 
-Related: [import](import.md), [fleet registry](fleet-registry.md), [roadmap](roadmap.md).
+Related: [import](import.md), [add](add.md), [fleet registry](fleet-registry.md), [roadmap](roadmap.md).
 
 A repository with no `repave.yaml` and a layout that does not match any golden path is an
 [import](import.md) candidate first: import rearranges it and adds the scaffold, after which
@@ -42,6 +42,13 @@ fall back to the catalog list.
 listed the same way as upgrade planning.
 
 JSON output includes `"remote": true` when the target was cloned from a URL.
+
+## Multi-component repositories
+
+When `repave.yaml` includes `spec.components[]` (entries added via [`repave add`](add.md)),
+verify runs gates and pin drift for the primary blueprint at the top level and for each
+component independently. JSON output adds a `components` array; overall `ok` requires every
+component to pass gates and align pins.
 
 ## Portal
 
