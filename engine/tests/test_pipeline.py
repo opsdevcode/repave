@@ -777,6 +777,92 @@ def test_generate_app_service_nodejs_dry_run(
     assert not failing, [(g.name, g.message) for g in failing]
 
 
+def test_generate_app_service_java_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root=repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "inventory-api",
+            "description": "Inventory HTTP API",
+            "owner": "team:commerce",
+            "system": "commerce",
+            "catalog_lifecycle": "production",
+            "port": "8080",
+            "runtime": "java",
+            "include_helm_reference": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    assert (output_dir / "pom.xml").is_file()
+    assert (
+        output_dir / "src" / "main" / "java" / "com" / "repave" / "app" / "Application.java"
+    ).is_file()
+    assert (
+        output_dir / "src" / "test" / "java" / "com" / "repave" / "app" / "HealthTest.java"
+    ).is_file()
+    dockerfile = (output_dir / "Dockerfile").read_text(encoding="utf-8")
+    assert "eclipse-temurin:21" in dockerfile
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["appService"]["runtime"] == "java"
+    failing = [g for g in result.gates if not g.passed and not g.skipped]
+    assert not failing, [(g.name, g.message) for g in failing]
+
+
+def test_generate_app_service_dotnet_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root=repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "billing-api",
+            "description": "Billing HTTP API",
+            "owner": "team:payments",
+            "system": "payments",
+            "catalog_lifecycle": "production",
+            "port": "8080",
+            "runtime": "dotnet",
+            "include_helm_reference": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    assert (output_dir / "App.csproj").is_file()
+    csproj = (output_dir / "App.csproj").read_text(encoding="utf-8")
+    assert "net10.0" in csproj
+    assert "BillingApi" in csproj
+    assert (output_dir / "Program.cs").is_file()
+    assert (output_dir / "tests" / "App.Tests.csproj").is_file()
+    assert (output_dir / "tests" / "HealthTests.cs").is_file()
+    dockerfile = (output_dir / "Dockerfile").read_text(encoding="utf-8")
+    assert "mcr.microsoft.com/dotnet/sdk:10.0" in dockerfile
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["appService"]["runtime"] == "dotnet"
+    failing = [g for g in result.gates if not g.passed and not g.skipped]
+    assert not failing, [(g.name, g.message) for g in failing]
+
+
 def test_generate_observability_as_code_dry_run(
     repo_root: Path,
     output_config,

@@ -1,0 +1,9 @@
+{% if runtime == 'dotnet' -%}
+{% set dotnet_project = service_name.replace('-', ' ')|title|replace(' ', '') -%}
+using Repave.{{ dotnet_project }};
+
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+app.MapGet("/healthz", () => Results.Json(Health.Payload()));
+app.Run();
+{% endif %}

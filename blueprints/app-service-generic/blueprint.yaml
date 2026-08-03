@@ -2,8 +2,8 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: app-service-generic
-  version: 0.4.2
-  description: Governed application service repo (Python, Go, or Node.js/TypeScript) with Dockerfile, tests, and Backstage catalog metadata.
+  version: 0.5.0
+  description: Governed application service repo (Python, Go, Node.js/TypeScript, Java, or .NET) with Dockerfile, tests, and Backstage catalog metadata.
 spec:
   artifactType: app-service
   standard:
@@ -49,7 +49,9 @@ spec:
         - python
         - go
         - nodejs
-      description: Application runtime (Python FastAPI, Go HTTP, or Node.js/TypeScript HTTP).
+        - java
+        - dotnet
+      description: Application runtime (Python, Go, Node.js/TypeScript, Java, or .NET HTTP).
     - name: include_helm_reference
       type: string
       required: false
@@ -96,6 +98,8 @@ spec:
     - go-test
     - node-lint
     - node-test
+    - java-build
+    - dotnet-test
     - actionlint
     - secrets
     - docs-drift
@@ -111,6 +115,10 @@ spec:
       config_file: package.json
     node-test:
       test_directory: test
+    java-build:
+      config_file: pom.xml
+    dotnet-test:
+      test_project: tests/App.Tests.csproj
   output:
     type: pull_request
     provenance:

@@ -1,0 +1,14 @@
+{% if runtime == 'java' -%}
+package com.repave.app;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+class HealthTest {
+    @Test
+    void healthPayloadIsOk() {
+        assertEquals("{\"status\":\"ok\"}", Application.healthPayload());
+    }
+}
+{% endif %}

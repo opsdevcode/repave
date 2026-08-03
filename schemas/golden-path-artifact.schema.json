@@ -225,7 +225,7 @@
                   "port": { "type": "string" },
                   "runtime": {
                     "type": "string",
-                    "enum": ["python", "go", "nodejs"]
+                    "enum": ["python", "go", "nodejs", "java", "dotnet"]
                   },
                   "include_helm_reference": { "type": "string" },
                   "helm_chart_repo": { "type": "string" }
@@ -517,7 +517,7 @@
             "port": { "type": "string" },
             "runtime": {
               "type": "string",
-              "enum": ["python", "go", "nodejs"]
+              "enum": ["python", "go", "nodejs", "java", "dotnet"]
             },
             "include_helm_reference": { "type": "string" },
             "helm_chart_repo": { "type": "string" }

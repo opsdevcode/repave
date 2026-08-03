@@ -4,7 +4,7 @@ from pathlib import Path
 
 import repave_engine.gate_runners as _gr
 from repave_engine.gate_registry import GateContext, GateResult
-from repave_engine.gate_toolchain import node_cli_ready
+from repave_engine.gate_toolchain import dotnet_cli_ready, maven_cli_ready, node_cli_ready
 
 
 def _ensure_python_project_installed(output_dir: Path) -> None:
@@ -238,3 +238,96 @@ def run_node_test(ctx: GateContext) -> GateResult:
         return GateResult("node-test", True, False, "npm test passed")
     detail = result.stderr.strip() or result.stdout.strip() or "npm test failed"
     return GateResult("node-test", False, False, detail)
+
+
+def _pom_is_valid(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    text = path.read_text(encoding="utf-8").strip()
+    return text.startswith("<?xml") or "<project" in text
+
+
+def _has_java_tests(output_dir: Path) -> bool:
+    test_root = output_dir / "src" / "test" / "java"
+    if not test_root.is_dir():
+        return False
+    for candidate in test_root.rglob("*.java"):
+        if candidate.is_file() and candidate.read_text(encoding="utf-8").strip():
+            return True
+    return False
+
+
+def run_java_build(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("java-build", True, True, "java-build gate not applicable; skipped")
+
+    if not _gr.tool_available("mvn"):
+        return GateResult("java-build", True, True, "mvn not installed; skipped")
+
+    if not maven_cli_ready():
+        return GateResult("java-build", True, True, "mvn not runnable; skipped")
+
+    pom_name = "pom.xml"
+    if ctx.blueprint is not None:
+        cfg = ctx.blueprint.gate_config_for("java-build")
+        pom_name = str(cfg.get("config_file", pom_name))
+
+    pom = output_dir / pom_name
+    if not _pom_is_valid(pom):
+        return GateResult("java-build", True, True, "no pom.xml found; skipped")
+
+    if not _has_java_tests(output_dir):
+        return GateResult("java-build", True, True, "no Java tests; skipped")
+
+    result = _gr.run_command(["mvn", "-q", "test"], output_dir)
+    if result.returncode == 0:
+        return GateResult("java-build", True, False, "mvn test passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "mvn test failed"
+    return GateResult("java-build", False, False, detail)
+
+
+def _csproj_is_valid(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    text = path.read_text(encoding="utf-8").strip()
+    return text.startswith("<Project") and "Sdk=" in text
+
+
+def _find_dotnet_test_project(output_dir: Path, configured: str) -> Path | None:
+    candidate = output_dir / configured
+    if _csproj_is_valid(candidate):
+        return candidate
+    for path in sorted(output_dir.rglob("*Tests.csproj")):
+        if _csproj_is_valid(path):
+            return path
+    return None
+
+
+def run_dotnet_test(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("dotnet-test", True, True, "dotnet-test gate not applicable; skipped")
+
+    if not _gr.tool_available("dotnet"):
+        return GateResult("dotnet-test", True, True, "dotnet not installed; skipped")
+
+    if not dotnet_cli_ready():
+        return GateResult("dotnet-test", True, True, "dotnet not runnable; skipped")
+
+    configured = "tests/App.Tests.csproj"
+    if ctx.blueprint is not None:
+        cfg = ctx.blueprint.gate_config_for("dotnet-test")
+        configured = str(cfg.get("test_project", configured))
+
+    test_project = _find_dotnet_test_project(output_dir, configured)
+    if test_project is None:
+        return GateResult("dotnet-test", True, True, "no dotnet test project found; skipped")
+
+    result = _gr.run_command(
+        ["dotnet", "test", str(test_project.relative_to(output_dir))], output_dir
+    )
+    if result.returncode == 0:
+        return GateResult("dotnet-test", True, False, "dotnet test passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "dotnet test failed"
+    return GateResult("dotnet-test", False, False, detail)

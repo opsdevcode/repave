@@ -1,0 +1,33 @@
+{% if runtime == 'java' -%}
+package com.repave.app;
+
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+
+public final class Application {
+    private Application() {}
+
+    public static void main(String[] args) throws IOException {
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "{{ port }}"));
+        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        server.createContext("/healthz", Application::handleHealth);
+        server.start();
+    }
+
+    static void handleHealth(HttpExchange exchange) throws IOException {
+        byte[] body = healthPayload().getBytes();
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.sendResponseHeaders(200, body.length);
+        try (OutputStream output = exchange.getResponseBody()) {
+            output.write(body);
+        }
+    }
+
+    static String healthPayload() {
+        return "{\"status\":\"ok\"}";
+    }
+}
+{% endif %}

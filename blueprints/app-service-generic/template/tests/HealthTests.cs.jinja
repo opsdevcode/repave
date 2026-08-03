@@ -1,0 +1,12 @@
+{% if runtime == 'dotnet' -%}
+{% set dotnet_project = service_name.replace('-', ' ')|title|replace(' ', '') -%}
+using Repave.{{ dotnet_project }};
+
+namespace Repave.{{ dotnet_project }}.Tests;
+
+public class HealthTests
+{
+    [Fact]
+    public void Payload_is_ok() => Assert.Equal("ok", Health.Payload().Status);
+}
+{% endif %}

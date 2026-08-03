@@ -122,6 +122,38 @@ def node_cli_ready() -> bool:
     return node_ok and npm_ok
 
 
+def maven_cli_ready() -> bool:
+    """True when mvn executes (Maven wrapper or system install)."""
+    mvn_bin = resolve_tool("mvn")
+    if not mvn_bin:
+        return False
+    run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
+    result = run_subprocess(
+        [mvn_bin, "-version"],
+        cwd=run_cwd,
+        check=False,
+        env=os.environ.copy(),
+        timeout=30,
+    )
+    return result.returncode == 0
+
+
+def dotnet_cli_ready() -> bool:
+    """True when dotnet executes."""
+    dotnet_bin = resolve_tool("dotnet")
+    if not dotnet_bin:
+        return False
+    run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
+    result = run_subprocess(
+        [dotnet_bin, "--version"],
+        cwd=run_cwd,
+        check=False,
+        env=os.environ.copy(),
+        timeout=30,
+    )
+    return result.returncode == 0
+
+
 def gate_tool_status() -> dict[str, bool]:
     """Tool readiness as seen by the running engine process (for /readyz)."""
     ensure_gate_path()

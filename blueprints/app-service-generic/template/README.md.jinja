@@ -35,7 +35,7 @@ Run locally:
 ```bash
 go run ./cmd/server
 ```
-{% else -%}
+{% elif runtime == 'nodejs' -%}
 Install dependencies and run checks:
 
 ```bash
@@ -49,6 +49,33 @@ Run locally:
 ```bash
 npm run build
 npm start
+```
+{% elif runtime == 'java' -%}
+Run tests and package the service:
+
+```bash
+mvn test
+mvn package
+```
+
+Run locally:
+
+```bash
+mvn package
+java -jar target/app-{{ service_name }}-0.1.0-SNAPSHOT.jar
+```
+{% elif runtime == 'dotnet' -%}
+Run tests and publish:
+
+```bash
+dotnet test tests/App.Tests.csproj
+dotnet run --project App.csproj
+```
+
+Run locally:
+
+```bash
+dotnet run --project App.csproj
 ```
 {% endif %}
 
