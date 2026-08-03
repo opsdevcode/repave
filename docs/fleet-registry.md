@@ -118,7 +118,8 @@ schedule (`fleetOperatorSnapshot.cronJob`). Set `fleetOperatorSnapshot.cronJob.o
 when GPRs live in a different namespace than the portal release. See
 [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md) § Fleet operator snapshot.
 
-Validate locally: `make chart-smoke-fleet-snapshot` (kind: portal + operator + snapshot Job).
+Validate locally: `make chart-smoke-fleet-snapshot` (kind: portal + operator + snapshot Job +
+platform campaign pause/resume via `/platform/campaigns`).
 
 ### Platform console day-2 actions
 
@@ -127,7 +128,7 @@ portal without shell `kubectl` hints:
 
 | Surface | Action | Mechanism |
 | --- | --- | --- |
-| `/platform/campaigns` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`) |
+| `/platform/campaigns` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`; validated by `make chart-smoke-fleet-snapshot`) |
 | `/platform/standards` | Confirm drift for behind repos | Submits a `fleet_drift_confirm` async run (`verify` fan-out); requires `durability.async_generation` |
 
 Campaign phase updates still follow the fleet operator snapshot schedule — re-run snapshot or
@@ -204,7 +205,8 @@ time. `test_fleet_manifests.py` asserts those fixtures still match the renderer.
 Use **either** continuous operator sync **or** GitOps-rendered manifests — not both for
 the same namespace unless you accept duplicate reconcile sources.
 
-CI validates fleet sync create/prune with `make chart-smoke-fleet-snapshot` (shared PVC,
-portal API unregister, operator GPR prune, snapshot CronJob). Local full stack:
+CI validates fleet sync create/prune and platform campaign pause/resume with
+`make chart-smoke-fleet-snapshot` (shared PVC, portal API unregister, operator GPR prune,
+UpgradeCampaign patch via `/platform/campaigns`, snapshot CronJob). Local full stack:
 `make kind-co-install` seeds [`deploy/k8s/testdata/fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl)
 via fleetSync — see [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md).

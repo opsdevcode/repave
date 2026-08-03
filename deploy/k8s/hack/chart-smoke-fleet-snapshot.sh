@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# kind smoke: fleet shared PVC, operator fleetSync prune, and snapshot CronJob.
+# kind smoke: fleet shared PVC, operator fleetSync prune, snapshot CronJob, and campaign pause.
 # Seeds a fleet registry, waits for fleetSync GPRs, unregisters one repo via the portal API,
-# waits for GPR prune, runs a one-off snapshot Job, and verifies /platform/fleet overlay.
+# waits for GPR prune, applies an UpgradeCampaign, runs a one-off snapshot Job, verifies
+# /platform/fleet and /platform/campaigns, pauses the campaign via the portal, and asserts
+# spec.paused on the CR.
 # CI: .github/workflows/chart.yml (chart-smoke-fleet-snapshot job).
 set -euo pipefail
 
@@ -10,6 +12,8 @@ CHART="${ROOT}/deploy/k8s/chart"
 OPERATOR_CHART="${ROOT}/deploy/k8s/operator-chart"
 OPERATOR="${ROOT}/operator"
 FLEET_REGISTRY="${ROOT}/deploy/k8s/testdata/fleet-registry.jsonl"
+CAMPAIGN_MANIFEST="${ROOT}/deploy/k8s/testdata/upgrade-campaign-smoke.yaml"
+CAMPAIGN_NAME="platform-rollout"
 
 CLUSTER_NAME="${KIND_CLUSTER_NAME:-repave-chart-smoke-fleet-snapshot}"
 NS="${CHART_SMOKE_FLEET_SNAPSHOT_NAMESPACE:-repave-fleet-snapshot-smoke}"
@@ -161,6 +165,27 @@ if kubectl -n "${NS}" get "goldenpathrepo/${PRUNED_GPR}" >/dev/null 2>&1; then
 fi
 kubectl -n "${NS}" get "goldenpathrepo/${KEPT_GPR}" >/dev/null
 
+echo "==> apply UpgradeCampaign ${CAMPAIGN_NAME} and label kept GPR"
+kubectl apply -n "${NS}" -f "${CAMPAIGN_MANIFEST}"
+kubectl label "goldenpathrepo/${KEPT_GPR}" -n "${NS}" \
+  "repave.dev/upgrade-campaign=${CAMPAIGN_NAME}" --overwrite
+deadline=$((SECONDS + TIMEOUT))
+while (( SECONDS < deadline )); do
+  phase="$(kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" \
+    -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+  if [[ "${phase}" == "Active" ]]; then
+    break
+  fi
+  sleep 3
+done
+phase="$(kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" \
+  -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+if [[ "${phase}" != "Active" ]]; then
+  echo "Timed out waiting for UpgradeCampaign ${CAMPAIGN_NAME} to become Active (phase=${phase})" >&2
+  kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" -o yaml
+  exit 1
+fi
+
 echo "==> run one-off fleet operator snapshot job from CronJob"
 job_name="fleet-snapshot-smoke-$(date +%s)"
 kubectl -n "${NS}" create job --from="cronjob/${CRONJOB}" "${job_name}"
@@ -176,7 +201,10 @@ repos = body.get('repos') or []
 assert len(repos) >= 1, body
 assert any('acme/tf-vpc' in str(row.get('repo_url', '')) for row in repos), body
 assert not any('opa-guardrails' in str(row.get('repo_url', '')) for row in repos), body
-" "${snapshot_json}"
+campaigns = body.get('campaigns') or []
+assert any(row.get('name') == sys.argv[2] for row in campaigns), body
+assert any(not row.get('paused') for row in campaigns if row.get('name') == sys.argv[2]), body
+" "${snapshot_json}" "${CAMPAIGN_NAME}"
 
 echo "==> probe platform fleet page"
 fleet_html="$(curl -sf "http://127.0.0.1:${PORT}/platform/fleet")"
@@ -188,4 +216,65 @@ assert 'opa-guardrails' not in html, 'expected unregistered repo removed from fl
 assert 'operator status from snapshot' in html.lower(), 'expected operator snapshot overlay'
 " "${fleet_html}"
 
-echo "OK: fleet sync prune + operator snapshot chart smoke passed"
+echo "==> probe platform campaigns page"
+campaigns_html="$(curl -sf "http://127.0.0.1:${PORT}/platform/campaigns")"
+python3 -c "
+import sys
+html = sys.argv[1]
+name = sys.argv[2]
+assert name in html, 'expected campaign on /platform/campaigns'
+assert 'Pause campaign' in html, 'expected pause action before patch'
+assert 'Resume campaign' not in html, 'campaign should not appear paused yet'
+" "${campaigns_html}" "${CAMPAIGN_NAME}"
+
+echo "==> pause ${CAMPAIGN_NAME} via platform console"
+pause_status="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "http://127.0.0.1:${PORT}/platform/campaigns/${NS}/${CAMPAIGN_NAME}/paused" \
+  -d 'paused=1')"
+if [[ "${pause_status}" != "303" ]]; then
+  echo "expected HTTP 303 from campaign pause POST, got ${pause_status}" >&2
+  exit 1
+fi
+deadline=$((SECONDS + TIMEOUT))
+while (( SECONDS < deadline )); do
+  paused="$(kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" \
+    -o jsonpath='{.spec.paused}' 2>/dev/null || true)"
+  if [[ "${paused}" == "true" ]]; then
+    break
+  fi
+  sleep 2
+done
+paused="$(kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" \
+  -o jsonpath='{.spec.paused}' 2>/dev/null || true)"
+if [[ "${paused}" != "true" ]]; then
+  echo "Timed out waiting for UpgradeCampaign spec.paused=true" >&2
+  kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" -o yaml
+  exit 1
+fi
+
+echo "==> resume ${CAMPAIGN_NAME} via platform console"
+resume_status="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  "http://127.0.0.1:${PORT}/platform/campaigns/${NS}/${CAMPAIGN_NAME}/paused" \
+  -d 'paused=0')"
+if [[ "${resume_status}" != "303" ]]; then
+  echo "expected HTTP 303 from campaign resume POST, got ${resume_status}" >&2
+  exit 1
+fi
+deadline=$((SECONDS + TIMEOUT))
+while (( SECONDS < deadline )); do
+  paused="$(kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" \
+    -o jsonpath='{.spec.paused}' 2>/dev/null || true)"
+  if [[ "${paused}" == "false" ]]; then
+    break
+  fi
+  sleep 2
+done
+paused="$(kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" \
+  -o jsonpath='{.spec.paused}' 2>/dev/null || true)"
+if [[ "${paused}" != "false" ]]; then
+  echo "Timed out waiting for UpgradeCampaign spec.paused=false after resume" >&2
+  kubectl get "upgradecampaign/${CAMPAIGN_NAME}" -n "${NS}" -o yaml
+  exit 1
+fi
+
+echo "OK: fleet sync prune + operator snapshot + campaign pause chart smoke passed"

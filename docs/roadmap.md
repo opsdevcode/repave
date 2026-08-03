@@ -354,7 +354,7 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   continuous operator sync is enabled — see [`docs/fleet-registry.md`](fleet-registry.md))
 - kind co-install: `make kind-co-install`, [`values-kind.yaml`](../deploy/k8s/chart/values-kind.yaml),
   sample [`fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl),
-  `make chart-smoke-fleet-snapshot` for register→sync→unregister→GPR prune in CI
+  `make chart-smoke-fleet-snapshot` for register→sync→unregister→GPR prune and campaign pause in CI
 
 ### Kubernetes deploy — Helm chart (engine v1.74+)
 
@@ -1187,7 +1187,8 @@ the standards index → `fleet_drift_confirm` async run). **Day-2:** Helm
 (`values-fleet-shared.yaml`) refreshes the snapshot for the platform console without manual CLI;
 fleet snapshot RBAC grants portal **`patch`** on `upgradecampaigns` for campaign actions.
 **Shipped:** operator continuous registry sync (`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`)
-with GPR prune on unregister — validated by `make chart-smoke-fleet-snapshot`.
+with GPR prune on unregister — validated by `make chart-smoke-fleet-snapshot` (includes
+platform campaign pause/resume via `/platform/campaigns`).
 
 ---
 
