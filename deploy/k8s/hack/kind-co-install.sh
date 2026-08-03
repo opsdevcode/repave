@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# kind: portal (Helm + fleet registry) + operator + fleet-manifests apply + local drift fixture.
+# kind: portal (Helm + fleet registry) + operator fleetSync + drift fixture.
 #
-# Prerequisites: docker, kind, helm, kubectl, and engine venv (for fleet-manifests).
+# Prerequisites: docker, kind, helm, kubectl.
 #
 #   make kind-co-install
 #   CO_INSTALL_KEEP_CLUSTER=1 make kind-co-install   # leave cluster running
@@ -36,12 +36,6 @@ require helm
 require kubectl
 require docker
 require openssl
-
-REPAVE_CLI="${ROOT}/engine/.venv/bin/repave"
-if [[ ! -x "${REPAVE_CLI}" ]]; then
-  echo "Install the engine venv first (make install) so fleet-manifests is available." >&2
-  exit 1
-fi
 
 cleanup_cluster() {
   if [[ "${CO_INSTALL_KEEP_CLUSTER:-}" == "1" ]]; then

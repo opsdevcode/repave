@@ -125,4 +125,9 @@ if ! grep -q 'claimName: repave-fleet' "${fleet_shared_rendered}"; then
   exit 1
 fi
 
+if ! grep -q 'verbs: \["get", "list", "watch", "create", "update", "patch", "delete"\]' "${fleet_shared_rendered}"; then
+  echo "operator RBAC must allow goldenpathrepos create/delete for fleetSync" >&2
+  exit 1
+fi
+
 echo "OK: operator chart lint and template checks passed"

@@ -190,6 +190,8 @@ time. `test_fleet_manifests.py` asserts those fixtures still match the renderer.
 
 Use **either** continuous operator sync **or** GitOps-rendered manifests — not both for
 the same namespace unless you accept duplicate reconcile sources.
-[`deploy/k8s/testdata/fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl),
-copies it into the portal pod, and applies rendered GPRs — see
-[`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md).
+
+CI validates fleet sync create/prune with `make chart-smoke-fleet-snapshot` (shared PVC,
+portal API unregister, operator GPR prune, snapshot CronJob). Local full stack:
+`make kind-co-install` seeds [`deploy/k8s/testdata/fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl)
+via fleetSync — see [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md).

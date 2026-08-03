@@ -14,7 +14,7 @@ via chart values or standalone manifests.
 | [`chart/values-fleet-shared.yaml`](chart/values-fleet-shared.yaml) | Shared fleet registry PVC + operator snapshot CronJob for platform console |
 | [`chart/values-digest-pinned.yaml`](chart/values-digest-pinned.yaml) | Supply-chain overlay: pin portal/worker/corpus by digest |
 | [`chart/values-multi-replica-smoke.yaml`](chart/values-multi-replica-smoke.yaml) | CI overlay: two portal replicas on shared Postgres |
-| [`hack/kind-co-install.sh`](hack/kind-co-install.sh) | kind: portal + fleet registry + operator + `fleet-manifests` apply |
+| [`hack/kind-co-install.sh`](hack/kind-co-install.sh) | kind: portal + fleet registry + operator fleetSync + drift fixture |
 | [`chart/templates/servicemonitor.yaml`](chart/templates/servicemonitor.yaml) | Optional Prometheus Operator scrape (when `monitoring.serviceMonitor.enabled`) |
 | [`chart/templates/prometheusrules.yaml`](chart/templates/prometheusrules.yaml) | Optional alert rules (when `monitoring.prometheusRules.enabled`) |
 | `prometheus-rules.yaml` | Standalone alert pack (same rules as chart template; no Prometheus Operator chart required) |

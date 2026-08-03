@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# kind smoke: fleet shared PVC + operator snapshot CronJob (platform console day-2).
-# Seeds a fleet registry, waits for operator fleetSync GPRs, runs a one-off snapshot Job,
-# and verifies the portal reads operator status from the shared PVC.
+# kind smoke: fleet shared PVC, operator fleetSync prune, and snapshot CronJob.
+# Seeds a fleet registry, waits for fleetSync GPRs, unregisters one repo via the portal API,
+# waits for GPR prune, runs a one-off snapshot Job, and verifies /platform/fleet overlay.
 # CI: .github/workflows/chart.yml (chart-smoke-fleet-snapshot job).
 set -euo pipefail
 
@@ -126,6 +126,41 @@ if [[ "${gpr_count}" -lt 2 ]]; then
   exit 1
 fi
 
+echo "==> port-forward for fleet unregister API"
+kubectl -n "${NS}" port-forward svc/repave "${PORT}:8088" >/tmp/repave-fleet-snapshot-smoke-pf.log 2>&1 &
+PF_PID=$!
+trap 'kill "${PF_PID}" 2>/dev/null || true; cleanup' EXIT
+sleep 3
+curl -sf "http://127.0.0.1:${PORT}/health" | grep -q '"status":"ok"'
+
+UNREGISTER_URL="https://github.com/acme/opa-guardrails"
+PRUNED_GPR="acme-opa-guardrails"
+KEPT_GPR="acme-tf-vpc"
+
+echo "==> unregister ${UNREGISTER_URL} via API and wait for fleetSync GPR prune"
+curl -sf -G -X DELETE \
+  "http://127.0.0.1:${PORT}/api/v2/fleet" \
+  --data-urlencode "repo_url=${UNREGISTER_URL}"
+deadline=$((SECONDS + TIMEOUT))
+while (( SECONDS < deadline )); do
+  gpr_count="$(kubectl get goldenpathrepo -n "${NS}" -l repave.dev/managed-by=repave-fleet \
+    --no-headers 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "${gpr_count}" -eq 1 ]]; then
+    break
+  fi
+  sleep 3
+done
+if [[ "${gpr_count}" -ne 1 ]]; then
+  echo "Timed out waiting for fleetSync to prune unregistered GoldenPathRepo" >&2
+  kubectl get goldenpathrepo -n "${NS}" -A
+  exit 1
+fi
+if kubectl -n "${NS}" get "goldenpathrepo/${PRUNED_GPR}" >/dev/null 2>&1; then
+  echo "expected ${PRUNED_GPR} to be pruned after unregister" >&2
+  exit 1
+fi
+kubectl -n "${NS}" get "goldenpathrepo/${KEPT_GPR}" >/dev/null
+
 echo "==> run one-off fleet operator snapshot job from CronJob"
 job_name="fleet-snapshot-smoke-$(date +%s)"
 kubectl -n "${NS}" create job --from="cronjob/${CRONJOB}" "${job_name}"
@@ -138,23 +173,19 @@ import json, sys
 body = json.loads(sys.argv[1])
 assert body.get('version') == 2, body
 repos = body.get('repos') or []
-assert len(repos) >= 2, body
+assert len(repos) >= 1, body
 assert any('acme/tf-vpc' in str(row.get('repo_url', '')) for row in repos), body
+assert not any('opa-guardrails' in str(row.get('repo_url', '')) for row in repos), body
 " "${snapshot_json}"
 
-echo "==> port-forward and probe platform fleet page"
-kubectl -n "${NS}" port-forward svc/repave "${PORT}:8088" >/tmp/repave-fleet-snapshot-smoke-pf.log 2>&1 &
-PF_PID=$!
-trap 'kill "${PF_PID}" 2>/dev/null || true; cleanup' EXIT
-sleep 3
-
-curl -sf "http://127.0.0.1:${PORT}/health" | grep -q '"status":"ok"'
+echo "==> probe platform fleet page"
 fleet_html="$(curl -sf "http://127.0.0.1:${PORT}/platform/fleet")"
 python3 -c "
 import sys
 html = sys.argv[1]
-assert 'acme/tf-vpc' in html, 'expected seeded repo on /platform/fleet'
+assert 'acme/tf-vpc' in html, 'expected kept repo on /platform/fleet'
+assert 'opa-guardrails' not in html, 'expected unregistered repo removed from fleet page'
 assert 'operator status from snapshot' in html.lower(), 'expected operator snapshot overlay'
 " "${fleet_html}"
 
-echo "OK: fleet operator snapshot chart smoke passed"
+echo "OK: fleet sync prune + operator snapshot chart smoke passed"

@@ -19,7 +19,7 @@ rules:
     verbs: ["get", "update", "patch"]
   - apiGroups: ["repave.dev"]
     resources: ["goldenpathrepos"]
-    verbs: ["get", "list", "watch", "update", "patch"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: ["repave.dev"]
     resources: ["goldenpathrepos/status"]
     verbs: ["get", "update", "patch"]
