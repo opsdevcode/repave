@@ -120,6 +120,19 @@ when GPRs live in a different namespace than the portal release. See
 
 Validate locally: `make chart-smoke-fleet-snapshot` (kind: portal + operator + snapshot Job).
 
+### Platform console day-2 actions
+
+Admins with platform access (`ROLE_ADMIN` in service mode) can run day-2 actions from the
+portal without shell `kubectl` hints:
+
+| Surface | Action | Mechanism |
+| --- | --- | --- |
+| `/platform/campaigns` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`) |
+| `/platform/standards` | Confirm drift for behind repos | Submits a `fleet_drift_confirm` async run (`verify` fan-out); requires `durability.async_generation` |
+
+Campaign phase updates still follow the fleet operator snapshot schedule — re-run snapshot or
+wait for the CronJob after patching `spec.paused`.
+
 ## Operator sync
 
 ### Continuous registry sync (operator)

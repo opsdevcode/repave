@@ -42,8 +42,10 @@ rollup, remote GitHub docs, upgrade/provenance rendering, owner filter, SLO heal
 **cost visibility** (Infracost gate + CI, URL/AWS/Azure actuals, library tile badges, Cloud spend
 scorecard).
 **Platform console** (admin `/platform/*`: fleet register/unregister, ops health, standards
-blast radius, operator campaign snapshot v2); **Helm fleet operator snapshot CronJob**
-(`fleetOperatorSnapshot.cronJob`, `values-fleet-shared.yaml` — keeps `/platform/campaigns` fresh).
+blast radius with **confirm-drift** async runs, operator campaign snapshot v2 with **in-portal
+pause/resume**); **Helm fleet operator snapshot CronJob**
+(`fleetOperatorSnapshot.cronJob`, `values-fleet-shared.yaml` — keeps `/platform/campaigns` fresh;
+portal ServiceAccount **patch** on `upgradecampaigns` for campaign actions).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
 → [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
 
@@ -160,7 +162,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
 | **Supply chain** | shipped | GitHub App auth, governed PR conventions, SHA-pinned Actions, digest-pinned base images, chart `image.digest` |
-| **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel; **platform console** (`/platform/fleet`, `/platform/ops`, `/platform/standards`, `/platform/campaigns`) |
+| **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel; **platform console** (`/platform/*` — fleet, ops, standards blast radius + confirm drift, campaigns with pause/resume) |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
@@ -1176,8 +1178,11 @@ kind co-install). **Polish shipped:** portal operator status via snapshot file, 
 flags (`--kustomization`, `--prune`, `--gitops-readme`, `--enable-remediation`),
 `repave fleet-operator-snapshot` (v2 snapshot includes UpgradeCampaign rows), and admin
 **platform console** at `/platform/fleet`, `/platform/ops`, `/platform/standards`,
-`/platform/campaigns`. **Day-2:** Helm `fleetOperatorSnapshot.cronJob` on the shared fleet PVC
-(`values-fleet-shared.yaml`) refreshes the snapshot for the platform console without manual CLI.
+`/platform/campaigns` (in-portal **pause/resume** for `UpgradeCampaign`; **Confirm drift** on
+the standards index → `fleet_drift_confirm` async run). **Day-2:** Helm
+`fleetOperatorSnapshot.cronJob` on the shared fleet PVC
+(`values-fleet-shared.yaml`) refreshes the snapshot for the platform console without manual CLI;
+fleet snapshot RBAC grants portal **`patch`** on `upgradecampaigns` for campaign actions.
 **Shipped:** operator continuous registry sync (`REPAVE_FLEET_SYNC_*`, Helm `fleetSync.*`)
 with GPR prune on unregister — validated by `make chart-smoke-fleet-snapshot`.
 
