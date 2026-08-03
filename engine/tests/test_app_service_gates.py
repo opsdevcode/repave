@@ -73,3 +73,27 @@ def test_go_test_skips_without_go_mod(tmp_path: Path, monkeypatch) -> None:
 
     assert results[0].passed is True
     assert results[0].skipped is True
+
+
+def test_node_lint_skips_without_package_json(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "repave_engine.gate_runners.tool_available",
+        lambda name: name in {"node", "npm"},
+    )
+
+    results = run_gates(tmp_path, ("node-lint",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True
+
+
+def test_node_test_skips_without_package_json(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(
+        "repave_engine.gate_runners.tool_available",
+        lambda name: name in {"node", "npm"},
+    )
+
+    results = run_gates(tmp_path, ("node-test",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True

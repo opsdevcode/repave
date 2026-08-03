@@ -1,0 +1,9 @@
+{% if runtime == 'nodejs' -%}
+import { createServer } from "./server.js";
+
+const port = Number(process.env.PORT ?? "{{ port }}");
+
+createServer().listen(port, () => {
+  console.log(`listening on ${port}`);
+});
+{% endif %}

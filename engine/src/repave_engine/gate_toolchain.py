@@ -99,6 +99,29 @@ def terraform_cli_ready() -> bool:
     return result.returncode == 0
 
 
+def node_cli_ready() -> bool:
+    """True when node and npm execute (not only a version-manager shim)."""
+    node_bin = resolve_tool("node")
+    npm_bin = resolve_tool("npm")
+    if not node_bin or not npm_bin:
+        return False
+    run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
+    env = os.environ.copy()
+    node_ok = (
+        run_subprocess(
+            [node_bin, "--version"], cwd=run_cwd, check=False, env=env, timeout=15
+        ).returncode
+        == 0
+    )
+    npm_ok = (
+        run_subprocess(
+            [npm_bin, "--version"], cwd=run_cwd, check=False, env=env, timeout=15
+        ).returncode
+        == 0
+    )
+    return node_ok and npm_ok
+
+
 def gate_tool_status() -> dict[str, bool]:
     """Tool readiness as seen by the running engine process (for /readyz)."""
     ensure_gate_path()

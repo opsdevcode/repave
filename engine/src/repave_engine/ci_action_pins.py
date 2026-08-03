@@ -24,6 +24,7 @@ REQUIRED_ACTIONS: tuple[str, ...] = (
     "actions/checkout",
     "actions/setup-python",
     "actions/setup-go",
+    "actions/setup-node",
     "hashicorp/setup-terraform",
     "terraform-linters/setup-tflint",
     "azure/setup-helm",

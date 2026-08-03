@@ -735,6 +735,48 @@ def test_generate_app_service_go_dry_run(
     assert all(g.passed or g.skipped for g in result.gates)
 
 
+def test_generate_app_service_nodejs_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root=repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "orders-api",
+            "description": "Orders HTTP API",
+            "owner": "team:commerce",
+            "system": "commerce",
+            "catalog_lifecycle": "production",
+            "port": "8080",
+            "runtime": "nodejs",
+            "include_helm_reference": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    assert (output_dir / "package.json").is_file()
+    package_text = (output_dir / "package.json").read_text(encoding="utf-8")
+    assert '"name": "app-orders-api"' in package_text
+    assert (output_dir / "src" / "server.ts").is_file()
+    assert (output_dir / "src" / "main.ts").is_file()
+    assert (output_dir / "test" / "health.test.ts").is_file()
+    go_mod = output_dir / "go.mod"
+    assert not go_mod.is_file() or not go_mod.read_text(encoding="utf-8").strip()
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["appService"]["runtime"] == "nodejs"
+    failing = [g for g in result.gates if not g.passed and not g.skipped]
+    assert not failing, [(g.name, g.message) for g in failing]
+
+
 def test_generate_observability_as_code_dry_run(
     repo_root: Path,
     output_config,

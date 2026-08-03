@@ -20,6 +20,8 @@ from repave_engine.gate_runners import (
     run_helm_template,
     run_infracost,
     run_molecule,
+    run_node_lint,
+    run_node_test,
     run_opa,
     run_promtool,
     run_provenance_drift,
@@ -218,6 +220,20 @@ register_gate(
     GateSpec(
         name="go-test",
         runner=run_go_test,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="node-lint",
+        runner=run_node_lint,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="node-test",
+        runner=run_node_test,
         artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
     )
 )

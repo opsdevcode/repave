@@ -4,6 +4,7 @@ from pathlib import Path
 
 import repave_engine.gate_runners as _gr
 from repave_engine.gate_registry import GateContext, GateResult
+from repave_engine.gate_toolchain import node_cli_ready
 
 
 def _ensure_python_project_installed(output_dir: Path) -> None:
@@ -161,3 +162,79 @@ def run_go_test(ctx: GateContext) -> GateResult:
         return GateResult("go-test", True, False, "go test passed")
     detail = result.stderr.strip() or result.stdout.strip() or "go test failed"
     return GateResult("go-test", False, False, detail)
+
+
+def _package_json_is_valid(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    text = path.read_text(encoding="utf-8").strip()
+    return text.startswith("{") and '"name"' in text
+
+
+def _has_node_tests(output_dir: Path) -> bool:
+    for pattern in ("test/**/*.test.ts", "test/**/*.test.js", "tests/**/*.test.ts"):
+        for candidate in output_dir.glob(pattern):
+            if candidate.is_file() and candidate.read_text(encoding="utf-8").strip():
+                return True
+    return False
+
+
+def _ensure_node_deps_installed(output_dir: Path) -> None:
+    marker = output_dir / ".repave" / "node_deps_installed"
+    if marker.is_file():
+        return
+    install = _gr.run_command(["npm", "install"], output_dir)
+    if install.returncode == 0:
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text("ok", encoding="utf-8")
+
+
+def run_node_lint(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("node-lint", True, True, "node-lint gate not applicable; skipped")
+
+    if not _gr.tool_available("node") or not _gr.tool_available("npm"):
+        return GateResult("node-lint", True, True, "node/npm not installed; skipped")
+
+    if not node_cli_ready():
+        return GateResult("node-lint", True, True, "node/npm not runnable; skipped")
+
+    package_json = output_dir / "package.json"
+    if not _package_json_is_valid(package_json):
+        return GateResult("node-lint", True, True, "no package.json found; skipped")
+
+    _ensure_node_deps_installed(output_dir)
+
+    result = _gr.run_command(["npm", "run", "lint"], output_dir)
+    if result.returncode == 0:
+        return GateResult("node-lint", True, False, "npm run lint passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "npm run lint failed"
+    return GateResult("node-lint", False, False, detail)
+
+
+def run_node_test(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("node-test", True, True, "node-test gate not applicable; skipped")
+
+    if not _gr.tool_available("node") or not _gr.tool_available("npm"):
+        return GateResult("node-test", True, True, "node/npm not installed; skipped")
+
+    if not node_cli_ready():
+        return GateResult("node-test", True, True, "node/npm not runnable; skipped")
+
+    package_json = output_dir / "package.json"
+    if not _package_json_is_valid(package_json):
+        return GateResult("node-test", True, True, "no package.json found; skipped")
+
+    if not _has_node_tests(output_dir):
+        return GateResult("node-test", True, True, "no node tests; skipped")
+
+    _ensure_node_deps_installed(output_dir)
+
+    result = _gr.run_command(["npm", "test"], output_dir)
+    if result.returncode == 0:
+        return GateResult("node-test", True, False, "npm test passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "npm test failed"
+    return GateResult("node-test", False, False, detail)

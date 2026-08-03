@@ -21,7 +21,7 @@ Run locally:
 pip install -e .
 uvicorn app.main:app --reload --port {{ port }}
 ```
-{% else -%}
+{% elif runtime == 'go' -%}
 Run tests and format checks:
 
 ```bash
@@ -34,6 +34,21 @@ Run locally:
 
 ```bash
 go run ./cmd/server
+```
+{% else -%}
+Install dependencies and run checks:
+
+```bash
+npm install
+npm run lint
+npm test
+```
+
+Run locally:
+
+```bash
+npm run build
+npm start
 ```
 {% endif %}
 
