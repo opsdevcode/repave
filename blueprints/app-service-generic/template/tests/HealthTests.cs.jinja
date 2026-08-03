@@ -1,6 +1,7 @@
 {% if runtime == 'dotnet' -%}
 {% set dotnet_project = service_name.replace('-', ' ')|title|replace(' ', '') -%}
 using Repave.{{ dotnet_project }};
+using Xunit;
 
 namespace Repave.{{ dotnet_project }}.Tests;
 
