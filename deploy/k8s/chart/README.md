@@ -297,7 +297,7 @@ make chart-smoke              # kind install (CI: chart-smoke on chart/image pat
 make chart-smoke-decomposed   # decomposed portal + worker + Postgres async run (CI: chart-smoke-decomposed)
 make chart-smoke-multi-replica   # two portal replicas + shared Postgres sessions/queue (CI: chart-smoke-multi-replica)
 make chart-smoke-environment-vending   # environment vending PVC + reclaim CronJob (CI: chart-smoke-environment-vending)
-make chart-smoke-fleet-snapshot   # fleet PVC + fleetSync prune + snapshot CronJob (CI: chart-smoke-fleet-snapshot)
+make chart-smoke-fleet-snapshot   # fleet PVC + fleetSync prune + snapshot CronJob + campaign pause (CI: chart-smoke-fleet-snapshot)
 ```
 
 ## Scaling

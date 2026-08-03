@@ -1,0 +1,7 @@
+# Applied by chart-smoke-fleet-snapshot.sh after fleetSync creates GoldenPathRepos.
+apiVersion: repave.dev/v1beta1
+kind: UpgradeCampaign
+metadata:
+  name: platform-rollout
+spec:
+  maxConcurrentPRs: 5
