@@ -223,7 +223,10 @@
                   "service_name": { "type": "string", "minLength": 1 },
                   "owner": { "type": "string", "minLength": 1 },
                   "port": { "type": "string" },
-                  "runtime": { "type": "string" },
+                  "runtime": {
+                    "type": "string",
+                    "enum": ["python", "go", "nodejs"]
+                  },
                   "include_helm_reference": { "type": "string" },
                   "helm_chart_repo": { "type": "string" }
                 }
@@ -512,7 +515,10 @@
             "service_name": { "type": "string", "minLength": 1 },
             "owner": { "type": "string", "minLength": 1 },
             "port": { "type": "string" },
-            "runtime": { "type": "string" },
+            "runtime": {
+              "type": "string",
+              "enum": ["python", "go", "nodejs"]
+            },
             "include_helm_reference": { "type": "string" },
             "helm_chart_repo": { "type": "string" }
           }

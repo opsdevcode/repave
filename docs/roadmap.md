@@ -6,8 +6,8 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.23.0  
 
-**In progress:** **Developer paved roads** — v1.83 runtime and archetype breadth
-([Node/Java runtimes, worker/grpc layouts](#v183--runtime-and-archetype-breadth)).
+**In progress:** **Developer paved roads** — v1.83 runtime breadth (Node.js/TypeScript on
+`app-service-generic`, `node-lint`/`node-test` gates — [runtime and archetype breadth](#v183--runtime-and-archetype-breadth)).
 v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **Multi-component brownfield add** (`repave add`, `spec.components[]`
@@ -2214,7 +2214,13 @@ independently. Remote governed PR publish is a follow-on (see **Follow-ons** abo
 
 *Planning label: v1.83 (roadmap numbering only).*
 
-**Status:** Not started.
+**Status:** In progress on `feat/v183-nodejs-runtime` — Node.js/TypeScript runtime on
+`app-service-generic`, `node-lint`/`node-test` gate runners, CI `setup-node`, and doctor pin.
+Java runtime, `appService.layout` archetypes (`worker`, `scheduled-job`, `grpc`), and
+conformance fixtures for each layout remain open.
+
+**Follow-ons (same theme):** Java + `java-build`; layout knob and per-layout templates; `buf-lint`
+for gRPC; conformance snapshots per runtime/layout pair.
 
 **Problem:** `app-service-generic` covers Python and Go over HTTP. Every other runtime and every
 non-HTTP shape — queue consumers, scheduled jobs, gRPC services — falls off the paved road

@@ -1,0 +1,21 @@
+{% if runtime == 'nodejs' -%}
+{
+  "name": "app-{{ service_name }}",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "node --import tsx --test test/**/*.test.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
+{% endif %}

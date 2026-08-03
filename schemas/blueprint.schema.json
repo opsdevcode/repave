@@ -108,6 +108,8 @@
               "python-test",
               "go-lint",
               "go-test",
+              "node-lint",
+              "node-test",
               "actionlint"
             ]
           }
@@ -486,6 +488,26 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {}
+            },
+            "node-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_file": {
+                  "type": "string",
+                  "description": "Node project manifest (package.json) for lint script."
+                }
+              }
+            },
+            "node-test": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "test_directory": {
+                  "type": "string",
+                  "description": "Directory containing node test files."
+                }
+              }
             },
             "actionlint": {
               "type": "object",

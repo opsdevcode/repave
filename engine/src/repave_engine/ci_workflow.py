@@ -17,6 +17,7 @@ from repave_engine.ci_toolchain import (
     HADOLINT_VERSION,
     HELM_VERSION,
     INFRACOST_VERSION,
+    NODE_VERSION,
     PYTHON_VERSION,
     TERRAFORM_VERSION,
     TFLINT_VERSION,
@@ -104,6 +105,7 @@ def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str,
         "needs_hadolint": "dockerfile-lint" in gate_set,
         "needs_python": bool(gate_set & {"python-lint", "python-test"}),
         "needs_go": bool(gate_set & {"go-lint", "go-test"}),
+        "needs_node": bool(gate_set & {"node-lint", "node-test"}),
         "needs_actionlint": "actionlint" in gate_set,
     }
 
@@ -129,6 +131,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         hadolint_version=HADOLINT_VERSION,
         actionlint_version=ACTIONLINT_VERSION,
         go_version=GO_VERSION,
+        node_version=NODE_VERSION,
         infracost_version=INFRACOST_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,
         alertmanager_version=_ALERTMANAGER_VERSION,

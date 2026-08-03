@@ -19,6 +19,8 @@ from repave_engine.gate_runners.app import (
     run_dockerfile_lint,
     run_go_lint,
     run_go_test,
+    run_node_lint,
+    run_node_test,
     run_python_lint,
     run_python_test,
 )
@@ -82,6 +84,8 @@ __all__ = [
     "run_helm_template",
     "run_infracost",
     "run_molecule",
+    "run_node_lint",
+    "run_node_test",
     "run_opa",
     "run_promtool",
     "run_provenance_drift",

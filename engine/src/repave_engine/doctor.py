@@ -26,6 +26,7 @@ _PIN_BY_TOOL: dict[str, str] = {
     "helm": ci_toolchain.HELM_VERSION,
     "hadolint": ci_toolchain.HADOLINT_VERSION,
     "go": ci_toolchain.GO_VERSION,
+    "node": ci_toolchain.NODE_VERSION,
     "infracost": ci_toolchain.INFRACOST_VERSION,
     "actionlint": ci_toolchain.ACTIONLINT_VERSION,
 }

@@ -94,9 +94,17 @@ jobs:
         uses: {{ actions['actions/setup-go'].ref }}  # {{ actions['actions/setup-go'].tag }}
         with:
           go-version: "{{ go_version }}"
+{% endif %}{% if needs_node %}
+      - name: Set up Node
+        uses: {{ actions['actions/setup-node'].ref }}  # {{ actions['actions/setup-node'].tag }}
+        with:
+          node-version: "{{ node_version }}"
 {% endif %}{% if needs_python %}
       - name: Install service dev dependencies
         run: pip install -e ".[dev]"
+{% endif %}{% if needs_node %}
+      - name: Install Node dev dependencies
+        run: npm install
 {% endif %}
       - name: Run golden path gates
         run: repave gates --path .
