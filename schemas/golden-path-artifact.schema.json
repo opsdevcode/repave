@@ -216,6 +216,7 @@
                   "owner",
                   "port",
                   "runtime",
+                  "layout",
                   "include_helm_reference"
                 ],
                 "additionalProperties": false,
@@ -226,6 +227,10 @@
                   "runtime": {
                     "type": "string",
                     "enum": ["python", "go", "nodejs", "java", "dotnet"]
+                  },
+                  "layout": {
+                    "type": "string",
+                    "enum": ["http-api", "worker", "scheduled-job", "grpc"]
                   },
                   "include_helm_reference": { "type": "string" },
                   "helm_chart_repo": { "type": "string" }
@@ -509,7 +514,7 @@
         },
         "appService": {
           "type": "object",
-          "required": ["service_name", "owner", "port", "runtime", "include_helm_reference"],
+          "required": ["service_name", "owner", "port", "runtime", "layout", "include_helm_reference"],
           "additionalProperties": false,
           "properties": {
             "service_name": { "type": "string", "minLength": 1 },
@@ -518,6 +523,10 @@
             "runtime": {
               "type": "string",
               "enum": ["python", "go", "nodejs", "java", "dotnet"]
+            },
+            "layout": {
+              "type": "string",
+              "enum": ["http-api", "worker", "scheduled-job", "grpc"]
             },
             "include_helm_reference": { "type": "string" },
             "helm_chart_repo": { "type": "string" }

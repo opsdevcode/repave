@@ -1,0 +1,15 @@
+{% if layout == 'grpc' -%}
+syntax = "proto3";
+
+package health.v1;
+
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+}
+{% endif -%}

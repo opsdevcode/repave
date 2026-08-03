@@ -10,9 +10,24 @@ COPY pyproject.toml .
 COPY src ./src
 RUN pip install --no-cache-dir .
 
+{% if layout == 'http-api' -%}
 EXPOSE {{ port }}
 
 CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "{{ port }}"]
+{% elif layout == 'worker' -%}
+ENV QUEUE_URL=""
+
+CMD ["python", "-m", "app.main"]
+{% elif layout == 'scheduled-job' -%}
+CMD ["python", "-m", "app.main"]
+{% elif layout == 'grpc' -%}
+COPY buf.yaml .
+COPY proto ./proto
+
+EXPOSE {{ port }}
+
+CMD ["python", "-m", "app.main"]
+{% endif -%}
 {% elif runtime == 'go' -%}
 FROM golang:1.23-alpine AS build
 

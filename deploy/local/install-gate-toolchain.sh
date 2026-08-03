@@ -13,6 +13,7 @@ INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
 INSTALL_KUBECTL="${INSTALL_KUBECTL:-1}"
 INSTALL_ACTIONLINT="${INSTALL_ACTIONLINT:-1}"
+INSTALL_BUF="${INSTALL_BUF:-1}"
 DEST="${DEST:-/usr/local/bin}"
 GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 
@@ -165,4 +166,13 @@ if [[ "$INSTALL_ACTIONLINT" == "1" ]]; then
   fi
 fi
 
-echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION}, actionlint=${ACTIONLINT_VERSION})."
+if [[ "$INSTALL_BUF" == "1" ]]; then
+  tmp_buf="$(mktemp -d)"
+  "${CURL_GET[@]}" \
+    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${kubectl_arch}.tar.gz" \
+    | tar xz -C "$tmp_buf" buf/bin/buf
+  install_bin "$tmp_buf/buf/bin/buf"
+  rm -rf "$tmp_buf"
+fi
+
+echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION}, actionlint=${ACTIONLINT_VERSION}, buf=${BUF_VERSION})."

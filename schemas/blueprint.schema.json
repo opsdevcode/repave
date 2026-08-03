@@ -112,6 +112,7 @@
               "node-test",
               "java-build",
               "dotnet-test",
+              "buf-lint",
               "actionlint"
             ]
           }
@@ -528,6 +529,16 @@
                 "test_project": {
                   "type": "string",
                   "description": "Path to the xUnit test project (.csproj) for dotnet-test gate."
+                }
+              }
+            },
+            "buf-lint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "config_file": {
+                  "type": "string",
+                  "description": "Path to buf.yaml for buf lint."
                 }
               }
             },

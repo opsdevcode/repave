@@ -6,9 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** — v1.83 runtime breadth (Java and .NET 10 on
-`app-service-generic`, `java-build`/`dotnet-test` gates — [runtime and archetype breadth](#v183--runtime-and-archetype-breadth)).
-Node.js/TypeScript runtime shipped on `main`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
+**In progress:** **Developer paved roads** — v1.83 layout archetypes (`appService.layout`:
+`worker`, `scheduled-job`, `grpc` on `app-service-generic` — [runtime and archetype breadth](#v183--runtime-and-archetype-breadth)).
+All runtimes (Python, Go, Node.js, Java, .NET) shipped on `main`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **Multi-component brownfield add** (`repave add`, `spec.components[]`
 in provenance, per-component verify, portal add action on service detail,
@@ -2214,13 +2214,13 @@ independently. Remote governed PR publish is a follow-on (see **Follow-ons** abo
 
 *Planning label: v1.83 (roadmap numbering only).*
 
-**Status:** In progress on `feat/v183-java-dotnet-runtimes` — Java and .NET 10 runtimes on
-`app-service-generic`, `java-build`/`dotnet-test` gate runners, Linux container Dockerfiles,
-CI `setup-java`/`setup-dotnet`, and doctor pins. Node.js/TypeScript shipped on `main`.
-`appService.layout` archetypes (`worker`, `scheduled-job`, `grpc`), and conformance fixtures
-for each layout remain open.
+**Status:** In progress on `feat/v183-app-service-layouts` — `appService.layout` on
+`app-service-generic` (`http-api`, `worker`, `scheduled-job`, `grpc`), Python templates per
+layout, `buf-lint` gate, and conformance/dry-run coverage. Runtimes (Python, Go, Node.js, Java,
+.NET 10) shipped on `main`. Non-HTTP layouts are Python-only until the runtime matrix expands.
+Conformance snapshots per runtime/layout pair remain open.
 
-**Follow-ons (same theme):** layout knob and per-layout templates; `buf-lint` for gRPC;
+**Follow-ons (same theme):** worker/scheduled-job/grpc templates for Go, Node.js, Java, and .NET;
 conformance snapshots per runtime/layout pair.
 
 **Problem:** `app-service-generic` covers Python and Go over HTTP. Every other runtime and every

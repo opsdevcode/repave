@@ -20,6 +20,10 @@ runtime:
   type: str
   default: python
 
+layout:
+  type: str
+  default: http-api
+
 include_helm_reference:
   type: str
   default: "false"

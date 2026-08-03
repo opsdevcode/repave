@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 import yaml
 
-from repave_engine.blueprint import load_blueprint
+from repave_engine.blueprint import load_blueprint, validate_inputs
 from repave_engine.pipeline import generate_from_blueprint, generate_from_path
 from repave_engine.target_repo import resolve_module_repository
 
@@ -694,6 +694,7 @@ def test_generate_app_service_dry_run(
     spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
     assert spec["artifactType"] == "app-service"
     assert spec["appService"]["service_name"] == "checkout-api"
+    assert spec["appService"].get("layout", "http-api") == "http-api"
     assert all(g.passed or g.skipped for g in result.gates)
 
 
@@ -861,6 +862,75 @@ def test_generate_app_service_dotnet_dry_run(
     assert spec["appService"]["runtime"] == "dotnet"
     failing = [g for g in result.gates if not g.passed and not g.skipped]
     assert not failing, [(g.name, g.message) for g in failing]
+
+
+@pytest.mark.parametrize(
+    ("layout", "extra_assert"),
+    [
+        ("worker", lambda out: "QUEUE_URL" in (out / "README.md").read_text(encoding="utf-8")),
+        ("scheduled-job", lambda out: "CronJob" in (out / "README.md").read_text(encoding="utf-8")),
+        (
+            "grpc",
+            lambda out: (
+                (out / "proto" / "health" / "v1" / "health.proto").is_file()
+                and (out / "buf.yaml").is_file()
+            ),
+        ),
+    ],
+)
+def test_generate_app_service_layout_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+    layout: str,
+    extra_assert,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root=repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "orders-worker",
+            "description": "Orders background worker",
+            "owner": "team:commerce",
+            "port": "8080",
+            "runtime": "python",
+            "layout": layout,
+            "include_helm_reference": "false",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+
+    output_dir = result.render.output_dir
+    extra_assert(output_dir)
+    spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
+    assert spec["appService"]["layout"] == layout
+    failing = [g for g in result.gates if not g.passed and not g.skipped]
+    assert not failing, [(g.name, g.message) for g in failing]
+
+
+def test_app_service_layout_requires_python_for_non_http_api(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "app-service-generic",
+        repo_root=repo_root,
+    )
+    with pytest.raises(ValueError, match="layout 'worker'"):
+        validate_inputs(
+            blueprint,
+            {
+                "service_name": "payments-api",
+                "description": "Payments",
+                "owner": "team:payments",
+                "runtime": "go",
+                "layout": "worker",
+                "include_helm_reference": "false",
+            },
+        )
 
 
 def test_generate_observability_as_code_dry_run(

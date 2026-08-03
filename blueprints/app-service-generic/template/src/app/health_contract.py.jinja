@@ -1,0 +1,7 @@
+{% if runtime == 'python' and layout == 'grpc' -%}
+"""Health contract shared by tests until gRPC stubs are generated."""
+
+
+def health_status() -> dict[str, str]:
+    return {"status": "ok"}
+{% endif -%}

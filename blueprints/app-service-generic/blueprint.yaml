@@ -2,8 +2,8 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: app-service-generic
-  version: 0.5.0
-  description: Governed application service repo (Python, Go, Node.js/TypeScript, Java, or .NET) with Dockerfile, tests, and Backstage catalog metadata.
+  version: 0.6.0
+  description: Governed application service repo with HTTP, worker, scheduled-job, or gRPC layouts.
 spec:
   artifactType: app-service
   standard:
@@ -52,6 +52,16 @@ spec:
         - java
         - dotnet
       description: Application runtime (Python, Go, Node.js/TypeScript, Java, or .NET HTTP).
+    - name: layout
+      type: string
+      required: false
+      default: http-api
+      enum:
+        - http-api
+        - worker
+        - scheduled-job
+        - grpc
+      description: Service archetype (HTTP API, queue worker, CronJob, or gRPC).
     - name: include_helm_reference
       type: string
       required: false
@@ -100,6 +110,7 @@ spec:
     - node-test
     - java-build
     - dotnet-test
+    - buf-lint
     - actionlint
     - secrets
     - docs-drift
@@ -119,6 +130,8 @@ spec:
       config_file: pom.xml
     dotnet-test:
       test_project: tests/App.Tests.csproj
+    buf-lint:
+      config_file: buf.yaml
   output:
     type: pull_request
     provenance:

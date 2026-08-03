@@ -16,6 +16,7 @@ from repave_engine.gate_runners.ansible import (
     run_molecule,
 )
 from repave_engine.gate_runners.app import (
+    run_buf_lint,
     run_dockerfile_lint,
     run_dotnet_test,
     run_go_lint,
@@ -72,6 +73,7 @@ __all__ = [
     "run_ansible_lint",
     "run_ansible_syntax_check",
     "run_azure_policy",
+    "run_buf_lint",
     "run_checkov",
     "run_command",
     "run_datadog_api_validate",

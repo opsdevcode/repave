@@ -11,6 +11,7 @@ from repave_engine.blueprint import Blueprint, artifact_family
 from repave_engine.ci_action_pins import action_pins
 from repave_engine.ci_toolchain import (
     ACTIONLINT_VERSION,
+    BUF_VERSION,
     CHECKOV_PIP_SPEC,
     CONFTEST_VERSION,
     DOTNET_VERSION,
@@ -110,6 +111,7 @@ def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str,
         "needs_node": bool(gate_set & {"node-lint", "node-test"}),
         "needs_java": "java-build" in gate_set,
         "needs_dotnet": "dotnet-test" in gate_set,
+        "needs_buf": "buf-lint" in gate_set,
         "needs_actionlint": "actionlint" in gate_set,
     }
 
@@ -138,6 +140,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         node_version=NODE_VERSION,
         java_version=JAVA_VERSION,
         dotnet_version=DOTNET_VERSION,
+        buf_version=BUF_VERSION,
         infracost_version=INFRACOST_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,
         alertmanager_version=_ALERTMANAGER_VERSION,
