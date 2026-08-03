@@ -52,6 +52,13 @@ After required checks pass, use the normal **Merge pull request** control on Git
 Release automation (`chore/release/*`) still admin-merges outside branch rules.
 See [CONTRIBUTING.md](../CONTRIBUTING.md) and [`.github/rulesets/README.md`](../.github/rulesets/README.md).
 
+## PR URLs
+
+Use the **GitHub PR URL** from `gh pr view --json url` (for example
+`https://github.com/opsdevcode/repave/pull/445`). Do **not** substitute Cursor
+autopilot or cloud-agent review links (`[Review](bc-id#changes)`, `[Try Live]`, etc.)
+unless the user explicitly asks for autopilot.
+
 ## After opening a PR
 
 When `gh pr create` succeeds (or the user asked to open a PR and one already exists),
