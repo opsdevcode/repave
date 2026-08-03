@@ -246,3 +246,54 @@ jobs:
         run: |
           chmod +x deploy/k8s/hack/chart-smoke-environment-vending.sh
           ./deploy/k8s/hack/chart-smoke-environment-vending.sh
+
+  chart-smoke-fleet-snapshot:
+    name: chart-smoke-fleet-snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: ./.github/actions/chart-ci-paths
+        id: paths
+
+      - name: Unrelated change (skip fleet snapshot chart smoke)
+        if: >-
+          github.event_name == 'pull_request' &&
+          steps.paths.outputs.chart_needed != 'true'
+        run: echo "No chart or portal image paths; skipping fleet snapshot kind smoke."
+
+      - name: Install Helm
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        with:
+          version: v3.16.4
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        with:
+          go-version-file: operator/go.mod
+          cache: false
+
+      - name: Install kind
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: go install sigs.k8s.io/kind@v0.27.0
+
+      - name: Add Go bin to PATH
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run fleet snapshot chart smoke (kind)
+        if: >-
+          github.event_name != 'pull_request' ||
+          steps.paths.outputs.chart_needed == 'true'
+        run: |
+          chmod +x deploy/k8s/hack/chart-smoke-fleet-snapshot.sh
+          ./deploy/k8s/hack/chart-smoke-fleet-snapshot.sh

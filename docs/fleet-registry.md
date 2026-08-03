@@ -118,6 +118,8 @@ schedule (`fleetOperatorSnapshot.cronJob`). Set `fleetOperatorSnapshot.cronJob.o
 when GPRs live in a different namespace than the portal release. See
 [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md) § Fleet operator snapshot.
 
+Validate locally: `make chart-smoke-fleet-snapshot` (kind: portal + operator + snapshot Job).
+
 ## Operator sync
 
 ### Continuous registry sync (operator)
