@@ -90,6 +90,7 @@ from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
 from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.fleet import FleetError
+from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import (
     bundle_result_from_stored_run,
@@ -147,6 +148,7 @@ from repave_engine.portal_platform import (
     build_platform_ops_page,
     build_platform_standards_detail,
     build_platform_standards_page,
+    find_campaign_in_snapshot,
     platform_admin_visible,
     register_fleet_entry_from_form,
     require_platform_admin,
@@ -1987,6 +1989,36 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 campaigns_page=campaigns_page,
             ),
         )
+
+    @app.post("/platform/campaigns/{namespace}/{name}/paused")
+    async def platform_campaign_set_paused(
+        request: Request,
+        namespace: str,
+        name: str,
+    ) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        campaigns_page = build_platform_campaigns_page(repo_root)
+        campaign = find_campaign_in_snapshot(
+            campaigns_page.snapshot,
+            namespace=namespace,
+            name=name,
+        )
+        if campaign is None:
+            raise HTTPException(
+                status_code=404, detail=f"Campaign {namespace}/{name} not in snapshot"
+            )
+        form = await request.form()
+        paused = str(form.get("paused", "1")).strip().lower() in {"1", "true", "on", "yes"}
+        try:
+            patch_upgrade_campaign_paused(
+                campaign.name,
+                campaign.namespace,
+                paused=paused,
+            )
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return RedirectResponse(url="/platform/campaigns", status_code=303)
 
     app.include_router(
         build_ops_router(

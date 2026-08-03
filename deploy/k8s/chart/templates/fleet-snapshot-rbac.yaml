@@ -9,8 +9,11 @@ metadata:
     {{- include "repave.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["repave.dev"]
-    resources: ["goldenpathrepos", "upgradecampaigns"]
+    resources: ["goldenpathrepos"]
     verbs: ["get", "list"]
+  - apiGroups: ["repave.dev"]
+    resources: ["upgradecampaigns"]
+    verbs: ["get", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -36,8 +39,11 @@ metadata:
     {{- include "repave.labels" . | nindent 4 }}
 rules:
   - apiGroups: ["repave.dev"]
-    resources: ["goldenpathrepos", "upgradecampaigns"]
+    resources: ["goldenpathrepos"]
     verbs: ["get", "list"]
+  - apiGroups: ["repave.dev"]
+    resources: ["upgradecampaigns"]
+    verbs: ["get", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
