@@ -22,6 +22,8 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "POST /api/v2/runs" in payload["endpoints"]
     assert "GET /api/v2/runs" in payload["endpoints"]
     assert "GET /api/v2/audit" in payload["endpoints"]
+    assert "GET /api/v2/estate" in payload["endpoints"]
+    assert "GET /api/v2/governance/annotations/{blueprint_name}" in payload["endpoints"]
     assert "GET /api/v2/fleet" in payload["endpoints"]
 
 

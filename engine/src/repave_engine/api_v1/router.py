@@ -11,8 +11,12 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from repave_engine.api_read_models import (
+    FleetRegistryUnavailableError,
+    build_estate_read_model,
+    build_governance_annotations_read_model,
+)
 from repave_engine.audit_history import (
-    AuditHistoryEntry,
     audit_filters_from_mapping,
     query_audit_entries,
 )
@@ -26,12 +30,10 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
-from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.deployment_status import fetch_entity_deployment_status_for_portal
 from repave_engine.entity_catalog import find_catalog_entity, observability_embed_url
-from repave_engine.estate_map import build_estate_tiles
 from repave_engine.execution_mode import (
     SYNC_GENERATE_UNAVAILABLE_DETAIL,
     worker_execution_mode_active,
@@ -49,24 +51,17 @@ from repave_engine.fleet_operator_status import load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
-from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.observability_slo import fetch_entity_slo_summary
-from repave_engine.policy_catalog import enabled_rule_ids_for_profile, load_policy_catalog
-from repave_engine.policy_selection import policy_input_defaults
 from repave_engine.portal_context import (
     audit_file_or_http404,
-    audit_portal_enabled,
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
-    portal_fleet_context,
-    portal_recent_activity,
 )
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
 from repave_engine.run_submit import parse_run_target, submit_async_run
 from repave_engine.settings import OutputConfig, load_fleet_config, load_portal_config
-from repave_engine.standards_diff import standards_diff_for_pin
 from repave_engine.verify import VerifyError, verify_target
 
 
@@ -93,61 +88,16 @@ def build_api_v1_router(
     @router.get("/estate")
     async def api_estate_map(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        enabled, fleet_repos, _namespace = portal_fleet_context(repo_root)
-        if not enabled:
-            raise HTTPException(
-                status_code=404,
-                detail="Fleet registry is not configured (set fleet.file or REPAVE_FLEET_FILE)",
-            )
-        audit_entries: tuple[AuditHistoryEntry, ...] = ()
-        if audit_portal_enabled(repo_root):
-            audit_entries = portal_recent_activity(repo_root, limit=80)
-        tiles = build_estate_tiles(fleet_repos, audit_entries=audit_entries)
-        return JSONResponse(
-            {
-                "count": len(tiles),
-                "tiles": [tile.to_public_dict() for tile in tiles],
-            }
-        )
+        try:
+            body = build_estate_read_model(repo_root)
+        except FleetRegistryUnavailableError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return JSONResponse(body)
 
     @router.get("/governance/annotations/{blueprint_name}")
     async def api_governance_annotations(blueprint_name: str, request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
-        standards = standards_diff_for_pin(
-            repo_root,
-            standard_source=blueprint.standard_source,
-            pinned_version=blueprint.standard_version,
-        )
-        try:
-            catalog = load_policy_catalog(repo_root)
-        except FileNotFoundError:
-            catalog = None
-        policy_defaults = policy_input_defaults(blueprint)
-        profile = policy_defaults.get("policy_profile", "estate-default")
-        enabled_ids = (
-            enabled_rule_ids_for_profile(
-                catalog,
-                profile=profile,
-                artifact_type=blueprint.artifact_type,
-            )
-            if catalog is not None
-            else frozenset()
-        )
-        policy_rules = (
-            tuple(rule for rule in catalog.rules if rule.id in enabled_ids)
-            if catalog is not None
-            else ()
-        )
-        previews = build_governance_previews(repo_root, standards, policy_rules)
-        return JSONResponse(
-            {
-                "blueprint": blueprint_name,
-                "standard": standards.standard_source,
-                "pinned_version": standards.pinned_version,
-                "previews": [item.to_public_dict() for item in previews],
-            }
-        )
+        return JSONResponse(build_governance_annotations_read_model(repo_root, blueprint_name))
 
     @router.post("/generate")
     async def api_generate(request: Request) -> JSONResponse:

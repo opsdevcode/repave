@@ -169,6 +169,8 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + observability/cost/deployment enrichments |
 | `GET` | `/api/v2/audit` | viewer+ | Query audit history (same filters as v1) |
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows |
+| `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (fleet freshness + audit sparklines) |
+| `GET` | `/api/v2/governance/annotations/{blueprint_name}` | viewer+ | Governance preflight annotation previews |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
@@ -204,5 +206,4 @@ log a deprecation warning at load time. Migration steps:
 
 ## Follow-ups
 
-- v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
 - Conversational governed AI generation (**v3.0.0** — see [roadmap](roadmap.md#conversational-and-governed-ai-generation))

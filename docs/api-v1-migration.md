@@ -43,6 +43,8 @@ the path prefix.
 | `GET /api/v1/fleet` | `GET /api/v2/fleet` | Fleet registry |
 | `POST /api/v1/fleet` | `POST /api/v2/fleet` | Register repo |
 | `DELETE /api/v1/fleet` | `DELETE /api/v2/fleet` | Unregister (`repo_url` query) |
+| `GET /api/v1/estate` | `GET /api/v2/estate` | Estate map tiles (fleet + audit sparklines) |
+| `GET /api/v1/governance/annotations/{blueprint}` | `GET /api/v2/governance/annotations/{blueprint}` | Governance preflight previews |
 
 v2-only surfaces (no v1 equivalent):
 
@@ -53,17 +55,8 @@ v2-only surfaces (no v1 equivalent):
 | `POST /api/v2/upgrades/apply` | Operator apply-upgrade HTTP |
 | `POST /api/v2/imports/*` | Repo import plan/apply/batch |
 
-### v1-only JSON (migrate before v3)
-
-These routes **do not** have v2 parity yet. Keep calling them until a v2 read model ships
-or consume the portal HTML routes instead:
-
-| v1 | Alternative today |
-| --- | --- |
-| `GET /api/v1/estate` | Portal **`/estate`** (HTML); fleet + audit tiles |
-| `GET /api/v1/governance/annotations/{blueprint}` | Portal governance preflight on the blueprint form |
-
-Track v2 parity for these in release notes before v3 removes `/api/v1`.
+All JSON routes listed in the endpoint mapping above have v2 parity. v1 remains available
+with deprecation headers until the v3 sunset.
 
 ## Migration checklist
 

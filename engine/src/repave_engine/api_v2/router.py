@@ -12,6 +12,11 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from repave_engine import __version__
+from repave_engine.api_read_models import (
+    FleetRegistryUnavailableError,
+    build_estate_read_model,
+    build_governance_annotations_read_model,
+)
 from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.auth import (
     ROLE_ADMIN,
@@ -98,6 +103,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/catalog/entities",
     "GET /api/v2/catalog/entities/{entity_id}",
     "GET /api/v2/audit",
+    "GET /api/v2/estate",
+    "GET /api/v2/governance/annotations/{blueprint_name}",
     "GET /api/v2/fleet",
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
@@ -146,6 +153,23 @@ def build_api_v2_router(
                 "endpoints": list(V2_ENDPOINTS),
             }
         )
+
+    @router.get("/estate")
+    async def api_v2_estate(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        try:
+            body = build_estate_read_model(repo_root)
+        except FleetRegistryUnavailableError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return JSONResponse(body)
+
+    @router.get("/governance/annotations/{blueprint_name}")
+    async def api_v2_governance_annotations(
+        blueprint_name: str,
+        request: Request,
+    ) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        return JSONResponse(build_governance_annotations_read_model(repo_root, blueprint_name))
 
     @router.post("/generate")
     async def api_v2_generate(request: Request) -> JSONResponse:
