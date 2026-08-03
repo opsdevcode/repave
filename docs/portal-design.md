@@ -37,7 +37,7 @@ static assets, CSS tokens, and a base layout template.
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | Replace browser last-run with server-side history |
 | Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |
-| v2.0 conversational generation | Second entry point in the same app shell (Phase 5) |
+| v3.0 conversational generation | Second entry point in the same app shell (Phase 5) |
 
 Delivery slices (all landed on `main`):
 

@@ -205,4 +205,4 @@ log a deprecation warning at load time. Migration steps:
 ## Follow-ups
 
 - v2 read models for `/api/v1/estate` and `/api/v1/governance/annotations/*`
-- Conversational governed AI generation (v2 must-have — see roadmap)
+- Conversational governed AI generation (**v3.0.0** — see [roadmap](roadmap.md#conversational-and-governed-ai-generation))
