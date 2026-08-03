@@ -44,7 +44,8 @@
             "azure-policy",
             "observability",
             "helm-chart",
-            "app-service"
+            "app-service",
+            "gitops-deployment"
           ]
         },
         "blueprint": {
@@ -313,6 +314,34 @@
             "ingress_host": { "type": "string" }
           }
         },
+        "gitopsDeployment": {
+          "type": "object",
+          "required": [
+            "service_name",
+            "environment",
+            "gitops_engine",
+            "chart_repo_url",
+            "chart_name",
+            "chart_version",
+            "target_namespace",
+            "sync_policy"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "service_name": { "type": "string", "minLength": 1 },
+            "environment": { "type": "string", "minLength": 1 },
+            "gitops_engine": { "type": "string", "enum": ["argocd", "flux"] },
+            "chart_repo_url": { "type": "string", "minLength": 1 },
+            "chart_name": { "type": "string", "minLength": 1 },
+            "chart_version": { "type": "string", "minLength": 1 },
+            "target_namespace": { "type": "string", "minLength": 1 },
+            "sync_policy": { "type": "string", "enum": ["manual", "automated"] },
+            "destination_server": { "type": "string" },
+            "argocd_project": { "type": "string" },
+            "flux_source_name": { "type": "string" },
+            "flux_source_namespace": { "type": "string" }
+          }
+        },
         "appService": {
           "type": "object",
           "required": ["service_name", "owner", "port", "runtime", "include_helm_reference"],
@@ -477,6 +506,17 @@
           },
           "then": {
             "required": ["appService"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "gitops-deployment" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["gitopsDeployment"]
           }
         },
         {

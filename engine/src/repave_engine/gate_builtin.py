@@ -40,6 +40,7 @@ _ANSIBLE_ARTIFACT_TYPES = frozenset(
 )
 _OBSERVABILITY_ARTIFACT_TYPES = frozenset({"observability"})
 _HELM_ARTIFACT_TYPES = frozenset({"helm-chart"})
+_GITOPS_ARTIFACT_TYPES = frozenset({"gitops-deployment"})
 _APP_SERVICE_ARTIFACT_TYPES = frozenset({"app-service"})
 _SHARED_ARTIFACT_TYPES = frozenset(
     {
@@ -50,6 +51,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "ansible-collection",
         "observability",
         "helm-chart",
+        "gitops-deployment",
         "app-service",
         "opa-policy",
         "azure-policy",
@@ -57,7 +59,14 @@ _SHARED_ARTIFACT_TYPES = frozenset(
     }
 )
 _OPA_GATE_ARTIFACT_TYPES = frozenset(
-    {"terraform-module", "terraform-environment-stack", "opa-policy", "observability", "helm-chart"}
+    {
+        "terraform-module",
+        "terraform-environment-stack",
+        "opa-policy",
+        "observability",
+        "helm-chart",
+        "gitops-deployment",
+    }
 )
 
 register_gate(
@@ -148,7 +157,8 @@ register_gate(
         runner=run_yamllint,
         artifact_types=_ANSIBLE_ARTIFACT_TYPES
         | _OBSERVABILITY_ARTIFACT_TYPES
-        | _HELM_ARTIFACT_TYPES,
+        | _HELM_ARTIFACT_TYPES
+        | _GITOPS_ARTIFACT_TYPES,
     )
 )
 register_gate(

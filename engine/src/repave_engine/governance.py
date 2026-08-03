@@ -68,6 +68,11 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         "python-test",
         *_BASELINE_GATES,
     ),
+    "gitops-deployment": (
+        "yamllint",
+        "opa",
+        *_BASELINE_GATES,
+    ),
 }
 
 

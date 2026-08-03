@@ -34,6 +34,12 @@ Remote URL shape:
 https://github.com/<org>/tf-<cloud_provider>-<module_name>
 ```
 
+GitOps delivery manifests land at one repository per service per environment:
+
+```text
+$(modules_root)/gitops-<environment>-<service_name>/
+```
+
 Ansible and other artifact types follow blueprint-specific naming in
 [`blueprints/`](../blueprints/).
 

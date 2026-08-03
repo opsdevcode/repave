@@ -1,0 +1,106 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: gitops-deployment-generic
+  version: 0.1.0
+  description: Governed Argo CD or Flux deployment manifest pinned to a chart version.
+spec:
+  artifactType: gitops-deployment
+  standard:
+    source: standards/gitops/deployment-standard.md
+    version: 1.0.0
+  inputs:
+    - name: service_name
+      type: string
+      required: true
+      description: Service being deployed (repo gitops-{environment}-{service_name}).
+    - name: environment
+      type: string
+      required: true
+      description: Deployment environment tier.
+      enum:
+        - dev
+        - staging
+        - prod
+      default: dev
+    - name: gitops_engine
+      type: string
+      required: true
+      description: GitOps controller that reconciles this manifest.
+      enum:
+        - argocd
+        - flux
+      default: argocd
+    - name: chart_repo_url
+      type: string
+      required: true
+      description: Chart repository URL (https:// or oci://).
+    - name: chart_name
+      type: string
+      required: true
+      description: Chart name within the repository.
+    - name: chart_version
+      type: string
+      required: true
+      description: Exact chart version to deploy (no floating references).
+      default: 0.1.0
+    - name: target_namespace
+      type: string
+      required: true
+      description: Namespace the workload is deployed into.
+      default: default
+    - name: sync_policy
+      type: string
+      required: true
+      description: Whether the controller syncs automatically or waits for a merge.
+      enum:
+        - manual
+        - automated
+      default: manual
+    - name: destination_server
+      type: string
+      required: false
+      description: Argo CD destination cluster API URL (required when gitops_engine is argocd).
+      default: https://kubernetes.default.svc
+    - name: argocd_project
+      type: string
+      required: false
+      description: Argo CD project; the implicit default project is rejected by policy.
+      default: platform
+    - name: flux_source_name
+      type: string
+      required: false
+      description: Flux HelmRepository name (required when gitops_engine is flux).
+      default: ""
+    - name: flux_source_namespace
+      type: string
+      required: false
+      description: Namespace holding the Flux HelmRepository.
+      default: flux-system
+  template:
+    engine: copier
+    path: template
+  gates:
+    - yamllint
+    - opa
+    - secrets
+    - docs-drift
+    - provenance-drift
+  opa:
+    policies_source: policy/opa/policies
+    policy_version: 1.0.0
+  gate_config:
+    yamllint:
+      paths:
+        - apps
+    opa:
+      policies_dir: policy/opa/policies
+      manifest_globs:
+        - apps/*.y*ml
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "gitops-{environment}-{service_name}"
+      title_template: "Bootstrap {environment} GitOps deployment for {service_name}"

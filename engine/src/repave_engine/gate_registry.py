@@ -44,6 +44,7 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
         "*.retry",
     ),
     "observability": (),
+    "gitops-deployment": (".repave",),
 }
 
 
