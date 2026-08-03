@@ -141,6 +141,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   v2.1+              environments      deployment status → gated plan on live state → vending (ADR 003)
   │
+  v2.18–v2.23        paved roads       GitOps delivery + deploy pipeline; SLOs/runbooks; `repave add`; runtimes; bundles
+  │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
 ```
 
@@ -169,6 +171,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
+| **v2.18+ developer paved roads** | Not started | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -1994,6 +1997,231 @@ documented objective — see
 7. Postgres backup/restore drill meets documented RPO/RTO — see
    [`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md)
    (`make postgres-dr-drill` baseline). **Met.**
+
+---
+
+## Developer paved roads (v2.x)
+
+**Target (v2.18–v2.23):** repave paves the creation of an artifact and stops there. A developer
+receives a repo with a Dockerfile, tests, gate CI, and a Backstage entry — then hand-writes
+everything that makes the service actually run: the deploy pipeline, the GitOps wiring, the SLOs,
+the runbook they will be paged against. This cluster finishes the journey, then widens it.
+
+Two structural gaps set the order below.
+
+1. **Every road ends at `git init`.** The engine already *reads* Argo and Flux live state
+   (`deployment_status.py`) and already *writes* GitOps PRs for environment vending
+   (`environment_vend.py`). The write side for services is the missing half, and it stays
+   git-only — no new credential surface against the
+   [ADR 003](adr/003-environment-lifecycle-and-live-state.md) boundary.
+2. **Every road is generate-time only.** `generate`, `import`, `update`, and `verify` cannot
+   answer "add a Helm chart to this existing service." Bundles compose at creation only. Since
+   few developers start from zero, this caps adoption of all 14 shipped blueprints.
+
+Critical path is the delivery path → deploy pipeline → composite bundles. Reliability,
+`repave add`, and runtime breadth are independently shippable and can be reordered.
+
+---
+
+### v2.18 — GitOps delivery golden path
+
+*Planning label: v2.18 (roadmap numbering only).*
+
+**Status:** Not started.
+
+**Problem:** [Helm chart](#v131--helm-chart-golden-path-accelerated-was-v133) and
+[app-service](#v132--application-service-scaffold-golden-path-accelerated-was-v134) paths emit
+the artifact to deploy but nothing that deploys it. Operators hand-write the Argo CD
+`Application` or Flux `Kustomization` per environment, so the pinning discipline every other
+path enforces is absent exactly where a bad pin reaches production.
+
+**Approach:**
+
+- New blueprint `gitops-deployment-generic`; artifact type `gitops-deployment`; new
+  `gitops` artifact family in `artifact_family()`, the blueprint schema enum, import
+  markers, and portal grouping
+- Renders an Argo CD `Application` or Flux `Kustomization` per environment, pinned to a chart
+  repository and version
+- New standards pack `standards/gitops/deployment-standard.md`
+- Policy rules: no `targetRevision: HEAD` or floating tag, automated sync requires an explicit
+  prune and self-heal decision, destination and project must be scoped
+- Gates: `yamllint`, `helm-template` against the referenced chart, `opa`, `secrets`,
+  `docs-drift`, `provenance-drift`
+
+**Dependencies:** v1.31 Helm path; `deployment_status.py` readers (environment lifecycle
+Phase 1); v1.39 OPA gate.
+
+**Done when:** A generated manifest round-trips through `deployment_status.py`, kind smoke
+deploys it, and `docs/module-repositories.md` documents the repository naming convention.
+
+---
+
+### v2.19 — Deploy pipeline path
+
+*Planning label: v2.19 (roadmap numbering only).*
+
+**Status:** Not started.
+
+**Problem:** Generated repos gate themselves ([v1.24](#v124--generated-module-ci-template)) but
+ship no delivery pipeline. Teams write their own, and the recurring failure is a long-lived
+cloud credential in a repository secret — the one thing the supply-chain theme spent a release
+eliminating everywhere else.
+
+**Approach:**
+
+- New partial `blueprints/_partials/delivery-inputs.yaml` consumed by `app-service-generic`
+  and `helm-chart-generic`
+- Generates a reusable GitHub Actions deploy workflow, environment protection and approval
+  configuration, and the cloud trust-policy snippet an operator applies once
+- Deploy step updates the v2.18 GitOps manifest rather than invoking `helm upgrade` directly,
+  so promotion stays a reviewable commit
+- New gate `actionlint` with a pin in `deploy/local/gate-toolchain-pins.env` and a
+  `repave doctor` entry
+- Policy rules: SHA-pinned actions, least-privilege `permissions:`, no static cloud
+  credentials in workflow files
+
+**Dependencies:** v2.18 delivery path; [supply chain](#supply-chain-digest-pins) pinning
+conventions; v1.13 gate registry.
+
+**Done when:** Generated workflows pass `actionlint` and the new policy pack, `repave doctor`
+reports the new gate, and a runbook covers wiring the cloud trust relationship.
+
+---
+
+### v2.20 — Reliability path: SLOs as code and runbooks
+
+*Planning label: v2.20 (roadmap numbering only).*
+
+**Status:** Not started.
+
+**Problem:** [Dashboards and monitors](#v140--observability-as-code-golden-path) are paved, but
+the objective those alerts defend is not, so alert thresholds are picked by hand and drift from
+whatever the service actually promises. Generated repos also ship no runbook, so the
+[operations runbooks](#operations-runbooks-and-troubleshooting) discipline that repave itself
+follows never reaches the fleet.
+
+**Approach:**
+
+- New blueprint `slo-as-code-generic` in the observability family: OpenSLO or Sloth
+  specifications compiled to Prometheus recording rules and multi-window burn-rate alerts,
+  with optional Datadog SLO resources via Terraform
+- `RUNBOOK.md` template added to `app-service-generic`, `helm-chart-generic`, and the new
+  blueprint; `docs-drift` enforces required sections (owner, escalation, dashboard links,
+  rollback procedure, game-day checklist)
+- Scorecard gains `has-slo` and `has-runbook` dimensions
+- Gates: `promtool` and `opa` are already registered, so the alerting half needs no new
+  runner — this is the cheapest entry in the cluster
+
+**Dependencies:** v1.40 observability paths; [portal scorecards](#developer-portal-surfaces-catalog-docs-scorecards-observability-read).
+
+**Done when:** Generated burn-rate rules pass `promtool`, the scorecard reports both new
+dimensions across the fleet, and the monitors and dashboards standards cross-link the path.
+
+---
+
+### v2.21 — `repave add`: paved roads for existing repositories
+
+*Planning label: v2.21 (roadmap numbering only).*
+
+**Status:** Not started.
+
+**Problem:** [`repave import`](#repo-import-to-golden-path) adopts a whole repository into one
+golden path and `repave update` bumps its pins, but there is no way to add a *second* artifact
+to a repository that already exists. Bundles compose only at generate time. The practical
+effect is that every blueprint is available only to greenfield work.
+
+**Approach:**
+
+- `repave add <blueprint> --repo <path|url>`, `POST /api/v2/repos/{id}/components`, and a
+  portal action on the repository detail page
+- Reuses `repo_import.py` and `import_rules.py` for overlay and conflict reporting, and the
+  `apply-upgrade` branch-and-commit path for publishing
+- **`repave.yaml` becomes multi-component**, recording each added blueprint and its pins
+  separately so `verify`, `update`, and `plan-upgrade` operate per component instead of
+  assuming one repository equals one blueprint — this is the load-bearing design decision
+- Never overwrites a file that is not generator-owned without `--force`; every add records an
+  audit entry and a governed PR
+
+**Dependencies:** Repo import Phase 1–3; `apply-upgrade`; v1.14 provenance;
+[governed PR conventions](#governed-pr-conventions).
+
+**Done when:** Adding `helm-chart-generic` to an existing app-service repository produces a
+clean PR that passes that repository's gates, and `verify` reports on both components
+independently.
+
+---
+
+### v2.22 — Runtime and archetype breadth
+
+*Planning label: v2.22 (roadmap numbering only).*
+
+**Status:** Not started.
+
+**Problem:** `app-service-generic` covers Python and Go over HTTP. Every other runtime and every
+non-HTTP shape — queue consumers, scheduled jobs, gRPC services — falls off the paved road
+entirely, and `gate_builtin.py` has no linters or test runners outside Python, Go, and Docker.
+
+**Approach:**
+
+- Runtimes: Node/TypeScript and Java on `app-service-generic`, each requiring a gate runner
+  (`node-lint`, `node-test`, `java-build`), a toolchain pin, a schema enum entry, and a
+  `repave doctor` line
+- Archetypes as an `appService.layout` knob, mirroring `terraform-module-resource`'s
+  `layout: single-resource`: `http-api` (default), `worker` (queue consumer with dead-letter
+  handling, idempotency, graceful drain), `scheduled-job` (CronJob with backoff and a
+  missed-run alert), `grpc` (proto, `buf-lint`, generated stubs)
+- Each layout composes with the v2.18–v2.20 delivery and reliability paths
+
+**Dependencies:** v1.32 app-service path; v1.13 gate registry; v1.29 conformance harness for
+per-layout snapshots.
+
+**Done when:** Every runtime and layout combination renders a gate-green repository in the
+conformance harness and carries its own delivery, SLO, and runbook artifacts.
+
+---
+
+### v2.23 — Composite paved roads
+
+*Planning label: v2.23 (roadmap numbering only).*
+
+**Status:** Not started.
+
+**Problem:** [`service-stack`](#composite-golden-paths-bundles) proved bundles work with three
+members, and its own follow-on (a Terraform module member) is still open. Once delivery and
+reliability paths exist, a service needs six coordinated repositories and the bundle catalog
+offers one.
+
+**Approach:**
+
+- `service-stack` gains the Terraform module member noted as a follow-on
+- New bundle `microservice-full`: app-service, helm-chart, gitops-deployment, dashboards,
+  monitors, and SLO, sharing service name, owner, tags, and one provenance lineage
+- Portal preset chips for common bundles (see [`portal-design.md`](portal-design.md) Phase 5)
+
+**Dependencies:** v2.18 delivery path; v2.20 reliability path; existing bundle schema and
+`blueprint_conformance.py`.
+
+**Done when:** One portal request registers every member in the fleet registry under a single
+bundle lineage, and conformance CI validates the cross-repository pins.
+
+---
+
+### Deferred from this cluster
+
+Recorded here rather than in the [parking lot](#parking-lot) because each is scoped enough to
+promote without new discovery:
+
+- **API contract path** — OpenAPI/AsyncAPI specification repository with `spectral` lint and
+  `oasdiff` breaking-change detection. Valuable and fully standalone, but needs two new gate
+  runners and unblocks nothing else in the cluster.
+- **Database migration path** — Alembic/Flyway/Atlas layout with a destructive-DDL policy and
+  a rollback plan. Needs its own policy design before scoping.
+- **Component-level self-service vending** — request a managed database, bucket, or queue
+  through the same GitOps PR flow as `environment_vend`. This is Phase 4 of
+  [environment lifecycle](#environment-lifecycle-and-deployment-awareness) and warrants an ADR.
+- **Organization blueprint packs** — [forked and remote blueprint packs](#forked-and-remote-blueprint-packs)
+  is the one item that lets adopters pave roads this cluster does not; pull it ahead of
+  everything above if external demand appears, since nothing here substitutes for it.
 
 ---
 
