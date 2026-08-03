@@ -4,6 +4,7 @@ metadata:
   name: {{ include "repave.fullname" . }}
   labels:
     {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: portal
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,4 +13,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    {{- include "repave.selectorLabels" . | nindent 4 }}
+    {{- include "repave.portalSelectorLabels" . | nindent 4 }}

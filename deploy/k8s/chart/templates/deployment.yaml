@@ -17,7 +17,7 @@ spec:
     {{- end }}
   selector:
     matchLabels:
-      {{- include "repave.selectorLabels" . | nindent 6 }}
+      {{- include "repave.portalSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
@@ -26,7 +26,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
       labels:
-        {{- include "repave.selectorLabels" . | nindent 8 }}
+        {{- include "repave.portalSelectorLabels" . | nindent 8 }}
         repave.dev/gate-toolchain: {{ ternary "true" "false" .Values.image.gateToolchain | quote }}
     spec:
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}

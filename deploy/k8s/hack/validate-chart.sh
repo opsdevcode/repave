@@ -47,6 +47,11 @@ if ! grep -q 'path: /health' "${rendered}" || ! grep -q 'path: /readyz' "${rende
   exit 1
 fi
 
+if ! grep -q 'app.kubernetes.io/component: portal' "${rendered}"; then
+  echo "portal Service and Deployment must include app.kubernetes.io/component: portal" >&2
+  exit 1
+fi
+
 if ! grep -q 'kind: PodDisruptionBudget' "${rendered}"; then
   echo "default render must include PodDisruptionBudget" >&2
   exit 1
@@ -158,6 +163,16 @@ fi
 
 if ! grep -q 'repave.dev/gate-toolchain: "false"' "${decomposed_smoke_rendered}"; then
   echo "values-decomposed-smoke.yaml must render portal without gate toolchain" >&2
+  exit 1
+fi
+
+if ! awk '/name: repave-decomposed-smoke$/{found=1} found && /app.kubernetes.io\/component: portal/{ok=1; exit} END{exit !ok}' "${decomposed_smoke_rendered}"; then
+  echo "decomposed smoke portal Deployment must use app.kubernetes.io/component: portal" >&2
+  exit 1
+fi
+
+if grep -A12 'name: repave-decomposed-smoke-worker' "${decomposed_smoke_rendered}" | grep -q 'app.kubernetes.io/component: portal'; then
+  echo "decomposed smoke worker Deployment must not use portal component label" >&2
   exit 1
 fi
 
