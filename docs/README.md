@@ -28,6 +28,7 @@ is the front door; use this index when you need depth.
 | Doc | Contents |
 | --- | --- |
 | [Import an existing repo](import.md) | `repave import`, detection, destination rules, reviewable PR |
+| [Add a component to a governed repo](add.md) | `repave add`, multi-component `repave.yaml`, portal add action |
 | [Fleet registry](fleet-registry.md) | `repave register`, registry storage, fleet API |
 | [Operator overview](operator-overview.md) | CRDs, drift, remediation PRs |
 | [Operator local dev](operator-local-dev.md) | envtest, kind, running the controller locally |

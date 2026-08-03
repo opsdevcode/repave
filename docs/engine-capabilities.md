@@ -21,7 +21,8 @@ live in [`schemas/`](../schemas/) with versioning policy in
 ## CLI
 
 `repave generate`, `repave list`, `repave import` (adopt an existing repo into a golden path
-layout — see [import.md](import.md)), `repave verify`, `repave update` (plan/apply blueprint
+layout — see [import.md](import.md)), `repave add` (layer a second blueprint onto a governed
+repo — see [add.md](add.md)), `repave verify`, `repave update` (plan/apply blueprint
 upgrades from `repave.yaml`), gate execution, provenance in `repave.yaml`.
 
 ## Gates (blueprint-configured)
