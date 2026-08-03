@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from repave_engine import ci_action_pins
 from repave_engine.blueprint import artifact_family, list_blueprints
 from repave_engine.ci_action_pins import action_pin, action_pins, load_action_pins
 from repave_engine.ci_toolchain import INFRACOST_VERSION, TERRAFORM_VERSION
@@ -67,6 +68,20 @@ def test_action_pins_load_from_repository_pin_file(repo_root: Path) -> None:
     by_repository = {spec.split("@")[0]: sha for spec, sha in on_disk.items()}
     for repository, pin in action_pins().items():
         assert pin.sha == by_repository[repository]
+
+
+def test_pins_are_only_needed_to_render_a_workflow(monkeypatch, tmp_path, terraform_blueprint):
+    """The published image ships no .github/, so only rendering may require the pin file."""
+    monkeypatch.setattr(ci_action_pins, "PINS_FILE", tmp_path / "absent.json")
+    ci_action_pins._pins.cache_clear()
+    try:
+        # Gate config and workflow paths must keep working without pins.
+        assert ci_workflow_relpath(terraform_blueprint)
+        assert snapshot_gate_config(terraform_blueprint) is not None
+        with pytest.raises(FileNotFoundError, match="Missing action pins"):
+            render_ci_workflow(terraform_blueprint)
+    finally:
+        ci_action_pins._pins.cache_clear()
 
 
 def test_load_action_pins_rejects_missing_required_action(tmp_path: Path) -> None:

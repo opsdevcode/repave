@@ -39,8 +39,10 @@ COPY deploy/local/certs/ /usr/local/share/ca-certificates/repave/
 
 # Gate toolchain: deploy/local/install-gate-toolchain.sh sources gate-toolchain-pins.env
 COPY ansible/requirements-gate-collections.yml /app/ansible/requirements-gate-collections.yml
-RUN mkdir -p /app/deploy/local
+RUN mkdir -p /app/deploy/local /app/.github
 COPY deploy/local/gate-toolchain-pins.env /app/deploy/local/gate-toolchain-pins.env
+# Action SHA pins for workflows written into generated repositories (ci_action_pins).
+COPY .github/action-pins.json /app/.github/action-pins.json
 COPY deploy/local/install-gate-toolchain.sh /app/deploy/local/install-gate-toolchain.sh
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl unzip git \

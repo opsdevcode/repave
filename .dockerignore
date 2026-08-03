@@ -1,5 +1,7 @@
 .git
 .github
+# Action SHA pins are read at runtime when rendering generated-repo workflows.
+!.github/action-pins.json
 **/.venv
 **/__pycache__
 **/.pytest_cache
