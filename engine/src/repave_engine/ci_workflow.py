@@ -8,6 +8,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from repave_engine import __version__
 from repave_engine.blueprint import Blueprint, artifact_family
+from repave_engine.ci_action_pins import action_pins
 from repave_engine.ci_toolchain import (
     CHECKOV_PIP_SPEC,
     CONFTEST_VERSION,
@@ -128,6 +129,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         infracost_version=INFRACOST_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,
         alertmanager_version=_ALERTMANAGER_VERSION,
+        actions=action_pins(),
         **needs,
     )
 
