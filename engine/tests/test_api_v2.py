@@ -60,9 +60,9 @@ def test_api_v2_upgrades_plan_requires_target_repo(repo_root, output_config) -> 
 
 
 @pytest.fixture
-def async_v2_client(repo_root, output_config, monkeypatch):
+def async_v2_client(repo_root, output_config, monkeypatch, tmp_path):
     monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
-    monkeypatch.setenv("REPAVE_RUNS_DB", str(repo_root / "data" / "test-v2-runs.sqlite"))
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "test-v2-runs.sqlite"))
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     yield client
     queue = client.app.state.run_queue
