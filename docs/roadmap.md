@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.17.1  
+**Current release:** v2.18.0  
 
 **In progress:** _(none — v2.x stabilization; next major themes under
 [v3.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane))._
