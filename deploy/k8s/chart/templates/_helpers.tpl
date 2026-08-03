@@ -213,3 +213,29 @@ app.kubernetes.io/instance: {{ .Release.Name }}
   value: {{ .Values.repave.environmentVending.file | quote }}
 {{- end }}
 {{- end }}
+
+{{- define "repave.fleetOperatorNamespace" -}}
+{{- default .Release.Namespace .Values.fleetOperatorSnapshot.cronJob.operatorNamespace -}}
+{{- end }}
+
+{{- define "repave.fleetDataVolumeMount" -}}
+{{- if .Values.repave.fleet.enabled }}
+- name: fleet
+  mountPath: /data/fleet
+{{- end }}
+{{- end }}
+
+{{- define "repave.fleetDataVolume" -}}
+{{- if .Values.repave.fleet.enabled }}
+- name: fleet
+  {{- if and .Values.persistence.fleet.enabled (not .Values.persistence.fleet.existingClaim) }}
+  persistentVolumeClaim:
+    claimName: {{ include "repave.fullname" . }}-fleet
+  {{- else if .Values.persistence.fleet.existingClaim }}
+  persistentVolumeClaim:
+    claimName: {{ .Values.persistence.fleet.existingClaim }}
+  {{- else }}
+  emptyDir: {}
+  {{- end }}
+{{- end }}
+{{- end }}

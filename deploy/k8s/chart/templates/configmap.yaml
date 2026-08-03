@@ -28,6 +28,9 @@ data:
     fleet:
       enabled: true
       file: {{ .Values.repave.fleet.file | quote }}
+      {{- if .Values.repave.fleet.operatorStatusFile }}
+      operator_status_file: {{ .Values.repave.fleet.operatorStatusFile | quote }}
+      {{- end }}
     {{- end }}
     {{- if .Values.repave.auth.serviceMode }}
     auth:

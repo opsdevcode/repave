@@ -111,6 +111,8 @@ repave:
   fleet:
     enabled: false
     file: /data/fleet/registry.jsonl
+    # JSON snapshot for operator GPR/campaign status (portal /platform/campaigns).
+    operatorStatusFile: /data/fleet/operator-status.json
   durability:
     # Async run queue (Phase 1 durability). Recommended for in-cluster deploys.
     enabled: true
@@ -165,6 +167,26 @@ environmentReclaim:
     apiBaseUrl: ""
     schedule: "0 * * * *"
     dryRun: false
+    concurrencyPolicy: Forbid
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 1
+    restartPolicy: OnFailure
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+# Scheduled operator status snapshot for fleet portal overlays (requires repave.fleet.enabled).
+fleetOperatorSnapshot:
+  cronJob:
+    enabled: false
+    # Namespace where GoldenPathRepo and UpgradeCampaign objects live (operator install).
+    operatorNamespace: ""
+    allNamespaces: false
+    schedule: "*/15 * * * *"
     concurrencyPolicy: Forbid
     successfulJobsHistoryLimit: 3
     failedJobsHistoryLimit: 1

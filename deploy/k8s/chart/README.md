@@ -141,6 +141,7 @@ See also [`docs/operations/README.md`](../../../docs/operations/README.md) for S
 | `repave.output.*` | Rendered into `repave.config.yaml` `output` block |
 | `repave.audit.enabled` | JSONL generation audit at `repave.audit.file` |
 | `repave.fleet.enabled` | Fleet registry JSONL at `repave.fleet.file` |
+| `repave.fleet.operatorStatusFile` | Operator GPR/campaign snapshot for `/platform/campaigns` |
 | `repave.auth.serviceMode` | OIDC login; requires `secrets.sessionSecret` and OIDC issuer/client |
 | `secrets.existingSecret` | Pre-created Secret with keys `github-token`, `session-secret`, `oidc-client-secret` |
 | `persistence.modules` | PVC for module staging (`modules_root`); use `emptyDir` when `enabled: false` |
@@ -246,6 +247,45 @@ helm upgrade --install repave ./deploy/k8s/chart \
 Use `environmentReclaim.cronJob.dryRun: true` to preview without opening PRs.
 
 Manual reclaim from a pod: `kubectl exec deploy/repave -n repave -- repave environments reclaim --dry-run`.
+
+## Fleet operator snapshot (platform console)
+
+When the repave operator is installed, the portal can show live `GoldenPathRepo` phase and
+`UpgradeCampaign` rows on `/platform/campaigns` and `/fleet` from a JSON snapshot on the
+shared fleet PVC — not by calling the Kubernetes API from the portal process.
+
+| Values path | Purpose |
+| --- | --- |
+| `repave.fleet.operatorStatusFile` | Path for operator status JSON (default `/data/fleet/operator-status.json`) |
+| `persistence.fleet` | Shared PVC for registry JSONL + operator snapshot (portal + CronJob) |
+| `fleetOperatorSnapshot.cronJob` | Scheduled `repave fleet-operator-snapshot` (requires gate-toolchain image with `kubectl`) |
+| `fleetOperatorSnapshot.cronJob.operatorNamespace` | Namespace where GPRs and UpgradeCampaigns live (defaults to release namespace) |
+
+Example overlay: [`values-fleet-shared.yaml`](values-fleet-shared.yaml) (enables fleet PVC,
+operator status path, and a `*/15` CronJob for co-install with the operator).
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  -f deploy/k8s/chart/values-fleet-shared.yaml \
+  --set repave.output.githubOrg=your-org \
+  --set secrets.existingSecret=repave-secrets
+```
+
+When the portal and operator run in different namespaces, set
+`fleetOperatorSnapshot.cronJob.operatorNamespace` to the operator install namespace. The chart
+creates a **Role** (or **ClusterRole** when `allNamespaces: true`) so the portal
+ServiceAccount can list `repave.dev/goldenpathrepos` and `upgradecampaigns`.
+
+Manual refresh from a pod:
+
+```bash
+kubectl exec deploy/repave -n repave -- repave fleet-operator-snapshot \
+  --output /data/fleet/operator-status.json \
+  --namespace repave-system
+```
+
+See [`docs/fleet-registry.md`](../../../docs/fleet-registry.md) for registry sync and snapshot
+semantics.
 
 ## Validation
 

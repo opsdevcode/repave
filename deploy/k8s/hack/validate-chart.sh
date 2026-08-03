@@ -296,6 +296,31 @@ if ! grep -q 'name: repave-fleet' "${fleet_shared_rendered}"; then
   exit 1
 fi
 
+if ! grep -q 'kind: CronJob' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must render fleet operator snapshot CronJob" >&2
+  exit 1
+fi
+
+if ! grep -q 'fleet-operator-snapshot' "${fleet_shared_rendered}"; then
+  echo "fleet snapshot CronJob must invoke repave fleet-operator-snapshot" >&2
+  exit 1
+fi
+
+if ! grep -q 'operator_status_file:' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must render fleet.operator_status_file in config" >&2
+  exit 1
+fi
+
+if ! grep -q 'kind: Role' "${fleet_shared_rendered}"; then
+  echo "values-fleet-shared.yaml must render fleet snapshot RBAC Role" >&2
+  exit 1
+fi
+
+if ! grep -q 'goldenpathrepos' "${fleet_shared_rendered}"; then
+  echo "fleet snapshot RBAC must grant list/get on goldenpathrepos" >&2
+  exit 1
+fi
+
 if ! grep -q 'require_session_secret: true' "${multi_replica_rendered}"; then
   echo "values-multi-replica-smoke.yaml must require session secret for multi-replica" >&2
   exit 1

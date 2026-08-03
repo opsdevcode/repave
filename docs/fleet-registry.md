@@ -112,6 +112,12 @@ repave fleet-operator-snapshot \
 Run that on a schedule in CI or beside your GitOps apply job so the portal stays aligned with
 `GoldenPathRepo` status without the engine calling the Kubernetes API directly.
 
+**In-cluster (Helm):** with [`values-fleet-shared.yaml`](../deploy/k8s/chart/values-fleet-shared.yaml),
+the portal chart can run a CronJob that writes the snapshot to the shared fleet PVC on a
+schedule (`fleetOperatorSnapshot.cronJob`). Set `fleetOperatorSnapshot.cronJob.operatorNamespace`
+when GPRs live in a different namespace than the portal release. See
+[`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md) § Fleet operator snapshot.
+
 ## Operator sync
 
 ### Continuous registry sync (operator)

@@ -1,0 +1,60 @@
+{{- if and .Values.fleetOperatorSnapshot.cronJob.enabled .Values.repave.fleet.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "repave.fullname" . }}-fleet-operator-snapshot
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.fleetOperatorSnapshot.cronJob.schedule | quote }}
+  concurrencyPolicy: {{ .Values.fleetOperatorSnapshot.cronJob.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.fleetOperatorSnapshot.cronJob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.fleetOperatorSnapshot.cronJob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "repave.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: fleet-operator-snapshot
+        spec:
+          restartPolicy: {{ .Values.fleetOperatorSnapshot.cronJob.restartPolicy }}
+          serviceAccountName: {{ include "repave.serviceAccountName" . }}
+          {{- with .Values.podSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: snapshot
+              image: {{ include "repave.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - repave
+                - fleet-operator-snapshot
+                - --output
+                - {{ .Values.repave.fleet.operatorStatusFile | quote }}
+                - --namespace
+                - {{ include "repave.fleetOperatorNamespace" . | quote }}
+                {{- if .Values.fleetOperatorSnapshot.cronJob.allNamespaces }}
+                - --all-namespaces
+                {{- end }}
+              env:
+                - name: REPAVE_ENV
+                  value: {{ .Values.repave.env | quote }}
+                {{- if .Values.repave.fleet.operatorStatusFile }}
+                - name: REPAVE_FLEET_OPERATOR_STATUS_FILE
+                  value: {{ .Values.repave.fleet.operatorStatusFile | quote }}
+                {{- end }}
+              volumeMounts:
+                - name: config
+                  mountPath: /app/repave.config.yaml
+                  subPath: repave.config.yaml
+                {{- include "repave.fleetDataVolumeMount" . | nindent 16 }}
+              resources:
+                {{- toYaml .Values.fleetOperatorSnapshot.cronJob.resources | nindent 16 }}
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "repave.fullname" . }}
+            {{- include "repave.fleetDataVolume" . | nindent 12 }}
+{{- end }}
