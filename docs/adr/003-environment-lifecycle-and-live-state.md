@@ -72,11 +72,11 @@ path: an Argo outage degrades the entity to "unknown" and never fails a catalog 
 **repave does not write.** No sync, no rollback, no refresh trigger. Argo and Flux keep
 owning reconciliation; repave observes.
 
-### Phase 2 — Governed plan against live state — partial on `main`
+### Phase 2 — Governed plan against live state — shipped on `main`
 
 Run a real `terraform plan` for a target repository or environment against a configured
 backend, evaluate OPA against the **plan JSON** rather than the source tree, and attach the
-plan summary plus policy verdict to the run record (PR body attachment remains a follow-up).
+plan summary plus policy verdict to the run record (optional PR body attachment on submit).
 
 Boundaries that must hold if this is built:
 
@@ -88,7 +88,7 @@ Boundaries that must hold if this is built:
   `repave.yaml` provenance or the audit record — only a summary and the policy verdict do.
 - **Plan only.** No apply on this rung, regardless of how convenient it becomes.
 
-### Phase 3 — Environment vending and sandboxes — shipped (partial)
+### Phase 3 — Environment vending and sandboxes — shipped on `main`
 
 Request an environment from a governed environment blueprint, receive one with an owner, a
 TTL, a cost view, and a lifecycle.

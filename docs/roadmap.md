@@ -6,8 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.20.0  
 
-**In progress:** _(none — v2.x stabilization; next major themes under
-[v3.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane))._
+**In progress:** **Developer paved roads** — v1.80 deploy pipeline path (delivery workflow
+generation; `actionlint` gate shipped — [v1.80](#v180--deploy-pipeline-path)). v3 themes under
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
 `Application` / Flux `HelmRelease`, `gitops` artifact family, exact-pin and sync-policy OPA
 rules — [v1.79](#v179--gitops-delivery-golden-path)); **environment lifecycle Phase 3
@@ -1833,7 +1834,7 @@ killed worker's run is replayable and visible from a second portal replica, and
 
 ### Environment lifecycle and deployment awareness
 
-**Status:** **Phase 1–3 shipped on `main` (partial)** — deployment status, `kind: live_plan`,
+**Status:** **Phase 1–3 shipped on `main`** — deployment status, `kind: live_plan`,
 environment vending (`environment_vend`), JSONL registry + catalog, sandbox TTL auto-reclaim,
 non-sandbox draft decommission PRs, CLI/API reclaim, optional Helm reclaim CronJob, catalog cost
 badges for vended environments, and post-merge registry finalize
@@ -1892,9 +1893,8 @@ pull requests remove expired environments from the registry on the next reclaim 
 generator.
 
 **Status:** **Shipped** — contract freeze and Postgres DR are on `main`, and the engine is
-tagged **`v2.0.0`**. Open on the v2.x line:
-[environment lifecycle](#environment-lifecycle-and-deployment-awareness) (Phase 1 shipped; Phase 2
-partial; Phase 3 directional). [Conversational governed AI](#conversational-and-governed-ai-generation)
+tagged **`v2.0.0`**. [Environment lifecycle](#environment-lifecycle-and-deployment-awareness)
+(Phases 1–3) and v2 read models are on `main`. [Conversational governed AI](#conversational-and-governed-ai-generation)
 is deferred to **v3.0.0** (see [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)).
 **Shipped:** v2 read models for `/api/v2/estate` and `/api/v2/governance/annotations/*`
 (parity with legacy v1 JSON).
