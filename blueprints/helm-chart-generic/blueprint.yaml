@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: helm-chart-generic
-  version: 0.2.0
+  version: 0.3.0
   description: Governed Helm chart for Kubernetes workloads (Deployment, Service, optional Ingress).
 spec:
   artifactType: helm-chart
@@ -85,6 +85,41 @@ spec:
         - production
         - deprecated
       description: Backstage spec.lifecycle for the generated component.
+    - name: enable_deploy_pipeline
+      type: string
+      required: false
+      default: "false"
+      enum:
+        - "true"
+        - "false"
+      description: Emit repave-deploy workflow to open GitOps promotion PRs (no helm upgrade in CI).
+    - name: deploy_environment
+      type: string
+      required: false
+      default: dev
+      enum:
+        - dev
+        - staging
+        - prod
+      description: GitHub Environment protecting GitOps promotion (when deploy pipeline enabled).
+    - name: gitops_repo
+      type: string
+      required: false
+      default: ""
+      description: GitOps repository (org/name) receiving chart version bumps. Required when deploy pipeline is enabled.
+    - name: gitops_manifest_path
+      type: string
+      required: false
+      default: apps/release.yaml
+      description: Path to the Argo CD Application or Flux HelmRelease manifest in the GitOps repo.
+    - name: gitops_engine
+      type: string
+      required: false
+      default: argocd
+      enum:
+        - argocd
+        - flux
+      description: GitOps controller reconciling the target manifest.
   template:
     engine: copier
     path: template

@@ -16,4 +16,6 @@ Governed application repositories from the `app-service-generic` golden path.
 
 Generated repos run the same gates as generate time via GitHub Actions (`repave gates`),
 including `actionlint` on `.github/workflows/` to catch invalid workflow YAML before merge.
+When `enable_deploy_pipeline` is true, repos also ship `repave-deploy.yml` (container
+build/push with GitHub OIDC) and `docs/DEPLOY-OIDC.md` for operator trust wiring.
 Toolchain versions align with `deploy/local/gate-toolchain-pins.env`.

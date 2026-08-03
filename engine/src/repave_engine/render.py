@@ -297,8 +297,11 @@ def render_blueprint(
         sync_readme_provenance_section(output_dir, blueprint, payload)
 
         from repave_engine.ci_workflow import write_ci_workflow
+        from repave_engine.deploy_workflow import validate_deploy_inputs, write_deploy_workflow
 
+        validate_deploy_inputs(blueprint, payload)
         write_ci_workflow(output_dir, blueprint)
+        write_deploy_workflow(output_dir, blueprint, payload)
         _append_yamllint_workflow_ignore(output_dir)
 
     return RenderResult(output_dir=output_dir, values=payload)
