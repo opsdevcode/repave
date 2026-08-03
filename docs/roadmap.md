@@ -2147,7 +2147,8 @@ dimensions across the fleet, and the monitors and dashboards standards cross-lin
 *Planning label: v1.82 (roadmap numbering only).*
 
 **Status:** In progress on `feat/v182-repave-add` — multi-component `repave.yaml`,
-`repave add` CLI, component plan/apply API, and per-component verify.
+`repave add` CLI, component plan/apply API, per-component verify, and portal add action
+([#453](https://github.com/opsdevcode/repave/pull/453)).
 
 **Problem:** [`repave import`](#repo-import-to-golden-path) adopts a whole repository into one
 golden path and `repave update` bumps its pins, but there is no way to add a *second* artifact
