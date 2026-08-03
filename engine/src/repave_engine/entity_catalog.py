@@ -255,6 +255,23 @@ def _has_runbook(repo_dir: Path) -> bool:
     return any((repo_dir / candidate).is_file() for candidate in RUNBOOK_CANDIDATES)
 
 
+def _has_slo(repo_dir: Path) -> bool:
+    openslo = repo_dir / "openslo"
+    if openslo.is_dir() and any(openslo.glob("*.y*ml")):
+        return True
+    sloth = repo_dir / "sloth"
+    if sloth.is_dir() and any(sloth.glob("*.y*ml")):
+        return True
+    rules_dir = repo_dir / "prometheus" / "rules"
+    if not rules_dir.is_dir():
+        return False
+    for path in rules_dir.glob("*.y*ml"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        if ":slo:" in text or "slo_burn" in text.lower():
+            return True
+    return False
+
+
 def _latest_audit_for_name(
     entries: tuple[AuditHistoryEntry, ...],
     *,
@@ -372,7 +389,18 @@ def build_scorecard(
     else:
         rb_level = "warn"
         rb_detail = "No RUNBOOK.md or docs/operations runbook"
-    dims.append(ScorecardDimension("runbook", "Runbook", rb_level, rb_detail))
+    dims.append(ScorecardDimension("has-runbook", "Runbook", rb_level, rb_detail))
+
+    if repo_dir is None:
+        slo_level: ScoreLevel = "unknown"
+        slo_detail = "No local checkout"
+    elif _has_slo(repo_dir):
+        slo_level = "pass"
+        slo_detail = "SLO rules or spec found"
+    else:
+        slo_level = "warn"
+        slo_detail = "No SLO recording rules or openslo/sloth specs"
+    dims.append(ScorecardDimension("has-slo", "SLO as code", slo_level, slo_detail))
 
     if audit is None:
         gate_level: ScoreLevel = "unknown"

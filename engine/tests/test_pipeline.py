@@ -682,6 +682,7 @@ def test_generate_app_service_dry_run(
     output_dir = result.render.output_dir
     assert (output_dir / "Dockerfile").is_file()
     assert (output_dir / "catalog-info.yaml").is_file()
+    assert (output_dir / "RUNBOOK.md").is_file()
     catalog = yaml.safe_load((output_dir / "catalog-info.yaml").read_text(encoding="utf-8"))
     assert catalog["metadata"]["name"] == "checkout-api"
     assert catalog["spec"]["owner"] == "team:payments"
@@ -989,6 +990,41 @@ def test_generate_dashboards_terraform_grafana_dry_run(
     output_dir = result.render.output_dir
     assert (output_dir / "dashboard.tf").is_file()
     assert not (output_dir / "datadog").exists()
+    assert all(g.passed or g.skipped for g in result.gates)
+
+
+def test_generate_slo_as_code_dry_run(
+    repo_root: Path,
+    output_config,
+    staging_root,
+) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "slo-as-code-generic",
+        repo_root=repo_root,
+    )
+    result = generate_from_blueprint(
+        blueprint,
+        {
+            "service_name": "checkout",
+            "organization": "platform",
+            "team": "payments",
+            "description": "Checkout availability SLO",
+            "slo_target_percent": "99.9",
+            "runbook_url": "https://wiki.example.com/runbooks/checkout",
+        },
+        output_config=output_config,
+        dry_run=True,
+        staging_root=staging_root,
+        repo_root=repo_root,
+    )
+    output_dir = result.render.output_dir
+    assert (output_dir / "prometheus" / "rules" / "slo-burn.yaml").is_file()
+    assert (output_dir / "RUNBOOK.md").is_file()
+    runbook = (output_dir / "RUNBOOK.md").read_text(encoding="utf-8")
+    assert "## Rollback procedure" in runbook
+    assert "## Game-day checklist" in runbook
+    docs_gate = next(g for g in result.gates if g.name == "docs-drift")
+    assert docs_gate.passed or docs_gate.skipped
     assert all(g.passed or g.skipped for g in result.gates)
 
 

@@ -11,6 +11,33 @@ from repave_engine.blueprint import _find_repo_root
 from repave_engine.gate_registry import GateContext, GateResult
 from repave_engine.provenance import validate_provenance_file
 
+_RUNBOOK_SECTIONS: tuple[str, ...] = (
+    "## Owner",
+    "## Escalation",
+    "## Dashboards",
+    "## Rollback procedure",
+    "## Game-day checklist",
+)
+
+
+def _requires_runbook(ctx: GateContext) -> bool:
+    blueprint = ctx.blueprint
+    if blueprint is None:
+        return False
+    if blueprint.artifact_type in ("app-service", "helm-chart"):
+        return True
+    return blueprint.name == "slo-as-code-generic"
+
+
+def _validate_runbook_content(content: str) -> str | None:
+    placeholders = [match for match in re.findall(r"\{\{[^}]+\}\}", content)]
+    if placeholders:
+        return f"RUNBOOK contains unresolved template placeholders: {', '.join(placeholders)}"
+    missing = [section for section in _RUNBOOK_SECTIONS if section not in content]
+    if missing:
+        return f"RUNBOOK.md missing sections: {', '.join(missing)}"
+    return None
+
 
 def run_docs_drift(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
@@ -36,6 +63,14 @@ def run_docs_drift(ctx: GateContext) -> GateResult:
 
     if "repave.yaml" not in content:
         return GateResult("docs-drift", False, False, "README must reference repave.yaml")
+
+    runbook = output_dir / "RUNBOOK.md"
+    if _requires_runbook(ctx) and not runbook.is_file():
+        return GateResult("docs-drift", False, False, "RUNBOOK.md missing")
+    if runbook.is_file():
+        runbook_error = _validate_runbook_content(runbook.read_text(encoding="utf-8"))
+        if runbook_error:
+            return GateResult("docs-drift", False, False, runbook_error)
 
     return GateResult("docs-drift", True, False, "README present and rendered")
 

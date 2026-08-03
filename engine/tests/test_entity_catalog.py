@@ -65,9 +65,24 @@ def test_build_scorecard_passes_with_fleet_and_audit(tmp_path: Path) -> None:
     assert levels["pins"] == "pass"
     assert levels["operator"] == "pass"
     assert levels["provenance"] == "pass"
-    assert levels["runbook"] == "pass"
+    assert levels["has-runbook"] == "pass"
+    assert levels["has-slo"] == "warn"
     assert levels["gates"] == "pass"
     assert levels["cost"] == "unknown"
+
+
+def test_build_scorecard_has_slo_when_rules_present(tmp_path: Path) -> None:
+    repo = tmp_path / "svc"
+    repo.mkdir()
+    rules = repo / "prometheus" / "rules"
+    rules.mkdir(parents=True)
+    (rules / "slo-burn.yaml").write_text(
+        "groups:\n  - name: slo\n    rules:\n      - record: checkout:slo:availability:ratio5m\n",
+        encoding="utf-8",
+    )
+    dims = build_scorecard(repo_dir=repo, fleet_entry=None, operator=None, audit=None)
+    levels = {dim.key: dim.level for dim in dims}
+    assert levels["has-slo"] == "pass"
 
 
 def test_build_catalog_merges_fleet_and_local(tmp_path: Path) -> None:

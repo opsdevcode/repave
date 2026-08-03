@@ -1,0 +1,13 @@
+inputs:
+  service_name: checkout
+  organization: platform
+  team: payments
+  description: Conformance fixture SLO pack
+  slo_target_percent: "99.9"
+  runbook_url: https://wiki.example.com/runbooks/checkout
+required_files:
+  - repave.yaml
+  - README.md
+  - RUNBOOK.md
+  - prometheus/rules/slo-burn.yaml
+snapshot: false

@@ -186,6 +186,17 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "helm-chart-generic" in names
     assert "app-service-generic" in names
     assert "gitops-deployment-generic" in names
+    assert "slo-as-code-generic" in names
+
+
+def test_load_slo_as_code_blueprint(repo_root: Path) -> None:
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "slo-as-code-generic",
+        repo_root=repo_root,
+    )
+    assert blueprint.artifact_type == "observability"
+    assert "promtool" in blueprint.gates
+    assert "docs-drift" in blueprint.gates
 
 
 def test_load_app_service_generic_blueprint(repo_root: Path) -> None:

@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: app-service-generic
-  version: 0.4.0
+  version: 0.4.1
   description: Governed application service repo (Python or Go) with Dockerfile, tests, and Backstage catalog metadata.
 spec:
   artifactType: app-service

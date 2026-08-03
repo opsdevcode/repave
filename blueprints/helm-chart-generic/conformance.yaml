@@ -11,4 +11,5 @@ required_files:
   - README.md
   - Chart.yaml
   - templates/deployment.yaml
+  - RUNBOOK.md
 snapshot: false

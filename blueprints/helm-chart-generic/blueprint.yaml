@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: helm-chart-generic
-  version: 0.3.0
+  version: 0.3.1
   description: Governed Helm chart for Kubernetes workloads (Deployment, Service, optional Ingress).
 spec:
   artifactType: helm-chart

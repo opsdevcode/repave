@@ -1,0 +1,47 @@
+# Prometheus SLO burn-rate rules for {{ service_name }}
+# Target: {{ slo_target_percent }}% availability over a rolling window.
+groups:
+  - name: {{ service_name }}-slo-recording
+    rules:
+      - record: {{ service_name | replace('-', '_') }}:slo:availability:ratio5m
+        expr: |
+          sum(rate(http_requests_total{job="{{ service_name }}",code!~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total{job="{{ service_name }}"}[5m]))
+      - record: {{ service_name | replace('-', '_') }}:slo:availability:ratio1h
+        expr: |
+          sum(rate(http_requests_total{job="{{ service_name }}",code!~"5.."}[1h]))
+          /
+          sum(rate(http_requests_total{job="{{ service_name }}"}[1h]))
+  - name: {{ service_name }}-slo-burn
+    rules:
+      - alert: {{ service_name | replace('-', '_') }}_slo_burn_fast
+        expr: |
+          (1 - {{ service_name | replace('-', '_') }}:slo:availability:ratio5m) * 100
+          > (100 - {{ slo_target_percent }}) * 14.4
+        for: 5m
+        labels:
+          severity: critical
+          service: {{ service_name }}
+          team: {{ team }}
+          env: {{ environment }}
+        annotations:
+          summary: "{{ service_name }} fast SLO burn (5m window)"
+          description: >
+            Error budget is burning quickly against the {{ slo_target_percent }}% target.
+          runbook_url: "{{ runbook_url }}"
+      - alert: {{ service_name | replace('-', '_') }}_slo_burn_slow
+        expr: |
+          (1 - {{ service_name | replace('-', '_') }}:slo:availability:ratio1h) * 100
+          > (100 - {{ slo_target_percent }}) * 6
+        for: 30m
+        labels:
+          severity: warning
+          service: {{ service_name }}
+          team: {{ team }}
+          env: {{ environment }}
+        annotations:
+          summary: "{{ service_name }} slow SLO burn (1h window)"
+          description: >
+            Sustained elevation against the {{ slo_target_percent }}% availability target.
+          runbook_url: "{{ runbook_url }}"
