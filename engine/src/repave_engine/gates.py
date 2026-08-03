@@ -93,6 +93,7 @@ _STRICT_DRY_RUN_GATES = frozenset(
         "ansible-syntax-check",
         "helm-lint",
         "helm-template",
+        "actionlint",
     }
 )
 

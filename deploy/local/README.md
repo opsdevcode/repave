@@ -132,6 +132,7 @@ image is tagged.
 | **conftest** 0.68.2 | Terraform, OPA policy | plan-time Rego |
 | **ansible-lint**, **yamllint**, **ansible-playbook** | Ansible role / playbook | `molecule` not in image (optional gate) |
 | **helm** 3.14.4 | Helm chart | lint + template gates |
+| **actionlint** 1.7.12 | Helm chart, app service, GitOps delivery | lints `.github/workflows/` |
 
 Dry-run preview **fails** (does not skip) when a blueprint gate’s CLI is missing **inside the
 process serving the portal**. In Compose, all tools below are in the image; on the host,

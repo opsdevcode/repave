@@ -195,6 +195,7 @@ def test_load_app_service_generic_blueprint(repo_root: Path) -> None:
     )
     assert blueprint.artifact_type == "app-service"
     assert "dockerfile-lint" in blueprint.gates
+    assert "actionlint" in blueprint.gates
     assert "python-test" in blueprint.gates
 
 
@@ -206,6 +207,7 @@ def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:
     assert blueprint.artifact_type == "helm-chart"
     assert "helm-lint" in blueprint.gates
     assert "helm-template" in blueprint.gates
+    assert "actionlint" in blueprint.gates
 
 
 def test_validate_helm_chart_requires_ingress_host_when_enabled(repo_root: Path) -> None:

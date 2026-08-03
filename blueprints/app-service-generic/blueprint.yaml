@@ -71,6 +71,7 @@ spec:
     - python-test
     - go-lint
     - go-test
+    - actionlint
     - secrets
     - docs-drift
     - provenance-drift

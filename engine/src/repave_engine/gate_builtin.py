@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from repave_engine.gate_registry import GateSpec, register_gate
 from repave_engine.gate_runners import (
+    run_actionlint,
     run_amtool,
     run_ansible_lint,
     run_ansible_syntax_check,
@@ -42,6 +43,9 @@ _OBSERVABILITY_ARTIFACT_TYPES = frozenset({"observability"})
 _HELM_ARTIFACT_TYPES = frozenset({"helm-chart"})
 _GITOPS_ARTIFACT_TYPES = frozenset({"gitops-deployment"})
 _APP_SERVICE_ARTIFACT_TYPES = frozenset({"app-service"})
+_WORKFLOW_ARTIFACT_TYPES = (
+    _HELM_ARTIFACT_TYPES | _APP_SERVICE_ARTIFACT_TYPES | _GITOPS_ARTIFACT_TYPES
+)
 _SHARED_ARTIFACT_TYPES = frozenset(
     {
         "terraform-module",
@@ -173,6 +177,13 @@ register_gate(
         name="helm-template",
         runner=run_helm_template,
         artifact_types=_HELM_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="actionlint",
+        runner=run_actionlint,
+        artifact_types=_WORKFLOW_ARTIFACT_TYPES,
     )
 )
 register_gate(

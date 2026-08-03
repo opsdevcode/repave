@@ -10,6 +10,7 @@ from repave_engine import __version__
 from repave_engine.blueprint import Blueprint, artifact_family
 from repave_engine.ci_action_pins import action_pins
 from repave_engine.ci_toolchain import (
+    ACTIONLINT_VERSION,
     CHECKOV_PIP_SPEC,
     CONFTEST_VERSION,
     GO_VERSION,
@@ -103,6 +104,7 @@ def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str,
         "needs_hadolint": "dockerfile-lint" in gate_set,
         "needs_python": bool(gate_set & {"python-lint", "python-test"}),
         "needs_go": bool(gate_set & {"go-lint", "go-test"}),
+        "needs_actionlint": "actionlint" in gate_set,
     }
 
 
@@ -125,6 +127,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         helm_version=HELM_VERSION,
         conftest_version=CONFTEST_VERSION,
         hadolint_version=HADOLINT_VERSION,
+        actionlint_version=ACTIONLINT_VERSION,
         go_version=GO_VERSION,
         infracost_version=INFRACOST_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,

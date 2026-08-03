@@ -107,7 +107,8 @@
               "python-lint",
               "python-test",
               "go-lint",
-              "go-test"
+              "go-test",
+              "actionlint"
             ]
           }
         },
@@ -485,6 +486,17 @@
               "type": "object",
               "additionalProperties": false,
               "properties": {}
+            },
+            "actionlint": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "paths": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "Glob patterns for workflow files (default .github/workflows/*)."
+                }
+              }
             }
           }
         },
