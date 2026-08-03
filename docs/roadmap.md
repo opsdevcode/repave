@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.20.0  
+**Current release:** v2.21.0  
 
 **In progress:** **Developer paved roads** — v1.81 reliability path (SLOs/runbooks as code —
 [v1.81](#v181--reliability-path-slos-as-code-and-runbooks)). v1.80 deploy pipeline shipped on
