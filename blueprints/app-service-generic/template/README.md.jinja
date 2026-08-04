@@ -53,9 +53,30 @@ gofmt -l .
 
 Run locally:
 
+{% if layout == 'http-api' -%}
 ```bash
 go run ./cmd/server
 ```
+{% elif layout == 'worker' -%}
+```bash
+export QUEUE_URL="https://example.com/queues/{{ service_name }}"
+go run ./cmd/server
+```
+
+Drain gracefully with `SIGTERM` so in-flight messages complete before exit.
+{% elif layout == 'scheduled-job' -%}
+```bash
+go run ./cmd/server
+```
+
+Schedule with a Kubernetes `CronJob` (see RUNBOOK.md). Exit code propagates to the job status.
+{% elif layout == 'grpc' -%}
+```bash
+buf lint
+buf generate   # after adding buf.gen.yaml and plugins
+go run ./cmd/server
+```
+{% endif -%}
 {% elif runtime == 'nodejs' -%}
 Install dependencies and run checks:
 
@@ -67,10 +88,34 @@ npm test
 
 Run locally:
 
+{% if layout == 'http-api' -%}
 ```bash
 npm run build
 npm start
 ```
+{% elif layout == 'worker' -%}
+```bash
+export QUEUE_URL="https://example.com/queues/{{ service_name }}"
+npm run build
+npm start
+```
+
+Drain gracefully with `SIGTERM` so in-flight messages complete before exit.
+{% elif layout == 'scheduled-job' -%}
+```bash
+npm run build
+npm start
+```
+
+Schedule with a Kubernetes `CronJob` (see RUNBOOK.md). Exit code propagates to the job status.
+{% elif layout == 'grpc' -%}
+```bash
+buf lint
+buf generate   # after adding buf.gen.yaml and plugins
+npm run build
+npm start
+```
+{% endif -%}
 {% elif runtime == 'java' -%}
 Run tests and package the service:
 
@@ -81,10 +126,34 @@ mvn package
 
 Run locally:
 
+{% if layout == 'http-api' -%}
 ```bash
 mvn package
 java -jar target/app-{{ service_name }}-0.1.0-SNAPSHOT.jar
 ```
+{% elif layout == 'worker' -%}
+```bash
+export QUEUE_URL="https://example.com/queues/{{ service_name }}"
+mvn package
+java -jar target/app-{{ service_name }}-0.1.0-SNAPSHOT.jar
+```
+
+Drain gracefully with `SIGTERM` so in-flight messages complete before exit.
+{% elif layout == 'scheduled-job' -%}
+```bash
+mvn package
+java -jar target/app-{{ service_name }}-0.1.0-SNAPSHOT.jar
+```
+
+Schedule with a Kubernetes `CronJob` (see RUNBOOK.md). Exit code propagates to the job status.
+{% elif layout == 'grpc' -%}
+```bash
+buf lint
+buf generate   # after adding buf.gen.yaml and plugins
+mvn package
+java -jar target/app-{{ service_name }}-0.1.0-SNAPSHOT.jar
+```
+{% endif -%}
 {% elif runtime == 'dotnet' -%}
 Run tests and publish:
 
@@ -95,9 +164,30 @@ dotnet run --project App.csproj
 
 Run locally:
 
+{% if layout == 'http-api' -%}
 ```bash
 dotnet run --project App.csproj
 ```
+{% elif layout == 'worker' -%}
+```bash
+export QUEUE_URL="https://example.com/queues/{{ service_name }}"
+dotnet run --project App.csproj
+```
+
+Drain gracefully with `SIGTERM` so in-flight messages complete before exit.
+{% elif layout == 'scheduled-job' -%}
+```bash
+dotnet run --project App.csproj
+```
+
+Schedule with a Kubernetes `CronJob` (see RUNBOOK.md). Exit code propagates to the job status.
+{% elif layout == 'grpc' -%}
+```bash
+buf lint
+buf generate   # after adding buf.gen.yaml and plugins
+dotnet run --project App.csproj
+```
+{% endif -%}
 {% endif %}
 
 Build the container:

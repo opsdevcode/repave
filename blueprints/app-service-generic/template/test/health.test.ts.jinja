@@ -1,4 +1,5 @@
 {% if runtime == 'nodejs' -%}
+{% if layout == 'http-api' -%}
 import assert from "node:assert/strict";
 import test from "node:test";
 
@@ -7,4 +8,31 @@ import { healthPayload } from "../src/server.ts";
 test("healthz payload", () => {
   assert.deepEqual(healthPayload(), { status: "ok" });
 });
+{% elif layout == 'worker' -%}
+import test from "node:test";
+
+import { processMessage } from "../src/server.ts";
+
+test("processMessage is idempotent", () => {
+  processMessage("order-1", "key-1");
+});
+{% elif layout == 'scheduled-job' -%}
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { runJob } from "../src/server.ts";
+
+test("runJob succeeds", () => {
+  assert.equal(runJob(), 0);
+});
+{% elif layout == 'grpc' -%}
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { healthStatus } from "../src/server.ts";
+
+test("healthStatus is ok", () => {
+  assert.deepEqual(healthStatus(), { status: "ok" });
+});
+{% endif -%}
 {% endif %}

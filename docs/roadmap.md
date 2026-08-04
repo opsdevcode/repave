@@ -6,11 +6,14 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** — v1.83 layout archetypes (`appService.layout`:
-`worker`, `scheduled-job`, `grpc` on `app-service-generic` — [runtime and archetype breadth](#v183--runtime-and-archetype-breadth)).
-All runtimes (Python, Go, Node.js, Java, .NET) shipped on `main`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
+**In progress:** **Developer paved roads** — v1.84 composite paved roads (`microservice-full` bundle —
+[composite paved roads](#v184--composite-paved-roads)). v1.83 runtime and layout breadth shipped on `main`.
+All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
+on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Multi-component brownfield add** (`repave add`, `spec.components[]`
+**Shipped on `main`:** **App-service layout archetypes** (`appService.layout` on
+`app-service-generic`: `worker`, `scheduled-job`, `grpc` for Python, Go, Node.js, Java, and .NET;
+`buf-lint` gate for grpc — [v1.83](#v183--runtime-and-archetype-breadth)); **Multi-component brownfield add** (`repave add`, `spec.components[]`
 in provenance, per-component verify, portal add action on service detail,
 `POST /api/v2/components/plan|apply` — [v1.82](#v182--repave-add-paved-roads-for-existing-repositories),
 [`docs/add.md`](add.md)); **GitOps delivery golden path** (`gitops-deployment-generic` — Argo CD
@@ -179,7 +182,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **Developer paved roads** | Partial (v1.79–v1.82 shipped; v1.83–v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, more runtimes and archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Partial (v1.79–v1.83 shipped; v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -2214,14 +2217,14 @@ independently. Remote governed PR publish is a follow-on (see **Follow-ons** abo
 
 *Planning label: v1.83 (roadmap numbering only).*
 
-**Status:** In progress on `feat/v183-app-service-layouts` — `appService.layout` on
-`app-service-generic` (`http-api`, `worker`, `scheduled-job`, `grpc`), Python templates per
-layout, `buf-lint` gate, and conformance/dry-run coverage. Runtimes (Python, Go, Node.js, Java,
-.NET 10) shipped on `main`. Non-HTTP layouts are Python-only until the runtime matrix expands.
-Conformance snapshots per runtime/layout pair remain open.
+**Status:** Shipped on `main` ([#457](https://github.com/opsdevcode/repave/pull/457),
+[#460](https://github.com/opsdevcode/repave/pull/460), [#461](https://github.com/opsdevcode/repave/pull/461)) —
+`appService.layout` on `app-service-generic` (`http-api`, `worker`, `scheduled-job`, `grpc`) for
+Python, Go, Node.js, Java, and .NET; `buf-lint` gate and grpc proto templates; dry-run coverage
+for every runtime × layout pair.
 
-**Follow-ons (same theme):** worker/scheduled-job/grpc templates for Go, Node.js, Java, and .NET;
-conformance snapshots per runtime/layout pair.
+**Follow-ons (optional):** conformance manifest snapshots per runtime/layout pair (fixture
+today remains python/http-api with `snapshot: false`).
 
 **Problem:** `app-service-generic` covers Python and Go over HTTP. Every other runtime and every
 non-HTTP shape — queue consumers, scheduled jobs, gRPC services — falls off the paved road
@@ -2250,7 +2253,7 @@ conformance harness and carries its own delivery, SLO, and runbook artifacts.
 
 *Planning label: v1.84 (roadmap numbering only).*
 
-**Status:** Not started.
+**Status:** Not started (next developer paved roads slice).
 
 **Problem:** [`service-stack`](#composite-golden-paths-bundles) proved bundles work with three
 members, and its own follow-on (a Terraform module member) is still open. Once delivery and

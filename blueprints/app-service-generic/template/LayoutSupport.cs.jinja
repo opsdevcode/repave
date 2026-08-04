@@ -1,0 +1,76 @@
+{% if runtime == 'dotnet' -%}
+{% set dotnet_project = service_name.replace('-', ' ')|title|replace(' ', '') -%}
+namespace Repave.{{ dotnet_project }};
+
+{% if layout == 'http-api' -%}
+public static class Health
+{
+    public static HealthStatus Payload() => new("ok");
+}
+
+public record HealthStatus(string Status);
+{% elif layout == 'worker' -%}
+public static class Worker
+{
+    public static void ProcessMessage(string body, string idempotencyKey)
+    {
+        _ = idempotencyKey;
+        Console.WriteLine($"processed message: {body}");
+    }
+
+    public static void Run()
+    {
+        var queueUrl = Environment.GetEnvironmentVariable("QUEUE_URL")?.Trim() ?? "";
+        if (string.IsNullOrEmpty(queueUrl))
+        {
+            Console.WriteLine("QUEUE_URL is unset; worker polls without consuming");
+        }
+
+        var shutdown = false;
+        Console.CancelKeyPress += (_, args) =>
+        {
+            args.Cancel = true;
+            shutdown = true;
+            Console.WriteLine("draining");
+        };
+
+        while (!shutdown)
+        {
+            if (!string.IsNullOrEmpty(queueUrl))
+            {
+                ProcessMessage("heartbeat", "bootstrap");
+            }
+            Thread.Sleep(1000);
+        }
+    }
+}
+{% elif layout == 'scheduled-job' -%}
+public static class ScheduledJob
+{
+    public static int Run()
+    {
+        Console.WriteLine("scheduled job started");
+        Console.WriteLine("scheduled job finished");
+        return 0;
+    }
+}
+{% elif layout == 'grpc' -%}
+public static class GrpcBootstrap
+{
+    public static void Serve()
+    {
+        _ = HealthContract.Status();
+        throw new InvalidOperationException(
+            "gRPC server bootstrap is intentionally minimal; run buf generate and " +
+            "implement the HealthService servicer before production deploy");
+    }
+}
+
+public static class HealthContract
+{
+    public static HealthStatus Status() => new("ok");
+}
+
+public record HealthStatus(string Status);
+{% endif -%}
+{% endif -%}

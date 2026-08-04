@@ -1,4 +1,5 @@
 {% if runtime == 'java' -%}
+{% if layout == 'http-api' -%}
 package com.repave.app;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -30,4 +31,79 @@ public final class Application {
         return "{\"status\":\"ok\"}";
     }
 }
+{% elif layout == 'worker' -%}
+package com.repave.app;
+
+public final class Application {
+    private static volatile boolean shutdown;
+
+    private Application() {}
+
+    public static void main(String[] args) throws InterruptedException {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> shutdown = true));
+        runWorker();
+    }
+
+    static void processMessage(String body, String idempotencyKey) {
+        System.out.printf("processed message: %s (key=%s)%n", body, idempotencyKey);
+    }
+
+    static void runWorker() throws InterruptedException {
+        String queueUrl = System.getenv().getOrDefault("QUEUE_URL", "").trim();
+        if (queueUrl.isEmpty()) {
+            System.out.println("QUEUE_URL is unset; worker polls without consuming");
+        }
+        while (!shutdown) {
+            if (!queueUrl.isEmpty()) {
+                processMessage("heartbeat", "bootstrap");
+            }
+            Thread.sleep(1000);
+        }
+        System.out.println("draining");
+    }
+}
+{% elif layout == 'scheduled-job' -%}
+package com.repave.app;
+
+public final class Application {
+    private Application() {}
+
+    public static void main(String[] args) {
+        System.exit(runJob());
+    }
+
+    static int runJob() {
+        System.out.println("scheduled job started");
+        System.out.println("scheduled job finished");
+        return 0;
+    }
+}
+{% elif layout == 'grpc' -%}
+package com.repave.app;
+
+import java.util.Map;
+
+public final class Application {
+    private Application() {}
+
+    public static void main(String[] args) {
+        serve();
+    }
+
+    static void serve() {
+        HealthContract.status();
+        throw new IllegalStateException(
+                "gRPC server bootstrap is intentionally minimal; run buf generate and "
+                        + "implement the HealthService servicer before production deploy");
+    }
+
+    static final class HealthContract {
+        private HealthContract() {}
+
+        static Map<String, String> status() {
+            return Map.of("status", "ok");
+        }
+    }
+}
+{% endif -%}
 {% endif %}

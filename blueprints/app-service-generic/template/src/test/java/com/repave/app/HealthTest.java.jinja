@@ -1,4 +1,5 @@
 {% if runtime == 'java' -%}
+{% if layout == 'http-api' -%}
 package com.repave.app;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,4 +12,42 @@ class HealthTest {
         assertEquals("{\"status\":\"ok\"}", Application.healthPayload());
     }
 }
+{% elif layout == 'worker' -%}
+package com.repave.app;
+
+import org.junit.jupiter.api.Test;
+
+class HealthTest {
+    @Test
+    void processMessageIsIdempotent() {
+        Application.processMessage("order-1", "key-1");
+    }
+}
+{% elif layout == 'scheduled-job' -%}
+package com.repave.app;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+class HealthTest {
+    @Test
+    void runJobSucceeds() {
+        assertEquals(0, Application.runJob());
+    }
+}
+{% elif layout == 'grpc' -%}
+package com.repave.app;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+
+class HealthTest {
+    @Test
+    void healthStatusIsOk() {
+        assertEquals("ok", Application.HealthContract.status().get("status"));
+    }
+}
+{% endif -%}
 {% endif %}
