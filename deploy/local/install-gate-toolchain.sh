@@ -55,6 +55,7 @@ case "$arch" in
     conf_arch="x86_64"
     helm_arch="amd64"
     kubectl_arch="amd64"
+    buf_arch="x86_64"
     ;;
   aarch64|arm64)
     tf_arch="arm64"
@@ -62,6 +63,7 @@ case "$arch" in
     conf_arch="arm64"
     helm_arch="arm64"
     kubectl_arch="arm64"
+    buf_arch="aarch64"
     ;;
   *)
     echo "unsupported architecture: $arch" >&2
@@ -169,7 +171,7 @@ fi
 if [[ "$INSTALL_BUF" == "1" ]]; then
   tmp_buf="$(mktemp -d)"
   "${CURL_GET[@]}" \
-    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${kubectl_arch}.tar.gz" \
+    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${buf_arch}.tar.gz" \
     | tar xz -C "$tmp_buf" buf/bin/buf
   install_bin "$tmp_buf/buf/bin/buf"
   rm -rf "$tmp_buf"
