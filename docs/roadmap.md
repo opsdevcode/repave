@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** optional follow-ons (deployment scorecard dimension). v1.83 runtime×layout conformance matrix shipped on `main`. v1.84 composite paved roads shipped on `main`.
+**In progress:** **Developer paved roads** optional follow-ons (in-cluster K8s cost allocation). Deployment scorecard dimension and v1.83 runtime×layout conformance shipped on `main`. v1.84 composite paved roads shipped on `main`.
 All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
 on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
@@ -176,7 +176,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
 | **Supply chain** | shipped | GitHub App auth, governed PR conventions, SHA-pinned Actions, digest-pinned base images, chart `image.digest` |
-| **Developer portal surfaces** | shipped | Catalog/library, scorecards, in-portal docs, observability embed + SLO panel; **platform console** (`/platform/*` — fleet, ops, standards blast radius + confirm drift, campaigns with pause/resume) |
+| **Developer portal surfaces** | shipped | Catalog/library, scorecards (incl. deployment dimension), in-portal docs, observability embed + SLO panel; **platform console** (`/platform/*` — fleet, ops, standards blast radius + confirm drift, campaigns with pause/resume) |
 | **Portal live governance** | shipped (tier 2) | Tier 1 + estate map, diff viewer, annotation previews, preflight, bundle topology, presenter |
 | **Cost awareness** | shipped | Infracost gate + CI; URL/AWS/Azure actuals; library badges; scorecard dimension |
 | **v2 contract freeze** | shipped | `/api/v2`, [`api-v1-migration.md`](api-v1-migration.md), [`repave-config-v1.md`](repave-config-v1.md), provenance on publish, blueprint schema policy, bundle async in worker mode |
@@ -1774,7 +1774,8 @@ discovery even though repave already holds the provenance that would populate it
 scorecard, and a health panel without leaving the portal.
 
 **Status:** **Shipped on `main`** — `/library` grouped catalog with owner filter and fleet scorecard
-rollup; entity detail pages with pins, per-entity scorecard, last generation, README/runbook/
+rollup; entity detail pages with pins, per-entity scorecard (including **Deployment** when
+`portal.deployment_reader` is configured), last generation, README/runbook/
 upgrade/provenance docs (local checkout or GitHub fetch), Grafana dashboard embed, and optional
 JSON SLO health panel (`portal.observability_slo_url`).
 

@@ -14,6 +14,7 @@ from typing import Any, Literal
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.blueprint import artifact_family
 from repave_engine.cost_actuals import CostActualsSummary, tag_coverage_for_fields
+from repave_engine.deployment_status import DeploymentStatus
 from repave_engine.environment_record import EnvironmentRecord
 from repave_engine.fleet import FleetEntry, normalize_repo_url
 from repave_engine.fleet_operator_status import FleetOperatorStatus
@@ -306,6 +307,37 @@ def _cost_scorecard_dimension(
         cost_level = "unknown"
         cost_detail = "Configure portal.cost_reader or cost_actuals_url for cloud spend"
     return ScorecardDimension("cost", "Cloud spend", cost_level, cost_detail)
+
+
+def _deployment_scorecard_dimension(deployment: DeploymentStatus | None) -> ScorecardDimension:
+    if deployment is None:
+        return ScorecardDimension(
+            "deployment",
+            "Deployment",
+            "unknown",
+            "Deployment status unavailable",
+        )
+    if deployment.health == "degraded":
+        level: ScoreLevel = "fail"
+    elif deployment.sync_status == "out_of_sync" or deployment.health == "progressing":
+        level = "warn"
+    elif deployment.sync_status == "synced" and deployment.health == "healthy":
+        level = "pass"
+    else:
+        level = "unknown"
+    detail = deployment.detail.strip() or f"{deployment.sync_status}/{deployment.health}"
+    if deployment.revision:
+        detail = f"{detail}; rev {deployment.revision[:12]}"
+    return ScorecardDimension("deployment", "Deployment", level, detail)
+
+
+def apply_deployment_to_scorecard(
+    scorecard: tuple[ScorecardDimension, ...],
+    *,
+    deployment: DeploymentStatus | None,
+) -> tuple[ScorecardDimension, ...]:
+    base = tuple(dim for dim in scorecard if dim.key != "deployment")
+    return (*base, _deployment_scorecard_dimension(deployment))
 
 
 def apply_cost_to_scorecard(
