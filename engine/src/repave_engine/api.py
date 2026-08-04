@@ -73,9 +73,12 @@ from repave_engine.bundle_portal import (
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
+from repave_engine.catalog_deployment import (
+    deployment_scorecard_for_entity,
+    enrich_catalog_entities_with_deployment,
+)
 from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
-from repave_engine.deployment_status import fetch_entity_deployment_status_for_portal
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
@@ -591,6 +594,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if owner.strip():
             entities = filter_entities_by_owner(entities, owner)
         entities = list(enrich_catalog_entities_with_cost(entities, portal_config))
+        entities = list(enrich_catalog_entities_with_deployment(entities, portal_config))
         blueprint_types = {
             blueprint.name: blueprint.artifact_type
             for blueprint in list_blueprints(blueprints_dir(repo_root))
@@ -643,6 +647,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 cost_actuals_configured=cost_configured,
             ),
         )
+        entity, deployment_status = deployment_scorecard_for_entity(entity, portal_config)
         token = resolve_github_access_token()
         docs = resolve_entity_docs(entity, github_token=token)
         readme_html = render_portal_markdown(docs["readme"]) if docs.get("readme") else ""
@@ -655,7 +660,6 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             provenance_html = render_portal_markdown(f"```yaml\n{docs['provenance'].strip()}\n```")
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
         slo_summary = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
-        deployment_status = fetch_entity_deployment_status_for_portal(portal_config, entity)
         live_plan_cfg = load_live_plan_config(repo_root)
         live_plan_env = (
             live_plan_cfg.environment_for(entity.entity_id) if live_plan_cfg is not None else None
