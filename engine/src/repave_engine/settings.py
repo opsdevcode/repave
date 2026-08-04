@@ -634,6 +634,15 @@ class CostAzureConfig:
 
 
 @dataclass(frozen=True)
+class CostK8sConfig:
+    base_url: str = ""
+    aggregate: str = "label:app.kubernetes.io/name"
+    allocation_key: str = "{name}"
+    window: str = "30d"
+    currency: str = "USD"
+
+
+@dataclass(frozen=True)
 class DeploymentArgocdConfig:
     base_url: str = ""
     application: str = "{name}"
@@ -656,6 +665,7 @@ class PortalConfig:
     cost_actuals_url: str = ""
     cost_aws: CostAwsConfig = field(default_factory=CostAwsConfig)
     cost_azure: CostAzureConfig = field(default_factory=CostAzureConfig)
+    cost_k8s: CostK8sConfig = field(default_factory=CostK8sConfig)
     deployment_reader: str = ""
     deployment_status_url: str = ""
     deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
@@ -676,6 +686,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     cost_reader = str(block.get("cost_reader", "")).strip().lower()
     aws_block = block.get("cost_aws", {})
     azure_block = block.get("cost_azure", {})
+    k8s_block = block.get("cost_k8s", {})
     cost_aws = CostAwsConfig(
         tag_key_owner=str(aws_block.get("tag_key_owner", "Owner")).strip() or "Owner"
         if isinstance(aws_block, dict)
@@ -695,6 +706,22 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         tag_key_service=str(azure_block.get("tag_key_service", "Service")).strip() or "Service"
         if isinstance(azure_block, dict)
         else "Service",
+    )
+    cost_k8s = CostK8sConfig(
+        base_url=str(k8s_block.get("base_url", "")).strip() if isinstance(k8s_block, dict) else "",
+        aggregate=str(k8s_block.get("aggregate", "label:app.kubernetes.io/name")).strip()
+        or "label:app.kubernetes.io/name"
+        if isinstance(k8s_block, dict)
+        else "label:app.kubernetes.io/name",
+        allocation_key=str(k8s_block.get("allocation_key", "{name}")).strip() or "{name}"
+        if isinstance(k8s_block, dict)
+        else "{name}",
+        window=str(k8s_block.get("window", "30d")).strip() or "30d"
+        if isinstance(k8s_block, dict)
+        else "30d",
+        currency=str(k8s_block.get("currency", "USD")).strip() or "USD"
+        if isinstance(k8s_block, dict)
+        else "USD",
     )
     deployment_status_url = str(block.get("deployment_status_url", "")).strip()
     deployment_reader = str(block.get("deployment_reader", "")).strip().lower()
@@ -734,6 +761,15 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     env_reader = os.environ.get("REPAVE_COST_READER", "").strip().lower()
     if env_reader:
         cost_reader = env_reader
+    env_k8s_base = os.environ.get("REPAVE_COST_K8S_BASE_URL", "").strip()
+    if env_k8s_base:
+        cost_k8s = CostK8sConfig(
+            base_url=env_k8s_base,
+            aggregate=cost_k8s.aggregate,
+            allocation_key=cost_k8s.allocation_key,
+            window=cost_k8s.window,
+            currency=cost_k8s.currency,
+        )
     env_deploy_url = os.environ.get("REPAVE_DEPLOYMENT_STATUS_URL", "").strip()
     if env_deploy_url:
         deployment_status_url = env_deploy_url
@@ -754,8 +790,8 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
             name=deployment_flux.name,
             kind=deployment_flux.kind,
         )
-    if cost_reader not in ("", "url", "aws", "azure"):
-        raise ValueError("portal.cost_reader must be 'url', 'aws', or 'azure'")
+    if cost_reader not in ("", "url", "aws", "azure", "k8s"):
+        raise ValueError("portal.cost_reader must be 'url', 'aws', 'azure', or 'k8s'")
     if deployment_reader not in ("", "url", "argocd", "flux"):
         raise ValueError("portal.deployment_reader must be 'url', 'argocd', or 'flux'")
     if deployment_flux.kind not in ("kustomization", "helmrelease"):
@@ -768,6 +804,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         cost_actuals_url=cost_url,
         cost_aws=cost_aws,
         cost_azure=cost_azure,
+        cost_k8s=cost_k8s,
         deployment_reader=deployment_reader,
         deployment_status_url=deployment_status_url,
         deployment_argocd=deployment_argocd,
