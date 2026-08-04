@@ -158,6 +158,9 @@ See also [`docs/operations/README.md`](../../../docs/operations/README.md) for S
 | `repave.fleet.enabled` | Fleet registry JSONL at `repave.fleet.file` |
 | `repave.fleet.operatorStatusFile` | Operator GPR/campaign snapshot for `/platform/campaigns` |
 | `repave.auth.serviceMode` | OIDC login; requires `secrets.sessionSecret` and OIDC issuer/client |
+| `repave.auth.sessionHttpsOnly` | Session cookie `Secure` flag (`REPAVE_SESSION_HTTPS_ONLY`); default `true` |
+| `repave.auth.oidc.scopes` | OIDC scopes rendered into ConfigMap (default `openid`/`profile`/`email`) |
+| `repave.auth.oidc.logoutReturnTo` | Post-logout URL (Auth0 Allowed Logout URLs) |
 | `secrets.existingSecret` | Pre-created Secret with keys `github-token`, `session-secret`, `oidc-client-secret` |
 | `persistence.modules` | PVC for module staging (`modules_root`); use `emptyDir` when `enabled: false` |
 | `ingress.enabled` | Expose the Service via Ingress |
@@ -180,6 +183,14 @@ helm upgrade --install repave ./deploy/k8s/chart \
 ```
 
 Do not commit real tokens in `values.yaml`. Use `secrets.create: true` only on kind.
+
+### Auth0 portal access
+
+Use [`values-auth0.yaml`](values-auth0.yaml) with
+[`values-decomposed-day2.yaml`](values-decomposed-day2.yaml) so the hosted portal
+and mutating APIs require Auth0 login (TLS-terminated Ingress). Full tenant setup
+(Regular Web App, Roles, Post-Login Action, break-glass):
+[`docs/auth-service-mode.md`](../../../docs/auth-service-mode.md#auth0-for-portal-access-day-1).
 
 ## Co-install with the operator
 

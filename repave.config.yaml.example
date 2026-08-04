@@ -58,17 +58,22 @@ output:
 # REPAVE_FLUX_API_SERVER / REPAVE_FLUX_TOKEN.
 
 # Optional hosted service authentication (OIDC). Local dev: leave disabled.
+# Auth0 portal access: see docs/auth-service-mode.md and deploy/k8s/chart/values-auth0.yaml
 # auth:
 #   service_mode: true
+#   session_https_only: true
 #   oidc:
-#     issuer: https://your-idp.example.com/oauth2/default
+#     issuer: https://YOUR_TENANT.us.auth0.com/
 #     client_id: repave-portal
 #     redirect_uri: https://repave.example.com/auth/callback
+#     logout_return_to: https://repave.example.com/
+#     scopes: [openid, profile, email]
 #     groups_claim: groups
 #     roles:
 #       admin: [repave-admins]
 #       generator: [repave-generators]
 # Secrets: REPAVE_SESSION_SECRET, REPAVE_OIDC_CLIENT_SECRET
+# Optional: REPAVE_SESSION_HTTPS_ONLY=0 for local HTTP testing with service_mode
 
 # Optional gate overrides applied during generation.
 gates:

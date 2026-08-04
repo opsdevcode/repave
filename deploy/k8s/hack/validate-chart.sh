@@ -20,12 +20,13 @@ job_rendered="$(mktemp)"
 decomposed_smoke_rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
 decomposed_day2_rendered="$(mktemp)"
+auth0_rendered="$(mktemp)"
 digest_rendered="$(mktemp)"
 multi_replica_rendered="$(mktemp)"
 worker_hpa_rendered="$(mktemp)"
 fleet_shared_rendered="$(mktemp)"
 env_vending_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}"' EXIT
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${auth0_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -225,6 +226,38 @@ fi
 
 if ! grep -q 'kind: HorizontalPodAutoscaler' "${decomposed_day2_rendered}"; then
   echo "values-decomposed-day2.yaml must render portal and worker HPAs" >&2
+  exit 1
+fi
+
+helm template repave-auth0 "${CHART}" \
+  --namespace repave-auth0 \
+  -f "${CHART}/values-decomposed-day2.yaml" \
+  -f "${CHART}/values-auth0.yaml" \
+  --set repave.output.githubOrg=example-org \
+  >"${auth0_rendered}"
+
+if ! grep -q 'service_mode: true' "${auth0_rendered}"; then
+  echo "values-auth0.yaml must enable auth.service_mode" >&2
+  exit 1
+fi
+
+if ! grep -q 'session_https_only: true' "${auth0_rendered}"; then
+  echo "values-auth0.yaml must set session_https_only" >&2
+  exit 1
+fi
+
+if ! grep -q 'REPAVE_SESSION_HTTPS_ONLY' "${auth0_rendered}"; then
+  echo "values-auth0.yaml must set REPAVE_SESSION_HTTPS_ONLY on portal" >&2
+  exit 1
+fi
+
+if ! grep -q -- '- openid' "${auth0_rendered}"; then
+  echo "values-auth0.yaml must render OIDC scopes in ConfigMap" >&2
+  exit 1
+fi
+
+if ! grep -q 'repave-admins' "${auth0_rendered}"; then
+  echo "values-auth0.yaml must map Auth0 admin role groups" >&2
   exit 1
 fi
 

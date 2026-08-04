@@ -6,7 +6,7 @@ import logging
 import secrets
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 import httpx
 from fastapi import HTTPException, Request
@@ -44,6 +44,8 @@ class AuthConfig:
     groups_claim: str
     admin_groups: frozenset[str]
     generator_groups: frozenset[str]
+    session_https_only: bool = False
+    oidc_logout_return_to: str = ""
 
 
 def is_public_path(path: str) -> bool:
@@ -103,6 +105,48 @@ def role_for_groups(groups: list[str], config: AuthConfig) -> str:
     if normalized.intersection(generator):
         return ROLE_GENERATOR
     return ROLE_VIEWER
+
+
+def groups_from_claims(claims: dict[str, Any], groups_claim: str) -> list[str]:
+    """Read group/role names from userinfo (supports Auth0 namespaced claims)."""
+    groups_raw = claims.get(groups_claim, [])
+    if isinstance(groups_raw, list):
+        return [str(item) for item in groups_raw if str(item).strip()]
+    if isinstance(groups_raw, str) and groups_raw.strip():
+        return [groups_raw.strip()]
+    return []
+
+
+def logout_return_to(config: AuthConfig) -> str:
+    """Post-logout landing URL (Auth0 Allowed Logout URLs / OIDC post_logout_redirect_uri)."""
+    explicit = config.oidc_logout_return_to.strip()
+    if explicit:
+        return explicit
+    parsed = urlparse(config.oidc_redirect_uri)
+    if parsed.scheme and parsed.netloc:
+        return f"{parsed.scheme}://{parsed.netloc}/"
+    return "/"
+
+
+def build_idp_logout_url(config: AuthConfig, discovery: dict[str, Any]) -> str | None:
+    """Build IdP logout URL from discovery, with Auth0 ``/v2/logout`` fallback."""
+    return_to = logout_return_to(config)
+    end_session = str(discovery.get("end_session_endpoint", "")).strip()
+    if end_session:
+        params = {
+            "client_id": config.oidc_client_id,
+            "post_logout_redirect_uri": return_to,
+        }
+        return f"{end_session}?{urlencode(params)}"
+    issuer_host = urlparse(config.oidc_issuer).netloc.lower()
+    if "auth0.com" not in issuer_host:
+        return None
+    issuer = config.oidc_issuer.rstrip("/")
+    params = {
+        "client_id": config.oidc_client_id,
+        "returnTo": return_to,
+    }
+    return f"{issuer}/v2/logout?{urlencode(params)}"
 
 
 def require_role(user: AuthUser | None, *allowed: str) -> None:
@@ -201,13 +245,7 @@ async def complete_oidc_callback(
         raise HTTPException(status_code=502, detail="OIDC sub claim missing")
 
     email = str(claims.get("email", subject)).strip()
-    groups_raw = claims.get(config.groups_claim, [])
-    groups: list[str] = []
-    if isinstance(groups_raw, list):
-        groups = [str(item) for item in groups_raw]
-    elif isinstance(groups_raw, str) and groups_raw.strip():
-        groups = [groups_raw.strip()]
-
+    groups = groups_from_claims(claims, config.groups_claim)
     role = role_for_groups(groups, config)
     request.session["repave_user"] = {"sub": subject, "email": email, "role": role}
     if not next_path.startswith("/"):
@@ -218,3 +256,19 @@ async def complete_oidc_callback(
 def clear_session(request: Request) -> RedirectResponse:
     request.session.clear()
     return RedirectResponse("/", status_code=302)
+
+
+async def complete_logout(request: Request, config: AuthConfig) -> RedirectResponse:
+    """Clear the local session, then redirect to the IdP logout endpoint when available."""
+    request.session.clear()
+    if not config.service_enabled or not config.oidc_issuer:
+        return RedirectResponse(logout_return_to(config), status_code=302)
+    try:
+        discovery = await fetch_oidc_discovery(config.oidc_issuer)
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("OIDC discovery failed during logout; local session cleared: %s", exc)
+        return RedirectResponse(logout_return_to(config), status_code=302)
+    idp_url = build_idp_logout_url(config, discovery)
+    if idp_url:
+        return RedirectResponse(idp_url, status_code=302)
+    return RedirectResponse(logout_return_to(config), status_code=302)

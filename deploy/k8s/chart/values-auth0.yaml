@@ -1,0 +1,34 @@
+# Auth0 overlay: require OIDC login for the hosted portal (HTML + mutating APIs).
+# Use with any TLS-terminated deploy (EKS recommended) and real secrets.
+#
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f values.yaml \
+#     -f values-decomposed-day2.yaml \
+#     -f values-auth0.yaml \
+#     --set repave.durability.databaseUrl=postgresql://... \
+#     --set secrets.existingSecret=repave-secrets
+#
+# Replace issuer / clientId / redirectUri / logoutReturnTo with your Auth0 tenant
+# and portal hostname. Create Roles repave-admins and repave-generators in Auth0,
+# plus a Post-Login Action that writes them to the groups claim (see
+# docs/auth-service-mode.md).
+
+repave:
+  auth:
+    serviceMode: true
+    sessionHttpsOnly: true
+    oidc:
+      issuer: https://YOUR_TENANT.us.auth0.com/
+      clientId: YOUR_AUTH0_CLIENT_ID
+      redirectUri: https://repave.example.com/auth/callback
+      logoutReturnTo: https://repave.example.com/
+      groupsClaim: groups
+      scopes:
+        - openid
+        - profile
+        - email
+      roles:
+        admin:
+          - repave-admins
+        generator:
+          - repave-generators

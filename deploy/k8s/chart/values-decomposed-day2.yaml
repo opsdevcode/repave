@@ -27,11 +27,14 @@ repave:
     enabled: true
   auth:
     serviceMode: true
+    sessionHttpsOnly: true
     oidc:
       issuer: https://auth.example.com
       clientId: repave
       redirectUri: https://repave.example.com/auth/callback
+      logoutReturnTo: https://repave.example.com/
       groupsClaim: groups
+      # For Auth0 portal login, prefer values-auth0.yaml (issuer, roles, scopes).
       roles:
         admin: []
         generator: []

@@ -6,7 +6,13 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** optional follow-on — in-cluster K8s cost allocation (`portal.cost_reader: k8s`). Deployment scorecard dimension and v1.83 runtime×layout conformance shipped on `main`. v1.84 composite paved roads shipped on `main`.
+**In progress:** **Auth0 portal access** — require Auth0 OIDC for hosted portal HTML and
+mutating APIs before shared deploy (`session_https_only`, IdP logout, Helm overlay
+[`values-auth0.yaml`](../deploy/k8s/chart/values-auth0.yaml),
+[`docs/auth-service-mode.md`](auth-service-mode.md)). Fine-grained Auth0 FGA stays in the
+[parking lot](#parking-lot). **Developer paved roads** optional follow-on — in-cluster K8s
+cost allocation (`portal.cost_reader: k8s`). Deployment scorecard dimension and v1.83
+runtime×layout conformance shipped on `main`. v1.84 composite paved roads shipped on `main`.
 All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
 on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
@@ -2435,6 +2441,9 @@ until someone owns them, since a v3 mention is not a commitment.
 - **Private blueprint registry** — pull blueprint packs from git tag or OCI artifact
   (beyond local fork paths in v1.28)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
+- **Auth0 FGA / fine-grained authorization** — relationship checks on catalog,
+  generate, and environment actions (Auth0 FGA or OpenFGA), wrapping today's
+  `require_role` coarse RBAC; does **not** block day-1 Auth0 portal login
 - **Catalog automation** — regenerate `provider-catalog.json` on provider release
   webhook or scheduled workflow
 - **Real resource scaffolds** — optional blueprint mode that emits provider resources

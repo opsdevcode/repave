@@ -35,11 +35,17 @@ data:
     {{- if .Values.repave.auth.serviceMode }}
     auth:
       service_mode: true
+      session_https_only: {{ .Values.repave.auth.sessionHttpsOnly }}
       oidc:
         issuer: {{ .Values.repave.auth.oidc.issuer | quote }}
         client_id: {{ .Values.repave.auth.oidc.clientId | quote }}
         redirect_uri: {{ .Values.repave.auth.oidc.redirectUri | quote }}
+        {{- if .Values.repave.auth.oidc.logoutReturnTo }}
+        logout_return_to: {{ .Values.repave.auth.oidc.logoutReturnTo | quote }}
+        {{- end }}
         groups_claim: {{ .Values.repave.auth.oidc.groupsClaim | quote }}
+        scopes:
+{{ toYaml .Values.repave.auth.oidc.scopes | indent 10 }}
         roles:
           admin:
 {{ toYaml .Values.repave.auth.oidc.roles.admin | indent 12 }}
