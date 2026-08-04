@@ -44,6 +44,7 @@ SKIP_DIR_NAMES = {
     ".repave",
     ".pytest_cache",
     ".ruff_cache",
+    "node_modules",
 }
 MANIFEST_SKIP_DIR_NAMES = SKIP_DIR_NAMES | {".gate-tools"}
 # Copier/Jinja leftovers vs Helm template syntax in rendered charts.

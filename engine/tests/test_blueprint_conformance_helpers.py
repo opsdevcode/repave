@@ -35,6 +35,14 @@ def test_manifest_skips_zero_byte_copier_stubs(tmp_path) -> None:
     assert "empty.go" not in manifest
 
 
+def test_placeholder_scan_skips_node_modules(tmp_path) -> None:
+    deps = tmp_path / "node_modules" / "pkg"
+    deps.mkdir(parents=True)
+    (deps / "broken.json").write_text('{"msg": "{{ not a copier var }}"}\n', encoding="utf-8")
+    (tmp_path / "README.md").write_text("ok\n", encoding="utf-8")
+    assert find_unresolved_placeholders(tmp_path) == []
+
+
 def test_load_app_service_variant_specs(repo_root: Path) -> None:
     specs = load_conformance_specs(repo_root / "blueprints" / "app-service-generic")
     assert len(specs) == 20
