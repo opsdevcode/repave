@@ -432,6 +432,27 @@
     {% endif %}
   </div>
 </section>
+{% elif cost_estimate %}
+<section class="card entity-cost" aria-labelledby="cost-estimate-heading">
+  <div class="card__header">
+    <h2 id="cost-estimate-heading">Cost estimate</h2>
+    <p class="muted card__subtitle">Infracost breakdown from the last terraform plan in this checkout.</p>
+  </div>
+  <div class="card__body">
+    <p class="entity-cost__amount">
+      <span class="badge badge--pass">{{ cost_estimate.currency }} {{ cost_estimate.monthly_cost }}/month</span>
+      {% if cost_estimate.hourly_cost and cost_estimate.hourly_cost != '—' %}
+      <span class="muted">· {{ cost_estimate.hourly_cost }}/hour</span>
+      {% endif %}
+    </p>
+    {% if cost_estimate.detail %}
+    <p class="muted">{{ cost_estimate.detail }}</p>
+    {% endif %}
+    {% if cost_estimate.resource_count %}
+    <p class="hint">{{ cost_estimate.resource_count }} priced resource(s) in breakdown.</p>
+    {% endif %}
+  </div>
+</section>
 {% endif %}
 
 {% if observability_url %}

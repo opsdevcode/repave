@@ -85,6 +85,9 @@ def test_enrich_catalog_entities_with_cost_from_local_estimate(tmp_path) -> None
     enriched = enrich_catalog_entities_with_cost([entity], PortalConfig(density="default"))
     assert enriched[0].cost_badge == "Est USD 15.00/mo"
     assert enriched[0].cost_badge_detail
+    cost_dim = next(dim for dim in enriched[0].scorecard if dim.key == "cost")
+    assert cost_dim.level == "pass"
+    assert "15.00" in cost_dim.detail
 
 
 def test_enrich_environment_entity_with_cost_url_reader() -> None:

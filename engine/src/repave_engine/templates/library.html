@@ -142,11 +142,21 @@
                 title="{{ entity.cost_badge_detail }}"
               >{{ entity.cost_badge }}</span>
               {% endif %}
-              {% for dim in entity.scorecard[:3] %}
+              {% for dim in entity.scorecard if dim.key in ('cost', 'deployment') %}
               <span
                 class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}"
                 title="{{ dim.detail }}"
               >{{ dim.label }}</span>
+              {% endfor %}
+              {% set preview_shown = namespace(count=0) %}
+              {% for dim in entity.scorecard if dim.key not in ('cost', 'deployment') %}
+              {% if preview_shown.count < 3 %}
+              <span
+                class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}"
+                title="{{ dim.detail }}"
+              >{{ dim.label }}</span>
+              {% set preview_shown.count = preview_shown.count + 1 %}
+              {% endif %}
               {% endfor %}
             </span>
           </a>
