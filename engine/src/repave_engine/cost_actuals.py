@@ -125,12 +125,12 @@ def fetch_entity_cost_actuals(
     return parse_cost_actuals_payload(payload, source_url=url, tag_coverage=coverage)
 
 
-CostReader = Literal["url", "aws", "azure"]
+CostReader = Literal["url", "aws", "azure", "k8s"]
 
 
 def resolve_cost_reader(*, cost_reader: str, cost_actuals_url: str) -> CostReader | None:
     explicit = cost_reader.strip().lower()
-    if explicit in ("url", "aws", "azure"):
+    if explicit in ("url", "aws", "azure", "k8s"):
         return explicit  # type: ignore[return-value]
     if cost_actuals_url.strip():
         return "url"
@@ -164,6 +164,10 @@ def fetch_entity_cost_actuals_for_portal(
         from repave_engine.cost_actuals_aws import fetch_entity_cost_actuals_aws
 
         return fetch_entity_cost_actuals_aws(portal_config.cost_aws, entity)
-    from repave_engine.cost_actuals_azure import fetch_entity_cost_actuals_azure
+    if reader == "azure":
+        from repave_engine.cost_actuals_azure import fetch_entity_cost_actuals_azure
 
-    return fetch_entity_cost_actuals_azure(portal_config.cost_azure, entity)
+        return fetch_entity_cost_actuals_azure(portal_config.cost_azure, entity)
+    from repave_engine.cost_actuals_k8s import fetch_entity_cost_actuals_k8s
+
+    return fetch_entity_cost_actuals_k8s(portal_config.cost_k8s, entity)

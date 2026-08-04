@@ -24,7 +24,7 @@ output:
 #   # Response: currency, amount_30d, as_of, detail.
 #   cost_actuals_url: "https://cost-api.example.com/v1/services/{name}/summary"
 #   # Native readers (server-side, read-only; credentials from the host environment):
-#   # cost_reader: aws   # or azure | url (default url when cost_actuals_url is set)
+#   # cost_reader: aws   # or azure | k8s | url (default url when cost_actuals_url is set)
 #   # cost_aws:
 #   #   tag_key_owner: Owner
 #   #   tag_key_service: Service
@@ -33,6 +33,12 @@ output:
 #   #   scope: /subscriptions/00000000-0000-0000-0000-000000000000
 #   #   tag_key_owner: Owner
 #   #   tag_key_service: Service
+#   # cost_k8s:   # OpenCost-compatible in-cluster allocation API
+#   #   base_url: http://opencost.opencost:9003
+#   #   aggregate: label:app.kubernetes.io/name   # or namespace, controller, etc.
+#   #   allocation_key: "{name}"   # key in the allocation response map
+#   #   window: 30d
+#   #   currency: USD
 #   # Deployment status (ADR 003 Phase 1) — read-only GitOps enrichment on entity detail:
 #   # deployment_reader: url   # or argocd | flux
 #   # deployment_status_url: "https://status.example/v1/services/{name}"
@@ -46,7 +52,7 @@ output:
 #   #   name: "{name}"
 #   #   kind: kustomization   # or helmrelease
 # Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL /
-# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER /
+# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER / REPAVE_COST_K8S_BASE_URL /
 # REPAVE_DEPLOYMENT_READER / REPAVE_DEPLOYMENT_STATUS_URL /
 # REPAVE_ARGOCD_BASE_URL / REPAVE_ARGOCD_TOKEN /
 # REPAVE_FLUX_API_SERVER / REPAVE_FLUX_TOKEN.

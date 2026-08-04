@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** optional follow-ons (in-cluster K8s cost allocation). Deployment scorecard dimension and v1.83 runtime×layout conformance shipped on `main`. v1.84 composite paved roads shipped on `main`.
+**In progress:** **Developer paved roads** optional follow-on — in-cluster K8s cost allocation (`portal.cost_reader: k8s`). Deployment scorecard dimension and v1.83 runtime×layout conformance shipped on `main`. v1.84 composite paved roads shipped on `main`.
 All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
 on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
@@ -1803,8 +1803,8 @@ shows last-30-day actual spend with its as-of time.
 
 **Status:** **Shipped on `main`** — `infracost` gate and generated-repo CI; `portal.cost_reader`
 (`url`, `aws`, `azure`); service detail and **library tile** cost badges (L30D actuals or local
-`.repave/cost-estimate.json`); **Cloud spend** scorecard dimension. Still open: in-cluster
-Kubernetes allocation (optional follow-up).
+`.repave/cost-estimate.json`); **Cloud spend** scorecard dimension. **In progress:** in-cluster
+Kubernetes allocation via `cost_reader: k8s` (OpenCost-compatible API).
 
 ---
 
