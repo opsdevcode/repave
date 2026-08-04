@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 
 from repave_engine.blueprint_conformance import (
-    blueprint_dirs,
-    load_conformance_spec,
+    conformance_cases,
+    load_conformance_specs,
     run_blueprint_conformance,
 )
 
@@ -18,17 +18,25 @@ def conformance_staging(tmp_path: Path) -> Path:
     return path
 
 
-def _blueprint_ids(repo_root: Path) -> list[str]:
-    return [path.name for path in blueprint_dirs(repo_root)]
+def _conformance_case_ids(repo_root: Path) -> list[str]:
+    return [
+        f"{blueprint_name}/{variant_id}" if variant_id else blueprint_name
+        for blueprint_name, variant_id in conformance_cases(repo_root)
+    ]
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("blueprint_name", _blueprint_ids(Path(__file__).resolve().parents[2]))
+@pytest.mark.parametrize(
+    ("blueprint_name", "variant_id"),
+    conformance_cases(Path(__file__).resolve().parents[2]),
+    ids=_conformance_case_ids(Path(__file__).resolve().parents[2]),
+)
 def test_blueprint_conformance_harness(
     repo_root: Path,
     output_config,
     conformance_staging: Path,
     blueprint_name: str,
+    variant_id: str,
 ) -> None:
     blueprint_dir = repo_root / "blueprints" / blueprint_name
     spec_path = blueprint_dir / "conformance.yaml"
@@ -36,26 +44,35 @@ def test_blueprint_conformance_harness(
         f"Add {spec_path.relative_to(repo_root)} with fixture inputs "
         "(see blueprints/terraform-module-generic/conformance.yaml)."
     )
-    load_conformance_spec(blueprint_dir)
+    load_conformance_specs(blueprint_dir)
 
+    label = blueprint_name if not variant_id else f"{blueprint_name}/{variant_id}"
     outcome = run_blueprint_conformance(
         blueprint_dir,
         repo_root=repo_root,
         output_config=output_config,
         staging_root=conformance_staging,
+        variant_id=variant_id or None,
     )
-    assert not outcome.gate_failures, f"{blueprint_name} gate failures:\n" + "\n".join(
-        outcome.gate_failures
-    )
+    assert not outcome.gate_failures, f"{label} gate failures:\n" + "\n".join(outcome.gate_failures)
     assert not outcome.missing_files, (
-        f"{blueprint_name} missing required files: {', '.join(outcome.missing_files)}"
+        f"{label} missing required files: {', '.join(outcome.missing_files)}"
     )
-    assert not outcome.placeholder_hits, (
-        f"{blueprint_name} unresolved template markers:\n"
-        + "\n".join(outcome.placeholder_hits[:20])
+    assert not outcome.placeholder_hits, f"{label} unresolved template markers:\n" + "\n".join(
+        outcome.placeholder_hits[:20]
     )
     if outcome.manifest_diff:
         pytest.fail(
-            f"{blueprint_name} conformance manifest drift: {outcome.manifest_diff}. "
+            f"{label} conformance manifest drift: {outcome.manifest_diff}. "
             "Run: make blueprint-conformance-update"
         )
+
+
+def test_app_service_conformance_has_twenty_variants(repo_root: Path) -> None:
+    specs = load_conformance_specs(repo_root / "blueprints" / "app-service-generic")
+    assert len(specs) == 20
+    ids = {spec.variant_id for spec in specs}
+    assert "python-http-api" in ids
+    assert "dotnet-grpc" in ids
+    snapshotted = [spec.variant_id for spec in specs if spec.snapshot]
+    assert snapshotted == ["python-http-api", "go-grpc", "nodejs-scheduled-job"]
