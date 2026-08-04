@@ -12,10 +12,11 @@ from typing import Any
 
 import yaml
 
-from repave_engine.blueprint import blueprints_dir, load_blueprint
+from repave_engine.blueprint import blueprints_dir, load_blueprint, validate_inputs
 from repave_engine.gates import is_gate_artifact_path
 from repave_engine.pipeline import generate_from_blueprint
-from repave_engine.settings import OutputConfig
+from repave_engine.render import render_blueprint
+from repave_engine.settings import OutputConfig, load_gate_overrides
 
 CONFORMANCE_FILE = "conformance.yaml"
 MANIFEST_FILE = "conformance.manifest.json"
@@ -45,8 +46,12 @@ SKIP_DIR_NAMES = {
     ".pytest_cache",
     ".ruff_cache",
     "node_modules",
+    "target",
+    "bin",
+    "obj",
 }
 MANIFEST_SKIP_DIR_NAMES = SKIP_DIR_NAMES | {".gate-tools"}
+MANIFEST_SKIP_FILE_NAMES = frozenset({"package-lock.json", "npm-shrinkwrap.yaml"})
 # Copier/Jinja leftovers vs Helm template syntax in rendered charts.
 _JINJA_BLOCK = re.compile(r"\{%")
 _Copier_VAR = re.compile(r"\{\{(?!\s*[\.\-$]|\s*include)")
@@ -62,6 +67,8 @@ class ConformanceSpec:
     required_files: tuple[str, ...]
     snapshot: bool
     variant_id: str = ""
+    run_gates: bool = True
+    slow_harness: bool = True
 
 
 @dataclass(frozen=True)
@@ -202,12 +209,18 @@ def _load_variant_specs(raw: dict[str, Any], *, path: Path) -> tuple[Conformance
                 label=str(path),
             )
         snapshot = bool(entry.get("snapshot", False))
+        run_gates_raw = entry.get("run_gates")
+        run_gates = snapshot if run_gates_raw is None else bool(run_gates_raw)
+        slow_harness_raw = entry.get("slow_harness")
+        slow_harness = snapshot if slow_harness_raw is None else bool(slow_harness_raw)
         specs.append(
             ConformanceSpec(
                 inputs=merged_inputs,
                 required_files=required_files,
                 snapshot=snapshot,
                 variant_id=variant_id,
+                run_gates=run_gates,
+                slow_harness=slow_harness,
             )
         )
     return tuple(specs)
@@ -245,13 +258,21 @@ def load_conformance_spec(blueprint_dir: Path) -> ConformanceSpec | None:
     return specs[0]
 
 
-def conformance_cases(repo_root: Path) -> tuple[tuple[str, str], ...]:
+def conformance_cases(
+    repo_root: Path,
+    *,
+    slow: bool | None = None,
+) -> tuple[tuple[str, str], ...]:
     cases: list[tuple[str, str]] = []
     for blueprint_dir in blueprint_dirs(repo_root):
         specs = load_conformance_specs(blueprint_dir)
         if not specs:
             continue
         for spec in specs:
+            if slow is True and not spec.slow_harness:
+                continue
+            if slow is False and spec.slow_harness:
+                continue
             cases.append((blueprint_dir.name, spec.variant_id))
     return tuple(cases)
 
@@ -265,6 +286,8 @@ def _is_text_artifact(path: Path) -> bool:
 def _should_skip_path(path: Path, *, manifest: bool = False) -> bool:
     skip = MANIFEST_SKIP_DIR_NAMES if manifest else SKIP_DIR_NAMES
     if any(part in skip for part in path.parts):
+        return True
+    if manifest and path.name in MANIFEST_SKIP_FILE_NAMES:
         return True
     return path.suffix == ".egg-info" or any(part.endswith(".egg-info") for part in path.parts)
 
@@ -429,31 +452,45 @@ def run_blueprint_conformance(
     if spec.variant_id:
         staging_name = f"{blueprint.name}/{spec.variant_id}"
 
-    prev_generated_at = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT")
-    if spec.snapshot:
-        os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = _CONFORMANCE_GENERATED_AT
-    try:
-        result = generate_from_blueprint(
+    staging_dir = staging_root / staging_name
+    gate_failures: tuple[str, ...]
+    if spec.run_gates:
+        prev_generated_at = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT")
+        if spec.snapshot:
+            os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = _CONFORMANCE_GENERATED_AT
+        try:
+            result = generate_from_blueprint(
+                blueprint,
+                values,
+                output_config=output_config,
+                dry_run=True,
+                staging_root=staging_dir,
+                repo_root=repo_root,
+            )
+        finally:
+            if spec.snapshot:
+                if prev_generated_at is None:
+                    os.environ.pop("REPAVE_PROVENANCE_GENERATED_AT", None)
+                else:
+                    os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = prev_generated_at
+        output_dir = result.render.output_dir
+        gate_failures = tuple(
+            f"{gate.name}: {gate.message}"
+            for gate in result.gates
+            if not gate.passed and not gate.skipped
+        )
+    else:
+        gate_overrides = load_gate_overrides(repo_root)
+        normalized = validate_inputs(
             blueprint,
             values,
-            output_config=output_config,
-            dry_run=True,
-            staging_root=staging_root / staging_name,
             repo_root=repo_root,
+            gate_overrides=gate_overrides,
         )
-    finally:
-        if spec.snapshot:
-            if prev_generated_at is None:
-                os.environ.pop("REPAVE_PROVENANCE_GENERATED_AT", None)
-            else:
-                os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = prev_generated_at
-    output_dir = result.render.output_dir
-
-    gate_failures = tuple(
-        f"{gate.name}: {gate.message}"
-        for gate in result.gates
-        if not gate.passed and not gate.skipped
-    )
+        staging_dir.mkdir(parents=True, exist_ok=True)
+        render_result = render_blueprint(blueprint, normalized, staging_dir)
+        output_dir = render_result.output_dir
+        gate_failures = ()
     missing = tuple(
         rel
         for rel in spec.required_files

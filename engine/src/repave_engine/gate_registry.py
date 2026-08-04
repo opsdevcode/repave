@@ -45,6 +45,14 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
     ),
     "observability": (),
     "gitops-deployment": (".repave",),
+    "app-service": (
+        "node_modules",
+        "package-lock.json",
+        "target",
+        "bin",
+        "obj",
+        ".repave",
+    ),
 }
 
 

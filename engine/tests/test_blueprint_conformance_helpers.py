@@ -51,6 +51,10 @@ def test_load_app_service_variant_specs(repo_root: Path) -> None:
     assert python_api.inputs["layout"] == "http-api"
     assert "tests/test_health.py" in python_api.required_files
     assert python_api.snapshot is True
+    assert python_api.run_gates is True
+    python_worker = next(spec for spec in specs if spec.variant_id == "python-worker")
+    assert python_worker.run_gates is False
+    assert python_worker.slow_harness is False
 
 
 def test_load_legacy_single_spec_conformance(repo_root: Path) -> None:
