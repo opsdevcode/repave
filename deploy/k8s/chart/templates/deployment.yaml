@@ -120,6 +120,8 @@ spec:
             {{- if .Values.repave.auth.serviceMode }}
             - name: REPAVE_SERVICE_MODE
               value: "1"
+            - name: REPAVE_SESSION_HTTPS_ONLY
+              value: {{ ternary "1" "0" .Values.repave.auth.sessionHttpsOnly | quote }}
             {{- end }}
             {{- if .Values.repave.audit.enabled }}
             - name: REPAVE_AUDIT_FILE

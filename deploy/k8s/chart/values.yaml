@@ -135,11 +135,18 @@ repave:
     artifactStoreUri: ""
   auth:
     serviceMode: false
+    # Secure session cookies (Secure flag). Default true when serviceMode is enabled in app.
+    sessionHttpsOnly: true
     oidc:
       issuer: ""
       clientId: ""
       redirectUri: ""
+      logoutReturnTo: ""
       groupsClaim: groups
+      scopes:
+        - openid
+        - profile
+        - email
       roles:
         admin: []
         generator: []

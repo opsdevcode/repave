@@ -435,20 +435,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     # Registered last so it wraps enforce_service_auth: Starlette runs the most recently
     # added middleware outermost, and enforce_service_auth reads request.session.
+    session_https_only = bool(auth_config.session_https_only) if auth_config is not None else False
     if session_store is not None:
         app.add_middleware(
             SqlSessionMiddleware,
             secret_key=session_secret,
             session_store=session_store,
             same_site="lax",
-            https_only=False,
+            https_only=session_https_only,
         )
     else:
         app.add_middleware(
             SessionMiddleware,
             secret_key=session_secret,
             same_site="lax",
-            https_only=False,
+            https_only=session_https_only,
         )
 
     def gate_toolchain_callout(gates: list[GateResult], *, dry_run: bool) -> str | None:

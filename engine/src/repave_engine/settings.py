@@ -868,6 +868,7 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
         scopes = ("openid", "profile", "email")
 
     groups_claim = str(oidc_block.get("groups_claim", "groups")).strip() or "groups"
+    logout_return_to = str(oidc_block.get("logout_return_to", "")).strip()
     roles_block = oidc_block.get("roles", {}) if isinstance(oidc_block, dict) else {}
     if not isinstance(roles_block, dict):
         roles_block = {}
@@ -877,6 +878,16 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
         if not isinstance(raw, list):
             return frozenset()
         return frozenset(str(item).strip() for item in raw if str(item).strip())
+
+    # Secure cookies default on in service mode (TLS-terminated EKS ingress).
+    session_https_only = service_enabled
+    env_https = os.environ.get("REPAVE_SESSION_HTTPS_ONLY", "").strip().lower()
+    if env_https in ("1", "true", "yes", "on"):
+        session_https_only = True
+    elif env_https in ("0", "false", "no", "off"):
+        session_https_only = False
+    if isinstance(block, dict) and "session_https_only" in block:
+        session_https_only = bool(block.get("session_https_only"))
 
     if service_enabled and not all((issuer, client_id, client_secret, redirect_uri)):
         raise ValueError(
@@ -896,6 +907,8 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
             groups_claim=groups_claim,
             admin_groups=_groups("admin"),
             generator_groups=_groups("generator"),
+            session_https_only=session_https_only,
+            oidc_logout_return_to=logout_return_to,
         )
 
     return AuthConfig(
@@ -910,6 +923,8 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
         groups_claim=groups_claim,
         admin_groups=_groups("admin"),
         generator_groups=_groups("generator"),
+        session_https_only=session_https_only,
+        oidc_logout_return_to=logout_return_to,
     )
 
 

@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from repave_engine.auth import (
     AuthConfig,
     build_login_redirect,
-    clear_session,
+    complete_logout,
     complete_oidc_callback,
     fetch_oidc_discovery,
 )
@@ -39,6 +39,9 @@ def build_auth_router(*, auth_config: AuthConfig | None) -> APIRouter:
 
     @router.post("/logout")
     async def auth_logout(request: Request) -> RedirectResponse:
-        return clear_session(request)
+        if auth_config is None:
+            request.session.clear()
+            return RedirectResponse("/", status_code=302)
+        return await complete_logout(request, auth_config)
 
     return router

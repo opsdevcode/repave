@@ -11,6 +11,7 @@ values or standalone manifests.
 | [`chart/values-day2.yaml`](chart/values-day2.yaml) | Production overlay: HPA, ServiceMonitor, PrometheusRule, session/GitHub readiness |
 | [`chart/values-decomposed.yaml`](chart/values-decomposed.yaml) | Decomposed portal + worker + corpus (Phase 2) |
 | [`chart/values-decomposed-day2.yaml`](chart/values-decomposed-day2.yaml) | Recommended hosted production: decomposed + day-2 operability |
+| [`chart/values-auth0.yaml`](chart/values-auth0.yaml) | Auth0 OIDC overlay — portal login + mutating API gate |
 | [`chart/values-environment-vending.yaml`](chart/values-environment-vending.yaml) | Environment vending registry PVC + TTL reclaim CronJob |
 | [`chart/values-fleet-shared.yaml`](chart/values-fleet-shared.yaml) | Shared fleet registry PVC + operator snapshot CronJob for platform console |
 | [`chart/values-digest-pinned.yaml`](chart/values-digest-pinned.yaml) | Supply-chain overlay: pin portal/worker/corpus by digest |

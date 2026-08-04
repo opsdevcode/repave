@@ -87,9 +87,12 @@ digest ([`docs/supply-chain.md`](../supply-chain.md)), `helm upgrade --wait`, an
 
 ### OIDC / sign-in outage
 
-1. Confirm IdP status and client secret rotation.
+1. Confirm IdP status and client secret rotation (Auth0: Application → Credentials;
+   callback/logout URLs must match
+   [`docs/auth-service-mode.md`](../auth-service-mode.md#auth0-for-portal-access-day-1)).
 2. Fall back to read-only mode is **not** automatic — restore IdP or disable
-   `auth.service_mode` only in break-glass (local open mode).
+   `auth.service_mode` / `repave.auth.serviceMode` only in break-glass (local open mode),
+   and keep the Service off the public Ingress while open.
 
 ### GitHub publish failures
 
@@ -112,7 +115,7 @@ Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md]
 
 ## Related
 
-- [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC and roles
+- [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC, Auth0 portal access, roles
 - [`docs/github-app-auth.md`](../github-app-auth.md) — GitHub App vs PAT for publish
 - [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
