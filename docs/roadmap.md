@@ -6,7 +6,7 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** follow-ons (optional conformance snapshots per runtime×layout pair). v1.84 composite paved roads shipped on `main`. v1.83 runtime and layout breadth shipped on `main`.
+**In progress:** **Developer paved roads** optional follow-ons (deployment scorecard dimension). v1.83 runtime×layout conformance matrix shipped on `main`. v1.84 composite paved roads shipped on `main`.
 All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
 on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
@@ -2225,8 +2225,7 @@ independently. Remote governed PR publish is a follow-on (see **Follow-ons** abo
 Python, Go, Node.js, Java, and .NET; `buf-lint` gate and grpc proto templates; dry-run coverage
 for every runtime × layout pair.
 
-**Follow-ons (optional):** conformance manifest snapshots per runtime/layout pair (fixture
-today remains python/http-api with `snapshot: false`).
+**Follow-ons (optional):** ~~conformance manifest snapshots per runtime/layout pair~~ **Shipped on `main`** — `app-service-generic/conformance.yaml` declares 20 runtime×layout variants (gates + required files); golden manifests for `python-http-api`, `go-grpc`, and `nodejs-scheduled-job`.
 
 **Problem:** `app-service-generic` covers Python and Go over HTTP. Every other runtime and every
 non-HTTP shape — queue consumers, scheduled jobs, gRPC services — falls off the paved road

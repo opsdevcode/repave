@@ -1,17 +1,98 @@
-inputs:
-  service_name: conformance-api
-  description: Conformance fixture application service
-  owner: group:platform
-  system: conformance
-  catalog_lifecycle: experimental
-  port: "8080"
-  runtime: python
-  layout: http-api
-  include_helm_reference: "false"
-required_files:
-  - repave.yaml
-  - README.md
-  - Dockerfile
-  - catalog-info.yaml
-  - RUNBOOK.md
-snapshot: false
+defaults:
+  inputs:
+    service_name: conformance-api
+    description: Conformance fixture application service
+    owner: group:platform
+    system: conformance
+    catalog_lifecycle: experimental
+    port: "8080"
+    include_helm_reference: "false"
+  required_files:
+    - repave.yaml
+    - README.md
+    - Dockerfile
+    - catalog-info.yaml
+    - RUNBOOK.md
+    - .github/workflows/repave-gates.yml
+
+runtime_required_files:
+  python:
+    - pyproject.toml
+    - src/app/__init__.py
+    - src/app/main.py
+    - tests/test_health.py
+  go:
+    - go.mod
+    - cmd/server/main.go
+    - cmd/server/main_test.go
+  nodejs:
+    - package.json
+    - tsconfig.json
+    - src/server.ts
+    - src/main.ts
+    - test/health.test.ts
+  java:
+    - pom.xml
+    - src/main/java/com/repave/app/Application.java
+    - src/test/java/com/repave/app/HealthTest.java
+  dotnet:
+    - App.csproj
+    - Program.cs
+    - LayoutSupport.cs
+    - tests/App.Tests.csproj
+    - tests/HealthTests.cs
+
+layout_required_files:
+  grpc:
+    - proto/health/v1/health.proto
+    - buf.yaml
+
+layout_runtime_required_files:
+  grpc:
+    python:
+      - src/app/health_contract.py
+
+variants:
+  - runtime: python
+    layout: http-api
+    snapshot: true
+  - runtime: python
+    layout: worker
+  - runtime: python
+    layout: scheduled-job
+  - runtime: python
+    layout: grpc
+  - runtime: go
+    layout: http-api
+  - runtime: go
+    layout: worker
+  - runtime: go
+    layout: scheduled-job
+  - runtime: go
+    layout: grpc
+    snapshot: true
+  - runtime: nodejs
+    layout: http-api
+  - runtime: nodejs
+    layout: worker
+  - runtime: nodejs
+    layout: scheduled-job
+    snapshot: true
+  - runtime: nodejs
+    layout: grpc
+  - runtime: java
+    layout: http-api
+  - runtime: java
+    layout: worker
+  - runtime: java
+    layout: scheduled-job
+  - runtime: java
+    layout: grpc
+  - runtime: dotnet
+    layout: http-api
+  - runtime: dotnet
+    layout: worker
+  - runtime: dotnet
+    layout: scheduled-job
+  - runtime: dotnet
+    layout: grpc
