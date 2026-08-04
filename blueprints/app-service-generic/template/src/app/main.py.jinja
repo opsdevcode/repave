@@ -83,7 +83,7 @@ def serve() -> None:
     _ = health_status()
     raise RuntimeError(
         "gRPC server bootstrap is intentionally minimal; run buf generate and "
-        "implement the Health servicer before production deploy"
+        "implement the HealthService servicer before production deploy"
     )
 
 

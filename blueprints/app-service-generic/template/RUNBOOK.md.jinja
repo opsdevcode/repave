@@ -26,7 +26,7 @@ Primary engineering owner for this service. Update when ownership transfers.
 
 1. Revert the last merge on `main` or roll back the GitOps promotion PR.
 2. Confirm the previous container image tag is live in the cluster.
-3. Run smoke tests against {% if layout == 'grpc' %}gRPC `Health.Check`{% else %}`/healthz` on port {{ port }}{% endif %}.
+3. Run smoke tests against {% if layout == 'grpc' %}gRPC `HealthService.Check`{% else %}`/healthz` on port {{ port }}{% endif %}.
 
 {% elif layout == 'worker' -%}
 ## Rollback procedure
