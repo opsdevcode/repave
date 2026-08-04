@@ -75,6 +75,19 @@ def _cross_ref_hint(member_id: str, context: dict[str, str]) -> str:
         return f"Image {context.get('image_repository', '')}:1.0.0"
     if member_id == "dashboards":
         return f"Dashboards for service {context.get('service_name', '')}"
+    if member_id == "gitops":
+        svc = context.get("service_name", "")
+        repo = context.get("helm_chart_repo", "")
+        return f"Deploys chart {svc} from {repo}"
+    if member_id == "monitors":
+        return f"Alerts for {context.get('service_name', '')} (runbook linked)"
+    if member_id == "slo":
+        pct = context.get("slo_target_percent", "")
+        svc = context.get("service_name", "")
+        return f"SLO target {pct}% for {svc}"
+    if member_id == "terraform":
+        provider = context.get("cloud_provider", "")
+        return f"Terraform module tf-{provider}-{context.get('service_name', '')}"
     return ""
 
 

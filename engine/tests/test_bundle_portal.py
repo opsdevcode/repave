@@ -37,6 +37,7 @@ def test_bundle_member_previews_repo_names(
     assert by_id["app"].repo_name == "app-payments-api"
     assert by_id["helm"].repo_name == "helm-payments-api"
     assert by_id["dashboards"].repo_name == "dashboards-platform-payments-api"
+    assert by_id["terraform"].repo_name == "tf-aws-payments-api"
 
 
 def test_bundle_provenance_document(
@@ -55,6 +56,8 @@ def test_bundle_provenance_document(
         "port": "8080",
         "runtime": "python",
         "catalog_lifecycle": "experimental",
+        "cloud_provider": "aws",
+        "provider_services": "ec2,s3",
     }
     result = generate_from_bundle(
         bundle,
@@ -68,5 +71,5 @@ def test_bundle_provenance_document(
     )
     assert doc["kind"] == "BundleGeneration"
     assert doc["spec"]["bundle"] == "service-stack"
-    assert len(doc["spec"]["members"]) == 3
+    assert len(doc["spec"]["members"]) == 4
     assert result.shared_inputs["service_name"] == "audit-svc"

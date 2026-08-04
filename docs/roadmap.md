@@ -6,12 +6,13 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Developer paved roads** — v1.84 composite paved roads (`microservice-full` bundle —
-[composite paved roads](#v184--composite-paved-roads)). v1.83 runtime and layout breadth shipped on `main`.
+**In progress:** **Developer paved roads** follow-ons (optional conformance snapshots per runtime×layout pair). v1.84 composite paved roads shipped on `main`. v1.83 runtime and layout breadth shipped on `main`.
 All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
 on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **App-service layout archetypes** (`appService.layout` on
+**Shipped on `main`:** **Composite paved roads (v1.84)** — `microservice-full` bundle (app, Helm, GitOps,
+dashboards, monitors, SLO), `service-stack` Terraform module member, portal bundle preset chips;
+**App-service layout archetypes** (`appService.layout` on
 `app-service-generic`: `worker`, `scheduled-job`, `grpc` for Python, Go, Node.js, Java, and .NET;
 `buf-lint` gate for grpc — [v1.83](#v183--runtime-and-archetype-breadth)); **Multi-component brownfield add** (`repave add`, `spec.components[]`
 in provenance, per-component verify, portal add action on service detail,
@@ -182,7 +183,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Postgres DR** | shipped | [`postgres-backup-restore.md`](operations/postgres-backup-restore.md), `make postgres-dr-drill` |
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
-| **Developer paved roads** | Partial (v1.79–v1.83 shipped; v1.84 open) | GitOps delivery and deploy pipeline paths, SLOs/runbooks as code, `repave add` for existing repos, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
@@ -1297,8 +1298,9 @@ report and a pin-drift summary without modifying the repo.
 *Planning label: v1.76 (roadmap numbering only).*
 
 **Status:** **Shipped on `main`** — `schemas/bundle.schema.json`, `blueprints/bundles/service-stack/`
-(app + Helm + dashboards), `repave generate --bundle`, portal **Composite bundles** catalog
-and `/bundles/{name}` form with combined plan result.
+v0.2.0 (app + Helm + dashboards + Terraform module), `blueprints/bundles/microservice-full/`
+(six-member full stack), `repave generate --bundle`, portal **Composite bundles** catalog with
+preset chips and `/bundles/{name}` form with combined plan result.
 
 **Problem:** Every blueprint emits exactly one artifact, but a real service needs a
 Terraform module, a Helm chart, an app-service repo, and observability. All four paths exist
@@ -2253,7 +2255,9 @@ conformance harness and carries its own delivery, SLO, and runbook artifacts.
 
 *Planning label: v1.84 (roadmap numbering only).*
 
-**Status:** Not started (next developer paved roads slice).
+**Status:** Shipped on `main` — `microservice-full` bundle (app-service, helm-chart,
+gitops-deployment, dashboards, monitors, SLO), `service-stack` v0.2.0 Terraform module member,
+portal catalog preset chips, bundle conformance fixtures, and dry-run tests.
 
 **Problem:** [`service-stack`](#composite-golden-paths-bundles) proved bundles work with three
 members, and its own follow-on (a Terraform module member) is still open. Once delivery and

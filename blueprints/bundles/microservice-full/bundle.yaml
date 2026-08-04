@@ -1,0 +1,180 @@
+apiVersion: repave.dev/v1alpha1
+kind: Bundle
+metadata:
+  name: microservice-full
+  version: 0.1.0
+  description: >-
+    Full microservice paved road — app, Helm, GitOps, dashboards, monitors, and SLO with shared lineage.
+spec:
+  inputs:
+    - name: service_name
+      type: string
+      required: true
+      description: Logical service name shared across all member repositories.
+    - name: description
+      type: string
+      required: true
+      description: Short description for README and catalog metadata.
+    - name: owner
+      type: string
+      required: true
+      description: Owning team (Backstage spec.owner, e.g. group:platform).
+    - name: organization
+      type: string
+      required: true
+      description: Organization slug for observability repo naming.
+    - name: team
+      type: string
+      required: true
+      description: Team slug for alert and dashboard tags.
+    - name: port
+      type: string
+      required: false
+      default: "8080"
+      description: Container listen port (app Dockerfile and Helm service).
+    - name: runtime
+      type: string
+      required: false
+      default: python
+      enum:
+        - python
+        - go
+        - nodejs
+        - java
+        - dotnet
+      description: Application runtime for the app-service member.
+    - name: catalog_lifecycle
+      type: string
+      required: false
+      default: experimental
+      enum:
+        - experimental
+        - production
+        - deprecated
+      description: Backstage lifecycle for the generated component.
+    - name: image_repository
+      type: string
+      required: false
+      default: ""
+      description: >-
+        Container image repository for the Helm chart (without tag). When empty,
+        defaults to ghcr.io/{github_org}/app-{service_name}.
+    - name: runbook_url
+      type: string
+      required: true
+      description: HTTPS runbook URL for monitors and SLO alert annotations.
+    - name: slo_target_percent
+      type: string
+      required: false
+      default: "99.9"
+      description: Availability SLO target for the SLO member (for example 99.9).
+    - name: environment
+      type: string
+      required: false
+      default: dev
+      enum:
+        - dev
+        - staging
+        - prod
+      description: Deployment environment for GitOps and observability repos.
+    - name: gitops_engine
+      type: string
+      required: false
+      default: argocd
+      enum:
+        - argocd
+        - flux
+      description: GitOps controller for the deployment member.
+    - name: sync_policy
+      type: string
+      required: false
+      default: manual
+      enum:
+        - manual
+        - automated
+      description: GitOps sync policy (manual waits for merge).
+    - name: target_namespace
+      type: string
+      required: false
+      default: default
+      description: Kubernetes namespace for the GitOps deployment.
+  members:
+    - id: app
+      blueprint: app-service-generic
+      input_mapping:
+        service_name: "{service_name}"
+        description: "{description}"
+        owner: "{owner}"
+        system: ""
+        catalog_lifecycle: "{catalog_lifecycle}"
+        port: "{port}"
+        runtime: "{runtime}"
+        include_helm_reference: "true"
+        helm_chart_repo: "{helm_chart_repo}"
+    - id: helm
+      blueprint: helm-chart-generic
+      input_mapping:
+        chart_name: "{service_name}"
+        app_name: "{service_name}"
+        description: "{description}"
+        image_repository: "{image_repository}"
+        image_tag: "1.0.0"
+        service_port: "{port}"
+        enable_ingress: "false"
+        include_backstage_catalog: "false"
+    - id: gitops
+      blueprint: gitops-deployment-generic
+      input_mapping:
+        service_name: "{service_name}"
+        environment: "{environment}"
+        gitops_engine: "{gitops_engine}"
+        chart_repo_url: "{helm_chart_repo}"
+        chart_name: "{service_name}"
+        chart_version: "1.0.0"
+        target_namespace: "{target_namespace}"
+        sync_policy: "{sync_policy}"
+        destination_server: https://kubernetes.default.svc
+        argocd_project: platform
+    - id: dashboards
+      blueprint: dashboards-as-code-generic
+      input_mapping:
+        service_name: "{service_name}"
+        organization: "{organization}"
+        team: "{team}"
+        description: "{description}"
+        backend: grafana
+        configuration_mode: custom
+        output_mode: native
+        environment: "{environment}"
+        observability_focus: dashboards
+        dashboard_pack_source: repave-red-starter
+        datasource_uid: prometheus
+    - id: monitors
+      blueprint: monitors-as-code-generic
+      input_mapping:
+        service_name: "{service_name}"
+        organization: "{organization}"
+        team: "{team}"
+        description: "{description}"
+        configuration_mode: recommended
+        backend: prometheus
+        output_mode: native
+        environment: "{environment}"
+        observability_focus: monitors
+        notification_source: repave-estate-oncall
+        notification_target: pagerduty-platform-primary
+        runbook_url: "{runbook_url}"
+        slo_target_percent: "{slo_target_percent}"
+    - id: slo
+      blueprint: slo-as-code-generic
+      input_mapping:
+        service_name: "{service_name}"
+        organization: "{organization}"
+        team: "{team}"
+        description: "{description}"
+        slo_target_percent: "{slo_target_percent}"
+        runbook_url: "{runbook_url}"
+        environment: "{environment}"
+        observability_focus: slo
+        notification_source: repave-estate-oncall
+        notification_target: pagerduty-platform-primary

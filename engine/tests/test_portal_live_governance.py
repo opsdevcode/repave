@@ -90,6 +90,8 @@ def test_bundle_result_includes_topology(repo_root, output_config) -> None:
             "port": "8080",
             "runtime": "python",
             "catalog_lifecycle": "experimental",
+            "cloud_provider": "aws",
+            "provider_services": "ec2,s3",
         },
     )
     assert response.status_code == 200

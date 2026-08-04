@@ -1,0 +1,42 @@
+inputs:
+  service_name: microservice-demo
+  description: Microservice full bundle conformance fixture
+  owner: group:platform
+  organization: platform
+  team: payments
+  port: "8080"
+  runtime: python
+  catalog_lifecycle: experimental
+  runbook_url: https://wiki.example.com/runbooks/microservice-demo
+  slo_target_percent: "99.9"
+  environment: dev
+  gitops_engine: argocd
+  sync_policy: manual
+  target_namespace: default
+required_members:
+  - app
+  - helm
+  - gitops
+  - dashboards
+  - monitors
+  - slo
+member_required_files:
+  app:
+    - repave.yaml
+    - Dockerfile
+    - catalog-info.yaml
+  helm:
+    - repave.yaml
+    - Chart.yaml
+  gitops:
+    - repave.yaml
+    - apps/release.yaml
+  dashboards:
+    - repave.yaml
+    - README.md
+  monitors:
+    - repave.yaml
+    - README.md
+  slo:
+    - repave.yaml
+    - prometheus/rules/slo-burn.yaml

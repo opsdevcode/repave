@@ -1088,7 +1088,10 @@ def test_index_lists_service_stack_bundle(repo_root, output_config) -> None:
     response = client.get("/")
     assert response.status_code == 200
     assert "service-stack" in response.text
+    assert "microservice-full" in response.text
     assert "/bundles/service-stack" in response.text
+    assert "/bundles/microservice-full" in response.text
+    assert "preset-chip" in response.text
 
 
 def test_bundle_form_renders_shared_inputs(repo_root, output_config) -> None:
@@ -1120,6 +1123,8 @@ def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) ->
             "port": "8080",
             "runtime": "python",
             "catalog_lifecycle": "experimental",
+            "cloud_provider": "aws",
+            "provider_services": "ec2,s3",
         },
     )
     assert response.status_code == 200
