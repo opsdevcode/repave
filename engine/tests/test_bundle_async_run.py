@@ -23,6 +23,8 @@ SERVICE_STACK_INPUTS = {
     "port": "8080",
     "runtime": "python",
     "catalog_lifecycle": "experimental",
+    "cloud_provider": "aws",
+    "provider_services": "ec2,s3",
 }
 
 
@@ -30,7 +32,7 @@ def _fake_bundle_result() -> dict[str, object]:
     return {
         "kind": "bundle",
         "bundle": "service-stack",
-        "bundle_version": "0.1.0",
+        "bundle_version": "0.2.0",
         "dry_run": True,
         "gates_outcome": "passed",
         "gates_passed": True,

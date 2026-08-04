@@ -212,22 +212,50 @@
           repoName = "helm-" + serviceName;
         } else if (memberId === "dashboards") {
           repoName = "dashboards-" + organization + "-" + serviceName;
+        } else if (memberId === "gitops") {
+          var envField = form.querySelector('[name="environment"]');
+          var environment = slug(envField && envField.value, "dev");
+          repoName = "gitops-" + environment + "-" + serviceName;
+        } else if (memberId === "monitors") {
+          repoName = "monitors-" + organization + "-" + serviceName;
+        } else if (memberId === "slo") {
+          repoName = "slo-" + organization + "-" + serviceName;
+        } else if (memberId === "terraform") {
+          var cloudField = form.querySelector('[name="cloud_provider"]');
+          var cloud = slug(cloudField && cloudField.value, "aws");
+          repoName = "tf-" + cloud + "-" + serviceName;
         }
         if (repoEl && repoName) {
           repoEl.textContent = repoName;
         }
         if (xrefEl) {
+          var helmUrl =
+            "https://github.com/" + githubOrg + "/helm-" + serviceName;
+          var imageRef = "ghcr.io/" + githubOrg + "/app-" + serviceName + ":1.0.0";
           if (memberId === "app") {
-            xrefEl.textContent =
-              "Links to Helm chart at https://github.com/" +
-              githubOrg +
-              "/helm-" +
-              serviceName;
+            xrefEl.textContent = "Links to Helm chart at " + helmUrl;
           } else if (memberId === "helm") {
-            xrefEl.textContent =
-              "Image ghcr.io/" + githubOrg + "/app-" + serviceName + ":1.0.0";
+            xrefEl.textContent = "Image " + imageRef;
           } else if (memberId === "dashboards") {
             xrefEl.textContent = "Dashboards for service " + serviceName;
+          } else if (memberId === "gitops") {
+            xrefEl.textContent =
+              "Deploys chart " + serviceName + " from " + helmUrl;
+          } else if (memberId === "monitors") {
+            xrefEl.textContent = "Alerts for " + serviceName + " (runbook linked)";
+          } else if (memberId === "slo") {
+            var sloField = form.querySelector('[name="slo_target_percent"]');
+            var sloTarget = slug(sloField && sloField.value, "99.9");
+            xrefEl.textContent =
+              "SLO target " + sloTarget + "% for " + serviceName;
+          } else if (memberId === "terraform") {
+            var cloudProvider = slug(
+              form.querySelector('[name="cloud_provider"]') &&
+                form.querySelector('[name="cloud_provider"]').value,
+              "aws"
+            );
+            xrefEl.textContent =
+              "Terraform module tf-" + cloudProvider + "-" + serviceName;
           }
         }
       });
@@ -239,6 +267,12 @@
     if (orgField) {
       orgField.addEventListener("input", updatePreview);
     }
+    form.querySelectorAll('[name="environment"], [name="cloud_provider"], [name="slo_target_percent"]').forEach(
+      function (field) {
+        field.addEventListener("input", updatePreview);
+        field.addEventListener("change", updatePreview);
+      }
+    );
     updatePreview();
   }
 

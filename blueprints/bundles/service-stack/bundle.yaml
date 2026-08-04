@@ -2,14 +2,14 @@ apiVersion: repave.dev/v1alpha1
 kind: Bundle
 metadata:
   name: service-stack
-  version: 0.1.0
-  description: Application service, Helm chart, and Grafana dashboards with shared naming and cross-references.
+  version: 0.2.0
+  description: Application service, Helm chart, Grafana dashboards, and Terraform module with shared naming.
 spec:
   inputs:
     - name: service_name
       type: string
       required: true
-      description: Logical service name (repos app-{name}, helm-{name}, dashboards).
+      description: Logical service name (repos app-{name}, helm-{name}, dashboards, tf module).
     - name: description
       type: string
       required: true
@@ -38,6 +38,9 @@ spec:
       enum:
         - python
         - go
+        - nodejs
+        - java
+        - dotnet
       description: Application runtime for the app-service member.
     - name: catalog_lifecycle
       type: string
@@ -55,6 +58,20 @@ spec:
       description: >-
         Container image repository for the Helm chart (without tag). When empty,
         defaults to ghcr.io/{github_org}/app-{service_name}.
+    - name: cloud_provider
+      type: string
+      required: false
+      default: aws
+      enum:
+        - aws
+        - azure
+        - gcp
+      description: Cloud provider for the Terraform module member.
+    - name: provider_services
+      type: string
+      required: false
+      default: ec2,s3
+      description: Comma-separated Terraform provider services for the module (provider-catalog.json).
   members:
     - id: app
       blueprint: app-service-generic
@@ -93,3 +110,14 @@ spec:
         observability_focus: dashboards
         dashboard_pack_source: repave-red-starter
         datasource_uid: prometheus
+    - id: terraform
+      blueprint: terraform-module-generic
+      input_mapping:
+        module_name: "{service_name}"
+        description: "{description}"
+        cloud_provider: "{cloud_provider}"
+        provider_services: "{provider_services}"
+        include_backstage_catalog: "true"
+        owner: "{owner}"
+        system: ""
+        catalog_lifecycle: "{catalog_lifecycle}"

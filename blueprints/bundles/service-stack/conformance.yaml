@@ -7,10 +7,13 @@ inputs:
   port: "8080"
   runtime: python
   catalog_lifecycle: experimental
+  cloud_provider: aws
+  provider_services: ec2,s3
 required_members:
   - app
   - helm
   - dashboards
+  - terraform
 member_required_files:
   app:
     - repave.yaml
@@ -22,3 +25,6 @@ member_required_files:
   dashboards:
     - repave.yaml
     - README.md
+  terraform:
+    - repave.yaml
+    - versions.tf

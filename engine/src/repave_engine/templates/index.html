@@ -130,6 +130,13 @@
         <span class="badge badge--app">{{ catalog_bundles|length }}</span>
       </summary>
       <ul class="catalog-inventory__items">
+        <li class="catalog-inventory__row catalog-inventory__row--presets" data-catalog-item>
+          <div class="catalog-inventory__preset-chips">
+            <span class="muted catalog-inventory__preset-label">Quick start</span>
+            <a class="btn btn--ghost btn--sm preset-chip" href="/bundles/service-stack">App + Helm + dashboards + Terraform</a>
+            <a class="btn btn--ghost btn--sm preset-chip" href="/bundles/microservice-full">Full microservice (6 repos)</a>
+          </div>
+        </li>
         {% for bundle in catalog_bundles %}
         <li class="catalog-inventory__row" data-catalog-item>
           <a

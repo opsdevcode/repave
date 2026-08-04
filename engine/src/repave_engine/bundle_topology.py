@@ -61,8 +61,16 @@ def _default_edges(bundle_name: str, member_ids: list[str]) -> tuple[TopologyEdg
     edges: list[TopologyEdge] = []
     if "app" in member_ids and "helm" in member_ids:
         edges.append(TopologyEdge("app", "helm", "chart packages app"))
+    if "helm" in member_ids and "gitops" in member_ids:
+        edges.append(TopologyEdge("helm", "gitops", "deploys chart"))
     if "helm" in member_ids and "dashboards" in member_ids:
         edges.append(TopologyEdge("helm", "dashboards", "observability"))
+    if "app" in member_ids and "monitors" in member_ids:
+        edges.append(TopologyEdge("app", "monitors", "alerts"))
+    if "app" in member_ids and "slo" in member_ids:
+        edges.append(TopologyEdge("app", "slo", "SLO"))
+    if "app" in member_ids and "terraform" in member_ids:
+        edges.append(TopologyEdge("terraform", "app", "infra"))
     if len(member_ids) > 1 and not edges:
         for index in range(len(member_ids) - 1):
             edges.append(TopologyEdge(member_ids[index], member_ids[index + 1], "member chain"))
