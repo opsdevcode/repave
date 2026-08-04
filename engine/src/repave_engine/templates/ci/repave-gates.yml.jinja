@@ -111,6 +111,11 @@ jobs:
         uses: {{ actions['actions/setup-dotnet'].ref }}  # {{ actions['actions/setup-dotnet'].tag }}
         with:
           dotnet-version: "{{ dotnet_version }}"
+{% endif %}{% if needs_buf %}
+      - name: Install buf
+        run: |
+          BUF_URL="https://github.com/bufbuild/buf/releases/download/v{{ buf_version }}/buf-Linux-x86_64.tar.gz"
+          curl -sSL "$BUF_URL" | tar xz -C /usr/local/bin --strip-components=2 buf/bin/buf
 {% endif %}{% if needs_python %}
       - name: Install service dev dependencies
         run: pip install -e ".[dev]"

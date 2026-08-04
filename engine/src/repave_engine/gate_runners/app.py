@@ -4,7 +4,12 @@ from pathlib import Path
 
 import repave_engine.gate_runners as _gr
 from repave_engine.gate_registry import GateContext, GateResult
-from repave_engine.gate_toolchain import dotnet_cli_ready, maven_cli_ready, node_cli_ready
+from repave_engine.gate_toolchain import (
+    buf_cli_ready,
+    dotnet_cli_ready,
+    maven_cli_ready,
+    node_cli_ready,
+)
 
 
 def _ensure_python_project_installed(output_dir: Path) -> None:
@@ -331,3 +336,37 @@ def run_dotnet_test(ctx: GateContext) -> GateResult:
         return GateResult("dotnet-test", True, False, "dotnet test passed")
     detail = result.stderr.strip() or result.stdout.strip() or "dotnet test failed"
     return GateResult("dotnet-test", False, False, detail)
+
+
+def _buf_config_is_valid(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    text = path.read_text(encoding="utf-8").strip()
+    return text.startswith("version:") and "modules:" in text
+
+
+def run_buf_lint(ctx: GateContext) -> GateResult:
+    output_dir = ctx.output_dir
+    if ctx.blueprint is not None and ctx.blueprint.artifact_type != "app-service":
+        return GateResult("buf-lint", True, True, "buf-lint gate not applicable; skipped")
+
+    if not _gr.tool_available("buf"):
+        return GateResult("buf-lint", True, True, "buf not installed; skipped")
+
+    if not buf_cli_ready():
+        return GateResult("buf-lint", True, True, "buf not runnable; skipped")
+
+    config_name = "buf.yaml"
+    if ctx.blueprint is not None:
+        cfg = ctx.blueprint.gate_config_for("buf-lint")
+        config_name = str(cfg.get("config_file", config_name))
+
+    config_path = output_dir / config_name
+    if not _buf_config_is_valid(config_path):
+        return GateResult("buf-lint", True, True, "no buf.yaml found; skipped")
+
+    result = _gr.run_command(["buf", "lint"], output_dir)
+    if result.returncode == 0:
+        return GateResult("buf-lint", True, False, "buf lint passed")
+    detail = result.stderr.strip() or result.stdout.strip() or "buf lint failed"
+    return GateResult("buf-lint", False, False, detail)

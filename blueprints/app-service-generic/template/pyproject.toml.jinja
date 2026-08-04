@@ -9,15 +9,19 @@ version = "0.1.0"
 description = "{{ description }}"
 requires-python = ">=3.12"
 dependencies = [
+{% if layout == 'http-api' -%}
   "fastapi>=0.110.0",
   "uvicorn[standard]>=0.27.0",
+{% endif -%}
 ]
 
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",
   "ruff>=0.9.0",
+{% if layout == 'http-api' -%}
   "httpx>=0.27.0",
+{% endif -%}
 ]
 
 [tool.pytest.ini_options]
@@ -34,4 +38,4 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-{% endif %}
+{% endif -%}

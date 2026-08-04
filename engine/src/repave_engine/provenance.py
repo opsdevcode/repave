@@ -373,6 +373,7 @@ def _build_app_service_spec(
             "owner": str(values.get("owner", "")).strip(),
             "port": str(values.get("port", "8080")).strip(),
             "runtime": str(values.get("runtime", "python")).strip(),
+            "layout": str(values.get("layout", "http-api")).strip(),
             "include_helm_reference": str(values.get("include_helm_reference", "false")).strip(),
         },
     }

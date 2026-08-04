@@ -99,6 +99,15 @@ def test_node_test_skips_without_package_json(tmp_path: Path, monkeypatch) -> No
     assert results[0].skipped is True
 
 
+def test_buf_lint_skips_without_buf_yaml(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "buf")
+
+    results = run_gates(tmp_path, ("buf-lint",))
+
+    assert results[0].passed is True
+    assert results[0].skipped is True
+
+
 def test_java_build_skips_without_pom(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: name == "mvn")
 

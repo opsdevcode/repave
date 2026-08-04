@@ -7,6 +7,7 @@ from repave_engine.gate_runners import (
     run_ansible_lint,
     run_ansible_syntax_check,
     run_azure_policy,
+    run_buf_lint,
     run_checkov,
     run_datadog_api_validate,
     run_datadog_dashboard,
@@ -250,6 +251,13 @@ register_gate(
     GateSpec(
         name="dotnet-test",
         runner=run_dotnet_test,
+        artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="buf-lint",
+        runner=run_buf_lint,
         artifact_types=_APP_SERVICE_ARTIFACT_TYPES,
     )
 )

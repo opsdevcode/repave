@@ -154,6 +154,22 @@ def dotnet_cli_ready() -> bool:
     return result.returncode == 0
 
 
+def buf_cli_ready() -> bool:
+    """True when buf executes."""
+    buf_bin = resolve_tool("buf")
+    if not buf_bin:
+        return False
+    run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
+    result = run_subprocess(
+        [buf_bin, "--version"],
+        cwd=run_cwd,
+        check=False,
+        env=os.environ.copy(),
+        timeout=15,
+    )
+    return result.returncode == 0
+
+
 def gate_tool_status() -> dict[str, bool]:
     """Tool readiness as seen by the running engine process (for /readyz)."""
     ensure_gate_path()

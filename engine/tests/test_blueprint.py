@@ -208,6 +208,7 @@ def test_load_app_service_generic_blueprint(repo_root: Path) -> None:
     assert "dockerfile-lint" in blueprint.gates
     assert "actionlint" in blueprint.gates
     assert "python-test" in blueprint.gates
+    assert "buf-lint" in blueprint.gates
 
 
 def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:

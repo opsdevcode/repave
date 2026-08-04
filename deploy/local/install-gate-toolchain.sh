@@ -13,6 +13,7 @@ INSTALL_ANSIBLE_COLLECTIONS="${INSTALL_ANSIBLE_COLLECTIONS:-1}"
 INSTALL_HELM="${INSTALL_HELM:-1}"
 INSTALL_KUBECTL="${INSTALL_KUBECTL:-1}"
 INSTALL_ACTIONLINT="${INSTALL_ACTIONLINT:-1}"
+INSTALL_BUF="${INSTALL_BUF:-1}"
 DEST="${DEST:-/usr/local/bin}"
 GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 
@@ -54,6 +55,7 @@ case "$arch" in
     conf_arch="x86_64"
     helm_arch="amd64"
     kubectl_arch="amd64"
+    buf_arch="x86_64"
     ;;
   aarch64|arm64)
     tf_arch="arm64"
@@ -61,6 +63,7 @@ case "$arch" in
     conf_arch="arm64"
     helm_arch="arm64"
     kubectl_arch="arm64"
+    buf_arch="aarch64"
     ;;
   *)
     echo "unsupported architecture: $arch" >&2
@@ -165,4 +168,13 @@ if [[ "$INSTALL_ACTIONLINT" == "1" ]]; then
   fi
 fi
 
-echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION}, actionlint=${ACTIONLINT_VERSION})."
+if [[ "$INSTALL_BUF" == "1" ]]; then
+  tmp_buf="$(mktemp -d)"
+  "${CURL_GET[@]}" \
+    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${buf_arch}.tar.gz" \
+    | tar xz -C "$tmp_buf" buf/bin/buf
+  install_bin "$tmp_buf/buf/bin/buf"
+  rm -rf "$tmp_buf"
+fi
+
+echo "Gate toolchain installed (terraform=${TERRAFORM_VERSION}, tflint=${TFLINT_VERSION}, conftest=${CONFTEST_VERSION}, helm=${HELM_VERSION}, infracost=${INFRACOST_VERSION}, kubectl=${KUBECTL_VERSION}, actionlint=${ACTIONLINT_VERSION}, buf=${BUF_VERSION})."

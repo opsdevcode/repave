@@ -443,6 +443,13 @@ def _validate_gitops_deployment_inputs(blueprint: Blueprint, normalized: dict[st
 def _validate_app_service_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
     if blueprint.name != "app-service-generic":
         return
+    layout = str(normalized.get("layout", "http-api")).strip()
+    runtime = str(normalized.get("runtime", "python")).strip()
+    if layout != "http-api" and runtime != "python":
+        raise ValueError(
+            f"layout {layout!r} is supported for runtime python only; "
+            "use layout http-api for other runtimes until the matrix expands"
+        )
     if str(normalized.get("include_helm_reference", "false")).strip() == "true":
         repo = str(normalized.get("helm_chart_repo", "")).strip()
         if not repo:
