@@ -1,9 +1,23 @@
 {% if runtime == 'dotnet' -%}
 {% set dotnet_project = service_name.replace('-', ' ')|title|replace(' ', '') -%}
+{% if layout == 'http-api' -%}
 using Repave.{{ dotnet_project }};
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 app.MapGet("/healthz", () => Results.Json(Health.Payload()));
 app.Run();
+{% elif layout == 'worker' -%}
+using Repave.{{ dotnet_project }};
+
+Worker.Run();
+{% elif layout == 'scheduled-job' -%}
+using Repave.{{ dotnet_project }};
+
+Environment.Exit(ScheduledJob.Run());
+{% elif layout == 'grpc' -%}
+using Repave.{{ dotnet_project }};
+
+GrpcBootstrap.Serve();
+{% endif -%}
 {% endif %}

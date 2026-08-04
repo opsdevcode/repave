@@ -864,6 +864,7 @@ def test_generate_app_service_dotnet_dry_run(
     assert not failing, [(g.name, g.message) for g in failing]
 
 
+@pytest.mark.parametrize("runtime", ["python", "go", "nodejs", "java", "dotnet"])
 @pytest.mark.parametrize(
     ("layout", "extra_assert"),
     [
@@ -882,6 +883,7 @@ def test_generate_app_service_layout_dry_run(
     repo_root: Path,
     output_config,
     staging_root,
+    runtime: str,
     layout: str,
     extra_assert,
 ) -> None:
@@ -896,7 +898,7 @@ def test_generate_app_service_layout_dry_run(
             "description": "Orders background worker",
             "owner": "team:commerce",
             "port": "8080",
-            "runtime": "python",
+            "runtime": runtime,
             "layout": layout,
             "include_helm_reference": "false",
         },
@@ -910,27 +912,30 @@ def test_generate_app_service_layout_dry_run(
     extra_assert(output_dir)
     spec = yaml.safe_load((output_dir / "repave.yaml").read_text(encoding="utf-8"))["spec"]
     assert spec["appService"]["layout"] == layout
+    assert spec["appService"]["runtime"] == runtime
     failing = [g for g in result.gates if not g.passed and not g.skipped]
     assert not failing, [(g.name, g.message) for g in failing]
 
 
-def test_app_service_layout_requires_python_for_non_http_api(repo_root: Path) -> None:
+def test_app_service_layout_accepts_all_runtimes(repo_root: Path) -> None:
     blueprint = load_blueprint(
         repo_root / "blueprints" / "app-service-generic",
         repo_root=repo_root,
     )
-    with pytest.raises(ValueError, match="layout 'worker'"):
-        validate_inputs(
+    for runtime in ("go", "nodejs", "java", "dotnet"):
+        normalized = validate_inputs(
             blueprint,
             {
                 "service_name": "payments-api",
                 "description": "Payments",
                 "owner": "team:payments",
-                "runtime": "go",
+                "runtime": runtime,
                 "layout": "worker",
                 "include_helm_reference": "false",
             },
         )
+        assert normalized["runtime"] == runtime
+        assert normalized["layout"] == "worker"
 
 
 def test_generate_observability_as_code_dry_run(

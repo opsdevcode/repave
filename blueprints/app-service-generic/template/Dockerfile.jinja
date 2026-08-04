@@ -43,7 +43,15 @@ FROM gcr.io/distroless/static-debian12
 
 COPY --from=build /server /server
 
+{% if layout == 'http-api' or layout == 'grpc' -%}
 EXPOSE {{ port }}
+{% endif -%}
+{% if layout == 'worker' -%}
+ENV QUEUE_URL=""
+{% elif layout == 'grpc' -%}
+COPY buf.yaml .
+COPY proto ./proto
+{% endif -%}
 
 USER nonroot:nonroot
 ENTRYPOINT ["/server"]
@@ -66,8 +74,17 @@ ENV NODE_ENV=production
 COPY package.json ./
 RUN npm install --omit=dev
 COPY --from=build /app/dist ./dist
+{% if layout == 'grpc' -%}
+COPY buf.yaml .
+COPY proto ./proto
+{% endif -%}
 
+{% if layout == 'http-api' or layout == 'grpc' -%}
 EXPOSE {{ port }}
+{% endif -%}
+{% if layout == 'worker' -%}
+ENV QUEUE_URL=""
+{% endif -%}
 
 USER node
 CMD ["node", "dist/main.js"]
@@ -86,8 +103,17 @@ FROM eclipse-temurin:21-jre-noble
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
+{% if layout == 'grpc' -%}
+COPY buf.yaml .
+COPY proto ./proto
+{% endif -%}
 
+{% if layout == 'http-api' or layout == 'grpc' -%}
 EXPOSE {{ port }}
+{% endif -%}
+{% if layout == 'worker' -%}
+ENV QUEUE_URL=""
+{% endif -%}
 
 USER 1000
 ENTRYPOINT ["java", "-jar", "app.jar"]
@@ -108,8 +134,17 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble
 WORKDIR /app
 
 COPY --from=build /app/publish .
+{% if layout == 'grpc' -%}
+COPY buf.yaml .
+COPY proto ./proto
+{% endif -%}
 
+{% if layout == 'http-api' or layout == 'grpc' -%}
 EXPOSE {{ port }}
+{% endif -%}
+{% if layout == 'worker' -%}
+ENV QUEUE_URL=""
+{% endif -%}
 
 USER $APP_UID
 ENTRYPOINT ["dotnet", "{{ dotnet_project }}.dll"]

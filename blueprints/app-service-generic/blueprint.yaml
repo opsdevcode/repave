@@ -2,7 +2,7 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: app-service-generic
-  version: 0.6.0
+  version: 0.7.0
   description: Governed application service repo with HTTP, worker, scheduled-job, or gRPC layouts.
 spec:
   artifactType: app-service
@@ -51,7 +51,7 @@ spec:
         - nodejs
         - java
         - dotnet
-      description: Application runtime (Python, Go, Node.js/TypeScript, Java, or .NET HTTP).
+      description: Application runtime (Python, Go, Node.js/TypeScript, Java, or .NET).
     - name: layout
       type: string
       required: false

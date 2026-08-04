@@ -5,9 +5,29 @@ using Xunit;
 
 namespace Repave.{{ dotnet_project }}.Tests;
 
+{% if layout == 'http-api' -%}
 public class HealthTests
 {
     [Fact]
     public void Payload_is_ok() => Assert.Equal("ok", Health.Payload().Status);
 }
+{% elif layout == 'worker' -%}
+public class HealthTests
+{
+    [Fact]
+    public void ProcessMessage_is_idempotent() => Worker.ProcessMessage("order-1", "key-1");
+}
+{% elif layout == 'scheduled-job' -%}
+public class HealthTests
+{
+    [Fact]
+    public void RunJob_succeeds() => Assert.Equal(0, ScheduledJob.Run());
+}
+{% elif layout == 'grpc' -%}
+public class HealthTests
+{
+    [Fact]
+    public void HealthStatus_is_ok() => Assert.Equal("ok", HealthContract.Status().Status);
+}
+{% endif -%}
 {% endif %}

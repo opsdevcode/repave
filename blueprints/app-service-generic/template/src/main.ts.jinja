@@ -1,4 +1,5 @@
 {% if runtime == 'nodejs' -%}
+{% if layout == 'http-api' -%}
 import { createServer } from "./server.js";
 
 const port = Number(process.env.PORT ?? "{{ port }}");
@@ -6,4 +7,17 @@ const port = Number(process.env.PORT ?? "{{ port }}");
 createServer().listen(port, () => {
   console.log(`listening on ${port}`);
 });
+{% elif layout == 'worker' -%}
+import { runWorker } from "./server.js";
+
+void runWorker();
+{% elif layout == 'scheduled-job' -%}
+import { runJob } from "./server.js";
+
+process.exitCode = runJob();
+{% elif layout == 'grpc' -%}
+import { serve } from "./server.js";
+
+serve();
+{% endif -%}
 {% endif %}
