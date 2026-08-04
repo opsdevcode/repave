@@ -7,7 +7,6 @@ import signal
 import tempfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -72,17 +71,16 @@ from repave_engine.bundle_portal import (
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
-from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
+from repave_engine.catalog_cost import enrich_catalog_entities_with_cost, enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
     enrich_catalog_entities_with_deployment,
 )
-from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
+from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
-    apply_cost_to_scorecard,
     filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
@@ -636,17 +634,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         entity = find_catalog_entity(entities, entity_id)
         if entity is None:
             raise HTTPException(status_code=404, detail="Entity not found")
-        cost_actuals = fetch_entity_cost_actuals_for_portal(portal_config, entity)
-        entity = replace(
-            entity,
-            scorecard=apply_cost_to_scorecard(
-                entity.scorecard,
-                owner=entity.owner,
-                display_name=entity.display_name,
-                cost_actuals=cost_actuals,
-                cost_actuals_configured=cost_configured,
-            ),
-        )
+        entity, cost_actuals, cost_estimate = enrich_entity_cost(entity, portal_config)
         entity, deployment_status = deployment_scorecard_for_entity(entity, portal_config)
         token = resolve_github_access_token()
         docs = resolve_entity_docs(entity, github_token=token)
@@ -696,6 +684,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 observability_url=obs_url,
                 slo_summary=slo_summary,
                 cost_actuals=cost_actuals,
+                cost_estimate=cost_estimate,
                 deployment_status=deployment_status,
                 live_plan_available=live_plan_available,
                 live_plan_env=live_plan_env,

@@ -14,6 +14,7 @@ from typing import Any, Literal
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.blueprint import artifact_family
 from repave_engine.cost_actuals import CostActualsSummary, tag_coverage_for_fields
+from repave_engine.cost_estimate import CostEstimate
 from repave_engine.deployment_status import DeploymentStatus
 from repave_engine.environment_record import EnvironmentRecord
 from repave_engine.fleet import FleetEntry, normalize_repo_url
@@ -290,11 +291,20 @@ def _cost_scorecard_dimension(
     display_name: str,
     cost_actuals: CostActualsSummary | None,
     cost_actuals_configured: bool,
+    cost_estimate: CostEstimate | None = None,
 ) -> ScorecardDimension:
     if cost_actuals is not None:
         cost_level: ScoreLevel = "pass" if cost_actuals.tag_coverage == "complete" else "warn"
         as_of = cost_actuals.as_of[:19] if cost_actuals.as_of else "unknown"
         cost_detail = f"L30D {cost_actuals.currency} {cost_actuals.amount_30d} as of {as_of}"
+    elif cost_estimate is not None and cost_estimate.monthly_cost.strip() not in (
+        "",
+        "—",
+    ):
+        cost_level = "pass"
+        cost_detail = f"Est {cost_estimate.currency} {cost_estimate.monthly_cost}/mo from Infracost"
+        if cost_estimate.detail.strip():
+            cost_detail = cost_estimate.detail.strip()
     elif cost_actuals_configured:
         coverage, cov_detail = tag_coverage_for_fields(owner, display_name)
         if coverage == "missing":
@@ -347,6 +357,7 @@ def apply_cost_to_scorecard(
     display_name: str,
     cost_actuals: CostActualsSummary | None,
     cost_actuals_configured: bool,
+    cost_estimate: CostEstimate | None = None,
 ) -> tuple[ScorecardDimension, ...]:
     base = tuple(dim for dim in scorecard if dim.key != "cost")
     return (
@@ -356,6 +367,7 @@ def apply_cost_to_scorecard(
             display_name=display_name,
             cost_actuals=cost_actuals,
             cost_actuals_configured=cost_actuals_configured,
+            cost_estimate=cost_estimate,
         ),
     )
 

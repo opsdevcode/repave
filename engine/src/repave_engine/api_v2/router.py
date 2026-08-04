@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import AsyncIterator
-from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -29,14 +28,13 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
-from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
+from repave_engine.catalog_cost import enrich_catalog_entities_with_cost, enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
     enrich_catalog_entities_with_deployment,
 )
-from repave_engine.cost_actuals import cost_reader_configured, fetch_entity_cost_actuals_for_portal
+from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.entity_catalog import (
-    apply_cost_to_scorecard,
     find_catalog_entity,
     observability_embed_url,
 )
@@ -742,17 +740,7 @@ def build_api_v2_router(
         entity = find_catalog_entity(entities, entity_id)
         if entity is None:
             raise HTTPException(status_code=404, detail="Entity not found")
-        cost = fetch_entity_cost_actuals_for_portal(portal_config, entity)
-        entity = replace(
-            entity,
-            scorecard=apply_cost_to_scorecard(
-                entity.scorecard,
-                owner=entity.owner,
-                display_name=entity.display_name,
-                cost_actuals=cost,
-                cost_actuals_configured=cost_configured,
-            ),
-        )
+        entity, cost, cost_estimate = enrich_entity_cost(entity, portal_config)
         entity, deployment = deployment_scorecard_for_entity(entity, portal_config)
         body = entity.to_public_dict()
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
@@ -761,9 +749,10 @@ def build_api_v2_router(
         slo = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
         if slo is not None:
             body["slo_summary"] = slo.to_public_dict()
-        cost = fetch_entity_cost_actuals_for_portal(portal_config, entity)
         if cost is not None:
             body["cost_actuals"] = cost.to_public_dict()
+        if cost_estimate is not None:
+            body["cost_estimate"] = cost_estimate.to_public_dict()
         if deployment is not None:
             body["deployment_status"] = deployment.to_public_dict()
         return JSONResponse(body)

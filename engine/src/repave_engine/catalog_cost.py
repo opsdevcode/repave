@@ -40,35 +40,43 @@ def local_cost_estimate(entity: CatalogEntity) -> CostEstimate | None:
     return load_cost_estimate_file(Path(entity.local_path))
 
 
-def enrich_catalog_entities_with_cost(
-    entities: Sequence[CatalogEntity],
+def enrich_entity_cost(
+    entity: CatalogEntity,
     portal_config: PortalConfig,
-) -> tuple[CatalogEntity, ...]:
-    """Fetch cost actuals (cached) and local estimates; patch scorecards and tile badges."""
+    *,
+    cost_actuals: CostActualsSummary | None = None,
+) -> tuple[CatalogEntity, CostActualsSummary | None, CostEstimate | None]:
+    """Apply cost badge and scorecard dimension from reader actuals and/or local estimate."""
     configured = cost_reader_configured(
         cost_reader=portal_config.cost_reader,
         cost_actuals_url=portal_config.cost_actuals_url,
     )
-    enriched: list[CatalogEntity] = []
-    for entity in entities:
-        actuals = (
-            fetch_entity_cost_actuals_for_portal(portal_config, entity) if configured else None
-        )
-        estimate = local_cost_estimate(entity)
-        badge, badge_detail = format_cost_badge(actuals=actuals, estimate=estimate)
-        scorecard = apply_cost_to_scorecard(
+    actuals = (
+        cost_actuals
+        if cost_actuals is not None
+        else (fetch_entity_cost_actuals_for_portal(portal_config, entity) if configured else None)
+    )
+    estimate = local_cost_estimate(entity)
+    badge, badge_detail = format_cost_badge(actuals=actuals, estimate=estimate)
+    patched = replace(
+        entity,
+        scorecard=apply_cost_to_scorecard(
             entity.scorecard,
             owner=entity.owner,
             display_name=entity.display_name,
             cost_actuals=actuals,
             cost_actuals_configured=configured,
-        )
-        enriched.append(
-            replace(
-                entity,
-                scorecard=scorecard,
-                cost_badge=badge,
-                cost_badge_detail=badge_detail,
-            )
-        )
-    return tuple(enriched)
+            cost_estimate=estimate,
+        ),
+        cost_badge=badge,
+        cost_badge_detail=badge_detail,
+    )
+    return patched, actuals, estimate
+
+
+def enrich_catalog_entities_with_cost(
+    entities: Sequence[CatalogEntity],
+    portal_config: PortalConfig,
+) -> tuple[CatalogEntity, ...]:
+    """Fetch cost actuals (cached) and local estimates; patch scorecards and tile badges."""
+    return tuple(enrich_entity_cost(entity, portal_config)[0] for entity in entities)
