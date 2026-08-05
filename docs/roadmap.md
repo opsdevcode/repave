@@ -388,7 +388,9 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   `kind-co-install`; validated in `chart-validate` CI
 - **OCI publish:** [`chart-publish.yml`](../.github/workflows/chart-publish.yml) pushes
   `oci://ghcr.io/opsdevcode/charts/repave` and `repave-operator` on semver tags; chart
-  `version` and `appVersion` match the engine release
+  `version` and `appVersion` match the engine release. After GHCR image tags exist, the
+  workflow dispatches `repave-release` to private `opsdevcode/repave-aws-infra` (secret
+  `INFRA_DEPLOY_TOKEN`) for prod pin bump + deploy
 
 ### GitHub App authentication (engine v1.105+)
 

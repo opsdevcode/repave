@@ -31,5 +31,45 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]] && ! [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "tag '${GITHUB_REF_NAME}' is not a semver vX.Y.Z; refusing publish" >&2
+            exit 1
+          fi
           chmod +x deploy/k8s/hack/publish-charts.sh
           ./deploy/k8s/hack/publish-charts.sh "${VERSION}"
+
+      - name: Wait for GHCR image tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          chmod +x deploy/k8s/hack/wait-ghcr-tags.sh
+          ./deploy/k8s/hack/wait-ghcr-tags.sh "${VERSION}"
+
+      - name: Notify repave-aws-infra
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.INFRA_DEPLOY_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${GH_TOKEN:-}" ]]; then
+            echo "INFRA_DEPLOY_TOKEN is not set; cannot dispatch deploy to repave-aws-infra" >&2
+            echo "Create a PAT (repo scope on opsdevcode/repave-aws-infra) as secret INFRA_DEPLOY_TOKEN." >&2
+            exit 1
+          fi
+          SEMVER="${VERSION#v}"
+          gh api repos/opsdevcode/repave-aws-infra/dispatches \
+            --input - <<EOF
+          {
+            "event_type": "repave-release",
+            "client_payload": {
+              "version": "${SEMVER}",
+              "tag": "v${SEMVER}",
+              "sha": "${GITHUB_SHA}"
+            }
+          }
+          EOF
+          echo "Dispatched repave-release for ${SEMVER} to opsdevcode/repave-aws-infra"
