@@ -22,7 +22,7 @@ from repave_engine.state_contract import (
     parse_version,
 )
 from repave_engine.statestore.settings import StateStoreConfig
-from statestore_support import make_state
+from statestore_support import make_state, managed_resource
 
 BACKEND = "/api/state/v1/backend/acme/prod"
 
@@ -272,3 +272,190 @@ def test_backend_accepts_bearer_token(tmp_path: Path) -> None:
     with _client(tmp_path, _auth_config("svc-token")) as client:
         headers = {"Authorization": "Bearer svc-token"}
         assert client.post(BACKEND, content=make_state(), headers=headers).status_code == 200
+
+
+# -- resource graph ---------------------------------------------------------
+
+
+def _seed_graph(client: TestClient) -> None:
+    resources = [
+        managed_resource("aws_vpc", "main"),
+        managed_resource("aws_subnet", "web", depends_on=["aws_vpc.main"]),
+        managed_resource("aws_instance", "app", depends_on=["aws_subnet.web"]),
+    ]
+    assert client.post(BACKEND, content=make_state(resources=resources)).status_code == 200
+
+
+def test_resources_endpoint_lists_the_graph(client: TestClient) -> None:
+    _seed_graph(client)
+    payload = client.get("/api/state/v1/states/acme/prod/resources").json()
+    assert [row["address"] for row in payload["resources"]] == [
+        "aws_instance.app",
+        "aws_subnet.web",
+        "aws_vpc.main",
+    ]
+
+
+def test_resources_endpoint_filters_by_type(client: TestClient) -> None:
+    _seed_graph(client)
+    payload = client.get(
+        "/api/state/v1/states/acme/prod/resources", params={"type": "aws_vpc"}
+    ).json()
+    assert [row["address"] for row in payload["resources"]] == ["aws_vpc.main"]
+
+
+def test_inventory_endpoint_totals_resources(client: TestClient) -> None:
+    _seed_graph(client)
+    payload = client.get("/api/state/v1/states/acme/prod/inventory").json()
+    assert payload["total"] == 3
+    assert {entry["type"] for entry in payload["inventory"]} == {
+        "aws_vpc",
+        "aws_subnet",
+        "aws_instance",
+    }
+
+
+def test_graph_endpoint_returns_nodes_and_edges(client: TestClient) -> None:
+    _seed_graph(client)
+    payload = client.get("/api/state/v1/states/acme/prod/graph").json()
+    assert len(payload["nodes"]) == 3
+    assert {(edge["from"], edge["to"]) for edge in payload["edges"]} == {
+        ("aws_subnet.web", "aws_vpc.main"),
+        ("aws_instance.app", "aws_subnet.web"),
+    }
+
+
+def test_blast_radius_endpoint_reports_dependents_and_dependencies(client: TestClient) -> None:
+    _seed_graph(client)
+    payload = client.get(
+        "/api/state/v1/states/acme/prod/blast-radius", params={"address": "aws_subnet.web"}
+    ).json()
+    assert payload["affected"] == ["aws_instance.app"]
+    assert payload["affected_count"] == 1
+    assert payload["depends_on"] == ["aws_vpc.main"]
+
+
+def test_drift_endpoint_reports_only_changes(client: TestClient) -> None:
+    _seed_graph(client)
+    refreshed = make_state(
+        resources=[
+            managed_resource("aws_vpc", "main"),
+            managed_resource("aws_subnet", "web", depends_on=["aws_vpc.main"]),
+        ]
+    )
+    payload = client.post("/api/state/v1/states/acme/prod/drift", content=refreshed).json()
+    assert payload["compared_count"] == 3
+    assert payload["changed_count"] == 1
+    assert payload["drift"][0] == {
+        "address": "aws_instance.app",
+        "status": "removed",
+        "changed_keys": [],
+    }
+
+
+def test_drift_endpoint_rejects_a_non_state_body(client: TestClient) -> None:
+    _seed_graph(client)
+    response = client.post("/api/state/v1/states/acme/prod/drift", content=b"{}")
+    assert response.status_code == 400
+
+
+def test_graph_endpoints_404_on_unknown_state(client: TestClient) -> None:
+    for path in ("resources", "inventory", "graph"):
+        assert client.get(f"/api/state/v1/states/acme/missing/{path}").status_code == 404
+    assert (
+        client.get(
+            "/api/state/v1/states/acme/missing/blast-radius", params={"address": "aws_vpc.main"}
+        ).status_code
+        == 404
+    )
+
+
+def test_provider_schema_cache_redacts_subsequent_writes(client: TestClient) -> None:
+    schema = {
+        "provider_schemas": {
+            "registry.terraform.io/hashicorp/aws": {
+                "resource_schemas": {
+                    "aws_db_instance": {"block": {"attributes": {"endpoint": {"sensitive": True}}}}
+                }
+            }
+        }
+    }
+    cached = client.post(
+        "/api/state/v1/provider-schemas",
+        params={"provider": "hashicorp/aws", "version": "5.0.0"},
+        json=schema,
+    )
+    assert cached.status_code == 200
+    assert cached.json()["types"] == 1
+
+    resource = managed_resource(
+        "aws_db_instance", "db", attributes={"id": "db-1", "endpoint": "host:5432"}
+    )
+    assert client.post(BACKEND, content=make_state(resources=[resource])).status_code == 200
+
+    # The blob keeps the real value; only the queryable index is redacted.
+    exported = client.get("/api/state/v1/states/acme/prod/export").json()
+    assert exported["resources"][0]["instances"][0]["attributes"]["endpoint"] == "host:5432"
+
+
+def test_provider_schema_rejects_invalid_json(client: TestClient) -> None:
+    response = client.post(
+        "/api/state/v1/provider-schemas",
+        params={"provider": "hashicorp/aws"},
+        content=b"not json",
+    )
+    assert response.status_code == 400
+
+
+def test_blast_radius_cost_joins_infracost_by_address(client: TestClient) -> None:
+    _seed_graph(client)
+    breakdown = {
+        "currency": "USD",
+        "projects": [
+            {
+                "breakdown": {
+                    "resources": [
+                        {"name": "aws_subnet.web", "monthlyCost": "5.00"},
+                        {
+                            "name": "aws_instance.app",
+                            "monthlyCost": "30.00",
+                            "subresources": [{"name": "root_block_device", "monthlyCost": "2.50"}],
+                        },
+                    ]
+                }
+            }
+        ],
+    }
+    payload = client.post(
+        "/api/state/v1/states/acme/prod/blast-radius/cost",
+        params={"address": "aws_subnet.web"},
+        json=breakdown,
+    ).json()
+
+    assert payload["scope"] == ["aws_subnet.web", "aws_instance.app"]
+    # 5.00 for the subnet + 30.00 + 2.50 rolled up from the instance's subresource.
+    assert payload["monthly_cost"] == "37.50"
+    assert payload["unpriced"] == []
+
+
+def test_blast_radius_cost_reports_unpriced_resources(client: TestClient) -> None:
+    _seed_graph(client)
+    breakdown = {"projects": [{"breakdown": {"resources": [{"name": "aws_vpc.main"}]}}]}
+    payload = client.post(
+        "/api/state/v1/states/acme/prod/blast-radius/cost",
+        params={"address": "aws_vpc.main"},
+        json=breakdown,
+    ).json()
+
+    assert payload["monthly_cost"] == "0.00"
+    assert payload["unpriced"] == ["aws_instance.app", "aws_subnet.web"]
+
+
+def test_blast_radius_cost_rejects_invalid_json(client: TestClient) -> None:
+    _seed_graph(client)
+    response = client.post(
+        "/api/state/v1/states/acme/prod/blast-radius/cost",
+        params={"address": "aws_vpc.main"},
+        content=b"not json",
+    )
+    assert response.status_code == 400

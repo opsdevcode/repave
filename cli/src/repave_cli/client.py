@@ -67,6 +67,25 @@ class StateVersion:
         )
 
 
+@dataclass(frozen=True)
+class ResourceRow:
+    address: str
+    type: str
+    mode: str
+    provider: str
+    instance_count: int
+
+    @staticmethod
+    def from_payload(payload: dict[str, Any]) -> ResourceRow:
+        return ResourceRow(
+            address=str(payload.get("address", "")),
+            type=str(payload.get("type", "")),
+            mode=str(payload.get("mode", "")),
+            provider=str(payload.get("provider", "")),
+            instance_count=int(payload.get("instance_count", 0)),
+        )
+
+
 class StateClient:
     """Thin, synchronous client. One instance per command invocation."""
 
@@ -143,6 +162,75 @@ class StateClient:
         payload = self._request("GET", path, params={"limit": limit}).json()
         items = payload.get("versions", []) if isinstance(payload, dict) else []
         return [StateVersion.from_payload(item) for item in items if isinstance(item, dict)]
+
+    # -- resource graph -------------------------------------------------------
+
+    def _graph_get(
+        self, state: str, suffix: str, *, tenant: str | None, params: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        path = f"/states/{tenant or self.tenant}/{state}/{suffix}"
+        payload = self._request("GET", path, params=params).json()
+        return payload if isinstance(payload, dict) else {}
+
+    def list_resources(
+        self,
+        state: str,
+        *,
+        tenant: str | None = None,
+        resource_type: str | None = None,
+        mode: str | None = None,
+    ) -> list[ResourceRow]:
+        params: dict[str, Any] = {}
+        if resource_type:
+            params["type"] = resource_type
+        if mode:
+            params["mode"] = mode
+        payload = self._graph_get(state, "resources", tenant=tenant, params=params or None)
+        items = payload.get("resources", [])
+        return [ResourceRow.from_payload(item) for item in items if isinstance(item, dict)]
+
+    def inventory(self, state: str, *, tenant: str | None = None) -> dict[str, Any]:
+        return self._graph_get(state, "inventory", tenant=tenant)
+
+    def graph(self, state: str, *, tenant: str | None = None) -> dict[str, Any]:
+        return self._graph_get(state, "graph", tenant=tenant)
+
+    def blast_radius(
+        self, state: str, address: str, *, tenant: str | None = None
+    ) -> dict[str, Any]:
+        return self._graph_get(state, "blast-radius", tenant=tenant, params={"address": address})
+
+    def blast_radius_cost(
+        self, state: str, address: str, breakdown: bytes, *, tenant: str | None = None
+    ) -> dict[str, Any]:
+        path = f"/states/{tenant or self.tenant}/{state}/blast-radius/cost"
+        payload = self._request(
+            "POST",
+            path,
+            params={"address": address},
+            content=breakdown,
+            headers={"Content-Type": "application/json"},
+        ).json()
+        return payload if isinstance(payload, dict) else {}
+
+    def drift(self, state: str, refreshed: bytes, *, tenant: str | None = None) -> dict[str, Any]:
+        path = f"/states/{tenant or self.tenant}/{state}/drift"
+        payload = self._request(
+            "POST", path, content=refreshed, headers={"Content-Type": "application/json"}
+        ).json()
+        return payload if isinstance(payload, dict) else {}
+
+    def cache_provider_schema(
+        self, schema: bytes, *, provider: str, version: str = ""
+    ) -> dict[str, Any]:
+        payload = self._request(
+            "POST",
+            "/provider-schemas",
+            params={"provider": provider, "version": version},
+            content=schema,
+            headers={"Content-Type": "application/json"},
+        ).json()
+        return payload if isinstance(payload, dict) else {}
 
 
 def _raise_for_status(response: httpx.Response) -> None:

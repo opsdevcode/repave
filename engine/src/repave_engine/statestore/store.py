@@ -17,7 +17,28 @@ from typing import Any, Final, Literal
 
 from repave_engine.sql_store import SqlConnection
 from repave_engine.statestore.crypto import StateCrypto, open_blob, seal_blob
+from repave_engine.statestore.graph import (
+    DriftEntry,
+    InventoryEntry,
+    ResourceRow,
+    blast_radius,
+    cache_provider_schema,
+    clear_graph,
+    compare_drift,
+    dependencies_of,
+    inventory,
+    list_edges,
+    list_resources,
+    load_cached_sensitive_attributes,
+    replace_graph,
+    stored_instance_attributes,
+)
 from repave_engine.statestore.migrate import apply_migrations
+from repave_engine.statestore.normalize import (
+    Edge,
+    normalize_state,
+    sensitive_attributes_from_provider_schema,
+)
 from repave_engine.statestore.state_document import (
     StateDocument,
     StateDocumentError,
@@ -305,6 +326,82 @@ class StateStore:
             for row in rows
         ]
 
+    # -- graph queries --------------------------------------------------------
+
+    def _require_state_id(self, tenant_id: str, name: str) -> str | None:
+        row = self._state_row(tenant_id, name)
+        return None if row is None else str(row["state_id"])
+
+    def resources(
+        self,
+        tenant_id: str,
+        name: str,
+        *,
+        resource_type: str | None = None,
+        mode: str | None = None,
+    ) -> list[ResourceRow]:
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        return list_resources(self._conn, state_id, resource_type=resource_type, mode=mode)
+
+    def inventory(self, tenant_id: str, name: str) -> list[InventoryEntry]:
+        """Resource counts by type — what the estate is made of."""
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        return inventory(self._conn, state_id)
+
+    def blast_radius(self, tenant_id: str, name: str, address: str) -> list[str]:
+        """Everything a change to `address` can transitively reach."""
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        return blast_radius(self._conn, state_id, address)
+
+    def dependencies(self, tenant_id: str, name: str, address: str) -> list[str]:
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        return dependencies_of(self._conn, state_id, address)
+
+    def edges(self, tenant_id: str, name: str) -> list[Edge]:
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        return list_edges(self._conn, state_id)
+
+    def drift(self, tenant_id: str, name: str, refreshed: bytes) -> list[DriftEntry]:
+        """Compare stored attributes against a refreshed state produced elsewhere.
+
+        Repave does not run `refresh` itself (ADR 004 decision 4): the client holds the
+        cloud credentials, so it refreshes and posts the result here for comparison.
+        """
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        document = parse_state_document(refreshed)
+        observed = normalize_state(
+            document, schema_sensitive=load_cached_sensitive_attributes(self._conn)
+        )
+        observed_attributes = {
+            instance.address: instance.attributes
+            for resource in observed.resources
+            for instance in resource.instances
+        }
+        return compare_drift(stored_instance_attributes(self._conn, state_id), observed_attributes)
+
+    def cache_provider_schema(self, payload: Any, *, provider: str, version: str = "") -> int:
+        """Record provider sensitivity so later writes redact more than the denylist can.
+
+        Returns the number of resource types learned.
+        """
+        sensitive = sensitive_attributes_from_provider_schema(payload)
+        cache_provider_schema(
+            self._conn, provider=provider, version=version, sensitive_by_type=sensitive
+        )
+        return len(sensitive)
+
     # -- writes -------------------------------------------------------------
 
     def write_state(
@@ -401,6 +498,9 @@ class StateStore:
         blob, encryption, key_id = seal_blob(document.raw, self._crypto)
         version_id = _new_id()
         stamp = _now()
+        normalized = normalize_state(
+            document, schema_sensitive=load_cached_sensitive_attributes(self._conn)
+        )
         try:
             self._conn.execute(
                 "INSERT INTO state_versions (version_id, state_id, serial, lineage, "
@@ -426,6 +526,15 @@ class StateStore:
                 "updated_at = ? WHERE state_id = ?",
                 (document.serial, document.lineage, version_id, stamp, state_id),
             )
+            # The graph is a derived index of the current version, rebuilt in the same
+            # transaction that moves the pointer. An index that can lag the blob it
+            # describes is worse than no index.
+            replace_graph(
+                self._conn,
+                state_id=state_id,
+                version_id=version_id,
+                normalized=normalized,
+            )
             self._conn.commit()
         except Exception:
             self._conn.rollback()
@@ -441,7 +550,9 @@ class StateStore:
         row = self._state_row(tenant_id, name)
         if row is None:
             return False
-        self._conn.execute("DELETE FROM states WHERE state_id = ?", (str(row["state_id"]),))
+        state_id = str(row["state_id"])
+        clear_graph(self._conn, state_id)
+        self._conn.execute("DELETE FROM states WHERE state_id = ?", (state_id,))
         self._conn.commit()
         return True
 

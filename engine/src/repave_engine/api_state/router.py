@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import json
 import logging
 import secrets
 from collections.abc import Iterator
@@ -31,6 +32,7 @@ from repave_engine.auth import (
     require_role,
     service_user_from_bearer,
 )
+from repave_engine.cost_estimate import parse_resource_costs, total_monthly_cost
 from repave_engine.sql_store import connect
 from repave_engine.state_contract import (
     CLIENT_HEADER,
@@ -44,6 +46,7 @@ from repave_engine.state_contract import (
 )
 from repave_engine.statestore.crypto import StateCryptoError, load_state_crypto
 from repave_engine.statestore.settings import StateStoreConfig
+from repave_engine.statestore.state_document import StateDocumentError
 from repave_engine.statestore.store import (
     StateCorruptionError,
     StateStore,
@@ -250,6 +253,154 @@ def build_state_router(
             {"versions": [item.to_payload() for item in versions]},
             warning=warning,
         )
+
+    # -- resource graph -----------------------------------------------------
+
+    def read_scope(request: Request) -> str:
+        return require_client_role(request, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+
+    @contextmanager
+    def open_existing(tenant: str, state: str) -> Iterator[StateStore]:
+        with open_store() as store:
+            if not store.state_exists(tenant, state):
+                raise HTTPException(status_code=404, detail="state not found")
+            yield store
+
+    @router.get("/states/{tenant}/{state}/resources")
+    async def list_state_resources(
+        request: Request,
+        tenant: str,
+        state: str,
+        type: str | None = None,
+        mode: str | None = None,
+    ) -> JSONResponse:
+        warning = read_scope(request)
+        with open_existing(tenant, state) as store:
+            rows = store.resources(tenant, state, resource_type=type, mode=mode)
+        return _json({"resources": [row.to_payload() for row in rows]}, warning=warning)
+
+    @router.get("/states/{tenant}/{state}/inventory")
+    async def state_inventory(request: Request, tenant: str, state: str) -> JSONResponse:
+        warning = read_scope(request)
+        with open_existing(tenant, state) as store:
+            entries = store.inventory(tenant, state)
+        return _json(
+            {
+                "inventory": [entry.to_payload() for entry in entries],
+                "total": sum(entry.count for entry in entries),
+            },
+            warning=warning,
+        )
+
+    @router.get("/states/{tenant}/{state}/graph")
+    async def state_graph(request: Request, tenant: str, state: str) -> JSONResponse:
+        warning = read_scope(request)
+        with open_existing(tenant, state) as store:
+            rows = store.resources(tenant, state)
+            edges = store.edges(tenant, state)
+        return _json(
+            {
+                "nodes": [row.to_payload() for row in rows],
+                "edges": [
+                    {"from": edge.from_address, "to": edge.to_address, "kind": edge.kind}
+                    for edge in edges
+                ],
+            },
+            warning=warning,
+        )
+
+    @router.get("/states/{tenant}/{state}/blast-radius")
+    async def state_blast_radius(
+        request: Request, tenant: str, state: str, address: str
+    ) -> JSONResponse:
+        warning = read_scope(request)
+        with open_existing(tenant, state) as store:
+            affected = store.blast_radius(tenant, state, address)
+            depends_on = store.dependencies(tenant, state, address)
+        return _json(
+            {
+                "address": address,
+                "affected": affected,
+                "affected_count": len(affected),
+                "depends_on": depends_on,
+            },
+            warning=warning,
+        )
+
+    @router.post("/states/{tenant}/{state}/blast-radius/cost")
+    async def state_blast_radius_cost(
+        request: Request, tenant: str, state: str, address: str
+    ) -> JSONResponse:
+        """Price a blast radius against an Infracost breakdown posted by the client.
+
+        Infracost keys resources by the same address the graph does, so this is a join
+        rather than a second pricing run.
+        """
+        warning = read_scope(request)
+        try:
+            payload = json.loads(await request.body())
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=400, detail=f"infracost breakdown must be JSON: {exc}"
+            ) from exc
+
+        with open_existing(tenant, state) as store:
+            affected = store.blast_radius(tenant, state, address)
+        scope = [address, *affected]
+        costs = parse_resource_costs(payload)
+        total, unpriced = total_monthly_cost(costs, scope)
+        currency = next(iter(costs.values())).currency if costs else "USD"
+        return _json(
+            {
+                "address": address,
+                "scope": scope,
+                "currency": currency,
+                "monthly_cost": f"{total:.2f}",
+                "unpriced": list(unpriced),
+                "resources": [costs[item].to_public_dict() for item in scope if item in costs],
+            },
+            warning=warning,
+        )
+
+    @router.post("/states/{tenant}/{state}/drift")
+    async def state_drift(request: Request, tenant: str, state: str) -> JSONResponse:
+        """Compare stored attributes against a refreshed state posted by the client.
+
+        The refresh runs client-side because the cloud credentials live there
+        (ADR 004 decision 4); the body is a state document, not a plan.
+        """
+        warning = read_scope(request)
+        body = await request.body()
+        with open_existing(tenant, state) as store:
+            try:
+                entries = store.drift(tenant, state, body)
+            except StateDocumentError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+        changed = [entry for entry in entries if entry.status != "unchanged"]
+        return _json(
+            {
+                "drift": [entry.to_payload() for entry in changed],
+                "changed_count": len(changed),
+                "compared_count": len(entries),
+            },
+            warning=warning,
+        )
+
+    @router.post("/provider-schemas")
+    async def cache_provider_schema(
+        request: Request, provider: str, version: str = ""
+    ) -> JSONResponse:
+        """Cache `providers schema -json` so writes redact beyond the name denylist."""
+        warning = require_client_role(request, ROLE_GENERATOR, ROLE_ADMIN)
+        try:
+            payload = json.loads(await request.body())
+        except json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=400, detail=f"provider schema must be JSON: {exc}"
+            ) from exc
+        with open_store() as store:
+            learned = store.cache_provider_schema(payload, provider=provider, version=version)
+        return _json({"provider": provider, "version": version, "types": learned}, warning=warning)
 
     return router
 

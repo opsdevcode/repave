@@ -57,6 +57,43 @@ repave-tf state import prod terraform.tfstate
 repave-tf state export prod --out terraform.tfstate
 ```
 
+### Query the resource graph
+
+Every accepted write rebuilds a normalized index of the current state, so these are
+SQL queries rather than another Terraform run.
+
+```bash
+repave-tf graph inventory prod                  # resource counts by type
+repave-tf graph resources prod --type aws_instance
+repave-tf graph show prod                       # nodes and edges as JSON
+
+# What else breaks if this resource changes?
+repave-tf graph blast-radius prod aws_vpc.main
+
+# ...and what does that radius cost?
+infracost breakdown --path . --format json --out-file infracost.json
+repave-tf graph blast-radius prod aws_vpc.main --cost infracost.json
+```
+
+Drift compares stored attributes against a state you refreshed yourself. Repave never
+holds your cloud credentials, so the refresh runs on your side and only the result is
+uploaded:
+
+```bash
+tofu refresh && tofu state pull > refreshed.tfstate
+repave-tf graph drift prod refreshed.tfstate
+```
+
+Attributes marked sensitive are redacted before they reach the queryable index, so a
+changed secret will not show as drift. To widen redaction beyond the built-in name
+denylist, upload your provider schemas once per provider version:
+
+```bash
+tofu providers schema -json > schema.json
+repave-tf graph cache-provider-schema schema.json --provider hashicorp/aws \
+  --provider-version 5.0.0
+```
+
 ## Develop
 
 ```bash

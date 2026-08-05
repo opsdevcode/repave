@@ -3,8 +3,8 @@
 **Status:** Accepted — **Phase 0** shipped (binary resolution, migration runner, `repave-cli`
 scaffold, frozen `/api/state/v1` contract); **Phase 1** shipped (authoritative store, HTTP
 backend, reversible import/export); **Phase 2** shipped (normalization, graph, inventory,
-blast radius, drift, timeline); **Phase 3** shipped (transactions, commit-time conflict
-detection, gate-blocked commit). **Phase 4** not started — explicit go/no-go in
+blast radius, drift, timeline, cost join). **Phase 3** in progress (transactions,
+commit-time conflict detection). **Phase 4** not started — explicit go/no-go in
 [`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
 **Date:** 2026-08-04
 **Scope:** `engine/src/repave_engine/statestore/`, `engine/src/repave_engine/api_state/`,
@@ -265,13 +265,14 @@ running `terraform apply` directly.
 - [x] Blast radius returns the transitive dependents of a resource address.
 - [x] Drift compares a refreshed state against stored attributes and reports per-resource deltas.
 - [x] Timeline lists every version with author, serial, and timestamp.
+- [x] Infracost breakdown joins onto graph addresses so a blast radius carries a price.
 
 **Phase 3**
 
-- [x] Transaction lifecycle `open → previewing → committing → committed | failed | aborted`.
-- [x] Two transactions touching disjoint resources both commit.
-- [x] Two transactions touching an overlapping resource: the second gets `409` naming the first.
-- [x] A failing gate blocks commit and leaves the transaction in `failed`.
+- [ ] Transaction lifecycle `open → previewing → committing → committed | failed | aborted`.
+- [ ] Two transactions touching disjoint resources both commit.
+- [ ] Two transactions touching an overlapping resource: the second gets `409` naming the first.
+- [ ] A failing gate blocks commit and leaves the transaction in `failed`.
 
 **Phase 4**
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from decimal import Decimal
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -13,6 +14,8 @@ from repave_engine.cost_estimate import (
     cost_estimate_from_gates,
     load_cost_estimate_file,
     parse_infracost_breakdown,
+    parse_resource_costs,
+    total_monthly_cost,
     write_cost_estimate_file,
 )
 from repave_engine.gate_registry import GateContext, GateResult
@@ -134,3 +137,78 @@ def test_run_infracost_writes_estimate(tmp_path: Path, monkeypatch: pytest.Monke
     assert result.passed is True
     assert "12.34" in result.message
     assert load_cost_estimate_file(tmp_path) is not None
+
+
+# -- per-resource costs for the state graph join ----------------------------
+
+
+def test_parse_resource_costs_keys_by_address() -> None:
+    payload = {
+        "currency": "EUR",
+        "projects": [
+            {
+                "breakdown": {
+                    "resources": [
+                        {"name": "aws_instance.web", "monthlyCost": "12.34"},
+                        {"name": "aws_s3_bucket.assets", "monthlyCost": "0.50"},
+                    ]
+                }
+            }
+        ],
+    }
+    costs = parse_resource_costs(payload)
+    assert set(costs) == {"aws_instance.web", "aws_s3_bucket.assets"}
+    assert costs["aws_instance.web"].monthly_cost == Decimal("12.34")
+    assert costs["aws_instance.web"].currency == "EUR"
+
+
+def test_parse_resource_costs_rolls_up_subresources() -> None:
+    payload = {
+        "projects": [
+            {
+                "breakdown": {
+                    "resources": [
+                        {
+                            "name": "aws_instance.web",
+                            "monthlyCost": "10.00",
+                            "subresources": [
+                                {"name": "root_block_device", "monthlyCost": "1.50"},
+                                {"name": "ebs_block_device", "monthlyCost": "2.00"},
+                            ],
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+    assert parse_resource_costs(payload)["aws_instance.web"].monthly_cost == Decimal("13.50")
+
+
+def test_parse_resource_costs_merges_the_same_address_across_projects() -> None:
+    project = {"breakdown": {"resources": [{"name": "aws_instance.web", "monthlyCost": "5.00"}]}}
+    costs = parse_resource_costs({"projects": [project, project]})
+    assert costs["aws_instance.web"].monthly_cost == Decimal("10.00")
+
+
+def test_parse_resource_costs_treats_a_null_price_as_zero() -> None:
+    payload = {"projects": [{"breakdown": {"resources": [{"name": "aws_vpc.main"}]}}]}
+    assert parse_resource_costs(payload)["aws_vpc.main"].monthly_cost == Decimal(0)
+
+
+def test_parse_resource_costs_tolerates_garbage() -> None:
+    assert parse_resource_costs(None) == {}
+    assert parse_resource_costs({"projects": "nope"}) == {}
+    assert parse_resource_costs({"projects": [{"breakdown": {"resources": [{}]}}]}) == {}
+
+
+def test_total_monthly_cost_reports_unpriced_addresses() -> None:
+    costs = parse_resource_costs(
+        {
+            "projects": [
+                {"breakdown": {"resources": [{"name": "aws_instance.web", "monthlyCost": "7.25"}]}}
+            ]
+        }
+    )
+    total, unpriced = total_monthly_cost(costs, ["aws_instance.web", "aws_vpc.main"])
+    assert total == Decimal("7.25")
+    assert unpriced == ("aws_vpc.main",)
