@@ -177,6 +177,12 @@ practice restore in non-production. Targets: **RPO ≤ 1 hour**, **RTO ≤ 4 hou
 
 JSONL export mirrors are optional; they do not replace database backup for recovery.
 
+**When the state store is enabled**, these targets are no longer sufficient. Runs and audit
+records can be regenerated; Terraform state cannot. Tighten to continuous archiving with
+point-in-time recovery, and rehearse the restore — see
+[`docs/state-graph.md`](state-graph.md#operational-obligations). Byte-exact
+`repave-tf state export` is the last-resort escape hatch, not the backup strategy.
+
 ## API
 
 | Method | Path | Purpose |

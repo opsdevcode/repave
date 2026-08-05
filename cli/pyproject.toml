@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# Separate package from repave-engine: this is the first repave tool that mutates
+# production infrastructure, so it gets its own testing bar. Versions stay lockstep
+# with the engine under one semantic-release run (ADR 004 decision 12).
+name = "repave-cli"
+version = "2.24.0"
+description = "repave state and execution client (repave-tf)"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+authors = [{ name = "Eric Skaggs" }]
+dependencies = [
+  # HTTP only. This package must never gain a database driver: clients holding
+  # database credentials is the failure mode ADR 004 exists to avoid.
+  "httpx>=0.27.0",
+  # Library reuse for the gate corpus and the resolved IaC binary. The engine's
+  # FastAPI/uvicorn dependencies live behind its `server` extra, so this stays light.
+  "repave-engine>=2.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  # The server extra is a *test* dependency only. It is what makes the import
+  # boundary tests meaningful: FastAPI is importable here, so a client module that
+  # reaches for it fails the test rather than passing vacuously.
+  "repave-engine[server]",
+  "pytest>=8.0",
+  "pytest-cov>=6.0",
+  "ruff>=0.9.0",
+  "mypy>=1.14.0",
+  "bandit[toml]>=1.8.0",
+]
+
+[project.scripts]
+# `repave` is already claimed by repave-engine and installed by every generated
+# repo's CI, so the client needs its own name.
+repave-tf = "repave_cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+markers = [
+  "slow: runs a real HTTP server end to end",
+]
+
+[tool.coverage.run]
+source = ["repave_cli"]
+branch = false
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+mypy_path = ["src"]
+packages = ["repave_cli"]
+
+[tool.bandit]
+exclude_dirs = ["tests"]

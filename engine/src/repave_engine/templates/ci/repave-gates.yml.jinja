@@ -123,6 +123,13 @@ jobs:
       - name: Install Node dev dependencies
         run: npm install
 {% endif %}
+{% if needs_state_client %}
+      # Inert until the repository sets a REPAVE_STATE_URL variable, so this step
+      # can ship fleet-wide before any repo has moved its state.
+      - name: Install repave-tf
+        if: vars.REPAVE_STATE_URL != ''
+        run: pip install "repave-cli=={{ engine_version }}"
+{% endif %}
       - name: Run golden path gates
         run: repave gates --path .
 {% if needs_datadog_api or needs_infracost %}

@@ -57,8 +57,27 @@ def cmd_gates(args: argparse.Namespace) -> int:
     blueprint = blueprint_from_repave_file(repave_file)
 
     results = run_gates(repo_path, blueprint.gates, blueprint=blueprint)
-    for gate in results:
-        status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
-        print(f"[{status}] {gate.name}: {gate.message}")
+    if getattr(args, "json", False):
+        # Shape consumed by `repave-tf tf apply --gates` (ADR 004 Phase 3).
+        print(
+            json.dumps(
+                {
+                    "gates": [
+                        {
+                            "name": gate.name,
+                            "passed": gate.passed,
+                            "skipped": gate.skipped,
+                            "message": gate.message,
+                        }
+                        for gate in results
+                    ]
+                },
+                indent=2,
+            )
+        )
+    else:
+        for gate in results:
+            status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
+            print(f"[{status}] {gate.name}: {gate.message}")
 
     return 0 if all_gates_passed(results) else 1

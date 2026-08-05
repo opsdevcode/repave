@@ -9,6 +9,7 @@ from repave_engine.blueprint import TflintGateConfig
 from repave_engine.cost_estimate import parse_infracost_breakdown, write_cost_estimate_file
 from repave_engine.gate_registry import GateContext, GateResult
 from repave_engine.gate_runners._core import _toolchain_skip, tflint_config_args
+from repave_engine.iac_binary import iac_argv
 
 
 def run_terraform_fmt(ctx: GateContext) -> GateResult:
@@ -17,7 +18,7 @@ def run_terraform_fmt(ctx: GateContext) -> GateResult:
         return _toolchain_skip(ctx, "terraform-fmt", "terraform not available")
 
     result = _gr.run_command(
-        ["terraform", "fmt", "-check", "-recursive"],
+        iac_argv("fmt", "-check", "-recursive"),
         output_dir,
         timeout=_gr.gate_timeout_seconds(ctx, "terraform-fmt"),
     )
@@ -34,7 +35,7 @@ def run_terraform_validate(ctx: GateContext) -> GateResult:
     if not _gr.terraform_usable(output_dir):
         return _toolchain_skip(ctx, "terraform-validate", "terraform not available")
 
-    init = _gr.run_command(["terraform", "init", "-backend=false"], output_dir)
+    init = _gr.run_command(iac_argv("init", "-backend=false"), output_dir)
     if init.returncode != 0:
         return GateResult(
             "terraform-validate",
@@ -43,7 +44,7 @@ def run_terraform_validate(ctx: GateContext) -> GateResult:
             init.stderr.strip() or init.stdout.strip() or "terraform init failed",
         )
 
-    validate = _gr.run_command(["terraform", "validate"], output_dir)
+    validate = _gr.run_command(iac_argv("validate"), output_dir)
     if validate.returncode == 0:
         return GateResult("terraform-validate", True, False, "terraform validate passed")
     return GateResult(
@@ -65,7 +66,7 @@ def run_terraform_test(ctx: GateContext) -> GateResult:
     if not test_dir.is_dir() or not any(test_dir.rglob("*.tftest.hcl")):
         return _toolchain_skip(ctx, "terraform-test", "no terraform tests", benign=True)
 
-    init = _gr.run_command(["terraform", "init", "-backend=false"], output_dir)
+    init = _gr.run_command(iac_argv("init", "-backend=false"), output_dir)
     if init.returncode != 0:
         return GateResult(
             "terraform-test",
@@ -74,7 +75,7 @@ def run_terraform_test(ctx: GateContext) -> GateResult:
             init.stderr.strip() or init.stdout.strip() or "terraform init failed",
         )
 
-    result = _gr.run_command(["terraform", "test"], output_dir)
+    result = _gr.run_command(iac_argv("test"), output_dir)
     if result.returncode == 0:
         return GateResult("terraform-test", True, False, "terraform test passed")
     return GateResult(
@@ -111,26 +112,25 @@ def _terraform_plan_json(output_dir: Path, plan_subdir: str) -> Path | None:
     plan_binary = work / "tfplan"
     plan_json = work / "tfplan.json"
 
-    init = _gr.run_command(["terraform", "init", "-backend=false", "-input=false"], output_dir)
+    init = _gr.run_command(iac_argv("init", "-backend=false", "-input=false"), output_dir)
     if init.returncode != 0:
         return None
 
     plan = _gr.run_command(
-        [
-            "terraform",
+        iac_argv(
             "plan",
             "-out",
             str(plan_binary.relative_to(output_dir)),
             "-input=false",
             "-lock=false",
-        ],
+        ),
         output_dir,
     )
     if plan.returncode != 0:
         return None
 
     show = _gr.run_command(
-        ["terraform", "show", "-json", str(plan_binary.relative_to(output_dir))],
+        iac_argv("show", "-json", str(plan_binary.relative_to(output_dir))),
         output_dir,
     )
     if show.returncode != 0:

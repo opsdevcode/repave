@@ -49,6 +49,7 @@ from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
     ROLE_VIEWER,
+    AuthConfig,
     authenticated_user,
     is_public_path,
     require_role,
@@ -2166,8 +2167,47 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             auth_config=auth_config,
         )
     )
+    _mount_state_router(app, repo_root=repo_root, auth_config=auth_config)
 
     return app
+
+
+def _mount_state_router(app: FastAPI, *, repo_root: Path, auth_config: AuthConfig | None) -> None:
+    """Mount `/api/state/v1` only when a state store is configured (ADR 004).
+
+    Off by default: an unconfigured store leaves the app byte-identical to v2.24.
+    A misconfigured one must not take the portal down with it, so failures are logged
+    and the routes are simply absent.
+    """
+    from repave_engine.statestore.settings import load_state_store_config
+
+    log = logging.getLogger(__name__)
+    try:
+        config = load_state_store_config(repo_root)
+    except ValueError as exc:
+        log.error("state store configuration is invalid; routes not mounted: %s", exc)
+        return
+    if config is None:
+        return
+
+    from repave_engine.api_state import build_state_router
+
+    try:
+        app.include_router(
+            build_state_router(
+                repo_root=repo_root,
+                config=config,
+                auth_config=auth_config,
+            )
+        )
+    except (OSError, RuntimeError) as exc:
+        log.error("state store unavailable; routes not mounted: %s", exc)
+        return
+    if config.requires_postgres_warning:
+        log.warning(
+            "state store is using %s; PostgreSQL 14+ is required for shared deployments",
+            config.database.dialect,
+        )
 
 
 def create_app_for_serve() -> FastAPI:

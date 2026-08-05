@@ -33,6 +33,14 @@ target an empty database or one you intend to overwrite.
 These are **hours, not days** — see [roadmap — resilience](../roadmap.md#resilience-and-disaster-recovery).
 Multi-region active/passive failover is a follow-on; this runbook covers single-region backup/restore.
 
+**These targets do not apply when the state store is enabled.** Runs, audit records, and
+sessions can be regenerated from the repositories repave governs; Terraform state cannot be
+regenerated from anything. An hour of lost state is an hour of infrastructure repave can no
+longer manage. Enabling the store requires continuous archiving with point-in-time recovery
+and a rehearsed, timed restore before any team stores real state — see
+[`docs/state-graph.md`](../state-graph.md#operational-obligations) and
+[ADR 004](../adr/004-state-custody-and-the-resource-graph.md).
+
 ## Prerequisites
 
 - `pg_dump`, `pg_restore`, and `psql` (client tools matching Postgres 14+)

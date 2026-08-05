@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +15,30 @@ if TYPE_CHECKING:
     from repave_engine.pipeline import GenerationResult
 
 COST_ESTIMATE_REL_PATH = Path(".repave") / "cost-estimate.json"
+
+
+@dataclass(frozen=True)
+class ResourceCost:
+    """Monthly cost of one resource, addressable the same way the state graph is."""
+
+    address: str
+    currency: str
+    monthly_cost: Decimal
+
+    def merge(self, other: ResourceCost) -> ResourceCost:
+        """Combine duplicate addresses across projects into one figure."""
+        return ResourceCost(
+            address=self.address,
+            currency=self.currency,
+            monthly_cost=self.monthly_cost + other.monthly_cost,
+        )
+
+    def to_public_dict(self) -> dict[str, str]:
+        return {
+            "address": self.address,
+            "currency": self.currency,
+            "monthly_cost": f"{self.monthly_cost:.2f}",
+        }
 
 
 @dataclass(frozen=True)
@@ -63,6 +89,77 @@ def parse_infracost_breakdown(payload: Any) -> CostEstimate | None:
         resource_count=resources,
         detail=detail,
     )
+
+
+def parse_resource_costs(payload: Any) -> dict[str, ResourceCost]:
+    """Per-resource monthly cost from an Infracost breakdown, keyed by address.
+
+    Feeds the join onto the state graph (ADR 004 Phase 2): with an address key on both
+    sides, "what does this blast radius cost" is a lookup rather than a second tool run.
+    Subresources roll up into their parent, because the graph has no node for them.
+    """
+    costs: dict[str, ResourceCost] = {}
+    if not isinstance(payload, dict):
+        return costs
+    currency = str(payload.get("currency", "USD")).strip() or "USD"
+
+    projects = payload.get("projects")
+    if not isinstance(projects, list):
+        return costs
+    for project in projects:
+        if not isinstance(project, dict):
+            continue
+        breakdown = project.get("breakdown")
+        if not isinstance(breakdown, dict):
+            continue
+        resources = breakdown.get("resources")
+        if not isinstance(resources, list):
+            continue
+        for resource in resources:
+            parsed = _resource_cost(resource, currency)
+            if parsed is None:
+                continue
+            existing = costs.get(parsed.address)
+            costs[parsed.address] = parsed if existing is None else existing.merge(parsed)
+    return costs
+
+
+def _resource_cost(resource: Any, currency: str) -> ResourceCost | None:
+    if not isinstance(resource, dict):
+        return None
+    address = str(resource.get("name", "")).strip()
+    if not address:
+        return None
+    monthly = _as_decimal(resource.get("monthlyCost"))
+    for sub in resource.get("subresources") or []:
+        if isinstance(sub, dict):
+            monthly += _as_decimal(sub.get("monthlyCost"))
+    return ResourceCost(address=address, currency=currency, monthly_cost=monthly)
+
+
+def _as_decimal(value: Any) -> Decimal:
+    """Infracost emits costs as strings; null means "not priced", which is not zero cost."""
+    if value is None:
+        return Decimal(0)
+    try:
+        return Decimal(str(value))
+    except InvalidOperation:
+        return Decimal(0)
+
+
+def total_monthly_cost(
+    costs: dict[str, ResourceCost], addresses: Iterable[str]
+) -> tuple[Decimal, tuple[str, ...]]:
+    """Sum costs over addresses. Returns (total, addresses with no price)."""
+    total = Decimal(0)
+    unpriced: list[str] = []
+    for address in addresses:
+        found = costs.get(address)
+        if found is None:
+            unpriced.append(address)
+            continue
+        total += found.monthly_cost
+    return total, tuple(sorted(unpriced))
 
 
 def write_cost_estimate_file(output_dir: Path, estimate: CostEstimate) -> Path:

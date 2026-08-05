@@ -93,3 +93,37 @@ def test_blueprint_from_repave_requires_ci_gates(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match=r"ci\.gates is required"):
         blueprint_from_repave_file(path)
+
+
+def test_cli_gates_json_matches_the_client_gate_contract(
+    terraform_blueprint,
+    tmp_path: Path,
+    monkeypatch,
+    capsys,
+) -> None:
+    """`repave gates --json` feeds `repave-tf tf apply --gates`; the shapes must agree."""
+    import json
+
+    from repave_engine.cli import cmd_gates
+    from repave_engine.statestore.transactions import parse_gate_outcomes
+
+    values = validate_inputs(
+        terraform_blueprint,
+        {
+            "module_name": "vpc",
+            "description": "VPC",
+            "cloud_provider": "aws",
+            "provider_services": "ec2",
+        },
+    )
+    output_dir = tmp_path / "module"
+    render_blueprint(terraform_blueprint, values, output_dir)
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda name: False)
+
+    args = type("Args", (), {"path": str(output_dir), "json": True})()
+    assert cmd_gates(args) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    outcomes = parse_gate_outcomes(payload["gates"])
+    assert outcomes, "gate results should survive the round trip"
+    assert {o.name for o in outcomes} == {g["name"] for g in payload["gates"]}

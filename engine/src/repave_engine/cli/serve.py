@@ -55,10 +55,19 @@ def cmd_run_worker(args: argparse.Namespace) -> int:
         queue.close(wait=True)
 
 
-def cmd_serve(args: argparse.Namespace) -> int:
-    import uvicorn
+SERVER_EXTRA_HINT = (
+    "repave serve requires the server extra: install repave-engine[server] "
+    "(or run `uv sync --extra server` from engine/)"
+)
 
-    from repave_engine.api import create_app
+
+def cmd_serve(args: argparse.Namespace) -> int:
+    try:
+        import uvicorn
+
+        from repave_engine.api import create_app
+    except ImportError as exc:
+        raise SystemExit(f"{SERVER_EXTRA_HINT}\nmissing dependency: {exc.name}") from exc
 
     repo_root = Path(args.repo_root).resolve()
     if args.reload:

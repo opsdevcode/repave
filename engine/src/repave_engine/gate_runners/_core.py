@@ -83,22 +83,10 @@ def gate_result_from_command(
 
 
 def terraform_usable(output_dir: Path) -> bool:
-    from repave_engine.gate_toolchain import terraform_cli_ready
+    """True when an IaC CLI (tofu preferred, terraform fallback) runs in output_dir."""
+    from repave_engine.iac_binary import iac_cli_ready
 
-    if not terraform_cli_ready():
-        return False
-    run_cwd = subprocess_cwd(output_dir)
-    terraform_bin = resolve_tool("terraform")
-    if not terraform_bin:
-        return False
-    result = run_subprocess(
-        [terraform_bin, "version"],
-        cwd=run_cwd,
-        check=False,
-        env=os.environ.copy(),
-        timeout=15,
-    )
-    return result.returncode == 0
+    return iac_cli_ready(output_dir)
 
 
 _DRY_RUN_TOOLCHAIN_HINT = (

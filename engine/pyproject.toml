@@ -9,23 +9,34 @@ description = "Governed, repeatable platform engineering generation engine"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.12"
 authors = [{ name = "Eric Skaggs" }]
+# Core = generation, gates, and the CLI surface. jinja2 and prometheus-client stay
+# here because render.py/ci_workflow.py and pipeline.py import them directly.
+# Portal/API-only packages live in the `server` extra so `repave-cli` (which depends
+# on this package as a library) does not drag FastAPI onto developer laptops.
 dependencies = [
   "copier>=9.0.0",
   "pyyaml>=6.0",
   "jsonschema>=4.0",
-  "fastapi>=0.110.0",
-  "python-multipart>=0.0.9",
-  "uvicorn[standard]>=0.27.0",
   "jinja2>=3.1.0",
   "httpx>=0.27.0",
-  "itsdangerous>=2.2.0",
   "PyJWT[crypto]>=2.10.0",
+  # Imported directly by statestore/crypto.py for state envelope encryption; also a
+  # transitive dependency of PyJWT[crypto].
+  "cryptography>=42.0",
   "prometheus-client>=0.21.0",
   "opentelemetry-api>=1.27.0",
 ]
 
 [project.optional-dependencies]
+server = [
+  "fastapi>=0.110.0",
+  "python-multipart>=0.0.9",
+  "uvicorn[standard]>=0.27.0",
+  "itsdangerous>=2.2.0",
+]
 dev = [
+  # Includes the server extra: the test suite exercises the portal and API.
+  "repave-engine[server]",
   "pytest>=8.0",
   "pytest-cov>=6.0",
   "pytest-xdist>=3.6",
@@ -60,7 +71,7 @@ repave = "repave_engine.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-repave_engine = ["templates/*.html", "templates/partials/*.html", "templates/ci/*", "static/*", "data/*"]
+repave_engine = ["py.typed", "templates/*.html", "templates/partials/*.html", "templates/ci/*", "static/*", "data/*", "statestore/migrations/*/*.sql"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

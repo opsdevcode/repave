@@ -420,6 +420,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=".",
         help="Repository root containing repave.yaml (default: current directory)",
     )
+    gates_cmd.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit results as JSON, for `repave-tf tf apply --gates`",
+    )
     gates_cmd.set_defaults(func=cmd_gates)
 
     plan = sub.add_parser(
