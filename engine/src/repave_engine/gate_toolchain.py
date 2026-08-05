@@ -84,19 +84,10 @@ def subprocess_cwd(preferred: Path) -> Path:
 
 
 def terraform_cli_ready() -> bool:
-    """True when terraform is on PATH and `terraform version` succeeds."""
-    terraform_bin = resolve_tool("terraform")
-    if not terraform_bin:
-        return False
-    run_cwd = subprocess_cwd(Path(tempfile.gettempdir()))
-    result = run_subprocess(
-        [terraform_bin, "version"],
-        cwd=run_cwd,
-        check=False,
-        env=os.environ.copy(),
-        timeout=15,
-    )
-    return result.returncode == 0
+    """True when an IaC CLI (tofu preferred, terraform fallback) runs `version`."""
+    from repave_engine.iac_binary import iac_cli_ready
+
+    return iac_cli_ready()
 
 
 def node_cli_ready() -> bool:
@@ -174,6 +165,8 @@ def gate_tool_status() -> dict[str, bool]:
     """Tool readiness as seen by the running engine process (for /readyz)."""
     ensure_gate_path()
     return {
+        # Key stays "terraform" for the frozen /readyz contract; the value is true
+        # when either OpenTofu or Terraform is usable.
         "terraform": terraform_cli_ready(),
         "tflint": tool_available("tflint"),
         "checkov": checkov_argv() is not None,

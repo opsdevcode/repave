@@ -9,3 +9,5 @@ Lightweight ADRs for repave platform choices. Number files sequentially; link fr
 | [002](002-v2-service-decomposition.md) | v2 service decomposition and repository strategy |
 | [002 addendum](002-addendum-run-artifact-rehydrate.md) | Async run rehydrate: run-record snapshots (default) vs object storage (optional) |
 | [003](003-environment-lifecycle-and-live-state.md) | Environment lifecycle and how far repave reaches into live state |
+| [004](004-state-custody-and-the-resource-graph.md) | State custody and the resource graph (authoritative Terraform state store) |
+| [005](005-state-graph-build-vs-buy.md) | State graph: build vs buy |

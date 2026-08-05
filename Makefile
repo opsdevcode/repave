@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot postgres-dr-drill kind-co-install gate-doctor
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -62,6 +62,32 @@ quality: lint typecheck
 js-lint:
 	npm ci
 	npm run lint:js
+
+# repave-cli (ADR 004). Installed with the engine's server extra so the import
+# boundary tests can prove the client does not reach for FastAPI or a database.
+cli-install:
+	cd cli && uv venv && uv pip install -e ".[dev]" -e "../engine[server]"
+
+cli-test:
+	cd cli && uv run --no-project pytest --cov=repave_cli --cov-report=term-missing
+
+cli-test-fast:
+	cd cli && uv run --no-project pytest -m "not slow" --no-cov -q
+
+cli-lint:
+	cd cli && uv run --no-project ruff check src tests
+
+cli-format:
+	cd cli && uv run --no-project ruff format src tests
+
+cli-typecheck:
+	cd cli && uv run --no-project mypy src
+
+cli-security:
+	cd cli && uv run --no-project bandit -r src -c pyproject.toml
+
+cli-quality: cli-lint cli-typecheck
+	@cd cli && uv run --no-project ruff format --check src tests
 
 serve:
 	mkdir -p $(MODULES_ROOT)

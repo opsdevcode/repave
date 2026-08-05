@@ -89,6 +89,14 @@ class SqlConnection:
         adapted = _adapt_sql(sql, self.dialect)
         return self._conn.execute(adapted, params)
 
+    def execute_ddl(self, sql: str) -> Any:
+        """Execute one parameterless statement verbatim.
+
+        `execute` rewrites `?` to `%s` for PostgreSQL, which would corrupt jsonb
+        operators and quoted literals in schema SQL. Migrations take this path.
+        """
+        return self._conn.execute(sql)
+
     def commit(self) -> None:
         self._conn.commit()
 

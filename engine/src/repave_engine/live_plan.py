@@ -17,6 +17,7 @@ from repave_engine.gate_runners import _core as _gr
 from repave_engine.gate_toolchain import tool_available
 from repave_engine.gates import GateResult
 from repave_engine.git_clone import CloneError
+from repave_engine.iac_binary import iac_argv
 from repave_engine.upgrade_api import UpgradeTargetError, materialize_upgrade_target
 
 logger = logging.getLogger(__name__)
@@ -103,7 +104,7 @@ def terraform_live_plan_json(
     plan_binary = work / "tfplan"
     plan_json = work / "tfplan.json"
 
-    init_cmd = ["terraform", "init", "-input=false"]
+    init_cmd = iac_argv("init", "-input=false")
     if not use_backend:
         init_cmd.append("-backend=false")
     init = _gr.run_command(init_cmd, output_dir)
@@ -112,14 +113,13 @@ def terraform_live_plan_json(
         return None
 
     plan = _gr.run_command(
-        [
-            "terraform",
+        iac_argv(
             "plan",
             "-out",
             str(plan_binary.relative_to(output_dir)),
             "-input=false",
             "-lock=false",
-        ],
+        ),
         output_dir,
     )
     if plan.returncode != 0:
@@ -127,7 +127,7 @@ def terraform_live_plan_json(
         return None
 
     show = _gr.run_command(
-        ["terraform", "show", "-json", str(plan_binary.relative_to(output_dir))],
+        iac_argv("show", "-json", str(plan_binary.relative_to(output_dir))),
         output_dir,
     )
     if show.returncode != 0:
