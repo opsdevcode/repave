@@ -3,8 +3,9 @@
 **Status:** Accepted — **Phase 0** shipped (binary resolution, migration runner, `repave-cli`
 scaffold, frozen `/api/state/v1` contract); **Phase 1** shipped (authoritative store, HTTP
 backend, reversible import/export); **Phase 2** shipped (normalization, graph, inventory,
-blast radius, drift, timeline, cost join). **Phase 3** in progress (transactions,
-commit-time conflict detection). **Phase 4** not started — explicit go/no-go in
+blast radius, drift, timeline, cost join); **Phase 3** shipped (transactions,
+commit-time conflict detection, gate-blocked commit, `repave-tf tf plan|apply`).
+**Phase 4** not started — explicit go/no-go in
 [`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
 **Date:** 2026-08-04
 **Scope:** `engine/src/repave_engine/statestore/`, `engine/src/repave_engine/api_state/`,
@@ -124,10 +125,26 @@ not separate subsystems. None of it touches the write path.
 
 ### Phase 3 — Transactions and commit-time conflict detection
 
-`repave-tf plan` / `repave-tf apply` drive the binary locally against a server-side
-transaction. Gates run inline before commit, so a policy or cost failure **blocks** the
-transaction rather than being advisory. This is the capability no external vendor can offer,
-because it requires repave's blueprint provenance and gate corpus.
+`repave-tf tf plan` / `repave-tf tf apply` drive the binary locally against a server-side
+transaction: open, plan, preview, apply, commit, with a bail-out at every step. Gates are
+evaluated before commit, so a policy or cost failure **blocks** the transaction rather than
+being advisory. This is the capability no external vendor can offer, because it requires
+repave's blueprint provenance and gate corpus.
+
+Concurrency is optimistic. Each transaction pins the serial it read and declares the
+resources its plan touches; overlap is detected at commit and returns `409` naming the
+transactions that got there first. Only write-write overlap conflicts. Holding a lock
+across a plan that runs for minutes would be strictly worse than the whole-state lock
+Terraform already takes, because it holds longer.
+
+**Where gates actually run, and what that buys.** The client runs them, because the client
+holds the working directory and the credentials; it reports results with the preview. The
+server enforces `required_gates`: a required gate that is missing, failing, or skipped
+refuses the commit. This stops the realistic failure — someone forgetting, or CI drifting —
+and does not stop a determined operator from posting a fabricated pass. That operator can
+already apply out of band, so the boundary buys enforcement against accident, not against
+malice. Moving evaluation server-side would mean giving the server the credentials, which
+is the thing this architecture exists to avoid.
 
 ### Phase 4 — Graph-scoped parallel execution
 
@@ -269,10 +286,12 @@ running `terraform apply` directly.
 
 **Phase 3**
 
-- [ ] Transaction lifecycle `open → previewing → committing → committed | failed | aborted`.
-- [ ] Two transactions touching disjoint resources both commit.
-- [ ] Two transactions touching an overlapping resource: the second gets `409` naming the first.
-- [ ] A failing gate blocks commit and leaves the transaction in `failed`.
+- [x] Transaction lifecycle `open → previewing → committing → committed | failed | aborted`.
+- [x] Two transactions touching disjoint resources both commit.
+- [x] Two transactions touching an overlapping resource: the second gets `409` naming the first.
+- [x] A failing gate blocks commit and leaves the transaction in `failed`.
+- [x] A required gate that was never reported blocks commit; absent is not treated as passed.
+- [x] `repave-tf` ships in generated terraform CI, inert until `REPAVE_STATE_URL` is set.
 
 **Phase 4**
 

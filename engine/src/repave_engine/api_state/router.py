@@ -36,6 +36,7 @@ from repave_engine.cost_estimate import parse_resource_costs, total_monthly_cost
 from repave_engine.sql_store import connect
 from repave_engine.state_contract import (
     CLIENT_HEADER,
+    HTTP_CONFLICT,
     HTTP_LOCKED,
     HTTP_UPGRADE_REQUIRED,
     LOCK_ID_PARAM,
@@ -52,6 +53,10 @@ from repave_engine.statestore.store import (
     StateStore,
     ensure_state_schema,
     parse_lock_body,
+)
+from repave_engine.statestore.transactions import (
+    parse_gate_outcomes,
+    resources_from_plan_json,
 )
 
 logger = logging.getLogger(__name__)
@@ -80,7 +85,7 @@ def build_state_router(
     def open_store() -> Iterator[StateStore]:
         conn = connect(config.database)
         try:
-            yield StateStore(conn, crypto=crypto)
+            yield StateStore(conn, crypto=crypto, required_gates=config.required_gates)
         finally:
             conn.close()
 
@@ -402,7 +407,110 @@ def build_state_router(
             learned = store.cache_provider_schema(payload, provider=provider, version=version)
         return _json({"provider": provider, "version": version, "types": learned}, warning=warning)
 
+    # -- transactions ---------------------------------------------------------
+
+    def write_scope(request: Request) -> str:
+        return require_client_role(request, ROLE_GENERATOR, ROLE_ADMIN)
+
+    @router.post("/states/{tenant}/{state}/tx")
+    async def open_transaction(
+        request: Request, tenant: str, state: str, operation: str = "apply"
+    ) -> JSONResponse:
+        """Open a transaction pinned to the state's current serial."""
+        warning = write_scope(request)
+        with open_store() as store:
+            tx = store.open_transaction(tenant, state, author=actor(request), operation=operation)
+        return _json(tx.to_payload(), warning=warning)
+
+    @router.get("/states/{tenant}/{state}/tx")
+    async def list_transactions(
+        request: Request, tenant: str, state: str, status: str | None = None, limit: int = 50
+    ) -> JSONResponse:
+        warning = read_scope(request)
+        with open_existing(tenant, state) as store:
+            items = store.list_transactions(tenant, state, status=status, limit=limit)
+        return _json({"transactions": [tx.to_payload() for tx in items]}, warning=warning)
+
+    @router.get("/tx/{tx_id}")
+    async def describe_transaction(request: Request, tx_id: str) -> JSONResponse:
+        warning = read_scope(request)
+        with open_store() as store:
+            tx = store.transactions.get(tx_id)
+        if tx is None:
+            raise HTTPException(status_code=404, detail=f"no such transaction: {tx_id}")
+        return _json(tx.to_payload(), warning=warning)
+
+    @router.post("/tx/{tx_id}/preview")
+    async def preview_transaction(request: Request, tx_id: str) -> JSONResponse:
+        """Record the plan's read/write set and gate results, then dry-run the commit.
+
+        The body is `{"plan": <tofu show -json output>, "gates": [...]}`. Conflicts
+        reported here are advisory — another transaction can still land before commit,
+        which is why commit re-checks.
+        """
+        warning = write_scope(request)
+        payload = await _json_body(request)
+        with open_store() as store:
+            transactions = store.transactions
+            existing = transactions.get(tx_id)
+            if existing is None:
+                raise HTTPException(status_code=404, detail=f"no such transaction: {tx_id}")
+
+            recorded = transactions.record_resources(
+                tx_id, resources_from_plan_json(payload.get("plan"))
+            )
+            if not recorded.ok:
+                raise HTTPException(status_code=409, detail=recorded.detail)
+
+            gated = transactions.record_gates(tx_id, parse_gate_outcomes(payload.get("gates")))
+            if not gated.ok:
+                raise HTTPException(status_code=409, detail=gated.detail)
+
+            transactions.transition(tx_id, "previewing", detail="plan recorded")
+            outcome = transactions.prepare_commit(tx_id)
+        return _json(outcome.to_payload(), warning=warning)
+
+    @router.post("/tx/{tx_id}/commit")
+    async def commit_transaction(request: Request, tx_id: str) -> JSONResponse:
+        """Commit a transaction with the post-apply state as the body."""
+        warning = write_scope(request)
+        body = await request.body()
+        lock_id = request.query_params.get(LOCK_ID_PARAM) or None
+        with open_store() as store:
+            outcome = store.commit_transaction(tx_id, body, author=actor(request), lock_id=lock_id)
+        if outcome.status == "absent":
+            raise HTTPException(status_code=404, detail=outcome.detail)
+        if outcome.status == "invalid":
+            raise HTTPException(status_code=400, detail=outcome.detail)
+        if outcome.status in ("conflict", "blocked"):
+            return JSONResponse(outcome.to_payload(), status_code=HTTP_CONFLICT)
+        return _json(outcome.to_payload(), warning=warning)
+
+    @router.post("/tx/{tx_id}/abort")
+    async def abort_transaction(request: Request, tx_id: str) -> JSONResponse:
+        warning = write_scope(request)
+        with open_store() as store:
+            outcome = store.transactions.abort(tx_id)
+        if outcome.transaction is None:
+            raise HTTPException(status_code=404, detail=outcome.detail)
+        if not outcome.ok:
+            raise HTTPException(status_code=409, detail=outcome.detail)
+        return _json(outcome.to_payload(), warning=warning)
+
     return router
+
+
+async def _json_body(request: Request) -> dict[str, Any]:
+    raw = await request.body()
+    if not raw.strip():
+        return {}
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail=f"body must be JSON: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="body must be a JSON object")
+    return payload
 
 
 def _bootstrap_schema(config: StateStoreConfig) -> None:

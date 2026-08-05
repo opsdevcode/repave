@@ -11,7 +11,9 @@ from repave_cli import __version__
 from repave_cli.client import StateClientError
 from repave_cli.commands.graph import add_graph_parser
 from repave_cli.commands.state import add_state_parser
+from repave_cli.commands.tf import add_tf_parser
 from repave_cli.config import ConfigError
+from repave_cli.runner import RunnerError
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -38,6 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     add_state_parser(subparsers)
     add_graph_parser(subparsers)
+    add_tf_parser(subparsers)
     return parser
 
 
@@ -50,7 +53,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     try:
         return int(args.handler(args))
-    except (ConfigError, StateClientError) as exc:
+    except (ConfigError, StateClientError, RunnerError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_ERROR
     except KeyboardInterrupt:  # pragma: no cover - interactive only

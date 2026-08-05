@@ -60,6 +60,7 @@ STATE_API_ENDPOINTS: Final[tuple[str, ...]] = (
     "GET /api/state/v1/states/{tenant}/{state}/inventory",
     "POST /api/state/v1/provider-schemas",
     "POST /api/state/v1/states/{tenant}/{state}/tx",
+    "GET /api/state/v1/states/{tenant}/{state}/tx",
     "GET /api/state/v1/tx/{tx_id}",
     "POST /api/state/v1/tx/{tx_id}/preview",
     "POST /api/state/v1/tx/{tx_id}/commit",

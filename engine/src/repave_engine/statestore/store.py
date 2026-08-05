@@ -44,6 +44,11 @@ from repave_engine.statestore.state_document import (
     StateDocumentError,
     parse_state_document,
 )
+from repave_engine.statestore.transactions import (
+    CommitOutcome,
+    Transaction,
+    TransactionStore,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -188,13 +193,24 @@ def ensure_state_schema(conn: SqlConnection) -> None:
 class StateStore:
     """Authoritative store for state bytes, keyed by (tenant, state name)."""
 
-    def __init__(self, conn: SqlConnection, *, crypto: StateCrypto | None = None) -> None:
+    def __init__(
+        self,
+        conn: SqlConnection,
+        *,
+        crypto: StateCrypto | None = None,
+        required_gates: frozenset[str] = frozenset(),
+    ) -> None:
         self._conn = conn
         self._crypto = crypto
+        self._transactions = TransactionStore(conn, required_gates=required_gates)
 
     @property
     def connection(self) -> SqlConnection:
         return self._conn
+
+    @property
+    def transactions(self) -> TransactionStore:
+        return self._transactions
 
     # -- tenants and states -------------------------------------------------
 
@@ -401,6 +417,88 @@ class StateStore:
             self._conn, provider=provider, version=version, sensitive_by_type=sensitive
         )
         return len(sensitive)
+
+    # -- transactions ---------------------------------------------------------
+
+    def open_transaction(
+        self, tenant_id: str, name: str, *, author: str, operation: str = "apply"
+    ) -> Transaction:
+        """Start a transaction pinned to the state's current serial.
+
+        The pin is what makes conflict detection possible: at commit we ask whether
+        anything in the write set moved since this point.
+        """
+        state_id = self.ensure_state(tenant_id, name)
+        row = self._state_row(tenant_id, name)
+        base_serial = int(row["serial"]) if row is not None else 0
+        base_version_id = str(row["current_version_id"] or "") if row is not None else ""
+        return self._transactions.open(
+            state_id,
+            author=author,
+            operation=operation,
+            base_version_id=base_version_id,
+            base_serial=base_serial,
+        )
+
+    def list_transactions(
+        self, tenant_id: str, name: str, *, status: str | None = None, limit: int = 50
+    ) -> list[Transaction]:
+        state_id = self._require_state_id(tenant_id, name)
+        if state_id is None:
+            return []
+        return self._transactions.list_for_state(state_id, status=status, limit=limit)
+
+    def commit_transaction(
+        self, tx_id: str, raw: bytes, *, author: str, lock_id: str | None = None
+    ) -> CommitOutcome:
+        """Write state and finalize a transaction, or refuse and fail the transaction.
+
+        Conflicts and gates are checked before the write, so a rejected transaction
+        never leaves a half-applied version behind.
+        """
+        tx = self._transactions.get(tx_id)
+        if tx is None:
+            return CommitOutcome(status="absent", detail=f"no such transaction: {tx_id}")
+
+        located = self._locate_state(tx.state_id)
+        if located is None:  # pragma: no cover - cascade should prevent this
+            return CommitOutcome(
+                status="invalid", detail="the state this transaction targets was deleted"
+            )
+        tenant_id, name = located
+
+        prepared = self._transactions.prepare_commit(tx_id)
+        if not prepared.ok:
+            self._transactions.fail(tx_id, detail=prepared.detail)
+            return CommitOutcome(
+                status=prepared.status,
+                detail=prepared.detail,
+                transaction=self._transactions.get(tx_id),
+                conflicts=prepared.conflicts,
+                conflicting_addresses=prepared.conflicting_addresses,
+                blocking_gates=prepared.blocking_gates,
+            )
+
+        written = self.write_state(tenant_id, name, raw, author=author, lock_id=lock_id)
+        if written.status in ("invalid", "conflict", "locked"):
+            self._transactions.fail(tx_id, detail=written.detail)
+            return CommitOutcome(
+                status="invalid" if written.status == "invalid" else "conflict",
+                detail=written.detail,
+                transaction=self._transactions.get(tx_id),
+            )
+
+        return self._transactions.commit(
+            tx_id, committed_serial=written.serial, version_id=written.version_id or ""
+        )
+
+    def _locate_state(self, state_id: str) -> tuple[str, str] | None:
+        row = self._conn.execute(
+            "SELECT tenant_id, name FROM states WHERE state_id = ?", (state_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return str(row["tenant_id"]), str(row["name"])
 
     # -- writes -------------------------------------------------------------
 

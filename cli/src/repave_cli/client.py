@@ -7,7 +7,7 @@ credential boundary is the architecture".
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
@@ -84,6 +84,37 @@ class ResourceRow:
             provider=str(payload.get("provider", "")),
             instance_count=int(payload.get("instance_count", 0)),
         )
+
+
+@dataclass(frozen=True)
+class CommitResult:
+    status: str
+    detail: str
+    conflicts: tuple[str, ...] = ()
+    conflicting_addresses: tuple[str, ...] = ()
+    blocking_gates: tuple[str, ...] = ()
+    transaction: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def ok(self) -> bool:
+        return self.status == "committed"
+
+    @staticmethod
+    def from_payload(payload: Any) -> CommitResult:
+        data = payload if isinstance(payload, dict) else {}
+        transaction = data.get("transaction")
+        return CommitResult(
+            status=str(data.get("status", "")),
+            detail=str(data.get("detail", "")),
+            conflicts=_str_tuple(data.get("conflicts")),
+            conflicting_addresses=_str_tuple(data.get("conflicting_addresses")),
+            blocking_gates=_str_tuple(data.get("blocking_gates")),
+            transaction=transaction if isinstance(transaction, dict) else {},
+        )
+
+
+def _str_tuple(value: Any) -> tuple[str, ...]:
+    return tuple(str(item) for item in value) if isinstance(value, list) else ()
 
 
 class StateClient:
@@ -218,6 +249,59 @@ class StateClient:
         payload = self._request(
             "POST", path, content=refreshed, headers={"Content-Type": "application/json"}
         ).json()
+        return payload if isinstance(payload, dict) else {}
+
+    # -- transactions ---------------------------------------------------------
+
+    def open_transaction(
+        self, state: str, *, operation: str = "apply", tenant: str | None = None
+    ) -> dict[str, Any]:
+        path = f"/states/{tenant or self.tenant}/{state}/tx"
+        payload = self._request("POST", path, params={"operation": operation}).json()
+        return payload if isinstance(payload, dict) else {}
+
+    def list_transactions(
+        self, state: str, *, tenant: str | None = None, status: str | None = None, limit: int = 50
+    ) -> list[dict[str, Any]]:
+        path = f"/states/{tenant or self.tenant}/{state}/tx"
+        params: dict[str, Any] = {"limit": limit}
+        if status:
+            params["status"] = status
+        payload = self._request("GET", path, params=params).json()
+        items = payload.get("transactions", []) if isinstance(payload, dict) else []
+        return [item for item in items if isinstance(item, dict)]
+
+    def describe_transaction(self, tx_id: str) -> dict[str, Any]:
+        payload = self._request("GET", f"/tx/{tx_id}").json()
+        return payload if isinstance(payload, dict) else {}
+
+    def preview_transaction(
+        self, tx_id: str, *, plan: dict[str, Any], gates: list[dict[str, Any]] | None = None
+    ) -> dict[str, Any]:
+        payload = self._request(
+            "POST", f"/tx/{tx_id}/preview", json={"plan": plan, "gates": gates or []}
+        ).json()
+        return payload if isinstance(payload, dict) else {}
+
+    def commit_transaction(self, tx_id: str, raw: bytes) -> CommitResult:
+        """Commit with the post-apply state. A 409 is an outcome, not an exception.
+
+        Conflicts and blocked gates are expected results that the caller reports to the
+        user, so they are returned as data rather than raised.
+        """
+        response = self._http.request(
+            "POST",
+            f"/tx/{tx_id}/commit",
+            content=raw,
+            headers={"Content-Type": "application/json"},
+        )
+        if response.status_code == 409:
+            return CommitResult.from_payload(response.json())
+        _raise_for_status(response)
+        return CommitResult.from_payload(response.json())
+
+    def abort_transaction(self, tx_id: str) -> dict[str, Any]:
+        payload = self._request("POST", f"/tx/{tx_id}/abort").json()
         return payload if isinstance(payload, dict) else {}
 
     def cache_provider_schema(

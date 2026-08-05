@@ -8,7 +8,12 @@ work, writing ADRs, and opening issues.
 
 **In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Auth0 portal access** — engine/Helm hardening plus operator runbook
+**Shipped on `main`:** **State custody and the resource graph** — authoritative Terraform
+state store, queryable resource graph, and gate-blocked transactions
+([ADR 004](adr/004-state-custody-and-the-resource-graph.md),
+[ADR 005](adr/005-state-graph-build-vs-buy.md),
+[`docs/state-graph.md`](state-graph.md)); off by default, Phase 4 gated;
+**Auth0 portal access** — engine/Helm hardening plus operator runbook
 ([`docs/operations/auth0-portal.md`](operations/auth0-portal.md), Action
 [`post-login-groups.js`](../deploy/k8s/auth0/post-login-groups.js),
 [`values-auth0.yaml`](../deploy/k8s/chart/values-auth0.yaml)); tenant secrets and hosted
@@ -388,7 +393,9 @@ Docs: [`operator-local-dev.md`](operator-local-dev.md),
   `kind-co-install`; validated in `chart-validate` CI
 - **OCI publish:** [`chart-publish.yml`](../.github/workflows/chart-publish.yml) pushes
   `oci://ghcr.io/opsdevcode/charts/repave` and `repave-operator` on semver tags; chart
-  `version` and `appVersion` match the engine release
+  `version` and `appVersion` match the engine release. After GHCR image tags exist, the
+  workflow dispatches `repave-release` to private `opsdevcode/repave-aws-infra` (secret
+  `INFRA_DEPLOY_TOKEN`) for prod pin bump + deploy
 
 ### GitHub App authentication (engine v1.105+)
 
@@ -2297,6 +2304,48 @@ promote without new discovery:
 - **Organization blueprint packs** — [forked and remote blueprint packs](#forked-and-remote-blueprint-packs)
   is the one item that lets adopters pave roads this cluster does not; pull it ahead of
   everything above if external demand appears, since nothing here substitutes for it.
+
+---
+
+## State custody and the resource graph (v2.x)
+
+**Status:** Phases 0–3 shipped on `main`. Phase 4 blocked behind an explicit go/no-go gate
+whose default answer is no.
+
+**Design:** [ADR 004](adr/004-state-custody-and-the-resource-graph.md) ·
+**Build vs buy:** [ADR 005](adr/005-state-graph-build-vs-buy.md) ·
+**Operator guide:** [`docs/state-graph.md`](state-graph.md) ·
+**Exec memo:** [`docs/state-graph-exec-memo.md`](state-graph-exec-memo.md)
+
+Repave could certify that a repository was conformant and could not say what it had built:
+no inventory, no blast radius, no infrastructure drift. Holding the state is what makes
+those answers possible, and it is the only way policy becomes preventative at apply time
+rather than descriptive at render time.
+
+The store is **off by default**. With no `state_store` block, behavior is byte-identical to
+before, and `repave-tf state export` returns plain `.tfstate` at any time, so adopting it
+does not trap an estate.
+
+| Phase | Status | What it delivers |
+| ----- | ------ | ---------------- |
+| 0 — foundations | Shipped | `tofu` preferred over `terraform`, versioned migration runner, `repave-cli` package, frozen `/api/state/v1` |
+| 1 — authoritative store | Shipped | Terraform `http` backend, byte-exact blobs, serial/lineage guards, whole-state locking, reversible import/export |
+| 2 — normalization and graph | Shipped | Resources, instances, edges; inventory, blast radius, drift, timeline, Infracost join |
+| 3 — transactions | Shipped | `repave-tf tf plan\|apply`, optimistic commit-time conflict detection with `409`, **gate-blocked commit** |
+| 4 — parallel execution | **Gated** | [Go/no-go review](state-graph-phase4-review.md); default is no-go |
+
+Phase 3 is the differentiator: a commit is refused when repave's own gates do not pass,
+inside the transaction, before anything is applied. That needs the blueprint provenance and
+gate corpus, which is why [ADR 005](adr/005-state-graph-build-vs-buy.md) concludes that the
+store was worth building and parallel execution is not.
+
+The architecture is a credential boundary. The server holds state and never holds cloud
+credentials; the client holds credentials and never holds a database connection. A boundary
+test fails the build if `repave_cli` imports database code.
+
+**Still open:** a named owner for the Terraform/OpenTofu compatibility treadmill and a
+platform security sign-off on the persistence posture reversal, both required before the
+store is enabled in any shared deployment.
 
 ---
 

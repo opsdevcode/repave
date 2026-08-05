@@ -21,6 +21,7 @@ htmlcov/
 .conformance-modules/
 .gate-tools/
 .tmp-staging/
+.tmp-*/
 private/
 data/
 repave.config.yaml

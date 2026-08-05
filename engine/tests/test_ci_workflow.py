@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from repave_engine import ci_action_pins
+from repave_engine import __version__, ci_action_pins
 from repave_engine.blueprint import artifact_family, list_blueprints
 from repave_engine.ci_action_pins import action_pin, action_pins, load_action_pins
 from repave_engine.ci_toolchain import INFRACOST_VERSION, TERRAFORM_VERSION
@@ -106,3 +106,19 @@ def test_snapshot_gate_config_merges_raw(terraform_blueprint) -> None:
     snapshot = snapshot_gate_config(terraform_blueprint)
     assert "checkov" in snapshot
     assert snapshot["checkov"]["config_file"] == ".checkov.yml"
+
+
+def test_terraform_artifacts_install_the_state_client(terraform_blueprint) -> None:
+    """Phase 3 rollout: repave-tf ships with terraform CI, gated on a repo variable."""
+    rendered = render_ci_workflow(terraform_blueprint)
+    assert "Install repave-tf" in rendered
+    assert "if: vars.REPAVE_STATE_URL != ''" in rendered
+    assert f'pip install "repave-cli=={__version__}"' in rendered
+
+
+def test_only_terraform_artifacts_install_the_state_client(repo_root: Path) -> None:
+    """Nothing else owns state, so nothing else should carry the client."""
+    for blueprint in list_blueprints(repo_root / "blueprints"):
+        rendered = render_ci_workflow(blueprint)
+        expected = artifact_family(blueprint.artifact_type) == "terraform"
+        assert ("repave-cli" in rendered) is expected, blueprint.artifact_type

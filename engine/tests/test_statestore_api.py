@@ -73,11 +73,12 @@ def test_discovery_reports_contract(client: TestClient) -> None:
 
 def test_contract_lists_every_mounted_client_route(client: TestClient) -> None:
     """Endpoints are advertised to pinned clients; drift here is a contract break."""
-    declared = {entry.split(" ", 1)[1] for entry in STATE_API_ENDPOINTS}
+    declared = set(STATE_API_ENDPOINTS)
     mounted = {
-        route.path  # type: ignore[attr-defined]
+        f"{method} {route.path}"  # type: ignore[attr-defined]
         for route in client.app.routes  # type: ignore[attr-defined]
         if getattr(route, "path", "").startswith("/api/state/v1")
+        for method in getattr(route, "methods", set()) - {"HEAD", "OPTIONS"}
     }
     assert mounted <= declared, f"undeclared routes: {sorted(mounted - declared)}"
 
@@ -459,3 +460,232 @@ def test_blast_radius_cost_rejects_invalid_json(client: TestClient) -> None:
         content=b"not json",
     )
     assert response.status_code == 400
+
+
+# -- transactions -----------------------------------------------------------
+
+
+def _seed_state(client: TestClient, serial: int = 1) -> None:
+    resources = [managed_resource("aws_vpc", "main")]
+    assert (
+        client.post(BACKEND, content=make_state(serial=serial, resources=resources)).status_code
+        == 200
+    )
+
+
+def _open_tx(client: TestClient) -> str:
+    response = client.post("/api/state/v1/states/acme/prod/tx")
+    assert response.status_code == 200
+    return str(response.json()["tx_id"])
+
+
+def _plan(*entries: tuple[str, list[str]]) -> dict[str, object]:
+    return {
+        "resource_changes": [
+            {"address": address, "change": {"actions": actions}} for address, actions in entries
+        ]
+    }
+
+
+def test_opening_a_transaction_pins_the_serial(client: TestClient) -> None:
+    _seed_state(client, serial=4)
+    payload = client.post("/api/state/v1/states/acme/prod/tx").json()
+    assert payload["status"] == "open"
+    assert payload["base_serial"] == 4
+
+
+def test_preview_records_the_write_set(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    payload = client.post(
+        f"/api/state/v1/tx/{tx_id}/preview",
+        json={"plan": _plan(("aws_vpc.main", ["no-op"]), ("aws_subnet.web", ["create"]))},
+    ).json()
+
+    assert payload["status"] == "committed"
+    resources = payload["transaction"]["resources"]
+    assert {r["address"]: r["intent"] for r in resources} == {
+        "aws_vpc.main": "read",
+        "aws_subnet.web": "write",
+    }
+    assert payload["transaction"]["status"] == "previewing"
+
+
+def test_describe_transaction_reports_status(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    assert client.get(f"/api/state/v1/tx/{tx_id}").json()["status"] == "open"
+
+
+def test_describe_unknown_transaction_is_404(client: TestClient) -> None:
+    assert client.get("/api/state/v1/tx/nope").status_code == 404
+    assert client.post("/api/state/v1/tx/nope/preview", json={}).status_code == 404
+
+
+def test_commit_writes_state_and_closes_the_transaction(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    client.post(f"/api/state/v1/tx/{tx_id}/preview", json={"plan": _plan()})
+
+    updated = make_state(
+        serial=2,
+        resources=[managed_resource("aws_vpc", "main"), managed_resource("aws_subnet", "web")],
+    )
+    payload = client.post(f"/api/state/v1/tx/{tx_id}/commit", content=updated).json()
+
+    assert payload["status"] == "committed"
+    assert payload["transaction"]["committed_serial"] == 2
+    assert client.get("/api/state/v1/states/acme/prod").json()["serial"] == 2
+
+
+def test_overlapping_commit_returns_409_naming_the_conflict(client: TestClient) -> None:
+    _seed_state(client)
+    alice = _open_tx(client)
+    bob = _open_tx(client)
+    overlap = {"plan": _plan(("aws_subnet.web", ["update"]))}
+    client.post(f"/api/state/v1/tx/{alice}/preview", json=overlap)
+    client.post(f"/api/state/v1/tx/{bob}/preview", json=overlap)
+
+    first = client.post(
+        f"/api/state/v1/tx/{alice}/commit",
+        content=make_state(serial=2, resources=[managed_resource("aws_vpc", "main")]),
+    )
+    assert first.status_code == 200
+
+    second = client.post(
+        f"/api/state/v1/tx/{bob}/commit",
+        content=make_state(serial=3, resources=[managed_resource("aws_vpc", "main")]),
+    )
+    assert second.status_code == 409
+    payload = second.json()
+    assert payload["status"] == "conflict"
+    assert payload["conflicts"] == [alice]
+    assert payload["conflicting_addresses"] == ["aws_subnet.web"]
+
+
+def test_disjoint_commits_both_succeed(client: TestClient) -> None:
+    _seed_state(client)
+    alice = _open_tx(client)
+    bob = _open_tx(client)
+    client.post(f"/api/state/v1/tx/{alice}/preview", json={"plan": _plan(("a.one", ["update"]))})
+    client.post(f"/api/state/v1/tx/{bob}/preview", json={"plan": _plan(("b.two", ["update"]))})
+
+    vpc = [managed_resource("aws_vpc", "main")]
+    assert (
+        client.post(
+            f"/api/state/v1/tx/{alice}/commit", content=make_state(serial=2, resources=vpc)
+        ).status_code
+        == 200
+    )
+    assert (
+        client.post(
+            f"/api/state/v1/tx/{bob}/commit", content=make_state(serial=3, resources=vpc)
+        ).status_code
+        == 200
+    )
+
+
+def test_a_failing_gate_blocks_commit_with_409(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    client.post(
+        f"/api/state/v1/tx/{tx_id}/preview",
+        json={
+            "plan": _plan(("a.one", ["update"])),
+            "gates": [{"name": "opa", "passed": False, "message": "policy denied"}],
+        },
+    )
+    response = client.post(
+        f"/api/state/v1/tx/{tx_id}/commit",
+        content=make_state(serial=2, resources=[managed_resource("aws_vpc", "main")]),
+    )
+    assert response.status_code == 409
+    assert response.json()["blocking_gates"] == ["opa"]
+    # The refused commit must not have moved the state.
+    assert client.get("/api/state/v1/states/acme/prod").json()["serial"] == 1
+
+
+def test_preview_reports_blocking_gates_before_commit(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    payload = client.post(
+        f"/api/state/v1/tx/{tx_id}/preview",
+        json={"plan": _plan(), "gates": [{"name": "checkov", "passed": False}]},
+    ).json()
+    assert payload["status"] == "blocked"
+    assert payload["blocking_gates"] == ["checkov"]
+
+
+def test_aborting_a_transaction_makes_it_final(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    assert client.post(f"/api/state/v1/tx/{tx_id}/abort").status_code == 200
+    assert client.get(f"/api/state/v1/tx/{tx_id}").json()["status"] == "aborted"
+
+    replay = client.post(f"/api/state/v1/tx/{tx_id}/abort")
+    assert replay.status_code == 409
+
+
+def test_aborting_an_unknown_transaction_is_404(client: TestClient) -> None:
+    assert client.post("/api/state/v1/tx/nope/abort").status_code == 404
+
+
+def test_committing_an_aborted_transaction_is_refused(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    client.post(f"/api/state/v1/tx/{tx_id}/abort")
+    response = client.post(
+        f"/api/state/v1/tx/{tx_id}/commit",
+        content=make_state(serial=2, resources=[managed_resource("aws_vpc", "main")]),
+    )
+    assert response.status_code == 400
+
+
+def test_transactions_are_listed_for_a_state(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    payload = client.get("/api/state/v1/states/acme/prod/tx").json()
+    assert [tx["tx_id"] for tx in payload["transactions"]] == [tx_id]
+
+    filtered = client.get(
+        "/api/state/v1/states/acme/prod/tx", params={"status": "committed"}
+    ).json()
+    assert filtered["transactions"] == []
+
+
+def test_preview_rejects_a_non_json_body(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    response = client.post(f"/api/state/v1/tx/{tx_id}/preview", content=b"not json")
+    assert response.status_code == 400
+
+
+def test_preview_rejects_a_json_array_body(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    response = client.post(f"/api/state/v1/tx/{tx_id}/preview", content=b"[]")
+    assert response.status_code == 400
+
+
+def test_preview_accepts_an_empty_body(client: TestClient) -> None:
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    assert client.post(f"/api/state/v1/tx/{tx_id}/preview", content=b"").status_code == 200
+
+
+def test_a_required_gate_is_enforced_from_config(tmp_path: Path) -> None:
+    config = StateStoreConfig(
+        database=DatabaseConfig(dialect="sqlite", sqlite_path=tmp_path / "state.db"),
+        required_gates=frozenset({"opa"}),
+    )
+    app = FastAPI()
+    app.include_router(build_state_router(repo_root=tmp_path, config=config, auth_config=None))
+    with TestClient(app) as client:
+        _seed_state(client)
+        tx_id = _open_tx(client)
+        response = client.post(
+            f"/api/state/v1/tx/{tx_id}/commit",
+            content=make_state(serial=2, resources=[managed_resource("aws_vpc", "main")]),
+        )
+        assert response.status_code == 409
+        assert response.json()["blocking_gates"] == ["opa"]

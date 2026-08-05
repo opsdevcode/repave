@@ -94,6 +94,47 @@ repave-tf graph cache-provider-schema schema.json --provider hashicorp/aws \
   --provider-version 5.0.0
 ```
 
+### Plan and apply through a transaction
+
+`tofu` runs on your machine, in your working directory, with your cloud credentials. The
+store receives a plan summary, your gate results, and the resulting state document — never
+a credential.
+
+```bash
+repave-tf tf plan prod --chdir infra/prod
+repave-tf tf apply prod --chdir infra/prod
+```
+
+`apply` opens a transaction, plans, previews, and only then applies. A preview that reports
+a conflict or a blocking gate stops before the apply, so a governance failure costs a plan
+rather than a half-applied change.
+
+Concurrency is optimistic: transactions that touch different resources commit
+independently, and one that overlaps another gets refused with the transaction that won.
+
+```
+conflict: aws_subnet.web changed since serial 12; conflicting transaction(s): 9f3c...
+  Re-plan against current state and retry
+```
+
+Gate results come from a JSON file, so whatever produced them — `repave gates`, your own
+pipeline — can feed the decision:
+
+```bash
+repave gates --path . --json > gates.json
+repave-tf tf apply prod --gates gates.json
+```
+
+A gate named in the server's `required_gates` must be reported passing. Missing counts as
+blocking: "nobody ran it" cannot be read as "it passed".
+
+```bash
+repave-tf tf status prod          # transactions for a state
+repave-tf tf abort <tx-id>        # release one that was left open
+```
+
+Exit codes: `0` success, `1` error, `2` blocked by a conflict or a gate.
+
 ## Develop
 
 ```bash

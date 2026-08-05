@@ -113,6 +113,9 @@ def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str,
         "needs_dotnet": "dotnet-test" in gate_set,
         "needs_buf": "buf-lint" in gate_set,
         "needs_actionlint": "actionlint" in gate_set,
+        # Only artifacts that own Terraform state have anything to talk to the state
+        # store about (ADR 004 Phase 3).
+        "needs_state_client": artifact_family(artifact_type) == "terraform",
     }
 
 
