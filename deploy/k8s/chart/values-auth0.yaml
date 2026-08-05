@@ -9,9 +9,9 @@
 #     --set secrets.existingSecret=repave-secrets
 #
 # Replace issuer / clientId / redirectUri / logoutReturnTo with your Auth0 tenant
-# and portal hostname. Create Roles repave-admins and repave-generators in Auth0,
-# plus a Post-Login Action that writes them to the groups claim (see
-# docs/auth-service-mode.md).
+# and portal hostname. Operator checklist: docs/operations/auth0-portal.md
+# Action source: deploy/k8s/auth0/post-login-groups.js
+# Secrets: deploy/k8s/hack/bootstrap-auth0-secrets.sh
 
 repave:
   auth:

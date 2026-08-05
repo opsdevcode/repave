@@ -6,17 +6,14 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.24.0  
 
-**In progress:** **Auth0 portal access** — require Auth0 OIDC for hosted portal HTML and
-mutating APIs before shared deploy (`session_https_only`, IdP logout, Helm overlay
-[`values-auth0.yaml`](../deploy/k8s/chart/values-auth0.yaml),
-[`docs/auth-service-mode.md`](auth-service-mode.md)). Fine-grained Auth0 FGA stays in the
-[parking lot](#parking-lot). **Developer paved roads** optional follow-on — in-cluster K8s
-cost allocation (`portal.cost_reader: k8s`). Deployment scorecard dimension and v1.83
-runtime×layout conformance shipped on `main`. v1.84 composite paved roads shipped on `main`.
-All runtimes (Python, Go, Node.js, Java, .NET) and layouts (`http-api`, `worker`, `scheduled-job`, `grpc`)
-on `app-service-generic`. v1.82 brownfield `repave add` and v1.81 reliability path shipped on `main`. v3 themes under
+**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Composite paved roads (v1.84)** — `microservice-full` bundle (app, Helm, GitOps,
+**Shipped on `main`:** **Auth0 portal access** — engine/Helm hardening plus operator runbook
+([`docs/operations/auth0-portal.md`](operations/auth0-portal.md), Action
+[`post-login-groups.js`](../deploy/k8s/auth0/post-login-groups.js),
+[`values-auth0.yaml`](../deploy/k8s/chart/values-auth0.yaml)); tenant secrets and hosted
+EKS wiring live in private infra, not this repo. **in-cluster K8s cost allocation**
+(`portal.cost_reader: k8s`); **Composite paved roads (v1.84)** — `microservice-full` bundle (app, Helm, GitOps,
 dashboards, monitors, SLO), `service-stack` Terraform module member, portal bundle preset chips;
 **App-service layout archetypes** (`appService.layout` on
 `app-service-generic`: `worker`, `scheduled-job`, `grpc` for Python, Go, Node.js, Java, and .NET;
@@ -1808,9 +1805,8 @@ requirements on Terraform blueprints.
 shows last-30-day actual spend with its as-of time.
 
 **Status:** **Shipped on `main`** — `infracost` gate and generated-repo CI; `portal.cost_reader`
-(`url`, `aws`, `azure`); service detail and **library tile** cost badges (L30D actuals or local
-`.repave/cost-estimate.json`); **Cloud spend** scorecard dimension. **In progress:** in-cluster
-Kubernetes allocation via `cost_reader: k8s` (OpenCost-compatible API).
+(`url`, `aws`, `azure`, `k8s` OpenCost-compatible); service detail and **library tile** cost
+badges (L30D actuals or local `.repave/cost-estimate.json`); **Cloud spend** scorecard dimension.
 
 ---
 

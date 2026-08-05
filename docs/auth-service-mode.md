@@ -92,7 +92,9 @@ Example: `https://opsdevcode.us.auth0.com/`
 1. Create Auth0 Roles: `repave-admins`, `repave-generators`.
 2. Assign roles to users (or sync from your enterprise connection).
 3. Add a **Post-Login Action** so roles appear on **userinfo** under the claim
-   configured as `groups_claim` (default `groups`):
+   configured as `groups_claim` (default `groups`). Use the checked-in source
+   [`deploy/k8s/auth0/post-login-groups.js`](../deploy/k8s/auth0/post-login-groups.js)
+   (same body as below):
 
 ```javascript
 exports.onExecutePostLogin = async (event, api) => {
@@ -103,6 +105,8 @@ exports.onExecutePostLogin = async (event, api) => {
   }
 };
 ```
+
+Operator deploy checklist: [`docs/operations/auth0-portal.md`](operations/auth0-portal.md).
 
 If you prefer a namespaced claim (Auth0 recommendation for custom APIs), set
 `groups_claim` to that URI (for example `https://repave.opsdevcode/groups`) and use
