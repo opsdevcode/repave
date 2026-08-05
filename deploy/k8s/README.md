@@ -3,7 +3,8 @@
 Starter manifests and chart hooks for hosted repave (roadmap v1.35–v1.38). Install the
 engine with the **Helm chart** under [`chart/`](chart/README.md) (local path or
 `oci://ghcr.io/opsdevcode/charts/repave` on semver tags), then wire observability via chart
-values or standalone manifests.
+values or standalone manifests. Semver tags also notify `opsdevcode/repave-aws-infra` via
+`repository_dispatch` when secret `INFRA_DEPLOY_TOKEN` is set (see that repo’s README).
 
 | Path | Purpose |
 | --- | --- |
