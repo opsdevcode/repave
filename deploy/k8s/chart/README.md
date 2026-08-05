@@ -188,9 +188,12 @@ Do not commit real tokens in `values.yaml`. Use `secrets.create: true` only on k
 
 Use [`values-auth0.yaml`](values-auth0.yaml) with
 [`values-decomposed-day2.yaml`](values-decomposed-day2.yaml) so the hosted portal
-and mutating APIs require Auth0 login (TLS-terminated Ingress). Full tenant setup
-(Regular Web App, Roles, Post-Login Action, break-glass):
-[`docs/auth-service-mode.md`](../../../docs/auth-service-mode.md#auth0-for-portal-access-day-1).
+and mutating APIs require Auth0 login (TLS-terminated Ingress).
+
+- Operator checklist: [`docs/operations/auth0-portal.md`](../../../docs/operations/auth0-portal.md)
+- Post-Login Action: [`../auth0/post-login-groups.js`](../auth0/post-login-groups.js)
+- Secrets: [`../hack/bootstrap-auth0-secrets.sh`](../hack/bootstrap-auth0-secrets.sh)
+- Config reference: [`docs/auth-service-mode.md`](../../../docs/auth-service-mode.md#auth0-for-portal-access-day-1)
 
 ## Co-install with the operator
 

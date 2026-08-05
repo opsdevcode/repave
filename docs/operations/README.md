@@ -28,6 +28,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | `RepaveJsonlAppendFailures` | [Stuck async queue](#stuck-async-queue) |
 | `RepaveHPAAtMaxReplicas` | [Scale out](#scale-out) (requires kube-state-metrics) |
 | Postgres data loss / restore | [postgres-backup-restore.md](postgres-backup-restore.md) |
+| Auth0 portal access (hosted login) | [auth0-portal.md](auth0-portal.md) |
 | Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
 
 ## Runbooks
@@ -116,6 +117,7 @@ Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md]
 ## Related
 
 - [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC, Auth0 portal access, roles
+- [`auth0-portal.md`](auth0-portal.md) — Auth0 tenant + Helm deploy checklist
 - [`docs/github-app-auth.md`](../github-app-auth.md) — GitHub App vs PAT for publish
 - [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
