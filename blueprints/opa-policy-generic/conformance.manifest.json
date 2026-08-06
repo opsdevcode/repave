@@ -1,7 +1,8 @@
 {
   ".github/workflows/repave-gates.yml": "d190d818ed6bda3c0075a05cf52b7b18e8021fb2aff765dbfaaa63ecfd2f884e",
   "README.md": "f122f863e2db89fea9188bbbf294e356d1f8cfd557766d808f0f394ac5cfd2a3",
+  "policy/allocation_tags.rego": "a4e42d78bca5a1575ad98f32f0584941ede5aa9bddb5a65be589c1d1d722d4d2",
   "policy/destructive_changes.rego": "00de0be8cad0c4f5b5efcb6b3901501382c05470f2846cca20915d6930084e38",
-  "repave.yaml": "e3ffe214768ac1843511a77dc4b171afcf293a9bcf423c2a2abd9eb31274ca20",
+  "repave.yaml": "3247cdec123f71b852279bd4838cdaa1d1cf8f4039844a311affb228dfb30d02",
   "tests/fixtures/plan-create-only.json": "6c1456d6c3c5893e0b14d18d33ba12afaabae4e5efa709232ce934fc75a419e5"
 }

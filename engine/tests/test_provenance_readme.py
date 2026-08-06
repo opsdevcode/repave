@@ -21,6 +21,7 @@ def test_provenance_section_markdown_includes_blueprint_and_repave_yaml(
         {
             "chart_name": "api",
             "app_name": "api",
+            "owner": "platform-engineering",
             "description": "API chart",
             "image_repository": "ghcr.io/acme/api",
         },
@@ -44,6 +45,7 @@ def test_sync_readme_provenance_section_replaces_existing_block(
         {
             "chart_name": "api",
             "app_name": "api",
+            "owner": "platform-engineering",
             "description": "API chart",
             "image_repository": "ghcr.io/acme/api",
         },
@@ -74,6 +76,7 @@ def test_sync_readme_provenance_section_appends_when_missing(
         {
             "chart_name": "api",
             "app_name": "api",
+            "owner": "platform-engineering",
             "description": "API chart",
             "image_repository": "ghcr.io/acme/api",
         },

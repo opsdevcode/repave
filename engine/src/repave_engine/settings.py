@@ -724,6 +724,62 @@ def load_gate_overrides(repo_root: Path) -> GateOverrides:
 
 
 @dataclass(frozen=True)
+class CostAllocationConfig:
+    tag_key_owner: str = "Owner"
+    tag_key_service: str = "Service"
+    tag_key_environment: str = "Environment"
+    tag_key_cost_center: str = "CostCenter"
+
+
+_DEFAULT_COST_ALLOCATION = CostAllocationConfig()
+
+
+def _coerce_tag_key(value: Any, *, default: str) -> str:
+    text = str(value).strip() if value is not None else ""
+    return text or default
+
+
+def _parse_cost_allocation_tag_keys_env() -> dict[str, str]:
+    raw = os.environ.get("REPAVE_COST_ALLOCATION_TAG_KEYS", "").strip()
+    if not raw:
+        return {}
+    parsed: dict[str, str] = {}
+    for segment in raw.split(","):
+        part = segment.strip()
+        if not part or "=" not in part:
+            continue
+        key, value = part.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if key and value:
+            parsed[key] = value
+    return parsed
+
+
+def _load_cost_allocation_config(block: dict[str, Any] | None) -> CostAllocationConfig:
+    defaults = _DEFAULT_COST_ALLOCATION
+    tag_keys: dict[str, Any] = {}
+    if isinstance(block, dict):
+        raw_keys = block.get("tag_keys")
+        if raw_keys is not None and not isinstance(raw_keys, dict):
+            raise ValueError("portal.cost_allocation.tag_keys must be a mapping")
+        if isinstance(raw_keys, dict):
+            tag_keys = raw_keys
+    env_map = _parse_cost_allocation_tag_keys_env()
+    merged = {**{str(k): str(v) for k, v in tag_keys.items()}, **env_map}
+    return CostAllocationConfig(
+        tag_key_owner=_coerce_tag_key(merged.get("owner"), default=defaults.tag_key_owner),
+        tag_key_service=_coerce_tag_key(merged.get("service"), default=defaults.tag_key_service),
+        tag_key_environment=_coerce_tag_key(
+            merged.get("environment"), default=defaults.tag_key_environment
+        ),
+        tag_key_cost_center=_coerce_tag_key(
+            merged.get("cost_center"), default=defaults.tag_key_cost_center
+        ),
+    )
+
+
+@dataclass(frozen=True)
 class CostAwsConfig:
     tag_key_owner: str = "Owner"
     tag_key_service: str = "Service"
@@ -767,6 +823,7 @@ class PortalConfig:
     observability_slo_url: str = ""
     cost_reader: str = ""
     cost_actuals_url: str = ""
+    cost_allocation: CostAllocationConfig = field(default_factory=CostAllocationConfig)
     cost_aws: CostAwsConfig = field(default_factory=CostAwsConfig)
     cost_azure: CostAzureConfig = field(default_factory=CostAzureConfig)
     cost_k8s: CostK8sConfig = field(default_factory=CostK8sConfig)
@@ -788,28 +845,36 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     slo_url = str(block.get("observability_slo_url", "")).strip()
     cost_url = str(block.get("cost_actuals_url", "")).strip()
     cost_reader = str(block.get("cost_reader", "")).strip().lower()
+    cost_alloc_block = block.get("cost_allocation", {})
+    cost_allocation = _load_cost_allocation_config(
+        cost_alloc_block if isinstance(cost_alloc_block, dict) else {}
+    )
     aws_block = block.get("cost_aws", {})
     azure_block = block.get("cost_azure", {})
     k8s_block = block.get("cost_k8s", {})
     cost_aws = CostAwsConfig(
-        tag_key_owner=str(aws_block.get("tag_key_owner", "Owner")).strip() or "Owner"
-        if isinstance(aws_block, dict)
-        else "Owner",
-        tag_key_service=str(aws_block.get("tag_key_service", "Service")).strip() or "Service"
-        if isinstance(aws_block, dict)
-        else "Service",
+        tag_key_owner=_coerce_tag_key(
+            aws_block.get("tag_key_owner") if isinstance(aws_block, dict) else None,
+            default=cost_allocation.tag_key_owner,
+        ),
+        tag_key_service=_coerce_tag_key(
+            aws_block.get("tag_key_service") if isinstance(aws_block, dict) else None,
+            default=cost_allocation.tag_key_service,
+        ),
     )
     cost_azure = CostAzureConfig(
         subscription_id=str(azure_block.get("subscription_id", "")).strip()
         if isinstance(azure_block, dict)
         else "",
         scope=str(azure_block.get("scope", "")).strip() if isinstance(azure_block, dict) else "",
-        tag_key_owner=str(azure_block.get("tag_key_owner", "Owner")).strip() or "Owner"
-        if isinstance(azure_block, dict)
-        else "Owner",
-        tag_key_service=str(azure_block.get("tag_key_service", "Service")).strip() or "Service"
-        if isinstance(azure_block, dict)
-        else "Service",
+        tag_key_owner=_coerce_tag_key(
+            azure_block.get("tag_key_owner") if isinstance(azure_block, dict) else None,
+            default=cost_allocation.tag_key_owner,
+        ),
+        tag_key_service=_coerce_tag_key(
+            azure_block.get("tag_key_service") if isinstance(azure_block, dict) else None,
+            default=cost_allocation.tag_key_service,
+        ),
     )
     cost_k8s = CostK8sConfig(
         base_url=str(k8s_block.get("base_url", "")).strip() if isinstance(k8s_block, dict) else "",
@@ -906,6 +971,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         observability_slo_url=slo_url,
         cost_reader=cost_reader,
         cost_actuals_url=cost_url,
+        cost_allocation=cost_allocation,
         cost_aws=cost_aws,
         cost_azure=cost_azure,
         cost_k8s=cost_k8s,

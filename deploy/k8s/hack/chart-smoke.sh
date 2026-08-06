@@ -62,10 +62,27 @@ kubectl -n "${NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"
 kubectl -n "${NS}" port-forward svc/repave 18088:8088 >/tmp/repave-chart-smoke-pf.log 2>&1 &
 PF_PID=$!
 trap 'kill "${PF_PID}" 2>/dev/null || true; cleanup' EXIT
-sleep 3
 
-curl -sf "http://127.0.0.1:18088/health" | grep -q '"status":"ok"'
-curl -sf "http://127.0.0.1:18088/readyz" | grep -q '"status":"ready"'
-curl -sf "http://127.0.0.1:18088/" | grep -qi 'catalog\|blueprint\|repave'
+# Capture curl body before grep: with pipefail, `curl | grep -q` can exit 23
+# (SIGPIPE) when grep matches early while curl is still writing.
+probe_match() {
+  local url="$1" pattern="$2"
+  local body
+  body="$(curl -sf "${url}")"
+  grep -qiE "${pattern}" <<<"${body}"
+}
 
-echo "OK: chart smoke passed"
+for attempt in 1 2 3 4 5; do
+  if probe_match "http://127.0.0.1:18088/health" '"status":"ok"' \
+    && probe_match "http://127.0.0.1:18088/readyz" '"status":"ready"' \
+    && probe_match "http://127.0.0.1:18088/" 'catalog|blueprint|repave'; then
+    echo "OK: chart smoke passed"
+    exit 0
+  fi
+  if [[ "${attempt}" -eq 5 ]]; then
+    echo "portal probes failed after port-forward" >&2
+    cat /tmp/repave-chart-smoke-pf.log >&2 || true
+    exit 1
+  fi
+  sleep 2
+done

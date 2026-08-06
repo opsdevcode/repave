@@ -60,9 +60,14 @@ spec:
       description: Emit catalog-info.yaml for Backstage Software Catalog import.
     - name: owner
       type: string
+      required: true
+      default: platform-engineering
+      description: Owning team for cost allocation and Backstage catalog owner.
+    - name: cost_center
+      type: string
       required: false
       default: ""
-      description: Backstage spec.owner (required when include_backstage_catalog is true).
+      description: Optional cost center for chargeback (CostCenter tag).
     - name: system
       type: string
       required: false

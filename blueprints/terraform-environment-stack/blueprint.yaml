@@ -36,6 +36,16 @@ spec:
         - staging
         - prod
       default: dev
+    - name: owner
+      type: string
+      required: true
+      default: platform-engineering
+      description: Owning team for cost allocation (Owner tag).
+    - name: cost_center
+      type: string
+      required: false
+      default: ""
+      description: Optional cost center for chargeback (CostCenter tag).
     - name: pinned_modules
       type: string
       required: false

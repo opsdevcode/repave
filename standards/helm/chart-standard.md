@@ -31,6 +31,9 @@ All workloads MUST include standard labels from `_helpers.tpl`:
 - `app.kubernetes.io/name`
 - `app.kubernetes.io/instance`
 - `helm.sh/chart`
+- `repave.dev/owner`, `repave.dev/service`, `repave.dev/environment` (FinOps allocation — required via `values.owner`, `values.serviceName`, `values.environment`)
+
+Optional: `values.costCenter` for chargeback metadata.
 
 ## Validation
 

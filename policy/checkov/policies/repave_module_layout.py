@@ -7,6 +7,7 @@ from checkov.common.models.enums import CheckCategories, CheckResult
 from checkov.terraform.checks.resource.base_resource_check import BaseResourceCheck
 
 from repave_policy_utils import (
+    common_tags_include_allocation_tags,
     declared_variable_names,
     file_contains_resource_blocks,
     module_dir,
@@ -125,7 +126,28 @@ class RequiredModuleVariables(_RepaveModuleLayoutCheck):
         return CheckResult.PASSED
 
 
+class AllocationTagsInCommonLocals(_RepaveModuleLayoutCheck):
+    def __init__(self) -> None:
+        super().__init__(
+            check_id="CKV2_REPAVE_13",
+            name="locals.tf common_tags must include FinOps allocation tags",
+            guideline=(
+                "Merge Owner, Service, Environment, and CostCenter into local.common_tags "
+                "from module inputs (var.owner, var.service, var.environment, var.cost_center)."
+            ),
+        )
+
+    def scan_module_layout(self, module_root: Path) -> CheckResult:
+        content = read_module_file(module_root, "locals.tf")
+        if content is None:
+            return CheckResult.FAILED
+        if not common_tags_include_allocation_tags(content):
+            return CheckResult.FAILED
+        return CheckResult.PASSED
+
+
 check_locals_file_present = LocalsFilePresent()
 check_variables_file_has_no_resources = VariablesFileHasNoResources()
 check_main_tf_has_no_resources = MainTfHasNoResources()
 check_required_module_variables = RequiredModuleVariables()
+check_allocation_tags_in_common_locals = AllocationTagsInCommonLocals()

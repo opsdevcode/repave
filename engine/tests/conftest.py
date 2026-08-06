@@ -54,6 +54,7 @@ def resource_module_inputs() -> dict[str, str]:
         "cloud_provider": "aws",
         "provider_service": "s3",
         "provider_resource": "bucket",
+        "owner": "platform-engineering",
     }
 
 
@@ -64,6 +65,7 @@ def env_stack_inputs() -> dict[str, str]:
         "description": "Example environment stack",
         "cloud_provider": "aws",
         "environment": "dev",
+        "owner": "platform-engineering",
         "pinned_modules": (
             '[{"name":"foundation","source":"./modules/_example","repo_name":"_example"}]'
         ),
@@ -88,6 +90,8 @@ def sample_inputs() -> dict[str, str]:
         "description": "Example module generated in tests",
         "cloud_provider": "aws",
         "provider_services": "ec2,s3",
+        "owner": "platform-engineering",
+        "cost_center": "CC-100",
     }
 
 

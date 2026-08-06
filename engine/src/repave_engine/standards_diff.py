@@ -120,7 +120,7 @@ def standards_diff_for_pin(
             reason=f"Standard path `{rel}` was not found in the catalog root.",
             files=(),
         )
-    if not (repo_root / ".git").is_dir():
+    if not (repo_root / ".git").exists():
         return StandardsDiffResult(
             available=False,
             pinned_version=pinned,

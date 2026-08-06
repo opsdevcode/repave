@@ -22,6 +22,24 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "owner" {
+  type        = string
+  description = "Owning team for cost allocation (Owner tag)."
+  default     = "{{ owner }}"
+}
+
+variable "service" {
+  type        = string
+  description = "Service name for cost allocation (Service tag)."
+  default     = "{{ module_name }}"
+}
+
+variable "cost_center" {
+  type        = string
+  description = "Optional cost center for chargeback (CostCenter tag)."
+  default     = "{{ cost_center }}"
+}
+
 variable "name_prefix" {
   type        = string
   description = "Optional naming prefix; when null, defaults to module_name-environment."

@@ -16,6 +16,7 @@ REPAVE_LAYOUT_CHECKS = (
     "CKV2_REPAVE_5",
     "CKV2_REPAVE_6",
     "CKV2_REPAVE_7",
+    "CKV2_REPAVE_13",
 )
 
 REPAVE_VERSION_CHECKS = (
@@ -89,6 +90,7 @@ def test_compliant_fixture_passes_security_checks(fixtures_root: Path, policy_pa
         ("fail-main-resource", {"CKV2_REPAVE_5"}),
         ("fail-missing-vars", {"CKV2_REPAVE_6"}),
         ("fail-no-local-refs", {"CKV2_REPAVE_7"}),
+        ("fail-missing-allocation-tags", {"CKV2_REPAVE_13"}),
     ],
 )
 def test_fixture_violations_fail_expected_checks(
