@@ -7,7 +7,7 @@ import pytest
 
 from repave_engine.sql_store import DatabaseConfig, connect
 from repave_engine.statestore.graph import DriftEntry, compare_drift
-from repave_engine.statestore.normalize import REDACTED
+from repave_engine.statestore.normalize import EDGE_REFERENCE, REDACTED, Edge
 from repave_engine.statestore.store import StateStore, ensure_state_schema
 from statestore_support import make_state, managed_resource
 
@@ -122,6 +122,41 @@ def test_dependencies_are_the_forward_direction(store: StateStore) -> None:
 def test_edges_to_unknown_addresses_are_dropped(store: StateStore) -> None:
     _write(store, [managed_resource("aws_subnet", "web", depends_on=["aws_vpc.missing"])])
     assert store.edges(TENANT, NAME) == []
+
+
+def test_extra_edges_enrich_graph_without_state_depends_on(store: StateStore) -> None:
+    """Plan-JSON references fill gaps state dependencies leave empty."""
+    outcome = store.write_state(
+        TENANT,
+        NAME,
+        make_state(
+            serial=1,
+            resources=[
+                managed_resource("aws_vpc", "main"),
+                managed_resource("aws_subnet", "web"),  # no depends_on in state
+            ],
+        ),
+        author="test",
+        extra_edges=[
+            Edge(
+                from_address="aws_subnet.web",
+                to_address="aws_vpc.main",
+                kind=EDGE_REFERENCE,
+            ),
+            Edge(
+                from_address="aws_subnet.web",
+                to_address="aws_vpc.missing",
+                kind=EDGE_REFERENCE,
+            ),
+        ],
+    )
+    assert outcome.status == "created", outcome.detail
+
+    edges = store.edges(TENANT, NAME)
+    assert [(e.from_address, e.to_address, e.kind) for e in edges] == [
+        ("aws_subnet.web", "aws_vpc.main", "reference")
+    ]
+    assert store.blast_radius(TENANT, NAME, "aws_vpc.main") == ["aws_subnet.web"]
 
 
 def test_graph_is_replaced_not_appended_on_rewrite(store: StateStore) -> None:

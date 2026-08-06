@@ -203,7 +203,9 @@ running `terraform apply` directly.
 5. **Graph source of truth is staged.** State-derived edges (`depends_on` plus resolved
    attribute references) are sufficient for blast radius and inventory in Phase 2.
    Plan-JSON `configuration.root_module` expression references are required before any Phase 4
-   partitioning, and are already collected opportunistically.
+   partitioning; on the transaction preview/commit path they are persisted and merged into
+   `replace_graph` as `extra_edges` (`kind: reference`). Direct backend/import writes remain
+   state-derived only.
 6. **Separate deployable.** `repave-statestore` runs as its own role rather than inside the
    portal process, because availability requirements differ by an order of magnitude. The
    decomposition shape from [ADR 002](002-v2-service-decomposition.md) and

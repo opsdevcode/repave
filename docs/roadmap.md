@@ -6,11 +6,12 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.26.0  
 
-**In progress:** **State store shared-deploy enablement** (Helm knobs + ops checklist for
-ADR 004 Phases 1–3; store stays off by default — Phase 4 remains no-go). Fine-grained Auth0
-FGA stays in the [parking lot](#parking-lot). v3 themes under
+**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **GitHub repository provisioning goldpath** (`github-repo-generic` —
+**Shipped on `main`:** **State store shared-deploy Helm knobs** (`repave.stateStore` +
+[`state-store-enablement.md`](operations/state-store-enablement.md); still off by default);
+**plan-JSON config edges** on transaction preview/commit (`edges_from_plan_json` →
+`replace_graph` `extra_edges`); **GitHub repository provisioning goldpath** (`github-repo-generic` —
 template or selection create, org team grants, Platform catalog family, `repave create-repo`,
 `GET /api/v2/github/teams` — [github-repo-goldpath](github-repo-goldpath.md); phase 2:
 `default-pr` rulesets, additive membership sync from a source org team, fleet register →
@@ -2348,10 +2349,9 @@ promote without new discovery:
 ## State custody and the resource graph (v2.x)
 
 **Status:** Phases 0–3 shipped on `main`. Phase 4 **no-go** recorded
-([`state-graph-phase4-review.md`](state-graph-phase4-review.md)). Shared-deploy enablement
-prep in progress (chart `repave.stateStore` + [`state-store-enablement.md`](operations/state-store-enablement.md));
-defaults stay off. Next after knobs: security sign-off, treadmill owner, PITR drill, then
-plan-JSON edge wiring — not Phase 4 code.
+([`state-graph-phase4-review.md`](state-graph-phase4-review.md)). Shared-deploy Helm knobs
+and plan-JSON config edges on the transaction write path shipped; store defaults stay off.
+Next: security sign-off, treadmill owner, PITR drill — not Phase 4 code.
 
 **Design:** [ADR 004](adr/004-state-custody-and-the-resource-graph.md) ·
 **Build vs buy:** [ADR 005](adr/005-state-graph-build-vs-buy.md) ·
@@ -2387,8 +2387,8 @@ test fails the build if `repave_cli` imports database code.
 
 **Still open (Phases 1–3 enablement, not Phase 4):** a named owner for the Terraform/OpenTofu
 compatibility treadmill and a platform security sign-off on the persistence posture
-reversal, both required before the store is enabled in any shared deployment. Plan-JSON
-configuration edges on the write path remain prep for any future Phase 4 revisit.
+reversal, both required before the store is enabled in any shared deployment. Transaction
+commits merge plan-JSON `reference` edges; direct backend/import writes stay state-derived.
 
 ---
 

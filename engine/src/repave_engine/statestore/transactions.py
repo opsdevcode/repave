@@ -24,6 +24,7 @@ from datetime import UTC, datetime
 from typing import Any, Final, Literal
 
 from repave_engine.sql_store import SqlConnection
+from repave_engine.statestore.normalize import Edge
 
 TransactionStatus = Literal["open", "previewing", "committing", "committed", "failed", "aborted"]
 CommitStatus = Literal["committed", "conflict", "blocked", "invalid", "absent"]
@@ -110,6 +111,8 @@ class Transaction:
     committed_version_id: str = ""
     resources: tuple[TransactionResource, ...] = ()
     gates: tuple[GateOutcome, ...] = ()
+    config_edges: tuple[Edge, ...] = ()
+    """Plan-JSON configuration edges recorded at preview; applied on commit."""
 
     @property
     def is_final(self) -> bool:
@@ -134,6 +137,14 @@ class Transaction:
             "updated_at": self.updated_at,
             "resources": [r.to_payload() for r in self.resources],
             "gates": [g.to_payload() for g in self.gates],
+            "config_edges": [
+                {
+                    "from_address": edge.from_address,
+                    "to_address": edge.to_address,
+                    "kind": edge.kind,
+                }
+                for edge in self.config_edges
+            ],
         }
 
 
@@ -226,6 +237,7 @@ class TransactionStore:
             updated_at=str(row["updated_at"]),
             resources=self._resources(tx_id),
             gates=self._gates(tx_id),
+            config_edges=self._config_edges(tx_id),
         )
 
     def _resources(self, tx_id: str) -> tuple[TransactionResource, ...]:
@@ -255,6 +267,21 @@ class TransactionStore:
                 passed=bool(row["passed"]),
                 skipped=bool(row["skipped"]),
                 message=str(row["message"]),
+            )
+            for row in rows
+        )
+
+    def _config_edges(self, tx_id: str) -> tuple[Edge, ...]:
+        rows = self.conn.execute(
+            "SELECT from_address, to_address, kind FROM state_transaction_edges "
+            "WHERE tx_id = ? ORDER BY from_address ASC, to_address ASC, kind ASC",
+            (tx_id,),
+        ).fetchall()
+        return tuple(
+            Edge(
+                from_address=str(row["from_address"]),
+                to_address=str(row["to_address"]),
+                kind=str(row["kind"]),
             )
             for row in rows
         )
@@ -317,6 +344,39 @@ class TransactionStore:
         self._touch(tx_id)
         self.conn.commit()
         return TransactionOutcome(ok=True, detail="resources recorded", transaction=self.get(tx_id))
+
+    def record_config_edges(self, tx_id: str, edges: Iterable[Edge]) -> TransactionOutcome:
+        """Persist plan-JSON configuration edges for the commit-time graph rebuild.
+
+        Replaces anything previously recorded so re-preview stays authoritative.
+        """
+        tx = self.get(tx_id)
+        if tx is None:
+            return TransactionOutcome(ok=False, detail=f"no such transaction: {tx_id}")
+        if tx.is_final:
+            return TransactionOutcome(
+                ok=False,
+                detail=f"transaction {tx_id} is {tx.status}; open a new one",
+                transaction=tx,
+            )
+
+        self.conn.execute("DELETE FROM state_transaction_edges WHERE tx_id = ?", (tx_id,))
+        seen: set[tuple[str, str, str]] = set()
+        for edge in edges:
+            key = (edge.from_address, edge.to_address, edge.kind)
+            if not edge.from_address or not edge.to_address or key in seen:
+                continue
+            seen.add(key)
+            self.conn.execute(
+                "INSERT INTO state_transaction_edges (tx_id, from_address, to_address, kind) "
+                "VALUES (?, ?, ?, ?)",
+                (tx_id, edge.from_address, edge.to_address, edge.kind),
+            )
+        self._touch(tx_id)
+        self.conn.commit()
+        return TransactionOutcome(
+            ok=True, detail="config edges recorded", transaction=self.get(tx_id)
+        )
 
     def record_gates(self, tx_id: str, gates: Iterable[GateOutcome]) -> TransactionOutcome:
         tx = self.get(tx_id)

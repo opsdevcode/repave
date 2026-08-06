@@ -487,6 +487,25 @@ def _plan(*entries: tuple[str, list[str]]) -> dict[str, object]:
     }
 
 
+def _plan_with_config_edge(
+    *entries: tuple[str, list[str]],
+    from_address: str = "aws_subnet.web",
+    to_address: str = "aws_vpc.main",
+) -> dict[str, object]:
+    payload = _plan(*entries)
+    payload["configuration"] = {
+        "root_module": {
+            "resources": [
+                {
+                    "address": from_address,
+                    "expressions": {"vpc_id": {"references": [f"{to_address}.id", to_address]}},
+                }
+            ]
+        }
+    }
+    return payload
+
+
 def test_opening_a_transaction_pins_the_serial(client: TestClient) -> None:
     _seed_state(client, serial=4)
     payload = client.post("/api/state/v1/states/acme/prod/tx").json()
@@ -536,6 +555,42 @@ def test_commit_writes_state_and_closes_the_transaction(client: TestClient) -> N
     assert payload["status"] == "committed"
     assert payload["transaction"]["committed_serial"] == 2
     assert client.get("/api/state/v1/states/acme/prod").json()["serial"] == 2
+
+
+def test_preview_records_config_edges_and_commit_writes_them(client: TestClient) -> None:
+    """Plan configuration references land on the graph even without state depends_on."""
+    _seed_state(client)
+    tx_id = _open_tx(client)
+    preview = client.post(
+        f"/api/state/v1/tx/{tx_id}/preview",
+        json={
+            "plan": _plan_with_config_edge(
+                ("aws_vpc.main", ["no-op"]),
+                ("aws_subnet.web", ["create"]),
+            )
+        },
+    ).json()
+    assert preview["transaction"]["config_edges"] == [
+        {
+            "from_address": "aws_subnet.web",
+            "to_address": "aws_vpc.main",
+            "kind": "reference",
+        }
+    ]
+
+    updated = make_state(
+        serial=2,
+        resources=[
+            managed_resource("aws_vpc", "main"),
+            managed_resource("aws_subnet", "web"),  # no depends_on
+        ],
+    )
+    assert client.post(f"/api/state/v1/tx/{tx_id}/commit", content=updated).status_code == 200
+
+    graph = client.get("/api/state/v1/states/acme/prod/graph").json()
+    assert {(edge["from"], edge["to"], edge["kind"]) for edge in graph["edges"]} == {
+        ("aws_subnet.web", "aws_vpc.main", "reference")
+    }
 
 
 def test_overlapping_commit_returns_409_naming_the_conflict(client: TestClient) -> None:

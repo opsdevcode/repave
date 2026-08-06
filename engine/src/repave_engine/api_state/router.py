@@ -46,6 +46,7 @@ from repave_engine.state_contract import (
     upgrade_required_detail,
 )
 from repave_engine.statestore.crypto import StateCryptoError, load_state_crypto
+from repave_engine.statestore.normalize import edges_from_plan_json
 from repave_engine.statestore.settings import StateStoreConfig
 from repave_engine.statestore.state_document import StateDocumentError
 from repave_engine.statestore.store import (
@@ -456,11 +457,14 @@ def build_state_router(
             if existing is None:
                 raise HTTPException(status_code=404, detail=f"no such transaction: {tx_id}")
 
-            recorded = transactions.record_resources(
-                tx_id, resources_from_plan_json(payload.get("plan"))
-            )
+            plan = payload.get("plan")
+            recorded = transactions.record_resources(tx_id, resources_from_plan_json(plan))
             if not recorded.ok:
                 raise HTTPException(status_code=409, detail=recorded.detail)
+
+            edged = transactions.record_config_edges(tx_id, edges_from_plan_json(plan))
+            if not edged.ok:
+                raise HTTPException(status_code=409, detail=edged.detail)
 
             gated = transactions.record_gates(tx_id, parse_gate_outcomes(payload.get("gates")))
             if not gated.ok:
