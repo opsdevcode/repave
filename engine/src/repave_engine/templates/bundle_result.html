@@ -36,7 +36,7 @@
       <span class="badge badge--pass">Applied</span>
       All members written under the configured modules root.
       {% else %}
-      <span class="badge badge--fail">Not published</span>
+      <span class="badge badge--fail">Apply blocked</span>
       One or more members failed gates; no repositories were updated.
       {% endif %}
     </p>
@@ -71,8 +71,7 @@
   <div class="card__header">
     <h2 id="lineage-heading">Lineage</h2>
     <p class="muted card__subtitle">
-      Bundle run recorded in the audit log as <code>bundle_generation</code> with
-      <code>bundle_provenance</code> metadata.
+      Bundle lineage for each member is recorded in that repo’s <code>repave.yaml</code>.
     </p>
   </div>
   <div class="card__body">

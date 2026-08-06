@@ -83,7 +83,7 @@
     <p class="muted">Branch <code>{{ environment_vend_summary.git_branch }}</code></p>
     {% elif run_record.dry_run %}
     <div class="alert alert--info" role="note">
-      Dry run only — gates were evaluated; no GitOps pull request was opened.
+      Plan only — gates were evaluated; no GitOps pull request was opened.
     </div>
     {% else %}
     <p class="muted">No pull request URL was recorded on this run.</p>

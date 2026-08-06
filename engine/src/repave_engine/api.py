@@ -381,6 +381,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     {"kind": "nav", "label": "Platform ops", "href": "/platform/ops"},
                     {"kind": "nav", "label": "Platform standards", "href": "/platform/standards"},
                     {"kind": "nav", "label": "Platform campaigns", "href": "/platform/campaigns"},
+                    {"kind": "nav", "label": "Platform adoption", "href": "/platform/adoption"},
                 ]
             )
         for blueprint in list_blueprints(blueprints_dir(repo_root)):

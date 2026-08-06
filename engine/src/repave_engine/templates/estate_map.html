@@ -52,6 +52,9 @@
       {% endfor %}
     </div>
     <footer class="estate-tile__footer">
+      {% if tile.entity_id %}
+      <a href="/services/{{ tile.entity_id }}" class="estate-tile__action">Library</a>
+      {% endif %}
       <a href="/update?target_repo={{ tile.repo_url | urlencode }}" class="estate-tile__action">Upgrade</a>
       <a href="{{ tile.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ tile.repo_url }}</code></a>
       {% if tile.registered_at %}

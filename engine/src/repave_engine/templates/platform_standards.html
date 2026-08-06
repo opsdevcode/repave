@@ -53,7 +53,11 @@
           <td>
             <a href="/platform/standards/{{ summary.blueprint_name }}">View repos</a>
             {% if async_generation_enabled and summary.behind_repos %}
-            <form method="post" action="/platform/standards/{{ summary.blueprint_name }}/confirm-drift" class="inline-form">
+            <form
+              method="post"
+              action="/platform/standards/{{ summary.blueprint_name }}/confirm-drift"
+              class="form-actions"
+            >
               {% for row in summary.behind_repos %}
               <input type="hidden" name="repo_urls" value="{{ row.repo_url }}" />
               {% endfor %}

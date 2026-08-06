@@ -34,6 +34,7 @@ def test_build_estate_tiles_freshness_and_sparkline() -> None:
     assert len(tiles) == 1
     assert tiles[0].freshness == "fresh"
     assert tiles[0].blueprint_name == "terraform-module-generic"
+    assert tiles[0].entity_id == "acme-tf-vpc"
     assert 1 in tiles[0].sparkline
 
 

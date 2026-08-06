@@ -91,7 +91,10 @@
   </div>
   <div class="card__body">
     {% if component_add_flash_message %}
-    <p class="hint {% if component_add_flash_status == 'error' %}hint--error{% elif component_add_flash_status == 'blocked' %}hint--warn{% else %}hint--ok{% endif %}">
+    <p
+      class="alert {% if component_add_flash_status == 'error' %}alert--fail{% elif component_add_flash_status == 'blocked' %}alert--warn{% else %}alert--pass{% endif %}"
+      role="status"
+    >
       {{ component_add_flash_message }}
     </p>
     {% endif %}
@@ -101,21 +104,20 @@
     <form
       method="post"
       action="/services/{{ entity.entity_id }}/add-component"
-      class="form-grid"
       data-repave-busy-form
       data-busy-label="Planning component add…"
     >
-      <label class="form-field">
-        <span class="form-field__label">Blueprint</span>
-        <select name="blueprint" required>
+      <div class="field">
+        <label class="field__label" for="add-component-blueprint">Blueprint</label>
+        <select class="field__input" id="add-component-blueprint" name="blueprint" required>
           {% for blueprint in addable_blueprints %}
           <option value="{{ blueprint.name }}">{{ blueprint.name }}</option>
           {% endfor %}
         </select>
-      </label>
-      <label class="form-field form-field--checkbox">
+      </div>
+      <label class="field field--inline">
         <input type="checkbox" name="force" value="on" />
-        <span>Force overwrite when scaffold files differ</span>
+        <span>Force overwrite when files differ</span>
       </label>
       <div class="form-actions">
         <button class="btn btn--secondary btn--sm" type="submit" name="action" value="plan">
@@ -318,51 +320,66 @@
     <form
       method="post"
       action="/services/{{ entity.entity_id }}/request-environment"
-      class="form-grid"
       data-repave-busy-form
       data-busy-label="Vending environment stack…"
       data-busy-stages="Validating inputs|Rendering stack|Running gates|Opening GitOps PR"
     >
-      <label class="form-field">
-        <span class="form-field__label">Stack name</span>
-        <input name="stack_name" type="text" required value="{{ default_stack_name }}" />
-      </label>
-      <label class="form-field">
-        <span class="form-field__label">Description</span>
+      <div class="field">
+        <label class="field__label" for="vend-stack-name">Stack name</label>
         <input
+          class="field__input"
+          id="vend-stack-name"
+          name="stack_name"
+          type="text"
+          required
+          value="{{ default_stack_name }}"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-description">Description</label>
+        <input
+          class="field__input"
+          id="vend-description"
           name="description"
           type="text"
           required
           value="Environment stack for {{ entity.display_name }}"
         />
-      </label>
-      <label class="form-field">
-        <span class="form-field__label">Cloud provider</span>
-        <select name="cloud_provider">
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-cloud-provider">Cloud provider</label>
+        <select class="field__input" id="vend-cloud-provider" name="cloud_provider">
           <option value="aws" selected>aws</option>
           <option value="azure">azure</option>
           <option value="gcp">gcp</option>
         </select>
-      </label>
-      <label class="form-field">
-        <span class="form-field__label">Environment</span>
-        <select name="environment">
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-environment">Environment</label>
+        <select class="field__input" id="vend-environment" name="environment">
           <option value="dev" selected>dev</option>
           <option value="staging">staging</option>
           <option value="prod">prod</option>
         </select>
-      </label>
-      <label class="form-field">
-        <span class="form-field__label">Owner</span>
-        <input name="owner" type="text" value="{{ entity.owner or '' }}" placeholder="team-platform" />
-      </label>
-      <label class="form-field">
-        <span class="form-field__label">Class</span>
-        <input name="class" type="text" value="sandbox" />
-      </label>
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-owner">Owner</label>
+        <input
+          class="field__input"
+          id="vend-owner"
+          name="owner"
+          type="text"
+          value="{{ entity.owner or '' }}"
+          placeholder="team-platform"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-class">Class</label>
+        <input class="field__input" id="vend-class" name="class" type="text" value="sandbox" />
+      </div>
       <div class="form-actions">
         <button class="btn btn--secondary btn--sm" type="submit" name="action" value="preview">
-          Preview gates
+          Plan gates
         </button>
         <button
           class="btn btn--primary btn--sm"
@@ -474,14 +491,38 @@
 </section>
 {% endif %}
 
-{% if provenance_html %}
-<section class="card" aria-labelledby="provenance-heading">
+{% if provenance_html or provenance_components %}
+<section class="card" aria-labelledby="lineage-heading">
   <div class="card__header">
-    <h2 id="provenance-heading">Provenance</h2>
-    <p class="muted card__subtitle"><code>repave.yaml</code> from the repository checkout or GitHub.</p>
+    <h2 id="lineage-heading">Lineage</h2>
+    <p class="muted card__subtitle">
+      Pins recorded in <code>repave.yaml</code> from the repository checkout or GitHub.
+    </p>
   </div>
-  <div class="card__body entity-docs markdown-body">
-    {{ provenance_html | safe }}
+  <div class="card__body">
+    {% if provenance_components %}
+    <dl class="governance-card__list">
+      {% for component in provenance_components %}
+      <div>
+        <dt>{% if component.primary %}Primary{% else %}Component{% endif %}</dt>
+        <dd>
+          <code>{{ component.component_id }}</code>
+          · {{ component.blueprint_name }}@{{ component.blueprint_version }}
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+    {% if provenance_html %}
+    <details class="result-collapsible">
+      <summary class="result-collapsible__summary">
+        <span class="result-collapsible__title">View <code>repave.yaml</code></span>
+      </summary>
+      <div class="result-collapsible__body entity-docs markdown-body">
+        {{ provenance_html | safe }}
+      </div>
+    </details>
+    {% endif %}
   </div>
 </section>
 {% endif %}

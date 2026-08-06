@@ -67,6 +67,7 @@
         <dt>Lineage</dt>
         <dd class="governance-card__value governance-card__value--inline">
           Engine <code>{{ app_version }}</code>
+          · <code>repave.yaml</code>
         </dd>
       </div>
       {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
@@ -111,7 +112,7 @@
         <dd class="governance-card__gates">
           {% if blueprint.gates|length > 8 %}
           <details class="governance-card__gates-details">
-            <summary>{{ blueprint.gates|length }} gates on scaffold</summary>
+            <summary>{{ blueprint.gates|length }} gates on apply</summary>
             <div class="governance-card__gates-grid">
               {% for gate in blueprint.gates %}
               <span class="chip">{{ gate }}</span>
@@ -174,7 +175,7 @@
     </div>
     {% endif %}
     <p class="governance-card__footnote muted">
-      Pins are frozen on scaffold. Enable <code>audit</code> in config for fleet-wide activity.
+      Pins are frozen on apply. Enable <code>audit</code> in config for fleet-wide activity.
     </p>
     {% if governance_collapsible %}
       </div>
@@ -996,7 +997,7 @@
     >
       <h2 class="form-section__title" id="publish-heading">Delivery</h2>
       <p class="hint">
-        Choose <strong>Plan</strong> or <strong>Apply</strong> in the sticky actions below before you scaffold.
+        Choose <strong>Plan</strong> or <strong>Apply</strong> in the sticky actions below before you apply.
       </p>
       <p class="hint">
         Apply writes the repository under <code>REPAVE_MODULES_ROOT</code>.
@@ -1025,15 +1026,15 @@
             tabindex="-1"
             aria-hidden="true"
           >
-            Dry run preview
+            Plan preview
           </button>
           <button type="button" class="btn btn--primary" data-dry-run-run>
-            Dry run preview
+            Plan preview
           </button>
           {% if form_stepper %}
-          <button class="btn btn--secondary" type="submit" data-stepper-submit>Scaffold repository</button>
+          <button class="btn btn--secondary" type="submit" data-stepper-submit>Apply</button>
           {% else %}
-          <button class="btn btn--secondary" type="submit">Scaffold repository</button>
+          <button class="btn btn--secondary" type="submit">Apply</button>
           {% endif %}
         </div>
       </div>

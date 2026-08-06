@@ -142,7 +142,8 @@ def test_observability_url_on_detail(
     assert "Observability" in body
     assert "Health summary" in body
     assert "Upgrade notes" in body
-    assert "Provenance" in body
+    assert "Lineage" in body
+    assert "repave.yaml" in body
 
 
 def test_api_v2_entity_detail_includes_deployment_status(

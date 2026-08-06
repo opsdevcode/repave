@@ -358,7 +358,7 @@ environment_vending:
         detail = client.get(f"/services/{entity_id}")
         assert detail.status_code == 200
         assert "Request environment" in detail.text
-        assert "Preview gates" in detail.text
+        assert "Plan gates" in detail.text
         assert "Open GitOps PR" in detail.text
         assert "environments/tf-live" in detail.text or "tf-live" in detail.text
     finally:

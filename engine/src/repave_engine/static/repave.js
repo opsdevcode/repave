@@ -309,7 +309,7 @@
           return;
         }
         navigator.clipboard.writeText(text).then(function () {
-          showToast("Lineage receipt copied");
+          showToast("Lineage summary copied");
           button.textContent = "Copied";
           setTimeout(function () {
             button.textContent = defaultLabel;
@@ -549,7 +549,7 @@
     }
     var outcome = run.outcome === "failed" ? "failed" : "passed";
     var badgeClass = outcome === "failed" ? "badge--fail" : "badge--pass";
-    var mode = run.dryRun ? "dry-run" : "published";
+    var mode = run.dryRun ? "Plan" : "Applied";
     var when = formatRelativeTime(run.timestamp);
     var blueprintUrl = "/blueprints/" + encodeURIComponent(run.blueprint);
     mount.innerHTML =

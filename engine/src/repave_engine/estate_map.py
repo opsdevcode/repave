@@ -7,6 +7,7 @@ from typing import Any, Literal
 from urllib.parse import urlparse
 
 from repave_engine.audit_history import AuditHistoryEntry
+from repave_engine.entity_catalog import entity_id_for_repo_url
 from repave_engine.fleet import normalize_repo_url
 
 FreshnessLevel = Literal["fresh", "aging", "drift", "error", "unknown"]
@@ -25,6 +26,7 @@ class EstateTile:
     freshness_detail: str
     registered_at: str
     sparkline: tuple[SparkValue, ...]
+    entity_id: str = ""
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
@@ -38,6 +40,7 @@ class EstateTile:
             "freshness_detail": self.freshness_detail,
             "registered_at": self.registered_at,
             "sparkline": list(self.sparkline),
+            "entity_id": self.entity_id,
         }
 
 
@@ -121,6 +124,7 @@ def build_estate_tiles(
                     title=title,
                     slots=sparkline_slots,
                 ),
+                entity_id=entity_id_for_repo_url(repo_url),
             )
         )
     return sorted(tiles, key=lambda item: item.title.lower())
