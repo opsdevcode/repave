@@ -1,0 +1,59 @@
+{{- if and .Values.platformMetricsSnapshot.cronJob.enabled .Values.repave.platformMetrics.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "repave.fullname" . }}-platform-metrics-snapshot
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.platformMetricsSnapshot.cronJob.schedule | quote }}
+  concurrencyPolicy: {{ .Values.platformMetricsSnapshot.cronJob.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.platformMetricsSnapshot.cronJob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.platformMetricsSnapshot.cronJob.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "repave.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: platform-metrics-snapshot
+        spec:
+          restartPolicy: {{ .Values.platformMetricsSnapshot.cronJob.restartPolicy }}
+          serviceAccountName: {{ include "repave.serviceAccountName" . }}
+          {{- with .Values.podSecurityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: snapshot
+              image: {{ include "repave.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - repave
+                - metrics
+                - adoption
+                - --persist
+                - --format
+                - json
+              env:
+                - name: REPAVE_ENV
+                  value: {{ .Values.repave.env | quote }}
+                - name: REPAVE_PLATFORM_METRICS
+                  value: "1"
+                {{- if .Values.repave.platformMetrics.snapshotFile }}
+                - name: REPAVE_PLATFORM_METRICS_FILE
+                  value: {{ .Values.repave.platformMetrics.snapshotFile | quote }}
+                {{- end }}
+              volumeMounts:
+                - name: config
+                  mountPath: /app/repave.config.yaml
+                  subPath: repave.config.yaml
+                {{- include "repave.fleetDataVolumeMount" . | nindent 16 }}
+              resources:
+                {{- toYaml .Values.platformMetricsSnapshot.cronJob.resources | nindent 16 }}
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "repave.fullname" . }}
+            {{- include "repave.fleetDataVolume" . | nindent 12 }}
+{{- end }}

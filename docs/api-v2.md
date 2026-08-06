@@ -187,6 +187,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
+| `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption / DX outcome metrics (`?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 
 ## `/api/v1` deprecation
 

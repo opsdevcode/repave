@@ -21,6 +21,7 @@ from repave_engine.cli.fleet import (
     cmd_unregister,
 )
 from repave_engine.cli.generate import cmd_generate, cmd_list
+from repave_engine.cli.metrics import cmd_metrics_adoption
 from repave_engine.cli.repo_import import cmd_import
 from repave_engine.cli.serve import cmd_run_worker, cmd_serve
 from repave_engine.cli.upgrade import cmd_apply_upgrade, cmd_plan_upgrade, cmd_update
@@ -196,6 +197,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     fleet.add_argument("--format", choices=["text", "json"], default="text")
     fleet.set_defaults(func=cmd_fleet)
+
+    metrics = sub.add_parser("metrics", help="Platform adoption and DX outcome metrics")
+    metrics_sub = metrics.add_subparsers(dest="metrics_command", required=True)
+    metrics_adoption = metrics_sub.add_parser(
+        "adoption",
+        help="Show golden-path adoption ratio, funnel, and friction",
+        parents=[common],
+    )
+    metrics_adoption.add_argument("--format", choices=["text", "json"], default="text")
+    metrics_adoption.add_argument(
+        "--persist",
+        action="store_true",
+        help="Append a snapshot to the configured snapshot store",
+    )
+    metrics_adoption.add_argument(
+        "--history",
+        type=int,
+        default=0,
+        help="With --format json, include N recent snapshots",
+    )
+    metrics_adoption.set_defaults(func=cmd_metrics_adoption)
 
     audit = sub.add_parser("audit", help="Query the generation audit log")
     audit_sub = audit.add_subparsers(dest="audit_command", required=True)

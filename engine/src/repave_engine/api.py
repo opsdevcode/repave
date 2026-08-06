@@ -150,6 +150,7 @@ from repave_engine.portal_generate import (
 )
 from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_platform import (
+    build_platform_adoption_page,
     build_platform_campaigns_page,
     build_platform_fleet_page,
     build_platform_ops_page,
@@ -2111,6 +2112,27 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="platform",
                 platform_nav="campaigns",
                 campaigns_page=campaigns_page,
+            ),
+        )
+
+    @app.get("/platform/adoption", response_class=HTMLResponse)
+    async def platform_adoption_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        probe_token = resolve_github_access_token() if github_credentials_configured() else None
+        adoption_page = build_platform_adoption_page(
+            repo_root,
+            github_token=probe_token,
+            persist=False,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_adoption.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="adoption",
+                adoption_page=adoption_page,
             ),
         )
 

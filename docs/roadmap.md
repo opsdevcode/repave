@@ -6,9 +6,13 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.27.1  
 
-**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
+**In progress:** [Platform as a product](#platform-as-a-product-v2x) follow-ons (v1.86–v1.89) —
+feedback loop next. Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot).
+v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **State store shared-deploy Helm knobs** (`repave.stateStore` +
+**Shipped on `main`:** **Platform adoption / DX metrics (v1.85)** — `/platform/adoption`,
+`GET /api/v2/platform/metrics`, `repave metrics adoption`, snapshot CronJob
+([`docs/platform-metrics.md`](platform-metrics.md)); **State store shared-deploy Helm knobs** (`repave.stateStore` +
 [`state-store-enablement.md`](operations/state-store-enablement.md); still off by default);
 **plan-JSON config edges** on transaction preview/commit (`edges_from_plan_json` →
 `replace_graph` `extra_edges`); **GitHub repository provisioning goldpath** (`github-repo-generic` —
@@ -113,6 +117,10 @@ locally after bumping `engine` `__version__`.
 - Keep **tech debt** in [Engine hardening and tech debt](#engine-hardening-and-tech-debt)
   with the same problem/approach/done-when shape as features, and cite the file that
   carries the debt so the entry stays checkable.
+- **Sunset / removal is product work.** Removing a capability (or dead UI surface) needs a
+  roadmap entry or parking-lot note, a deprecation window when integrators depend on it, and
+  the same problem/approach/done-when shape as features. Prefer deleting unused code over
+  leaving half-wired surfaces — see [Platform as a product](#platform-as-a-product-v2x).
 - Portal **visual and layout** planning: [`portal-design.md`](portal-design.md)
   (implements primarily under v1.18).
 - Operator **local development and testing**: [`operator-local-dev.md`](operator-local-dev.md)
@@ -171,6 +179,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   v1.79–v1.84        paved roads       GitOps delivery + deploy pipeline; SLOs/runbooks shipped; `repave add` shipped; runtimes; bundles
   │
+  v1.85–v1.89        platform-as-product  adoption/DX metrics → feedback → stakeholder views → cognitive load → roadmap evidence
+  │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
 ```
 
@@ -200,6 +210,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
+| **Platform as a product** | Partial (v1.85 shipped; v1.86–v1.89 open) | Treat the IDP as a product: adoption/DX metrics shipped; feedback, stakeholder views, cognitive-load reduction, roadmap evidence open ([platform as a product](#platform-as-a-product-v2x)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
@@ -2343,6 +2354,139 @@ promote without new discovery:
 - **Organization blueprint packs** — [forked and remote blueprint packs](#forked-and-remote-blueprint-packs)
   is the one item that lets adopters pave roads this cluster does not; pull it ahead of
   everything above if external demand appears, since nothing here substitutes for it.
+
+---
+
+## Platform as a product (v2.x)
+
+Repave is an internal developer platform. Adoption problems kill platforms more often than
+technical gaps. This cluster adopts the five [product management principles for
+IDPs](https://platformengineering.org/blog/five-product-management-principles-for-internal-developer-platforms)
+so we treat developers as customers, measure outcomes (not only infrastructure outputs), and
+evolve continuously — including sunsetting unused surfaces.
+
+**Principles**
+
+1. **Treat internal developers as customers, not captive users** — they have alternatives;
+   discover needs via workflow observation, usage data, and outcome-focused interviews.
+2. **Design for developer outcomes, not infrastructure outputs** — adoption, satisfaction,
+   and value-stream improvement over raw generation counts and uptime.
+3. **Commit to continuous evolution over fixed project delivery** — living roadmap, dedicated
+   ownership, and the discipline to remove features.
+4. **Build golden paths that enable autonomy** — opinionated workflows that reduce cognitive
+   load; CLI / portal / API personas over one shared surface.
+5. **Measure success through developer experience metrics** — satisfaction as a leading
+   indicator, golden-path adoption rates, continuous feedback loops.
+
+**Maturity self-assessment** (re-score when a theme in this cluster ships):
+
+| Principle | Score | Notes |
+| --- | --- | --- |
+| 1 Customers | Partial | Bypass list shipped with v1.85; CSAT/friction capture is v1.86 |
+| 2 Outcomes | Partial | Adoption + funnel gauges shipped; stakeholder views are v1.87 |
+| 3 Continuous evolution | Strong | Living roadmap + deprecation windows; sunset policy added |
+| 4 Golden paths | Strong | Blueprints, bundles, gates, CLI/UI/API; cognitive load still high |
+| 5 DX metrics | Partial | Adoption ratio, funnel, TTF shipped; feedback loop is v1.86 |
+
+Planning labels **v1.85–v1.89** continue the paved-roads numbering on the 2.x line and are
+**not** engine tags.
+
+### v1.85 — Golden path adoption and DX metrics
+
+*Planning label: v1.85 (roadmap numbering only).*
+
+**Problem:** Platform teams (including this project) can see generation counts and queue depth
+but not whether developers choose golden paths, where plan→apply drops off, or how long
+first success takes. Without those outcomes, roadmap priority stays guesswork.
+
+**Approach:**
+
+- Pure core `dx_metrics.py`: adoption ratio (governed / eligible), plan→apply funnel, time to
+  first artifact, service creation time, gate friction
+- Eligible denominator from configured GitHub org/topic search; governed set from the fleet
+  registry; non-governed remainder is the bypass list (shadow-IT signal)
+- `platform_metrics` config block, snapshot store (JSONL + SQL) + Helm CronJob for trends
+- Surfaces: `GET /api/v2/platform/metrics`, `/platform/adoption`, Prometheus gauges,
+  `repave metrics adoption`
+- Degrade gracefully when audit is off (same pattern as `/activity` and `/estate`)
+
+**Done when:** An admin can see adoption ratio, funnel drop-off by blueprint, and trend
+sparklines from portal/API/CLI without hand-querying audit JSONL; docs cover config and
+baselines.
+
+**Status:** **Shipped on `main`** — `dx_metrics.py` + snapshot store (JSONL/SQL),
+`GET /api/v2/platform/metrics`, `/platform/adoption`, `repave metrics adoption`, Prometheus
+gauges, Helm CronJob (`platformMetricsSnapshot`), [`docs/platform-metrics.md`](platform-metrics.md).
+
+**Follow-ons:** v1.86 feedback loop correlates CSAT against this denominator.
+
+### v1.86 — Feedback loop
+
+*Planning label: v1.86 (roadmap numbering only).*
+
+**Problem:** There is no in-portal CSAT or friction capture, so principle 1 has no continuous
+discovery instrument beyond raw audit rows.
+
+**Approach:** Lightweight CSAT + friction capture on result and run-console pages, tied to
+`blueprint@version` and gates outcome; `/platform/feedback` rollup for admins.
+
+**Done when:** Feedback events land in the same store family as adoption snapshots and appear
+on an admin rollup within one release of capture.
+
+**Status:** Not started.
+
+**Depends on:** v1.85 (denominator and store patterns).
+
+### v1.87 — Stakeholder interfaces
+
+*Planning label: v1.87 (roadmap numbering only).*
+
+**Problem:** Security/compliance and leadership need clear interfaces over platform outcomes
+without competing for the developer surface (principle 2).
+
+**Approach:** Read-only views over the metrics store — compliance posture (gate pass rate,
+bypass list size) and leadership value-stream summary — behind existing platform-admin roles.
+
+**Done when:** Secondary stakeholders get dedicated pages or API slices that do not add fields
+to the developer catalog/library chrome.
+
+**Status:** Not started.
+
+**Depends on:** v1.85.
+
+### v1.88 — Cognitive load reduction
+
+*Planning label: v1.88 (roadmap numbering only).*
+
+**Problem:** Blueprint forms are creation-heavy (large steppers and governance rails). Funnel
+drop-off from v1.85 should name which paths to simplify first (principle 4).
+
+**Approach:** Guided vs expert persona modes and progressive disclosure on
+`blueprint_form.html`, prioritized by plan→apply drop-off rather than by guesswork.
+
+**Done when:** At least one high-drop-off golden path ships a guided mode that reduces
+required fields without removing expert escape hatches.
+
+**Status:** Not started.
+
+**Depends on:** v1.85 funnel data.
+
+### v1.89 — Roadmap evidence loop
+
+*Planning label: v1.89 (roadmap numbering only).*
+
+**Problem:** Roadmap themes record status but not who asked or whether shipped work was
+adopted (principle 3).
+
+**Approach:** Adoption evidence and requesting-team attribution on themes; sunset candidates
+surfaced from low-adoption golden paths.
+
+**Done when:** At least one theme update cites adoption evidence from `/platform/adoption`, and
+one low-adoption path is marked for sunset or simplification with a dated window.
+
+**Status:** Not started.
+
+**Depends on:** v1.85; optionally v1.86.
 
 ---
 

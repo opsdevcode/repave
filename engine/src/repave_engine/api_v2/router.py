@@ -129,6 +129,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
     "POST /api/v2/environments/reclaim",
+    "GET /api/v2/platform/metrics",
 )
 
 
@@ -966,5 +967,47 @@ def build_api_v2_router(
         except EnvironmentReclaimError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(summary.to_public_dict())
+
+    @router.get("/platform/metrics")
+    async def api_v2_platform_metrics(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.dx_metrics_store import capture_dx_metrics, read_dx_metrics_snapshots
+        from repave_engine.settings import load_platform_metrics_config
+
+        metrics_cfg = load_platform_metrics_config(repo_root)
+        if metrics_cfg is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "platform_metrics is not configured "
+                    "(set platform_metrics.enabled or REPAVE_PLATFORM_METRICS=1)"
+                ),
+            )
+        persist = str(request.query_params.get("persist", "")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        history_raw = str(request.query_params.get("history", "0")).strip() or "0"
+        try:
+            history_limit = max(0, min(int(history_raw), 100))
+        except ValueError:
+            history_limit = 0
+        token = resolve_github_access_token(None)
+        snapshot = capture_dx_metrics(
+            repo_root,
+            github_token=token,
+            persist=persist,
+        )
+        payload: dict[str, Any] = snapshot.to_public_dict()
+        if history_limit:
+            history = read_dx_metrics_snapshots(
+                metrics_cfg.snapshot_file,
+                repo_root=repo_root,
+                limit=history_limit,
+            )
+            payload["history"] = [item.to_public_dict() for item in history]
+        return JSONResponse(payload)
 
     return router
