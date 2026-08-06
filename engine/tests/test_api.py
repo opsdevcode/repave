@@ -392,12 +392,15 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
+    assert "Plan preview" in response.text
+    assert ">Apply<" in response.text or ">Apply</button>" in response.text
     assert "form-actions__preflight-details" in response.text
     assert "form-actions__toolbar" in response.text
     assert "form-actions__delivery" in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
+    assert "repave.yaml" in response.text
 
 
 def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config) -> None:
@@ -410,6 +413,9 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "formatPortalErrorDetail" in body
     assert "insufficient role" in body
     assert "generators group" in body
+    assert "Lineage summary copied" in body
+    assert "Lineage receipt" not in body
+    assert 'dryRun ? "Plan" : "Applied"' in body
 
 
 def test_portal_generate_viewer_returns_json_insufficient_role(

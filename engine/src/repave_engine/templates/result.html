@@ -34,7 +34,7 @@
       <span class="badge badge--pass">Applied</span>
       Output written under the configured modules root.
       {% else %}
-      <span class="badge badge--fail">Not published</span>
+      <span class="badge badge--fail">Apply blocked</span>
       Gates did not pass; the repository was not updated.
       {% endif %}
     </p>
@@ -400,17 +400,19 @@
 </section>
 {% endif %}
 
-<section class="card stack-gap" aria-labelledby="publish-heading">
+{% if result.pr_message %}
+<section class="card stack-gap" aria-labelledby="pr-description-heading">
   <details class="publish-plan" open>
     <summary class="publish-plan__summary">
-      <h2 id="publish-heading" class="publish-plan__title">Publish plan</h2>
-      <span class="muted">PR description preview</span>
+      <h2 id="pr-description-heading" class="publish-plan__title">PR description</h2>
+      <span class="muted">Preview of the pull request body</span>
     </summary>
     <div class="publish-plan__body publish-plan__body--markdown">
       <pre class="panel-code publish-plan__markdown">{{ result.pr_message }}</pre>
     </div>
   </details>
 </section>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

@@ -11,7 +11,7 @@
   <div>
     <h1 class="page-title">Operator campaigns</h1>
     <p class="page-lead">
-      UpgradeCampaign status and remediation PR queue from the operator snapshot
+      Upgrade campaign status and remediation PR queue from the operator snapshot
       (<code>fleet.operator_status_file</code>).
     </p>
   </div>
@@ -68,7 +68,7 @@
   </div>
 </section>
 {% else %}
-<div class="alert alert--info">No UpgradeCampaign resources in the snapshot.</div>
+<div class="alert alert--info">No upgrade campaigns in the snapshot.</div>
 {% endif %}
 
 {% if campaigns_page.remediation_queue %}
@@ -96,7 +96,7 @@
 {% if campaigns_page.snapshot.repos %}
 <section class="card" aria-labelledby="gpr-heading">
   <div class="card__header">
-    <h2 id="gpr-heading">GoldenPathRepo status</h2>
+    <h2 id="gpr-heading">Golden-path repo status</h2>
     <p class="muted card__subtitle">{{ campaigns_page.snapshot.repos | length }} repo(s) in snapshot</p>
   </div>
   <div class="card__body">

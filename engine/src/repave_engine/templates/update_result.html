@@ -5,14 +5,14 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/update">← Update repository</a></p>
+<p class="breadcrumb"><a href="/update">← Upgrade repository</a></p>
 
 <section class="result-hero result-hero--passed" aria-labelledby="upgrade-heading">
   <div class="result-hero__main">
     <p class="result-hero__eyebrow">{{ plan.blueprint_name }}@{{ plan.blueprint_version }}</p>
     <h1 id="upgrade-heading" class="result-hero__title">Upgrade preview</h1>
     <p class="result-hero__banner">
-      <span class="badge badge--skip">Dry-run</span>
+      <span class="badge badge--skip">Plan</span>
       {{ plan.summary }}
     </p>
   </div>

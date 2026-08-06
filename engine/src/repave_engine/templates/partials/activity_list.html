@@ -10,9 +10,9 @@
     </div>
     <div class="activity-list__meta">
       <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
-        {{ row.gates_outcome }}
+        {% if row.gates_outcome == 'failed' %}Failed{% elif row.gates_outcome == 'passed' %}Passed{% else %}{{ row.gates_outcome|capitalize }}{% endif %}
       </span>
-      <span class="badge badge--skip">{% if row.dry_run %}dry-run{% else %}publish{% endif %}</span>
+      <span class="badge badge--skip">{% if row.dry_run %}Plan{% else %}Applied{% endif %}</span>
       <span class="muted">{{ row.acting_user }}</span>
       <time class="muted" datetime="{{ row.timestamp }}">{{ row.timestamp[:19] }}</time>
       {% if row.repository_url %}

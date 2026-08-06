@@ -24,13 +24,12 @@ redirects to `/runs/{id}`.
 
 ## Required flows (every golden path)
 
-1. **Plan (dry-run)** — POST `/generate` with `dry_run=true` returns **200** and
+1. **Plan** — POST `/generate` with `dry_run=true` returns **200** and
    the result page shows gate summary and **Generated files** (file tree / preview).
 2. **Stepper forms** — When `data-form-stepper` is present:
-   - **Dry run preview** (`data-dry-run-run`) must work from early steps without
+   - **Plan preview** (`data-dry-run-run`) must work from early steps without
      requiring the user to reach Delivery first.
-   - **Scaffold repository** submit on the Delivery step must respect plan vs apply
-     radios.
+   - **Apply** submit on the Delivery step must respect plan vs apply radios.
    - Hidden-step `required` fields must not block submit (use `novalidate` + JS
      validation in `initFormStepper`, or equivalent).
 3. **Apply (optional)** — `dry_run=false` path unchanged unless explicitly scoped;
@@ -40,22 +39,23 @@ redirects to `/runs/{id}`.
 
 1. Run `make format && make quality && make test` from repo root.
 2. Extend `engine/tests/test_api.py` when behavior changes (form markers, POST
-   dry-run smoke for at least **terraform-module-generic** and one **standard**
+   plan smoke for at least **terraform-module-generic** and one **standard**
    stepper blueprint such as `ansible-role-generic`).
-3. Manually spot-check in browser: open blueprint → **Dry run preview** → result shows
+3. Manually spot-check in browser: open blueprint → **Plan preview** → result shows
    files (when time permits; tests are the gate).
 
 ## Consistency
 
 - Keep labels aligned with `portal-ux-copy.mdc` and `docs/portal-design.md`.
-- If renaming actions (Generate → Scaffold, Dry-run → Plan), update **templates,
-  JS user strings, CSS hints, and tests** in the same PR — not copy-only follow-ups.
-- Do not hide the only submit control without providing an equivalent **Dry run preview**
+- Product labels are **Plan preview** / **Apply**; wire hooks stay `data-dry-run-*`.
+  If renaming actions, update **templates, JS user strings, CSS hints, and tests**
+  in the same PR — not copy-only follow-ups.
+- Do not hide the only submit control without providing an equivalent **Plan preview**
   path that hits the same `/generate` contract.
 
 ## Review checklist
 
-- [ ] Dry-run POST still returns rendered files in HTML result.
-- [ ] Stepper: **Dry run preview** present where submit is step-gated; `novalidate` + validation wired.
+- [ ] Plan POST (`dry_run=true`) still returns rendered files in HTML result.
+- [ ] Stepper: **Plan preview** present where submit is step-gated; `novalidate` + validation wired.
 - [ ] Tests updated for new strings or form attributes.
 - [ ] No orphaned `terraform_stepper` / dead selectors in JS.

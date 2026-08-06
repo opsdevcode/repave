@@ -22,32 +22,37 @@ source. Labels, hints, and governance rails should explain **what they get**, no
   jargon unless the user must run a CLI command.
 - Roadmap theme labels, semver planning names, or “shipped in v1.x” in product
   chrome (OK in `docs/`, not in templates).
+- The word **receipt** in templates or JS toasts (use **lineage** / `repave.yaml`).
 
 ## Prefer instead
 
 - **Lineage:** blueprint@version, pinned standard, governance baseline, engine version.
   Provenance is written to `repave.yaml` in the artifact — do not use the word
-  “receipt” in templates or show a full-file YAML dump on the result page (lineage
-  rows are enough; file tree still lists `repave.yaml`).
+  “receipt” in templates or show a full-file YAML dump by default (lineage rows
+  are enough; optional collapsed `repave.yaml` view is OK; file tree still lists it).
+- **Plan / Apply:** validate-only is **Plan** (button **Plan preview**); write is
+  **Apply**. Form field `name="dry_run"` and JS hooks `data-dry-run-*` stay as the
+  wire contract — only user-visible strings use Plan/Apply.
 - **Policy:** profile label, pack source, catalog rule titles — not raw skip-check
   wiring unless troubleshooting.
 - **Gates:** gate id and pass/fail/skip; failures get human lead-ins (for example
-  “Publish blocked”) then tool output in expandable excerpts.
+  “Apply blocked”) then tool output in expandable excerpts.
 - **Backstage:** `catalog-info.yaml`, owner, `repave.dev/*` annotations — product
   integration language from `docs/backstage.md`.
 
 ## When adding governance or result panels
 
 - Match wording across `blueprint_form.html` (governance rail) and `result.html`
-  (lineage block): same terms for standard, policy, and provenance file.
+  (lineage block): same terms for standard, policy, and `repave.yaml`.
 - If copy would only make sense to someone who read `engine/src/repave_engine/`,
   rewrite it or move it to `docs/` / code comments.
 
 ## Review checklist (portal PRs)
 
 - [ ] No README section headers or “sync on generate” phrasing in templates/JS.
+- [ ] No visible “receipt” in templates or JS user strings.
 - [ ] Hints explain user action or outcome, not internal sync/render steps.
 - [ ] New strings are consistent with `docs/portal-design.md` (Copy and voice).
-- [ ] **Behavior unchanged:** plan (dry-run) and scaffold still reach `/generate`
+- [ ] **Behavior unchanged:** Plan (`dry_run=true`) and Apply still reach `/generate`
   and show results — see `portal-ui-behavior.mdc`.
 - [ ] Copy/label renames update tests in `engine/tests/test_api.py` in the same PR.

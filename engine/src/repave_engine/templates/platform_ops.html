@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Platform ops — repave{% endblock %}
+{% block title %}Estate health — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
@@ -139,14 +139,14 @@
   <div class="card__body">
     {% if ops_page.environment_vending_enabled and ops_page.reclaim_preview %}
     <p class="muted">
-      Dry-run reclaim preview:
+      Plan reclaim preview:
       {{ ops_page.reclaim_preview.to_public_dict().reclaimed }} to reclaim,
       {{ ops_page.reclaim_preview.to_public_dict().skipped }} skipped.
     </p>
     {% if async_generation_enabled %}
     <form method="post" action="/platform/ops/reclaim" class="form-actions">
       <input type="hidden" name="dry_run" value="1" />
-      <button type="submit" class="btn btn--secondary">Refresh dry-run preview</button>
+      <button type="submit" class="btn btn--secondary">Refresh plan preview</button>
     </form>
     <form method="post" action="/platform/ops/reclaim" class="form-actions">
       <input type="hidden" name="dry_run" value="0" />

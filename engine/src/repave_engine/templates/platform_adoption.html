@@ -19,9 +19,9 @@
 
 {% if not adoption_page.metrics_enabled %}
 <div class="alert alert--info">
-  Enable <code>platform_metrics</code> in <code>repave.config.yaml</code>
-  (or set <code>REPAVE_PLATFORM_METRICS=1</code>) to collect adoption metrics.
-  See <code>docs/platform-metrics.md</code>.
+  Enable platform metrics in <code>repave.config.yaml</code>
+  (<code>platform_metrics</code>, or set <code>REPAVE_PLATFORM_METRICS=1</code>)
+  to collect adoption trends. See the platform metrics operations guide.
 </div>
 {% else %}
   {% set snap = adoption_page.snapshot %}
@@ -173,7 +173,7 @@
   <div class="card__header">
     <h2 id="bypass-heading">Bypass list</h2>
     <p class="muted card__subtitle">
-      Eligible repositories not in the fleet registry (shadow-IT signal).
+      Eligible repositories not yet in the fleet registry.
       Showing {{ adoption_page.bypass_preview|length }} of {{ snap.bypass_repos|length }}.
     </p>
   </div>

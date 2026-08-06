@@ -41,14 +41,14 @@
     <ul class="home-hero__metrics" aria-label="Catalog summary">
       <li>
         <span class="home-hero__metric-value">{{ stats.paths }}</span>
-        <span class="home-hero__metric-label">platform templates</span>
+        <span class="home-hero__metric-label">golden paths</span>
       </li>
       <li>
         <span class="home-hero__metric-value">{{ catalog_groups|length }}</span>
         <span class="home-hero__metric-label">artifact families</span>
       </li>
       <li class="home-hero__metric-note">
-        Gates on every scaffold
+        Gates on every apply
       </li>
     </ul>
     {% endif %}
@@ -59,7 +59,7 @@
   <ol class="demo-pipeline__steps">
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">1</span>
-      <span><strong>Select</strong> a golden path template to scaffold</span>
+      <span><strong>Select</strong> a golden path to plan or apply</span>
     </li>
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">2</span>
@@ -67,7 +67,7 @@
     </li>
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">3</span>
-      <span><strong>Scaffold</strong> — render, gates, delivery</span>
+      <span><strong>Apply</strong> — render, gates, delivery</span>
     </li>
   </ol>
 </nav>
@@ -110,7 +110,7 @@
   <header class="catalog-inventory__header">
     <h2 id="golden-paths-heading" class="catalog-inventory__title">Golden paths</h2>
     <p class="catalog-inventory__lead muted">
-      Platform templates grouped by family — expand a category to scaffold a new artifact.
+      Golden paths grouped by family — expand a category to plan or apply a new artifact.
       Already created repos live in the
       <a href="/library">library</a>.
     </p>
@@ -124,7 +124,7 @@
         <span class="catalog-inventory__summary-main">
           <span class="catalog-inventory__category-title">Composite bundles</span>
           <span class="catalog-inventory__category-subtitle muted">
-            Linked repositories scaffolded in one plan
+            Linked repositories applied in one plan
           </span>
         </span>
         <span class="badge badge--app">{{ catalog_bundles|length }}</span>

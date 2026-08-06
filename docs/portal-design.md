@@ -12,8 +12,8 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Route | Template | Highlights |
 | --- | --- | --- |
 | Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
-| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Dry run preview** + Delivery plan/apply; scope filter, presets, validation |
-| Generation result | `result.html` | Status hero, lineage/receipt + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
+| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** + Delivery plan/apply; scope filter, presets, validation |
+| Generation result | `result.html` | Status hero, lineage + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
 and the shell shows a “Last run in this browser” snippet on home and form routes.
@@ -34,7 +34,7 @@ static assets, CSS tokens, and a base layout template.
 | Roadmap item | Visual / UX home |
 | --- | --- |
 | v1.18 Portal and UX hardening | **Complete** — Phases 1–4 + visual v2 + scope UX (see [Shipped](roadmap.md#shipped)) |
-| v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns, **Dry run preview** on all forms |
+| v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns, **Plan preview** on all forms |
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | **Shipped** — audit sink, `/activity`, hosted `/runs`; browser last-run remains a local convenience |
 | Cost visibility (shipped) | Library cost badges, Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
@@ -82,7 +82,7 @@ Default theme is **night-ops** (`color-scheme: dark` on `:root`):
 
 ### App shell
 
-- Top bar: wordmark, primary nav (“Golden paths”), optional environment badge
+- Top bar: wordmark, primary nav (Catalog, Library, …), optional environment badge
   (for example `local` when running under Docker Compose).
 - Content area: consistent max width and horizontal padding; mobile single column.
 - Breadcrumb or back link styled consistently (not bare `<a>` above `<h1>`).
@@ -296,13 +296,15 @@ real time; any route exposes Cmd/Ctrl-K navigation without a SPA rewrite.
 Portal strings are **product copy**, not engine documentation.
 
 - **Show:** pinned standard, policy profile, gate names, `repave.yaml` as the
-  generation receipt, Backstage `catalog-info.yaml` and `repave.dev/*` lineage.
+  lineage file, Backstage `catalog-info.yaml` and `repave.dev/*` annotations.
 - **Hide:** README section titles (`## Provenance`), “synced on generate”, render
-  pipeline steps, and other implementation details that belong in `docs/` or code
-  comments only.
+  pipeline steps, the word “receipt”, and other implementation details that belong
+  in `docs/` or code comments only.
+- **Plan / Apply:** validate-only mode is **Plan** (CTA **Plan preview**); write
+  mode is **Apply**. Keep wire fields `dry_run` / `data-dry-run-*` unchanged.
 
-Governance rail **Lineage** row: engine version + receipt file name — same terms
-as the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
+Governance rail **Lineage** row: engine version + `repave.yaml` — same terms as
+the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
 
 ---
 

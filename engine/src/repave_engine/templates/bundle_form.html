@@ -98,7 +98,7 @@
     <section class="form-section stack-gap" aria-labelledby="bundle-preview-heading">
       <h2 class="form-section__title" id="bundle-preview-heading">Repository preview</h2>
       <p class="hint">
-        Target names update as you change <code>service_name</code>. Cross-links are applied on scaffold.
+        Target names update as you change <code>service_name</code>. Cross-links are applied on apply.
       </p>
       <ul class="bundle-repo-grid" id="bundle-repo-preview" aria-live="polite">
         {% for preview in member_previews %}
@@ -131,12 +131,12 @@
           tabindex="-1"
           aria-hidden="true"
         >
-          Dry run preview
+          Plan preview
         </button>
         <button type="button" class="btn btn--primary" data-dry-run-run>
-          Dry run preview
+          Plan preview
         </button>
-        <button class="btn btn--secondary" type="submit">Scaffold bundle</button>
+        <button class="btn btn--secondary" type="submit">Apply</button>
       </div>
       </div>
     </div>

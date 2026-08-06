@@ -25,8 +25,14 @@
       <span class="field__label">Status</span>
       <select class="field__input" name="status">
         <option value="">Any</option>
-        {% for value in ['queued', 'running', 'succeeded', 'failed', 'dead_letter'] %}
-        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ value }}</option>
+        {% for value, label in [
+          ('queued', 'Queued'),
+          ('running', 'Running'),
+          ('succeeded', 'Succeeded'),
+          ('failed', 'Failed'),
+          ('dead_letter', 'Dead letter'),
+        ] %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label>
@@ -61,7 +67,12 @@
           <td><code>{{ run.blueprint_name }}</code></td>
           <td>
             <span class="badge badge--{% if run.status.value == 'succeeded' %}pass{% elif run.status.value in ('failed', 'dead_letter') %}fail{% else %}muted{% endif %}">
-              {{ run.status.value }}
+              {% if run.status.value == 'dead_letter' %}Dead letter
+              {% elif run.status.value == 'queued' %}Queued
+              {% elif run.status.value == 'running' %}Running
+              {% elif run.status.value == 'succeeded' %}Succeeded
+              {% elif run.status.value == 'failed' %}Failed
+              {% else %}{{ run.status.value }}{% endif %}
             </span>
           </td>
           <td class="muted">{{ run.acting_user }}</td>
