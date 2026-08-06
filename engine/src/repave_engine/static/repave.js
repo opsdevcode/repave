@@ -65,6 +65,233 @@
     document.body.classList.toggle("repave-busy", active);
   }
 
+  function portalSubmitButton(form, submitter) {
+    if (submitter && submitter.tagName === "BUTTON") {
+      return submitter;
+    }
+    return (
+      form.querySelector("[data-dry-run-run]:not([hidden])") ||
+      form.querySelector("[data-stepper-submit]:not([hidden])") ||
+      form.querySelector('button[type="submit"]:not([hidden])')
+    );
+  }
+
+  function beginBusyForm(form, submitter) {
+    var btn = portalSubmitButton(form, submitter);
+    if (!btn || btn.disabled) {
+      return;
+    }
+    var busyLabel = form.getAttribute("data-busy-label") || "Working…";
+    var stages = (form.getAttribute("data-busy-stages") || "")
+      .split("|")
+      .map(function (s) {
+        return s.trim();
+      })
+      .filter(Boolean);
+    var stageLabel = stages.length ? stages[0] : busyLabel;
+    if (!btn.dataset.repaveOriginalLabel) {
+      btn.dataset.repaveOriginalLabel = btn.textContent;
+    }
+    btn.disabled = true;
+    btn.classList.add("btn--busy");
+    btn.textContent = stages.length ? stages[0] : busyLabel;
+    setBusyOverlay(true, stageLabel);
+    if (form._repaveStageTimer) {
+      clearInterval(form._repaveStageTimer);
+      form._repaveStageTimer = null;
+    }
+    if (stages.length > 1) {
+      var stageIndex = 0;
+      form._repaveStageTimer = setInterval(function () {
+        stageIndex = (stageIndex + 1) % stages.length;
+        btn.textContent = stages[stageIndex];
+        setBusyOverlay(true, stages[stageIndex]);
+      }, 2200);
+    }
+  }
+
+  function resetBusyForm(form) {
+    setBusyOverlay(false);
+    if (form._repaveStageTimer) {
+      clearInterval(form._repaveStageTimer);
+      form._repaveStageTimer = null;
+    }
+    form.querySelectorAll(".btn--busy").forEach(function (btn) {
+      btn.disabled = false;
+      btn.classList.remove("btn--busy");
+      if (btn.dataset.repaveOriginalLabel) {
+        btn.textContent = btn.dataset.repaveOriginalLabel;
+      }
+    });
+  }
+
+  function formatPortalErrorDetail(detail, status) {
+    var text = "";
+    if (Array.isArray(detail)) {
+      text = detail
+        .map(function (item) {
+          if (item && typeof item === "object" && item.msg) {
+            return String(item.msg);
+          }
+          return String(item);
+        })
+        .filter(Boolean)
+        .join("; ");
+    } else if (detail != null && detail !== "") {
+      text = String(detail);
+    }
+    if (status === 401) {
+      return "Sign in required. Refresh the page and sign in again.";
+    }
+    if (status === 403 && /insufficient role/i.test(text)) {
+      return (
+        "You need generator access to run this action. " +
+        "Ask a platform admin to add you to the generators group (repave-generators)."
+      );
+    }
+    if (status === 429) {
+      return text || "Too many requests. Wait a moment and try again.";
+    }
+    if (status === 503) {
+      return text || "Service temporarily unavailable. Try again shortly.";
+    }
+    return text || "Request failed (" + status + ").";
+  }
+
+  function showPortalSubmitError(form, message) {
+    var banner = form.querySelector("[data-portal-submit-error]");
+    if (!banner) {
+      banner = document.createElement("p");
+      banner.className = "form-validation";
+      banner.setAttribute("data-portal-submit-error", "");
+      banner.setAttribute("role", "alert");
+      var mount = form.querySelector(".form-actions") || form;
+      mount.insertBefore(banner, mount.firstChild);
+    }
+    banner.textContent = message;
+    banner.hidden = false;
+    if (typeof banner.scrollIntoView === "function") {
+      banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function clearPortalSubmitError(form) {
+    var banner = form.querySelector("[data-portal-submit-error]");
+    if (!banner) {
+      return;
+    }
+    banner.textContent = "";
+    banner.hidden = true;
+  }
+
+  function shouldNativePortalSubmit(form) {
+    if (form.getAttribute("data-repave-native-submit") !== null) {
+      return true;
+    }
+    var action = (form.getAttribute("action") || form.action || "").toString();
+    if (action.indexOf("/auth/logout") !== -1) {
+      return true;
+    }
+    var streamBox = form.querySelector('input[name="stream"][value="1"]');
+    return Boolean(streamBox && streamBox.checked);
+  }
+
+  function applyPortalSuccessResponse(response, html) {
+    if (response.redirected && response.url) {
+      window.location.href = response.url;
+      return;
+    }
+    var trimmed = (html || "").trim();
+    if (trimmed.indexOf("<") === 0) {
+      document.open();
+      document.write(html);
+      document.close();
+      return;
+    }
+    if (response.url) {
+      window.location.href = response.url;
+      return;
+    }
+    window.location.reload();
+  }
+
+  function submitPortalForm(form, submitter) {
+    clearPortalSubmitError(form);
+    beginBusyForm(form, submitter);
+    var action = form.getAttribute("action") || form.action || window.location.href;
+    var method = (form.getAttribute("method") || "post").toUpperCase();
+    var body = new FormData(form);
+    if (submitter && submitter.name) {
+      body.append(submitter.name, submitter.value || "");
+    }
+    return fetch(action, {
+      method: method,
+      body: body,
+      credentials: "same-origin",
+      headers: {
+        Accept: "text/html, application/json;q=0.9, */*;q=0.8",
+      },
+    })
+      .then(function (response) {
+        var contentType = response.headers.get("content-type") || "";
+        if (!response.ok) {
+          if (contentType.indexOf("application/json") !== -1) {
+            return response.json().then(function (payload) {
+              throw {
+                portalError: true,
+                message: formatPortalErrorDetail(
+                  payload && payload.detail,
+                  response.status
+                ),
+              };
+            });
+          }
+          return response.text().then(function (text) {
+            throw {
+              portalError: true,
+              message: formatPortalErrorDetail(text.slice(0, 240), response.status),
+            };
+          });
+        }
+        return response.text().then(function (html) {
+          applyPortalSuccessResponse(response, html);
+        });
+      })
+      .catch(function (err) {
+        resetBusyForm(form);
+        var message =
+          err && err.portalError
+            ? err.message
+            : "Network error — check your connection and try again.";
+        showPortalSubmitError(form, message);
+      });
+  }
+
+  function initPortalFetchSubmit() {
+    document.addEventListener(
+      "submit",
+      function (event) {
+        var form = event.target;
+        if (!form || form.tagName !== "FORM") {
+          return;
+        }
+        if (event.defaultPrevented) {
+          return;
+        }
+        var method = (form.getAttribute("method") || "get").toLowerCase();
+        if (method !== "post") {
+          return;
+        }
+        if (shouldNativePortalSubmit(form)) {
+          return;
+        }
+        event.preventDefault();
+        submitPortalForm(form, event.submitter);
+      },
+      false
+    );
+  }
+
   function initLineageReceiptCopy() {
     document.querySelectorAll("[data-copy-lineage-receipt]").forEach(function (button) {
       if (button.dataset.repaveLineageCopyBound) {
@@ -277,51 +504,22 @@
   }
 
   function initBusyForms() {
+    // Native navigation only (stream / data-repave-native-submit). Fetch submits
+    // use beginBusyForm inside submitPortalForm.
     document.querySelectorAll("[data-repave-busy-form]").forEach(function (form) {
       form.addEventListener("submit", function (event) {
-        if (event.defaultPrevented) {
+        if (event.defaultPrevented || !shouldNativePortalSubmit(form)) {
           return;
         }
-        var streamBox = form.querySelector('input[name="stream"][value="1"]');
-        if (streamBox && streamBox.checked) {
-          return;
-        }
-        var btn =
-          form.querySelector("[data-dry-run-run]:not([hidden])") ||
-          form.querySelector("[data-stepper-submit]:not([hidden])") ||
-          form.querySelector('button[type="submit"]');
+        var btn = portalSubmitButton(form, event.submitter);
         if (!btn || btn.disabled) {
           return;
         }
-        var busyLabel = form.getAttribute("data-busy-label") || "Working…";
-        var stages = (form.getAttribute("data-busy-stages") || "")
-          .split("|")
-          .map(function (s) {
-            return s.trim();
-          })
-          .filter(Boolean);
-        var stageLabel = stages.length ? stages[0] : busyLabel;
-        var originalLabel = btn.textContent;
         window.setTimeout(function () {
           if (event.defaultPrevented) {
             return;
           }
-          btn.disabled = true;
-          btn.classList.add("btn--busy");
-          btn.dataset.repaveOriginalLabel = originalLabel;
-          btn.textContent = stages.length ? stages[0] : busyLabel;
-          setBusyOverlay(true, stageLabel);
-          if (stages.length > 1) {
-            var stageIndex = 0;
-            if (form._repaveStageTimer) {
-              clearInterval(form._repaveStageTimer);
-            }
-            form._repaveStageTimer = setInterval(function () {
-              stageIndex = (stageIndex + 1) % stages.length;
-              btn.textContent = stages[stageIndex];
-              setBusyOverlay(true, stages[stageIndex]);
-            }, 2200);
-          }
+          beginBusyForm(form, event.submitter);
         }, 0);
       });
     });
@@ -1810,6 +2008,8 @@
       initHomeResumeChip();
     },
     showToast: showToast,
+    showSubmitError: showPortalSubmitError,
+    formatErrorDetail: formatPortalErrorDetail,
   };
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -1823,6 +2023,7 @@
     initBusyForms();
     initFormStepper();
     initFormDryRun();
+    initPortalFetchSubmit();
     initHomeQuicknav();
     initCatalogSearch();
     initGateDashboard();

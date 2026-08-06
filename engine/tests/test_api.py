@@ -386,6 +386,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "policy-compact-summary" in response.text
     assert "policy-catalog" in response.text
     assert "data-repave-busy-form" in response.text
+    assert "data-portal-submit-error" in response.text
     assert "form-actions--sticky" in response.text
     assert "Standard pin drift" in response.text
     assert "data-form-stepper" not in response.text
@@ -398,6 +399,67 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
+
+
+def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/static/repave.js")
+    assert response.status_code == 200
+    body = response.text
+    assert "initPortalFetchSubmit" in body
+    assert "showPortalSubmitError" in body
+    assert "formatPortalErrorDetail" in body
+    assert "insufficient role" in body
+    assert "generators group" in body
+
+
+def test_portal_generate_viewer_returns_json_insufficient_role(
+    tmp_path, output_config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from itsdangerous import URLSafeSerializer
+
+    from repave_engine.session_store import load_session_store
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "durability:\n"
+        "  async_generation: true\n"
+        "  database_url: sqlite:///data/repave.sqlite\n"
+        "  export_jsonl: false\n"
+        "  require_session_secret: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_SESSION_SECRET", "test-secret")
+    monkeypatch.setenv("REPAVE_SERVICE_MODE", "1")
+    monkeypatch.setenv("REPAVE_OIDC_ISSUER", "https://idp.example.com")
+    monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
+    monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+
+    client = TestClient(
+        create_app(repo_root=tmp_path, output_config=output_config),
+        raise_server_exceptions=False,
+    )
+    store = load_session_store(tmp_path)
+    assert store is not None
+    session_id = store.create_id()
+    store.save(
+        session_id,
+        {"repave_user": {"sub": "viewer-1", "email": "v@example.com", "role": "viewer"}},
+    )
+    signer = URLSafeSerializer("test-secret", salt="repave-sql-session")
+    client.cookies.set("session", signer.dumps(session_id))
+
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "module_name": "demo",
+            "dry_run": "true",
+        },
+    )
+    assert response.status_code == 403
+    assert response.headers.get("content-type", "").startswith("application/json")
+    assert response.json()["detail"] == "Insufficient role"
 
 
 def test_generate_form_includes_plan_preview_flag(repo_root, output_config) -> None:

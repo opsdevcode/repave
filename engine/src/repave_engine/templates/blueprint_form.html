@@ -1007,6 +1007,7 @@
 
     <div class="form-actions form-actions--sticky{% if form_stepper %} form-actions--stepper{% if publish_step == 0 %} form-actions--stepper-final{% endif %}{% endif %}">
       {% include "partials/governance_preflight_collapsible.html" %}
+      <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
       <div class="form-actions__toolbar">
         {% if async_generation_enabled %}

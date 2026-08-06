@@ -75,7 +75,7 @@
           </button>
           {% if auth_enabled and auth_user %}
           <span class="shell__user muted">{{ auth_user.email }}</span>
-          <form class="shell__logout" method="post" action="/auth/logout">
+          <form class="shell__logout" method="post" action="/auth/logout" data-repave-native-submit>
             <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
           </form>
           {% elif auth_enabled %}
