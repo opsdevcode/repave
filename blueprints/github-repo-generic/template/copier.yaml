@@ -1,0 +1,44 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+  - "{% if not team_slugs %}.github/CODEOWNERS{% endif %}"
+
+repo_name:
+  type: str
+
+description:
+  type: str
+  default: ""
+
+create_mode:
+  type: str
+  default: selection
+
+visibility:
+  type: str
+  default: private
+
+topics:
+  type: str
+  default: ""
+
+template_owner:
+  type: str
+  default: ""
+
+template_repo:
+  type: str
+  default: ""
+
+team_slugs:
+  type: str
+  default: ""
+
+team_permission:
+  type: str
+  default: push
+
+default_branch:
+  type: str
+  default: main

@@ -45,7 +45,8 @@
             "observability",
             "helm-chart",
             "app-service",
-            "gitops-deployment"
+            "gitops-deployment",
+            "github-repo"
           ]
         },
         "blueprint": {
@@ -144,7 +145,8 @@
                   "observability",
                   "helm-chart",
                   "app-service",
-                  "gitops-deployment"
+                  "gitops-deployment",
+                  "github-repo"
                 ]
               },
               "blueprint": {
@@ -262,6 +264,29 @@
                   "argocd_project": { "type": "string" },
                   "flux_source_name": { "type": "string" },
                   "flux_source_namespace": { "type": "string" }
+                }
+              },
+              "githubRepository": {
+                "type": "object",
+                "required": ["repo_name", "create_mode", "visibility"],
+                "additionalProperties": false,
+                "properties": {
+                  "repo_name": { "type": "string", "minLength": 1 },
+                  "create_mode": { "type": "string", "enum": ["template", "selection"] },
+                  "visibility": {
+                    "type": "string",
+                    "enum": ["public", "private", "internal"]
+                  },
+                  "description": { "type": "string" },
+                  "topics": { "type": "string" },
+                  "template_owner": { "type": "string" },
+                  "template_repo": { "type": "string" },
+                  "team_slugs": { "type": "string" },
+                  "team_permission": {
+                    "type": "string",
+                    "enum": ["pull", "triage", "push", "maintain", "admin"]
+                  },
+                  "default_branch": { "type": "string" }
                 }
               },
               "observability": {
@@ -512,6 +537,26 @@
             "flux_source_namespace": { "type": "string" }
           }
         },
+        "githubRepository": {
+          "type": "object",
+          "required": ["repo_name", "create_mode", "visibility"],
+          "additionalProperties": false,
+          "properties": {
+            "repo_name": { "type": "string", "minLength": 1 },
+            "create_mode": { "type": "string", "enum": ["template", "selection"] },
+            "visibility": { "type": "string", "enum": ["public", "private", "internal"] },
+            "description": { "type": "string" },
+            "topics": { "type": "string" },
+            "template_owner": { "type": "string" },
+            "template_repo": { "type": "string" },
+            "team_slugs": { "type": "string" },
+            "team_permission": {
+              "type": "string",
+              "enum": ["pull", "triage", "push", "maintain", "admin"]
+            },
+            "default_branch": { "type": "string" }
+          }
+        },
         "appService": {
           "type": "object",
           "required": ["service_name", "owner", "port", "runtime", "layout", "include_helm_reference"],
@@ -694,6 +739,17 @@
           },
           "then": {
             "required": ["gitopsDeployment"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "github-repo" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["githubRepository"]
           }
         },
         {

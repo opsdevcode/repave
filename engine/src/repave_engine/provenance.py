@@ -412,6 +412,40 @@ def _build_gitops_deployment_spec(
     return {"artifactType": "gitops-deployment", "gitopsDeployment": deployment}, service_name
 
 
+def _build_github_repo_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    repo_name = str(values.get("repo_name", blueprint.name))
+    repo: dict[str, Any] = {
+        "repo_name": repo_name,
+        "create_mode": str(values.get("create_mode", "selection")).strip(),
+        "visibility": str(values.get("visibility", "private")).strip(),
+    }
+    description = str(values.get("description", "")).strip()
+    if description:
+        repo["description"] = description
+    topics = str(values.get("topics", "")).strip()
+    if topics:
+        repo["topics"] = topics
+    template_owner = str(values.get("template_owner", "")).strip()
+    if template_owner:
+        repo["template_owner"] = template_owner
+    template_repo = str(values.get("template_repo", "")).strip()
+    if template_repo:
+        repo["template_repo"] = template_repo
+    team_slugs = str(values.get("team_slugs", "")).strip()
+    if team_slugs:
+        repo["team_slugs"] = team_slugs
+    team_permission = str(values.get("team_permission", "")).strip()
+    if team_permission:
+        repo["team_permission"] = team_permission
+    default_branch = str(values.get("default_branch", "")).strip()
+    if default_branch:
+        repo["default_branch"] = default_branch
+    return {"artifactType": "github-repo", "githubRepository": repo}, repo_name
+
+
 def _provenance_generated_at() -> str:
     fixed = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT", "").strip()
     if fixed:
@@ -442,6 +476,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_app_service_spec(blueprint, values)
     elif blueprint.artifact_type == "gitops-deployment":
         artifact_spec, metadata_name = _build_gitops_deployment_spec(blueprint, values)
+    elif blueprint.artifact_type == "github-repo":
+        artifact_spec, metadata_name = _build_github_repo_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

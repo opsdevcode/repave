@@ -10,6 +10,12 @@ from repave_engine.github import (
     ensure_github_repository,
     push_module_repository,
 )
+from repave_engine.github_repo_provision import (
+    GitHubRepoProvisionSpec,
+    format_provision_message,
+    plan_provision,
+    provision_github_repository,
+)
 from repave_engine.output_template import format_output_template
 from repave_engine.pr_conventions import (
     PullRequestConventions,
@@ -27,6 +33,7 @@ class PullRequestPlan:
     branch: str
     files_root: Path
     repository: ModuleRepository
+    provision: GitHubRepoProvisionSpec | None = None
 
 
 def plan_pull_request(
@@ -41,15 +48,19 @@ def plan_pull_request(
     module_values: dict[str, Any],
     repo_root: Path | None = None,
     gate_results: tuple[GateResult, ...] = (),
+    provision: GitHubRepoProvisionSpec | None = None,
 ) -> PullRequestPlan:
     conventions = (
         load_pull_request_conventions(repo_root)
         if repo_root is not None
         else PullRequestConventions()
     )
+    name_hint = str(
+        module_values.get("repo_name") or module_values.get("module_name") or blueprint_name
+    )
     branch = branch_name(
         conventions.branch_prefix_generate,
-        str(module_values.get("module_name", blueprint_name)),
+        name_hint,
         blueprint_version,
     )
     title = format_output_template(title_template, module_values)
@@ -63,12 +74,17 @@ def plan_pull_request(
     for field_name in input_fields:
         if field_name in module_values:
             summary_lines.append(f"- {field_name}: `{module_values[field_name]}`")
+    output_label = (
+        "governed GitHub repository provision"
+        if provision is not None
+        else "governed module repository"
+    )
     summary_lines.extend(
         [
             "",
             f"- Standard version: `{standard_version}`",
             f"- Target repository: `{repository.web_url}`",
-            "- Output type: governed module repository",
+            f"- Output type: {output_label}",
             "- Gates: enforced before publish",
             "",
             "## Rollback",
@@ -86,10 +102,14 @@ def plan_pull_request(
         branch=branch,
         files_root=files_root,
         repository=repository,
+        provision=provision,
     )
 
 
 def create_pull_request(plan: PullRequestPlan, *, github_token: str | None) -> str:
+    if plan.provision is not None:
+        return _create_provisioned_repository(plan, github_token=github_token)
+
     if not github_token:
         return (
             "Dry-run: remote GitHub repository not created. Provide GITHUB_TOKEN or GitHub App "
@@ -132,4 +152,52 @@ def create_pull_request(plan: PullRequestPlan, *, github_token: str | None) -> s
         f"Repository: {plan.repository.web_url}\n"
         f"Branch: {plan.branch}\n"
         f"Local repository: {plan.repository.local_path}"
+    )
+
+
+def _create_provisioned_repository(
+    plan: PullRequestPlan,
+    *,
+    github_token: str | None,
+) -> str:
+    if plan.provision is None:
+        raise RuntimeError("provision plan missing for github-repo publish path")
+    if not github_token:
+        planned = plan_provision(plan.provision)
+        return (
+            "Dry-run: GitHub repository not provisioned. Provide GITHUB_TOKEN or GitHub App "
+            "credentials to enable remote publish.\n"
+            + format_provision_message(
+                planned.create,
+                planned.teams,
+                overlay="planned",
+                local_path=str(plan.repository.local_path),
+                branch=plan.branch,
+            )
+        )
+
+    try:
+        created, grants = provision_github_repository(plan.provision, github_token)
+        push_module_repository(plan.repository, github_token, branch=plan.branch)
+    except GitHubError as exc:
+        return (
+            "GitHub repository provisioning failed.\n"
+            f"Target repository: {plan.repository.web_url}\n"
+            f"Local repository: {plan.repository.local_path}\n"
+            f"Error ({exc.status}): {exc.message}"
+        )
+    except RuntimeError as exc:
+        return (
+            "GitHub repository provisioning failed while pushing the overlay commit.\n"
+            f"Target repository: {plan.repository.web_url}\n"
+            f"Local repository: {plan.repository.local_path}\n"
+            f"Error: {exc}"
+        )
+
+    return format_provision_message(
+        created,
+        grants,
+        overlay="pushed",
+        local_path=str(plan.repository.local_path),
+        branch=plan.branch,
     )

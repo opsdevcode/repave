@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
+from repave_engine.github_repo_provision import OrgTeam
 
 
 def test_api_v2_metadata(repo_root, output_config) -> None:
@@ -24,6 +25,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/audit" in payload["endpoints"]
     assert "GET /api/v2/estate" in payload["endpoints"]
     assert "GET /api/v2/governance/annotations/{blueprint_name}" in payload["endpoints"]
+    assert "GET /api/v2/github/teams" in payload["endpoints"]
     assert "GET /api/v2/fleet" in payload["endpoints"]
 
 
@@ -156,3 +158,33 @@ def test_api_v2_generate_async_matches_runs(async_v2_client) -> None:
         )
         assert response.status_code in (200, 202)
         assert "run_id" in response.json()
+
+
+def test_api_v2_github_teams(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    with patch(
+        "repave_engine.api_v2.router.list_org_teams",
+        return_value=(OrgTeam(slug="platform", name="Platform", description="ops"),),
+    ) as listed:
+        response = client.get("/api/v2/github/teams")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["org"] == output_config.github_org
+    assert body["teams"] == [
+        {"slug": "platform", "name": "Platform", "description": "ops"},
+    ]
+    listed.assert_called_once()
+
+
+def test_api_v2_github_teams_requires_token(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_APP_ID", raising=False)
+    monkeypatch.delenv("GITHUB_APP_INSTALLATION_ID", raising=False)
+    monkeypatch.delenv("GITHUB_APP_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("GITHUB_APP_PRIVATE_KEY_FILE", raising=False)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    with patch("repave_engine.api_v2.router.resolve_github_access_token", return_value=None):
+        response = client.get("/api/v2/github/teams")
+    assert response.status_code == 503
+    assert "GitHub credentials" in response.json()["detail"]

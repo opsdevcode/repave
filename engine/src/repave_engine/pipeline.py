@@ -30,6 +30,7 @@ from repave_engine.gates import (
     gate_outcome,
     run_gates,
 )
+from repave_engine.github_repo_provision import build_provision_spec
 from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
 from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
@@ -183,6 +184,12 @@ def _publish_after_gates(
                 dry_run=dry_run,
                 artifact_type=blueprint.artifact_type,
             )
+            provision = None
+            if blueprint.artifact_type == "github-repo":
+                provision = build_provision_spec(
+                    repository=module_repository,
+                    values=normalized,
+                )
             pr_plan = plan_pull_request(
                 blueprint_name=blueprint.name,
                 blueprint_version=blueprint.version,
@@ -194,6 +201,7 @@ def _publish_after_gates(
                 module_values=normalized,
                 repo_root=repo_root,
                 gate_results=gate_results,
+                provision=provision,
             )
             if dry_run:
                 pr_body = create_pull_request(pr_plan, github_token=None)
@@ -308,6 +316,12 @@ def generate_from_blueprint(
                 repo_root=repo_root,
                 gate_results=tuple(gate_results),
             )
+            provision = None
+            if blueprint.artifact_type == "github-repo":
+                provision = build_provision_spec(
+                    repository=module_repository,
+                    values=normalized,
+                )
             pr_plan = plan_pull_request(
                 blueprint_name=blueprint.name,
                 blueprint_version=blueprint.version,
@@ -319,6 +333,7 @@ def generate_from_blueprint(
                 module_values=normalized,
                 repo_root=repo_root,
                 gate_results=tuple(gate_results),
+                provision=provision,
             )
         else:
             published_repository = None

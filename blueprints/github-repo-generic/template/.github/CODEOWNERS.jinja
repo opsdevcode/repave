@@ -1,0 +1,3 @@
+# Teams granted by github-repo-generic (permission: {{ team_permission }}).
+# Replace ORG with your GitHub organization slug before relying on CODEOWNERS reviews.
+* {% for slug in team_slugs.split(',') if slug.strip() %}@ORG/{{ slug.strip() }} {% endfor %}

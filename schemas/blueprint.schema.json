@@ -131,7 +131,8 @@
             "observability",
             "helm-chart",
             "app-service",
-            "gitops-deployment"
+            "gitops-deployment",
+            "github-repo"
           ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."

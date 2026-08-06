@@ -61,6 +61,7 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "observability",
         "helm-chart",
         "gitops-deployment",
+        "github-repo",
         "app-service",
         "opa-policy",
         "azure-policy",

@@ -20,6 +20,7 @@ _TYPED_BLOCKS_BY_ARTIFACT: dict[str, str] = {
     "helm-chart": "helmChart",
     "app-service": "appService",
     "gitops-deployment": "gitopsDeployment",
+    "github-repo": "githubRepository",
     "opa-policy": "opaPolicy",
     "azure-policy": "azurePolicy",
     "checkov-policy": "checkovPolicy",

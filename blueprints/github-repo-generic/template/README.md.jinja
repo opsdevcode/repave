@@ -1,0 +1,45 @@
+# {{ repo_name }}
+
+{% if description -%}
+{{ description }}
+{% else -%}
+GitHub repository provisioned by the `github-repo-generic` golden path.
+{%- endif %}
+
+## Usage
+
+This repository was created with **{{ create_mode }}** mode and **{{ visibility }}** visibility.
+
+{% if create_mode == 'template' -%}
+Content was copied from the template `{{ template_owner }}/{{ template_repo }}`. The governed
+overlay (`repave.yaml`, this README) is pushed as a follow-up commit.
+{%- else -%}
+The repository was created from selection inputs (visibility, description, topics). Apply a
+content golden path separately when you need Terraform, app, Helm, or other scaffolds.
+{%- endif %}
+
+{% if team_slugs -%}
+Org teams granted **{{ team_permission }}**: `{{ team_slugs }}`.
+{%- else -%}
+No org teams were granted access during provision. Add teams in GitHub or re-run with
+`team_slugs`.
+{%- endif %}
+
+{% if topics -%}
+Topics: `{{ topics }}`.
+{%- endif %}
+
+## Configuration
+
+| Field | Value |
+| --- | --- |
+| Create mode | `{{ create_mode }}` |
+| Visibility | `{{ visibility }}` |
+| Default branch | `{{ default_branch }}` |
+{% if create_mode == 'template' -%}
+| Template | `{{ template_owner }}/{{ template_repo }}` |
+{%- endif %}
+
+## Provenance
+
+Lineage is recorded in `repave.yaml` when you publish. Re-run generate to refresh pins.

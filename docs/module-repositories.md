@@ -48,3 +48,7 @@ Ansible and other artifact types follow blueprint-specific naming in
 When dry-run is disabled and `GITHUB_TOKEN` is set, repave creates the target
 repository if needed and pushes the initial commit to `main`. See
 [Concepts — remote publish](concepts.md#remote-publish).
+
+To provision a repository **without** an artifact scaffold (template copy or selection
+form + team grants), use [`github-repo-generic`](github-repo-goldpath.md)
+(`repave create-repo`).
