@@ -58,6 +58,20 @@ spec:
       required: false
       default: ""
       description: Ingress hostname (required when enable_ingress is true).
+    - name: environment
+      type: string
+      required: false
+      default: dev
+      enum:
+        - dev
+        - staging
+        - prod
+      description: Deployment environment for FinOps labels (repave.dev/environment).
+    - name: cost_center
+      type: string
+      required: false
+      default: ""
+      description: Optional cost center for chargeback metadata.
     - name: include_backstage_catalog
       type: string
       required: false
@@ -68,9 +82,9 @@ spec:
       description: Emit catalog-info.yaml for Backstage Software Catalog import.
     - name: owner
       type: string
-      required: false
-      default: ""
-      description: Backstage spec.owner (required when include_backstage_catalog is true).
+      required: true
+      default: platform-engineering
+      description: Owning team for FinOps labels and Backstage catalog owner.
     - name: system
       type: string
       required: false

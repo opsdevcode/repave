@@ -5,13 +5,13 @@
   "policy/checkov/__init__.py": "1cc68695ade2d4b5aad8c720b858d861b54693edfbac30008b2647d4f1129bba",
   "policy/checkov/custom_001_terraform_version_exists.yaml": "4f09be591e8091637b38441b33e307ccf7eb92b9cd1a8b3e3061ac02353d25d7",
   "policy/checkov/custom_002_terraform_version_capped.yaml": "ea088493b2cc70eb63dc0cbbf14a18f9d40a76dc3212086cc2c0a3b94caefb22",
-  "policy/checkov/repave_module_layout.py": "17c7c9c447783661b6cc50f65fdbafb85aefa7a7a60f8ff8e98707ab1bee1e3b",
+  "policy/checkov/repave_module_layout.py": "6e223eca2b623a883ba5ef3af8b9a9401e06a75a5f4b6a5f82deaf9f7fd280cd",
   "policy/checkov/repave_null_resource_locals.py": "7074ae07b8d6fb66ed8baf281cb0dacdbcd85f3e61c8ecfe17ca816270f28e89",
-  "policy/checkov/repave_policy_utils.py": "c86a20c0286aefb3241450fc43a3b5dab3c73b55996ca26f300dcaa3cea6b660",
+  "policy/checkov/repave_policy_utils.py": "98a95a254c04c2a6d7dd6e9fc08b3f955dc08819ab1a16530e60de42035b0bd3",
   "policy/checkov/repave_security.py": "77ca7f36408a7e64c51f88e952b034739e9b66fbd2fd218e30fb96259b3f7be4",
-  "repave.yaml": "6d57aef33616f274213d76a3f0aba424265a14401e68ee7857f33222755ba458",
+  "repave.yaml": "594b06431614e13fec87482743b2c19aaf283258488a05fb411d599a7fc5e956",
   "tests/fixtures/pass/example.tf": "df0dd3c90d7cf9f66a1650b2fc683e33e601dafbd85971451cdf187dc6fc9912",
-  "tests/fixtures/pass/locals.tf": "2c0d82694713ce9e2943dfd76e019b0d8ede62a48137a3635f4174a642da854f",
+  "tests/fixtures/pass/locals.tf": "77a123debb68f60e80e6a59750f010321e8fff281a5fdb1b6c3298bcfbf50694",
   "tests/fixtures/pass/variables.tf": "3802e2f3de5e5b97a186d6b3c7362547d6801a32b68b08869487e75b05028375",
   "tests/fixtures/pass/versions.tf": "2e146f2c843dc454678fee1cf0662641ac1adacfcb7fa610482dfe1ae95f9fe7"
 }

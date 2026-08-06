@@ -37,6 +37,16 @@ spec:
       type: string
       required: true
       description: Single resource type within the service to scaffold.
+    - name: owner
+      type: string
+      required: true
+      default: platform-engineering
+      description: Owning team for cost allocation (Owner tag).
+    - name: cost_center
+      type: string
+      required: false
+      default: ""
+      description: Optional cost center for chargeback (CostCenter tag).
     - name: policy_pack_source
       type: string
       required: false

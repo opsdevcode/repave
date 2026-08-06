@@ -29,4 +29,7 @@ helm.sh/chart: {{ include "repave.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 managed-by: repave
+repave.dev/owner: {{ required "set values.owner for FinOps allocation" .Values.owner | quote }}
+repave.dev/service: {{ required "set values.serviceName for FinOps allocation" .Values.serviceName | quote }}
+repave.dev/environment: {{ required "set values.environment for FinOps allocation" .Values.environment | quote }}
 {{- end }}

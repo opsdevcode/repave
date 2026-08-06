@@ -10,7 +10,9 @@
         "checkov:CKV2_REPAVE_6",
         "checkov:CKV2_REPAVE_8",
         "checkov:CKV2_REPAVE_9",
-        "opa:destructive_changes"
+        "checkov:CKV2_REPAVE_13",
+        "opa:destructive_changes",
+        "opa:allocation_tags"
       ]
     },
     "strict": {
@@ -21,7 +23,7 @@
     "layout": {
       "label": "Module layout",
       "description": "Terraform module structure and required inputs (repave module standard).",
-      "includes": ["checkov:CKV2_REPAVE_3", "checkov:CKV2_REPAVE_4", "checkov:CKV2_REPAVE_5", "checkov:CKV2_REPAVE_6", "checkov:CKV2_REPAVE_7"]
+      "includes": ["checkov:CKV2_REPAVE_3", "checkov:CKV2_REPAVE_4", "checkov:CKV2_REPAVE_5", "checkov:CKV2_REPAVE_6", "checkov:CKV2_REPAVE_7", "checkov:CKV2_REPAVE_13"]
     },
     "security": {
       "label": "Security baseline",
@@ -248,6 +250,29 @@
       "checkov_id": "CKV2_REPAVE_12",
       "title": "Variable defaults must not embed secret material",
       "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "checkov:CKV2_REPAVE_13",
+      "family": "checkov",
+      "checkov_id": "CKV2_REPAVE_13",
+      "title": "locals.tf common_tags must include FinOps allocation tags",
+      "artifact_types": ["terraform-module", "terraform-environment-stack", "checkov-policy"],
+      "required": false,
+      "removable": true
+    },
+    {
+      "id": "opa:allocation_tags",
+      "family": "opa",
+      "rego_file": "allocation_tags.rego",
+      "title": "Terraform resources with tags must include allocation keys",
+      "artifact_types": [
+        "terraform-module",
+        "terraform-environment-stack",
+        "opa-policy",
+        "observability"
+      ],
       "required": false,
       "removable": true
     },

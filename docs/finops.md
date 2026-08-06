@@ -22,7 +22,7 @@ Community anchors:
 | `portal.cost_reader` (`url` / `aws` / `azure` / `k8s`) | Read-only L30D actuals for catalog entities |
 | Library badges + Cloud spend scorecard | Showback signal on `/library` and entity detail |
 | State graph blast-radius cost join | Join Infracost breakdown to graph resources |
-| Terraform tag standards | Soft guidance for `owner` / `service` / `environment` |
+| Terraform tag standards | Required FinOps allocation tags on golden paths (v1.90) |
 
 Config examples: [`repave.config.yaml.example`](../repave.config.yaml.example).
 
@@ -56,8 +56,31 @@ name → `Service`). Incomplete tags yield `tag_coverage` of `partial` or `missi
 actuals.
 
 v1.90 makes those tags **gate-enforced** on golden paths and allows org-specific key names via
-`portal.cost_allocation.tag_keys`. Until then, treat tag completeness as a manual adoption
-checklist for any estate using `portal.cost_reader`.
+`portal.cost_allocation.tag_keys`.
+
+### Gate enforcement (v1.90)
+
+| Gate | What fails |
+| --- | --- |
+| Checkov `CKV2_REPAVE_13` | `locals.tf` `common_tags` missing `Owner`/`Service`/`Environment`/`CostCenter` from module inputs |
+| OPA `allocation_tags` | Terraform plan resources with tags missing allocation keys |
+| OPA `kubernetes` (helm) | Deployment `metadata.labels` missing `repave.dev/owner`, `repave.dev/service`, `repave.dev/environment` |
+| Cloud spend scorecard | **Fail** (not warn) when `portal.cost_reader` is configured and catalog tags are incomplete |
+
+Configure org-specific cloud tag key names (defaults: `Owner`, `Service`, `Environment`, `CostCenter`):
+
+```yaml
+portal:
+  cost_allocation:
+    tag_keys:
+      owner: Team
+      service: App
+      environment: Environment
+      cost_center: CostCenter
+```
+
+Environment override: `REPAVE_COST_ALLOCATION_TAG_KEYS=owner=Team,service=App,environment=Environment,cost_center=CostCenter`.
+`portal.cost_aws` / `portal.cost_azure` `tag_key_*` inherit from `cost_allocation` unless overridden per reader block.
 
 | Catalog field | Typical cloud tag | Used by |
 | --- | --- | --- |

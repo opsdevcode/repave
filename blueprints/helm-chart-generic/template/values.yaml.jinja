@@ -1,5 +1,10 @@
 replicaCount: 1
 
+owner: {{ owner }}
+serviceName: {{ app_name }}
+environment: {{ environment }}
+costCenter: "{{ cost_center }}"
+
 image:
   repository: {{ image_repository }}
   tag: "{{ image_tag }}"

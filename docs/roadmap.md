@@ -6,11 +6,13 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.28.1  
 
-**In progress:** [FinOps enablement](#finops-enablement-v2x) (v1.90–v1.94) — tag governance
-first; [Platform as a product](#platform-as-a-product-v2x) follow-ons (v1.87–v1.89).
+**In progress:** [FinOps enablement](#finops-enablement-v2x) (v1.91–v1.94) — estimate policy
+next; [Platform as a product](#platform-as-a-product-v2x) follow-ons (v1.87–v1.89).
 Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Platform feedback loop (v1.86)** — CSAT + friction capture on result/run-console,
+**Shipped on `main`:** **FinOps tag governance (v1.90)** — required allocation tags on terraform/helm
+golden paths, Checkov `CKV2_REPAVE_13`, OPA `allocation_tags`, `portal.cost_allocation.tag_keys`,
+scorecard fail on incomplete tags ([`docs/finops.md`](finops.md)); **Platform feedback loop (v1.86)** — CSAT + friction capture on result/run-console,
 `/platform/feedback`, `GET|POST /api/v2/platform/feedback` ([`docs/platform-metrics.md`](platform-metrics.md));
 **Platform adoption / DX metrics (v1.85)** — `/platform/adoption`,
 `GET /api/v2/platform/metrics`, `repave metrics adoption`, snapshot CronJob
@@ -215,7 +217,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **Platform as a product** | Partial (v1.85–v1.86 shipped; v1.87–v1.89 open) | Treat the IDP as a product: adoption/DX metrics and feedback loop shipped; stakeholder views, cognitive-load reduction, roadmap evidence open ([platform as a product](#platform-as-a-product-v2x)) |
-| **FinOps enablement** | Not started (v1.90–v1.94) | Hybrid FinOps: tag governance, estimate policy, showback/budgets, thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
+| **FinOps enablement** | Partial (v1.90 shipped; v1.91–v1.94 open) | Hybrid FinOps: tag governance shipped; estimate policy, showback/budgets, thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
@@ -2527,7 +2529,7 @@ cloud FOCUS exports, commercial platforms).
 | Capability | Score | Notes |
 | --- | --- | --- |
 | Planning & estimating | Strong | Infracost + optional `max_monthly_usd`; org floor is v1.91 |
-| Allocation | Weak | Soft tag standards; `tag_coverage` warn only — v1.90 |
+| Allocation | Partial | v1.90 gate-enforced tags; CE/OpenCost tag filters |
 | Reporting & analytics | Weak | Single L30D snapshot — v1.92 trends/budgets |
 | Data ingestion / FOCUS | Absent | v1.93 thin adapter |
 | Anomaly / chargeback | Absent | v1.94 lightweight hooks + export |
@@ -2555,7 +2557,7 @@ them — allocation fails silently (`tag_coverage` warn).
 **Done when:** Default terraform and app-service generates fail gates without allocation tags;
 [`docs/finops.md`](finops.md) explains mapping to Cost Explorer / OpenCost filters.
 
-**Status:** Not started.
+**Status:** Shipped on `main` (v1.90 tag governance — Checkov/OPA gates, `portal.cost_allocation.tag_keys`, scorecard fail).
 
 ### v1.91 — Estimate and cost policy at plan time
 

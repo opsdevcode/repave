@@ -81,6 +81,21 @@ def references_shared_locals(content: str) -> bool:
     return "local.name_prefix" in normalized and "local.common_tags" in normalized
 
 
+ALLOCATION_TAG_BINDINGS = (
+    ("Owner", "var.owner"),
+    ("Service", "var.service"),
+    ("Environment", "var.environment"),
+    ("CostCenter", "var.cost_center"),
+)
+
+
+def common_tags_include_allocation_tags(content: str) -> bool:
+    normalized = content.replace(" ", "").replace("\n", "")
+    if "common_tags" not in normalized:
+        return False
+    return all(f"{key}={binding}" in normalized for key, binding in ALLOCATION_TAG_BINDINGS)
+
+
 def iter_tf_files(module_root: Path) -> list[Path]:
     return sorted(path for path in module_root.glob("*.tf") if path.is_file())
 

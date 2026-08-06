@@ -294,7 +294,7 @@ def _cost_scorecard_dimension(
     cost_estimate: CostEstimate | None = None,
 ) -> ScorecardDimension:
     if cost_actuals is not None:
-        cost_level: ScoreLevel = "pass" if cost_actuals.tag_coverage == "complete" else "warn"
+        cost_level: ScoreLevel = "pass" if cost_actuals.tag_coverage == "complete" else "fail"
         as_of = cost_actuals.as_of[:19] if cost_actuals.as_of else "unknown"
         cost_detail = f"L30D {cost_actuals.currency} {cost_actuals.amount_30d} as of {as_of}"
     elif cost_estimate is not None and cost_estimate.monthly_cost.strip() not in (
@@ -307,8 +307,8 @@ def _cost_scorecard_dimension(
             cost_detail = cost_estimate.detail.strip()
     elif cost_actuals_configured:
         coverage, cov_detail = tag_coverage_for_fields(owner, display_name)
-        if coverage == "missing":
-            cost_level = "warn"
+        if coverage != "complete":
+            cost_level = "fail"
             cost_detail = cov_detail
         else:
             cost_level = "unknown"

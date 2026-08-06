@@ -25,6 +25,13 @@ output:
 #   cost_actuals_url: "https://cost-api.example.com/v1/services/{name}/summary"
 #   # Native readers (server-side, read-only; credentials from the host environment):
 #   # cost_reader: aws   # or azure | k8s | url (default url when cost_actuals_url is set)
+#   cost_allocation:
+#     tag_keys:
+#       owner: Owner        # cloud tag key for catalog owner (default Owner)
+#       service: Service    # cloud tag key for service name (default Service)
+#       environment: Environment
+#       cost_center: CostCenter
+#   # Override tag key names for all readers: REPAVE_COST_ALLOCATION_TAG_KEYS=owner=Team,service=App
 #   # cost_aws:
 #   #   tag_key_owner: Owner
 #   #   tag_key_service: Service
@@ -52,7 +59,8 @@ output:
 #   #   name: "{name}"
 #   #   kind: kustomization   # or helmrelease
 # Or set REPAVE_OBSERVABILITY_DASHBOARD_URL / REPAVE_OBSERVABILITY_SLO_URL /
-# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER / REPAVE_COST_K8S_BASE_URL /
+# REPAVE_COST_ACTUALS_URL / REPAVE_COST_READER / REPAVE_COST_ALLOCATION_TAG_KEYS /
+# REPAVE_COST_K8S_BASE_URL /
 # REPAVE_DEPLOYMENT_READER / REPAVE_DEPLOYMENT_STATUS_URL /
 # REPAVE_ARGOCD_BASE_URL / REPAVE_ARGOCD_TOKEN /
 # REPAVE_FLUX_API_SERVER / REPAVE_FLUX_TOKEN.

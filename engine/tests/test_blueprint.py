@@ -233,6 +233,7 @@ def test_validate_helm_chart_requires_ingress_host_when_enabled(repo_root: Path)
             {
                 "chart_name": "api",
                 "app_name": "api",
+                "owner": "platform-engineering",
                 "description": "API chart",
                 "image_repository": "ghcr.io/acme/api",
                 "enable_ingress": "true",
@@ -255,6 +256,7 @@ def test_build_provenance_document_helm_chart(repo_root: Path) -> None:
             {
                 "chart_name": "api",
                 "app_name": "api",
+                "owner": "platform-engineering",
                 "description": "API chart",
                 "image_repository": "ghcr.io/acme/api",
             },

@@ -79,6 +79,7 @@ def test_append_component_records_blueprint_name() -> None:
         {
             "chart_name": "checkout-api-chart",
             "app_name": "checkout-api",
+            "owner": "platform-engineering",
             "description": "Chart",
             "image_repository": "ghcr.io/example/checkout-api",
             "image_tag": "latest",

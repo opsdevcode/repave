@@ -624,6 +624,7 @@ def test_generate_helm_chart_dry_run(
         {
             "chart_name": "api",
             "app_name": "api",
+            "owner": "platform-engineering",
             "description": "HTTP API",
             "image_repository": "ghcr.io/acme/api",
             "image_tag": "1.2.3",

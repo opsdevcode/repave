@@ -90,8 +90,10 @@ Align with HashiCorp's module development guidance:
 - Accept a `tags` map (or structured tagging object) at the module boundary.
 - Merge caller tags with module-managed tags in locals; module keys win on conflict
   only when required for compliance (document overrides).
-- Minimum recommended tag keys: `environment`, `owner`, `service` / `app`,
-  `managed-by = terraform`.
+- Minimum required FinOps allocation tag keys in `local.common_tags`: `Owner`, `Service`,
+  `Environment`, `CostCenter` (mapped from `var.owner`, `var.service`, `var.environment`,
+  `var.cost_center`). Checkov `CKV2_REPAVE_13` fails generate when missing.
+- Also merge module-managed keys: `module`, `environment`, `managed_by = terraform`.
 - Apply tags consistently via provider `default_tags` at the root module when the
   estate standardizes on provider-level tagging — child modules still accept `tags`
   for portability.

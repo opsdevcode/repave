@@ -55,6 +55,7 @@ def test_render_helm_deploy_workflow_pins_actions(repo_root: Path) -> None:
         "gitops_manifest_path": "apps/release.yaml",
         "gitops_engine": "argocd",
         "chart_name": "api",
+        "owner": "platform-engineering",
     }
     text = render_deploy_workflow(blueprint, payload)
     assert "promote-gitops" in text
@@ -96,6 +97,7 @@ def test_write_deploy_workflow_creates_files(
         blueprint,
         {
             "chart_name": "api",
+            "owner": "platform-engineering",
             "app_name": "api",
             "description": "HTTP API",
             "image_repository": "ghcr.io/acme/api",
@@ -123,6 +125,7 @@ def test_write_deploy_workflow_creates_files(
             "gitops_repo": "acme/gitops-dev-api",
             "gitops_engine": "argocd",
             "chart_name": "api",
+            "owner": "platform-engineering",
         },
     )
     assert "GitHub App" in oidc
