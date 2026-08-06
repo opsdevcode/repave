@@ -2088,7 +2088,9 @@ type, Platform catalog family), engine template/selection create + team grants,
 [`docs/github-repo-goldpath.md`](github-repo-goldpath.md). Phase 2: `ruleset_profile`
 (`default-pr`), additive membership sync from `membership_source_team` (create destination
 teams if missing), fleet register after apply so fleetsync / `fleet-manifests` emit
-`GoldenPathRepo`, `GET /api/v2/github/teams/{slug}/members`.
+`GoldenPathRepo`, `GET /api/v2/github/teams/{slug}/members`. Ops validation:
+[`docs/operations/github-repo-fleet-validation.md`](operations/github-repo-fleet-validation.md)
+(`make validate-github-repo-fleet`, `make chart-smoke-fleet-snapshot`).
 
 **Problem:** Org repos are still created by hand or via ad-hoc scripts: template copy,
 visibility, topics, and team permissions are inconsistent, and existing golden paths only

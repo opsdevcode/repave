@@ -59,6 +59,9 @@ repository (same path as import). Operator fleetsync or `repave fleet-manifests`
 a `GoldenPathRepo`. The engine never calls Kubernetes directly. See
 [Fleet registry](fleet-registry.md).
 
+**Ops validation:** [github-repo → fleet → GoldenPathRepo](operations/github-repo-fleet-validation.md)
+(`make validate-github-repo-fleet`, then `make chart-smoke-fleet-snapshot`).
+
 ## Auth requirements
 
 PAT (`GITHUB_TOKEN`) or GitHub App installation token must be able to:

@@ -39,7 +39,9 @@ repave register https://github.com/acme/tf-vpc --path ~/modules/tf-vpc --owner p
 Successful **github-repo** apply (`github-repo-generic` / `repave create-repo`) also
 best-effort registers the new repository when the fleet registry is enabled — the same
 path import uses — so fleetsync / `fleet-manifests` can emit a `GoldenPathRepo`. See
-[GitHub repository goldpath](github-repo-goldpath.md).
+[GitHub repository goldpath](github-repo-goldpath.md) and the ops checklist
+[github-repo → fleet → GoldenPathRepo](operations/github-repo-fleet-validation.md)
+(`make validate-github-repo-fleet`).
 
 Provenance is the preferred source because it is exactly what the operator observes. When
 you have no checkout, pass pins explicitly:
@@ -123,8 +125,13 @@ schedule (`fleetOperatorSnapshot.cronJob`). Set `fleetOperatorSnapshot.cronJob.o
 when GPRs live in a different namespace than the portal release. See
 [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md) § Fleet operator snapshot.
 
-Validate locally: `make chart-smoke-fleet-snapshot` (kind: portal + operator + snapshot Job +
-platform campaign pause/resume via `/platform/campaigns`).
+Validate locally:
+
+- `make validate-github-repo-fleet` — simulate github-repo register → `fleet-manifests` (no cluster)
+- `make chart-smoke-fleet-snapshot` — kind: portal + operator fleetsync + snapshot Job +
+  platform campaign pause/resume via `/platform/campaigns`
+
+Full checklist: [github-repo fleet validation](operations/github-repo-fleet-validation.md).
 
 ### Platform console day-2 actions
 
