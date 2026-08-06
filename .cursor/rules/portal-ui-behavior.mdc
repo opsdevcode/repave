@@ -13,6 +13,15 @@ alwaysApply: false
 Copy and layout changes **must not break** core portal flows. Treat templates,
 `repave.js`, and `repave.css` as one product surface with shared contracts.
 
+## Portal POST submit contract
+
+Portal HTML forms **must not** navigate to raw JSON error pages. `repave.js`
+intercepts `method="post"` submits (except `data-repave-native-submit`, logout,
+and checked `stream=1`) via `fetch`, keeps the user on the form, and shows
+`[data-portal-submit-error]` / `.form-validation` for 4xx/5xx (including
+`Insufficient role`). Success still replaces the document with HTML or follows
+redirects to `/runs/{id}`.
+
 ## Required flows (every golden path)
 
 1. **Plan (dry-run)** — POST `/generate` with `dry_run=true` returns **200** and
