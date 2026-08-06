@@ -37,28 +37,46 @@ the portal, CLI, or API; and the estate stays aligned via provenance, fleet regi
 Kubernetes operator.
 
 ```mermaid
-flowchart LR
-  subgraph surfaces [Surfaces]
-    Portal[Portal]
-    CLI[CLI]
-    API[HTTP_API]
+flowchart TB
+  subgraph consume [Builders consume]
+    Portal(["Portal catalog"])
+    CLI(["CLI / CI"])
+    API(["HTTP API"])
   end
-  subgraph control [Control_plane]
-    Engine[Engine_and_gates]
-    Corpus[Blueprints_standards_policy]
-    Op[Operator]
+
+  subgraph own [Platform owns]
+    Packs["Blueprints · standards · policy packs"]
   end
-  subgraph estate [Estate]
-    Repos[Module_and_service_repos]
-    Fleet[Fleet_registry]
+
+  subgraph plane [Control plane]
+    Engine["Engine<br/>validate → render → mandatory gates"]
+    Operator["Kubernetes operator<br/>observe → plan → remediation PR"]
+    Registry[("Fleet registry")]
   end
+
+  subgraph estate [Golden-path estate]
+    Repos[("Module and service repos")]
+    Lineage["repave.yaml provenance"]
+  end
+
   Portal --> Engine
   CLI --> Engine
   API --> Engine
-  Corpus --> Engine
-  Engine -->|pave_publish| Repos
-  Op -->|observe_plan_PR| Repos
-  Fleet --> Op
+  Packs --> Engine
+  Engine -->|"1 · pave and publish"| Repos
+  Repos --- Lineage
+  Lineage --> Registry
+  Registry --> Operator
+  Operator -->|"2 · drift and upgrade"| Repos
+  Operator -.->|"3 · pins move · repave"| Packs
+```
+
+```mermaid
+flowchart LR
+  today["Today · v2 platform GA<br/>generate · gates · provenance<br/>fleet observe / remediate"]
+  near["Near-term · v2.x<br/>FinOps on golden paths<br/>environments · GitOps · bundles"]
+  future["Becoming · v3<br/>low-risk auto-merge<br/>mandatory policy · governed AI"]
+  today --> near --> future
 ```
 
 | Horizon | What that means |
@@ -214,14 +232,20 @@ Full steps (CLI, publish, operator): **[docs/quickstart.md](docs/quickstart.md)*
 ## How it works
 
 ```mermaid
-flowchart LR
-  Blueprint[blueprint.yaml] --> Validate[Validate_inputs]
-  Validate --> Render[Copier_render]
-  Render --> Gates[Mandatory_gates]
-  Gates --> Publish[Module_repo]
-  Publish --> Provenance[repave.yaml]
-  Provenance --> Drift[Operator_drift]
-  Drift -->|repave| Blueprint
+flowchart TB
+  subgraph pave [Pave]
+    Blueprint["blueprint.yaml"] --> Validate["Validate inputs"]
+    Validate --> Render["Copier render"]
+    Render --> Gates["Mandatory gates"]
+    Gates --> Publish["Module repo<br/>GitHub optional"]
+    Publish --> Provenance["repave.yaml lineage"]
+  end
+
+  subgraph repave [Repave when standards move]
+    Provenance --> Drift["Operator detects pin drift"]
+    Drift --> Plan["Upgrade plan + remediation PR"]
+    Plan -->|"merge · new pins"| Blueprint
+  end
 ```
 
 ```text

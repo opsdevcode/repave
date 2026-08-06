@@ -29,14 +29,63 @@ reconciliation keeps the estate on the current road.
 | Cost awareness | Infracost gate, cost readers, [FinOps enablement](finops.md) |
 
 ```mermaid
+flowchart TB
+  subgraph consume [Builders consume]
+    Portal(["Portal catalog"])
+    CLI(["CLI / CI"])
+    API(["HTTP API"])
+  end
+
+  subgraph own [Platform owns]
+    Packs["Blueprints · standards · policy packs"]
+  end
+
+  subgraph plane [Control plane]
+    Engine["Engine<br/>validate → render → mandatory gates"]
+    Operator["Kubernetes operator<br/>observe → plan → remediation PR"]
+    Registry[("Fleet registry")]
+  end
+
+  subgraph estate [Golden-path estate]
+    Repos[("Module and service repos")]
+    Lineage["repave.yaml provenance"]
+  end
+
+  Portal --> Engine
+  CLI --> Engine
+  API --> Engine
+  Packs --> Engine
+  Engine -->|"1 · pave and publish"| Repos
+  Repos --- Lineage
+  Lineage --> Registry
+  Registry --> Operator
+  Operator -->|"2 · drift and upgrade"| Repos
+  Operator -.->|"3 · pins move · repave"| Packs
+```
+
+```mermaid
+flowchart TB
+  subgraph pave [Pave]
+    Blueprint["blueprint.yaml"] --> Validate["Validate inputs"]
+    Validate --> Render["Copier render"]
+    Render --> Gates["Mandatory gates"]
+    Gates --> Publish["Module repo"]
+    Publish --> Provenance["repave.yaml lineage"]
+  end
+
+  subgraph repaveLoop [Repave when standards move]
+    Provenance --> Drift["Operator detects pin drift"]
+    Drift --> Plan["Upgrade plan + remediation PR"]
+    Plan -->|"merge · new pins"| Blueprint
+  end
+```
+
+```mermaid
 flowchart LR
-  Blueprint[blueprint.yaml] --> Validate[Validate_inputs]
-  Validate --> Render[Copier_render]
-  Render --> Gates[Mandatory_gates]
-  Gates --> Publish[Module_repo]
-  Publish --> Provenance[repave.yaml]
-  Provenance --> Drift[Operator_drift]
-  Drift -->|repave| Blueprint
+  today["Today · v2<br/>generate · gates · provenance<br/>fleet observe / remediate"]
+  near["Near-term · v2.x<br/>FinOps on golden paths<br/>environments · GitOps · bundles"]
+  future["Becoming · v3<br/>low-risk auto-merge<br/>mandatory policy · governed AI"]
+  today --> near --> future
 ```
 
 | Horizon | Meaning |
