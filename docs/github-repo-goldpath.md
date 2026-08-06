@@ -21,12 +21,12 @@ Template mode requires `template_owner` and `template_repo`.
 
 | Surface | How |
 | --- | --- |
-| Portal | Catalog **Platform** family → `github-repo-generic` form |
+| Portal | Catalog **Platform** family → `github-repo-generic` form (destination teams datalist, membership sync toggle, source-team member preview, ruleset profile) |
 | CLI | `repave generate --blueprint blueprints/github-repo-generic --input ...` |
 | Alias | `repave create-repo --name my-service --team platform-admins` |
 | API | `POST /api/v2/generate` with `"blueprint": "github-repo-generic"` |
 | Teams picker | `GET /api/v2/github/teams` (lists org teams for the form) |
-| Team members preview | `GET /api/v2/github/teams/{slug}/members` (viewer+) |
+| Team members preview | `GET /api/v2/github/teams/{slug}/members` (viewer+; portal source-team preview) |
 
 Dry-run is the default. Apply needs GitHub credentials (see below).
 

@@ -2098,7 +2098,8 @@ create empty public repos as a side effect of artifact publish.
 
 - Thin Copier overlay (`README`, `repave.yaml`, optional `CODEOWNERS`) plus GitHub REST
   provision (template generate or selection create, ruleset profile, team sync, grants)
-- Portal form with create-mode toggle and org team listing / member preview
+- Portal form with create-mode toggle, org team listing, membership sync toggle,
+  source-team member preview, and ruleset profile select
 - Fleet register on successful apply (no kubectl from the engine)
 - Still out of scope: cross-org/IdP SCIM, purging extra members, legacy branch protection
   API, auto-applying a second artifact blueprint
