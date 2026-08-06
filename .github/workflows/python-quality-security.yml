@@ -48,6 +48,11 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python3 scripts/check-action-pins.py
 
+      - name: Verify Release shares CI gate-toolchain runtimes
+        if: steps.paths.outputs.ci_needed == 'true'
+        working-directory: ${{ github.workspace }}
+        run: python3 scripts/check_release_test_toolchain.py
+
       - name: Ruff lint
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run ruff check src tests

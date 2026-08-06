@@ -40,10 +40,13 @@ matches CI parallelism locally.
 
 ### Gate toolchain (CI, Compose, local)
 
-CI and Release install pinned CLIs via
-[`.github/actions/gate-toolchain`](.github/actions/gate-toolchain) and then run
+CI and Release install pinned CLIs **and** app-service runtimes (Temurin 21,
+.NET 10, Maven) via
+[`.github/actions/gate-toolchain`](.github/actions/gate-toolchain), then run
 **`repave doctor --strict`** (same pins as `deploy/local/gate-toolchain-pins.env`).
-The Compose image runs the same check at **`docker build`** when
+Do **not** add Java/.NET/Maven only in `ci.yml` — Release must use the same
+composite or tags (and downstream EKS deploys) stall. `scripts/check_release_test_toolchain.py`
+enforces that. The Compose image runs the same CLI check at **`docker build`** when
 `INSTALL_GATE_TOOLCHAIN=1`.
 
 Locally, after [`deploy/local/install-gate-toolchain.sh`](deploy/local/install-gate-toolchain.sh):
@@ -333,6 +336,12 @@ version that has no GitHub Release yet.
 
 **Do not break automated versioning.** The Release job must keep producing
 semver tags and GitHub Releases after `feat:` / `fix:` merges to `main`.
+Those tags trigger deploy pipelines (for example `repave-aws-infra` → EKS).
+
+Release runs the **full** engine pytest suite before semantic-release. Any new
+runtime needed by dry-run gates belongs in
+[`.github/actions/gate-toolchain`](.github/actions/gate-toolchain) so CI and
+Release stay identical — never wire it into `ci.yml` alone.
 
 python-semantic-release 10.3+ writes GitHub Actions step outputs whenever
 `GITHUB_OUTPUT` is set. Our flow uses `--no-push --no-tag` and never populates

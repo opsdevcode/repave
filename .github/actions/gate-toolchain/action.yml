@@ -1,5 +1,7 @@
 name: Gate toolchain
-description: Pinned CLIs for engine dry-run gate tests (aligned with deploy/local)
+description: >-
+  Pinned CLIs plus app-service runtimes (JDK 21, .NET 10) for engine dry-run
+  gate tests. Shared by CI and Release so toolchain drift cannot block tags.
 
 inputs:
   enable-cache:
@@ -10,6 +12,30 @@ inputs:
 runs:
   using: composite
   steps:
+    # App-service java-build / dotnet-build gates need these on every pytest run.
+    # Keep them here (not only in ci.yml) so Release cannot drift and stall tags
+    # that drive downstream EKS deploys.
+    - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07  # v4
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9  # v4
+      with:
+        dotnet-version: "10.0.x"
+
+    - name: Install Maven
+      shell: bash
+      run: |
+        set -euo pipefail
+        if command -v mvn >/dev/null 2>&1; then
+          mvn -version
+          exit 0
+        fi
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends maven
+        mvn -version
+
     - name: Prepare gate toolchain paths
       shell: bash
       run: |
