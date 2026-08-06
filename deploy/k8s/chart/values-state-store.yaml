@@ -1,0 +1,28 @@
+# State store overlay: mount /api/state/v1 and persist Terraform state (ADR 004).
+# Defaults stay off in values.yaml — merge this only after the enablement checklist.
+#
+#   helm upgrade --install repave ./deploy/k8s/chart \
+#     -f values.yaml \
+#     -f values-decomposed-day2.yaml \
+#     -f values-state-store.yaml \
+#     --set repave.durability.databaseUrl=postgresql://... \
+#     --set repave.stateStore.databaseUrl=postgresql://... \
+#     --set secrets.existingSecret=repave-secrets
+#
+# Operator checklist: docs/operations/state-store-enablement.md
+# Secrets: deploy/k8s/hack/bootstrap-state-store-secrets.sh
+# Design: docs/adr/004-state-custody-and-the-resource-graph.md
+# Operator guide: docs/state-graph.md
+#
+# databaseUrl may share the durability Postgres *instance* (separate tables) or
+# use a dedicated database. SQLite is not supported for shared deploy.
+# KEK must live in the Secret (state-kek); enabling without KEK writes plaintext.
+
+repave:
+  stateStore:
+    enabled: true
+    # Override at install time — do not commit production URLs.
+    databaseUrl: postgresql://repave:change-me@postgres.repave.svc:5432/repave
+    defaultTenant: default
+    # Empty = gates advisory. Name gates to make absent/skipped fail commit.
+    requiredGates: []

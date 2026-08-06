@@ -158,7 +158,11 @@ the workflow change can ship fleet-wide before any repository moves its state.
 
 ## Operational obligations
 
-State is the most critical data repave holds. Before enabling this in a shared deployment:
+State is the most critical data repave holds. Before enabling this in a shared deployment,
+complete the checklist in
+[`docs/operations/state-store-enablement.md`](operations/state-store-enablement.md)
+(Helm overlay [`values-state-store.yaml`](../deploy/k8s/chart/values-state-store.yaml),
+KEK bootstrap [`bootstrap-state-store-secrets.sh`](../deploy/k8s/hack/bootstrap-state-store-secrets.sh)).
 
 - **Point-in-time recovery and a rehearsed restore**, extending
   [`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md).

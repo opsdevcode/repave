@@ -161,6 +161,38 @@ app.kubernetes.io/component: portal
 {{- end }}
 {{- end }}
 
+{{- define "repave.stateStoreEnv" -}}
+{{- if .Values.repave.stateStore.enabled }}
+{{- if not .Values.repave.stateStore.databaseUrl }}
+{{- fail "repave.stateStore.enabled requires repave.stateStore.databaseUrl (PostgreSQL 14+)" }}
+{{- end }}
+{{- $secretName := include "repave.secretName" . }}
+{{- if not $secretName }}
+{{- fail "repave.stateStore.enabled requires secrets.existingSecret or secrets.create (for REPAVE_STATE_KEK)" }}
+{{- end }}
+- name: REPAVE_STATE_STORE_URL
+  value: {{ .Values.repave.stateStore.databaseUrl | quote }}
+- name: REPAVE_STATE_STORE_TENANT
+  value: {{ .Values.repave.stateStore.defaultTenant | quote }}
+{{- if .Values.repave.stateStore.requiredGates }}
+- name: REPAVE_STATE_REQUIRED_GATES
+  value: {{ .Values.repave.stateStore.requiredGates | join "," | quote }}
+{{- end }}
+- name: REPAVE_STATE_KEK
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: state-kek
+      optional: false
+- name: REPAVE_STATE_KEK_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: state-kek-id
+      optional: true
+{{- end }}
+{{- end }}
+
 {{- define "repave.environmentReclaimApiBaseUrl" -}}
 {{- if .Values.environmentReclaim.cronJob.apiBaseUrl }}
 {{- .Values.environmentReclaim.cronJob.apiBaseUrl }}

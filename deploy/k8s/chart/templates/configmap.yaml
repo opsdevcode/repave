@@ -76,6 +76,16 @@ data:
       run_stale_seconds: {{ .Values.repave.durability.runStaleSeconds }}
       run_retry_base_seconds: {{ .Values.repave.durability.runRetryBaseSeconds }}
     {{- end }}
+    {{- if and .Values.repave.stateStore.enabled .Values.repave.stateStore.databaseUrl }}
+    state_store:
+      enabled: true
+      database_url: {{ .Values.repave.stateStore.databaseUrl | quote }}
+      default_tenant: {{ .Values.repave.stateStore.defaultTenant | quote }}
+      {{- if .Values.repave.stateStore.requiredGates }}
+      required_gates:
+{{ toYaml .Values.repave.stateStore.requiredGates | indent 8 }}
+      {{- end }}
+    {{- end }}
     {{- if include "repave.environmentVendingEnabled" . }}
     environment_vending:
       enabled: true

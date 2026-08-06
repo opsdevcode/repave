@@ -195,6 +195,19 @@ and mutating APIs require Auth0 login (TLS-terminated Ingress).
 - Secrets: [`../hack/bootstrap-auth0-secrets.sh`](../hack/bootstrap-auth0-secrets.sh)
 - Config reference: [`docs/auth-service-mode.md`](../../../docs/auth-service-mode.md#auth0-for-portal-access-day-1)
 
+### State store (ADR 004)
+
+Use [`values-state-store.yaml`](values-state-store.yaml) only after the enablement
+checklist. Defaults stay **off** (`repave.stateStore.enabled: false`).
+
+- Operator checklist: [`docs/operations/state-store-enablement.md`](../../../docs/operations/state-store-enablement.md)
+- Secrets (KEK): [`../hack/bootstrap-state-store-secrets.sh`](../hack/bootstrap-state-store-secrets.sh)
+- Operator guide: [`docs/state-graph.md`](../../../docs/state-graph.md)
+- Design: [`docs/adr/004-state-custody-and-the-resource-graph.md`](../../../docs/adr/004-state-custody-and-the-resource-graph.md)
+
+Server env: `REPAVE_STATE_STORE_URL` (enables), `REPAVE_STATE_KEK` (required in shared
+deploy). Client/CI env: `REPAVE_STATE_URL` (portal base URL) — different name on purpose.
+
 ## Co-install with the operator
 
 Typical layout:
