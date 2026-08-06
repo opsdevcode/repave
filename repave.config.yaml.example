@@ -107,12 +107,13 @@ gates:
 # platform_metrics:
 #   enabled: true
 #   snapshot_file: data/platform-metrics/snapshots.jsonl
+#   feedback_file: data/platform-metrics/feedback.jsonl
 #   github_orgs: [your-github-org]
 #   github_topics: []
 #   search_limit: 100
 #   baseline_adoption_ratio: 0.6
 #   baseline_plan_apply_ratio: 0.4
-# Or: REPAVE_PLATFORM_METRICS=1, REPAVE_PLATFORM_METRICS_FILE=...
+# Or: REPAVE_PLATFORM_METRICS=1, REPAVE_PLATFORM_METRICS_FILE=..., REPAVE_PLATFORM_FEEDBACK_FILE=...
 
 # Optional async generation queue (see docs/durability.md).
 # Hosted service mode (auth.service_mode) REQUIRES database_url — JSONL is export-only.

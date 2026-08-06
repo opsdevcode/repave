@@ -80,6 +80,44 @@ platformMetricsSnapshot:
 The CronJob runs `repave metrics adoption --persist` so `/platform/adoption` can show
 trend sparklines (at/above baseline = pass).
 
+## Feedback loop (v1.86)
+
+Lightweight CSAT (1–5) and optional friction tags on **result** and **run-console** surfaces.
+Events correlate with `blueprint@version`, dry-run vs apply, and gates outcome.
+
+### Configuration
+
+Uses the same `platform_metrics` block:
+
+```yaml
+platform_metrics:
+  enabled: true
+  feedback_file: data/platform-metrics/feedback.jsonl
+```
+
+| Variable | Effect |
+| --- | --- |
+| `REPAVE_PLATFORM_FEEDBACK_FILE` | Override feedback JSONL path |
+
+When `durability.database_url` is set, events also land in the `feedback_events` SQL table;
+JSONL export follows `durability.export_jsonl`.
+
+### Friction tags
+
+`slow`, `confusing-form`, `unclear-errors`, `missing-docs`, `gates-heavy`, `other`.
+
+### Surfaces
+
+| Surface | Path / command |
+| --- | --- |
+| Portal capture | Result page card; compact panel on run-console complete |
+| Portal (admin) | `/platform/feedback` |
+| API | `POST /api/v2/platform/feedback` (generator or admin) |
+| API rollup | `GET /api/v2/platform/feedback` (admin; `?limit=50`) |
+
+Portal JS posts once per run via `sessionStorage` — feedback append is best-effort and never
+blocks generation.
+
 ## Baselines
 
 Set `baseline_adoption_ratio` / `baseline_plan_apply_ratio` once you have a stable week of

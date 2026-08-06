@@ -268,6 +268,18 @@ def _ensure_schema_sqlite(conn: SqlConnection) -> None:
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_dx_metrics_created ON dx_metrics_snapshots(created_at)"
     )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feedback_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            record_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_feedback_events_created ON feedback_events(created_at)"
+    )
 
 
 def _ensure_schema_postgres(conn: SqlConnection) -> None:
@@ -360,6 +372,18 @@ def _ensure_schema_postgres(conn: SqlConnection) -> None:
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_dx_metrics_created ON dx_metrics_snapshots(created_at)"
+    )
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS feedback_events (
+            id BIGSERIAL PRIMARY KEY,
+            record_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_feedback_events_created ON feedback_events(created_at)"
     )
 
 
@@ -489,6 +513,34 @@ def append_dx_metrics_snapshot_line(
 def scan_dx_metrics_snapshots(conn: SqlConnection, *, max_rows: int) -> list[dict[str, Any]]:
     cur = conn.execute(
         "SELECT record_json FROM dx_metrics_snapshots ORDER BY id DESC LIMIT ?",
+        (max(1, max_rows),),
+    )
+    rows = cur.fetchall() if hasattr(cur, "fetchall") else list(cur)
+    out: list[dict[str, Any]] = []
+    for row in rows:
+        raw = row["record_json"] if isinstance(row, dict) else row[0]
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(payload, dict):
+            out.append(payload)
+    return out
+
+
+def append_feedback_event_line(
+    conn: SqlConnection, payload: dict[str, Any], *, created_at: str
+) -> None:
+    line = json.dumps(payload, separators=(",", ":"))
+    conn.execute(
+        "INSERT INTO feedback_events (record_json, created_at) VALUES (?, ?)",
+        (line, created_at),
+    )
+
+
+def scan_feedback_events(conn: SqlConnection, *, max_rows: int) -> list[dict[str, Any]]:
+    cur = conn.execute(
+        "SELECT record_json FROM feedback_events ORDER BY id DESC LIMIT ?",
         (max(1, max_rows),),
     )
     rows = cur.fetchall() if hasattr(cur, "fetchall") else list(cur)

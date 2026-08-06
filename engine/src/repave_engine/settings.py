@@ -189,6 +189,7 @@ class PlatformMetricsConfig:
 
     enabled: bool
     snapshot_file: Path
+    feedback_file: Path
     github_orgs: tuple[str, ...] = ()
     github_topics: tuple[str, ...] = ()
     search_limit: int = 100
@@ -207,6 +208,7 @@ def load_platform_metrics_config(repo_root: Path) -> PlatformMetricsConfig | Non
         "on",
     }
     env_file = os.environ.get("REPAVE_PLATFORM_METRICS_FILE", "").strip()
+    env_feedback_file = os.environ.get("REPAVE_PLATFORM_FEEDBACK_FILE", "").strip()
 
     def _resolve(value: str) -> Path:
         path = Path(value).expanduser()
@@ -220,6 +222,7 @@ def load_platform_metrics_config(repo_root: Path) -> PlatformMetricsConfig | Non
         return PlatformMetricsConfig(
             enabled=True,
             snapshot_file=_resolve(env_file or "data/platform-metrics/snapshots.jsonl"),
+            feedback_file=_resolve(env_feedback_file or "data/platform-metrics/feedback.jsonl"),
         )
 
     if not isinstance(block, dict):
@@ -233,6 +236,12 @@ def load_platform_metrics_config(repo_root: Path) -> PlatformMetricsConfig | Non
     path = _resolve(str(block.get("snapshot_file", "data/platform-metrics/snapshots.jsonl")))
     if env_file:
         path = _resolve(env_file)
+
+    feedback_path = _resolve(
+        str(block.get("feedback_file", "data/platform-metrics/feedback.jsonl"))
+    )
+    if env_feedback_file:
+        feedback_path = _resolve(env_feedback_file)
 
     orgs_raw = block.get("github_orgs", [])
     topics_raw = block.get("github_topics", [])
@@ -269,6 +278,7 @@ def load_platform_metrics_config(repo_root: Path) -> PlatformMetricsConfig | Non
     return PlatformMetricsConfig(
         enabled=True,
         snapshot_file=path,
+        feedback_file=feedback_path,
         github_orgs=tuple(item.strip() for item in orgs_raw if item.strip()),
         github_topics=tuple(item.strip() for item in topics_raw if item.strip()),
         search_limit=search_limit,

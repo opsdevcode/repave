@@ -131,6 +131,30 @@
     <p class="run-console__actions" hidden data-run-complete-actions>
       <a class="btn btn--primary" href="/runs/{{ run_id }}/result">View full result</a>
     </p>
+
+    {% if blueprint is defined %}
+    <div
+      class="feedback-capture feedback-capture--compact run-console__feedback"
+      data-feedback-capture
+      data-surface="run_console"
+      data-blueprint="{{ blueprint.name }}"
+      data-blueprint-version="{{ blueprint.version }}"
+      data-dry-run="{{ run_record.dry_run | tojson }}"
+      data-gates-outcome=""
+      data-run-id="{{ run_id }}"
+      hidden
+    >
+      <p class="hint">Quick check-in before the result page loads?</p>
+      <div class="feedback-capture__stars" role="group" aria-label="Satisfaction rating">
+        {% for score in range(1, 6) %}
+        <button type="button" class="feedback-capture__star" data-csat="{{ score }}" aria-label="{{ score }} star{% if score != 1 %}s{% endif %}">
+          {{ score }}
+        </button>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn btn--ghost btn--sm" data-feedback-dismiss>Skip</button>
+    </div>
+    {% endif %}
   </div>
 </section>
 {% endblock %}

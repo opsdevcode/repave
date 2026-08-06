@@ -152,6 +152,7 @@ from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_platform import (
     build_platform_adoption_page,
     build_platform_campaigns_page,
+    build_platform_feedback_page,
     build_platform_fleet_page,
     build_platform_ops_page,
     build_platform_standards_detail,
@@ -382,6 +383,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     {"kind": "nav", "label": "Platform standards", "href": "/platform/standards"},
                     {"kind": "nav", "label": "Platform campaigns", "href": "/platform/campaigns"},
                     {"kind": "nav", "label": "Platform adoption", "href": "/platform/adoption"},
+                    {"kind": "nav", "label": "Platform feedback", "href": "/platform/feedback"},
                 ]
             )
         for blueprint in list_blueprints(blueprints_dir(repo_root)):
@@ -1435,6 +1437,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     dry_run=result.dry_run,
                 ),
                 result_portal=build_result_portal_context(result, repo_root),
+                run_id=run_id,
             ),
         )
 
@@ -2134,6 +2137,22 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="platform",
                 platform_nav="adoption",
                 adoption_page=adoption_page,
+            ),
+        )
+
+    @app.get("/platform/feedback", response_class=HTMLResponse)
+    async def platform_feedback_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        feedback_page = build_platform_feedback_page(repo_root)
+        return templates.TemplateResponse(
+            request,
+            "platform_feedback.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="feedback",
+                feedback_page=feedback_page,
             ),
         )
 
