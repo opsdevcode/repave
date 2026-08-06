@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -101,6 +102,8 @@ from repave_engine.upgrade_api import (
 )
 from repave_engine.verify import VerifyError, verify_target
 
+logger = logging.getLogger(__name__)
+
 V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2",
     "POST /api/v2/generate",
@@ -130,6 +133,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "DELETE /api/v2/fleet",
     "POST /api/v2/environments/reclaim",
     "GET /api/v2/platform/metrics",
+    "GET /api/v2/platform/feedback",
+    "POST /api/v2/platform/feedback",
 )
 
 
@@ -1009,5 +1014,99 @@ def build_api_v2_router(
             )
             payload["history"] = [item.to_public_dict() for item in history]
         return JSONResponse(payload)
+
+    @router.post("/platform/feedback")
+    async def api_v2_platform_feedback_post(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        from datetime import datetime, timezone
+
+        from repave_engine.feedback import (
+            build_feedback_event,
+            normalize_friction_tags,
+            normalize_surface,
+            validate_csat,
+        )
+        from repave_engine.feedback_store import append_feedback_event
+        from repave_engine.settings import load_platform_metrics_config
+
+        metrics_cfg = load_platform_metrics_config(repo_root)
+        if metrics_cfg is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "platform_metrics is not configured "
+                    "(set platform_metrics.enabled or REPAVE_PLATFORM_METRICS=1)"
+                ),
+            )
+        body = await _parse_json_object(request)
+        try:
+            csat = validate_csat(body.get("csat"))
+            friction_tags = normalize_friction_tags(body.get("friction_tags"))
+            surface = normalize_surface(body.get("surface"))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        blueprint_name = str(body.get("blueprint_name", "")).strip()
+        if not blueprint_name:
+            raise HTTPException(status_code=400, detail="blueprint_name is required")
+        comment = str(body.get("comment", "")).strip()
+        if len(comment) > 2000:
+            raise HTTPException(status_code=400, detail="comment must be at most 2000 characters")
+        submitted_at = (
+            datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+        )
+        event = build_feedback_event(
+            submitted_at=submitted_at,
+            csat=csat,
+            friction_tags=friction_tags,
+            comment=comment,
+            blueprint_name=blueprint_name,
+            blueprint_version=str(body.get("blueprint_version", "")).strip(),
+            dry_run=bool(body.get("dry_run")),
+            gates_outcome=str(body.get("gates_outcome", "")).strip(),
+            acting_user=_acting_user(request),
+            run_id=str(body.get("run_id", "")).strip(),
+            surface=surface,
+        )
+        try:
+            append_feedback_event(
+                metrics_cfg.feedback_file,
+                event,
+                repo_root=repo_root,
+            )
+        except OSError as exc:
+            logger.warning("Failed to persist feedback event: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to persist feedback event",
+            ) from exc
+        return JSONResponse(event.to_public_dict(), status_code=201)
+
+    @router.get("/platform/feedback")
+    async def api_v2_platform_feedback_get(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.feedback_store import load_feedback_rollup
+        from repave_engine.settings import load_platform_metrics_config
+
+        metrics_cfg = load_platform_metrics_config(repo_root)
+        if metrics_cfg is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "platform_metrics is not configured "
+                    "(set platform_metrics.enabled or REPAVE_PLATFORM_METRICS=1)"
+                ),
+            )
+        history_raw = str(request.query_params.get("limit", "50")).strip() or "50"
+        try:
+            limit = max(1, min(int(history_raw), 200))
+        except ValueError:
+            limit = 50
+        rollup, events = load_feedback_rollup(repo_root, limit=limit)
+        return JSONResponse(
+            {
+                "rollup": rollup.to_public_dict(),
+                "events": [event.to_public_dict() for event in events],
+            }
+        )
 
     return router

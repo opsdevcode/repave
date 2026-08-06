@@ -153,6 +153,7 @@ def test_platform_fleet_page_renders(repo_root, output_config, registry: Path) -
     assert "terraform-module-generic@0.9.0" in body
     assert "/platform/ops" in body
     assert "/platform/adoption" in body
+    assert "/platform/feedback" in body
 
 
 def test_platform_fleet_register_and_unregister(repo_root, output_config, registry: Path) -> None:
@@ -203,6 +204,14 @@ def test_platform_campaigns_page_without_snapshot(repo_root, output_config) -> N
     body = client.get("/platform/campaigns").text
     assert "Operator campaigns" in body
     assert "fleet-operator-snapshot" in body
+
+
+def test_platform_feedback_page_without_metrics(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.delenv("REPAVE_PLATFORM_METRICS", raising=False)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/platform/feedback").text
+    assert "Developer feedback" in body
+    assert "platform_metrics" in body
 
 
 def test_find_campaign_in_snapshot() -> None:

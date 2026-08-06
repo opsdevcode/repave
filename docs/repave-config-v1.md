@@ -70,6 +70,7 @@ When `database_url` is set:
 | Audit | `audit_events` | `audit.file` when `export_jsonl: true` |
 | Fleet | `fleet_events` | `fleet.file` when `export_jsonl: true` |
 | DX metrics snapshots | `dx_metrics_snapshots` | `platform_metrics.snapshot_file` when `export_jsonl: true` |
+| Platform feedback | `feedback_events` | `platform_metrics.feedback_file` when `export_jsonl: true` |
 | OIDC sessions | `sessions` | — |
 
 Platform adoption config (`platform_metrics`) is documented in

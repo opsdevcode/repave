@@ -120,6 +120,7 @@ repave:
   platformMetrics:
     enabled: false
     snapshotFile: /data/fleet/platform-metrics.jsonl
+    feedbackFile: /data/fleet/platform-feedback.jsonl
     githubOrgs: []
     githubTopics: []
     searchLimit: 100

@@ -3356,6 +3356,72 @@ details.file-panel summary {
   font-weight: 600;
 }
 
+.toast[hidden] {
+  display: none;
+}
+
+.feedback-capture {
+  margin-top: var(--space-4);
+}
+
+.feedback-capture--compact {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+}
+
+.feedback-capture__stars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.feedback-capture__star {
+  min-width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.feedback-capture__star:hover,
+.feedback-capture__star.is-selected {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--text);
+}
+
+.feedback-capture__tags {
+  border: 0;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+}
+
+.feedback-capture__tag-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.feedback-capture__tags .chip {
+  cursor: pointer;
+}
+
+.feedback-capture__tags .chip.is-active {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.feedback-capture__comment {
+  min-height: 3.5rem;
+  resize: vertical;
+}
+
 .toast {
   position: fixed;
   bottom: var(--space-5);

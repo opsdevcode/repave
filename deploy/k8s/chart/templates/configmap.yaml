@@ -36,6 +36,7 @@ data:
     platform_metrics:
       enabled: true
       snapshot_file: {{ .Values.repave.platformMetrics.snapshotFile | quote }}
+      feedback_file: {{ .Values.repave.platformMetrics.feedbackFile | quote }}
       search_limit: {{ .Values.repave.platformMetrics.searchLimit }}
       {{- if .Values.repave.platformMetrics.githubOrgs }}
       github_orgs:

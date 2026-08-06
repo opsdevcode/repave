@@ -361,3 +361,29 @@ def _adoption_spark_value(
         return 2
     threshold = baseline if baseline is not None else 0.5
     return 1 if ratio >= threshold else 0
+
+
+@dataclass(frozen=True)
+class PlatformFeedbackPage:
+    metrics_enabled: bool
+    rollup: object | None
+    recent_events: tuple[object, ...]
+
+
+def build_platform_feedback_page(repo_root: Path) -> PlatformFeedbackPage:
+    from repave_engine.feedback_store import load_feedback_rollup
+    from repave_engine.settings import load_platform_metrics_config
+
+    metrics_cfg = load_platform_metrics_config(repo_root)
+    if metrics_cfg is None:
+        return PlatformFeedbackPage(
+            metrics_enabled=False,
+            rollup=None,
+            recent_events=(),
+        )
+    rollup, events = load_feedback_rollup(repo_root, limit=100)
+    return PlatformFeedbackPage(
+        metrics_enabled=True,
+        rollup=rollup,
+        recent_events=events,
+    )

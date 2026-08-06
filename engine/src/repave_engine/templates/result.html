@@ -324,6 +324,52 @@
 </section>
 {% endif %}
 
+<section
+  class="card feedback-capture"
+  aria-labelledby="feedback-heading"
+  data-feedback-capture
+  data-surface="result"
+  data-blueprint="{{ result.blueprint.name }}"
+  data-blueprint-version="{{ result.blueprint.version }}"
+  data-dry-run="{{ result.dry_run | tojson }}"
+  data-gates-outcome="{{ gate_summary.outcome }}"
+  {% if run_id is defined and run_id %}data-run-id="{{ run_id }}"{% endif %}
+  hidden
+>
+  <div class="card__header">
+    <h2 id="feedback-heading" class="card__title--sm">How was this run?</h2>
+    <p class="muted card__subtitle">One-tap CSAT helps the platform team prioritize friction.</p>
+  </div>
+  <div class="card__body">
+    <div class="feedback-capture__stars" role="group" aria-label="Satisfaction rating">
+      {% for score in range(1, 6) %}
+      <button type="button" class="feedback-capture__star" data-csat="{{ score }}" aria-label="{{ score }} star{% if score != 1 %}s{% endif %}">
+        {{ score }}
+      </button>
+      {% endfor %}
+    </div>
+    <fieldset class="feedback-capture__tags">
+      <legend class="muted">Friction (optional)</legend>
+      <div class="feedback-capture__tag-grid">
+        <label class="chip"><input type="checkbox" value="slow" hidden> Slow</label>
+        <label class="chip"><input type="checkbox" value="confusing-form" hidden> Confusing form</label>
+        <label class="chip"><input type="checkbox" value="unclear-errors" hidden> Unclear errors</label>
+        <label class="chip"><input type="checkbox" value="missing-docs" hidden> Missing docs</label>
+        <label class="chip"><input type="checkbox" value="gates-heavy" hidden> Gates heavy</label>
+        <label class="chip"><input type="checkbox" value="other" hidden> Other</label>
+      </div>
+    </fieldset>
+    <label class="field">
+      <span class="field__label muted">Comment (optional)</span>
+      <textarea class="field__input feedback-capture__comment" rows="2" maxlength="2000" placeholder="What would make the next run smoother?"></textarea>
+    </label>
+    <div class="form-actions">
+      <button type="button" class="btn btn--primary btn--sm" data-feedback-submit>Send feedback</button>
+      <button type="button" class="btn btn--ghost btn--sm" data-feedback-dismiss>Not now</button>
+    </div>
+  </div>
+</section>
+
 {% if result.rendered_files %}
 <section class="card stack-gap" aria-labelledby="files-heading">
   <div class="card__header">

@@ -1191,6 +1191,186 @@
     });
   }
 
+  var FEEDBACK_STORAGE_PREFIX = "repave:feedback:";
+
+  function feedbackStorageKey(root) {
+    var blueprint = root.getAttribute("data-blueprint") || "";
+    var version = root.getAttribute("data-blueprint-version") || "";
+    var runId = root.getAttribute("data-run-id") || "";
+    var surface = root.getAttribute("data-surface") || "result";
+    return FEEDBACK_STORAGE_PREFIX + surface + ":" + blueprint + "@" + version + ":" + runId;
+  }
+
+  function feedbackAlreadySubmitted(root) {
+    try {
+      return sessionStorage.getItem(feedbackStorageKey(root)) === "1";
+    } catch (_err) {
+      return false;
+    }
+  }
+
+  function markFeedbackSubmitted(root) {
+    try {
+      sessionStorage.setItem(feedbackStorageKey(root), "1");
+    } catch (_err2) {
+      /* ignore */
+    }
+  }
+
+  function readFeedbackContext(root) {
+    var summaryNode = document.getElementById("result-summary-json");
+    var summary = null;
+    if (summaryNode) {
+      try {
+        summary = JSON.parse(summaryNode.textContent || "{}");
+      } catch (_err3) {
+        summary = null;
+      }
+    }
+    return {
+      blueprint_name:
+        root.getAttribute("data-blueprint") ||
+        (summary && summary.blueprint) ||
+        "",
+      blueprint_version:
+        root.getAttribute("data-blueprint-version") ||
+        (summary && summary.version) ||
+        "",
+      dry_run:
+        root.getAttribute("data-dry-run") === "true" ||
+        !!(summary && summary.dryRun),
+      gates_outcome:
+        root.getAttribute("data-gates-outcome") ||
+        (summary && summary.outcome) ||
+        "",
+      run_id: root.getAttribute("data-run-id") || "",
+      surface: root.getAttribute("data-surface") || "result",
+    };
+  }
+
+  function collectFrictionTags(root) {
+    var tags = [];
+    root.querySelectorAll(".feedback-capture__tags input[type=checkbox]:checked").forEach(
+      function (input) {
+        if (input.value) {
+          tags.push(input.value);
+        }
+      }
+    );
+    return tags;
+  }
+
+  function submitFeedbackCapture(root) {
+    var selected = root.querySelector(".feedback-capture__star.is-selected");
+    if (!selected) {
+      showToast("Pick a rating from 1 to 5");
+      return;
+    }
+    var ctx = readFeedbackContext(root);
+    if (!ctx.blueprint_name) {
+      showToast("Missing blueprint context for feedback");
+      return;
+    }
+    var commentNode = root.querySelector(".feedback-capture__comment");
+    var payload = {
+      csat: Number(selected.getAttribute("data-csat")),
+      friction_tags: collectFrictionTags(root),
+      comment: commentNode ? commentNode.value.trim() : "",
+      blueprint_name: ctx.blueprint_name,
+      blueprint_version: ctx.blueprint_version,
+      dry_run: ctx.dry_run,
+      gates_outcome: ctx.gates_outcome,
+      run_id: ctx.run_id,
+      surface: ctx.surface,
+    };
+    fetch("/api/v2/platform/feedback", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().then(function (body) {
+            throw new Error((body && body.detail) || "Feedback submit failed");
+          });
+        }
+        markFeedbackSubmitted(root);
+        root.hidden = true;
+        showToast("Thanks — feedback recorded");
+      })
+      .catch(function (err) {
+        showToast(err && err.message ? err.message : "Could not send feedback");
+      });
+  }
+
+  function bindFeedbackCapture(root) {
+    if (!root || feedbackAlreadySubmitted(root)) {
+      if (root) {
+        root.hidden = true;
+      }
+      return;
+    }
+    root.querySelectorAll(".feedback-capture__star").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        root.querySelectorAll(".feedback-capture__star").forEach(function (peer) {
+          peer.classList.remove("is-selected");
+        });
+        btn.classList.add("is-selected");
+      });
+    });
+    root.querySelectorAll(".feedback-capture__tags .chip").forEach(function (chip) {
+      chip.addEventListener("click", function (event) {
+        var input = chip.querySelector("input[type=checkbox]");
+        if (!input) {
+          return;
+        }
+        if (event.target === input) {
+          chip.classList.toggle("is-active", input.checked);
+          return;
+        }
+        input.checked = !input.checked;
+        chip.classList.toggle("is-active", input.checked);
+      });
+    });
+    var submitBtn = root.querySelector("[data-feedback-submit]");
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function () {
+        submitFeedbackCapture(root);
+      });
+    }
+    var dismissBtn = root.querySelector("[data-feedback-dismiss]");
+    if (dismissBtn) {
+      dismissBtn.addEventListener("click", function () {
+        markFeedbackSubmitted(root);
+        root.hidden = true;
+      });
+    }
+    root.hidden = false;
+  }
+
+  function initFeedbackCapture() {
+    document.querySelectorAll("[data-feedback-capture]").forEach(function (root) {
+      if (root.getAttribute("data-surface") === "run_console") {
+        return;
+      }
+      bindFeedbackCapture(root);
+    });
+  }
+
+  function showRunConsoleFeedback(gatesOutcome) {
+    var root = document.querySelector(
+      '[data-feedback-capture][data-surface="run_console"]'
+    );
+    if (!root || feedbackAlreadySubmitted(root)) {
+      return;
+    }
+    if (gatesOutcome) {
+      root.setAttribute("data-gates-outcome", gatesOutcome);
+    }
+    bindFeedbackCapture(root);
+  }
+
   function initRunConsole() {
     var root = document.querySelector("[data-run-console]");
     if (!root) {
@@ -1465,6 +1645,7 @@
         if (completeActions) {
           completeActions.hidden = false;
         }
+        showRunConsoleFeedback(data.gates_outcome || "");
         if (resultUrl && data.status === "succeeded") {
           window.setTimeout(function () {
             window.location.href = resultUrl;
@@ -1861,6 +2042,7 @@
     initPortalFetchSubmit();
     initCatalogSearch();
     initGateDashboard();
+    initFeedbackCapture();
     initFormDraft();
     initRunConsole();
     initResultGateAnimations();
