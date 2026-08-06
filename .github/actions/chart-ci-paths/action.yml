@@ -12,7 +12,8 @@ runs:
     - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590  # v3
       id: filter
       with:
-        predicate-quantifier: every
+        # Default "some": any listed path change sets chart_needed. "every" would
+        # require each changed file to match all globs (impossible across trees).
         filters: |
           chart_needed:
             - 'deploy/k8s/**'

@@ -83,7 +83,9 @@ kubectl -n "${NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"
 PORTAL_API_URL="http://repave.${NS}.svc.cluster.local:8088"
 echo "==> operator webhook TLS + Helm install (REPAVE_API_URL=${PORTAL_API_URL})"
 chmod +x "${OPERATOR}/hack/setup-webhook-certs.sh"
-bash "${OPERATOR}/hack/setup-webhook-certs.sh"
+# Certs + CA SAN must match the operator release namespace (not the default
+# repave-system). Bare kind has no /modules hostPath — disable the kind overlay mount.
+WEBHOOK_NAMESPACE="${NS}" bash "${OPERATOR}/hack/setup-webhook-certs.sh"
 CA_BUNDLE="$(base64 <"${OPERATOR}/hack/webhook-certs/ca.crt" | tr -d '\n')"
 helm upgrade --install repave-operator "${OPERATOR_CHART}" \
   --namespace "${NS}" --create-namespace \
@@ -96,6 +98,7 @@ helm upgrade --install repave-operator "${OPERATOR_CHART}" \
   --set "webhook.caBundle=${CA_BUNDLE}" \
   --set "fleetSync.gitopsNamespace=${NS}" \
   --set "fleetSync.intervalSeconds=15" \
+  --set modules.hostPath.enabled=false \
   --wait --timeout "${TIMEOUT}s"
 
 kubectl -n "${NS}" rollout status deployment/repave-operator --timeout="${TIMEOUT}s"

@@ -50,6 +50,9 @@ echo "==> kind load image"
 kind load docker-image "${IMG_REPO}:${IMG_TAG}" --name "${CLUSTER_NAME}"
 
 echo "==> helm install (environment vending overlay)"
+# Portal-only image (INSTALL_GATE_TOOLCHAIN=0): must set gateToolchain=false or
+# /readyz waits for missing gate CLIs and helm --wait times out.
+# Overlay expects an existing Secret; create a placeholder for kind smoke.
 helm upgrade --install repave "${CHART}" \
   --namespace "${NS}" --create-namespace \
   -f "${CHART}/values-kind.yaml" \
@@ -57,10 +60,14 @@ helm upgrade --install repave "${CHART}" \
   --set image.repository="${IMG_REPO}" \
   --set image.tag="${IMG_TAG}" \
   --set image.pullPolicy=Never \
+  --set image.gateToolchain=false \
   --set repave.output.githubOrg=example-org \
   --set environmentReclaim.cronJob.dryRun=true \
   --set persistence.modules.enabled=false \
   --set persistence.modules.kindHostPath="" \
+  --set secrets.create=true \
+  --set secrets.existingSecret="" \
+  --set secrets.githubToken=kind-placeholder-token \
   --wait --timeout "${TIMEOUT}s"
 
 CRONJOB="repave-environment-reclaim"
