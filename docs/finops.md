@@ -93,9 +93,11 @@ Currency and `BillingCurrency` handling follow the same rules as other cost read
 
 ## Related
 
+- Product model (IDP): [Concepts](concepts.md) · [README — What repave is](../README.md#what-repave-is)
 - Roadmap cluster: [FinOps enablement](roadmap.md#finops-enablement-v2x)
 - Shipped foundation: [Cost visibility](roadmap.md#cost-visibility)
 - Config contract: [`repave-config-v1.md`](repave-config-v1.md)
 - Portal surfaces: [`portal-design.md`](portal-design.md)
+- Docs index: [`README.md`](README.md)
 - Operations index: [`operations/README.md`](operations/README.md)
 - State graph cost join: [`state-graph.md`](state-graph.md)

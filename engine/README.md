@@ -1,6 +1,8 @@
 # repave-engine
 
-Core generation engine for [repave](../README.md).
+Core generation engine for the [repave](../README.md) IDP — renders golden-path blueprints,
+runs mandatory gates, and publishes module repositories. Product model:
+[Concepts](../docs/concepts.md).
 
 ## Install (development)
 

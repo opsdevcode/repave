@@ -6,21 +6,20 @@
 
 ## Context
 
-The `GoldenPathRepo` CRD accepts either:
+At decision time (before Phases A–C), the `GoldenPathRepo` CRD accepted either:
 
 - **`spec.localPath`** — read `repave.yaml` and the working tree on the operator pod (or a
-  kind hostPath mount). **Shipped** for GA.
-- **`spec.repoURL`** — intended for module repos hosted on GitHub (or other git remotes).
+  kind hostPath mount). Already shipped for GA.
+- **`spec.repoURL`** — intended for module repos hosted on GitHub (or other git remotes),
+  but inventory via clone was not yet implemented. The controller returned
+  `RemoteRepoUnsupported` and did not clone remotes. Remediation PRs that push to GitHub
+  already required `spec.repoURL` when `dryRun` is false
+  ([`operator/internal/controller/remediation.go`](../../operator/internal/controller/remediation.go)).
 
-Today, inventory via **`repoURL` is not implemented**. The controller returns
-`RemoteRepoUnsupported` and does not clone remotes ([`operator/internal/inventory/observe.go`](../../operator/internal/inventory/observe.go)).
-Remediation PRs that push to GitHub already require `spec.repoURL` when `dryRun` is false
-([`operator/internal/controller/remediation.go`](../../operator/internal/controller/remediation.go)).
-
-Platform teams want to register many generated repos without mounting host paths into the
-cluster. The engine and portal already support **local path** upgrade preview
-(`repave update`, `/update`); the operator should eventually reconcile the same contracts
-against remote repos.
+Platform teams wanted to register many generated repos without mounting host paths into the
+cluster. The engine and portal already supported **local path** upgrade preview
+(`repave update`, `/update`); the operator needed to reconcile the same contracts against
+remote repos. **Phases A–C have since shipped** (see Decision and Status above).
 
 ## Decision
 
@@ -66,18 +65,22 @@ configured fetcher; `localPath` is still recommended for kind/e2e and dev cluste
 
 ## Consequences
 
-- **Positive:** Clear GA boundary; CRD stays stable; e2e keeps using `localPath` fixtures.
-- **Negative:** Users with only `repoURL` see unsupported status until Phase A lands.
+- **Positive:** Clear GA boundary at decision time; CRD stayed stable; e2e kept using
+  `localPath` fixtures while Phases A–C landed.
+- **After ship:** `repoURL` inventory, plan, and remediation are GA when a fetcher and
+  credentials are configured; `RemoteRepoUnsupported` remains only when the operator runs
+  without a configured fetcher. `localPath` is still recommended for kind/e2e and dev.
 - **Engine:** No change to `repave.yaml` schema for inventory; operator calls existing CLI
   subprocess contracts.
 
-## Acceptance (when implemented)
+## Acceptance (met)
 
 - `GoldenPathRepo` with `spec.repoURL` (mock git server or Gitea in e2e) reaches
   `OutOfDate` when fixture pins drift from `spec.desiredPins`.
-- Document Secret shape in [`docs/operator-local-dev.md`](../operator-local-dev.md) and
+- Secret shape documented in [`docs/operator-local-dev.md`](../operator-local-dev.md) and
   [`operator/README.md`](../../operator/README.md).
-- Update [Operator GA scope](../operator-ga.md) out-of-scope table → shipped.
+- [Operator GA scope](../operator-ga.md) and [operator overview](../operator-overview.md)
+  describe both inventory modes.
 
 ## References
 

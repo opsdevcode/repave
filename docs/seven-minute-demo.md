@@ -1,7 +1,9 @@
 # Seven-minute demo (acts 1–6)
 
-Live script for stakeholder demos. Everything is **dry-run** unless you explicitly
-enable apply. Pair with [Sales demo runbook](sales-demo.md) for talking points.
+Live script for stakeholder demos of the repave **IDP** — paved roads today, estate
+upgrades in the same shell. Everything is **dry-run** unless you explicitly enable apply.
+Pair with [Sales demo runbook](sales-demo.md) for talking points. Product model:
+[Concepts](concepts.md) · [What repave is](../README.md#what-repave-is).
 
 **Prep:** [Demo verification](demo-verification.md) · `make serve` or
 [Docker Compose](../deploy/local/README.md) → http://localhost:8088
@@ -20,7 +22,7 @@ cd engine && uv run pytest tests/test_demo_acts.py -v
 2. Confirm golden paths group by family (Terraform, Ansible, Policy, …).
 3. Use search or scroll to **terraform-module-generic** and open it.
 
-**Say:** “Platform owns blueprints and pins; builders pick a golden path.”
+**Say:** “This is the IDP catalog — platform owns blueprints and pins; builders pick a golden path.”
 
 ---
 
@@ -77,7 +79,7 @@ Full policy family walkthrough: [policy-golden-paths-demo.md](policy-golden-path
 
 ---
 
-## Act 6 — Developer portal (~1 min)
+## Act 6 — Catalog surface (~1 min)
 
 1. Open **terraform-module-generic** again.
 2. Fill Identity + Services as in act 2.
@@ -85,7 +87,7 @@ Full policy family walkthrough: [policy-golden-paths-demo.md](policy-golden-path
    → `true`, **owner** → `group:platform` (optional **system** / lifecycle).
 4. **Dry run preview** → in **Generated files**, open **`catalog-info.yaml`**.
 
-**Say:** “Same generate path emits catalog metadata for Backstage import.”
+**Say:** “Same paved road emits catalog metadata for Backstage — one generate, multiple IDP surfaces.”
 
 ---
 
@@ -103,4 +105,5 @@ Full policy family walkthrough: [policy-golden-paths-demo.md](policy-golden-path
 ## After the meeting
 
 - [Quickstart](quickstart.md) for hands-on follow-up.
-- [Roadmap](roadmap.md) for maturity themes (operator, SSO, v2).
+- [Concepts](concepts.md) for the IDP model.
+- [Roadmap](roadmap.md) for today vs becoming (FinOps v2.x, autonomous v3).

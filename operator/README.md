@@ -1,10 +1,12 @@
 # repave operator (v1.17 GA)
 
-Kubernetes reconciliation for generated golden-path repositories: detect drift
-and pinned-version bumps, then open **governed remediation pull requests** (never
-direct pushes to module repos).
+Day-2 estate control for the [repave](../README.md) IDP: Kubernetes reconciliation for
+generated golden-path repositories — detect drift and pinned-version bumps, then open
+**governed remediation pull requests** (never direct pushes to module repos).
 
-GA scope, checklist, and out-of-scope items: [`docs/operator-ga.md`](../docs/operator-ga.md).
+Overview: [`docs/operator-overview.md`](../docs/operator-overview.md) · Product model:
+[`docs/concepts.md`](../docs/concepts.md). GA scope, checklist, and out-of-scope items:
+[`docs/operator-ga.md`](../docs/operator-ga.md).
 
 **Slice 0 (scaffold):** `GoldenPathRepo` CRD (`repave.dev/v1beta1`, storage version;
 `v1alpha1` served with conversion), baseline

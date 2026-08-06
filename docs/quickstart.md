@@ -1,6 +1,8 @@
 # Quickstart (local)
 
-Run the full generate → gates → preview loop without Kubernetes.
+Run the paved-road loop of the [repave IDP](concepts.md) — generate → gates → preview —
+without Kubernetes. This is the same control plane you host later; locally you only need
+Docker Compose (or `make serve` for engine/template work).
 
 **Gate tools (Terraform, Checkov, Conftest, tflint, Helm, Ansible linters) ship in the
 [Docker Compose](#docker-compose-recommended) image.** You do not install them on the host.

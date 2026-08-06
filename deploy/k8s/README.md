@@ -1,7 +1,11 @@
 # Kubernetes operability artifacts
 
-Starter manifests and chart hooks for hosted repave (roadmap v1.35–v1.38). Install the
-engine with the **Helm chart** under [`chart/`](chart/README.md) (local path or
+Hosted control-plane deploy for the [repave](../../README.md) IDP — Helm charts and day-2
+operability overlays (roadmap v1.35–v1.38). Product model:
+[`docs/concepts.md`](../../docs/concepts.md) · Operations index:
+[`docs/operations/README.md`](../../docs/operations/README.md).
+
+Install the engine with the **Helm chart** under [`chart/`](chart/README.md) (local path or
 `oci://ghcr.io/opsdevcode/charts/repave` on semver tags), then wire observability via chart
 values or standalone manifests. Semver tags also notify `opsdevcode/repave-aws-infra` via
 `repository_dispatch` when secret `INFRA_DEPLOY_TOKEN` is set (see that repo’s README).

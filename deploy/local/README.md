@@ -1,5 +1,9 @@
 # Local quickstart (kind optional)
 
+Local loop for the [repave](../../README.md) IDP — portal, gates, and dry-run generate on a
+laptop without a cluster. Product model: [`docs/concepts.md`](../../docs/concepts.md) ·
+Step-by-step: [`docs/quickstart.md`](../../docs/quickstart.md).
+
 ## Docker Compose (recommended)
 
 ```bash
