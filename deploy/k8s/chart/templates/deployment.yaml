@@ -153,6 +153,7 @@ spec:
                   optional: true
             {{- include "repave.apiTokenEnv" . | nindent 12 }}
             {{- end }}
+            {{- include "repave.stateStoreEnv" . | nindent 12 }}
           {{- if .Values.lifecycle.preStop.enabled }}
           lifecycle:
             preStop:

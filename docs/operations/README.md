@@ -29,6 +29,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | `RepaveHPAAtMaxReplicas` | [Scale out](#scale-out) (requires kube-state-metrics) |
 | Postgres data loss / restore | [postgres-backup-restore.md](postgres-backup-restore.md) |
 | Auth0 portal access (hosted login) | [auth0-portal.md](auth0-portal.md) |
+| State store shared deploy (ADR 004) | [state-store-enablement.md](state-store-enablement.md) |
 | Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
 | github-repo apply without fleet register / missing GPR | [github-repo-fleet-validation.md](github-repo-fleet-validation.md) |
 

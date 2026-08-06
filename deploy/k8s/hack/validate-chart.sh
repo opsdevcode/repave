@@ -21,12 +21,13 @@ decomposed_smoke_rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
 decomposed_day2_rendered="$(mktemp)"
 auth0_rendered="$(mktemp)"
+state_store_rendered="$(mktemp)"
 digest_rendered="$(mktemp)"
 multi_replica_rendered="$(mktemp)"
 worker_hpa_rendered="$(mktemp)"
 fleet_shared_rendered="$(mktemp)"
 env_vending_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${auth0_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}"' EXIT
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${auth0_rendered}" "${state_store_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -258,6 +259,46 @@ fi
 
 if ! grep -q 'repave-admins' "${auth0_rendered}"; then
   echo "values-auth0.yaml must map Auth0 admin role groups" >&2
+  exit 1
+fi
+
+# Default chart must not mount state store (off by default).
+if grep -q 'REPAVE_STATE_STORE_URL' "${rendered}"; then
+  echo "base values.yaml must not set REPAVE_STATE_STORE_URL" >&2
+  exit 1
+fi
+if grep -q 'state_store:' "${rendered}"; then
+  echo "base values.yaml must not render state_store config" >&2
+  exit 1
+fi
+
+helm template repave-state-store "${CHART}" \
+  --namespace repave-state-store \
+  -f "${CHART}/values-decomposed-day2.yaml" \
+  -f "${CHART}/values-state-store.yaml" \
+  --set repave.output.githubOrg=example-org \
+  --set secrets.existingSecret=repave-secrets \
+  --set secrets.stateKek=dGVzdC1rZWstaXMtMzItYnl0ZXMtbG9uZyEh \
+  >"${state_store_rendered}"
+
+if ! grep -q 'REPAVE_STATE_STORE_URL' "${state_store_rendered}"; then
+  echo "values-state-store.yaml must set REPAVE_STATE_STORE_URL on portal" >&2
+  exit 1
+fi
+if ! grep -q 'name: REPAVE_STATE_KEK' "${state_store_rendered}"; then
+  echo "values-state-store.yaml must mount REPAVE_STATE_KEK from Secret" >&2
+  exit 1
+fi
+if ! grep -q 'key: state-kek' "${state_store_rendered}"; then
+  echo "values-state-store.yaml must reference secret key state-kek" >&2
+  exit 1
+fi
+if ! grep -q 'state_store:' "${state_store_rendered}"; then
+  echo "values-state-store.yaml must render state_store in ConfigMap" >&2
+  exit 1
+fi
+if ! grep -q 'database_url:' "${state_store_rendered}"; then
+  echo "values-state-store.yaml must render state_store.database_url" >&2
   exit 1
 fi
 

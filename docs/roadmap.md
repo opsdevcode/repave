@@ -6,7 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.25.1  
 
-**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
+**In progress:** **State store shared-deploy enablement** (Helm knobs + ops checklist for
+ADR 004 Phases 1–3; store stays off by default — Phase 4 remains no-go). Fine-grained Auth0
+FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **GitHub repository provisioning goldpath** (`github-repo-generic` —
 template or selection create, org team grants, Platform catalog family, `repave create-repo`,
@@ -2346,8 +2348,10 @@ promote without new discovery:
 ## State custody and the resource graph (v2.x)
 
 **Status:** Phases 0–3 shipped on `main`. Phase 4 **no-go** recorded
-([`state-graph-phase4-review.md`](state-graph-phase4-review.md)); next productive work is
-Phases 1–3 shared-deploy enablement and plan-JSON edge wiring, not parallel apply code.
+([`state-graph-phase4-review.md`](state-graph-phase4-review.md)). Shared-deploy enablement
+prep in progress (chart `repave.stateStore` + [`state-store-enablement.md`](operations/state-store-enablement.md));
+defaults stay off. Next after knobs: security sign-off, treadmill owner, PITR drill, then
+plan-JSON edge wiring — not Phase 4 code.
 
 **Design:** [ADR 004](adr/004-state-custody-and-the-resource-graph.md) ·
 **Build vs buy:** [ADR 005](adr/005-state-graph-build-vs-buy.md) ·

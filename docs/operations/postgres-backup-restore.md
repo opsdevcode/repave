@@ -38,8 +38,15 @@ sessions can be regenerated from the repositories repave governs; Terraform stat
 regenerated from anything. An hour of lost state is an hour of infrastructure repave can no
 longer manage. Enabling the store requires continuous archiving with point-in-time recovery
 and a rehearsed, timed restore before any team stores real state — see
-[`docs/state-graph.md`](../state-graph.md#operational-obligations) and
+[`docs/operations/state-store-enablement.md`](state-store-enablement.md),
+[`docs/state-graph.md`](../state-graph.md#operational-obligations), and
 [ADR 004](../adr/004-state-custody-and-the-resource-graph.md).
+
+**State store tables** (when enabled) include `state_tenants`, `states`, `state_versions`,
+graph, and transaction tables — separate from durability runs/sessions. A restore must
+bring those tables back under the same `REPAVE_STATE_KEK`; a DB restore without the KEK
+yields unreadable encrypted blobs. Prefer proving PITR against a staging clone that has
+exercised `repave-tf state import` / export before production cutover.
 
 ## Prerequisites
 
