@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 
 from repave_engine.github import GitHubError
+from repave_engine.github_repo_provision import build_provision_spec
 from repave_engine.output_template import format_output_template
 from repave_engine.pr import create_pull_request, plan_pull_request
 from repave_engine.settings import OutputConfig
@@ -181,3 +182,98 @@ def test_create_pull_request_reports_push_runtime_error(tmp_path: Path) -> None:
 
     assert "GitHub publish failed while pushing" in message
     assert "git failed" in message
+
+
+def test_create_pull_request_provision_dry_run(tmp_path: Path) -> None:
+    config = OutputConfig(github_org="example-org", modules_root=tmp_path / "modules")
+    repository = resolve_module_repository(
+        module_name="platform-demo",
+        config=config,
+        name_template="{repo_name}",
+        template_values={"repo_name": "platform-demo"},
+    )
+    values = {
+        "repo_name": "platform-demo",
+        "create_mode": "selection",
+        "visibility": "private",
+        "team_slugs": "platform",
+        "team_permission": "push",
+    }
+    provision = build_provision_spec(repository=repository, values=values)
+    plan = plan_pull_request(
+        blueprint_name="github-repo-generic",
+        blueprint_version="0.1.0",
+        standard_version="1.0.0",
+        title_template="Provision GitHub repository {repo_name}",
+        input_fields=("repo_name", "create_mode", "visibility", "team_slugs"),
+        files_root=repository.local_path,
+        repository=repository,
+        module_values=values,
+        provision=provision,
+    )
+    message = create_pull_request(plan, github_token=None)
+    assert "Dry-run: GitHub repository not provisioned" in message
+    assert "Would create example-org/platform-demo via selection" in message
+    assert "Would grant team 'platform' push" in message
+
+
+def test_create_pull_request_provision_apply(tmp_path: Path) -> None:
+    config = OutputConfig(github_org="example-org", modules_root=tmp_path / "modules")
+    repository = resolve_module_repository(
+        module_name="platform-demo",
+        config=config,
+        name_template="{repo_name}",
+        template_values={"repo_name": "platform-demo"},
+    )
+    values = {
+        "repo_name": "platform-demo",
+        "create_mode": "selection",
+        "visibility": "private",
+        "team_slugs": "platform",
+        "team_permission": "push",
+    }
+    provision = build_provision_spec(repository=repository, values=values)
+    plan = plan_pull_request(
+        blueprint_name="github-repo-generic",
+        blueprint_version="0.1.0",
+        standard_version="1.0.0",
+        title_template="Provision GitHub repository {repo_name}",
+        input_fields=("repo_name",),
+        files_root=repository.local_path,
+        repository=repository,
+        module_values=values,
+        provision=provision,
+    )
+    from repave_engine.github_repo_provision import RepoCreateResult, TeamGrantResult
+
+    with (
+        patch(
+            "repave_engine.pr.provision_github_repository",
+            return_value=(
+                RepoCreateResult(
+                    status="created",
+                    owner="example-org",
+                    name="platform-demo",
+                    web_url="https://github.com/example-org/platform-demo",
+                    create_mode="selection",
+                    visibility="private",
+                    message="Created example-org/platform-demo (visibility=private)",
+                ),
+                (
+                    TeamGrantResult(
+                        team_slug="platform",
+                        permission="push",
+                        status="granted",
+                        message="Granted team 'platform' push on example-org/platform-demo",
+                    ),
+                ),
+            ),
+        ),
+        patch("repave_engine.pr.push_module_repository") as push,
+    ):
+        message = create_pull_request(plan, github_token="ghp_test")
+
+    push.assert_called_once()
+    assert "Created example-org/platform-demo" in message
+    assert "Overlay push: pushed" in message
+    assert "Granted team 'platform' push" in message

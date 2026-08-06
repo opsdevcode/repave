@@ -1,0 +1,14 @@
+inputs:
+  repo_name: platform-demo
+  description: Conformance fixture for github-repo-generic
+  create_mode: selection
+  visibility: private
+  topics: platform,repave
+  team_slugs: platform-admins
+  team_permission: push
+  default_branch: main
+required_files:
+  - repave.yaml
+  - README.md
+  - .github/CODEOWNERS
+snapshot: false

@@ -289,4 +289,23 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             gitops_values["flux_source_namespace"] = str(deploy["flux_source_namespace"]).strip()
         return gitops_values
 
+    if artifact_type == "github-repo":
+        repo = spec.get("githubRepository")
+        if not isinstance(repo, dict):
+            raise ValueError("github-repo provenance missing spec.githubRepository")
+        repo_name = str(repo.get("repo_name", artifact_name)).strip()
+        github_values: dict[str, Any] = {
+            "repo_name": repo_name,
+            "description": str(repo.get("description", "")).strip(),
+            "create_mode": str(repo.get("create_mode", "selection")).strip(),
+            "visibility": str(repo.get("visibility", "private")).strip(),
+            "topics": str(repo.get("topics", "")).strip(),
+            "template_owner": str(repo.get("template_owner", "")).strip(),
+            "template_repo": str(repo.get("template_repo", "")).strip(),
+            "team_slugs": str(repo.get("team_slugs", "")).strip(),
+            "team_permission": str(repo.get("team_permission", "push")).strip(),
+            "default_branch": str(repo.get("default_branch", "main")).strip(),
+        }
+        return github_values
+
     raise ValueError(f"unsupported artifactType {artifact_type!r}")

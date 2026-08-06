@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import argparse
 import json
+from unittest.mock import patch
 
 import pytest
 
 from repave_engine.cli import (
     _parse_inputs,
     build_parser,
+    cmd_create_repo,
     cmd_generate,
     cmd_list,
     cmd_serve,
@@ -37,6 +39,46 @@ def _generate_args(repo_root, sample_inputs, output_config, tmp_path, **override
 def test_parse_inputs_valid() -> None:
     values = _parse_inputs(["module_name=example", "description=test module"])
     assert values == {"module_name": "example", "description": "test module"}
+
+
+def test_cmd_create_repo_maps_to_generate(repo_root, output_config, tmp_path) -> None:
+    args = argparse.Namespace(
+        repo_root=str(repo_root),
+        name="platform-demo",
+        mode="template",
+        template="example-org/template-service",
+        visibility="private",
+        description="demo",
+        topics="platform",
+        team=["platform-admins", "developers"],
+        team_permission="push",
+        default_branch="main",
+        dry_run=True,
+        github_token=None,
+        github_org=output_config.github_org,
+        modules_root=str(output_config.modules_root),
+        staging_root=str(tmp_path / "staging"),
+    )
+    with patch("repave_engine.cli.create_repo.cmd_generate", return_value=0) as generate:
+        code = cmd_create_repo(args)
+    assert code == 0
+    generate_args = generate.call_args.args[0]
+    assert generate_args.blueprint == "blueprints/github-repo-generic"
+    assert "repo_name=platform-demo" in generate_args.input
+    assert "create_mode=template" in generate_args.input
+    assert "template_owner=example-org" in generate_args.input
+    assert "template_repo=template-service" in generate_args.input
+    assert "team_slugs=platform-admins,developers" in generate_args.input
+
+
+def test_build_parser_includes_create_repo() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        ["create-repo", "--name", "demo", "--team", "platform", "--repo-root", "."]
+    )
+    assert args.func is cmd_create_repo
+    assert args.name == "demo"
+    assert args.team == ["platform"]
 
 
 def test_parse_inputs_invalid() -> None:

@@ -1,0 +1,92 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: github-repo-generic
+  version: 0.1.0
+  description: >-
+    Provision a GitHub organization repository from a template or selection form,
+    then grant selected org teams repository permission.
+spec:
+  artifactType: github-repo
+  standard:
+    source: standards/github/repo-provisioning-standard.md
+    version: 1.0.0
+  inputs:
+    - name: repo_name
+      type: string
+      required: true
+      description: Repository name (https://github.com/{org}/{repo_name}).
+    - name: description
+      type: string
+      required: false
+      default: ""
+      description: Short repository description shown on GitHub.
+    - name: create_mode
+      type: string
+      required: true
+      default: selection
+      enum:
+        - selection
+        - template
+      description: >-
+        selection creates a repo from visibility/topics choices; template copies an
+        org template repository.
+    - name: visibility
+      type: string
+      required: true
+      default: private
+      enum:
+        - private
+        - public
+        - internal
+      description: Repository visibility (internal requires GitHub Enterprise Cloud).
+    - name: topics
+      type: string
+      required: false
+      default: ""
+      description: Comma-separated GitHub topics (optional).
+    - name: template_owner
+      type: string
+      required: false
+      default: ""
+      description: Owner of the template repository (required when create_mode is template).
+    - name: template_repo
+      type: string
+      required: false
+      default: ""
+      description: Template repository name (required when create_mode is template).
+    - name: team_slugs
+      type: string
+      required: false
+      default: ""
+      description: Comma-separated org team slugs to grant access after create.
+    - name: team_permission
+      type: string
+      required: false
+      default: push
+      enum:
+        - pull
+        - triage
+        - push
+        - maintain
+        - admin
+      description: Permission granted to every selected team.
+    - name: default_branch
+      type: string
+      required: false
+      default: main
+      description: Default branch name for the overlay commit push.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - secrets
+    - docs-drift
+    - provenance-drift
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "{repo_name}"
+      title_template: "Provision GitHub repository {repo_name}"

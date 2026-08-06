@@ -425,6 +425,7 @@ def validate_inputs(
     _validate_helm_chart_inputs(blueprint, normalized)
     _validate_app_service_inputs(blueprint, normalized)
     _validate_gitops_deployment_inputs(blueprint, normalized)
+    _validate_github_repo_inputs(blueprint, normalized)
 
     return normalized
 
@@ -438,6 +439,17 @@ def _validate_gitops_deployment_inputs(blueprint: Blueprint, normalized: dict[st
         return
     if not str(normalized.get("flux_source_name", "")).strip():
         raise ValueError("flux_source_name is required when gitops_engine is flux")
+
+
+def _validate_github_repo_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
+    if blueprint.artifact_type != "github-repo":
+        return
+    if str(normalized.get("create_mode", "")).strip() != "template":
+        return
+    if not str(normalized.get("template_owner", "")).strip():
+        raise ValueError("template_owner is required when create_mode is template")
+    if not str(normalized.get("template_repo", "")).strip():
+        raise ValueError("template_repo is required when create_mode is template")
 
 
 def _validate_app_service_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
@@ -515,6 +527,8 @@ def primary_publish_name(blueprint: Blueprint, values: dict[str, Any]) -> str:
         return str(values.get("chart_name", blueprint.name))
     if blueprint.artifact_type == "gitops-deployment":
         return str(values.get("service_name", blueprint.name))
+    if blueprint.artifact_type == "github-repo":
+        return str(values.get("repo_name", blueprint.name))
     if blueprint.artifact_type == "observability":
         return str(values.get("service_name", blueprint.name))
     if blueprint.artifact_type == "azure-policy":
@@ -657,8 +671,10 @@ _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "helm": ("Kubernetes / Helm", "Workload charts for cluster delivery teams"),
     "app": ("Application services", "Service repos with Dockerfile, CI, and catalog metadata"),
     "gitops": ("GitOps delivery", "Argo CD and Flux manifests pinned to a chart version"),
+    "platform": ("Platform", "GitHub repository provisioning, templates, and team grants"),
 }
 _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
+    "platform",
     "terraform",
     "ansible",
     "helm",
@@ -668,6 +684,7 @@ _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
     "observability",
 )
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
+    "platform": ("github-repo",),
     "terraform": ("terraform-module", "terraform-environment-stack"),
     "ansible": ("ansible-role", "ansible-collection", "ansible-playbook-project"),
     "helm": ("helm-chart",),
@@ -693,6 +710,8 @@ def artifact_family(artifact_type: str) -> str:
         return "gitops"
     if artifact_type == "app-service":
         return "app"
+    if artifact_type == "github-repo":
+        return "platform"
     return artifact_type
 
 

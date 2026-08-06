@@ -76,6 +76,7 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         "actionlint",
         *_BASELINE_GATES,
     ),
+    "github-repo": (*_BASELINE_GATES,),
 }
 
 

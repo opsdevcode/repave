@@ -43,6 +43,11 @@ When dry-run is disabled and `GITHUB_TOKEN` is set, repave creates the target
 GitHub repository (org or user account) if needed and pushes the bootstrapped
 module to `main`.
 
+For **platform repository provisioning** (template or selection create, then org team
+grants) use the `github-repo-generic` goldpath — see
+[GitHub repository goldpath](github-repo-goldpath.md). That path still writes a thin
+governed overlay (`repave.yaml`, README) into the new repo.
+
 ## Provenance (`repave.yaml`)
 
 Blueprints may declare `spec.output.provenance.file` (typically `repave.yaml`).

@@ -32,6 +32,8 @@
   --family-gitops-text: #ffd7c4;
   --family-app: #34a853;
   --family-app-text: #c8f0d4;
+  --family-platform: #5b8def;
+  --family-platform-text: #d6e4ff;
   --radius: 8px;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -2310,12 +2312,24 @@ details.file-panel summary {
   --group-title: var(--family-app-text);
 }
 
+.catalog-group--platform {
+  --group-accent: var(--family-platform);
+  --group-title: var(--family-platform-text);
+}
+
+.catalog-group--gitops {
+  --group-accent: var(--family-gitops);
+  --group-title: var(--family-gitops-text);
+}
+
 .catalog-group--terraform,
 .catalog-group--ansible,
 .catalog-group--policy,
 .catalog-group--observability,
 .catalog-group--helm,
-.catalog-group--app {
+.catalog-group--app,
+.catalog-group--platform,
+.catalog-group--gitops {
   padding: var(--space-4);
   border-radius: calc(var(--radius) + 4px);
   background: color-mix(in srgb, var(--group-accent) 6%, var(--surface));
@@ -2337,7 +2351,9 @@ details.file-panel summary {
 .catalog-group--policy .catalog-group__header,
 .catalog-group--observability .catalog-group__header,
 .catalog-group--helm .catalog-group__header,
-.catalog-group--app .catalog-group__header {
+.catalog-group--app .catalog-group__header,
+.catalog-group--platform .catalog-group__header,
+.catalog-group--gitops .catalog-group__header {
   margin-bottom: var(--space-4);
   padding: var(--space-3) var(--space-4);
   border-left: 4px solid var(--group-accent);
@@ -2350,7 +2366,9 @@ details.file-panel summary {
 .catalog-group--policy .catalog-group__title,
 .catalog-group--observability .catalog-group__title,
 .catalog-group--helm .catalog-group__title,
-.catalog-group--app .catalog-group__title {
+.catalog-group--app .catalog-group__title,
+.catalog-group--platform .catalog-group__title,
+.catalog-group--gitops .catalog-group__title {
   color: color-mix(in srgb, var(--group-title) 88%, var(--text));
 }
 
@@ -2571,6 +2589,12 @@ details.file-panel summary {
   background: color-mix(in srgb, var(--family-app) 22%, transparent);
   color: var(--family-app-text);
   border-color: color-mix(in srgb, var(--family-app) 45%, transparent);
+}
+
+.badge--platform {
+  background: color-mix(in srgb, var(--family-platform) 22%, transparent);
+  color: var(--family-platform-text);
+  border-color: color-mix(in srgb, var(--family-platform) 45%, transparent);
 }
 
 /* —— Blueprint form (Phase 3) —— */
@@ -3088,6 +3112,11 @@ details.file-panel summary {
 .form-panel--helm {
   border-left: 3px solid var(--family-helm);
   background: color-mix(in srgb, var(--family-helm) 4%, var(--surface-raised));
+}
+
+.form-panel--platform {
+  border-left: 3px solid var(--family-platform);
+  background: color-mix(in srgb, var(--family-platform) 4%, var(--surface-raised));
 }
 
 .form-panel--app {

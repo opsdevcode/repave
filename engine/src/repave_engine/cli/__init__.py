@@ -8,6 +8,7 @@ from typing import cast
 from repave_engine.blueprint import _find_repo_root
 from repave_engine.cli._common import _parse_inputs
 from repave_engine.cli.audit import cmd_audit_query
+from repave_engine.cli.create_repo import cmd_create_repo
 from repave_engine.cli.doctor import cmd_doctor
 from repave_engine.cli.fleet import (
     cmd_fleet,
@@ -28,6 +29,7 @@ __all__ = [
     "build_parser",
     "cmd_apply_upgrade",
     "cmd_audit_query",
+    "cmd_create_repo",
     "cmd_doctor",
     "cmd_fleet",
     "cmd_fleet_manifests",

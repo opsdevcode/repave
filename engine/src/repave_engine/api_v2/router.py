@@ -57,6 +57,7 @@ from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
+from repave_engine.github_repo_provision import list_org_teams
 from repave_engine.import_rules import parse_path_overrides
 from repave_engine.observability_slo import fetch_entity_slo_summary
 from repave_engine.portal_context import (
@@ -122,6 +123,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/audit",
     "GET /api/v2/estate",
     "GET /api/v2/governance/annotations/{blueprint_name}",
+    "GET /api/v2/github/teams",
     "GET /api/v2/fleet",
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
@@ -187,6 +189,50 @@ def build_api_v2_router(
     ) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
         return JSONResponse(build_governance_annotations_read_model(repo_root, blueprint_name))
+
+    @router.get("/github/teams")
+    async def api_v2_github_teams(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        org = output_config.github_org.strip()
+        if not org:
+            raise HTTPException(
+                status_code=400,
+                detail="github_org is not configured; set output.github_org or REPAVE_GITHUB_ORG",
+            )
+        token = resolve_github_access_token()
+        if not token:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "GitHub credentials are not configured; set GITHUB_TOKEN or "
+                    "GitHub App env vars to list org teams"
+                ),
+            )
+        try:
+            teams = list_org_teams(org, token)
+        except GitHubError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"Failed to list teams for org {org}: HTTP {exc.status}. "
+                    "Ensure the token can read organization teams."
+                ),
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(
+            {
+                "org": org,
+                "teams": [
+                    {
+                        "slug": team.slug,
+                        "name": team.name,
+                        "description": team.description,
+                    }
+                    for team in teams
+                ],
+            }
+        )
 
     @router.post("/generate")
     async def api_v2_generate(request: Request) -> JSONResponse:

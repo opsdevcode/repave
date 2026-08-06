@@ -10,6 +10,7 @@ from repave_engine.cli._common import (
 )
 from repave_engine.cli.add import cmd_add
 from repave_engine.cli.audit import cmd_audit_query
+from repave_engine.cli.create_repo import cmd_create_repo
 from repave_engine.cli.doctor import cmd_doctor
 from repave_engine.cli.environments import cmd_environments_reclaim
 from repave_engine.cli.fleet import (
@@ -77,6 +78,67 @@ def build_parser() -> argparse.ArgumentParser:
         help="GitHub token for remote publish (defaults to GITHUB_TOKEN when not dry-run)",
     )
     generate.set_defaults(func=cmd_generate)
+
+    create_repo = sub.add_parser(
+        "create-repo",
+        help="Provision a GitHub repository (github-repo-generic alias)",
+        parents=[common],
+    )
+    _add_output_options(create_repo)
+    create_repo.add_argument("--name", required=True, help="Repository name")
+    create_repo.add_argument(
+        "--mode",
+        choices=("selection", "template"),
+        default="selection",
+        help="Create mode (default: selection)",
+    )
+    create_repo.add_argument(
+        "--template",
+        default=None,
+        help="Template repository as owner/repo (required for --mode template)",
+    )
+    create_repo.add_argument(
+        "--visibility",
+        choices=("private", "public", "internal"),
+        default="private",
+        help="Repository visibility (default: private)",
+    )
+    create_repo.add_argument("--description", default="", help="Repository description")
+    create_repo.add_argument("--topics", default="", help="Comma-separated GitHub topics")
+    create_repo.add_argument(
+        "--team",
+        action="append",
+        default=[],
+        help="Org team slug to grant (repeatable)",
+    )
+    create_repo.add_argument(
+        "--team-permission",
+        choices=("pull", "triage", "push", "maintain", "admin"),
+        default="push",
+        help="Permission for selected teams (default: push)",
+    )
+    create_repo.add_argument(
+        "--default-branch",
+        default="main",
+        help="Default branch for overlay push (default: main)",
+    )
+    create_repo.add_argument(
+        "--dry-run",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Plan without creating the remote repository (default: true)",
+    )
+    create_repo.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token for remote publish (defaults to GITHUB_TOKEN when not dry-run)",
+    )
+    create_repo.add_argument(
+        "--staging-root",
+        default=None,
+        help="Optional directory to retain pre-publish staging output",
+    )
+    create_repo.set_defaults(func=cmd_create_repo)
 
     listing = sub.add_parser("list", help="List available blueprints", parents=[common])
     listing.set_defaults(func=cmd_list)

@@ -26,6 +26,8 @@
           Terraform
         {% elif bp_family == 'ansible' %}
           Ansible
+        {% elif bp_family == 'platform' %}
+          Platform · GitHub
         {% else %}
           {{ blueprint.artifact_type }}
         {% endif %}
@@ -34,8 +36,8 @@
   </div>
 </header>
 
-<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'gitops', 'app') %} form-layout--split{% endif %}">
-  {% set governance_collapsible = bp_family in ('terraform', 'ansible', 'observability', 'policy', 'helm', 'gitops', 'app') %}
+<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'gitops', 'app', 'platform') %} form-layout--split{% endif %}">
+  {% set governance_collapsible = bp_family in ('terraform', 'ansible', 'observability', 'policy', 'helm', 'gitops', 'app', 'platform') %}
   <aside class="governance-card governance-card--{{ bp_family }}"{% if not governance_collapsible %} aria-labelledby="governance-heading"{% endif %}>
     {% if governance_collapsible %}
     <details class="governance-card__details">
@@ -863,6 +865,9 @@
         data-form-step="0"
         {% elif form_stepper == 'terraform' %}
         data-form-step="0"
+        {% endif %}
+        {% if blueprint.artifact_type == 'github-repo' and field.name in ('template_owner', 'template_repo') %}
+        data-github-repo-when="template"
         {% endif %}
       >
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
@@ -2918,6 +2923,64 @@
         syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
       }
     });
+  }
+})();
+</script>
+{% endif %}
+{% if blueprint.artifact_type == "github-repo" %}
+<script>
+(() => {
+  const modeSelect = document.getElementById("create_mode");
+  const templateBlocks = document.querySelectorAll("[data-github-repo-when='template']");
+  const teamInput = document.getElementById("team_slugs");
+  const syncTemplateFields = () => {
+    const isTemplate = modeSelect && modeSelect.value === "template";
+    templateBlocks.forEach((block) => {
+      block.hidden = !isTemplate;
+      block.querySelectorAll("input, select, textarea").forEach((el) => {
+        if (isTemplate) {
+          el.removeAttribute("disabled");
+        } else {
+          el.setAttribute("disabled", "disabled");
+        }
+      });
+    });
+  };
+  if (modeSelect) {
+    modeSelect.addEventListener("change", syncTemplateFields);
+    syncTemplateFields();
+  }
+  if (teamInput && teamInput.tagName === "INPUT") {
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.id = "github-teams-hint";
+    hint.textContent = "Loading org teams…";
+    teamInput.insertAdjacentElement("afterend", hint);
+    fetch("/api/v2/github/teams")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload) => {
+        const teams = Array.isArray(payload.teams) ? payload.teams : [];
+        if (!teams.length) {
+          hint.textContent = "No teams returned; enter team slugs as a comma-separated list.";
+          return;
+        }
+        const slugs = teams.map((team) => team.slug).filter(Boolean);
+        hint.textContent = `Org teams: ${slugs.join(", ")}`;
+        teamInput.setAttribute("list", "github-team-slugs");
+        let dataList = document.getElementById("github-team-slugs");
+        if (!dataList) {
+          dataList = document.createElement("datalist");
+          dataList.id = "github-team-slugs";
+          teamInput.insertAdjacentElement("afterend", dataList);
+        }
+        dataList.innerHTML = slugs
+          .map((slug) => `<option value="${slug}"></option>`)
+          .join("");
+      })
+      .catch(() => {
+        hint.textContent =
+          "Could not list org teams (token/org). Enter team slugs as a comma-separated list.";
+      });
   }
 })();
 </script>
