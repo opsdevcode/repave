@@ -28,16 +28,18 @@ Local development: [operator-local-dev.md](operator-local-dev.md) · GA scope:
 ## Engine vs operator
 
 ```mermaid
-flowchart LR
-  subgraph generate [Generation]
-    Form[Portal_CLI_API] --> Engine[Engine_gates]
-    Engine --> NewRepo[New_module_repo]
+flowchart TB
+  subgraph generate [Generation — pave]
+    Form(["Portal · CLI · API"]) --> Engine["Engine + mandatory gates"]
+    Engine -->|"publish"| NewRepo[("New module repo + repave.yaml")]
   end
-  subgraph day2 [Estate_day2]
-    GPR[GoldenPathRepo] --> Observe[Observe_repave_yaml]
-    Observe --> Plan[Upgrade_plan]
-    Plan --> PR[Remediation_PR]
-    BP[Blueprint] -->|blueprintRef| GPR
+
+  subgraph day2 [Estate — repave]
+    BP["Blueprint CR<br/>desired pins"] -->|"blueprintRef"| GPR["GoldenPathRepo"]
+    GPR --> Observe["Observe repave.yaml<br/>localPath or repoURL"]
+    Observe --> Plan["Upgrade plan"]
+    Plan --> PR["Remediation PR"]
+    PR -->|"merge · aligned pins"| NewRepo
   end
 ```
 
