@@ -6,6 +6,9 @@ inputs:
   topics: platform,repave
   team_slugs: platform-admins
   team_permission: push
+  membership_source_team: platform
+  sync_team_membership: "true"
+  ruleset_profile: default-pr
   default_branch: main
 required_files:
   - repave.yaml

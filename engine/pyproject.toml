@@ -71,7 +71,16 @@ repave = "repave_engine.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-repave_engine = ["py.typed", "templates/*.html", "templates/partials/*.html", "templates/ci/*", "static/*", "data/*", "statestore/migrations/*/*.sql"]
+repave_engine = [
+  "py.typed",
+  "templates/*.html",
+  "templates/partials/*.html",
+  "templates/ci/*",
+  "static/*",
+  "data/*",
+  "statestore/migrations/*/*.sql",
+  "github_rulesets/*.json",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

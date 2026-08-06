@@ -39,6 +39,18 @@ team_permission:
   type: str
   default: push
 
+membership_source_team:
+  type: str
+  default: ""
+
+sync_team_membership:
+  type: str
+  default: ""
+
+ruleset_profile:
+  type: str
+  default: none
+
 default_branch:
   type: str
   default: main

@@ -53,6 +53,9 @@ def test_cmd_create_repo_maps_to_generate(repo_root, output_config, tmp_path) ->
         team=["platform-admins", "developers"],
         team_permission="push",
         default_branch="main",
+        ruleset_profile="default-pr",
+        membership_source_team="platform",
+        sync_team_membership=True,
         dry_run=True,
         github_token=None,
         github_org=output_config.github_org,
@@ -69,6 +72,9 @@ def test_cmd_create_repo_maps_to_generate(repo_root, output_config, tmp_path) ->
     assert "template_owner=example-org" in generate_args.input
     assert "template_repo=template-service" in generate_args.input
     assert "team_slugs=platform-admins,developers" in generate_args.input
+    assert "ruleset_profile=default-pr" in generate_args.input
+    assert "membership_source_team=platform" in generate_args.input
+    assert "sync_team_membership=true" in generate_args.input
 
 
 def test_build_parser_includes_create_repo() -> None:

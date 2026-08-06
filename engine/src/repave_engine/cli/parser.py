@@ -123,6 +123,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="Default branch for overlay push (default: main)",
     )
     create_repo.add_argument(
+        "--ruleset-profile",
+        choices=("none", "default-pr"),
+        default="none",
+        help="Repository ruleset profile after overlay push (default: none)",
+    )
+    create_repo.add_argument(
+        "--membership-source-team",
+        default="",
+        help="Existing org team slug to copy members from into --team destinations",
+    )
+    create_repo.add_argument(
+        "--sync-team-membership",
+        action=argparse.BooleanOptionalAction,
+        default=None,
+        help=(
+            "Create missing destination teams and sync members from "
+            "--membership-source-team (default: on when source team is set)"
+        ),
+    )
+    create_repo.add_argument(
         "--dry-run",
         action=argparse.BooleanOptionalAction,
         default=True,

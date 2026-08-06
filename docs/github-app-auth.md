@@ -25,7 +25,7 @@ Typical repave usage (adjust for your org policy):
 | Surface | Permissions |
 | --- | --- |
 | Engine publish (create/push module repos) | Repository administration, contents read/write |
-| GitHub repo goldpath (`github-repo-generic`) | Administration (create + template generate), contents read/write, members/teams (read org teams + set team repo permissions) |
+| GitHub repo goldpath (`github-repo-generic`) | Administration (create, template generate, repository rulesets), contents read/write, organization members/teams (list teams, create teams, manage memberships, set team repo permissions) |
 | Operator remediation (clone/push/PR) | Contents read/write, pull requests read/write |
 | Private repo verify/clone | Contents read |
 

@@ -10,7 +10,9 @@ work, writing ADRs, and opening issues.
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **GitHub repository provisioning goldpath** (`github-repo-generic` —
 template or selection create, org team grants, Platform catalog family, `repave create-repo`,
-`GET /api/v2/github/teams` — [github-repo-goldpath](github-repo-goldpath.md)); **State custody and the resource graph** — authoritative Terraform
+`GET /api/v2/github/teams` — [github-repo-goldpath](github-repo-goldpath.md); phase 2:
+`default-pr` rulesets, additive membership sync from a source org team, fleet register →
+`GoldenPathRepo`); **State custody and the resource graph** — authoritative Terraform
 state store, queryable resource graph, and gate-blocked transactions
 ([ADR 004](adr/004-state-custody-and-the-resource-graph.md),
 [ADR 005](adr/005-state-graph-build-vs-buy.md),
@@ -2083,7 +2085,10 @@ Critical path is the delivery path → deploy pipeline → composite bundles. Re
 **Status:** **Shipped on `main`** — `blueprints/github-repo-generic/` (`github-repo` artifact
 type, Platform catalog family), engine template/selection create + team grants,
 `repave create-repo`, `GET /api/v2/github/teams`,
-[`docs/github-repo-goldpath.md`](github-repo-goldpath.md).
+[`docs/github-repo-goldpath.md`](github-repo-goldpath.md). Phase 2: `ruleset_profile`
+(`default-pr`), additive membership sync from `membership_source_team` (create destination
+teams if missing), fleet register after apply so fleetsync / `fleet-manifests` emit
+`GoldenPathRepo`, `GET /api/v2/github/teams/{slug}/members`.
 
 **Problem:** Org repos are still created by hand or via ad-hoc scripts: template copy,
 visibility, topics, and team permissions are inconsistent, and existing golden paths only
@@ -2092,12 +2097,15 @@ create empty public repos as a side effect of artifact publish.
 **Approach:**
 
 - Thin Copier overlay (`README`, `repave.yaml`, optional `CODEOWNERS`) plus GitHub REST
-  provision (template generate or selection create, then team repo permissions)
-- Portal form with create-mode toggle and org team listing
-- Out of scope for v1: creating teams, rulesets, auto-applying a second artifact blueprint
+  provision (template generate or selection create, ruleset profile, team sync, grants)
+- Portal form with create-mode toggle and org team listing / member preview
+- Fleet register on successful apply (no kubectl from the engine)
+- Still out of scope: cross-org/IdP SCIM, purging extra members, legacy branch protection
+  API, auto-applying a second artifact blueprint
 
 **Done when:** Operators can dry-run and apply a governed GitHub repo from portal/CLI/API
-with optional team grants and no live GitHub calls in CI.
+with optional rulesets, membership sync, team grants, and fleet → `GoldenPathRepo`, with
+no live GitHub calls in CI.
 
 ### v1.79 — GitOps delivery golden path
 

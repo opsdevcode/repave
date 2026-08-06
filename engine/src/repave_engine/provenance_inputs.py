@@ -305,6 +305,9 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             "team_slugs": str(repo.get("team_slugs", "")).strip(),
             "team_permission": str(repo.get("team_permission", "push")).strip(),
             "default_branch": str(repo.get("default_branch", "main")).strip(),
+            "ruleset_profile": str(repo.get("ruleset_profile", "none")).strip() or "none",
+            "membership_source_team": str(repo.get("membership_source_team", "")).strip(),
+            "sync_team_membership": str(repo.get("sync_team_membership", "")).strip(),
         }
         return github_values
 

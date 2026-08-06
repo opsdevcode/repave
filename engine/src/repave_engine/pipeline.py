@@ -22,6 +22,7 @@ from repave_engine.bundle import (
     prepare_member_values,
     validate_bundle_inputs,
 )
+from repave_engine.fleet import FleetEntry, FleetError, register_repo
 from repave_engine.gates import (
     GateResult,
     RunEventCallback,
@@ -47,13 +48,47 @@ from repave_engine.render import (
     collect_rendered_files,
     render_blueprint,
 )
-from repave_engine.settings import OutputConfig, load_audit_config, load_gate_overrides
+from repave_engine.settings import (
+    OutputConfig,
+    load_audit_config,
+    load_fleet_config,
+    load_gate_overrides,
+)
 from repave_engine.target_repo import (
     ModuleRepository,
     publish_to_module_repository,
     resolve_module_repository,
 )
 from repave_engine.tracing import pipeline_span
+
+
+def _fleet_message_after_github_repo_publish(
+    *,
+    repo_root: Path | None,
+    blueprint: Blueprint,
+    repository: ModuleRepository,
+) -> str:
+    """Best-effort fleet register so fleetsync/manifests can emit GoldenPathRepo."""
+    if repo_root is None:
+        return "Fleet disabled; run repave register / fleet-manifests to emit GoldenPathRepo"
+    fleet_config = load_fleet_config(repo_root)
+    if fleet_config is None or not fleet_config.enabled:
+        return "Fleet disabled; run repave register / fleet-manifests to emit GoldenPathRepo"
+    try:
+        register_repo(
+            fleet_config.file,
+            FleetEntry(
+                repo_url=repository.web_url,
+                blueprint_name=blueprint.name,
+                blueprint_version=blueprint.version,
+                standard_source=blueprint.standard_source,
+                standard_version=blueprint.standard_version,
+            ),
+            repo_root=repo_root,
+        )
+    except (FleetError, OSError) as exc:
+        return f"Fleet register failed (provision succeeded): {exc}"
+    return f"Fleet registered: {repository.web_url}"
 
 
 @dataclass(frozen=True)
@@ -204,9 +239,23 @@ def _publish_after_gates(
                 provision=provision,
             )
             if dry_run:
-                pr_body = create_pull_request(pr_plan, github_token=None)
+                pr_body = create_pull_request(
+                    pr_plan,
+                    github_token=None,
+                    fleet_message=(
+                        "Fleet: dry-run; apply with fleet enabled to register a "
+                        "GoldenPathRepo target"
+                    ),
+                )
             else:
                 pr_body = create_pull_request(pr_plan, github_token=github_token)
+                if blueprint.artifact_type == "github-repo" and publish_message_succeeded(pr_body):
+                    fleet_line = _fleet_message_after_github_repo_publish(
+                        repo_root=repo_root,
+                        blueprint=blueprint,
+                        repository=module_repository,
+                    )
+                    pr_body = f"{pr_body}\n{fleet_line}"
             pr_message = f"{publish_message}\n\n{pr_body}"
             published_repository = module_repository
             if (

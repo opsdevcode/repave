@@ -57,7 +57,7 @@ from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
-from repave_engine.github_repo_provision import list_org_teams
+from repave_engine.github_repo_provision import list_org_teams, list_team_members
 from repave_engine.import_rules import parse_path_overrides
 from repave_engine.observability_slo import fetch_entity_slo_summary
 from repave_engine.portal_context import (
@@ -124,6 +124,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/estate",
     "GET /api/v2/governance/annotations/{blueprint_name}",
     "GET /api/v2/github/teams",
+    "GET /api/v2/github/teams/{slug}/members",
     "GET /api/v2/fleet",
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
@@ -231,6 +232,48 @@ def build_api_v2_router(
                     }
                     for team in teams
                 ],
+            }
+        )
+
+    @router.get("/github/teams/{slug}/members")
+    async def api_v2_github_team_members(request: Request, slug: str) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        org = output_config.github_org.strip()
+        if not org:
+            raise HTTPException(
+                status_code=400,
+                detail="github_org is not configured; set output.github_org or REPAVE_GITHUB_ORG",
+            )
+        team_slug = slug.strip()
+        if not team_slug:
+            raise HTTPException(status_code=400, detail="team slug is required")
+        token = resolve_github_access_token()
+        if not token:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "GitHub credentials are not configured; set GITHUB_TOKEN or "
+                    "GitHub App env vars to list team members"
+                ),
+            )
+        try:
+            members = list_team_members(org, team_slug, token)
+        except GitHubError as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"Failed to list members of team {team_slug!r} in org {org}: "
+                    f"HTTP {exc.status}. Ensure the token can read organization teams."
+                ),
+            ) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(
+            {
+                "org": org,
+                "team": team_slug,
+                "members": list(members),
+                "count": len(members),
             }
         )
 

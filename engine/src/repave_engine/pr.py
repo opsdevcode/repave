@@ -12,9 +12,11 @@ from repave_engine.github import (
 )
 from repave_engine.github_repo_provision import (
     GitHubRepoProvisionSpec,
+    apply_repository_ruleset,
+    create_github_repository,
     format_provision_message,
     plan_provision,
-    provision_github_repository,
+    sync_and_grant_teams,
 )
 from repave_engine.output_template import format_output_template
 from repave_engine.pr_conventions import (
@@ -106,9 +108,18 @@ def plan_pull_request(
     )
 
 
-def create_pull_request(plan: PullRequestPlan, *, github_token: str | None) -> str:
+def create_pull_request(
+    plan: PullRequestPlan,
+    *,
+    github_token: str | None,
+    fleet_message: str | None = None,
+) -> str:
     if plan.provision is not None:
-        return _create_provisioned_repository(plan, github_token=github_token)
+        return _create_provisioned_repository(
+            plan,
+            github_token=github_token,
+            fleet_message=fleet_message,
+        )
 
     if not github_token:
         return (
@@ -159,6 +170,7 @@ def _create_provisioned_repository(
     plan: PullRequestPlan,
     *,
     github_token: str | None,
+    fleet_message: str | None = None,
 ) -> str:
     if plan.provision is None:
         raise RuntimeError("provision plan missing for github-repo publish path")
@@ -173,12 +185,23 @@ def _create_provisioned_repository(
                 overlay="planned",
                 local_path=str(plan.repository.local_path),
                 branch=plan.branch,
+                team_sync=planned.team_sync,
+                ruleset=planned.ruleset,
+                fleet_message=fleet_message
+                or ("Fleet: dry-run; apply with fleet enabled to register a GoldenPathRepo target"),
             )
         )
 
     try:
-        created, grants = provision_github_repository(plan.provision, github_token)
+        created = create_github_repository(plan.provision, github_token)
         push_module_repository(plan.repository, github_token, branch=plan.branch)
+        ruleset = apply_repository_ruleset(
+            owner=plan.provision.owner,
+            repo=plan.provision.name,
+            profile=plan.provision.ruleset_profile,
+            token=github_token,
+        )
+        team_sync, grants = sync_and_grant_teams(plan.provision, github_token)
     except GitHubError as exc:
         return (
             "GitHub repository provisioning failed.\n"
@@ -200,4 +223,7 @@ def _create_provisioned_repository(
         overlay="pushed",
         local_path=str(plan.repository.local_path),
         branch=plan.branch,
+        team_sync=team_sync,
+        ruleset=ruleset,
+        fleet_message=fleet_message,
     )

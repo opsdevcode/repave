@@ -16,6 +16,7 @@ def cmd_create_repo(args: argparse.Namespace) -> int:
         f"visibility={args.visibility}",
         f"team_permission={args.team_permission}",
         f"default_branch={args.default_branch}",
+        f"ruleset_profile={args.ruleset_profile}",
     ]
     if args.description:
         inputs.append(f"description={args.description}")
@@ -23,6 +24,12 @@ def cmd_create_repo(args: argparse.Namespace) -> int:
         inputs.append(f"topics={args.topics}")
     if teams:
         inputs.append(f"team_slugs={','.join(teams)}")
+    membership_source = str(getattr(args, "membership_source_team", "") or "").strip()
+    if membership_source:
+        inputs.append(f"membership_source_team={membership_source}")
+    sync_membership = getattr(args, "sync_team_membership", None)
+    if sync_membership is not None:
+        inputs.append(f"sync_team_membership={'true' if sync_membership else 'false'}")
     if args.mode == "template":
         if not args.template:
             raise ValueError("--template owner/repo is required when --mode template")

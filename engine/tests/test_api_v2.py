@@ -26,6 +26,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/estate" in payload["endpoints"]
     assert "GET /api/v2/governance/annotations/{blueprint_name}" in payload["endpoints"]
     assert "GET /api/v2/github/teams" in payload["endpoints"]
+    assert "GET /api/v2/github/teams/{slug}/members" in payload["endpoints"]
     assert "GET /api/v2/fleet" in payload["endpoints"]
 
 
@@ -188,3 +189,22 @@ def test_api_v2_github_teams_requires_token(repo_root, output_config, monkeypatc
         response = client.get("/api/v2/github/teams")
     assert response.status_code == 503
     assert "GitHub credentials" in response.json()["detail"]
+
+
+def test_api_v2_github_team_members(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    with patch(
+        "repave_engine.api_v2.router.list_team_members",
+        return_value=("alice", "bob"),
+    ) as listed:
+        response = client.get("/api/v2/github/teams/platform/members")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["org"] == output_config.github_org
+    assert body["team"] == "platform"
+    assert body["members"] == ["alice", "bob"]
+    assert body["count"] == 2
+    listed.assert_called_once()
+    assert listed.call_args.args[0] == output_config.github_org
+    assert listed.call_args.args[1] == "platform"

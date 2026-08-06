@@ -444,12 +444,27 @@ def _validate_gitops_deployment_inputs(blueprint: Blueprint, normalized: dict[st
 def _validate_github_repo_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:
     if blueprint.artifact_type != "github-repo":
         return
-    if str(normalized.get("create_mode", "")).strip() != "template":
-        return
-    if not str(normalized.get("template_owner", "")).strip():
-        raise ValueError("template_owner is required when create_mode is template")
-    if not str(normalized.get("template_repo", "")).strip():
-        raise ValueError("template_repo is required when create_mode is template")
+    if str(normalized.get("create_mode", "")).strip() == "template":
+        if not str(normalized.get("template_owner", "")).strip():
+            raise ValueError("template_owner is required when create_mode is template")
+        if not str(normalized.get("template_repo", "")).strip():
+            raise ValueError("template_repo is required when create_mode is template")
+    ruleset_profile = str(normalized.get("ruleset_profile", "none")).strip() or "none"
+    if ruleset_profile not in {"none", "default-pr"}:
+        raise ValueError(
+            f"Invalid ruleset_profile: {ruleset_profile!r}. Allowed values: default-pr, none"
+        )
+    team_slugs = str(normalized.get("team_slugs", "")).strip()
+    sync_raw = str(normalized.get("sync_team_membership", "")).strip().lower()
+    sync_on = sync_raw in {"1", "true", "yes", "on"}
+    source = str(normalized.get("membership_source_team", "")).strip()
+    if source and sync_raw == "":
+        sync_on = True
+    if sync_on and team_slugs and not source:
+        raise ValueError(
+            "membership_source_team is required when sync_team_membership is true "
+            "and team_slugs is set"
+        )
 
 
 def _validate_app_service_inputs(blueprint: Blueprint, normalized: dict[str, Any]) -> None:

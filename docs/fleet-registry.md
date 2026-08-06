@@ -36,6 +36,11 @@ Register a repository, reading its pins from a local checkout's `repave.yaml` pr
 repave register https://github.com/acme/tf-vpc --path ~/modules/tf-vpc --owner platform
 ```
 
+Successful **github-repo** apply (`github-repo-generic` / `repave create-repo`) also
+best-effort registers the new repository when the fleet registry is enabled — the same
+path import uses — so fleetsync / `fleet-manifests` can emit a `GoldenPathRepo`. See
+[GitHub repository goldpath](github-repo-goldpath.md).
+
 Provenance is the preferred source because it is exactly what the operator observes. When
 you have no checkout, pass pins explicitly:
 
