@@ -5,8 +5,8 @@ scaffold, frozen `/api/state/v1` contract); **Phase 1** shipped (authoritative s
 backend, reversible import/export); **Phase 2** shipped (normalization, graph, inventory,
 blast radius, drift, timeline, cost join); **Phase 3** shipped (transactions,
 commit-time conflict detection, gate-blocked commit, `repave-tf tf plan|apply`).
-**Phase 4** not started — explicit go/no-go in
-[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
+**Phase 4** not started — **no-go** recorded in
+[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md) (2026-08-06).
 **Date:** 2026-08-04
 **Scope:** `engine/src/repave_engine/statestore/`, `engine/src/repave_engine/api_state/`,
 new top-level `cli/` package (`repave-cli`), `repave.config.yaml`, Helm chart — v2.x line,
@@ -148,7 +148,9 @@ is the thing this architecture exists to avoid.
 
 ### Phase 4 — Graph-scoped parallel execution
 
-**Not started.** Gated behind [`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
+**Not started.** **No-go** recorded 2026-08-06 in
+[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md). Do not implement a
+partitioner or concurrent apply until a later **Go** supersedes that record.
 
 ## Reconciling ADR 003
 
@@ -295,8 +297,9 @@ running `terraform apply` directly.
 
 **Phase 4**
 
-- [ ] Explicit go/no-go review passed — see
+- [x] Explicit go/no-go review convened — outcome **No-go** (2026-08-06); see
       [`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
+- [ ] Go decision (supersedes no-go) — not met; entry conditions still open.
 
 ## References
 

@@ -103,7 +103,8 @@ repave-tf graph drift prod refreshed.tfstate
 Blast radius walks dependency edges backwards: everything a change to that address can
 reach. Edges come from `depends_on` plus resolved attribute references in state, which is
 sufficient for blast radius and inventory and is deliberately *not* sufficient for
-partitioning a configuration (see the [Phase 4 gate](state-graph-phase4-review.md)).
+partitioning a configuration. Phase 4 (graph-scoped parallel execution) is **no-go** —
+see the recorded decision in the [Phase 4 gate](state-graph-phase4-review.md).
 
 Pass `--cost infracost.json` to `blast-radius` to price the radius before approving it.
 

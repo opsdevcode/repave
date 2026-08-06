@@ -1,7 +1,8 @@
 # Phase 4 go/no-go review: graph-scoped parallel execution
 
-**Status:** gate is closed. Phase 4 is not started and must not be started until every
-condition on this page is met and an owner signs the decision.
+**Status:** gate is closed. **Decision recorded: No-go** (see [Decision record](#decision-record)).
+Phase 4 is not started and must not be started until every condition on this page is met
+and an owner signs a later **Go** decision that supersedes this record.
 
 Phases 1 through 3 of [ADR 004](adr/004-state-custody-and-the-resource-graph.md) shipped
 custody, a queryable resource graph, and transactions with commit-time conflict detection.
@@ -105,15 +106,31 @@ Option 2 should be attempted and shown insufficient before Phase 4 is considered
 
 ## Decision record
 
-When the review is convened, record the outcome here.
-
 | Field | Value |
 | ----- | ----- |
-| Date | _not convened_ |
-| Owner | _unassigned_ |
-| Entry conditions met | _n/a_ |
-| Alternative 2 attempted | _n/a_ |
-| Decision | **No-go** (default) |
-| Revisit | When entry conditions 1–3 hold |
+| Date | 2026-08-06 |
+| Owner | platform (Eric Skaggs) |
+| Entry conditions met | **No** — none of 1–6 hold (store still off by default in shared deploys; no production trust window; PITR for state store not rehearsed; plan-JSON config edges not on the write path; treadmill owner and hard-problem answers open) |
+| Alternative 2 attempted | **No** — split-the-configuration not shown insufficient; buy option not priced for this estate |
+| Decision | **No-go** |
+| Revisit | When entry conditions **1–3** hold; conditions **4–6** remain required before any Go. Prefer measuring split-config / buy before reopening. |
 
-The default is no-go. Absence of a decision is a no-go, not a go.
+### Rationale
+
+Phases 0–3 already deliver custody, inventory/blast radius, and gate-blocked transactions.
+Phase 4 only adds apply speed and makes repave responsible for partition correctness; a
+partitioner bug destroys infrastructure rather than failing CI. Until the store is boring
+in shared production, DR is proven, and plan-JSON configuration edges are the graph source
+of truth, starting parallel execution fails the gate by design.
+
+[ADR 005](adr/005-state-graph-build-vs-buy.md) already concludes: build Phases 1–3; do not
+build Phase 4 unless this gate is passed. The default remains no-go; absence of a later
+**Go** decision is still a no-go.
+
+### Next productive work (not Phase 4)
+
+1. Phases 1–3 shared-deploy enablement — named treadmill owner, platform security sign-off,
+   Helm/`REPAVE_STATE_*` / KEK wiring, rehearsed PITR.
+2. Wire plan-JSON configuration edges into graph writes (`edges_from_plan_json` is prep only
+   today) — entry condition 4.
+3. Only after a future **Go**: read-only partition analyzer, then concurrent apply.
