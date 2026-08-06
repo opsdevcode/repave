@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Wait until release image tags exist on ghcr.io (container.yml may still be pushing).
+# Uses the GHCR token exchange — raw Bearer GITHUB_TOKEN often returns 403 on manifests.
 set -euo pipefail
 
 VERSION="${1:-}"
@@ -18,6 +19,9 @@ if [[ -z "${TOKEN}" ]]; then
   exit 1
 fi
 
+# ghcr.io expects Basic auth username+PAT to mint a pull token (GITHUB_ACTOR in Actions).
+USER_NAME="${GHCR_USER:-${GITHUB_ACTOR:-${GITHUB_USER:-x-access-token}}}"
+
 IMAGES=(
   "opsdevcode/repave-engine"
   "opsdevcode/repave-engine-portal"
@@ -28,11 +32,23 @@ IMAGES=(
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-20}"
 
+pull_token() {
+  local image="$1"
+  local scope="repository:${image}:pull"
+  curl -sS -u "${USER_NAME}:${TOKEN}" \
+    "https://ghcr.io/token?service=ghcr.io&scope=${scope}" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin).get("token",""))'
+}
+
 manifest_ready() {
   local image="$1"
-  local code
+  local reg_token code
+  reg_token="$(pull_token "${image}")"
+  if [[ -z "${reg_token}" ]]; then
+    return 1
+  fi
   code="$(curl -sS -o /dev/null -w '%{http_code}' \
-    -H "Authorization: Bearer ${TOKEN}" \
+    -H "Authorization: Bearer ${reg_token}" \
     -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.docker.distribution.manifest.list.v2+json" \
     "https://ghcr.io/v2/${image}/manifests/${VERSION}" || true)"
   [[ "${code}" == "200" ]]

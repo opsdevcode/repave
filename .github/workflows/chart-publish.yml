@@ -51,15 +51,23 @@ jobs:
       - name: Notify repave-aws-infra
         if: startsWith(github.ref, 'refs/tags/v')
         env:
-          GH_TOKEN: ${{ secrets.INFRA_DEPLOY_TOKEN }}
+          # Prefer a dedicated infra dispatch PAT; fall back to the release admin token.
+          INFRA_DEPLOY_TOKEN: ${{ secrets.INFRA_DEPLOY_TOKEN }}
+          REPAVE_RELEASE_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
           VERSION: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if [[ -z "${GH_TOKEN:-}" ]]; then
-            echo "INFRA_DEPLOY_TOKEN is not set; cannot dispatch deploy to repave-aws-infra" >&2
-            echo "Create a PAT (repo scope on opsdevcode/repave-aws-infra) as secret INFRA_DEPLOY_TOKEN." >&2
+          if [[ -n "${INFRA_DEPLOY_TOKEN:-}" ]]; then
+            GH_TOKEN="${INFRA_DEPLOY_TOKEN}"
+          elif [[ -n "${REPAVE_RELEASE_TOKEN:-}" ]]; then
+            echo "INFRA_DEPLOY_TOKEN unset; using REPAVE_RELEASE_TOKEN for dispatch"
+            GH_TOKEN="${REPAVE_RELEASE_TOKEN}"
+          else
+            echo "set secret INFRA_DEPLOY_TOKEN (repo scope on opsdevcode/repave-aws-infra)" \
+              "or REPAVE_RELEASE_TOKEN with dispatch access" >&2
             exit 1
           fi
+          export GH_TOKEN
           SEMVER="${VERSION#v}"
           gh api repos/opsdevcode/repave-aws-infra/dispatches \
             --input - <<EOF
