@@ -88,7 +88,7 @@ kubectl -n "${PORTAL_NS}" rollout status deployment/repave --timeout="${TIMEOUT}
 PORTAL_API_URL="http://repave.${PORTAL_NS}.svc.cluster.local:8088"
 echo "==> operator webhook TLS + Helm install (REPAVE_API_URL=${PORTAL_API_URL})"
 chmod +x "${OPERATOR}/hack/setup-webhook-certs.sh"
-bash "${OPERATOR}/hack/setup-webhook-certs.sh"
+WEBHOOK_NAMESPACE="${OPERATOR_NS}" bash "${OPERATOR}/hack/setup-webhook-certs.sh"
 CA_BUNDLE="$(base64 <"${OPERATOR}/hack/webhook-certs/ca.crt" | tr -d '\n')"
 helm upgrade --install repave-operator "${OPERATOR_CHART}" \
   --namespace "${OPERATOR_NS}" --create-namespace \
