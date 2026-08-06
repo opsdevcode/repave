@@ -36,6 +36,8 @@ static assets, CSS tokens, and a base layout template.
 | v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns, **Dry run preview** on all forms |
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | Replace browser last-run with server-side history |
+| Cost visibility (shipped) | Library cost badges, Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
+| FinOps enablement (v1.90–v1.94) | Planned: tag-governance gate fails, estimate-in-PR evidence, entity sparklines + `/platform/finops` rollup ([roadmap](roadmap.md#finops-enablement-v2x)) |
 | Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |
 | v3.0 conversational generation | Second entry point in the same app shell (Phase 5) |
 
@@ -342,5 +344,6 @@ optional; snapshot HTML only if the team wants guardrails against template drift
 ## Related docs
 
 - [Roadmap — shipped portal UX](roadmap.md#v118--portal-ux-theme)
+- [FinOps enablement](roadmap.md#finops-enablement-v2x) — showback / budgets / FOCUS surfaces ([operator guide](finops.md))
 - [Concepts — golden path and governance](concepts.md)
 - [Engine README](../engine/README.md) — local portal URL
