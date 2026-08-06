@@ -151,6 +151,23 @@ def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> N
     assert ">local<" in response.text
 
 
+def test_version_badge_rendered_next_to_env(repo_root, output_config, monkeypatch) -> None:
+    from repave_engine import __version__
+
+    monkeypatch.setenv("REPAVE_ENV", "production")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "badge--env" in response.text
+    assert ">production<" in response.text
+    assert "badge--version" in response.text
+    assert f">v{__version__}<" in response.text
+    env_pos = response.text.index("badge--env")
+    version_pos = response.text.index("badge--version")
+    assert env_pos < version_pos
+
+
 def test_local_toolchain_warning_when_terraform_missing(
     repo_root, output_config, monkeypatch
 ) -> None:

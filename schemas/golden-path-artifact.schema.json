@@ -286,7 +286,13 @@
                     "type": "string",
                     "enum": ["pull", "triage", "push", "maintain", "admin"]
                   },
-                  "default_branch": { "type": "string" }
+                  "default_branch": { "type": "string" },
+                  "ruleset_profile": {
+                    "type": "string",
+                    "enum": ["none", "default-pr"]
+                  },
+                  "membership_source_team": { "type": "string" },
+                  "sync_team_membership": { "type": ["string", "boolean"] }
                 }
               },
               "observability": {
@@ -554,7 +560,13 @@
               "type": "string",
               "enum": ["pull", "triage", "push", "maintain", "admin"]
             },
-            "default_branch": { "type": "string" }
+            "default_branch": { "type": "string" },
+            "ruleset_profile": {
+              "type": "string",
+              "enum": ["none", "default-pr"]
+            },
+            "membership_source_team": { "type": "string" },
+            "sync_team_membership": { "type": ["string", "boolean"] }
           }
         },
         "appService": {

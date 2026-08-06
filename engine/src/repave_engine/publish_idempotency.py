@@ -55,7 +55,10 @@ def compute_publish_content_hash(staging_dir: Path, *, artifact_type: str) -> st
 
 
 def publish_message_succeeded(pr_message: str) -> bool:
-    return "github publish failed" not in pr_message.lower()
+    lowered = pr_message.lower()
+    if "github publish failed" in lowered:
+        return False
+    return "github repository provisioning failed" not in lowered
 
 
 def _iter_publish_files(staging_dir: Path, *, artifact_type: str) -> list[Path]:

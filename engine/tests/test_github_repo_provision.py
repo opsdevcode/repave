@@ -6,13 +6,19 @@ import pytest
 
 from repave_engine.github_client import GitHubError, StaticGitHubRestClient
 from repave_engine.github_repo_provision import (
+    apply_repository_ruleset,
     build_provision_spec,
     create_repository_from_selection,
     create_repository_from_template,
+    ensure_org_team,
     ensure_team_repo_permission,
     list_org_teams,
+    list_team_members,
+    load_ruleset_profile,
     plan_provision,
     provision_github_repository,
+    sync_and_grant_teams,
+    sync_team_membership_additive,
 )
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import resolve_module_repository
@@ -220,3 +226,194 @@ def test_provision_github_repository_grants_teams(tmp_path: Path) -> None:
     assert created.status == "created"
     assert len(grants) == 1
     assert grants[0].status == "granted"
+
+
+def test_build_provision_spec_ruleset_and_membership(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    spec = build_provision_spec(
+        repository=repository,
+        values={
+            "create_mode": "selection",
+            "visibility": "private",
+            "team_slugs": "dest-a",
+            "membership_source_team": "source",
+            "ruleset_profile": "default-pr",
+        },
+    )
+    assert spec.ruleset_profile == "default-pr"
+    assert spec.membership_source_team == "source"
+    assert spec.sync_team_membership is True
+
+
+def test_build_provision_spec_requires_source_when_sync_enabled(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    with pytest.raises(ValueError, match="membership_source_team is required"):
+        build_provision_spec(
+            repository=repository,
+            values={
+                "create_mode": "selection",
+                "visibility": "private",
+                "team_slugs": "dest-a",
+                "sync_team_membership": "true",
+            },
+        )
+
+
+def test_plan_provision_includes_ruleset_and_team_sync(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    spec = build_provision_spec(
+        repository=repository,
+        values={
+            "create_mode": "selection",
+            "visibility": "private",
+            "team_slugs": "dest-a",
+            "membership_source_team": "source",
+            "ruleset_profile": "default-pr",
+        },
+    )
+    plan = plan_provision(spec)
+    assert plan.ruleset is not None
+    assert plan.ruleset.status == "planned"
+    assert "Would apply ruleset profile default-pr" in plan.ruleset.message
+    assert len(plan.team_sync) == 1
+    assert plan.team_sync[0].status == "planned"
+    assert "source" in plan.team_sync[0].message
+
+
+def test_load_ruleset_profile_default_pr() -> None:
+    payload = load_ruleset_profile("default-pr")
+    assert payload["name"] == "repave-default-pr"
+    assert any(rule.get("type") == "pull_request" for rule in payload["rules"])
+    assert any(rule.get("type") == "non_fast_forward" for rule in payload["rules"])
+
+
+def test_apply_repository_ruleset_creates_and_updates() -> None:
+    create_client = StaticGitHubRestClient(
+        responses={
+            ("GET", "/repos/example-org/demo/rulesets"): [],
+            ("POST", "/repos/example-org/demo/rulesets"): {"id": 1},
+        },
+    )
+    created = apply_repository_ruleset(
+        owner="example-org",
+        repo="demo",
+        profile="default-pr",
+        token="ghp_test",
+        client=create_client,
+    )
+    assert created.status == "applied"
+    assert any(call[0] == "POST" for call in create_client.calls)
+
+    update_client = StaticGitHubRestClient(
+        responses={
+            ("GET", "/repos/example-org/demo/rulesets"): [
+                {"id": 42, "name": "repave-default-pr"},
+            ],
+            ("PUT", "/repos/example-org/demo/rulesets/42"): {"id": 42},
+        },
+    )
+    updated = apply_repository_ruleset(
+        owner="example-org",
+        repo="demo",
+        profile="default-pr",
+        token="ghp_test",
+        client=update_client,
+    )
+    assert updated.status == "updated"
+
+    skipped = apply_repository_ruleset(
+        owner="example-org",
+        repo="demo",
+        profile="none",
+        token="ghp_test",
+        client=StaticGitHubRestClient(),
+    )
+    assert skipped.status == "skipped"
+
+
+def test_ensure_org_team_creates_when_missing() -> None:
+    client = StaticGitHubRestClient(
+        errors={("GET", "/orgs/example-org/teams/new-team"): GitHubError(404, "missing")},
+        responses={("POST", "/orgs/example-org/teams"): {"slug": "new-team"}},
+    )
+    result = ensure_org_team("example-org", "new-team", "ghp_test", client=client)
+    assert result.status == "created"
+    post = next(call for call in client.calls if call[0] == "POST")
+    assert post[2] == {"name": "new-team", "privacy": "closed"}
+
+
+def test_list_team_members_and_additive_sync() -> None:
+    client = StaticGitHubRestClient(
+        responses={
+            ("GET", "/orgs/example-org/teams/source/members?per_page=100&page=1"): [
+                {"login": "alice"},
+                {"login": "bob"},
+            ],
+            ("GET", "/orgs/example-org/teams/dest"): {"slug": "dest"},
+            ("GET", "/orgs/example-org/teams/dest/members?per_page=100&page=1"): [
+                {"login": "alice"},
+            ],
+            ("PUT", "/orgs/example-org/teams/dest/memberships/bob"): {"state": "active"},
+        },
+    )
+    members = list_team_members("example-org", "source", "ghp_test", client=client)
+    assert members == ("alice", "bob")
+    results = sync_team_membership_additive(
+        org="example-org",
+        source_slug="source",
+        dest_slugs=("dest",),
+        token="ghp_test",
+        client=client,
+    )
+    assert len(results) == 1
+    assert results[0].status == "synced"
+    assert results[0].members_added == 1
+    assert any(call[0] == "PUT" and call[1].endswith("/memberships/bob") for call in client.calls)
+
+
+def test_list_team_members_missing_source_names_fix() -> None:
+    client = StaticGitHubRestClient(
+        errors={
+            (
+                "GET",
+                "/orgs/example-org/teams/missing/members?per_page=100&page=1",
+            ): GitHubError(404, "Not Found")
+        },
+    )
+    with pytest.raises(GitHubError, match="membership_source_team"):
+        list_team_members("example-org", "missing", "ghp_test", client=client)
+
+
+def test_sync_and_grant_teams_orders_sync_before_grants(tmp_path: Path) -> None:
+    repository = _repository(tmp_path)
+    spec = build_provision_spec(
+        repository=repository,
+        values={
+            "create_mode": "selection",
+            "visibility": "private",
+            "team_slugs": "dest",
+            "membership_source_team": "source",
+            "team_permission": "push",
+        },
+    )
+    client = StaticGitHubRestClient(
+        responses={
+            ("GET", "/orgs/example-org/teams/source/members?per_page=100&page=1"): [
+                {"login": "alice"},
+            ],
+            ("GET", "/orgs/example-org/teams/dest"): {"slug": "dest"},
+            ("GET", "/orgs/example-org/teams/dest/members?per_page=100&page=1"): [],
+            ("PUT", "/orgs/example-org/teams/dest/memberships/alice"): {},
+            (
+                "PUT",
+                f"/orgs/example-org/teams/dest/repos/{spec.owner}/{spec.name}",
+            ): None,
+        },
+    )
+    team_sync, grants = sync_and_grant_teams(spec, "ghp_test", client=client)
+    assert team_sync[0].members_added == 1
+    assert grants[0].status == "granted"
+    put_paths = [call[1] for call in client.calls if call[0] == "PUT"]
+    assert put_paths.index("/orgs/example-org/teams/dest/memberships/alice") < put_paths.index(
+        f"/orgs/example-org/teams/dest/repos/{spec.owner}/{spec.name}"
+    )

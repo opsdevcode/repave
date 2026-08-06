@@ -674,6 +674,15 @@ pre {
   border-color: var(--border);
 }
 
+.badge--version {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: var(--border);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
 .badge--pass,
 .badge--success {
   background: color-mix(in srgb, var(--success) 16%, transparent);

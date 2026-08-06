@@ -1,22 +1,31 @@
-"""GitHub repository provisioning: template/selection create and team grants."""
+"""GitHub repository provisioning: create, rulesets, team sync, and grants."""
 
 from __future__ import annotations
 
 import contextlib
+import json
+import logging
 from dataclasses import dataclass
+from importlib import resources
+from pathlib import Path
 from typing import Any, Literal, cast
 
 from repave_engine.github_client import GitHubError, GitHubRestClient, UrllibGitHubRestClient
 from repave_engine.github_rate_limit import record_github_response_headers
 from repave_engine.target_repo import ModuleRepository
 
+logger = logging.getLogger(__name__)
+
 CreateMode = Literal["template", "selection"]
 RepoVisibility = Literal["public", "private", "internal"]
 TeamPermission = Literal["pull", "triage", "push", "maintain", "admin"]
+RulesetProfile = Literal["none", "default-pr"]
 
 _VALID_VISIBILITY = frozenset({"public", "private", "internal"})
 _VALID_PERMISSIONS = frozenset({"pull", "triage", "push", "maintain", "admin"})
 _VALID_CREATE_MODES = frozenset({"template", "selection"})
+_VALID_RULESET_PROFILES = frozenset({"none", "default-pr"})
+_RULESET_PACKAGE = "repave_engine.github_rulesets"
 
 _default_client: GitHubRestClient = UrllibGitHubRestClient(
     on_response=record_github_response_headers,
@@ -50,6 +59,21 @@ class TeamGrantResult:
 
 
 @dataclass(frozen=True)
+class TeamSyncResult:
+    team_slug: str
+    status: Literal["created", "exists", "synced", "planned", "failed", "skipped"]
+    members_added: int
+    message: str
+
+
+@dataclass(frozen=True)
+class RulesetApplyResult:
+    profile: RulesetProfile
+    status: Literal["applied", "updated", "planned", "skipped", "failed"]
+    message: str
+
+
+@dataclass(frozen=True)
 class GitHubRepoProvisionSpec:
     create_mode: CreateMode
     owner: str
@@ -62,7 +86,18 @@ class GitHubRepoProvisionSpec:
     template_repo: str
     team_slugs: tuple[str, ...]
     team_permission: TeamPermission
+    ruleset_profile: RulesetProfile = "none"
+    membership_source_team: str = ""
+    sync_team_membership: bool = False
     auto_init: bool = False
+
+
+@dataclass(frozen=True)
+class ProvisionApplyResult:
+    create: RepoCreateResult
+    teams: tuple[TeamGrantResult, ...]
+    team_sync: tuple[TeamSyncResult, ...] = ()
+    ruleset: RulesetApplyResult | None = None
 
 
 @dataclass(frozen=True)
@@ -73,13 +108,14 @@ class GitHubRepoProvisionPlan:
     teams: tuple[TeamGrantResult, ...]
     overlay_push: Literal["planned", "pushed", "skipped"]
     summary: str
+    team_sync: tuple[TeamSyncResult, ...] = ()
+    ruleset: RulesetApplyResult | None = None
 
 
 def parse_team_slugs(raw: str | None) -> tuple[str, ...]:
     if not raw:
         return ()
     parts = [part.strip() for part in str(raw).split(",") if part.strip()]
-    # Preserve order, drop duplicates
     seen: set[str] = set()
     ordered: list[str] = []
     for part in parts:
@@ -92,6 +128,14 @@ def parse_team_slugs(raw: str | None) -> tuple[str, ...]:
 
 def parse_topics(raw: str | None) -> tuple[str, ...]:
     return parse_team_slugs(raw)
+
+
+def _parse_bool(raw: Any, *, default: bool = False) -> bool:
+    if raw is None or raw == "":
+        return default
+    if isinstance(raw, bool):
+        return raw
+    return str(raw).strip().lower() in {"1", "true", "yes", "on"}
 
 
 def build_provision_spec(
@@ -114,6 +158,11 @@ def build_provision_spec(
         allowed = ", ".join(sorted(_VALID_PERMISSIONS))
         raise ValueError(f"Invalid team_permission: {permission!r}. Allowed values: {allowed}")
 
+    ruleset_profile = str(values.get("ruleset_profile", "none")).strip() or "none"
+    if ruleset_profile not in _VALID_RULESET_PROFILES:
+        allowed = ", ".join(sorted(_VALID_RULESET_PROFILES))
+        raise ValueError(f"Invalid ruleset_profile: {ruleset_profile!r}. Allowed values: {allowed}")
+
     template_owner = str(values.get("template_owner", "")).strip()
     template_repo = str(values.get("template_repo", "")).strip()
     if mode == "template" and (not template_owner or not template_repo):
@@ -125,6 +174,15 @@ def build_provision_spec(
     description = str(values.get("description", "")).strip()
     topics = parse_topics(str(values.get("topics", "")))
     team_slugs = parse_team_slugs(str(values.get("team_slugs", "")))
+    membership_source = str(values.get("membership_source_team", "")).strip()
+    sync_membership = _parse_bool(values.get("sync_team_membership"), default=False)
+    if membership_source and values.get("sync_team_membership") in (None, ""):
+        sync_membership = True
+    if sync_membership and team_slugs and not membership_source:
+        raise ValueError(
+            "membership_source_team is required when sync_team_membership is true "
+            "and team_slugs is set"
+        )
 
     return GitHubRepoProvisionSpec(
         create_mode=cast(CreateMode, mode),
@@ -138,6 +196,9 @@ def build_provision_spec(
         template_repo=template_repo,
         team_slugs=team_slugs,
         team_permission=cast(TeamPermission, permission),
+        ruleset_profile=cast(RulesetProfile, ruleset_profile),
+        membership_source_team=membership_source,
+        sync_team_membership=sync_membership,
         auto_init=False,
     )
 
@@ -165,6 +226,7 @@ def plan_provision(spec: GitHubRepoProvisionSpec) -> GitHubRepoProvisionPlan:
         visibility=spec.visibility,
         message=create_msg,
     )
+    team_sync = _plan_team_sync(spec)
     teams = tuple(
         TeamGrantResult(
             team_slug=slug,
@@ -176,12 +238,23 @@ def plan_provision(spec: GitHubRepoProvisionSpec) -> GitHubRepoProvisionPlan:
         )
         for slug in spec.team_slugs
     )
-    summary = _format_plan_summary(create, teams, overlay="planned")
+    ruleset = _plan_ruleset(spec)
+    summary = format_provision_message(
+        create,
+        teams,
+        overlay="planned",
+        local_path="(staging)",
+        branch=spec.default_branch,
+        team_sync=team_sync,
+        ruleset=ruleset,
+    )
     return GitHubRepoProvisionPlan(
         create=create,
         teams=teams,
         overlay_push="planned",
         summary=summary,
+        team_sync=team_sync,
+        ruleset=ruleset,
     )
 
 
@@ -219,6 +292,172 @@ def list_org_teams(
             break
         page += 1
     return tuple(teams)
+
+
+def list_team_members(
+    org: str,
+    team_slug: str,
+    token: str,
+    *,
+    client: GitHubRestClient | None = None,
+) -> tuple[str, ...]:
+    rest = client if client is not None else _default_client
+    slug = team_slug.strip()
+    if not slug:
+        raise ValueError("team_slug is required to list team members")
+    members: list[str] = []
+    page = 1
+    while page <= 20:
+        path = f"/orgs/{org}/teams/{slug}/members?per_page=100&page={page}"
+        try:
+            payload = rest.request_json("GET", path, token)
+        except GitHubError as exc:
+            raise GitHubError(
+                exc.status,
+                (
+                    f"Failed to list members of team {slug!r} in org {org}: "
+                    f"HTTP {exc.status} — {exc.message}. "
+                    "Set membership_source_team to an existing org team the token can read."
+                ),
+            ) from exc
+        if not isinstance(payload, list) or not payload:
+            break
+        for item in payload:
+            if isinstance(item, dict):
+                login = str(item.get("login", "")).strip()
+                if login:
+                    members.append(login)
+        if len(payload) < 100:
+            break
+        page += 1
+    return tuple(members)
+
+
+def ensure_org_team(
+    org: str,
+    team_slug: str,
+    token: str,
+    *,
+    client: GitHubRestClient | None = None,
+) -> TeamSyncResult:
+    rest = client if client is not None else _default_client
+    slug = team_slug.strip()
+    if not slug:
+        return TeamSyncResult(
+            team_slug=team_slug,
+            status="failed",
+            members_added=0,
+            message="team_slug is empty; pass a GitHub team slug",
+        )
+    try:
+        rest.request_json("GET", f"/orgs/{org}/teams/{slug}", token)
+        return TeamSyncResult(
+            team_slug=slug,
+            status="exists",
+            members_added=0,
+            message=f"Team {slug!r} already exists in {org}",
+        )
+    except GitHubError as exc:
+        if exc.status != 404:
+            return TeamSyncResult(
+                team_slug=slug,
+                status="failed",
+                members_added=0,
+                message=(
+                    f"Failed to look up team {slug!r}: HTTP {exc.status} — {exc.message}. "
+                    "Ensure the token can read organization teams."
+                ),
+            )
+    try:
+        rest.request_json(
+            "POST",
+            f"/orgs/{org}/teams",
+            token,
+            {
+                # Use the slug as the display name so GitHub derives a matching slug.
+                "name": slug,
+                "privacy": "closed",
+            },
+        )
+    except GitHubError as exc:
+        return TeamSyncResult(
+            team_slug=slug,
+            status="failed",
+            members_added=0,
+            message=(
+                f"Failed to create team {slug!r} in {org}: HTTP {exc.status} — {exc.message}. "
+                "Ensure the token can administer organization teams."
+            ),
+        )
+    return TeamSyncResult(
+        team_slug=slug,
+        status="created",
+        members_added=0,
+        message=f"Created team {slug!r} in {org}",
+    )
+
+
+def sync_team_membership_additive(
+    *,
+    org: str,
+    source_slug: str,
+    dest_slugs: tuple[str, ...],
+    token: str,
+    client: GitHubRestClient | None = None,
+) -> tuple[TeamSyncResult, ...]:
+    rest = client if client is not None else _default_client
+    source_members = list_team_members(org, source_slug, token, client=rest)
+    results: list[TeamSyncResult] = []
+    for dest in dest_slugs:
+        ensured = ensure_org_team(org, dest, token, client=rest)
+        if ensured.status == "failed":
+            results.append(ensured)
+            continue
+        existing = set(list_team_members(org, dest, token, client=rest))
+        added = 0
+        failures: list[str] = []
+        for login in source_members:
+            if login in existing:
+                continue
+            try:
+                rest.request_json(
+                    "PUT",
+                    f"/orgs/{org}/teams/{dest}/memberships/{login}",
+                    token,
+                    {"role": "member"},
+                )
+                added += 1
+            except GitHubError as exc:
+                failures.append(f"{login} (HTTP {exc.status})")
+        if failures:
+            results.append(
+                TeamSyncResult(
+                    team_slug=dest,
+                    status="failed",
+                    members_added=added,
+                    message=(
+                        f"Partial sync to {dest!r} from {source_slug!r}: added {added}, "
+                        f"failed for {', '.join(failures)}. "
+                        "Ensure the token can manage team memberships."
+                    ),
+                )
+            )
+            continue
+        status: Literal["created", "exists", "synced"] = (
+            "created" if ensured.status == "created" else "synced"
+        )
+        results.append(
+            TeamSyncResult(
+                team_slug=dest,
+                status=status,
+                members_added=added,
+                message=(
+                    f"Synced {added} member(s) from {source_slug!r} into {dest!r} "
+                    f"(team {ensured.status})"
+                ),
+            )
+        )
+    return tuple(results)
 
 
 def ensure_team_repo_permission(
@@ -259,6 +498,78 @@ def ensure_team_repo_permission(
         permission=permission,
         status="granted",
         message=f"Granted team {slug!r} {permission} on {owner}/{repo}",
+    )
+
+
+def load_ruleset_profile(profile: RulesetProfile) -> dict[str, Any]:
+    if profile == "none":
+        raise ValueError("ruleset profile 'none' has no payload")
+    filename = f"{profile}.json"
+    try:
+        package = resources.files(_RULESET_PACKAGE)
+        data = package.joinpath(filename).read_text(encoding="utf-8")
+    except (FileNotFoundError, TypeError, AttributeError):
+        path = Path(__file__).resolve().parent / "github_rulesets" / filename
+        if not path.is_file():
+            raise ValueError(
+                f"Unknown ruleset profile {profile!r}; expected file {filename}"
+            ) from None
+        data = path.read_text(encoding="utf-8")
+    payload = json.loads(data)
+    if not isinstance(payload, dict):
+        raise ValueError(f"ruleset profile {profile!r} must be a JSON object")
+    return payload
+
+
+def apply_repository_ruleset(
+    *,
+    owner: str,
+    repo: str,
+    profile: RulesetProfile,
+    token: str,
+    client: GitHubRestClient | None = None,
+) -> RulesetApplyResult:
+    if profile == "none":
+        return RulesetApplyResult(
+            profile=profile,
+            status="skipped",
+            message="Ruleset profile none; skipped",
+        )
+    rest = client if client is not None else _default_client
+    try:
+        body = load_ruleset_profile(profile)
+    except ValueError as exc:
+        return RulesetApplyResult(profile=profile, status="failed", message=str(exc))
+    ruleset_name = str(body.get("name", profile)).strip() or profile
+    existing_id = _find_ruleset_id(owner, repo, ruleset_name, token, client=rest)
+    try:
+        if existing_id is not None:
+            rest.request_json(
+                "PUT",
+                f"/repos/{owner}/{repo}/rulesets/{existing_id}",
+                token,
+                body,
+            )
+            return RulesetApplyResult(
+                profile=profile,
+                status="updated",
+                message=f"Updated ruleset {ruleset_name!r} ({profile}) on {owner}/{repo}",
+            )
+        rest.request_json("POST", f"/repos/{owner}/{repo}/rulesets", token, body)
+    except GitHubError as exc:
+        return RulesetApplyResult(
+            profile=profile,
+            status="failed",
+            message=(
+                f"Failed to apply ruleset profile {profile!r} on {owner}/{repo}: "
+                f"HTTP {exc.status} — {exc.message}. "
+                "Ensure the token can administer repository rulesets."
+            ),
+        )
+    return RulesetApplyResult(
+        profile=profile,
+        status="applied",
+        message=f"Applied ruleset {ruleset_name!r} ({profile}) on {owner}/{repo}",
     )
 
 
@@ -410,18 +721,44 @@ def create_repository_from_selection(
     )
 
 
-def provision_github_repository(
+def create_github_repository(
     spec: GitHubRepoProvisionSpec,
     token: str,
     *,
     client: GitHubRestClient | None = None,
-) -> tuple[RepoCreateResult, tuple[TeamGrantResult, ...]]:
-    """Create (or reuse) the repository and grant team permissions."""
+) -> RepoCreateResult:
     rest = client if client is not None else _default_client
     if spec.create_mode == "template":
-        created = create_repository_from_template(spec, token, client=rest)
-    else:
-        created = create_repository_from_selection(spec, token, client=rest)
+        return create_repository_from_template(spec, token, client=rest)
+    return create_repository_from_selection(spec, token, client=rest)
+
+
+def sync_and_grant_teams(
+    spec: GitHubRepoProvisionSpec,
+    token: str,
+    *,
+    client: GitHubRestClient | None = None,
+) -> tuple[tuple[TeamSyncResult, ...], tuple[TeamGrantResult, ...]]:
+    rest = client if client is not None else _default_client
+    team_sync: tuple[TeamSyncResult, ...] = ()
+    if spec.sync_team_membership and spec.team_slugs and spec.membership_source_team:
+        try:
+            team_sync = sync_team_membership_additive(
+                org=spec.owner,
+                source_slug=spec.membership_source_team,
+                dest_slugs=spec.team_slugs,
+                token=token,
+                client=rest,
+            )
+        except GitHubError as exc:
+            team_sync = (
+                TeamSyncResult(
+                    team_slug=spec.membership_source_team,
+                    status="failed",
+                    members_added=0,
+                    message=str(exc.message),
+                ),
+            )
     grants = tuple(
         ensure_team_repo_permission(
             org=spec.owner,
@@ -434,6 +771,19 @@ def provision_github_repository(
         )
         for slug in spec.team_slugs
     )
+    return team_sync, grants
+
+
+def provision_github_repository(
+    spec: GitHubRepoProvisionSpec,
+    token: str,
+    *,
+    client: GitHubRestClient | None = None,
+) -> tuple[RepoCreateResult, tuple[TeamGrantResult, ...]]:
+    """Create (or reuse) the repository and grant team permissions (legacy tuple API)."""
+    rest = client if client is not None else _default_client
+    created = create_github_repository(spec, token, client=rest)
+    _, grants = sync_and_grant_teams(spec, token, client=rest)
     return created, grants
 
 
@@ -444,6 +794,9 @@ def format_provision_message(
     overlay: Literal["planned", "pushed", "skipped"],
     local_path: str,
     branch: str,
+    team_sync: tuple[TeamSyncResult, ...] = (),
+    ruleset: RulesetApplyResult | None = None,
+    fleet_message: str | None = None,
 ) -> str:
     lines = [
         create.message + ".",
@@ -454,18 +807,86 @@ def format_provision_message(
         f"Local repository: {local_path}",
         f"Overlay push: {overlay}",
     ]
+    if ruleset is not None:
+        lines.append(f"Ruleset: {ruleset.message}")
+    if team_sync:
+        lines.append("Team membership sync:")
+        for item in team_sync:
+            lines.append(f"- {item.message}")
     if teams:
         lines.append("Team grants:")
         for grant in teams:
             lines.append(f"- {grant.message}")
     else:
         lines.append("Team grants: none")
-    failed = [g for g in teams if g.status == "failed"]
-    if failed:
+    failed_grants = [g for g in teams if g.status == "failed"]
+    if failed_grants:
         lines.append(
             "One or more team grants failed; fix token/org admin permissions and re-run apply."
         )
+    failed_sync = [s for s in team_sync if s.status == "failed"]
+    if failed_sync:
+        lines.append(
+            "One or more team membership sync steps failed; fix org admin permissions and re-run."
+        )
+    if ruleset is not None and ruleset.status == "failed":
+        lines.append("Ruleset apply failed; fix administration permissions and re-run apply.")
+    if fleet_message:
+        lines.append(fleet_message)
     return "\n".join(lines)
+
+
+def _plan_team_sync(spec: GitHubRepoProvisionSpec) -> tuple[TeamSyncResult, ...]:
+    if not spec.sync_team_membership or not spec.team_slugs:
+        return ()
+    source = spec.membership_source_team or "(unset)"
+    return tuple(
+        TeamSyncResult(
+            team_slug=slug,
+            status="planned",
+            members_added=0,
+            message=(f"Would ensure team {slug!r} and sync members additively from {source!r}"),
+        )
+        for slug in spec.team_slugs
+    )
+
+
+def _plan_ruleset(spec: GitHubRepoProvisionSpec) -> RulesetApplyResult:
+    if spec.ruleset_profile == "none":
+        return RulesetApplyResult(
+            profile="none",
+            status="skipped",
+            message="Ruleset profile none; skipped",
+        )
+    return RulesetApplyResult(
+        profile=spec.ruleset_profile,
+        status="planned",
+        message=f"Would apply ruleset profile {spec.ruleset_profile}",
+    )
+
+
+def _find_ruleset_id(
+    owner: str,
+    repo: str,
+    name: str,
+    token: str,
+    *,
+    client: GitHubRestClient,
+) -> int | None:
+    try:
+        payload = client.request_json("GET", f"/repos/{owner}/{repo}/rulesets", token)
+    except GitHubError:
+        return None
+    if not isinstance(payload, list):
+        return None
+    for item in payload:
+        if isinstance(item, dict) and str(item.get("name", "")).strip() == name:
+            raw_id = item.get("id")
+            if isinstance(raw_id, int):
+                return raw_id
+            if isinstance(raw_id, str) and raw_id.isdigit():
+                return int(raw_id)
+    return None
 
 
 def _apply_visibility_and_topics(
@@ -474,7 +895,6 @@ def _apply_visibility_and_topics(
     *,
     client: GitHubRestClient,
 ) -> None:
-    # Template generate only accepts private bool; set visibility for internal orgs.
     if spec.visibility == "internal":
         with contextlib.suppress(GitHubError):
             client.request_json(
@@ -513,18 +933,3 @@ def _repository_exists(
 def _name_already_exists(message: str) -> bool:
     lowered = message.lower()
     return "already exists" in lowered or "name already exists" in lowered
-
-
-def _format_plan_summary(
-    create: RepoCreateResult,
-    teams: tuple[TeamGrantResult, ...],
-    *,
-    overlay: str,
-) -> str:
-    return format_provision_message(
-        create,
-        teams,
-        overlay=overlay,  # type: ignore[arg-type]
-        local_path="(staging)",
-        branch="main",
-    )

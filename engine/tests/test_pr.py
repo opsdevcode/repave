@@ -231,12 +231,14 @@ def test_create_pull_request_provision_apply(tmp_path: Path) -> None:
         "visibility": "private",
         "team_slugs": "platform",
         "team_permission": "push",
+        "ruleset_profile": "default-pr",
+        "membership_source_team": "source",
     }
     provision = build_provision_spec(repository=repository, values=values)
     plan = plan_pull_request(
         blueprint_name="github-repo-generic",
-        blueprint_version="0.1.0",
-        standard_version="1.0.0",
+        blueprint_version="0.2.0",
+        standard_version="1.1.0",
         title_template="Provision GitHub repository {repo_name}",
         input_fields=("repo_name",),
         files_root=repository.local_path,
@@ -244,20 +246,46 @@ def test_create_pull_request_provision_apply(tmp_path: Path) -> None:
         module_values=values,
         provision=provision,
     )
-    from repave_engine.github_repo_provision import RepoCreateResult, TeamGrantResult
+    from repave_engine.github_repo_provision import (
+        RepoCreateResult,
+        RulesetApplyResult,
+        TeamGrantResult,
+        TeamSyncResult,
+    )
 
     with (
         patch(
-            "repave_engine.pr.provision_github_repository",
+            "repave_engine.pr.create_github_repository",
+            return_value=RepoCreateResult(
+                status="created",
+                owner="example-org",
+                name="platform-demo",
+                web_url="https://github.com/example-org/platform-demo",
+                create_mode="selection",
+                visibility="private",
+                message="Created example-org/platform-demo (visibility=private)",
+            ),
+        ),
+        patch(
+            "repave_engine.pr.apply_repository_ruleset",
+            return_value=RulesetApplyResult(
+                profile="default-pr",
+                status="applied",
+                message=(
+                    "Applied ruleset 'repave-default-pr' (default-pr) on example-org/platform-demo"
+                ),
+            ),
+        ),
+        patch(
+            "repave_engine.pr.sync_and_grant_teams",
             return_value=(
-                RepoCreateResult(
-                    status="created",
-                    owner="example-org",
-                    name="platform-demo",
-                    web_url="https://github.com/example-org/platform-demo",
-                    create_mode="selection",
-                    visibility="private",
-                    message="Created example-org/platform-demo (visibility=private)",
+                (
+                    TeamSyncResult(
+                        team_slug="platform",
+                        status="synced",
+                        members_added=2,
+                        message="Synced 2 member(s) from 'source' into 'platform' (team exists)",
+                    ),
                 ),
                 (
                     TeamGrantResult(
@@ -276,4 +304,36 @@ def test_create_pull_request_provision_apply(tmp_path: Path) -> None:
     push.assert_called_once()
     assert "Created example-org/platform-demo" in message
     assert "Overlay push: pushed" in message
+    assert "Applied ruleset" in message
+    assert "Synced 2 member(s)" in message
     assert "Granted team 'platform' push" in message
+
+
+def test_create_pull_request_provision_dry_run_mentions_ruleset(tmp_path: Path) -> None:
+    config = OutputConfig(github_org="example-org", modules_root=tmp_path / "modules")
+    repository = resolve_module_repository(
+        module_name="platform-demo",
+        config=config,
+        name_template="{repo_name}",
+        template_values={"repo_name": "platform-demo"},
+    )
+    values = {
+        "repo_name": "platform-demo",
+        "create_mode": "selection",
+        "visibility": "private",
+        "ruleset_profile": "default-pr",
+    }
+    provision = build_provision_spec(repository=repository, values=values)
+    plan = plan_pull_request(
+        blueprint_name="github-repo-generic",
+        blueprint_version="0.2.0",
+        standard_version="1.1.0",
+        title_template="Provision GitHub repository {repo_name}",
+        input_fields=("repo_name",),
+        files_root=repository.local_path,
+        repository=repository,
+        module_values=values,
+        provision=provision,
+    )
+    message = create_pull_request(plan, github_token=None)
+    assert "Would apply ruleset profile default-pr" in message

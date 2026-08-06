@@ -2,15 +2,16 @@ apiVersion: repave.dev/v1alpha1
 kind: Blueprint
 metadata:
   name: github-repo-generic
-  version: 0.1.0
+  version: 0.2.0
   description: >-
     Provision a GitHub organization repository from a template or selection form,
+    optionally apply a ruleset profile, sync team membership from a source org team,
     then grant selected org teams repository permission.
 spec:
   artifactType: github-repo
   standard:
     source: standards/github/repo-provisioning-standard.md
-    version: 1.0.0
+    version: 1.1.0
   inputs:
     - name: repo_name
       type: string
@@ -59,7 +60,9 @@ spec:
       type: string
       required: false
       default: ""
-      description: Comma-separated org team slugs to grant access after create.
+      description: >-
+        Comma-separated destination org team slugs. Created if missing when membership
+        sync is enabled; then granted team_permission on the new repo.
     - name: team_permission
       type: string
       required: false
@@ -71,6 +74,30 @@ spec:
         - maintain
         - admin
       description: Permission granted to every selected team.
+    - name: membership_source_team
+      type: string
+      required: false
+      default: ""
+      description: >-
+        Existing org team slug whose members are copied additively into team_slugs
+        (required when sync_team_membership is true and team_slugs is set).
+    - name: sync_team_membership
+      type: string
+      required: false
+      default: ""
+      description: >-
+        When true (or when membership_source_team is set and this is left empty),
+        create missing destination teams and add source members (additive only).
+    - name: ruleset_profile
+      type: string
+      required: false
+      default: none
+      enum:
+        - none
+        - default-pr
+      description: >-
+        Repository ruleset applied after overlay push. default-pr requires PRs and
+        blocks force-push on the default branch (no required status checks).
     - name: default_branch
       type: string
       required: false

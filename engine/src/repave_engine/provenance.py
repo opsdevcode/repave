@@ -443,6 +443,19 @@ def _build_github_repo_spec(
     default_branch = str(values.get("default_branch", "")).strip()
     if default_branch:
         repo["default_branch"] = default_branch
+    ruleset_profile = str(values.get("ruleset_profile", "")).strip()
+    if ruleset_profile:
+        repo["ruleset_profile"] = ruleset_profile
+    membership_source = str(values.get("membership_source_team", "")).strip()
+    if membership_source:
+        repo["membership_source_team"] = membership_source
+    sync_raw = values.get("sync_team_membership")
+    if isinstance(sync_raw, bool):
+        repo["sync_team_membership"] = "true" if sync_raw else "false"
+    else:
+        sync_membership = str(sync_raw or "").strip().lower()
+        if sync_membership:
+            repo["sync_team_membership"] = sync_membership
     return {"artifactType": "github-repo", "githubRepository": repo}, repo_name
 
 
