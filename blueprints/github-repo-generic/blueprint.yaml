@@ -74,13 +74,6 @@ spec:
         - maintain
         - admin
       description: Permission granted to every selected team.
-    - name: membership_source_team
-      type: string
-      required: false
-      default: ""
-      description: >-
-        Existing org team slug whose members are copied additively into team_slugs
-        (required when sync_team_membership is true and team_slugs is set).
     - name: sync_team_membership
       type: string
       required: false
@@ -88,6 +81,13 @@ spec:
       description: >-
         When true (or when membership_source_team is set and this is left empty),
         create missing destination teams and add source members (additive only).
+    - name: membership_source_team
+      type: string
+      required: false
+      default: ""
+      description: >-
+        Existing org team slug whose members are copied additively into team_slugs
+        (required when sync_team_membership is true and team_slugs is set).
     - name: ruleset_profile
       type: string
       required: false

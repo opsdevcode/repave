@@ -767,6 +767,34 @@ def test_ansible_form_renders_split_governance(repo_root, output_config) -> None
     assert 'option value="2.18" selected' in response.text
 
 
+def test_github_repo_form_renders_phase2_controls(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/github-repo-generic")
+
+    assert response.status_code == 200
+    assert "form-panel--platform" in response.text
+    assert "governance-card--platform" in response.text
+    assert 'id="create_mode"' in response.text
+    assert 'data-github-repo-when="template"' in response.text
+    assert 'id="github-team-slugs-block"' in response.text
+    assert 'id="team_slugs"' in response.text
+    assert 'id="github-teams-hint"' in response.text
+    assert 'id="github-team-slugs"' in response.text
+    assert 'id="sync_team_membership_toggle"' in response.text
+    assert 'id="sync_team_membership"' in response.text
+    assert 'name="sync_team_membership"' in response.text
+    assert 'id="membership_source_team"' in response.text
+    assert 'id="github-source-team-members"' in response.text
+    assert 'id="github-source-team-members-list"' in response.text
+    assert 'id="ruleset_profile"' in response.text
+    assert "default-pr — require PRs" in response.text
+    assert "/api/v2/github/teams" in response.text
+    assert "/api/v2/github/teams/${encodeURIComponent(slug)}/members" in response.text
+    sync_pos = response.text.index('id="sync_team_membership_toggle"')
+    source_pos = response.text.index('id="membership_source_team"')
+    assert sync_pos < source_pos
+
+
 def test_app_service_form_renders_backstage_catalog(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/app-service-generic")

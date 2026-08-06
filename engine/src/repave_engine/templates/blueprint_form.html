@@ -740,6 +740,80 @@
         </div>
       </div>
       {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "support_windows" %}
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "team_slugs" %}
+      <div class="field-block" id="github-team-slugs-block">
+        <label for="team_slugs">Destination teams</label>
+        <p class="hint">
+          Comma-separated org team slugs. Each receives the team permission below.
+          When membership sync is on, missing teams are created first.
+        </p>
+        <input
+          class="input"
+          id="team_slugs"
+          name="team_slugs"
+          type="text"
+          list="github-team-slugs"
+          value="{{ field.default or '' }}"
+          autocomplete="off"
+          placeholder="platform-admins, developers"
+        />
+        <p class="hint" id="github-teams-hint">Loading org teams…</p>
+        <datalist id="github-team-slugs"></datalist>
+      </div>
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "membership_source_team" %}
+      <div class="field-block" id="github-membership-source-block">
+        <label for="membership_source_team">Membership source team</label>
+        <p class="hint">
+          Existing org team whose members are copied into the destination teams
+          (additive only). Required when sync is on and destination teams are set.
+        </p>
+        <input
+          class="input"
+          id="membership_source_team"
+          name="membership_source_team"
+          type="text"
+          list="github-team-slugs"
+          value="{{ field.default or '' }}"
+          autocomplete="off"
+          placeholder="platform"
+        />
+        <div
+          id="github-source-team-members"
+          class="github-team-members"
+          hidden
+          aria-live="polite"
+        >
+          <p class="hint" id="github-source-team-members-status"></p>
+          <ul id="github-source-team-members-list" class="github-team-members__list"></ul>
+        </div>
+      </div>
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "sync_team_membership" %}
+      <div class="field-block" id="github-sync-membership-block">
+        <label class="checkbox-row" for="sync_team_membership_toggle">
+          <input type="checkbox" id="sync_team_membership_toggle" />
+          Sync membership from source team
+        </label>
+        <input type="hidden" id="sync_team_membership" name="sync_team_membership" value="" />
+        <p class="hint">
+          Adds members who are missing on destination teams; does not remove extras.
+        </p>
+      </div>
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "ruleset_profile" %}
+      <div class="field-block" id="github-ruleset-profile-block">
+        <label for="ruleset_profile">Ruleset profile</label>
+        <p class="hint">
+          Applied after the overlay push. default-pr requires pull requests and blocks
+          force-push on the default branch (no required status checks).
+        </p>
+        <select class="select" id="ruleset_profile" name="ruleset_profile">
+          <option value="none" {% if (field.default or 'none') == 'none' %}selected{% endif %}>
+            none — skip ruleset
+          </option>
+          <option value="default-pr" {% if field.default == 'default-pr' %}selected{% endif %}>
+            default-pr — require PRs, block force-push
+          </option>
+        </select>
+      </div>
       {% elif blueprint.artifact_type == "ansible-collection" and ansible_collection_sample_patterns and ansible_catalog and field.name == "sample_role_pattern_source" %}
       <div class="field-block" id="ansible-collection-sample-pattern-block">
         <label for="sample_role_pattern_source">Sample role pattern</label>
@@ -2933,6 +3007,17 @@
   const modeSelect = document.getElementById("create_mode");
   const templateBlocks = document.querySelectorAll("[data-github-repo-when='template']");
   const teamInput = document.getElementById("team_slugs");
+  const sourceInput = document.getElementById("membership_source_team");
+  const syncToggle = document.getElementById("sync_team_membership_toggle");
+  const syncHidden = document.getElementById("sync_team_membership");
+  const teamsHint = document.getElementById("github-teams-hint");
+  const dataList = document.getElementById("github-team-slugs");
+  const membersPanel = document.getElementById("github-source-team-members");
+  const membersStatus = document.getElementById("github-source-team-members-status");
+  const membersList = document.getElementById("github-source-team-members-list");
+  let syncTouched = false;
+  let membersTimer = 0;
+
   const syncTemplateFields = () => {
     const isTemplate = modeSelect && modeSelect.value === "template";
     templateBlocks.forEach((block) => {
@@ -2946,39 +3031,167 @@
       });
     });
   };
+
+  const writeSyncHidden = () => {
+    if (!syncHidden || !syncToggle) {
+      return;
+    }
+    syncHidden.value = syncToggle.checked ? "true" : "false";
+  };
+
+  const syncMembershipDefaults = () => {
+    if (!syncToggle || !sourceInput) {
+      return;
+    }
+    const hasSource = Boolean(sourceInput.value.trim());
+    if (!syncTouched) {
+      syncToggle.checked = hasSource;
+    }
+    writeSyncHidden();
+  };
+
+  const fillTeamDatalist = (slugs) => {
+    if (!dataList) {
+      return;
+    }
+    dataList.replaceChildren();
+    slugs.forEach((slug) => {
+      const option = document.createElement("option");
+      option.value = slug;
+      dataList.appendChild(option);
+    });
+  };
+
+  const clearMemberPreview = () => {
+    if (membersList) {
+      membersList.replaceChildren();
+    }
+    if (membersStatus) {
+      membersStatus.textContent = "";
+    }
+    if (membersPanel) {
+      membersPanel.hidden = true;
+    }
+  };
+
+  const renderMemberPreview = (members) => {
+    if (!membersPanel || !membersStatus || !membersList) {
+      return;
+    }
+    membersPanel.hidden = false;
+    membersList.replaceChildren();
+    if (!members.length) {
+      membersStatus.textContent = "Source team has no members (or none visible to this token).";
+      return;
+    }
+    const preview = members.slice(0, 25);
+    membersStatus.textContent =
+      members.length > preview.length
+        ? `${members.length} members (showing first ${preview.length}):`
+        : `${members.length} member${members.length === 1 ? "" : "s"}:`;
+    preview.forEach((login) => {
+      const item = document.createElement("li");
+      item.textContent = login;
+      membersList.appendChild(item);
+    });
+  };
+
+  const loadSourceMembers = () => {
+    if (!sourceInput || !membersPanel) {
+      return;
+    }
+    const slug = sourceInput.value.trim();
+    if (!slug) {
+      clearMemberPreview();
+      return;
+    }
+    membersPanel.hidden = false;
+    if (membersStatus) {
+      membersStatus.textContent = `Loading members of ${slug}…`;
+    }
+    if (membersList) {
+      membersList.replaceChildren();
+    }
+    const path = `/api/v2/github/teams/${encodeURIComponent(slug)}/members`;
+    fetch(path)
+      .then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        const members = Array.isArray(payload.members) ? payload.members : [];
+        renderMemberPreview(members.map((item) => String(item)).filter(Boolean));
+      })
+      .catch(() => {
+        if (membersStatus) {
+          membersStatus.textContent =
+            `Could not list members of ${slug}. Check the team slug and GitHub credentials.`;
+        }
+        if (membersList) {
+          membersList.replaceChildren();
+        }
+        membersPanel.hidden = false;
+      });
+  };
+
+  const scheduleMemberPreview = () => {
+    window.clearTimeout(membersTimer);
+    membersTimer = window.setTimeout(loadSourceMembers, 300);
+  };
+
   if (modeSelect) {
     modeSelect.addEventListener("change", syncTemplateFields);
     syncTemplateFields();
   }
-  if (teamInput && teamInput.tagName === "INPUT") {
-    const hint = document.createElement("p");
-    hint.className = "hint";
-    hint.id = "github-teams-hint";
-    hint.textContent = "Loading org teams…";
-    teamInput.insertAdjacentElement("afterend", hint);
+
+  if (syncToggle && syncHidden) {
+    syncToggle.addEventListener("change", () => {
+      syncTouched = true;
+      writeSyncHidden();
+    });
+    syncMembershipDefaults();
+  }
+
+  if (sourceInput) {
+    sourceInput.addEventListener("input", () => {
+      syncMembershipDefaults();
+      scheduleMemberPreview();
+    });
+    sourceInput.addEventListener("change", () => {
+      syncMembershipDefaults();
+      loadSourceMembers();
+    });
+    if (sourceInput.value.trim()) {
+      loadSourceMembers();
+    }
+  }
+
+  if (teamsHint) {
     fetch("/api/v2/github/teams")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload) => {
         const teams = Array.isArray(payload.teams) ? payload.teams : [];
         if (!teams.length) {
-          hint.textContent = "No teams returned; enter team slugs as a comma-separated list.";
+          teamsHint.textContent =
+            "No teams returned; enter team slugs as a comma-separated list.";
           return;
         }
-        const slugs = teams.map((team) => team.slug).filter(Boolean);
-        hint.textContent = `Org teams: ${slugs.join(", ")}`;
-        teamInput.setAttribute("list", "github-team-slugs");
-        let dataList = document.getElementById("github-team-slugs");
-        if (!dataList) {
-          dataList = document.createElement("datalist");
-          dataList.id = "github-team-slugs";
-          teamInput.insertAdjacentElement("afterend", dataList);
+        const slugs = teams
+          .map((team) => (team && team.slug ? String(team.slug) : ""))
+          .filter(Boolean);
+        teamsHint.textContent = `Org teams: ${slugs.join(", ")}`;
+        fillTeamDatalist(slugs);
+        if (teamInput) {
+          teamInput.setAttribute("list", "github-team-slugs");
         }
-        dataList.innerHTML = slugs
-          .map((slug) => `<option value="${slug}"></option>`)
-          .join("");
+        if (sourceInput) {
+          sourceInput.setAttribute("list", "github-team-slugs");
+        }
       })
       .catch(() => {
-        hint.textContent =
+        teamsHint.textContent =
           "Could not list org teams (token/org). Enter team slugs as a comma-separated list.";
       });
   }
