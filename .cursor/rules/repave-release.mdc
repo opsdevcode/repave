@@ -58,6 +58,18 @@ Never remove `psr()` / `env -u GITHUB_OUTPUT` when “simplifying” the workflo
 | `upload_to_vcs_release` | `false` | Workflow uses `gh release create`, not PSR publish |
 | PSR invocations | `psr()` → `env -u GITHUB_OUTPUT` | Avoid required GHA output `commit_sha` |
 
+## CRITICAL: CI and Release share one test toolchain
+
+Release runs full engine pytest **before** tagging. Tags drive EKS deploys
+(`repave-aws-infra`). If Release lacks a runtime that CI has, tests fail and
+**no tag ships**.
+
+- Put new engine-test runtimes (JDK, .NET, Maven, …) in
+  **`.github/actions/gate-toolchain`**, not only in `ci.yml`.
+- Release must call that composite; do not duplicate `setup-java` /
+  `setup-dotnet` in `release.yml`.
+- Guard: `scripts/check_release_test_toolchain.py` (Python quality workflow).
+
 ## Common failure modes (fixed in repo history)
 
 - **GH013** direct push to `main` → admin-merge release PR pattern (#52+).
@@ -67,6 +79,9 @@ Never remove `psr()` / `env -u GITHUB_OUTPUT` when “simplifying” the workflo
 - **Tag without GitHub Release** → `publish_github_release` after merge (#54).
 - **Operator tests in Release** → `working-directory: operator` for `make test` (#50).
 - **Changelog stale** → `sync_changelog_if_needed` + `make changelog` on `main`.
+- **CI/Release toolchain drift (Java 21)** → app-service gates passed CI but
+  Release lacked Temurin; versions stuck at 2.24.0 until gate-toolchain owned
+  JDK/.NET/Maven for both workflows.
 
 ## Do not
 
@@ -76,5 +91,7 @@ Never remove `psr()` / `env -u GITHUB_OUTPUT` when “simplifying” the workflo
   GitHub Release.
 - Hand-bump `engine/pyproject.toml` version in feature PRs (use `feat:` / `fix:`
   on `main`).
+- Add engine-test runtimes to `ci.yml` without the same change in
+  `.github/actions/gate-toolchain` (Release will break; no tags; no EKS deploy).
 
 See `CONTRIBUTING.md` maintainer setup and `.github/workflows/release.yml`.

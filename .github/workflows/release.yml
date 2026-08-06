@@ -58,6 +58,8 @@ jobs:
           uv sync --extra dev --frozen
           uv pip install "python-semantic-release~=10.0"
 
+      # Same composite as CI: CLIs + JDK 21 + .NET 10 + Maven. Do not duplicate
+      # runtime setup here — tags (and EKS deploys) stall when Release drifts.
       - name: Install gate toolchain
         uses: ./.github/actions/gate-toolchain
 

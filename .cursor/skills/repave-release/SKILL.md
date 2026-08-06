@@ -26,6 +26,11 @@ Read `.github/workflows/release.yml` and `engine/pyproject.toml` `[tool.semantic
 - Version file paths are **relative to `engine/`**, not `engine/engine/`.
 - Never push version commits directly to `main`; use `chore/release/*` +
   `gh pr merge --admin`.
+- **CI ≡ Release test toolchain:** engine-test runtimes (JDK 21, .NET, Maven,
+  future CLIs) live in **`.github/actions/gate-toolchain`**. Both `ci.yml` and
+  `release.yml` must call that composite. Tags drive EKS deploys — Release
+  toolchain drift = no tag = no deploy. Guard:
+  `python3 scripts/check_release_test_toolchain.py`.
 
 ## Debug a failed Release run
 
@@ -39,6 +44,7 @@ gh run view <run-id> --repo opsdevcode/repave --log-failed
 | `engine/engine/pyproject.toml` | Version paths relative to `engine/` only |
 | GH013 push to main | Release PR + `--admin` merge (already in workflow) |
 | No GitHub Release for tag | `publish_github_release` repair block |
+| `maven-compiler-plugin` / java-build fail on Release only | Add runtime to **gate-toolchain**, not ci.yml alone; run `check_release_test_toolchain.py` |
 
 ## Checklist after editing release config
 
