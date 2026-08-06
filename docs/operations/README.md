@@ -30,6 +30,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | Postgres data loss / restore | [postgres-backup-restore.md](postgres-backup-restore.md) |
 | Auth0 portal access (hosted login) | [auth0-portal.md](auth0-portal.md) |
 | Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
+| github-repo apply without fleet register / missing GPR | [github-repo-fleet-validation.md](github-repo-fleet-validation.md) |
 
 ## Runbooks
 
@@ -124,3 +125,4 @@ Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md]
 - [`postgres-backup-restore.md`](postgres-backup-restore.md) — Postgres DR runbook
 - [`dr-drill-log.md`](dr-drill-log.md) — recorded backup/restore drills
 - [`crd-conversion-recovery.md`](crd-conversion-recovery.md) — operator CRD conversion drill
+- [`github-repo-fleet-validation.md`](github-repo-fleet-validation.md) — github-repo → fleet → GPR

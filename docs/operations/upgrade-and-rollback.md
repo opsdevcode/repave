@@ -21,6 +21,14 @@ Assumes a single replica or shared run/session store when scaling — see
 
    Production overlays: [`values-decomposed-day2.yaml`](../k8s/chart/values-decomposed-day2.yaml).
 
+   When fleet shared PVC / fleetsync is enabled, also run:
+
+   ```bash
+   make chart-smoke-fleet-snapshot
+   ```
+
+   See [github-repo fleet validation](github-repo-fleet-validation.md).
+
 2. **Pin the image by digest** in production overlays (not only `:latest`). Example:
 
    ```bash
