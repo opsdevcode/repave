@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 from repave_engine.sql_store import DatabaseConfig, connect
+from repave_engine.statestore.normalize import EDGE_REFERENCE, Edge
 from repave_engine.statestore.store import StateStore, ensure_state_schema
 from repave_engine.statestore.transactions import (
     INTENT_READ,
@@ -163,6 +164,7 @@ def test_operations_on_an_unknown_transaction_report_absent(store: StateStore) -
     assert store.commit_transaction("nope", _state(1, "a.b"), author="x").status == "absent"
     assert store.transactions.prepare_commit("nope").status == "absent"
     assert not store.transactions.record_resources("nope", []).ok
+    assert not store.transactions.record_config_edges("nope", []).ok
     assert not store.transactions.record_gates("nope", []).ok
 
 
@@ -174,6 +176,47 @@ def test_recording_resources_replaces_the_previous_set(store: StateStore) -> Non
     refreshed = store.transactions.get(tx.tx_id)
     assert refreshed is not None
     assert refreshed.write_set == ("c.three",)
+
+
+def test_recording_config_edges_replaces_the_previous_set(store: StateStore) -> None:
+    tx = store.open_transaction(TENANT, NAME, author="alice")
+    first = [
+        Edge(from_address="aws_subnet.web", to_address="aws_vpc.main", kind=EDGE_REFERENCE),
+        Edge(from_address="aws_subnet.web", to_address="aws_vpc.main", kind=EDGE_REFERENCE),
+    ]
+    assert store.transactions.record_config_edges(tx.tx_id, first).ok
+    assert store.transactions.record_config_edges(
+        tx.tx_id,
+        [Edge(from_address="aws_instance.app", to_address="aws_subnet.web", kind=EDGE_REFERENCE)],
+    ).ok
+
+    refreshed = store.transactions.get(tx.tx_id)
+    assert refreshed is not None
+    assert [(e.from_address, e.to_address) for e in refreshed.config_edges] == [
+        ("aws_instance.app", "aws_subnet.web")
+    ]
+
+
+def test_commit_applies_preview_config_edges_to_the_graph(store: StateStore) -> None:
+    """State without depends_on still gets configuration references after commit."""
+    store.write_state(TENANT, NAME, _state(1, "aws_vpc.main"), author="seed")
+    tx = store.open_transaction(TENANT, NAME, author="alice")
+    store.transactions.record_resources(tx.tx_id, _writes("aws_subnet.web"))
+    store.transactions.record_config_edges(
+        tx.tx_id,
+        [Edge(from_address="aws_subnet.web", to_address="aws_vpc.main", kind=EDGE_REFERENCE)],
+    )
+    store.transactions.transition(tx.tx_id, "previewing")
+
+    outcome = store.commit_transaction(
+        tx.tx_id, _state(2, "aws_vpc.main", "aws_subnet.web"), author="alice"
+    )
+    assert outcome.status == "committed", outcome.detail
+
+    edges = store.edges(TENANT, NAME)
+    assert [(e.from_address, e.to_address, e.kind) for e in edges] == [
+        ("aws_subnet.web", "aws_vpc.main", "reference")
+    ]
 
 
 def test_a_final_transaction_refuses_new_resources(store: StateStore) -> None:

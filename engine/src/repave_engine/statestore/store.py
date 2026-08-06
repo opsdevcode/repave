@@ -479,7 +479,14 @@ class StateStore:
                 blocking_gates=prepared.blocking_gates,
             )
 
-        written = self.write_state(tenant_id, name, raw, author=author, lock_id=lock_id)
+        written = self.write_state(
+            tenant_id,
+            name,
+            raw,
+            author=author,
+            lock_id=lock_id,
+            extra_edges=list(tx.config_edges),
+        )
         if written.status in ("invalid", "conflict", "locked"):
             self._transactions.fail(tx_id, detail=written.detail)
             return CommitOutcome(
@@ -510,8 +517,13 @@ class StateStore:
         *,
         author: str,
         lock_id: str | None = None,
+        extra_edges: list[Edge] | None = None,
     ) -> WriteOutcome:
-        """Persist a new state version, enforcing lock, lineage, and serial guards."""
+        """Persist a new state version, enforcing lock, lineage, and serial guards.
+
+        ``extra_edges`` are typically plan-JSON configuration references recorded on a
+        transaction at preview; they enrich the graph beyond state ``depends_on``.
+        """
         try:
             document = parse_state_document(raw)
         except StateDocumentError as exc:
@@ -539,7 +551,7 @@ class StateStore:
                 serial=document.serial,
             )
 
-        return self._insert_version(state_id, document, author=author)
+        return self._insert_version(state_id, document, author=author, extra_edges=extra_edges)
 
     def _guard_write(self, row: Any, document: StateDocument) -> WriteOutcome | None:
         stored_lineage = str(row["lineage"] or "")
@@ -591,7 +603,12 @@ class StateStore:
         return str(found["blob_sha256"]) if found is not None else ""
 
     def _insert_version(
-        self, state_id: str, document: StateDocument, *, author: str
+        self,
+        state_id: str,
+        document: StateDocument,
+        *,
+        author: str,
+        extra_edges: list[Edge] | None = None,
     ) -> WriteOutcome:
         blob, encryption, key_id = seal_blob(document.raw, self._crypto)
         version_id = _new_id()
@@ -632,6 +649,7 @@ class StateStore:
                 state_id=state_id,
                 version_id=version_id,
                 normalized=normalized,
+                extra_edges=extra_edges,
             )
             self._conn.commit()
         except Exception:

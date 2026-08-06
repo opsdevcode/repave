@@ -110,10 +110,10 @@ Option 2 should be attempted and shown insufficient before Phase 4 is considered
 | ----- | ----- |
 | Date | 2026-08-06 |
 | Owner | platform (Eric Skaggs) |
-| Entry conditions met | **No** — none of 1–6 hold (store still off by default in shared deploys; no production trust window; PITR for state store not rehearsed; plan-JSON config edges not on the write path; treadmill owner and hard-problem answers open) |
+| Entry conditions met | **No** — 1–3, 5–6 unmet (store still off by default in shared deploys; no production trust window; PITR for state store not rehearsed; treadmill owner and hard-problem answers open). **Condition 4 partial:** transaction preview/commit persists plan-JSON config edges onto the graph; direct backend/import writes remain state-derived only. |
 | Alternative 2 attempted | **No** — split-the-configuration not shown insufficient; buy option not priced for this estate |
 | Decision | **No-go** |
-| Revisit | When entry conditions **1–3** hold; conditions **4–6** remain required before any Go. Prefer measuring split-config / buy before reopening. |
+| Revisit | When entry conditions **1–3** hold; conditions **4–6** remain required before any Go (treat 4 as met for the transaction path once fleet applies use `repave-tf`). Prefer measuring split-config / buy before reopening. |
 
 ### Rationale
 
@@ -129,8 +129,8 @@ build Phase 4 unless this gate is passed. The default remains no-go; absence of 
 
 ### Next productive work (not Phase 4)
 
-1. Phases 1–3 shared-deploy enablement — named treadmill owner, platform security sign-off,
-   Helm/`REPAVE_STATE_*` / KEK wiring, rehearsed PITR.
-2. Wire plan-JSON configuration edges into graph writes (`edges_from_plan_json` is prep only
-   today) — entry condition 4.
+1. Complete Phases 1–3 shared-deploy gates — named treadmill owner, platform security
+   sign-off, rehearsed PITR (Helm/`REPAVE_STATE_*` / KEK knobs shipped).
+2. Prefer fleet apply via `repave-tf` transactions so config edges stay on the write path;
+   optional follow-up: attach plan JSON on direct import if needed.
 3. Only after a future **Go**: read-only partition analyzer, then concurrent apply.

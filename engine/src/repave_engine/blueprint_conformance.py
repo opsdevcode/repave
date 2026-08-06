@@ -58,6 +58,10 @@ _Copier_VAR = re.compile(r"\{\{(?!\s*[\.\-$]|\s*include)")
 _ENGINE_PIP_PIN = re.compile(r"repave-engine==[\d.]+(?:\.\w+)?")
 _ENGINE_VERSION_YAML = re.compile(r"(?m)^(\s*engine_version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$")
 _README_ENGINE_LINE = re.compile(r"(?m)^(- \*\*Engine:\*\* `)[\d.]+(?:\.\w+)?(`)")
+# Backstage annotation written by backstage_catalog.py — live version, hash-neutral.
+_CATALOG_ENGINE_ANNOTATION = re.compile(
+    r"(?m)^(\s*repave\.dev/engine-version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$"
+)
 _MANIFEST_ENGINE_NEUTRAL = b"SNAPSHOT"
 
 
@@ -343,6 +347,11 @@ def _normalize_manifest_bytes(rel: str, data: bytes) -> bytes:
         )
     elif rel == "README.md":
         text = _README_ENGINE_LINE.sub(rf"\1{_MANIFEST_ENGINE_NEUTRAL.decode()}\2", text)
+    elif rel == "catalog-info.yaml" or rel.endswith("/catalog-info.yaml"):
+        text = _CATALOG_ENGINE_ANNOTATION.sub(
+            rf"\1\2{_MANIFEST_ENGINE_NEUTRAL.decode()}\2",
+            text,
+        )
     return text.encode("utf-8")
 
 
