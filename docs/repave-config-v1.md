@@ -69,7 +69,11 @@ When `database_url` is set:
 | Async runs | `runs`, `run_events` | — (SQL only) |
 | Audit | `audit_events` | `audit.file` when `export_jsonl: true` |
 | Fleet | `fleet_events` | `fleet.file` when `export_jsonl: true` |
+| DX metrics snapshots | `dx_metrics_snapshots` | `platform_metrics.snapshot_file` when `export_jsonl: true` |
 | OIDC sessions | `sessions` | — |
+
+Platform adoption config (`platform_metrics`) is documented in
+[`platform-metrics.md`](platform-metrics.md).
 
 Set `durability.export_jsonl: false` in production when you rely on Postgres backup/restore
 ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md))

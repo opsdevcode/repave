@@ -1,8 +1,13 @@
-"""Prometheus metrics for generation operations."""
+"""Prometheus metrics for generation operations and DX outcomes."""
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from prometheus_client import Counter, Gauge, Histogram
+
+if TYPE_CHECKING:
+    from repave_engine.dx_metrics import DxMetricsSnapshot
 
 GENERATION_TOTAL = Counter(
     "repave_generations_total",
@@ -28,6 +33,18 @@ JSONL_APPEND_FAILURES = Counter(
     "Failed append-only JSONL store writes",
     ["store"],
 )
+GOLDEN_PATH_ADOPTION_RATIO = Gauge(
+    "repave_golden_path_adoption_ratio",
+    "Governed repositories over eligible repositories",
+)
+PLAN_APPLY_CONVERSION_RATIO = Gauge(
+    "repave_plan_apply_conversion_ratio",
+    "Apply count over plan (dry-run) count from audit",
+)
+TIME_TO_FIRST_ARTIFACT_SECONDS = Gauge(
+    "repave_dx_time_to_first_artifact_seconds",
+    "p50 seconds from first audit event to first successful apply per user",
+)
 
 
 def record_jsonl_append_failure(store: str) -> None:
@@ -40,3 +57,12 @@ def record_run_queue_depth(depth: int) -> None:
 
 def record_run_terminal(outcome: str, blueprint: str) -> None:
     RUNS_TOTAL.labels(outcome=outcome, blueprint=blueprint).inc()
+
+
+def record_dx_metrics(snapshot: DxMetricsSnapshot) -> None:
+    if snapshot.adoption_ratio is not None:
+        GOLDEN_PATH_ADOPTION_RATIO.set(snapshot.adoption_ratio)
+    if snapshot.plan_apply_ratio is not None:
+        PLAN_APPLY_CONVERSION_RATIO.set(snapshot.plan_apply_ratio)
+    if snapshot.time_to_first_artifact_seconds_p50 is not None:
+        TIME_TO_FIRST_ARTIFACT_SECONDS.set(snapshot.time_to_first_artifact_seconds_p50)

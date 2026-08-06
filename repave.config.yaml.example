@@ -101,6 +101,19 @@ gates:
 #   operator_status_file: ../repave-fleet/operator-status.json
 # Override path: REPAVE_FLEET_FILE, REPAVE_FLEET_OPERATOR_STATUS_FILE
 
+# Optional golden-path adoption / DX outcome metrics (platform-as-a-product).
+# See docs/platform-metrics.md. Surfaces: /platform/adoption, GET /api/v2/platform/metrics,
+# `repave metrics adoption`, Prometheus gauges.
+# platform_metrics:
+#   enabled: true
+#   snapshot_file: data/platform-metrics/snapshots.jsonl
+#   github_orgs: [your-github-org]
+#   github_topics: []
+#   search_limit: 100
+#   baseline_adoption_ratio: 0.6
+#   baseline_plan_apply_ratio: 0.4
+# Or: REPAVE_PLATFORM_METRICS=1, REPAVE_PLATFORM_METRICS_FILE=...
+
 # Optional async generation queue (see docs/durability.md).
 # Hosted service mode (auth.service_mode) REQUIRES database_url — JSONL is export-only.
 # durability:

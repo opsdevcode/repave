@@ -152,6 +152,7 @@ def test_platform_fleet_page_renders(repo_root, output_config, registry: Path) -
     assert "Register repository" in body
     assert "terraform-module-generic@0.9.0" in body
     assert "/platform/ops" in body
+    assert "/platform/adoption" in body
 
 
 def test_platform_fleet_register_and_unregister(repo_root, output_config, registry: Path) -> None:

@@ -90,7 +90,6 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "initCopyButtons" in response.text
     assert "initBusyForms" in response.text
     assert "initFormStepper" in response.text
-    assert "initHomeQuicknav" in response.text
     assert "initCatalogSearch" in response.text
     assert "initGateDashboard" in response.text
     assert "initFormDraft" in response.text

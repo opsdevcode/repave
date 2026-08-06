@@ -28,6 +28,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/github/teams" in payload["endpoints"]
     assert "GET /api/v2/github/teams/{slug}/members" in payload["endpoints"]
     assert "GET /api/v2/fleet" in payload["endpoints"]
+    assert "GET /api/v2/platform/metrics" in payload["endpoints"]
 
 
 def test_api_v2_upgrades_plan(repo_root, output_config, tmp_path) -> None:

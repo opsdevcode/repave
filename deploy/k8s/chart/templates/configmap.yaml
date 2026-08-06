@@ -32,6 +32,26 @@ data:
       operator_status_file: {{ .Values.repave.fleet.operatorStatusFile | quote }}
       {{- end }}
     {{- end }}
+    {{- if .Values.repave.platformMetrics.enabled }}
+    platform_metrics:
+      enabled: true
+      snapshot_file: {{ .Values.repave.platformMetrics.snapshotFile | quote }}
+      search_limit: {{ .Values.repave.platformMetrics.searchLimit }}
+      {{- if .Values.repave.platformMetrics.githubOrgs }}
+      github_orgs:
+{{ toYaml .Values.repave.platformMetrics.githubOrgs | indent 8 }}
+      {{- end }}
+      {{- if .Values.repave.platformMetrics.githubTopics }}
+      github_topics:
+{{ toYaml .Values.repave.platformMetrics.githubTopics | indent 8 }}
+      {{- end }}
+      {{- if not (eq (toString .Values.repave.platformMetrics.baselineAdoptionRatio) "") }}
+      baseline_adoption_ratio: {{ .Values.repave.platformMetrics.baselineAdoptionRatio }}
+      {{- end }}
+      {{- if not (eq (toString .Values.repave.platformMetrics.baselinePlanApplyRatio) "") }}
+      baseline_plan_apply_ratio: {{ .Values.repave.platformMetrics.baselinePlanApplyRatio }}
+      {{- end }}
+    {{- end }}
     {{- if .Values.repave.auth.serviceMode }}
     auth:
       service_mode: true

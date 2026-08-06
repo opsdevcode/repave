@@ -285,3 +285,79 @@ def find_campaign_in_snapshot(
         if campaign.name == target_name and row_ns == target_ns:
             return campaign
     return None
+
+
+@dataclass(frozen=True)
+class AdoptionTrendPoint:
+    captured_at: str
+    adoption_ratio: float | None
+    plan_apply_ratio: float | None
+    spark_value: int  # 0 fail-ish, 1 pass-ish, 2 empty
+
+
+@dataclass(frozen=True)
+class PlatformAdoptionPage:
+    metrics_enabled: bool
+    snapshot: object | None
+    history: tuple[AdoptionTrendPoint, ...]
+    bypass_preview: tuple[str, ...]
+
+
+def build_platform_adoption_page(
+    repo_root: Path,
+    *,
+    github_token: str | None = None,
+    persist: bool = False,
+) -> PlatformAdoptionPage:
+    from repave_engine.dx_metrics_store import capture_dx_metrics, read_dx_metrics_snapshots
+    from repave_engine.settings import load_platform_metrics_config
+
+    metrics_cfg = load_platform_metrics_config(repo_root)
+    if metrics_cfg is None:
+        return PlatformAdoptionPage(
+            metrics_enabled=False,
+            snapshot=None,
+            history=(),
+            bypass_preview=(),
+        )
+    snapshot = capture_dx_metrics(
+        repo_root,
+        github_token=github_token,
+        persist=persist,
+    )
+    history_snaps = read_dx_metrics_snapshots(
+        metrics_cfg.snapshot_file,
+        repo_root=repo_root,
+        limit=12,
+    )
+    # oldest → newest for sparkline left-to-right
+    chronological = tuple(reversed(history_snaps))
+    history = tuple(
+        AdoptionTrendPoint(
+            captured_at=item.captured_at,
+            adoption_ratio=item.adoption_ratio,
+            plan_apply_ratio=item.plan_apply_ratio,
+            spark_value=_adoption_spark_value(
+                item.adoption_ratio,
+                baseline=item.baseline_adoption_ratio,
+            ),
+        )
+        for item in chronological
+    )
+    return PlatformAdoptionPage(
+        metrics_enabled=True,
+        snapshot=snapshot,
+        history=history,
+        bypass_preview=snapshot.bypass_repos[:25],
+    )
+
+
+def _adoption_spark_value(
+    ratio: float | None,
+    *,
+    baseline: float | None,
+) -> int:
+    if ratio is None:
+        return 2
+    threshold = baseline if baseline is not None else 0.5
+    return 1 if ratio >= threshold else 0

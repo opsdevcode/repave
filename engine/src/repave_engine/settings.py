@@ -183,6 +183,100 @@ class FleetConfig:
     gitops_namespace: str = "default"
 
 
+@dataclass(frozen=True)
+class PlatformMetricsConfig:
+    """Outcome metrics for golden-path adoption (platform-as-a-product)."""
+
+    enabled: bool
+    snapshot_file: Path
+    github_orgs: tuple[str, ...] = ()
+    github_topics: tuple[str, ...] = ()
+    search_limit: int = 100
+    baseline_adoption_ratio: float | None = None
+    baseline_plan_apply_ratio: float | None = None
+
+
+def load_platform_metrics_config(repo_root: Path) -> PlatformMetricsConfig | None:
+    """Resolve platform_metrics from repave.config.yaml and env overrides."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("platform_metrics")
+    env_enabled = os.environ.get("REPAVE_PLATFORM_METRICS", "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    env_file = os.environ.get("REPAVE_PLATFORM_METRICS_FILE", "").strip()
+
+    def _resolve(value: str) -> Path:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        return path
+
+    if block is None:
+        if not env_enabled and not env_file:
+            return None
+        return PlatformMetricsConfig(
+            enabled=True,
+            snapshot_file=_resolve(env_file or "data/platform-metrics/snapshots.jsonl"),
+        )
+
+    if not isinstance(block, dict):
+        raise ValueError("platform_metrics must be a mapping in repave.config.yaml")
+
+    enabled_raw = block.get("enabled", True)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("platform_metrics.enabled must be a boolean")
+    enabled = enabled_raw or env_enabled
+
+    path = _resolve(str(block.get("snapshot_file", "data/platform-metrics/snapshots.jsonl")))
+    if env_file:
+        path = _resolve(env_file)
+
+    orgs_raw = block.get("github_orgs", [])
+    topics_raw = block.get("github_topics", [])
+    if orgs_raw is None:
+        orgs_raw = []
+    if topics_raw is None:
+        topics_raw = []
+    if not isinstance(orgs_raw, list) or not all(isinstance(item, str) for item in orgs_raw):
+        raise ValueError("platform_metrics.github_orgs must be a list of strings")
+    if not isinstance(topics_raw, list) or not all(isinstance(item, str) for item in topics_raw):
+        raise ValueError("platform_metrics.github_topics must be a list of strings")
+
+    limit_raw = block.get("search_limit", 100)
+    try:
+        search_limit = int(limit_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("platform_metrics.search_limit must be an integer") from exc
+    search_limit = max(1, min(search_limit, 1000))
+
+    def _optional_ratio(key: str) -> float | None:
+        raw = block.get(key)
+        if raw is None:
+            return None
+        try:
+            value = float(raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"platform_metrics.{key} must be a number") from exc
+        if value < 0.0 or value > 1.0:
+            raise ValueError(f"platform_metrics.{key} must be between 0 and 1")
+        return value
+
+    if not enabled:
+        return None
+    return PlatformMetricsConfig(
+        enabled=True,
+        snapshot_file=path,
+        github_orgs=tuple(item.strip() for item in orgs_raw if item.strip()),
+        github_topics=tuple(item.strip() for item in topics_raw if item.strip()),
+        search_limit=search_limit,
+        baseline_adoption_ratio=_optional_ratio("baseline_adoption_ratio"),
+        baseline_plan_apply_ratio=_optional_ratio("baseline_plan_apply_ratio"),
+    )
+
+
 def load_fleet_config(repo_root: Path) -> FleetConfig | None:
     """Resolve the fleet registry sink, mirroring load_audit_config."""
     file_data = _load_config_file(repo_root / "repave.config.yaml")
