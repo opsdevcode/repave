@@ -18,9 +18,18 @@ SUPPORTED_CONFIG_API_VERSIONS = frozenset({CONFIG_API_VERSION})
 
 
 @dataclass(frozen=True)
+class InfracostGatePolicy:
+    """Org floor for FinOps estimate policy (v1.91)."""
+
+    required: bool = False
+    max_monthly_usd: float | None = None
+
+
+@dataclass(frozen=True)
 class GateOverrides:
     checkov_skip_checks: tuple[str, ...] = ()
     blocked_policy_rule_skips: tuple[str, ...] = ()
+    infracost: InfracostGatePolicy = field(default_factory=InfracostGatePolicy)
 
 
 @dataclass(frozen=True)
@@ -695,19 +704,52 @@ def _resolve_secret(file_value: object, env_value: str | None) -> str | None:
     return text or None
 
 
+def _load_infracost_gate_policy(gates: dict[str, Any]) -> InfracostGatePolicy:
+    block = gates.get("infracost", {})
+    if not isinstance(block, dict):
+        return InfracostGatePolicy()
+    required_raw = block.get("required", False)
+    if isinstance(required_raw, str):
+        required = required_raw.strip().lower() in ("1", "true", "yes", "on")
+    else:
+        required = bool(required_raw)
+    max_raw = block.get("max_monthly_usd")
+    max_monthly: float | None = None
+    if max_raw not in (None, ""):
+        try:
+            max_monthly = float(max_raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "gates.infracost.max_monthly_usd must be a number "
+                "(set in repave.config.yaml or clear the key)"
+            ) from exc
+    env_required = os.environ.get("REPAVE_INFRACOST_REQUIRED", "").strip().lower()
+    if env_required in ("1", "true", "yes", "on"):
+        required = True
+    env_max = os.environ.get("REPAVE_INFRACOST_MAX_MONTHLY_USD", "").strip()
+    if env_max:
+        try:
+            max_monthly = float(env_max)
+        except ValueError as exc:
+            raise ValueError("REPAVE_INFRACOST_MAX_MONTHLY_USD must be a number") from exc
+    return InfracostGatePolicy(required=required, max_monthly_usd=max_monthly)
+
+
 def load_gate_overrides(repo_root: Path) -> GateOverrides:
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     gates = file_data.get("gates", {})
     if not isinstance(gates, dict):
-        return GateOverrides()
+        return GateOverrides(infracost=_load_infracost_gate_policy({}))
 
     checkov = gates.get("checkov", {})
-    if not isinstance(checkov, dict):
-        return GateOverrides()
-
-    skip_checks = checkov.get("skip_checks", [])
-    if not isinstance(skip_checks, list):
-        raise ValueError("gates.checkov.skip_checks must be a list of check IDs")
+    skip_checks: list[Any] = []
+    if isinstance(checkov, dict):
+        raw_skips = checkov.get("skip_checks", [])
+        if not isinstance(raw_skips, list):
+            raise ValueError("gates.checkov.skip_checks must be a list of check IDs")
+        skip_checks = raw_skips
+    elif checkov not in (None, {}):
+        raise ValueError("gates.checkov must be a mapping")
 
     policy = gates.get("policy", {})
     blocked: tuple[str, ...] = ()
@@ -720,6 +762,7 @@ def load_gate_overrides(repo_root: Path) -> GateOverrides:
     return GateOverrides(
         checkov_skip_checks=tuple(str(item) for item in skip_checks),
         blocked_policy_rule_skips=blocked,
+        infracost=_load_infracost_gate_policy(gates),
     )
 
 

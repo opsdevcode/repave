@@ -74,9 +74,20 @@ class GateContext:
     require_run: bool = False
 
     def config(self, gate_name: str) -> Mapping[str, Any]:
-        if self.blueprint is None:
-            return {}
-        return self.blueprint.gate_config_for(gate_name)
+        base: dict[str, Any] = {}
+        if self.blueprint is not None:
+            base = dict(self.blueprint.gate_config_for(gate_name))
+        if gate_name != "infracost" or self.gate_overrides is None:
+            return base
+        policy = self.gate_overrides.infracost
+        # Blueprint cap wins when set; otherwise apply org default.
+        if base.get("max_monthly_usd") in (None, "") and policy.max_monthly_usd is not None:
+            base["max_monthly_usd"] = policy.max_monthly_usd
+        if policy.required:
+            base["required"] = True
+        elif "required" not in base:
+            base["required"] = False
+        return base
 
 
 @dataclass(frozen=True)

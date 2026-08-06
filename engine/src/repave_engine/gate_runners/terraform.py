@@ -139,23 +139,38 @@ def _terraform_plan_json(output_dir: Path, plan_subdir: str) -> Path | None:
     return plan_json
 
 
+def _infracost_unavailable(ctx: GateContext, reason: str, *, required: bool) -> GateResult:
+    """Skip when optional; fail when gates.infracost.required (v1.91 org floor)."""
+    if required:
+        detail = reason.replace("; skipped", "").strip()
+        if not detail.endswith("."):
+            detail = f"{detail}."
+        return GateResult(
+            "infracost",
+            False,
+            False,
+            (
+                f"{detail} gates.infracost.required is enabled — install infracost, "
+                "set INFRACOST_API_KEY, and ensure terraform plan succeeds."
+            ),
+        )
+    return _toolchain_skip(ctx, "infracost", reason, benign=True)
+
+
 def run_infracost(ctx: GateContext) -> GateResult:
     output_dir = ctx.output_dir
+    cfg = ctx.config("infracost")
+    required = bool(cfg.get("required"))
     if not _gr.terraform_usable(output_dir):
-        return _toolchain_skip(ctx, "infracost", "terraform not available", benign=True)
+        return _infracost_unavailable(ctx, "terraform not available", required=required)
     if not _gr.tool_available("infracost"):
-        return _toolchain_skip(ctx, "infracost", "infracost not installed", benign=True)
+        return _infracost_unavailable(ctx, "infracost not installed", required=required)
     if not os.environ.get("INFRACOST_API_KEY", "").strip():
-        return _toolchain_skip(
-            ctx,
-            "infracost",
-            "INFRACOST_API_KEY not set",
-            benign=True,
-        )
+        return _infracost_unavailable(ctx, "INFRACOST_API_KEY not set", required=required)
 
     plan_json = _terraform_plan_json(output_dir, ".repave/infracost-plan")
     if plan_json is None:
-        return _toolchain_skip(ctx, "infracost", "terraform plan unavailable", benign=True)
+        return _infracost_unavailable(ctx, "terraform plan unavailable", required=required)
 
     result = _gr.run_command(
         [
@@ -183,13 +198,12 @@ def run_infracost(ctx: GateContext) -> GateResult:
         return GateResult("infracost", True, False, "infracost returned no cost data")
 
     write_cost_estimate_file(output_dir, estimate)
-    cfg = ctx.config("infracost")
     max_raw = cfg.get("max_monthly_usd")
     if max_raw not in (None, ""):
         try:
             max_monthly = float(max_raw)
             monthly_value = float(estimate.monthly_cost)
-        except ValueError:
+        except (TypeError, ValueError):
             max_monthly = None
             monthly_value = None
         if max_monthly is not None and monthly_value is not None and monthly_value > max_monthly:
@@ -199,7 +213,8 @@ def run_infracost(ctx: GateContext) -> GateResult:
                 False,
                 (
                     f"{estimate.detail}; exceeds configured limit "
-                    f"{estimate.currency} {max_monthly}/month"
+                    f"{estimate.currency} {max_monthly}/month "
+                    "(set gates.infracost.max_monthly_usd or blueprint gate_config.infracost)"
                 ),
             )
 

@@ -62,6 +62,20 @@ def test_render_evidence_checklist_marks_gate_states() -> None:
     assert "[~] `fmt` (skipped)" in body
 
 
+def test_render_evidence_checklist_annotates_cost_estimate() -> None:
+    body = render_evidence_checklist(
+        (
+            GateResult(
+                name="infracost",
+                passed=True,
+                skipped=False,
+                message="Estimated USD 42.00/month across 2 resource(s)",
+            ),
+        )
+    )
+    assert "**Cost estimate:** Estimated USD 42.00/month across 2 resource(s)" in body
+
+
 def test_load_pull_request_conventions_rejects_invalid_block(
     repo_root: Path, tmp_path: Path
 ) -> None:

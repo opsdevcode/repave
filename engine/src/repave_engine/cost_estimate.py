@@ -59,6 +59,86 @@ class CostEstimate:
         }
 
 
+@dataclass(frozen=True)
+class CostEstimateDelta:
+    """Before/after estimate comparison for upgrade/import previews (v1.91)."""
+
+    before: CostEstimate | None
+    after: CostEstimate | None
+    delta_monthly: str | None
+    detail: str
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "before": None if self.before is None else self.before.to_public_dict(),
+            "after": None if self.after is None else self.after.to_public_dict(),
+            "delta_monthly": self.delta_monthly,
+            "detail": self.detail,
+        }
+
+
+def _monthly_as_decimal(value: str) -> Decimal | None:
+    text = value.strip()
+    if not text or text == "—":
+        return None
+    try:
+        return Decimal(text)
+    except InvalidOperation:
+        return None
+
+
+def diff_cost_estimates(
+    before: CostEstimate | None,
+    after: CostEstimate | None,
+) -> CostEstimateDelta | None:
+    if before is None and after is None:
+        return None
+    before_val = None if before is None else _monthly_as_decimal(before.monthly_cost)
+    after_val = None if after is None else _monthly_as_decimal(after.monthly_cost)
+    delta_monthly: str | None = None
+    if (
+        before is not None
+        and after is not None
+        and before_val is not None
+        and after_val is not None
+    ):
+        delta = after_val - before_val
+        sign = "+" if delta >= 0 else ""
+        currency = after.currency
+        delta_monthly = f"{sign}{delta:.2f}"
+        detail = (
+            f"Estimate delta {currency} {delta_monthly}/month "
+            f"({before.monthly_cost} → {after.monthly_cost})"
+        )
+    elif after is not None:
+        detail = f"New estimate {after.detail}"
+    else:
+        detail = f"Previous estimate {before.detail}" if before is not None else "No estimate"
+    return CostEstimateDelta(
+        before=before,
+        after=after,
+        delta_monthly=delta_monthly,
+        detail=detail,
+    )
+
+
+def cost_estimate_from_gate_results(gates: Iterable[GateResult]) -> CostEstimate | None:
+    """Prefer persisted message parse; used for audit/PR evidence."""
+    return cost_estimate_from_gates(list(gates))
+
+
+def audit_extra_for_cost_estimate(estimate: CostEstimate | None) -> dict[str, Any]:
+    """Flat audit `extra` fields for outcome correlation (FinOps v1.91)."""
+    if estimate is None:
+        return {}
+    return {
+        "cost_estimate_monthly": estimate.monthly_cost,
+        "cost_estimate_currency": estimate.currency,
+        "cost_estimate_resources": estimate.resource_count,
+        "cost_estimate_detail": estimate.detail,
+    }
+
+
 def parse_infracost_breakdown(payload: Any) -> CostEstimate | None:
     if not isinstance(payload, dict):
         return None

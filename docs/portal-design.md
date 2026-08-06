@@ -38,7 +38,7 @@ static assets, CSS tokens, and a base layout template.
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | **Shipped** — audit sink, `/activity`, hosted `/runs`; browser last-run remains a local convenience |
 | Cost visibility (shipped) | Library cost badges, Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
-| FinOps enablement (v1.90–v1.94) | Planned: tag-governance gate fails, estimate-in-PR evidence, entity sparklines + `/platform/finops` rollup ([roadmap](roadmap.md#finops-enablement-v2x)) |
+| FinOps enablement (v1.90–v1.94) | Tags + estimate policy shipped (v1.90–v1.91); planned: entity sparklines + `/platform/finops` rollup ([roadmap](roadmap.md#finops-enablement-v2x)) |
 | Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |
 | v3.0 conversational generation | Second entry point in the same app shell (Phase 5) |
 

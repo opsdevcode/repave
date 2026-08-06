@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from helpers import make_blueprint
 from repave_engine.gate_registry import (
     GateContext,
     GateRegistryError,
@@ -17,6 +18,7 @@ from repave_engine.gate_registry import (
     unregister_gate,
 )
 from repave_engine.gates import run_gates
+from repave_engine.settings import GateOverrides, InfracostGatePolicy
 
 
 def test_builtin_gates_are_registered() -> None:
@@ -92,3 +94,17 @@ def test_artifact_paths_include_ansible_type_paths() -> None:
 def test_is_gate_artifact_path_matches_retry_files() -> None:
     assert is_gate_artifact_path("playbook.retry", artifact_type="ansible-role") is True
     assert is_gate_artifact_path("playbook.retry", artifact_type="terraform-module") is False
+
+
+def test_gate_context_merges_org_infracost_floor(tmp_path: Path) -> None:
+    blueprint = make_blueprint(tmp_path, create_template=False)
+    ctx = GateContext(
+        output_dir=tmp_path,
+        blueprint=blueprint,
+        gate_overrides=GateOverrides(
+            infracost=InfracostGatePolicy(required=True, max_monthly_usd=75.0)
+        ),
+    )
+    cfg = ctx.config("infracost")
+    assert cfg["required"] is True
+    assert cfg["max_monthly_usd"] == 75.0

@@ -10,8 +10,10 @@ import pytest
 from helpers import make_blueprint
 from repave_engine.cost_estimate import (
     CostEstimate,
+    audit_extra_for_cost_estimate,
     cost_estimate_for_result,
     cost_estimate_from_gates,
+    diff_cost_estimates,
     load_cost_estimate_file,
     parse_infracost_breakdown,
     parse_resource_costs,
@@ -22,6 +24,7 @@ from repave_engine.gate_registry import GateContext, GateResult
 from repave_engine.gate_runners.terraform import run_infracost
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
+from repave_engine.settings import GateOverrides, InfracostGatePolicy
 
 
 def test_parse_infracost_breakdown() -> None:
@@ -101,6 +104,38 @@ def test_run_infracost_skips_when_not_installed(
     strict = run_infracost(GateContext(output_dir=tmp_path, require_run=True))
     assert strict.skipped is True
     assert strict.passed is True
+
+
+def test_run_infracost_fails_when_required_and_missing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("repave_engine.gate_runners.terraform_usable", lambda _path: True)
+    monkeypatch.setattr("repave_engine.gate_runners.tool_available", lambda _name: False)
+    ctx = GateContext(
+        output_dir=tmp_path,
+        gate_overrides=GateOverrides(infracost=InfracostGatePolicy(required=True)),
+    )
+    result = run_infracost(ctx)
+    assert result.passed is False
+    assert result.skipped is False
+    assert "gates.infracost.required" in result.message
+
+
+def test_diff_cost_estimates_reports_monthly_delta() -> None:
+    before = CostEstimate("USD", "10.00", "—", 1, "Estimated USD 10.00/month")
+    after = CostEstimate("USD", "12.50", "—", 2, "Estimated USD 12.50/month")
+    delta = diff_cost_estimates(before, after)
+    assert delta is not None
+    assert delta.delta_monthly == "+2.50"
+    assert "10.00" in delta.detail and "12.50" in delta.detail
+
+
+def test_audit_extra_for_cost_estimate() -> None:
+    estimate = CostEstimate("USD", "9.99", "—", 3, "Estimated USD 9.99/month")
+    extra = audit_extra_for_cost_estimate(estimate)
+    assert extra["cost_estimate_monthly"] == "9.99"
+    assert extra["cost_estimate_currency"] == "USD"
+    assert audit_extra_for_cost_estimate(None) == {}
 
 
 def test_run_infracost_writes_estimate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
