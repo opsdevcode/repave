@@ -6,9 +6,9 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.27.1  
 
-**In progress:** [Platform as a product](#platform-as-a-product-v2x) follow-ons (v1.86–v1.89) —
-feedback loop next. Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot).
-v3 themes under
+**In progress:** [FinOps enablement](#finops-enablement-v2x) (v1.90–v1.94) — tag governance
+first; [Platform as a product](#platform-as-a-product-v2x) follow-ons (v1.86–v1.89).
+Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **Platform adoption / DX metrics (v1.85)** — `/platform/adoption`,
 `GET /api/v2/platform/metrics`, `repave metrics adoption`, snapshot CronJob
@@ -181,6 +181,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   │
   v1.85–v1.89        platform-as-product  adoption/DX metrics → feedback → stakeholder views → cognitive load → roadmap evidence
   │
+  v1.90–v1.94        FinOps enablement tag governance → estimate policy → showback/budgets → thin FOCUS → chargeback export
+  │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
 ```
 
@@ -211,6 +213,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **Platform as a product** | Partial (v1.85 shipped; v1.86–v1.89 open) | Treat the IDP as a product: adoption/DX metrics shipped; feedback, stakeholder views, cognitive-load reduction, roadmap evidence open ([platform as a product](#platform-as-a-product-v2x)) |
+| **FinOps enablement** | Not started (v1.90–v1.94) | Hybrid FinOps: tag governance, estimate policy, showback/budgets, thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
@@ -1835,6 +1838,9 @@ shows last-30-day actual spend with its as-of time.
 (`url`, `aws`, `azure`, `k8s` OpenCost-compatible); service detail and **library tile** cost
 badges (L30D actuals or local `.repave/cost-estimate.json`); **Cloud spend** scorecard dimension.
 
+**Follow-on:** [FinOps enablement (v1.90–v1.94)](#finops-enablement-v2x) promotes showback,
+budgets, and FOCUS-shaped ingest on top of this foundation — see [`docs/finops.md`](finops.md).
+
 ---
 
 ### Service decomposition for hosted scale
@@ -2490,6 +2496,153 @@ one low-adoption path is marked for sunset or simplification with a dated window
 
 ---
 
+## FinOps enablement (v2.x)
+
+Repave already ships **cost awareness** — Infracost at plan time, pluggable actuals readers,
+library badges, and a Cloud spend scorecard ([cost visibility](#cost-visibility)). That is not
+yet a FinOps practice. This cluster adopts [FinOps Foundation Framework
+2025](https://www.finops.org/insights/2025-finops-framework/) capabilities that belong in an
+IDP, plus a thin [FOCUS](https://focus.finops.org/focus-specification/) ingest path — without
+turning repave into a billing warehouse.
+
+**Role (hybrid):** enablement first (tags, estimate policy, showback/budgets), then thin
+FOCUS-compatible ingest and chargeback export. Commitment discounts, RI/SP engines, multi-year
+CUR warehouses, and cluster idle allocation stay in external FinOps tools (OpenCost/Kubecost,
+cloud FOCUS exports, commercial platforms).
+
+**Operator guide:** [`docs/finops.md`](finops.md).
+
+**Principles (Inform → Optimize → Operate)**
+
+1. **Inform** — allocate spend to the teams that own it (tags, showback).
+2. **Optimize** — put cost in the path of change (estimate-at-plan, budgets, anomalies).
+3. **Operate** — continuous accountability (exports, notifications), not one-off reports.
+
+**Maturity self-assessment** (re-score when a theme in this cluster ships):
+
+| Capability | Score | Notes |
+| --- | --- | --- |
+| Planning & estimating | Strong | Infracost + optional `max_monthly_usd`; org floor is v1.91 |
+| Allocation | Weak | Soft tag standards; `tag_coverage` warn only — v1.90 |
+| Reporting & analytics | Weak | Single L30D snapshot — v1.92 trends/budgets |
+| Data ingestion / FOCUS | Absent | v1.93 thin adapter |
+| Anomaly / chargeback | Absent | v1.94 lightweight hooks + export |
+| Rate optimization | Out of scope | External FinOps tools |
+
+Planning labels **v1.90–v1.94** continue the paved-roads numbering on the 2.x line and are
+**not** engine tags. Sequence after [platform adoption / DX metrics (v1.85)](#v185--golden-path-adoption-and-dx-metrics)
+so showback can reuse the same trend store shape.
+
+### v1.90 — Allocation foundations (tag governance)
+
+*Planning label: v1.90 (roadmap numbering only).*
+
+**Problem:** Cost actuals depend on owner/service tags, but golden paths only *recommend*
+them — allocation fails silently (`tag_coverage` warn).
+
+**Approach:**
+
+- Harden terraform/app/helm standards: required cost-allocation tags (`owner`, `service`,
+  `environment`, `cost-center` or org-configured keys)
+- OPA/Checkov rules that fail generate when required tags are missing
+- Config: `portal.cost_allocation.tag_keys` so tag names are org-owned
+- Scorecard: fail (not warn) when a cost reader is configured and tags are incomplete
+
+**Done when:** Default terraform and app-service generates fail gates without allocation tags;
+[`docs/finops.md`](finops.md) explains mapping to Cost Explorer / OpenCost filters.
+
+**Status:** Not started.
+
+### v1.91 — Estimate and cost policy at plan time
+
+*Planning label: v1.91 (roadmap numbering only).*
+
+**Problem:** Infracost is skip-friendly; hard caps are per-blueprint only; no shared policy
+floor.
+
+**Approach:**
+
+- Platform floor in `repave.config.yaml` `gates.infracost` (require when terraform gates are
+  present; org `max_monthly_usd` default)
+- Surface estimate delta vs previous pin on upgrade/import previews
+- Persist estimate summary into audit `extra` for outcome correlation
+- Cost annotation on governed PR body checklist (`pull_requests.evidence_checklist`)
+
+**Done when:** An org can require Infracost plus a default monthly cap without editing every
+blueprint; estimate appears in audit and PR evidence.
+
+**Status:** Not started.
+
+**Depends on:** [cost visibility](#cost-visibility) (shipped).
+
+### v1.92 — Showback: trends and budgets
+
+*Planning label: v1.92 (roadmap numbering only).*
+
+**Problem:** Catalog shows a single L30D number — no budget, no trend, no platform rollup.
+
+**Approach:**
+
+- Cost snapshot store (JSONL + SQL) of per-entity actuals over time (mirror adoption metrics
+  snapshot patterns)
+- Entity budgets in config or catalog metadata (`monthly_budget_usd`)
+- Portal: sparkline + budget vs actual on service detail; `/platform/finops` admin rollup
+- Prometheus gauges with cardinality-safe aggregate labels only
+
+**Done when:** An admin sees fleet cost vs budget rollup; entity detail shows trend vs budget
+without external BI.
+
+**Status:** Not started.
+
+**Depends on:** v1.90; [v1.85 adoption/DX metrics](#v185--golden-path-adoption-and-dx-metrics)
+snapshot patterns.
+
+### v1.93 — Thin FOCUS ingest
+
+*Planning label: v1.93 (roadmap numbering only).*
+
+**Problem:** Multi-cloud actuals stay vendor-shaped; adopters cannot feed a normalized billing
+export into showback.
+
+**Approach:**
+
+- New reader `portal.cost_reader: focus` for a FOCUS-shaped JSON/Parquet path or HTTPS export
+  (supported column subset documented in [`docs/finops.md`](finops.md))
+- Map FOCUS rows → existing `CostActualsSummary` (+ rollup dimensions)
+- Ingest FOCUS *produced elsewhere* (cloud FOCUS export or converter); repave does not run
+  full CUR → FOCUS ETL
+
+**Done when:** A FOCUS sample fixture drives entity actuals and platform rollup in tests; ops
+doc lists the supported column subset.
+
+**Status:** Not started.
+
+**Depends on:** v1.92.
+
+### v1.94 — Chargeback export and anomaly hooks
+
+*Planning label: v1.94 (roadmap numbering only).*
+
+**Problem:** Finance needs exports; ops needs “spend jumped” signals without a full anomaly
+product.
+
+**Approach:**
+
+- `GET /api/v2/platform/finops/export` (CSV/JSON) of owner × service × period × cost —
+  chargeback handoff, not invoicing
+- Simple anomaly: WoW / MoM % threshold on snapshot series → audit event + optional
+  notification webhook
+- Explicit non-goals: RI/SP purchase, invoice reconciliation, commitment discount optimization
+
+**Done when:** Export uses FOCUS-friendly column names where possible; anomaly fires a
+notification in a unit test with synthetic spikes.
+
+**Status:** Not started.
+
+**Depends on:** v1.92; optionally v1.93.
+
+---
+
 ## State custody and the resource graph (v2.x)
 
 **Status:** Phases 0–3 shipped on `main`. Phase 4 **no-go** recorded
@@ -2584,8 +2737,9 @@ that makes those v2 decisions checkable.
   autonomous tier below stays v3
 - **Graph-scoped planning:** blast-radius view and graph-scoped plan/apply for large state,
   surfaced as a registry tool rather than a repave-owned engine
-- **Cost showback:** budgets, multi-account rollups, chargeback exports, and anomaly alerts,
-  building on the estimate-and-actuals foundation in [cost visibility](#cost-visibility)
+- **Cost showback:** **Promoted** to [FinOps enablement (v1.90–v1.94)](#finops-enablement-v2x).
+  Remaining v3 only if org-wide invoicing or a full billing warehouse is required beyond the
+  hybrid enablement path ([`docs/finops.md`](finops.md))
 - Optional promotions from the parking lot: **multi-tenant** config namespacing and an **OCI
   blueprint registry**
 

@@ -21,6 +21,7 @@ is the front door; use this index when you need depth.
 | [Engine capabilities](engine-capabilities.md) | Platform engineers | Gates, CLI, blueprints, CI |
 | [Policy customization](../standards/policy/customization.md) | Platform / security | Profiles, catalog, portal, provenance, config floors |
 | [Roadmap](roadmap.md) | Planning | Shipped releases, planned themes, parking lot |
+| [FinOps enablement](finops.md) | Platform / FinOps | Tags, estimates, showback, FOCUS boundaries (v1.90–v1.94) |
 | [Portal design](portal-design.md) | UX / frontend | Shell, catalog, forms, results |
 
 ## Run and operate

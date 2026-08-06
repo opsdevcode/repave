@@ -33,6 +33,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
 | github-repo apply without fleet register / missing GPR | [github-repo-fleet-validation.md](github-repo-fleet-validation.md) |
 | Golden-path adoption / DX metrics | [platform-metrics.md](../platform-metrics.md) |
+| Cost actuals / FinOps enablement | [../finops.md](../finops.md) |
 
 ## Runbooks
 
@@ -124,6 +125,8 @@ Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md]
 - [`docs/github-app-auth.md`](../github-app-auth.md) — GitHub App vs PAT for publish
 - [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
+- [`docs/platform-metrics.md`](../platform-metrics.md) — golden-path adoption / DX metrics
+- [`docs/finops.md`](../finops.md) — FinOps enablement: tags, estimates, showback, FOCUS boundaries
 - [`postgres-backup-restore.md`](postgres-backup-restore.md) — Postgres DR runbook
 - [`dr-drill-log.md`](dr-drill-log.md) — recorded backup/restore drills
 - [`crd-conversion-recovery.md`](crd-conversion-recovery.md) — operator CRD conversion drill
