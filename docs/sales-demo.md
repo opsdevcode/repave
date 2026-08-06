@@ -23,16 +23,20 @@ Before a big meeting, run the [Demo verification checklist](demo-verification.md
 
 ## Narrative arc
 
-**One sentence:** repave turns platform standards into a **form** — every generate runs **gates** before anything ships, and **provenance** records what was pinned.
+**One sentence:** repave is an **internal developer platform** for golden-path estates —
+platform standards become a **form**, every generate runs **gates**, **provenance** records
+what was pinned, and day-2 upgrades keep the estate on the current road.
+
+Product model: [Concepts](concepts.md) · Today vs becoming: [README](../README.md#what-repave-is)
 
 | Step | What to show | What to say |
 | --- | --- | --- |
-| 1 — Catalog | Home, families (Terraform, Ansible, Policy) | “Builders pick a golden path; platform owns the blueprint and pins.” |
+| 1 — Catalog | Home, families (Terraform, Ansible, Policy) | “This is the IDP catalog — builders pick a golden path; platform owns the blueprint and pins.” |
 | 2 — Governed generate | **terraform-module-generic**, module `demo`, AWS, **ec2 + s3**, **Dry-run preview** on | “Pins for standards and policy packs are visible before generate — no surprise drift.” |
 | 3 — Proof | Result: **Lineage & receipt**, policy rules, gate dashboard | “Same inputs → same artifact; gates ran in-process; this is what would land in `repave.yaml`.” |
-| 4 — Existing estate | **Update repo** → **Use terraform-minimal** → **Preview upgrade** | “We don’t only create repos — we plan upgrades from provenance and can open remediation PRs.” |
+| 4 — Existing estate | **Update repo** → **Use terraform-minimal** → **Preview upgrade** | “The control plane doesn’t only create repos — we plan upgrades from provenance and can open remediation PRs.” |
 | 5 — Optional block | **opa-policy-generic**, **plan demo** = `destructive_delete`, dry-run | “Policy isn’t documentation — a failing gate blocks publish.” See [examples/policy](../examples/policy/README.md). |
-| 6 — Optional IDP | Terraform form: **Include Backstage catalog**, owner `group:platform` | “Same generate path registers `catalog-info.yaml` and lineage annotations for Backstage.” |
+| 6 — Optional catalog | Terraform form: **Include Backstage catalog**, owner `group:platform` | “Same generate path registers `catalog-info.yaml` and lineage annotations for Backstage — one paved road, multiple IDP surfaces.” |
 
 Keep **Dry-run preview** enabled unless you explicitly demo disk write or GitHub publish.
 
@@ -42,6 +46,7 @@ Keep **Dry-run preview** enabled unless you explicitly demo disk write or GitHub
 
 **Platform / SRE**
 
+- IDP control plane: portal + CLI + API today; operator for fleet drift ([operator overview](operator-overview.md)).
 - Blueprints are versioned; standards and Checkov/OPA packs are pinned in `blueprint.yaml`.
 - Gates are mandatory per blueprint — not optional CI add-ons.
 - [Engine capabilities](engine-capabilities.md) lists the full gate registry.
@@ -79,8 +84,9 @@ Scope: [Operator GA](operator-ga.md) · [Operator overview](operator-overview.md
 | Follow-up | Link |
 | --- | --- |
 | Try themselves | [Quickstart](quickstart.md) |
-| Concepts / vocabulary | [Concepts](concepts.md) |
+| Concepts / IDP model | [Concepts](concepts.md) |
 | Roadmap / maturity | [Roadmap](roadmap.md) |
+| FinOps path | [FinOps enablement](finops.md) |
 | Module naming and GitHub | [Module repositories](module-repositories.md) |
 
 ---

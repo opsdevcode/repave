@@ -1,45 +1,53 @@
 # repave documentation
 
-Product and engineering docs for the repave monorepo. The [README](../README.md)
-is the front door; use this index when you need depth.
+Product and engineering docs for the repave monorepo. The [README](../README.md) is the
+pitch (why the name, what the IDP is today, and what it is becoming). This index is depth —
+start with [Concepts](concepts.md) for the product model.
 
 ## Start here
 
 | Doc | Audience | Contents |
 | --- | --- | --- |
 | [Quickstart](quickstart.md) | New users | Docker Compose, `make serve`, first generate, CLI |
+| [Concepts](concepts.md) | Everyone | IDP model, golden paths, gates, provenance, operator |
 | [Seven-minute demo (acts 1–6)](seven-minute-demo.md) | Live demos | Full portal arc for stakeholder meetings |
-| [Policy golden paths demo](policy-golden-paths-demo.md) | Security / platform | Checkov, OPA, Azure Policy standalone paths |
 | [Sales demo runbook](sales-demo.md) | Field / leadership demos | Narrative, talking points, operator boundaries |
+| [Policy golden paths demo](policy-golden-paths-demo.md) | Security / platform | Checkov, OPA, Azure Policy standalone paths |
 | [Demo verification](demo-verification.md) | Maintainers / pre-release | Portal smoke checklist, screenshots, operator e2e |
-| [Concepts](concepts.md) | Everyone | Golden paths, blueprints, governance-by-construction, provenance |
-| [Blueprint versioning](blueprint-versioning.md) | Blueprint authors | v2 schema freeze, `metadata.version` semver policy |
-| [API v2](api-v2.md) | Integrators | Stable HTTP surface; v1 deprecation |
-| [API v1 migration](api-v1-migration.md) | Integrators | Sunset timeline and v1 → v2 endpoint map |
-| [repave.config v1](repave-config-v1.md) | Operators | Config `apiVersion`, hosted SQL, JSONL export mirrors |
-| [Module repositories](module-repositories.md) | Adopters | `REPAVE_MODULES_ROOT`, GitHub org, naming |
-| [Engine capabilities](engine-capabilities.md) | Platform engineers | Gates, CLI, blueprints, CI |
-| [Policy customization](../standards/policy/customization.md) | Platform / security | Profiles, catalog, portal, provenance, config floors |
-| [Roadmap](roadmap.md) | Planning | Shipped releases, planned themes, parking lot |
-| [FinOps enablement](finops.md) | Platform / FinOps | Tags, estimates, showback, FOCUS boundaries (v1.90–v1.94) |
-| [Portal design](portal-design.md) | UX / frontend | Shell, catalog, forms, results |
 
-## Run and operate
+## Platform model
+
+| Doc | Contents |
+| --- | --- |
+| [Concepts](concepts.md) | IDP framing, lifecycle, blueprints, governance-by-construction |
+| [Engine capabilities](engine-capabilities.md) | Gates, CLI, blueprints, CI |
+| [Blueprint versioning](blueprint-versioning.md) | v2 schema freeze, `metadata.version` semver policy |
+| [Module repositories](module-repositories.md) | `REPAVE_MODULES_ROOT`, GitHub org, naming |
+| [Policy customization](../standards/policy/customization.md) | Profiles, catalog, portal, provenance, config floors |
+| [FinOps enablement](finops.md) | Tags, estimates, showback, FOCUS boundaries (v1.90–v1.94) |
+| [Portal design](portal-design.md) | Shell, catalog, forms, results |
+| [API v2](api-v2.md) | Stable HTTP surface; v1 deprecation |
+| [API v1 migration](api-v1-migration.md) | Sunset timeline and v1 → v2 endpoint map |
+| [repave.config v1](repave-config-v1.md) | Config `apiVersion`, hosted SQL, JSONL export mirrors |
+| [Roadmap](roadmap.md) | Shipped releases, planned themes, parking lot |
+
+## Day-2 and estate
 
 | Doc | Contents |
 | --- | --- |
 | [Import an existing repo](import.md) | `repave import`, detection, destination rules, reviewable PR |
 | [Add a component to a governed repo](add.md) | `repave add`, multi-component `repave.yaml`, portal add action |
 | [Fleet registry](fleet-registry.md) | `repave register`, registry storage, fleet API |
-| [Operator overview](operator-overview.md) | CRDs, drift, remediation PRs |
+| [Operator overview](operator-overview.md) | CRDs, drift, remediation PRs (`localPath` + `repoURL`) |
 | [Operator local dev](operator-local-dev.md) | envtest, kind, running the controller locally |
 | [Operator GA scope](operator-ga.md) | v1.17 GA criteria and slices |
 | [Policy repos and operator](operator-policy-estate.md) | Policy artifacts, inventory, upgrade drift |
-| [ADR index](adr/README.md) | Architecture decisions (e.g. `repoURL` inventory) |
 | [Operator standards](operator-standards.md) | CRD and controller conventions |
+| [State custody and resource graph](state-graph.md) | Authoritative state store, graph, gate-blocked transactions |
 | [Operations](operations/README.md) | Metrics, audit, k8s starter manifests |
 | [Auth service mode](auth-service-mode.md) | OIDC, roles, session config |
 | [Supply chain](supply-chain.md) | SHA-pinned Actions, digest-pinned images, Helm `image.digest` |
+| [ADR index](adr/README.md) | Architecture decisions |
 
 ## Integrations
 

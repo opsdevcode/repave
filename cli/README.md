@@ -1,11 +1,12 @@
 # repave-cli (`repave-tf`)
 
-The repave state and execution client. Runs where cloud credentials already live —
-a CI runner or a developer machine — and speaks HTTP to the repave state store.
+State and execution client for the [repave](../README.md) IDP. Runs where cloud credentials
+already live — a CI runner or a developer machine — and speaks HTTP to the repave state
+store (graph-scoped plan/apply), separate from golden-path generation in `repave-engine`.
 
-See [ADR 004](../docs/adr/004-state-custody-and-the-resource-graph.md) for why this is a
-separate package from `repave-engine`, and [`docs/state-graph.md`](../docs/state-graph.md)
-for the operator guide.
+Product model: [`docs/concepts.md`](../docs/concepts.md). See
+[ADR 004](../docs/adr/004-state-custody-and-the-resource-graph.md) for why this is a
+separate package, and [`docs/state-graph.md`](../docs/state-graph.md) for the operator guide.
 
 ## Why a separate package
 

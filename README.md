@@ -29,6 +29,48 @@ Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  → 
 
 ---
 
+## What repave is
+
+repave is an **internal developer platform** for golden-path estates: a control plane where
+platform teams own blueprints, standards, and policy packs; builders consume paved roads through
+the portal, CLI, or API; and the estate stays aligned via provenance, fleet registry, and the
+Kubernetes operator.
+
+```mermaid
+flowchart LR
+  subgraph surfaces [Surfaces]
+    Portal[Portal]
+    CLI[CLI]
+    API[HTTP_API]
+  end
+  subgraph control [Control_plane]
+    Engine[Engine_and_gates]
+    Corpus[Blueprints_standards_policy]
+    Op[Operator]
+  end
+  subgraph estate [Estate]
+    Repos[Module_and_service_repos]
+    Fleet[Fleet_registry]
+  end
+  Portal --> Engine
+  CLI --> Engine
+  API --> Engine
+  Corpus --> Engine
+  Engine -->|pave_publish| Repos
+  Op -->|observe_plan_PR| Repos
+  Fleet --> Op
+```
+
+| Horizon | What that means |
+| --- | --- |
+| **Today (v2 platform GA)** | Generate → mandatory gates → provenance → publish; fleet observe / plan / remediate via portal, CLI, API, and operator |
+| **Near-term (v2.x)** | FinOps enablement on golden paths (tags → estimates → showback → thin FOCUS); deeper lifecycle surfaces (environments, GitOps, composite bundles) |
+| **Becoming (v3)** | Low-risk autonomous remediation, mandatory policy tier, lifecycle control plane, governed conversational AI — humans still own high-risk change |
+
+Product model: [Concepts](docs/concepts.md) · Planning: [Roadmap](docs/roadmap.md) · Cost path: [FinOps](docs/finops.md)
+
+---
+
 ## Why teams use repave
 
 - **Many builders, one standard** — Product engineers use the portal; platform keeps blueprints, standards, and policy packs.
@@ -46,9 +88,11 @@ Deep dive: [Concepts](docs/concepts.md) · [Roadmap](docs/roadmap.md) · [Quicks
 Night-ops web UI at **http://localhost:8088** ([Docker Compose](deploy/local/README.md) — gate
 tools in the image; works on Windows with Docker Desktop). Optional **`make serve`** on
 `:8089` is for engine/template dev without a full local toolchain.
-artifact family, governance sidebar, stepper forms, **Dry run preview** on early steps, gate dashboard
-on results, upgrade preview for existing repos. Screenshots below are captured from a running
-portal (not mockups).
+
+The portal is the day-to-day IDP surface: catalog by artifact family, governance sidebar,
+stepper forms, **Dry run preview** on early steps, gate dashboard on results, and upgrade
+preview for existing repos. Screenshots below are captured from a running portal (not
+mockups).
 
 <p align="center">
   <img src="docs/images/portal/home-catalog.png" alt="repave home — golden path catalog with quick menu and search" width="920" />
@@ -122,6 +166,8 @@ repave generate --repo-root .. --blueprint blueprints/terraform-module-generic -
 
 ## What you can do today
 
+The paved-road loop of the IDP — same contracts in portal, CLI, and API:
+
 - **Generate** Terraform, Ansible, policy, observability, Helm, and app-service golden paths ([`blueprints/`](blueprints/)).
 - **Portal + API** at `:8088` — forms, `/activity` audit view, [`POST /api/v1/generate`](docs/backstage.md).
 - **Import** an existing repository into a golden path layout via a reviewable PR — files move
@@ -167,6 +213,17 @@ Full steps (CLI, publish, operator): **[docs/quickstart.md](docs/quickstart.md)*
 
 ## How it works
 
+```mermaid
+flowchart LR
+  Blueprint[blueprint.yaml] --> Validate[Validate_inputs]
+  Validate --> Render[Copier_render]
+  Render --> Gates[Mandatory_gates]
+  Gates --> Publish[Module_repo]
+  Publish --> Provenance[repave.yaml]
+  Provenance --> Drift[Operator_drift]
+  Drift -->|repave| Blueprint
+```
+
 ```text
 blueprint.yaml  →  validate inputs  →  Copier render  →  gates  →  module repo  →  GitHub (optional)
 ```
@@ -184,8 +241,9 @@ Optional **operator** loop (estate scale): [Operator overview](docs/operator-ove
 | --- | --- |
 | **Index** | [docs/README.md](docs/README.md) |
 | Quickstart | [docs/quickstart.md](docs/quickstart.md) |
-| Concepts & provenance | [docs/concepts.md](docs/concepts.md) |
+| Product model (IDP concepts) | [docs/concepts.md](docs/concepts.md) |
 | Engine & gates | [docs/engine-capabilities.md](docs/engine-capabilities.md) |
+| FinOps enablement | [docs/finops.md](docs/finops.md) |
 | Import an existing repo | [docs/import.md](docs/import.md) |
 | Portal UX spec | [docs/portal-design.md](docs/portal-design.md) |
 | Roadmap | [docs/roadmap.md](docs/roadmap.md) |

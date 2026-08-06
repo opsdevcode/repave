@@ -13,6 +13,40 @@ Every other concept below follows from that: blueprints are the road, gates are 
 the surface uniform, `repave.yaml` records which road an artifact was paved from, and the
 operator repaves the estate when it drifts.
 
+## Internal developer platform
+
+repave is an **internal developer platform** (IDP) for golden-path estates — not a
+one-shot generator. Platform owns the corpus; builders consume paved roads; day-2
+reconciliation keeps the estate on the current road.
+
+| IDP capability | In repave |
+| --- | --- |
+| Software catalog / self-service | Portal home catalog, library, platform console |
+| Paved roads / scaffolding | Versioned **blueprints** (golden paths) |
+| Governance & policy | Mandatory **gates**, pinned standards and policy packs |
+| Service catalog integration | Optional Backstage `catalog-info.yaml` + `repave.dev/*` lineage |
+| Day-2 / estate control | Fleet registry, `repave update`, Kubernetes **operator** |
+| Cost awareness | Infracost gate, cost readers, [FinOps enablement](finops.md) |
+
+```mermaid
+flowchart LR
+  Blueprint[blueprint.yaml] --> Validate[Validate_inputs]
+  Validate --> Render[Copier_render]
+  Render --> Gates[Mandatory_gates]
+  Gates --> Publish[Module_repo]
+  Publish --> Provenance[repave.yaml]
+  Provenance --> Drift[Operator_drift]
+  Drift -->|repave| Blueprint
+```
+
+| Horizon | Meaning |
+| --- | --- |
+| **Today (v2)** | Generate, gates, provenance, fleet observe/plan/remediate |
+| **Near-term (v2.x)** | FinOps on golden paths; environments, GitOps, composite bundles |
+| **Becoming (v3)** | Low-risk auto-merge, mandatory policy, lifecycle control, governed AI |
+
+Front door: [README](../README.md) · Planning: [Roadmap](roadmap.md)
+
 ## Golden path
 
 A versioned, opinionated way to produce a compliant artifact. In repave, a golden
@@ -84,22 +118,24 @@ See [`docs/backstage.md`](backstage.md) and
 
 ## Portal
 
-The bundled web UI maps blueprint inputs to generation and shows gate results on
-a shared night-ops shell (home catalog, governance-aware forms, results dashboard).
-Layout, components, and acceptance criteria are in
+The bundled web UI is the primary IDP surface: it maps blueprint inputs to generation and
+shows gate results on a shared night-ops shell (home catalog, governance-aware forms,
+results dashboard). Layout, components, and acceptance criteria are in
 [`docs/portal-design.md`](portal-design.md). Browser-local last-run summary uses
-`sessionStorage`; fleet-wide history is available via the JSONL audit sink (portal activity and
-`repave.config.yaml` `audit` — see [Roadmap v1.30](roadmap.md#v130--audit-log-metrics-and-traces)).
+`sessionStorage`; fleet-wide history is available via the JSONL audit sink, portal
+`/activity`, and hosted `/runs` when durability SQL is configured
+(`repave.config.yaml` `audit` — see [Roadmap v1.30](roadmap.md#v130--audit-log-metrics-and-traces)).
 
 ## Self-healing (operator)
 
 The reconciliation **operator** (GA on `main`) watches `GoldenPathRepo` resources, detects pin
 drift, plans upgrades, and opens remediation PRs. Inventory works from `spec.localPath` or
-`spec.repoURL` (shallow clone); remote remediation uses the inventory workspace clone when a
-GitHub token is configured. Development and proof:
-[`docs/operator-standards.md`](operator-standards.md),
+`spec.repoURL` (shallow clone — [ADR 001](adr/001-goldenpathrepo-repo-url-inventory.md));
+remote remediation uses the inventory workspace clone when a GitHub token is configured.
+Development and proof: [`docs/operator-standards.md`](operator-standards.md),
 [`docs/operator-local-dev.md`](operator-local-dev.md),
-[`docs/operator-ga.md`](operator-ga.md). See also
+[`docs/operator-ga.md`](operator-ga.md),
+[`docs/operator-overview.md`](operator-overview.md). See also
 [`docs/roadmap.md`](roadmap.md#v117--reconciliation-operator-alpha) and
 [`operator/README.md`](../operator/README.md).
 
