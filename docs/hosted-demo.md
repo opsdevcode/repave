@@ -97,15 +97,13 @@ Local path: [quickstart.md](quickstart.md) · `make serve` is **:8089** (engine 
 
 ## Demo library (seed the estate)
 
-Before Monday, publish a **library** of golden-path repos into `opsdevcode` so Activity, Fleet,
-and the operator have real artifacts to show:
+Publish a **library** of golden-path repos into `opsdevcode` using the **GitHub App** on the
+portal pod (no PAT):
 
 ```bash
-export GITHUB_TOKEN=ghp_...   # repo create in opsdevcode
-export REPAVE_GITHUB_ORG=opsdevcode
-./scripts/seed-hosted-demo-library.sh
-SEED_COPY_FLEET_TO_CLUSTER=1 ./scripts/seed-hosted-demo-library.sh
-SEED_APPLY_MANIFESTS=1 ./scripts/seed-hosted-demo-library.sh
+cd /path/to/repave
+SEED_DRY_RUN=1 ./scripts/seed-hosted-demo-library-k8s.sh
+SEED_APPLY_MANIFESTS=1 ./scripts/seed-hosted-demo-library-k8s.sh
 ```
 
 Full catalog and talking points: [hosted-demo-library.md](hosted-demo-library.md).

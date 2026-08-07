@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -65,6 +66,17 @@ def _infer_repo_name(blueprint: str, inputs: dict[str, str]) -> str:
 
 def _modules_path(modules_root: Path, repo_name: str) -> Path:
     return modules_root / repo_name
+
+
+def _repave_command(*, engine_dir: Path) -> list[str]:
+    explicit = os.environ.get("REPAVE_CLI", "").strip()
+    if explicit:
+        return explicit.split()
+    if shutil.which("repave"):
+        return ["repave"]
+    if shutil.which("uv"):
+        return ["uv", "run", "repave"]
+    raise SystemExit("repave CLI not found: install engine or set REPAVE_CLI")
 
 
 def _run(cmd: list[str], *, cwd: Path, dry_run: bool, env: dict[str, str] | None = None) -> None:
@@ -152,7 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     github_org = args.github_org or org
     repo_root = args.repo_root.resolve()
     engine_dir = (args.engine_dir or repo_root / "engine").resolve()
-    repave = ["uv", "run", "repave"]
+    repave = _repave_command(engine_dir=engine_dir)
 
     fleet_file = args.fleet_file
     if not fleet_file or str(fleet_file) == ".":

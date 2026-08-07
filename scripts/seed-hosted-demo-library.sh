@@ -4,14 +4,25 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENGINE="${ROOT}/engine"
-CATALOG="${ROOT}/scripts/hosted-demo-library.yaml"
 FLEET_FILE="${REPAVE_FLEET_FILE:-${ROOT}/repave-fleet/registry.jsonl}"
 MODULES_ROOT="${REPAVE_MODULES_ROOT:-${HOME}/repave-modules}"
 MANIFESTS_DIR="${ROOT}/fleet-manifests"
 OPERATOR_NS="${OPERATOR_NAMESPACE:-repave-system}"
 
+if [[ "${SEED_TARGET:-}" == "k8s" || "${SEED_USE_GITHUB_APP:-}" == "1" ]]; then
+  exec "${ROOT}/scripts/seed-hosted-demo-library-k8s.sh"
+fi
+
+if kubectl config current-context >/dev/null 2>&1 \
+  && kubectl get deploy -n "${REPAVE_NAMESPACE:-repave}" "${REPAVE_RELEASE:-repave}" >/dev/null 2>&1 \
+  && [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  echo "Cluster reachable and no GITHUB_TOKEN — using portal pod GitHub App auth." >&2
+  exec "${ROOT}/scripts/seed-hosted-demo-library-k8s.sh"
+fi
+
 if [[ -z "${GITHUB_TOKEN:-}" && -z "${GITHUB_APP_ID:-}" ]]; then
-  echo "Set GITHUB_TOKEN (laptop) or run from a pod with GitHub App env vars." >&2
+  echo "Hosted: ./scripts/seed-hosted-demo-library-k8s.sh (GitHub App on portal pod)" >&2
+  echo "Local:  export GITHUB_APP_* or GITHUB_TOKEN, then re-run." >&2
   exit 1
 fi
 

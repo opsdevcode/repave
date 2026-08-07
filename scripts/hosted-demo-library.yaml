@@ -2,95 +2,10 @@
 # Publishes golden-path repos and registers them in the fleet registry for /activity,
 # /fleet, and operator GoldenPathRepo manifests.
 #
-# Usage:
-#   export REPAVE_GITHUB_ORG=opsdevcode GITHUB_TOKEN=ghp_...
-#   python3 scripts/seed_hosted_demo_library.py --repo-root .
+# Hosted (GitHub App on portal pod — no PAT):
+#   ./scripts/seed-hosted-demo-library-k8s.sh
+#   SEED_APPLY_MANIFESTS=1 ./scripts/seed-hosted-demo-library-k8s.sh
 #
-org: opsdevcode
-owner: platform
-registered_by: hosted-demo-seed
-
-repos:
-  # --- Terraform (Acts 1–3, upgrade, multi-cloud breadth) ---
-  - id: tf-vpc
-    blueprint: terraform-module-generic
-    inputs:
-      module_name: vpc-demo
-      description: Demo VPC module — networking baseline for the opsdevcode estate
-      cloud_provider: aws
-      provider_services: ec2,s3
-      owner: platform
-
-  - id: tf-eks
-    blueprint: terraform-module-generic
-    inputs:
-      module_name: eks-demo
-      description: Demo EKS cluster module — operator drift fixture (register with older pin)
-      cloud_provider: aws
-      provider_services: ec2,eks
-      owner: platform
-  # After publish, register with blueprint_version 0.9.0 while catalog is newer (drift demo).
-    register:
-      blueprint_version: "0.9.0"
-
-  - id: tf-azure-net
-    blueprint: terraform-module-generic
-    inputs:
-      module_name: networking-demo
-      description: Demo Azure networking module — second cloud in the library
-      cloud_provider: azure
-      provider_services: network
-      owner: platform
-
-  # --- Ansible ---
-  - id: ansible-web
-    blueprint: ansible-role-generic
-    inputs:
-      role_name: webserver
-      namespace: opsdevcode
-      description: Demo webserver Ansible role with Molecule gates
-
-  - id: ansible-hardening
-    blueprint: ansible-role-generic
-    inputs:
-      role_name: hardening
-      namespace: opsdevcode
-      description: Demo Linux hardening role for estate compliance story
-
-  # --- Policy family (Act 5 uses destructive_delete in portal; this is the pass path) ---
-  - id: opa-guardrails
-    blueprint: opa-policy-generic
-    inputs:
-      policy_name: guardrails
-      organization: platform
-      description: Platform OPA guardrails policy pack
-      plan_demo: pass
-
-  - id: checkov-baseline
-    blueprint: checkov-policy-generic
-    inputs:
-      policy_name: baseline
-      organization: platform
-      description: Checkov custom policy baseline for Terraform estates
-
-  # --- Packaging / delivery ---
-  - id: helm-payments
-    blueprint: helm-chart-generic
-    inputs:
-      chart_name: payments-api
-      app_name: payments-api
-      description: Demo payments API Helm chart
-      image_repository: ghcr.io/opsdevcode/payments-api
-      image_tag: "1.0.0"
-      owner: platform
-
-  - id: gitops-payments
-    blueprint: gitops-deployment-generic
-    inputs:
-      service_name: payments-api
-      environment: dev
-      gitops_engine: argocd
-      chart_repo_url: https://github.com/opsdevcode/helm-payments-api
-      chart_name: payments-api
-      chart_version: "1.0.0"
-      target_namespace: payments-dev
+# Local (PAT or GitHub App env):
+#   export REPAVE_GITHUB_ORG=opsdevcode GITHUB_APP_ID=... 
+#   python3 scripts/seed_hosted_demo_library.py --repo-root .

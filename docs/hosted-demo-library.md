@@ -30,61 +30,73 @@ Catalog source: [`scripts/hosted-demo-library.yaml`](../scripts/hosted-demo-libr
 
 ## Prerequisites
 
-```bash
-# GitHub — create repos in opsdevcode (PAT or use cluster GitHub App via kubectl exec)
-export REPAVE_GITHUB_ORG=opsdevcode
-export GITHUB_TOKEN=ghp_...    # repo + admin:org (or fine-grained equivalent)
+**Hosted repave-prod** uses a **GitHub App** (`GITHUB_APP_*` on the portal pod via
+`repave-secrets`) — same auth as portal publish. No laptop PAT required. See
+[github-app-auth.md](github-app-auth.md).
 
-# Local clone root for register --path (default ~/repave-modules)
-export REPAVE_MODULES_ROOT=$HOME/repave-modules
-
-# Fleet registry file (local); hosted cluster uses /data/fleet/registry.jsonl on the portal PVC
-export REPAVE_FLEET_FILE=$PWD/repave-fleet/registry.jsonl
-mkdir -p repave-fleet
-```
-
-**Hosted cluster:** enable fleet on the portal chart (`repave.fleet.enabled`, `persistence.fleet`)
-and set `fleetOperatorSnapshot.cronJob.operatorNamespace: repave-system` when GPRs live in a
+Enable fleet on the portal chart (`repave.fleet.enabled`, `persistence.fleet`) and set
+`fleetOperatorSnapshot.cronJob.operatorNamespace: repave-system` when GPRs live in a
 different namespace. See [repave-aws-infra](https://github.com/opsdevcode/repave-aws-infra)
 `kubernetes/values/repave-prod.yaml`.
 
 ---
 
-## One-shot seed (recommended)
+## One-shot seed on repave-prod (recommended)
 
-From repo root:
+From a machine with `kubectl` access to the cluster (GitHub App auth is on the portal pod):
 
 ```bash
-cd engine && uv sync --extra dev
-cd ..
+cd /path/to/repave
+chmod +x scripts/seed-hosted-demo-library-k8s.sh
 
-# Preview commands
+SEED_DRY_RUN=1 ./scripts/seed-hosted-demo-library-k8s.sh   # preview
+./scripts/seed-hosted-demo-library-k8s.sh                  # publish + register on PVC
+SEED_APPLY_MANIFESTS=1 ./scripts/seed-hosted-demo-library-k8s.sh   # + apply GPRs
+```
+
+The wrapper `./scripts/seed-hosted-demo-library.sh` auto-selects the k8s path when the cluster
+is reachable and `GITHUB_TOKEN` is unset.
+
+Writes:
+
+- published repos under `opsdevcode` (GitHub App installation)
+- modules under `/data/modules` on the portal PVC
+- fleet registry at `/data/fleet/registry.jsonl`
+- GPR manifests copied to `./fleet-manifests` on your laptop for `kubectl apply`
+
+---
+
+## Local seed (dev / PAT fallback)
+
+```bash
+export REPAVE_GITHUB_ORG=opsdevcode
+# GitHub App (preferred) or PAT:
+export GITHUB_APP_ID=... GITHUB_APP_INSTALLATION_ID=... GITHUB_APP_PRIVATE_KEY=...
+# export GITHUB_TOKEN=ghp_...   # local dev only
+
+export REPAVE_MODULES_ROOT=$HOME/repave-modules
+export REPAVE_FLEET_FILE=$PWD/repave-fleet/registry.jsonl
+mkdir -p repave-fleet
+
+cd engine && uv sync --extra dev && cd ..
 python3 scripts/seed_hosted_demo_library.py --dry-run
-
-# Publish all repos + register fleet + render operator manifests
 python3 scripts/seed_hosted_demo_library.py \
   --render-manifests \
   --manifests-dir ./fleet-manifests \
   --operator-namespace repave-system
-
-# Apply GoldenPathRepos (portal in repave, operator in repave-system)
-kubectl apply -k ./fleet-manifests
 ```
 
-Or use the shell wrapper:
-
-```bash
-./scripts/seed-hosted-demo-library.sh
-```
+Or `./scripts/seed-hosted-demo-library.sh` when `GITHUB_APP_*` or `GITHUB_TOKEN` is set locally.
 
 ---
 
-## Seed from inside the cluster
+## Legacy: manual kubectl exec
 
-When `GITHUB_APP_*` is already on the portal/worker (no laptop PAT):
+Equivalent to the k8s script (portal pod, `/app` repo root, App env already injected):
 
 ```bash
-portal_pod=$(kubectl get pod -n repave -l app.kubernetes.io/name=repave -o jsonpath='{.items[0].metadata.name}')
+portal_pod=$(kubectl get pod -n repave -l app.kubernetes.io/component=portal \
+  -o jsonpath='{.items[0].metadata.name}')
 kubectl cp scripts/hosted-demo-library.yaml repave/$portal_pod:/tmp/hosted-demo-library.yaml
 kubectl cp scripts/seed_hosted_demo_library.py repave/$portal_pod:/tmp/seed_hosted_demo_library.py
 kubectl exec -n repave "$portal_pod" -- \
@@ -92,17 +104,17 @@ kubectl exec -n repave "$portal_pod" -- \
   --repo-root /app \
   --modules-root /data/modules \
   --fleet-file /data/fleet/registry.jsonl \
-  --engine-dir /app/engine
+  --engine-dir /app/engine \
+  --render-manifests \
+  --manifests-dir /tmp/fleet-manifests \
+  --operator-namespace repave-system
 ```
-
-(`python3` + PyYAML must exist in the image — prefer laptop seed with `GITHUB_TOKEN` until
-a corpus image ships the script.)
 
 ---
 
-## Copy fleet registry to hosted PVC
+## Copy fleet registry (local seed only)
 
-After local `repave register`, bulk-load JSONL into the portal pod (same shape as kind co-install):
+When you registered on a laptop, bulk-load JSONL into the portal pod:
 
 ```bash
 portal_pod=$(kubectl get pod -n repave -l app.kubernetes.io/name=repave -o jsonpath='{.items[0].metadata.name}')
