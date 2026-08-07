@@ -33,6 +33,13 @@ from repave_engine.blueprint import (
     load_blueprint,
     validate_inputs,
 )
+from repave_engine.cost_estimate import (
+    CostEstimateDelta,
+    audit_extra_for_cost_estimate,
+    cost_estimate_from_gates,
+    diff_cost_estimates,
+    load_cost_estimate_file,
+)
 from repave_engine.entity_catalog import ScorecardDimension, build_scorecard
 from repave_engine.fleet import FleetEntry, FleetError, normalize_repo_url, register_repo
 from repave_engine.gate_registry import GateResult
@@ -76,8 +83,10 @@ from repave_engine.import_rules import (
     parse_path_overrides,
     quarantine_path,
 )
+from repave_engine.infracost_policy import effective_gate_names
 from repave_engine.pr_conventions import (
     PullRequestConventions,
+    append_evidence_section,
     branch_name,
     import_pull_request_title,
     load_pull_request_conventions,
@@ -184,6 +193,7 @@ class ImportPlan:
     candidates: tuple[BlueprintCandidate, ...] = ()
     scorecard: ScorecardDelta = field(default_factory=ScorecardDelta)
     gates: tuple[GateResult, ...] = ()
+    cost_delta: CostEstimateDelta | None = None
     values: dict[str, Any] = field(default_factory=dict)
     path_overrides: dict[str, str] = field(default_factory=dict)
     remote: bool = False
@@ -246,6 +256,7 @@ class ImportPlan:
                 }
                 for gate in self.gates
             ],
+            "cost_delta": (None if self.cost_delta is None else self.cost_delta.to_public_dict()),
         }
 
 
@@ -854,16 +865,23 @@ def build_import_plan(
             after_dir = Path(after_tmp) / "after"
             materialize_reorganized_tree(repo_dir, plan, reference_dir, after_dir)
             gates: tuple[GateResult, ...] = ()
+            cost_delta: CostEstimateDelta | None = None
             if with_gates:
+                gate_overrides = load_gate_overrides(repo_root)
                 gates = tuple(
                     run_gates(
                         after_dir,
-                        blueprint.gates,
+                        effective_gate_names(blueprint, gate_overrides),
                         blueprint=blueprint,
-                        gate_overrides=load_gate_overrides(repo_root),
+                        gate_overrides=gate_overrides,
                         require_run=False,
                     )
                 )
+                before_est = load_cost_estimate_file(repo_dir)
+                after_est = load_cost_estimate_file(after_dir) or cost_estimate_from_gates(
+                    list(gates)
+                )
+                cost_delta = diff_cost_estimates(before_est, after_est)
             scorecard = ScorecardDelta(
                 before=_score_tree(repo_dir, fleet_entry=None),
                 after=_score_tree(
@@ -872,7 +890,7 @@ def build_import_plan(
                     audit=_gate_audit_entry(blueprint, gates),
                 ),
             )
-        return replace(plan, gates=gates, scorecard=scorecard)
+        return replace(plan, gates=gates, scorecard=scorecard, cost_delta=cost_delta)
 
 
 def _gate_audit_entry(
@@ -1331,6 +1349,9 @@ def build_import_pull_request_body(result: ImportApplyResult) -> str:
         lines.extend(["", "### Failing gates"])
         lines.extend(f"- `{gate.name}`: {gate.message}" for gate in failing)
 
+    if plan.cost_delta is not None:
+        lines.extend(["", "### Cost estimate", plan.cost_delta.detail])
+
     lines.extend(
         [
             "",
@@ -1446,17 +1467,22 @@ def open_import_pull_request(
     )
 
     draft = not plan.gates_passed
+    conventions = load_pull_request_conventions(repo_root)
+    body = append_evidence_section(
+        build_import_pull_request_body(apply_result),
+        plan.gates,
+        enabled=conventions.evidence_checklist,
+    )
     payload = create_github_pull_request(
         preflight.repository.owner,
         preflight.repository.name,
         title=build_import_pull_request_title(plan),
-        body=build_import_pull_request_body(apply_result),
+        body=body,
         head=git_branch,
         base=base_branch or preflight.base_branch,
         token=github_token,
         draft=draft,
     )
-    conventions = load_pull_request_conventions(repo_root)
     pr_number = int(payload.get("number", 0))
     if pr_number and conventions.labels:
         add_pull_request_labels(
@@ -1511,6 +1537,11 @@ def record_import(
                     "pull_request_url": result.pull_request_url,
                     "draft": result.draft,
                     "source_layout_hash": plan.source_layout_hash,
+                    **audit_extra_for_cost_estimate(
+                        None
+                        if plan.cost_delta is None
+                        else plan.cost_delta.after or plan.cost_delta.before
+                    ),
                 },
             ),
             repo_root=repo_root,

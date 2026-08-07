@@ -291,6 +291,8 @@ def test_generate_applies_gate_overrides_from_config(
                 "  checkov:",
                 "    skip_checks:",
                 "      - CKV_TEST",
+                "  infracost:",
+                "    required: true",
             ]
         ),
         encoding="utf-8",
@@ -307,6 +309,7 @@ def test_generate_applies_gate_overrides_from_config(
         on_event=None,
     ):
         captured["gate_overrides"] = gate_overrides
+        captured["gate_names"] = gate_names
         from repave_engine.gates import GateResult
 
         return [GateResult("docs-drift", True, False, "ok")]
@@ -325,6 +328,7 @@ def test_generate_applies_gate_overrides_from_config(
     overrides = captured["gate_overrides"]
     assert overrides is not None
     assert overrides.checkov_skip_checks == ("CKV_TEST",)
+    assert "infracost" in captured["gate_names"]
 
 
 def test_generate_ansible_playbook_project_publishes_repo(

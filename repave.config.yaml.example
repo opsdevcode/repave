@@ -93,6 +93,12 @@ gates:
     required_rules:
       - checkov:CKV2_REPAVE_1
       - opa:destructive_changes
+  # FinOps estimate policy (v1.91). Org floor — injects/requires infracost when
+  # the blueprint already has terraform gates (or is a terraform artifact).
+  # Env: REPAVE_INFRACOST_REQUIRED=1, REPAVE_INFRACOST_MAX_MONTHLY_USD=500
+  # infracost:
+  #   required: true
+  #   max_monthly_usd: 500
 
 # Optional JSONL audit log for generations (portal and CLI).
 # audit:

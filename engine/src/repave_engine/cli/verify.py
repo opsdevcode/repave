@@ -56,7 +56,16 @@ def cmd_gates(args: argparse.Namespace) -> int:
     repave_file = repo_path / "repave.yaml"
     blueprint = blueprint_from_repave_file(repave_file)
 
-    results = run_gates(repo_path, blueprint.gates, blueprint=blueprint)
+    from repave_engine.infracost_policy import effective_gate_names
+    from repave_engine.settings import load_gate_overrides
+
+    gate_overrides = load_gate_overrides(repo_path)
+    results = run_gates(
+        repo_path,
+        effective_gate_names(blueprint, gate_overrides),
+        blueprint=blueprint,
+        gate_overrides=gate_overrides,
+    )
     if getattr(args, "json", False):
         # Shape consumed by `repave-tf tf apply --gates` (ADR 004 Phase 3).
         print(

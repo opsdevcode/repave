@@ -80,6 +80,56 @@ def test_load_gate_overrides_from_file(tmp_path: Path) -> None:
     overrides = load_gate_overrides(tmp_path)
 
     assert overrides.checkov_skip_checks == ("CKV_AWS_1",)
+    assert overrides.infracost.required is False
+    assert overrides.infracost.max_monthly_usd is None
+
+
+def test_load_gate_overrides_infracost_policy(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("REPAVE_INFRACOST_REQUIRED", raising=False)
+    monkeypatch.delenv("REPAVE_INFRACOST_MAX_MONTHLY_USD", raising=False)
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "output:",
+                "  github_org: acme",
+                "  modules_root: ../modules",
+                "gates:",
+                "  infracost:",
+                "    required: true",
+                "    max_monthly_usd: 250",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    overrides = load_gate_overrides(tmp_path)
+
+    assert overrides.infracost.required is True
+    assert overrides.infracost.max_monthly_usd == 250.0
+
+
+def test_load_gate_overrides_infracost_env_floor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_INFRACOST_REQUIRED", "1")
+    monkeypatch.setenv("REPAVE_INFRACOST_MAX_MONTHLY_USD", "100")
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "output:",
+                "  github_org: acme",
+                "  modules_root: ../modules",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    overrides = load_gate_overrides(tmp_path)
+
+    assert overrides.infracost.required is True
+    assert overrides.infracost.max_monthly_usd == 100.0
 
 
 def test_load_output_config_requires_modules_root(tmp_path: Path, monkeypatch) -> None:

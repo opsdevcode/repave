@@ -22,6 +22,10 @@ from repave_engine.bundle import (
     prepare_member_values,
     validate_bundle_inputs,
 )
+from repave_engine.cost_estimate import (
+    audit_extra_for_cost_estimate,
+    cost_estimate_from_gates,
+)
 from repave_engine.fleet import FleetEntry, FleetError, register_repo
 from repave_engine.gates import (
     GateResult,
@@ -32,6 +36,7 @@ from repave_engine.gates import (
     run_gates,
 )
 from repave_engine.github_repo_provision import build_provision_spec
+from repave_engine.infracost_policy import effective_gate_names
 from repave_engine.metrics import GENERATION_DURATION, GENERATION_TOTAL
 from repave_engine.notifications import GenerationNotificationContext, notify_after_generation
 from repave_engine.pr import PullRequestPlan, create_pull_request, plan_pull_request
@@ -148,6 +153,8 @@ def _record_operability(
         audit_cfg = None
     if audit_cfg is None or not audit_cfg.enabled:
         return
+    extra: dict[str, Any] = {"duration_seconds": round(elapsed, 3)}
+    extra.update(audit_extra_for_cost_estimate(cost_estimate_from_gates(gates)))
     append_audit_record(
         audit_cfg.file,
         AuditRecord(
@@ -159,7 +166,7 @@ def _record_operability(
             gates_outcome=outcome,
             repository_url=repository.web_url if repository is not None else None,
             acting_user=current_acting_user(),
-            extra={"duration_seconds": round(elapsed, 3)},
+            extra=extra,
         ),
         repo_root=catalog_root,
     )
@@ -331,7 +338,9 @@ def generate_from_blueprint(
             _emit_stage(on_event, "render", started=True)
             render_result = render_blueprint(blueprint, normalized, staging_dir)
             _emit_stage(on_event, "render", started=False)
-        run_gate_overrides = load_gate_overrides(repo_root) if repo_root is not None else None
+        run_gate_overrides = (
+            load_gate_overrides(repo_root) if repo_root is not None else gate_overrides
+        )
         with pipeline_span("repave.gates"):
             _emit_stage(on_event, "gates", started=True)
             gate_require_run = dry_run if require_run is None else require_run
@@ -339,7 +348,7 @@ def generate_from_blueprint(
                 gate_require_run = True
             gate_results = run_gates(
                 render_result.output_dir,
-                blueprint.gates,
+                effective_gate_names(blueprint, run_gate_overrides),
                 blueprint=blueprint,
                 gate_overrides=run_gate_overrides,
                 require_run=gate_require_run,

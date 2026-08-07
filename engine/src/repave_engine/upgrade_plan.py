@@ -9,6 +9,14 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.blueprint import blueprint_dir, load_blueprint, validate_inputs
+from repave_engine.cost_estimate import (
+    CostEstimateDelta,
+    cost_estimate_from_gates,
+    diff_cost_estimates,
+    load_cost_estimate_file,
+)
+from repave_engine.gate_registry import GateResult
+from repave_engine.gates import run_gates
 from repave_engine.github import (
     add_pull_request_labels,
     create_github_pull_request,
@@ -16,6 +24,7 @@ from repave_engine.github import (
 )
 from repave_engine.policy_selection import diff_policy_provenance
 from repave_engine.pr_conventions import (
+    append_evidence_section,
     load_pull_request_conventions,
     upgrade_pull_request_title,
 )
@@ -69,6 +78,8 @@ class UpgradePlanResult:
     policy_changes: tuple[str, ...] = ()
     pin_changes: tuple[PinChange, ...] = ()
     file_diffs: tuple[StandardsDiffFile, ...] = ()
+    cost_delta: CostEstimateDelta | None = None
+    gates: tuple[GateResult, ...] = ()
 
     @property
     def changed_file_count(self) -> int:
@@ -97,6 +108,16 @@ class UpgradePlanResult:
             "policy_changes": list(self.policy_changes),
             "pin_changes": [row.to_dict() for row in self.pin_changes],
             "file_diffs": [{"path": item.path, "patch": item.patch} for item in self.file_diffs],
+            "cost_delta": (None if self.cost_delta is None else self.cost_delta.to_public_dict()),
+            "gates": [
+                {
+                    "name": gate.name,
+                    "passed": gate.passed,
+                    "skipped": gate.skipped,
+                    "message": gate.message,
+                }
+                for gate in self.gates
+            ],
             "summary": self.summary,
         }
 
@@ -170,6 +191,8 @@ def build_upgrade_pull_request_body(plan: UpgradePlanResult) -> str:
         lines.append("")
         lines.append("### Policy changes")
         lines.extend(f"- {note}" for note in plan.policy_changes)
+    if plan.cost_delta is not None:
+        lines.extend(["", "### Cost estimate", plan.cost_delta.detail])
     lines.extend(
         [
             "",
@@ -210,7 +233,12 @@ def open_upgrade_pull_request(
         apply_result.plan.blueprint_name,
         apply_result.plan.blueprint_version,
     )
-    body = build_upgrade_pull_request_body(apply_result.plan)
+    conventions = load_pull_request_conventions(repo_root)
+    body = append_evidence_section(
+        build_upgrade_pull_request_body(apply_result.plan),
+        apply_result.plan.gates,
+        enabled=conventions.evidence_checklist,
+    )
     pr = create_github_pull_request(
         repository.owner,
         repository.name,
@@ -220,7 +248,6 @@ def open_upgrade_pull_request(
         base=base_branch,
         token=github_token,
     )
-    conventions = load_pull_request_conventions(repo_root)
     pr_number = int(pr.get("number", 0))
     if pr_number and conventions.labels:
         add_pull_request_labels(
@@ -463,6 +490,24 @@ def _render_upgrade_staging(
         modified=tuple(modified),
         added=tuple(added),
     )
+    # Cost preview: run infracost only when org floor requires it or a prior estimate exists
+    # (delta vs previous pin). Avoids terraform plan on every upgrade when optional.
+    before_est = load_cost_estimate_file(target_repo)
+    want_estimate = gate_overrides.infracost.required or before_est is not None
+    gates: tuple[GateResult, ...] = ()
+    after_est = None
+    if want_estimate:
+        gates = tuple(
+            run_gates(
+                staging_dir,
+                ("infracost",),
+                blueprint=blueprint,
+                gate_overrides=gate_overrides,
+                require_run=False,
+            )
+        )
+        after_est = load_cost_estimate_file(staging_dir) or cost_estimate_from_gates(list(gates))
+    cost_delta = diff_cost_estimates(before_est, after_est)
     result = UpgradePlanResult(
         added=tuple(added),
         modified=tuple(modified),
@@ -472,6 +517,8 @@ def _render_upgrade_staging(
         policy_changes=policy_changes,
         pin_changes=pin_changes,
         file_diffs=file_diffs,
+        cost_delta=cost_delta,
+        gates=gates,
     )
     return result, staging_dir, temp_dir, owns_staging
 

@@ -6,11 +6,13 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.30.0  
 
-**In progress:** [FinOps enablement](#finops-enablement-v2x) (v1.91–v1.94) — estimate policy
+**In progress:** [FinOps enablement](#finops-enablement-v2x) (v1.92–v1.94) — showback/budgets
 next; [Platform as a product](#platform-as-a-product-v2x) follow-ons (v1.87–v1.89).
 Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **FinOps tag governance (v1.90)** — required allocation tags on terraform/helm
+**Shipped on `main`:** **FinOps estimate policy (v1.91)** — `gates.infracost` org floor
+(`required` / `max_monthly_usd`), estimate in audit + PR evidence, upgrade/import cost delta
+([`docs/finops.md`](finops.md)); **FinOps tag governance (v1.90)** — required allocation tags on terraform/helm
 golden paths, Checkov `CKV2_REPAVE_13`, OPA `allocation_tags`, `portal.cost_allocation.tag_keys`,
 scorecard fail on incomplete tags ([`docs/finops.md`](finops.md)); **Platform feedback loop (v1.86)** — CSAT + friction capture on result/run-console,
 `/platform/feedback`, `GET|POST /api/v2/platform/feedback` ([`docs/platform-metrics.md`](platform-metrics.md));
@@ -217,7 +219,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **Platform as a product** | Partial (v1.85–v1.86 shipped; v1.87–v1.89 open) | Treat the IDP as a product: adoption/DX metrics and feedback loop shipped; stakeholder views, cognitive-load reduction, roadmap evidence open ([platform as a product](#platform-as-a-product-v2x)) |
-| **FinOps enablement** | Partial (v1.90 shipped; v1.91–v1.94 open) | Hybrid FinOps: tag governance shipped; estimate policy, showback/budgets, thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
+| **FinOps enablement** | Partial (v1.90–v1.91 shipped; v1.92–v1.94 open) | Hybrid FinOps: tags + estimate policy shipped; showback/budgets, thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
@@ -2577,7 +2579,8 @@ floor.
 **Done when:** An org can require Infracost plus a default monthly cap without editing every
 blueprint; estimate appears in audit and PR evidence.
 
-**Status:** Not started.
+**Status:** Shipped on `main` (v1.91 estimate policy — `gates.infracost` floor, audit/PR
+evidence, upgrade/import cost delta).
 
 **Depends on:** [cost visibility](#cost-visibility) (shipped).
 

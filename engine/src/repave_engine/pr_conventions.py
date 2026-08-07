@@ -131,6 +131,8 @@ def add_pull_request_title(blueprint_name: str, component_id: str) -> str:
 def render_evidence_checklist(gates: Sequence[GateResult]) -> str:
     if not gates:
         return ""
+    from repave_engine.cost_estimate import cost_estimate_from_gates
+
     lines = ["## Gate evidence", ""]
     for gate in gates:
         if gate.skipped:
@@ -145,6 +147,9 @@ def render_evidence_checklist(gates: Sequence[GateResult]) -> str:
         detail = gate.message.strip()
         suffix = f" — {detail}" if detail else ""
         lines.append(f"- {mark} `{gate.name}` ({state}){suffix}")
+    estimate = cost_estimate_from_gates(list(gates))
+    if estimate is not None:
+        lines.extend(["", f"**Cost estimate:** {estimate.detail}"])
     return "\n".join(lines) + "\n"
 
 

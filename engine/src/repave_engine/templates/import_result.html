@@ -105,6 +105,23 @@
 </section>
 {% endif %}
 
+{% if plan.cost_delta %}
+<section class="card result-cost-estimate" aria-labelledby="import-cost-heading">
+  <div class="card__header">
+    <h2 id="import-cost-heading">Cost estimate</h2>
+    <p class="muted card__subtitle">Infracost on the reorganized tree vs any prior estimate in the source repo.</p>
+  </div>
+  <div class="card__body">
+    <p class="muted">{{ plan.cost_delta.detail }}</p>
+    {% if plan.cost_delta.delta_monthly %}
+    <p class="result-cost-estimate__amount">
+      <span class="badge badge--pass">{{ plan.cost_delta.delta_monthly }}/month delta</span>
+    </p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if plan.gates %}
 <section class="card" aria-labelledby="import-gates-heading">
   <div class="card__header card__header--toolbar">

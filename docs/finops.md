@@ -18,7 +18,10 @@ Community anchors:
 | Surface | Role |
 | --- | --- |
 | `infracost` gate | Estimate monthly cost at terraform plan / generated-repo CI |
-| `gates.infracost.max_monthly_usd` | Optional per-blueprint hard cap on estimate |
+| `gates.infracost.required` | Org floor: require Infracost (fail skips) and inject when omitted (v1.91) |
+| `gates.infracost.max_monthly_usd` | Org default monthly cap; blueprint `gate_config` can tighten |
+| Audit `extra` + PR evidence | Estimate summary on generation/import audit and PR checklist |
+| Upgrade / import cost delta | Preview delta vs prior `.repave/cost-estimate.json` when present |
 | `portal.cost_reader` (`url` / `aws` / `azure` / `k8s`) | Read-only L30D actuals for catalog entities |
 | Library badges + Cloud spend scorecard | Showback signal on `/library` and entity detail |
 | State graph blast-radius cost join | Join Infracost breakdown to graph resources |
@@ -45,7 +48,7 @@ Config examples: [`repave.config.yaml.example`](../repave.config.yaml.example).
 1. **Inform (v1.90, v1.92)** — Required allocation tags so spend maps to owners; trends and
    budgets so teams see their share.
 2. **Optimize (v1.91)** — Cost in the path of change: require estimates, org monthly caps,
-   PR evidence.
+   PR evidence (shipped — see below).
 3. **Operate (v1.93–v1.94)** — FOCUS-shaped ingest when multi-cloud normalization matters;
    export for finance; simple anomaly notifications.
 
@@ -87,6 +90,26 @@ Environment override: `REPAVE_COST_ALLOCATION_TAG_KEYS=owner=Team,service=App,en
 | `owner` | `Owner` | AWS CE, Azure Cost Management |
 | `display_name` / service | `Service` | AWS CE, Azure Cost Management |
 | Kubernetes label | `app.kubernetes.io/name` (default aggregate) | OpenCost `k8s` reader |
+
+## Estimate policy at plan time (v1.91)
+
+Org floor in `repave.config.yaml` (or env):
+
+```yaml
+gates:
+  infracost:
+    required: true          # fail when Infracost cannot run; inject gate when omitted
+    max_monthly_usd: 500    # default cap when blueprint has no gate_config.infracost
+```
+
+| Env | Effect |
+| --- | --- |
+| `REPAVE_INFRACOST_REQUIRED=1` | Same as `required: true` |
+| `REPAVE_INFRACOST_MAX_MONTHLY_USD` | Overrides org `max_monthly_usd` |
+
+Blueprint `gate_config.infracost.max_monthly_usd` still wins when set (stricter per path).
+Estimates land in audit `extra` (`cost_estimate_*`), the generate PR evidence checklist,
+and upgrade/import preview deltas when a prior `.repave/cost-estimate.json` exists.
 
 ## Thin FOCUS ingest (v1.93)
 

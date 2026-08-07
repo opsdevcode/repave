@@ -14,6 +14,7 @@ from repave_engine.fleet import normalize_repo_url
 from repave_engine.gate_registry import GateResult
 from repave_engine.gates import all_gates_passed, run_gates
 from repave_engine.git_clone import CloneError, ephemeral_clone, resolve_git_token
+from repave_engine.infracost_policy import effective_gate_names
 from repave_engine.provenance_components import (
     component_doc_for_inputs,
     list_provenance_components,
@@ -220,7 +221,7 @@ def verify_repository(
     gates = tuple(
         run_gates(
             target_repo,
-            gate_blueprint.gates,
+            effective_gate_names(gate_blueprint, gate_overrides),
             blueprint=gate_blueprint,
             gate_overrides=gate_overrides,
             require_run=require_run,
@@ -242,7 +243,7 @@ def verify_repository(
                 comp_gates = tuple(
                     run_gates(
                         target_repo,
-                        comp_catalog.gates,
+                        effective_gate_names(comp_catalog, gate_overrides),
                         blueprint=comp_catalog,
                         gate_overrides=gate_overrides,
                         require_run=require_run,
