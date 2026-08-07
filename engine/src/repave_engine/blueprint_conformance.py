@@ -58,9 +58,9 @@ _Copier_VAR = re.compile(r"\{\{(?!\s*[\.\-$]|\s*include)")
 _ENGINE_PIP_PIN = re.compile(r"repave-engine==[\d.]+(?:\.\w+)?")
 _ENGINE_VERSION_YAML = re.compile(r"(?m)^(\s*engine_version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$")
 _README_ENGINE_LINE = re.compile(r"(?m)^(- \*\*Engine:\*\* `)[\d.]+(?:\.\w+)?(`)")
-# Backstage annotation written by backstage_catalog.py — live version, hash-neutral.
-_CATALOG_ENGINE_ANNOTATION = re.compile(
-    r"(?m)^(\s*repave\.dev/engine-version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$"
+# Backstage annotations written by backstage_catalog.py — live pins, hash-neutral.
+_CATALOG_REPAVE_VERSION_ANNOTATION = re.compile(
+    r"(?m)^(\s*repave\.dev/(?:engine|blueprint|standard)-version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$"
 )
 _MANIFEST_ENGINE_NEUTRAL = b"SNAPSHOT"
 
@@ -331,7 +331,7 @@ def find_unresolved_placeholders(output_dir: Path) -> list[str]:
 
 
 def _normalize_manifest_bytes(rel: str, data: bytes) -> bytes:
-    """Drop engine-version pins from hashes so release bumps do not rewrite manifests."""
+    """Drop live version pins from hashes so release bumps do not rewrite manifests."""
     if not _is_text_artifact(Path(rel)):
         return data
     try:
@@ -348,7 +348,7 @@ def _normalize_manifest_bytes(rel: str, data: bytes) -> bytes:
     elif rel == "README.md":
         text = _README_ENGINE_LINE.sub(rf"\1{_MANIFEST_ENGINE_NEUTRAL.decode()}\2", text)
     elif rel == "catalog-info.yaml" or rel.endswith("/catalog-info.yaml"):
-        text = _CATALOG_ENGINE_ANNOTATION.sub(
+        text = _CATALOG_REPAVE_VERSION_ANNOTATION.sub(
             rf"\1\2{_MANIFEST_ENGINE_NEUTRAL.decode()}\2",
             text,
         )
@@ -451,6 +451,7 @@ def run_blueprint_conformance(
     staging_root: Path,
     check_snapshot: bool = True,
     variant_id: str | None = None,
+    render_only: bool = False,
 ) -> ConformanceResult:
     spec = _resolve_conformance_spec(blueprint_dir, variant_id=variant_id)
 
@@ -462,12 +463,12 @@ def run_blueprint_conformance(
         staging_name = f"{blueprint.name}/{spec.variant_id}"
 
     staging_dir = staging_root / staging_name
+    prev_generated_at = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT")
+    if spec.snapshot:
+        os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = _CONFORMANCE_GENERATED_AT
     gate_failures: tuple[str, ...]
-    if spec.run_gates:
-        prev_generated_at = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT")
-        if spec.snapshot:
-            os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = _CONFORMANCE_GENERATED_AT
-        try:
+    try:
+        if spec.run_gates and not render_only:
             result = generate_from_blueprint(
                 blueprint,
                 values,
@@ -476,30 +477,30 @@ def run_blueprint_conformance(
                 staging_root=staging_dir,
                 repo_root=repo_root,
             )
-        finally:
-            if spec.snapshot:
-                if prev_generated_at is None:
-                    os.environ.pop("REPAVE_PROVENANCE_GENERATED_AT", None)
-                else:
-                    os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = prev_generated_at
-        output_dir = result.render.output_dir
-        gate_failures = tuple(
-            f"{gate.name}: {gate.message}"
-            for gate in result.gates
-            if not gate.passed and not gate.skipped
-        )
-    else:
-        gate_overrides = load_gate_overrides(repo_root)
-        normalized = validate_inputs(
-            blueprint,
-            values,
-            repo_root=repo_root,
-            gate_overrides=gate_overrides,
-        )
-        staging_dir.mkdir(parents=True, exist_ok=True)
-        render_result = render_blueprint(blueprint, normalized, staging_dir)
-        output_dir = render_result.output_dir
-        gate_failures = ()
+            output_dir = result.render.output_dir
+            gate_failures = tuple(
+                f"{gate.name}: {gate.message}"
+                for gate in result.gates
+                if not gate.passed and not gate.skipped
+            )
+        else:
+            gate_overrides = load_gate_overrides(repo_root)
+            normalized = validate_inputs(
+                blueprint,
+                values,
+                repo_root=repo_root,
+                gate_overrides=gate_overrides,
+            )
+            staging_dir.mkdir(parents=True, exist_ok=True)
+            render_result = render_blueprint(blueprint, normalized, staging_dir)
+            output_dir = render_result.output_dir
+            gate_failures = ()
+    finally:
+        if spec.snapshot:
+            if prev_generated_at is None:
+                os.environ.pop("REPAVE_PROVENANCE_GENERATED_AT", None)
+            else:
+                os.environ["REPAVE_PROVENANCE_GENERATED_AT"] = prev_generated_at
     missing = tuple(
         rel
         for rel in spec.required_files
@@ -559,3 +560,34 @@ def update_all_manifests(
                 label = f"{label}/{spec.variant_id}"
             updated.append(label)
     return updated
+
+
+def find_snapshot_manifest_drifts(
+    repo_root: Path,
+    *,
+    modules_root: Path,
+    staging_root: Path,
+    render_only: bool = False,
+) -> tuple[str, ...]:
+    """Return human-readable drift labels for snapshot conformance manifests."""
+    output_config = OutputConfig(github_org="conformance-check", modules_root=modules_root)
+    drifts: list[str] = []
+    for blueprint_dir in blueprint_dirs(repo_root):
+        for spec in load_conformance_specs(blueprint_dir):
+            if not spec.snapshot:
+                continue
+            outcome = run_blueprint_conformance(
+                blueprint_dir,
+                repo_root=repo_root,
+                output_config=output_config,
+                staging_root=staging_root,
+                check_snapshot=True,
+                variant_id=spec.variant_id or None,
+                render_only=render_only,
+            )
+            if outcome.manifest_diff:
+                label = blueprint_dir.name
+                if spec.variant_id:
+                    label = f"{label}/{spec.variant_id}"
+                drifts.append(f"{label}: {outcome.manifest_diff}")
+    return tuple(drifts)

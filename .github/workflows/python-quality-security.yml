@@ -53,6 +53,11 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python3 scripts/check_release_test_toolchain.py
 
+      - name: Verify blueprint conformance manifests
+        if: steps.paths.outputs.ci_needed == 'true'
+        working-directory: engine
+        run: uv run python ../scripts/check_blueprint_conformance_manifests.py
+
       - name: Ruff lint
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run ruff check src tests

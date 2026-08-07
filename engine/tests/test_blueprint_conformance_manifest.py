@@ -45,6 +45,24 @@ def test_manifest_digest_neutralizes_engine_version_in_catalog_info() -> None:
     )
 
 
+def test_manifest_digest_neutralizes_blueprint_and_standard_version_in_catalog_info() -> None:
+    before = (
+        b"metadata:\n"
+        b"  annotations:\n"
+        b"    repave.dev/blueprint-version: 0.12.0\n"
+        b"    repave.dev/standard-version: 1.4.0\n"
+    )
+    after = (
+        b"metadata:\n"
+        b"  annotations:\n"
+        b"    repave.dev/blueprint-version: 0.13.0\n"
+        b"    repave.dev/standard-version: 1.5.0\n"
+    )
+    assert _file_manifest_digest("catalog-info.yaml", before) == _file_manifest_digest(
+        "catalog-info.yaml", after
+    )
+
+
 def test_manifest_digest_still_sees_non_version_catalog_changes() -> None:
     before = (
         b"metadata:\n"
