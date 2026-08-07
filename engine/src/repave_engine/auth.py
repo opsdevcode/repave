@@ -117,6 +117,45 @@ def groups_from_claims(claims: dict[str, Any], groups_claim: str) -> list[str]:
     return []
 
 
+def _decode_unverified_jwt_payload(token: str) -> dict[str, Any]:
+    try:
+        import jwt
+
+        payload = jwt.decode(token, options={"verify_signature": False})
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def merge_oidc_user_claims(
+    userinfo: dict[str, Any],
+    id_token: str | None,
+    *,
+    groups_claim: str,
+) -> dict[str, Any]:
+    """Merge role claims from the id_token when userinfo omits them (Auth0 default)."""
+    merged = dict(userinfo)
+    if groups_from_claims(merged, groups_claim):
+        return merged
+    if not id_token:
+        return merged
+    id_claims = _decode_unverified_jwt_payload(id_token)
+    if not id_claims:
+        return merged
+    claim_keys = [groups_claim]
+    if groups_claim != "groups" and "groups" not in claim_keys:
+        claim_keys.append("groups")
+    for key in sorted(id_claims):
+        if key.endswith("/groups") and key not in claim_keys:
+            claim_keys.append(key)
+    for key in claim_keys:
+        if key in id_claims and not groups_from_claims(merged, key):
+            merged[key] = id_claims[key]
+        if groups_from_claims(merged, groups_claim):
+            break
+    return merged
+
+
 def logout_return_to(config: AuthConfig) -> str:
     """Post-logout landing URL (Auth0 Allowed Logout URLs / OIDC post_logout_redirect_uri)."""
     explicit = config.oidc_logout_return_to.strip()
@@ -239,6 +278,9 @@ async def complete_oidc_callback(
 
     if not isinstance(claims, dict):
         raise HTTPException(status_code=502, detail="Invalid userinfo response")
+
+    id_token = str(token_payload.get("id_token", "")).strip() or None
+    claims = merge_oidc_user_claims(claims, id_token, groups_claim=config.groups_claim)
 
     subject = str(claims.get("sub", "")).strip()
     if not subject:

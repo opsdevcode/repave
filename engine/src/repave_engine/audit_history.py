@@ -11,9 +11,31 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _DEFAULT_LIMIT = 8
+_HOME_ACTIVITY_LIMIT = 5
+HOME_ACTIVITY_LIMIT = _HOME_ACTIVITY_LIMIT
+_INITIAL_ARTIFACT_VERSION = "0.1.0"
 _MAX_LINE_BYTES = 256_000
 _MAX_SCAN_ROWS = 10_000
 _GENERATION_EVENTS = frozenset({"generation", "bundle_generation", "import"})
+
+
+def initial_artifact_version_for_audit() -> str:
+    """Default semver for a newly generated artifact (matches blueprint template pins)."""
+    return _INITIAL_ARTIFACT_VERSION
+
+
+def _github_repo_slug(repository_url: str) -> str:
+    normalized = repository_url.strip().rstrip("/")
+    if not normalized:
+        return ""
+    if "github.com/" in normalized:
+        tail = normalized.split("github.com/", 1)[1]
+        parts = [part for part in tail.split("/") if part]
+        if len(parts) >= 2:
+            return parts[1]
+        if parts:
+            return parts[0]
+    return normalized.rsplit("/", 1)[-1]
 
 
 @dataclass(frozen=True)
@@ -67,6 +89,39 @@ class AuditHistoryEntry:
             "repository_url": self.repository_url,
             "extra": self.extra,
         }
+
+    def activity_artifact_name(self) -> str:
+        """Library-style primary label: produced artifact, not the golden-path blueprint slug."""
+        module = self.module_name.strip()
+        if module and module != self.blueprint_name:
+            return module
+        slug = _github_repo_slug(self.repository_url or "")
+        if slug:
+            return slug
+        return module or self.blueprint_name
+
+    def activity_version_label(self) -> str | None:
+        """Released or initial artifact semver (not the blueprint pin)."""
+        raw = self.extra.get("artifact_version")
+        if not isinstance(raw, str):
+            return None
+        version = raw.strip().lstrip("v")
+        if not version:
+            return None
+        return f"v{version}"
+
+    def activity_blueprint_pin(self) -> str:
+        pin = self.blueprint_version.strip()
+        if pin:
+            return f"{self.blueprint_name}@{pin}"
+        return self.blueprint_name
+
+    def activity_href(self) -> str:
+        if self.repository_url:
+            from repave_engine.entity_catalog import entity_id_for_repo_url
+
+            return f"/services/{entity_id_for_repo_url(self.repository_url)}"
+        return f"/blueprints/{self.blueprint_name}"
 
 
 @dataclass(frozen=True)

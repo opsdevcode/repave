@@ -2,11 +2,13 @@
   {% for row in recent_activity %}
   <li class="activity-list__item">
     <div class="activity-list__primary">
-      <a href="/blueprints/{{ row.blueprint_name }}"><code>{{ row.blueprint_name }}</code></a>
-      @ {{ row.blueprint_version }}
-      {% if row.module_name %}
-      <span class="muted">· {{ row.module_name }}</span>
-      {% endif %}
+      <a class="activity-list__artifact" href="{{ row.activity_href() }}">
+        <span class="activity-list__artifact-name">{{ row.activity_artifact_name() }}</span>
+        {% if row.activity_version_label() %}
+        <span class="badge badge--muted">{{ row.activity_version_label() }}</span>
+        {% endif %}
+      </a>
+      <span class="muted activity-list__pin">via {{ row.activity_blueprint_pin() }}</span>
     </div>
     <div class="activity-list__meta">
       <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">

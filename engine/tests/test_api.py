@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, create_app
+from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderResult
@@ -102,8 +103,38 @@ def test_activity_page(repo_root, output_config) -> None:
     response = client.get("/activity")
 
     assert response.status_code == 200
-    assert "Generation activity" in response.text
+    assert "Activity" in response.text
     assert 'href="/activity"' in response.text
+
+
+def test_home_recent_activity_uses_artifact_labels(
+    repo_root, output_config, tmp_path: Path, monkeypatch
+) -> None:
+    audit_path = tmp_path / "audit.jsonl"
+    monkeypatch.setenv("REPAVE_AUDIT_FILE", str(audit_path))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    append_audit_record(
+        audit_path,
+        AuditRecord(
+            event="generation",
+            blueprint_name="terraform-module-generic",
+            blueprint_version="0.12.0",
+            module_name="vpc-demo",
+            dry_run=False,
+            gates_outcome="passed",
+            repository_url="https://github.com/opsdevcode/tf-aws-vpc-demo",
+            acting_user="alice",
+            extra={"artifact_version": "0.1.0"},
+        ),
+        repo_root=repo_root,
+    )
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Recent activity" in response.text
+    assert 'activity-list__artifact-name">vpc-demo<' in response.text
+    assert 'badge--muted">v0.1.0<' in response.text
+    assert "via terraform-module-generic@0.12.0" in response.text
+    assert "terraform-module-generic @ 0.12.0" not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:
@@ -499,10 +530,66 @@ def test_portal_generate_viewer_returns_json_insufficient_role(
             "module_name": "demo",
             "dry_run": "true",
         },
+        headers={"Accept": "application/json"},
     )
     assert response.status_code == 403
     assert response.headers.get("content-type", "").startswith("application/json")
     assert response.json()["detail"] == "Insufficient role"
+
+
+def test_portal_generate_viewer_returns_html_insufficient_role(
+    tmp_path, output_config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from itsdangerous import URLSafeSerializer
+
+    from repave_engine.session_store import load_session_store
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "durability:\n"
+        "  async_generation: true\n"
+        "  database_url: sqlite:///data/repave.sqlite\n"
+        "  export_jsonl: false\n"
+        "  require_session_secret: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_SESSION_SECRET", "test-secret")
+    monkeypatch.setenv("REPAVE_SERVICE_MODE", "1")
+    monkeypatch.setenv("REPAVE_OIDC_ISSUER", "https://idp.example.com")
+    monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
+    monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
+    monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+
+    client = TestClient(
+        create_app(repo_root=tmp_path, output_config=output_config),
+        raise_server_exceptions=False,
+    )
+    store = load_session_store(tmp_path)
+    assert store is not None
+    session_id = store.create_id()
+    store.save(
+        session_id,
+        {"repave_user": {"sub": "viewer-1", "email": "v@example.com", "role": "viewer"}},
+    )
+    signer = URLSafeSerializer("test-secret", salt="repave-sql-session")
+    client.cookies.set("session", signer.dumps(session_id))
+
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "module_name": "demo",
+            "dry_run": "false",
+        },
+        headers={
+            "Accept": "text/html,application/json;q=0.9",
+            "Referer": "https://repave.example.com/blueprints/terraform-module-generic",
+        },
+    )
+    assert response.status_code == 403
+    assert "text/html" in response.headers.get("content-type", "")
+    assert "data-portal-error-message" in response.text
+    assert "generator access" in response.text
+    assert "Could not complete request" in response.text
 
 
 def test_generate_form_includes_plan_preview_flag(repo_root, output_config) -> None:

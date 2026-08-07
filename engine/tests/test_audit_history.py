@@ -52,3 +52,43 @@ def test_read_recent_audit_entries_skips_non_generation(tmp_path: Path) -> None:
     assert len(entries) == 1
     assert entries[0].blueprint_name == "terraform-module-generic"
     assert entries[0].gates_outcome == "failed"
+
+
+def test_audit_entry_activity_labels_prefer_module_name() -> None:
+    from repave_engine.audit_history import AuditHistoryEntry
+
+    entry = AuditHistoryEntry(
+        timestamp="2026-01-01T00:00:00+00:00",
+        event="generation",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.12.0",
+        module_name="vpc-demo",
+        dry_run=False,
+        gates_outcome="passed",
+        acting_user="alice",
+        repository_url="https://github.com/opsdevcode/tf-aws-vpc-demo",
+        extra={"artifact_version": "0.1.0"},
+    )
+    assert entry.activity_artifact_name() == "vpc-demo"
+    assert entry.activity_version_label() == "v0.1.0"
+    assert entry.activity_blueprint_pin() == "terraform-module-generic@0.12.0"
+    assert entry.activity_href() == "/services/opsdevcode-tf-aws-vpc-demo"
+
+
+def test_audit_entry_activity_labels_fall_back_to_repo_slug() -> None:
+    from repave_engine.audit_history import AuditHistoryEntry
+
+    entry = AuditHistoryEntry(
+        timestamp="2026-01-01T00:00:00+00:00",
+        event="generation",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.12.0",
+        module_name="terraform-module-generic",
+        dry_run=True,
+        gates_outcome="passed",
+        acting_user="bob",
+        repository_url="https://github.com/acme/tf-aws-vpc-demo",
+        extra={},
+    )
+    assert entry.activity_artifact_name() == "tf-aws-vpc-demo"
+    assert entry.activity_version_label() is None
