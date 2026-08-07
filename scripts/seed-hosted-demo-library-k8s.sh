@@ -61,7 +61,11 @@ if [[ "${SEED_SKIP_REGISTER:-}" == "1" ]]; then
   seed_args+=(--skip-register)
 fi
 
-kubectl exec -n "${NAMESPACE}" "${pod}" -- "${seed_args[@]}"
+if [[ "${SEED_CONTINUE_ON_ERROR:-}" == "1" ]]; then
+  seed_args+=(--continue-on-error)
+fi
+
+kubectl exec -n "${NAMESPACE}" "${pod}" -- env -u GITHUB_TOKEN REPAVE_FORCE_GITHUB_APP=1 "${seed_args[@]}"
 
 if [[ "${SEED_DRY_RUN:-}" == "1" ]]; then
   echo "Dry run complete (no manifests copied)."

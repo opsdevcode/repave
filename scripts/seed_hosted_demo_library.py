@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -156,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifests-dir", type=Path, default=Path("fleet-manifests"))
     parser.add_argument("--operator-namespace", default="repave-system")
     parser.add_argument("--dry-run", action="store_true", help="print commands only")
+    parser.add_argument("--continue-on-error", action="store_true")
     parser.add_argument("--apply-manifests", action="store_true")
     args = parser.parse_args(argv)
 
@@ -176,6 +178,9 @@ def main(argv: list[str] | None = None) -> int:
         "REPAVE_GITHUB_ORG": github_org,
         "REPAVE_MODULES_ROOT": str(args.modules_root.expanduser()),
     }
+    if os.environ.get("REPAVE_FORCE_GITHUB_APP", "").strip().lower() in {"1", "true", "yes"}:
+        # Hosted portal mounts a legacy PAT; prefer installation token for publish/git push.
+        env["GITHUB_TOKEN"] = ""
 
     published: list[tuple[RepoSeed, str, Path]] = []
 
@@ -198,7 +203,12 @@ def main(argv: list[str] | None = None) -> int:
             ]
             for key, value in seed.inputs.items():
                 cmd.extend(["--input", f"{key}={value}"])
-            _run(cmd, cwd=engine_dir, dry_run=args.dry_run, env=env)
+            try:
+                _run(cmd, cwd=engine_dir, dry_run=args.dry_run, env=env)
+            except subprocess.CalledProcessError as exc:
+                if not args.continue_on_error:
+                    raise
+                print(f"warning: publish failed for {seed.seed_id}: {exc}", file=sys.stderr)
         published.append((seed, url, local_path))
 
         if args.skip_register:
@@ -226,7 +236,12 @@ def main(argv: list[str] | None = None) -> int:
                 reg_cmd.extend(["--standard-source", value])
             elif key == "standard_version":
                 reg_cmd.extend(["--standard-version", value])
-        _run(reg_cmd, cwd=engine_dir, dry_run=args.dry_run, env=env)
+        try:
+            _run(reg_cmd, cwd=engine_dir, dry_run=args.dry_run, env=env)
+        except subprocess.CalledProcessError as exc:
+            if not args.continue_on_error:
+                raise
+            print(f"warning: register failed for {seed.seed_id}: {exc}", file=sys.stderr)
 
     if args.render_manifests and not args.skip_register:
         out = args.manifests_dir.resolve()
