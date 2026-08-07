@@ -142,6 +142,9 @@ def test_run_console_contract(
     assert "data-run-console" in body
     assert "run-console__gate-table" in body
     assert "run-console-log" in body
+    assert 'data-stage="publish"' in body
+    assert "run-console__stage-index" in body
+    assert "Starting apply" in body
     assert f"/api/v1/runs/{run_id}/events" not in body
     assert 'data-run-id="' + run_id + '"' in body
 

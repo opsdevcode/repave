@@ -1442,8 +1442,10 @@
 
     var isLivePlan = root.getAttribute("data-live-plan") === "1";
     var isEnvironmentVend = root.getAttribute("data-environment-vend") === "1";
+    var isPipelineRun = !isLivePlan && !isEnvironmentVend;
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
     var vendStages = isEnvironmentVend ? ["validate", "render", "gates", "gitops"] : [];
+    var pipelineStages = isPipelineRun ? ["validate", "render", "gates", "publish"] : [];
     var livePlanStageLabels = {
       checkout: "Checkout target",
       plan: "Terraform plan",
@@ -1455,6 +1457,14 @@
       gates: "Run gates",
       gitops: "GitOps PR",
     };
+    var pipelineStageLabels = {
+      validate: "Validating inputs",
+      render: "Rendering templates",
+      gates: "Running gates",
+      publish: "Publishing to repository",
+    };
+    var runComplete = false;
+    var progressRegion = root.querySelector("[data-run-progress]");
 
     function countStagesDone(stages) {
       return stages.filter(function (stage) {
@@ -1488,6 +1498,38 @@
 
     function vendActiveStage() {
       return activeStageFrom(vendStages);
+    }
+
+    function countPipelineDone() {
+      return countStagesDone(pipelineStages);
+    }
+
+    function pipelineActiveStage() {
+      return activeStageFrom(pipelineStages);
+    }
+
+    function setRunBusy(busy) {
+      root.classList.toggle("is-running", busy);
+      if (progressRegion) {
+        progressRegion.setAttribute("aria-busy", busy ? "true" : "false");
+      }
+    }
+
+    function markPipelineComplete() {
+      pipelineStages.forEach(function (stage) {
+        setStage(stage, "done");
+      });
+    }
+
+    function stageLogLine(stage, started) {
+      if (stage === "publish") {
+        return started ? "Publishing to repository…" : "Publish complete.";
+      }
+      var label = pipelineStageLabels[stage] || vendStageLabels[stage] || livePlanStageLabels[stage];
+      if (label) {
+        return started ? label + "…" : label + " complete.";
+      }
+      return (started ? "Stage: " : "Finished: ") + stage;
     }
 
     function updateProgressBar() {
@@ -1537,6 +1579,45 @@
             progressLabel.textContent = "Waiting for environment vend…";
           }
         }
+      } else if (isPipelineRun && pipelineStages.length) {
+        var pipeDone = countPipelineDone();
+        var pipeActive = pipelineActiveStage();
+        var stageCount = pipelineStages.length;
+        if (pipeActive === "gates" && totalGates > 0) {
+          var gateFrac = currentGate
+            ? (finishedGates + 0.35) / totalGates
+            : finishedGates / totalGates;
+          pct = Math.round(((pipeDone + gateFrac) / stageCount) * 100);
+        } else if (pipeActive) {
+          pct = Math.round(((pipeDone + 0.35) / stageCount) * 100);
+        } else {
+          pct = Math.round((pipeDone / stageCount) * 100);
+        }
+        if (progressLabel) {
+          if (runComplete) {
+            progressLabel.textContent = "Apply complete — opening result…";
+          } else if (pipeActive === "gates" && currentGate) {
+            progressLabel.textContent =
+              "Running " +
+              currentGate +
+              " (" +
+              finishedGates +
+              " of " +
+              totalGates +
+              " gates)";
+          } else if (pipeActive === "gates" && finishedGates >= totalGates && totalGates > 0) {
+            progressLabel.textContent = "All gates passed — preparing publish…";
+          } else if (pipeActive) {
+            progressLabel.textContent = (pipelineStageLabels[pipeActive] || pipeActive) + "…";
+          } else if (pipeDone >= stageCount) {
+            progressLabel.textContent = "Finishing up…";
+          } else if (pipeDone > 0) {
+            progressLabel.textContent =
+              pipeDone + " of " + stageCount + " stages complete";
+          } else {
+            progressLabel.textContent = "Starting apply…";
+          }
+        }
       } else if (totalGates > 0) {
         pct = currentGate
           ? Math.round(((finishedGates + 0.35) / totalGates) * 100)
@@ -1556,7 +1637,7 @@
           ? "Waiting for live plan…"
           : isEnvironmentVend
             ? "Waiting for environment vend…"
-            : "Waiting for gates…";
+            : "Starting apply…";
       }
       pct = Math.max(0, Math.min(100, pct));
       if (progressBar) {
@@ -1568,6 +1649,7 @@
       if (!logEl) {
         return;
       }
+      logEl.hidden = false;
       logEl.textContent = (logEl.textContent ? logEl.textContent + "\n" : "") + line;
       logEl.scrollTop = logEl.scrollHeight;
     }
@@ -1626,13 +1708,15 @@
       }
       if (data.kind === "stage_started") {
         setStage(data.stage, "active");
-        appendLog("Stage: " + data.stage);
+        appendLog(stageLogLine(data.stage, true));
+        updateProgressBar();
       } else if (data.kind === "stage_finished") {
         setStage(data.stage, "done");
+        appendLog(stageLogLine(data.stage, false));
         if (isEnvironmentVend && data.stage === "gates") {
           setStage("gitops", "active");
-          updateProgressBar();
         }
+        updateProgressBar();
       } else if (data.kind === "live_plan_started") {
         setStage("checkout", "done");
         setStage("plan", "active");
@@ -1692,6 +1776,12 @@
       } else if (data.kind === "run_finished") {
         currentGate = "";
         finishedGates = totalGates;
+        runComplete = true;
+        if (isPipelineRun) {
+          markPipelineComplete();
+        }
+        setRunBusy(false);
+        root.classList.add("is-complete");
         updateProgressBar();
         appendLog("Run complete.");
         if (completeActions) {
@@ -1704,6 +1794,12 @@
           }, 800);
         }
       } else if (data.kind === "run_failed") {
+        setRunBusy(false);
+        root.classList.add("is-failed");
+        if (progressLabel) {
+          progressLabel.textContent = "Apply failed";
+        }
+        updateProgressBar();
         appendLog("Run failed: " + (data.error || "unknown error"));
         if (completeActions) {
           completeActions.hidden = false;
@@ -1751,6 +1847,11 @@
               finishedGates += 1;
             });
             currentGate = "";
+            if (isPipelineRun) {
+              runComplete = true;
+              markPipelineComplete();
+              root.classList.add("is-complete");
+            }
             updateProgressBar();
             if (completeActions) {
               completeActions.hidden = false;
@@ -1763,6 +1864,9 @@
     }
 
     if (initialStatus === "succeeded" || initialStatus === "dead_letter") {
+      runComplete = initialStatus === "succeeded";
+      setRunBusy(false);
+      root.classList.add(initialStatus === "succeeded" ? "is-complete" : "is-failed");
       pollStatus();
       if (completeActions) {
         completeActions.hidden = false;
@@ -1770,6 +1874,7 @@
       return;
     }
 
+    setRunBusy(true);
     var source = new EventSource("/api/v1/runs/" + encodeURIComponent(runId) + "/events");
     source.onmessage = function (msg) {
       try {
