@@ -1,7 +1,14 @@
 from __future__ import annotations
 
 from repave_engine.audit_history import AuditHistoryEntry
-from repave_engine.estate_map import build_estate_tiles
+from repave_engine.estate_map import build_estate_tiles, status_label_for_phase
+
+
+def test_status_label_for_phase() -> None:
+    assert status_label_for_phase("Ready") == "Current"
+    assert status_label_for_phase("OutOfDate") == "Needs upgrade"
+    assert status_label_for_phase("Error") == "Error"
+    assert status_label_for_phase("Custom") == "Custom"
 
 
 def test_build_estate_tiles_freshness_and_sparkline() -> None:
@@ -33,6 +40,8 @@ def test_build_estate_tiles_freshness_and_sparkline() -> None:
     tiles = build_estate_tiles(rows, audit_entries=audit, sparkline_slots=4)
     assert len(tiles) == 1
     assert tiles[0].freshness == "fresh"
+    assert tiles[0].status_label == "Current"
+    assert tiles[0].freshness_detail == "ok"
     assert tiles[0].blueprint_name == "terraform-module-generic"
     assert tiles[0].entity_id == "acme-tf-vpc"
     assert 1 in tiles[0].sparkline
@@ -51,3 +60,5 @@ def test_build_estate_tiles_unknown_operator_phase() -> None:
     ]
     tiles = build_estate_tiles(rows)
     assert tiles[0].freshness == "unknown"
+    assert tiles[0].status_label == ""
+    assert tiles[0].freshness_detail == "Upgrade status not available yet"

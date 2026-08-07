@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Estate map — repave{% endblock %}
+{% block title %}Repo status — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
@@ -8,10 +8,10 @@
 <p class="breadcrumb"><a href="/library">← Library</a> · <a href="/">Catalog</a></p>
 <header class="form-hero">
   <div>
-    <h1 class="page-title">Estate map</h1>
+    <h1 class="page-title">Repo status</h1>
     <p class="page-lead">
-      Fleet repositories as freshness-colored tiles. Sparklines summarize recent generation
-      outcomes from the audit log when configured.
+      Which governed repositories are current, and which need an upgrade.
+      Open a tile to preview an upgrade or jump to the GitHub repo.
     </p>
   </div>
 </header>
@@ -19,7 +19,7 @@
 {% if estate_enabled %}
   {% if estate_tiles %}
 <section class="estate-grid" aria-labelledby="estate-heading">
-  <h2 id="estate-heading" class="visually-hidden">Registered repositories</h2>
+  <h2 id="estate-heading" class="visually-hidden">Governed repositories</h2>
   {% for tile in estate_tiles %}
   <article class="estate-tile estate-tile--{{ tile.freshness }}" title="{{ tile.freshness_detail }}">
     <header class="estate-tile__header">
@@ -43,10 +43,10 @@
       <span class="badge badge--muted">{{ tile.blueprint_label }}</span>
       {% endif %}
     </p>
-    {% if tile.operator_phase %}
-    <p class="estate-tile__operator muted">operator {{ tile.operator_phase }}</p>
+    {% if tile.status_label %}
+    <p class="estate-tile__operator muted">{{ tile.status_label }}</p>
     {% endif %}
-    <div class="estate-tile__sparkline" role="img" aria-label="Recent generation outcomes">
+    <div class="estate-tile__sparkline" role="img" aria-label="Recent plan results">
       {% for value in tile.sparkline %}
       <span class="estate-spark estate-spark--{% if value == 1 %}pass{% elif value == 0 %}fail{% else %}empty{% endif %}"></span>
       {% endfor %}
@@ -66,26 +66,37 @@
 </section>
 {% if audit_sparklines_enabled %}
 <p class="hint estate-map-hint">
-  Sparkline legend: <span class="estate-spark estate-spark--pass" aria-hidden="true"></span> pass
-  · <span class="estate-spark estate-spark--fail" aria-hidden="true"></span> fail
+  Recent results:
+  <span class="estate-spark estate-spark--pass" aria-hidden="true"></span> passed
+  · <span class="estate-spark estate-spark--fail" aria-hidden="true"></span> failed
   · <span class="estate-spark estate-spark--empty" aria-hidden="true"></span> no data
 </p>
 {% endif %}
   {% else %}
 <section class="card">
   <div class="card__body">
-    <p class="muted">No repositories registered yet. Use <code>repave register</code> or the fleet API.</p>
+    <p class="muted">
+      No governed repositories yet.
+      <a href="/">Scaffold from the Catalog</a>
+      or register an existing repo under
+      <a href="/platform/fleet">Platform → Fleet</a>.
+    </p>
   </div>
 </section>
   {% endif %}
 {% else %}
 <section class="card">
   <div class="card__body">
-    <p class="muted">Enable the fleet registry in <code>repave.config.yaml</code> or set <code>REPAVE_FLEET_FILE</code>.</p>
+    <p class="muted">
+      Repo status needs the fleet registry enabled on this deployment.
+      Ask a platform admin if you expected repositories here.
+    </p>
   </div>
 </section>
 {% endif %}
 {% if not audit_sparklines_enabled %}
-<p class="hint estate-map-hint">Enable the audit sink to populate generation sparklines on each tile.</p>
+<p class="hint estate-map-hint">
+  Recent-result bars appear when the audit log is enabled for this deployment.
+</p>
 {% endif %}
 {% endblock %}

@@ -27,6 +27,7 @@ class EstateTile:
     registered_at: str
     sparkline: tuple[SparkValue, ...]
     entity_id: str = ""
+    status_label: str = ""
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
@@ -36,6 +37,7 @@ class EstateTile:
             "blueprint_name": self.blueprint_name,
             "blueprint_label": self.blueprint_label,
             "operator_phase": self.operator_phase,
+            "status_label": self.status_label,
             "freshness": self.freshness,
             "freshness_detail": self.freshness_detail,
             "registered_at": self.registered_at,
@@ -52,15 +54,29 @@ def _repo_tail(repo_url: str) -> str:
 
 def _freshness_for_row(row: dict[str, Any]) -> tuple[FreshnessLevel, str]:
     phase = str(row.get("operator_phase", "")).strip()
+    message = str(row.get("operator_message", "")).strip()
     if phase == "Error":
-        return "error", str(row.get("operator_message", "")).strip() or "Operator error"
+        return "error", message or "Upgrade check failed"
     if phase == "OutOfDate":
-        return "drift", str(row.get("operator_message", "")).strip() or "Pins out of date"
+        return "drift", message or "Behind the current golden path — open Upgrade"
     if phase == "Ready":
-        return "fresh", str(row.get("operator_message", "")).strip() or "Operator in sync"
+        return "fresh", message or "On the current golden path"
     if phase:
-        return "aging", phase
-    return "unknown", "Operator status not configured"
+        return "aging", message or f"Status: {phase}"
+    return "unknown", "Upgrade status not available yet"
+
+
+def status_label_for_phase(phase: str) -> str:
+    """User-facing status chip for an operator reconcile phase."""
+    normalized = phase.strip()
+    labels = {
+        "Ready": "Current",
+        "OutOfDate": "Needs upgrade",
+        "Error": "Error",
+        "Pending": "Checking",
+        "Progressing": "Updating",
+    }
+    return labels.get(normalized, normalized)
 
 
 def _audit_sparkline(
@@ -107,6 +123,7 @@ def build_estate_tiles(
         version = str(row.get("blueprint_version", "")).strip()
         label = f"{blueprint}@{version}" if blueprint and version else blueprint or "—"
         freshness, detail = _freshness_for_row(row)
+        phase = str(row.get("operator_phase", "")).strip()
         tiles.append(
             EstateTile(
                 repo_url=repo_url,
@@ -114,7 +131,8 @@ def build_estate_tiles(
                 owner=str(row.get("owner", "")).strip(),
                 blueprint_name=blueprint,
                 blueprint_label=label,
-                operator_phase=str(row.get("operator_phase", "")).strip(),
+                operator_phase=phase,
+                status_label=status_label_for_phase(phase),
                 freshness=freshness,
                 freshness_detail=detail,
                 registered_at=str(row.get("registered_at", "")).strip(),
