@@ -110,6 +110,12 @@ def build_blueprint_form_extras(
         )
     provider_catalog = load_provider_catalog(blueprint.path)
     form_stepper = None
+    # v1.88: Guided/Advanced progressive disclosure for terraform + ansible-role paths.
+    supports_form_mode = blueprint.artifact_type in (
+        "terraform-module",
+        "ansible-role",
+    ) and any(field.advanced for field in blueprint.inputs)
+    form_mode_default = "guided"
     profile = policy_defaults.get("policy_profile", "estate-default")
     standards = standards_diff_for_pin(
         repo_root,
@@ -141,6 +147,8 @@ def build_blueprint_form_extras(
         "blueprint": blueprint,
         "provider_catalog": provider_catalog,
         "form_stepper": form_stepper,
+        "supports_form_mode": supports_form_mode,
+        "form_mode_default": form_mode_default,
         "standards_diff": standards,
         "standards_diff_views": diff_view_models(standards),
         "governance_previews": governance_previews,

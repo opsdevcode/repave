@@ -141,6 +141,21 @@ segmented scope mode, scope presets and inline validation, Ansible enum inputs).
 
 **Goal:** Long Terraform flows feel guided; Ansible flows stay simple but polished.
 
+### Guided / Advanced form depth (v1.88)
+
+`terraform-module-generic` and `ansible-role-generic` default to **Guided** mode: core
+identity and scope fields only. **Advanced** reveals the rest of the blueprint’s declared
+inputs (policy pack/profile/rules, Backstage catalog knobs, Ansible pattern / min version /
+Galaxy platforms, Terraform service-scope panel). Classification is data-driven via optional
+`advanced: true` on blueprint `inputs` (`InputField.advanced`).
+
+Hidden Advanced controls stay in the DOM so blueprint defaults still submit (same idea as
+observability recommended vs custom). Escape hatch is the mode toggle — not a freeform box.
+
+**Non-goal (this slice):** freeform Terraform/Ansible paste or arbitrary overlays. Unknown
+inputs stay rejected. If demand remains later, prefer a typed map with allowlists — not raw
+HCL as the default.
+
 ### Governance card (feeds v1.22)
 
 Promote the gray meta block into a **governance card**:
@@ -265,7 +280,7 @@ Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activ
 | **Command palette** | Cmd/Ctrl-K plus shell **Jump to…** button with platform shortcut hint |
 | **Async runs index** | Client-side column sort on `/runs`; relative `<time>` labels portal-wide |
 | **Live plan surfaces** | Entity preflight panel, busy overlay on submit, result hero with resource counts |
-| **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions |
+| **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth on terraform + ansible-role generics (v1.88) |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
 | **White-label** | Deferred to **v2** — optional logo URL and accent override (not v1.18 scope) |

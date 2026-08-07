@@ -33,26 +33,31 @@ spec:
     - name: provider_service_scope
       type: string
       required: false
+      advanced: true
       description: JSON map of service scope — basic capabilities with optional additional resources, or custom-only.
     - name: policy_pack_source
       type: string
       required: false
+      advanced: true
       default: repave-default
       description: Pack registry entry from policy/catalog.json pack_sources.
     - name: policy_profile
       type: string
       required: false
+      advanced: true
       default: estate-default
       description: Profile from policy/catalog.json (use custom with policy_rules).
     - name: policy_rules
       type: string
       required: false
+      advanced: true
       multi: true
       default: ""
       description: Rule IDs from policy/catalog.json when policy_profile is custom.
     - name: include_backstage_catalog
       type: string
       required: false
+      advanced: true
       default: "false"
       enum:
         - "true"
@@ -66,16 +71,19 @@ spec:
     - name: cost_center
       type: string
       required: false
+      advanced: true
       default: ""
       description: Optional cost center for chargeback (CostCenter tag).
     - name: system
       type: string
       required: false
+      advanced: true
       default: ""
       description: Backstage spec.system (optional platform system name).
     - name: catalog_lifecycle
       type: string
       required: false
+      advanced: true
       default: experimental
       enum:
         - experimental
