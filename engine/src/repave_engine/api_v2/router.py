@@ -133,6 +133,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "DELETE /api/v2/fleet",
     "POST /api/v2/environments/reclaim",
     "GET /api/v2/platform/metrics",
+    "GET /api/v2/platform/compliance",
+    "GET /api/v2/platform/value-stream",
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
 )
@@ -1014,6 +1016,50 @@ def build_api_v2_router(
             )
             payload["history"] = [item.to_public_dict() for item in history]
         return JSONResponse(payload)
+
+    @router.get("/platform/compliance")
+    async def api_v2_platform_compliance(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.portal_platform import build_platform_compliance_page
+        from repave_engine.settings import load_platform_metrics_config
+
+        if load_platform_metrics_config(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "platform_metrics is not configured "
+                    "(set platform_metrics.enabled or REPAVE_PLATFORM_METRICS=1)"
+                ),
+            )
+        token = resolve_github_access_token(None)
+        page = build_platform_compliance_page(
+            repo_root,
+            github_token=token,
+            persist=False,
+        )
+        return JSONResponse(page.to_public_dict())
+
+    @router.get("/platform/value-stream")
+    async def api_v2_platform_value_stream(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.portal_platform import build_platform_value_stream_page
+        from repave_engine.settings import load_platform_metrics_config
+
+        if load_platform_metrics_config(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "platform_metrics is not configured "
+                    "(set platform_metrics.enabled or REPAVE_PLATFORM_METRICS=1)"
+                ),
+            )
+        token = resolve_github_access_token(None)
+        page = build_platform_value_stream_page(
+            repo_root,
+            github_token=token,
+            persist=False,
+        )
+        return JSONResponse(page.to_public_dict())
 
     @router.post("/platform/feedback")
     async def api_v2_platform_feedback_post(request: Request) -> JSONResponse:

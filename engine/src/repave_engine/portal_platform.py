@@ -387,3 +387,165 @@ def build_platform_feedback_page(repo_root: Path) -> PlatformFeedbackPage:
         rollup=rollup,
         recent_events=events,
     )
+
+
+@dataclass(frozen=True)
+class PlatformCompliancePage:
+    """Security/compliance posture over the DX metrics store (v1.87)."""
+
+    metrics_enabled: bool
+    snapshot: object | None
+    gate_pass_rate: float | None
+    bypass_count: int
+    bypass_preview: tuple[str, ...]
+    friction: tuple[object, ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        snap = self.snapshot
+        return {
+            "metrics_enabled": self.metrics_enabled,
+            "captured_at": getattr(snap, "captured_at", "") if snap is not None else "",
+            "gate_pass_rate": self.gate_pass_rate,
+            "bypass_count": self.bypass_count,
+            "bypass_repos": list(self.bypass_preview),
+            "friction": [
+                {
+                    "blueprint_name": getattr(row, "blueprint_name", ""),
+                    "total": getattr(row, "total", 0),
+                    "failed": getattr(row, "failed", 0),
+                    "fail_ratio": getattr(row, "fail_ratio", 0.0),
+                    "pass_ratio": (
+                        round(1.0 - float(getattr(row, "fail_ratio", 0.0)), 4)
+                        if getattr(row, "total", 0)
+                        else None
+                    ),
+                }
+                for row in self.friction
+            ],
+            "audit_available": bool(getattr(snap, "audit_available", False))
+            if snap is not None
+            else False,
+            "message": getattr(snap, "message", "") if snap is not None else "",
+        }
+
+
+@dataclass(frozen=True)
+class PlatformValueStreamPage:
+    """Leadership value-stream summary over the DX metrics store (v1.87)."""
+
+    metrics_enabled: bool
+    snapshot: object | None
+    history: tuple[AdoptionTrendPoint, ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        snap = self.snapshot
+        public = (
+            snap.to_public_dict() if snap is not None and hasattr(snap, "to_public_dict") else {}
+        )
+        return {
+            "metrics_enabled": self.metrics_enabled,
+            "adoption_ratio": public.get("adoption_ratio"),
+            "plan_apply_ratio": public.get("plan_apply_ratio"),
+            "governed_count": public.get("governed_count", 0),
+            "eligible_count": public.get("eligible_count", 0),
+            "plan_count": public.get("plan_count", 0),
+            "apply_count": public.get("apply_count", 0),
+            "time_to_first_artifact_seconds_p50": public.get("time_to_first_artifact_seconds_p50"),
+            "time_to_first_artifact_seconds_p90": public.get("time_to_first_artifact_seconds_p90"),
+            "service_creation_seconds_p50": public.get("service_creation_seconds_p50"),
+            "service_creation_seconds_p90": public.get("service_creation_seconds_p90"),
+            "funnels": public.get("funnels", []),
+            "baseline_adoption_ratio": public.get("baseline_adoption_ratio"),
+            "baseline_plan_apply_ratio": public.get("baseline_plan_apply_ratio"),
+            "captured_at": public.get("captured_at", ""),
+            "message": public.get("message", ""),
+            "history": [
+                {
+                    "captured_at": point.captured_at,
+                    "adoption_ratio": point.adoption_ratio,
+                    "plan_apply_ratio": point.plan_apply_ratio,
+                }
+                for point in self.history
+            ],
+        }
+
+
+def build_platform_compliance_page(
+    repo_root: Path,
+    *,
+    github_token: str | None = None,
+    persist: bool = False,
+) -> PlatformCompliancePage:
+    from repave_engine.dx_metrics import gate_pass_rate_from_friction
+    from repave_engine.dx_metrics_store import capture_dx_metrics
+    from repave_engine.settings import load_platform_metrics_config
+
+    metrics_cfg = load_platform_metrics_config(repo_root)
+    if metrics_cfg is None:
+        return PlatformCompliancePage(
+            metrics_enabled=False,
+            snapshot=None,
+            gate_pass_rate=None,
+            bypass_count=0,
+            bypass_preview=(),
+            friction=(),
+        )
+    snapshot = capture_dx_metrics(
+        repo_root,
+        github_token=github_token,
+        persist=persist,
+    )
+    return PlatformCompliancePage(
+        metrics_enabled=True,
+        snapshot=snapshot,
+        gate_pass_rate=gate_pass_rate_from_friction(snapshot.friction),
+        bypass_count=len(snapshot.bypass_repos),
+        bypass_preview=snapshot.bypass_repos[:50],
+        friction=snapshot.friction,
+    )
+
+
+def build_platform_value_stream_page(
+    repo_root: Path,
+    *,
+    github_token: str | None = None,
+    persist: bool = False,
+) -> PlatformValueStreamPage:
+    from repave_engine.dx_metrics_store import capture_dx_metrics, read_dx_metrics_snapshots
+    from repave_engine.settings import load_platform_metrics_config
+
+    metrics_cfg = load_platform_metrics_config(repo_root)
+    if metrics_cfg is None:
+        return PlatformValueStreamPage(
+            metrics_enabled=False,
+            snapshot=None,
+            history=(),
+        )
+    snapshot = capture_dx_metrics(
+        repo_root,
+        github_token=github_token,
+        persist=persist,
+    )
+    history_snaps = read_dx_metrics_snapshots(
+        metrics_cfg.snapshot_file,
+        repo_root=repo_root,
+        limit=12,
+    )
+    chronological = tuple(reversed(history_snaps))
+    history = tuple(
+        AdoptionTrendPoint(
+            captured_at=item.captured_at,
+            adoption_ratio=item.adoption_ratio,
+            plan_apply_ratio=item.plan_apply_ratio,
+            spark_value=_adoption_spark_value(
+                item.adoption_ratio,
+                baseline=item.baseline_adoption_ratio,
+            ),
+        )
+        for item in chronological
+    )
+    return PlatformValueStreamPage(
+        metrics_enabled=True,
+        snapshot=snapshot,
+        history=history,
+    )

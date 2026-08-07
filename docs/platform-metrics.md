@@ -57,7 +57,11 @@ SQL table; JSONL export follows `durability.export_jsonl`.
 | Surface | Path / command |
 | --- | --- |
 | Portal (admin) | `/platform/adoption` |
+| Portal compliance (admin) | `/platform/compliance` |
+| Portal value stream (admin) | `/platform/value-stream` |
 | API | `GET /api/v2/platform/metrics` (`?persist=1`, `?history=12`) |
+| API compliance | `GET /api/v2/platform/compliance` |
+| API value stream | `GET /api/v2/platform/value-stream` |
 | CLI | `repave metrics adoption [--persist] [--format json] [--history N]` |
 | Prometheus | `repave_golden_path_adoption_ratio`, `repave_plan_apply_conversion_ratio`, `repave_dx_time_to_first_artifact_seconds` |
 
@@ -117,6 +121,19 @@ JSONL export follows `durability.export_jsonl`.
 
 Portal JS posts once per run via `sessionStorage` — feedback append is best-effort and never
 blocks generation.
+
+## Stakeholder interfaces (v1.87)
+
+Secondary stakeholders get dedicated **read-only** pages over the same metrics store —
+behind platform-admin roles — without adding fields to the developer catalog or library.
+
+| Audience | Portal | API | Focus |
+| --- | --- | --- | --- |
+| Security / compliance | `/platform/compliance` | `GET /api/v2/platform/compliance` | Gate pass rate, bypass list size, per-path friction |
+| Leadership | `/platform/value-stream` | `GET /api/v2/platform/value-stream` | Adoption, plan→apply, time-to-first-artifact, trend history |
+
+These slices reuse `capture_dx_metrics` / snapshot history; they do not introduce a separate
+store or role beyond existing platform admin.
 
 ## Baselines
 

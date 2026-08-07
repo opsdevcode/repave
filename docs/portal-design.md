@@ -232,7 +232,9 @@ diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity
 standards drift diff, staged generate labels, catalog search, resume chip,
 **`/activity`** page, standards drift two-pane layout, form draft restore, result
 gate filters, and update busy stages shipped. Unused home quick-nav sidebar was
-**removed** (sunset). **Platform adoption** (`/platform/adoption`) ships outcome
+**removed** (sunset). **Platform stakeholder views** (`/platform/compliance`,
+`/platform/value-stream`) package metrics for security and leadership without catalog chrome.
+**Platform adoption** (`/platform/adoption`) ships outcome
 metrics for golden-path adoption — see [`platform-metrics.md`](platform-metrics.md).
 **Portal polish pass (2026-08):** semantic CSS token aliases (estate map, diff
 viewer, tables), `badge--warn`, live-plan result hero, entity live-plan preflight +

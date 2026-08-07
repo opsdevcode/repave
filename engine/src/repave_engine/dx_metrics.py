@@ -114,6 +114,22 @@ def _safe_ratio(numerator: int, denominator: int) -> float | None:
     return round(numerator / denominator, 4)
 
 
+def gate_pass_rate_from_friction(friction: Sequence[BlueprintFriction]) -> float | None:
+    """Overall gate pass rate from per-blueprint friction rows (1 - fail_ratio)."""
+    total = sum(item.total for item in friction)
+    failed = sum(item.failed for item in friction)
+    if total <= 0:
+        return None
+    return _safe_ratio(total - failed, total)
+
+
+def gate_pass_rate_from_funnels(funnels: Sequence[BlueprintFunnel]) -> float | None:
+    """Apply-path gate pass rate: passed applies ÷ applies across blueprints."""
+    applies = sum(item.applies for item in funnels)
+    passed = sum(item.passed_applies for item in funnels)
+    return _safe_ratio(passed, applies)
+
+
 def _parse_ts(raw: str) -> datetime | None:
     value = raw.strip()
     if not value:
