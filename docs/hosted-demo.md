@@ -58,11 +58,11 @@ credentials on the cluster (`repave-secrets`). Published repos land under `opsde
 
 ## Operator loop (optional)
 
-After [seeding demo fixtures](../repave-aws-infra/kubernetes/demo/README.md):
+After [seeding the demo library](hosted-demo-library.md) or [demo fixtures](https://github.com/opsdevcode/repave-aws-infra/tree/main/kubernetes/demo):
 
 ```bash
 kubectl get goldenpathrepo -A
-kubectl describe goldenpathrepo tf-eks-demo -n repave
+kubectl describe goldenpathrepo tf-eks-demo -n repave-system
 ```
 
 Expect **OutOfDate** when desired blueprint pins are ahead of `repave.yaml` in the GitHub repo,
@@ -92,6 +92,23 @@ then **UpgradePlanned** and a remediation PR when remediation is enabled.
 | Publish | Optional `GITHUB_TOKEN` | GitHub App via External Secrets |
 
 Local path: [quickstart.md](quickstart.md) · `make serve` is **:8089** (engine dev only).
+
+---
+
+## Demo library (seed the estate)
+
+Before Monday, publish a **library** of golden-path repos into `opsdevcode` so Activity, Fleet,
+and the operator have real artifacts to show:
+
+```bash
+export GITHUB_TOKEN=ghp_...   # repo create in opsdevcode
+export REPAVE_GITHUB_ORG=opsdevcode
+./scripts/seed-hosted-demo-library.sh
+SEED_COPY_FLEET_TO_CLUSTER=1 ./scripts/seed-hosted-demo-library.sh
+SEED_APPLY_MANIFESTS=1 ./scripts/seed-hosted-demo-library.sh
+```
+
+Full catalog and talking points: [hosted-demo-library.md](hosted-demo-library.md).
 
 ---
 
