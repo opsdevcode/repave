@@ -142,6 +142,42 @@ def test_groups_from_claims_auth0_namespaced() -> None:
     assert role_for_groups(groups, config) == ROLE_ADMIN
 
 
+def test_merge_oidc_user_claims_reads_groups_from_id_token() -> None:
+    import jwt
+
+    from repave_engine.auth import merge_oidc_user_claims, role_for_groups
+
+    id_token = jwt.encode(
+        {
+            "sub": "auth0|abc",
+            "groups": ["repave-generators"],
+        },
+        "secret",
+        algorithm="HS256",
+    )
+    merged = merge_oidc_user_claims(
+        {"sub": "auth0|abc", "email": "user@example.com"},
+        id_token,
+        groups_claim="groups",
+    )
+    config = _auth_config()
+    assert role_for_groups(groups_from_claims(merged, "groups"), config) == ROLE_GENERATOR
+
+
+def test_merge_oidc_user_claims_prefers_userinfo_when_present() -> None:
+    import jwt
+
+    from repave_engine.auth import merge_oidc_user_claims
+
+    id_token = jwt.encode({"groups": ["repave-generators"]}, "secret", algorithm="HS256")
+    merged = merge_oidc_user_claims(
+        {"groups": ["repave-admins"]},
+        id_token,
+        groups_claim="groups",
+    )
+    assert groups_from_claims(merged, "groups") == ["repave-admins"]
+
+
 def test_logout_return_to_derives_from_redirect_uri() -> None:
     config = _auth_config()
     assert logout_return_to(config) == "https://repave.example.com/"
