@@ -13,7 +13,7 @@ def test_verify_form_page(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "Verify existing repository" in response.text
     assert 'name="target_repo"' in response.text
-    assert "Verify repo" in response.text
+    assert ">Verify</a>" in response.text
     assert "form-actions__toolbar" in response.text
     assert "page-supplement" in response.text
     assert "Strict gates" in response.text
@@ -83,4 +83,4 @@ def test_nav_exposes_verify_link(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/").text
     assert 'href="/verify"' in body
-    assert "Verify repo" in body
+    assert ">Verify</a>" in body

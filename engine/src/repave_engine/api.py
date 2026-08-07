@@ -364,17 +364,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         items: list[dict[str, str]] = [
             {"kind": "nav", "label": "Catalog", "href": "/"},
             {"kind": "nav", "label": "Library", "href": "/library"},
-            {"kind": "nav", "label": "Import repo", "href": "/import"},
-            {"kind": "nav", "label": "Upgrade repo", "href": "/update"},
-            {"kind": "nav", "label": "Verify repo", "href": "/verify"},
-            {"kind": "nav", "label": "Estate map", "href": "/estate"},
+            {"kind": "nav", "label": "Import", "href": "/import"},
+            {"kind": "nav", "label": "Upgrade", "href": "/update"},
+            {"kind": "nav", "label": "Verify", "href": "/verify"},
+            {"kind": "nav", "label": "Repo status", "href": "/estate"},
             {"kind": "nav", "label": "Activity", "href": "/activity"},
             {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
         ]
         if run_queue is not None:
             items.insert(
                 len(items) - 1,
-                {"kind": "nav", "label": "Async runs", "href": "/runs"},
+                {"kind": "nav", "label": "Runs", "href": "/runs"},
             )
         auth_user = session_user(request) if request is not None else None
         if platform_admin_visible(auth_config, auth_user):

@@ -21,70 +21,60 @@
     <div class="shell{% if portal_density == 'compact' %} shell--compact{% endif %}{% if presenter_mode %} shell--presenter{% endif %}">
       <div class="shell__atmosphere" aria-hidden="true"></div>
       <header class="shell__bar">
-        <a class="shell__brand" href="/" aria-label="repave home">
-          <span class="shell__mark" aria-hidden="true"></span>
-          <span class="shell__wordmark">repave</span>
-        </a>
-        <nav class="shell__nav shell__nav--primary" aria-label="Primary">
-          <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>
-            Catalog
+        <div class="shell__bar-start">
+          <a class="shell__brand" href="/" aria-label="repave home">
+            <span class="shell__mark" aria-hidden="true"></span>
+            <span class="shell__wordmark">repave</span>
           </a>
-          <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>
-            Library
-          </a>
-          <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>
-            Upgrade repo
-          </a>
-          <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>
-            Verify repo
-          </a>
-        </nav>
-        <details class="shell__nav-more">
-          <summary class="shell__nav-more__summary">More</summary>
-          <nav class="shell__nav shell__nav--secondary" aria-label="More">
-            <a href="/import" {% if nav_active == "import" %}aria-current="page"{% endif %}>
-              Import repo
-            </a>
-            <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>
-              Estate
-            </a>
-            <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>
-              Activity
-            </a>
-            {% if async_generation_enabled %}
-            <a href="/runs" {% if nav_active == "runs" %}aria-current="page"{% endif %}>
-              Async runs
-            </a>
-            {% endif %}
-            {% if platform_admin_visible %}
-            <a href="/platform/fleet" {% if nav_active == "platform" %}aria-current="page"{% endif %}>
-              Platform
-            </a>
-            {% endif %}
+          <nav class="shell__nav shell__nav--primary" aria-label="Primary">
+            <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>Catalog</a>
+            <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>Library</a>
+            <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>Upgrade</a>
+            <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>Verify</a>
+            <details
+              class="shell__nav-more{% if nav_active in ('import', 'estate', 'activity', 'runs', 'platform') %} shell__nav-more--active{% endif %}"
+            >
+              <summary class="shell__nav-more__summary">More</summary>
+              <nav class="shell__nav shell__nav--secondary" aria-label="More">
+                <a href="/import" {% if nav_active == "import" %}aria-current="page"{% endif %}>Import</a>
+                <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>Repo status</a>
+                <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>Activity</a>
+                {% if async_generation_enabled %}
+                <a href="/runs" {% if nav_active == "runs" %}aria-current="page"{% endif %}>Runs</a>
+                {% endif %}
+                {% if platform_admin_visible %}
+                <a href="/platform/fleet" {% if nav_active == "platform" %}aria-current="page"{% endif %}>Platform</a>
+                {% endif %}
+              </nav>
+            </details>
           </nav>
-        </details>
+        </div>
         <div class="shell__meta">
           <button
             type="button"
-            class="btn btn--ghost btn--sm shell__command-palette-trigger"
+            class="shell__search"
             data-command-palette-open
             aria-label="Open command palette"
           >
-            Jump to…
+            <span class="shell__search-label">Search</span>
             <kbd class="shell__kbd" data-command-palette-kbd>⌘K</kbd>
           </button>
           {% if auth_enabled and auth_user %}
-          <span class="shell__user muted">{{ auth_user.email }}</span>
-          <form class="shell__logout" method="post" action="/auth/logout" data-repave-native-submit>
-            <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
-          </form>
+          <div class="shell__session">
+            <span class="shell__user" title="{{ auth_user.email }}">{{ auth_user.email }}</span>
+            <form class="shell__logout" method="post" action="/auth/logout" data-repave-native-submit>
+              <button class="shell__text-btn" type="submit">Sign out</button>
+            </form>
+          </div>
           {% elif auth_enabled %}
           <a class="btn btn--secondary btn--sm" href="/auth/login">Sign in</a>
           {% endif %}
-          {% if env_badge %}
-          <span class="badge badge--env">{{ env_badge }}</span>
-          {% endif %}
-          <span class="badge badge--version" title="repave engine version (GitHub release tag)">v{{ app_version }}</span>
+          <div class="shell__badges">
+            {% if env_badge %}
+            <span class="badge badge--env">{{ env_badge }}</span>
+            {% endif %}
+            <span class="badge badge--version" title="repave engine version (GitHub release tag)">v{{ app_version }}</span>
+          </div>
         </div>
       </header>
 

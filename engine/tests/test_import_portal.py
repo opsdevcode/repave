@@ -81,7 +81,7 @@ def test_import_nav_entry_is_present(client: TestClient) -> None:
     body = client.get("/").text
 
     assert 'href="/import"' in body
-    assert "Import repo" in body
+    assert ">Import</a>" in body
     assert "Import existing repo" in body
 
 

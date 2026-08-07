@@ -269,7 +269,9 @@ Pick based on audience and hosting model (v1.25+).
 
 Further craft (illustration, stepper) is optional.
 
-Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activity live under **More** in the shell.
+Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
+Import, Repo status, Activity, Runs, and Platform under **More**. The right side
+holds Search (⌘K), session, and environment badges.
 
 | Enhancement | Notes |
 | --- | --- |
@@ -301,7 +303,7 @@ Primary nav shows Catalog / Upgrade / Verify; Fleet, Services, Estate, and Activ
 | --- | --- |
 | Live run console (`/runs/{id}`, SSE gate events) | Shipped |
 | Command palette (Cmd/Ctrl-K) | Shipped |
-| Estate map, diff viewer, annotations, preflight, bundle graph, presenter mode | Shipped |
+| Repo status (`/estate`), diff viewer, annotations, preflight, bundle graph, presenter mode | Shipped |
 
 **Done when:** Users who enable “Live run console” on the blueprint form watch gates complete in
 real time; any route exposes Cmd/Ctrl-K navigation without a SPA rewrite.

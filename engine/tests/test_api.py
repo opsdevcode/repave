@@ -54,6 +54,8 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'href="/library"' in response.text
     assert "Browse library" in response.text
     assert "shell__nav--primary" in response.text
+    assert "shell__bar-start" in response.text
+    assert "shell__search" in response.text
     assert response.text.index("Library") < response.text.index("shell__nav-more")
     assert "Terraform" in response.text
     assert "Ansible" in response.text
@@ -1192,7 +1194,7 @@ def test_update_form_page(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "Upgrade existing repository" in response.text
     assert 'name="target_repo"' in response.text
-    assert "Upgrade repo" in response.text
+    assert ">Upgrade</a>" in response.text
     assert "form-actions__toolbar" in response.text
     assert "page-supplement" in response.text
     assert "data-repave-busy-form" in response.text

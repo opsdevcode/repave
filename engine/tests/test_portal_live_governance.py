@@ -33,7 +33,8 @@ def test_estate_map_page_lists_tiles(repo_root, output_config, registry: Path) -
     response = client.get("/estate")
 
     assert response.status_code == 200
-    assert "Estate map" in response.text
+    assert "Repo status" in response.text
+    assert "Which governed repositories are current" in response.text
     assert "tf-vpc" in response.text
     assert "estate-tile" in response.text
     assert "/blueprints/terraform-module-generic" in response.text
