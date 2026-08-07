@@ -54,6 +54,44 @@ def test_platform_cannot_skip_required_checkov(repo_root: Path) -> None:
         )
 
 
+def test_platform_required_rules_ignore_non_applicable_artifact_types(repo_root: Path) -> None:
+    opa_blueprint = load_blueprint(
+        repo_root / "blueprints" / "opa-policy-generic",
+        repo_root=repo_root,
+    )
+    overrides = GateOverrides(
+        blocked_policy_rule_skips=("checkov:CKV2_REPAVE_1", "opa:destructive_changes")
+    )
+    values = validate_inputs(
+        opa_blueprint,
+        {
+            "policy_name": "guardrails",
+            "organization": "platform",
+            "description": "OPA pack",
+            "plan_demo": "pass",
+        },
+        repo_root=repo_root,
+        gate_overrides=overrides,
+    )
+    assert isinstance(values.get("_policy_selection"), PolicySelection)
+
+    checkov_blueprint = load_blueprint(
+        repo_root / "blueprints" / "checkov-policy-generic",
+        repo_root=repo_root,
+    )
+    values = validate_inputs(
+        checkov_blueprint,
+        {
+            "policy_name": "baseline",
+            "organization": "platform",
+            "description": "Checkov pack",
+        },
+        repo_root=repo_root,
+        gate_overrides=overrides,
+    )
+    assert isinstance(values.get("_policy_selection"), PolicySelection)
+
+
 def test_policy_selection_file_roundtrip(tmp_path: Path) -> None:
     selection = PolicySelection(
         profile="estate-default",

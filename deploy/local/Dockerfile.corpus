@@ -10,3 +10,5 @@ COPY schemas /app/schemas
 COPY blueprints /app/blueprints
 COPY standards /app/standards
 COPY policy /app/policy
+COPY ansible /app/ansible
+COPY observability /app/observability

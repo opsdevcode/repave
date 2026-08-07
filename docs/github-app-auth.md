@@ -14,13 +14,13 @@ instead of a long-lived personal access token (PAT).
 | `GITHUB_APP_PRIVATE_KEY_FILE` | Path to PEM file (alternative to inline key) |
 | `REPAVE_GITHUB_RATE_LIMIT_MIN_REMAINING` | Proactive REST backoff threshold (default `50`; matches engine) |
 | `REPAVE_PREFER_GITHUB_APP` | When `1`/`true`, use installation tokens even if `GITHUB_TOKEN` is set (Helm: `repave.github.preferApp`) |
-| `REPAVE_SKIP_GITHUB_APP_PERMISSION_CHECK` | Skip contents:write validation on minted tokens (tests only) |
+| `REPAVE_SKIP_GITHUB_APP_PERMISSION_CHECK` | Skip permission validation on minted tokens (tests only) |
 
 **Precedence:** explicit CLI/API token → `GITHUB_TOKEN` (classic `ghp_` PAT) → minted installation token.
 
 When a GitHub App is configured, **OAuth user tokens** (`gho_…` in `GITHUB_TOKEN`) are ignored automatically — they cannot push to org repos via git. Hosted charts set `repave.github.preferApp: true` so pods never mount `github-token` and always mint installation tokens.
 
-On mint, the engine verifies the installation token includes **`contents: write`** and fails fast with a message naming the App permission to fix.
+On mint, the engine verifies the installation token includes **`contents: write`** and **`workflows: write`** (generated repos ship `.github/workflows/`) and fails fast with a message naming the App permissions to fix.
 
 Installation tokens are cached in-process and refreshed before expiry.
 
@@ -30,7 +30,7 @@ Typical repave usage (adjust for your org policy):
 
 | Surface | Permissions |
 | --- | --- |
-| Engine publish (create/push module repos) | Repository administration, contents read/write |
+| Engine publish (create/push module repos) | Repository administration, contents read/write, **workflows read/write** |
 | GitHub repo goldpath (`github-repo-generic`) | Administration (create, template generate, repository rulesets), contents read/write, organization members/teams (list teams, create teams, manage memberships, set team repo permissions) |
 | Operator remediation (clone/push/PR) | Contents read/write, pull requests read/write |
 | Private repo verify/clone | Contents read |
