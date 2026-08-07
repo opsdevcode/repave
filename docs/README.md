@@ -10,6 +10,7 @@ start with [Concepts](concepts.md) for the product model.
 | --- | --- | --- |
 | [Quickstart](quickstart.md) | New users | Docker Compose, `make serve`, first generate, CLI |
 | [Concepts](concepts.md) | Everyone | IDP model, golden paths, gates, provenance, operator |
+| [Hosted demo (EKS)](hosted-demo.md) | Live demos on repave-prod | Auth0, async workers, https://repave.opsdevco.de |
 | [Seven-minute demo (acts 1–6)](seven-minute-demo.md) | Live demos | Full portal arc for stakeholder meetings |
 | [Sales demo runbook](sales-demo.md) | Field / leadership demos | Narrative, talking points, operator boundaries |
 | [Policy golden paths demo](policy-golden-paths-demo.md) | Security / platform | Checkov, OPA, Azure Policy standalone paths |

@@ -69,7 +69,7 @@ values come from [`values-kind.yaml`](values-kind.yaml) and [`values-fleet-share
 | --- | --- |
 | `repave.apiUrl` | Portal `/api/v2` base URL (**required**) |
 | `image.*` | Operator manager image (`ghcr.io/opsdevcode/repave-operator`) |
-| `manager.leaderElect` | Controller-runtime leader election (default **true**) |
+| `manager.leaderElect` | Controller-runtime leader election (default **true**) — requires namespaced **Role** for `coordination.k8s.io/leases` (rendered in `templates/rbac.yaml`) |
 | `manager.metrics.*` | Prometheus metrics on `:8080` when enabled |
 | `webhook.caBundle` | Base64 CA for CRD conversion webhook (required when `crds.install=true`) |
 | `webhook.secretName` / `webhook.existingSecret` | Webhook serving cert Secret |

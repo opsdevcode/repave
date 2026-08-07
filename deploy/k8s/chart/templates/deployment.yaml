@@ -66,10 +66,7 @@ spec:
               value: "1"
             - name: REPAVE_RUNS_DB
               value: {{ .Values.repave.durability.runsDb | quote }}
-            {{- if .Values.repave.durability.databaseUrl }}
-            - name: REPAVE_DATABASE_URL
-              value: {{ .Values.repave.durability.databaseUrl | quote }}
-            {{- end }}
+            {{- include "repave.databaseUrlEnv" . | nindent 12 }}
             {{- if eq .Values.repave.durability.workerMode "external" }}
             - name: REPAVE_EXTERNAL_WORKERS
               value: "1"

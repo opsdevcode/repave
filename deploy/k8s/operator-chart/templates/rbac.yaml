@@ -41,3 +41,37 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "repave-operator.serviceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- if .Values.manager.leaderElect }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "repave-operator.fullname" . }}-leader-election
+  labels:
+    {{- include "repave-operator.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "repave-operator.fullname" . }}-leader-election
+  labels:
+    {{- include "repave-operator.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "repave-operator.fullname" . }}-leader-election
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "repave-operator.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

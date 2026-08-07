@@ -13,7 +13,8 @@ Before a big meeting, run the [Demo verification checklist](demo-verification.md
 
 ## Before the call (2 minutes)
 
-1. Start the portal: `cd deploy/local && docker compose up --build` **or** `make serve` → http://localhost:8088
+1. Start the portal: `cd deploy/local && docker compose up --build` → http://localhost:8088
+   **or** `make serve` → http://127.0.0.1:8089 (native dev; gate toolchain not guaranteed).
 2. Confirm the home catalog loads and search works.
 3. Optional: open [README portal screenshots](../README.md#portal-primary-ux) in a tab as backup if live demo fails.
 
@@ -36,7 +37,7 @@ Product model: [Concepts](concepts.md) · Today vs becoming: [README](../README.
 | 3 — Proof | Result: **Lineage & receipt**, policy rules, gate dashboard | “Same inputs → same artifact; gates ran in-process; this is what would land in `repave.yaml`.” |
 | 4 — Existing estate | **Update repo** → **Use terraform-minimal** → **Preview upgrade** | “The control plane doesn’t only create repos — we plan upgrades from provenance and can open remediation PRs.” |
 | 5 — Optional block | **opa-policy-generic**, **plan demo** = `destructive_delete`, dry-run | “Policy isn’t documentation — a failing gate blocks publish.” See [examples/policy](../examples/policy/README.md). |
-| 6 — Optional catalog | Terraform form: **Include Backstage catalog**, owner `group:platform` | “Same generate path registers `catalog-info.yaml` and lineage annotations for Backstage — one paved road, multiple IDP surfaces.” |
+| 6 — Optional catalog | Terraform form → **Advanced** → **Include Backstage catalog**, owner `group:platform` | “Same generate path registers `catalog-info.yaml` and lineage annotations for Backstage — one paved road, multiple IDP surfaces.” |
 
 Keep **Dry-run preview** enabled unless you explicitly demo disk write or GitHub publish.
 
@@ -95,7 +96,7 @@ Scope: [Operator GA](operator-ga.md) · [Operator overview](operator-overview.md
 
 | Symptom | Fix |
 | --- | --- |
-| Portal blank / no CSS | Hard refresh; for native `make serve`, ensure you hit the URL from the Makefile (8088). |
+| Portal blank / no CSS | Hard refresh; for native `make serve`, use **http://127.0.0.1:8089** (Compose uses 8088). |
 | Gate fails unexpectedly | Dry-run still shows failures — use it to explain “blocked by design.” |
 | OPA step skipped | Dry-run no longer skips missing Conftest — install it or use `deploy/local` compose. With tooling, a destructive plan demo shows **FAIL** on the `opa` gate. |
 | Compose slow first time | Pre-build before the meeting; keep the stack running. |

@@ -41,6 +41,8 @@ CORE_GATE_TOOLS: tuple[str, ...] = (
     "checkov",
     "conftest",
     "helm",
+    "ansible-lint",
+    "infracost",
 )
 
 _DEFAULT_TOOLS: tuple[str, ...] = CORE_GATE_TOOLS
