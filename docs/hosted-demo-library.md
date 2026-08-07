@@ -147,6 +147,51 @@ publish that variant; it is dry-run only.
 
 ---
 
+## Troubleshooting
+
+### `kubectl: Forbidden` from automation / CI
+
+Some sandboxes block the Kubernetes API even when your laptop `kubectl` works. Run seed and
+deploy scripts from a normal shell (or grant the agent full network permissions).
+
+### Portal pod `CrashLoopBackOff` before seeding
+
+The seed script execs into the **portal** pod. If it is not `Running` + ready, seeding will fail.
+
+```bash
+kubectl get pods -n repave -l app.kubernetes.io/component=portal
+kubectl logs -n repave -l app.kubernetes.io/component=portal --tail=40
+```
+
+If logs show:
+
+`auth.service_mode requires durability.database_url or REPAVE_DATABASE_URL`
+
+the live Helm release is missing **`databaseUrlSecret` → `REPAVE_DATABASE_URL`** wiring (shipped in
+repave chart PR [#504](https://github.com/opsdevcode/repave/pull/504)). Values in
+`repave-aws-infra/kubernetes/values/repave-prod.yaml` already point at `repave-postgres`, but OCI
+chart `2.33.0` does not mount it until you redeploy with a chart that includes the helper.
+
+**Fix** (from `repave-aws-infra`):
+
+```bash
+export REPAVE_CHART_PATH=~/repave/deploy/k8s/chart
+export OPERATOR_CHART_PATH=~/repave/deploy/k8s/operator-chart
+./scripts/sync-repave.sh
+kubectl rollout status deployment/repave -n repave
+```
+
+Confirm `REPAVE_DATABASE_URL` is present (structure only):
+
+```bash
+kubectl get deploy -n repave repave -o json \
+  | python3 -c "import json,sys;[print(e['name'],e.get('valueFrom',{})) for c in json.load(sys.stdin)['spec']['template']['spec']['containers'] if c['name']=='repave' for e in c.get('env',[]) if e['name']=='REPAVE_DATABASE_URL']"
+```
+
+Then re-run `./scripts/seed-hosted-demo-library-k8s.sh`.
+
+---
+
 ## Idempotency and teardown
 
 - Re-running publish may fail if GitHub repos already exist — use `--skip-publish` to register only.

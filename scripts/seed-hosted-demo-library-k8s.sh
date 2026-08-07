@@ -20,6 +20,20 @@ fi
 
 echo "Using portal pod ${NAMESPACE}/${pod} (GITHUB_APP_* from repave-secrets)"
 
+phase="$(kubectl get pod -n "${NAMESPACE}" "${pod}" \
+  -o jsonpath='{.status.phase}' 2>/dev/null || true)"
+ready="$(kubectl get pod -n "${NAMESPACE}" "${pod}" \
+  -o jsonpath='{.status.containerStatuses[?(@.name=="repave")].ready}' 2>/dev/null || true)"
+if [[ "${phase}" != "Running" || "${ready}" != "true" ]]; then
+  echo "Portal pod is not ready (phase=${phase:-unknown}, repave.ready=${ready:-unknown})." >&2
+  echo "Recent logs:" >&2
+  kubectl logs -n "${NAMESPACE}" "${pod}" -c repave --tail=25 2>&1 >&2 || true
+  echo >&2
+  echo "Common fix: OCI chart may lack databaseUrlSecret wiring — redeploy with:" >&2
+  echo "  REPAVE_CHART_PATH=~/repave/deploy/k8s/chart ./scripts/sync-repave.sh" >&2
+  exit 1
+fi
+
 kubectl exec -n "${NAMESPACE}" "${pod}" -- mkdir -p /data/fleet /data/modules "${TMP_PREFIX}"
 kubectl cp "${ROOT}/scripts/hosted-demo-library.yaml" \
   "${NAMESPACE}/${pod}:${TMP_PREFIX}/hosted-demo-library.yaml"
