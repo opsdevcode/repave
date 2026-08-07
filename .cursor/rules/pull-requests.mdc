@@ -10,6 +10,14 @@ When opening PRs for this repository (including via `gh pr create`):
 ## Titles
 
 - Use **conventional commits** style: `type(scope): short description` (same spirit as merge commits).
+- **Subject must not start with uppercase** — CI `semantic-pull-request` enforces
+  `subjectPattern: ^(?![A-Z]).+$` (see `.github/workflows/conventional-commits.yml`).
+  The part after `: ` starts lowercase even when the words include proper nouns later
+  (for example `Guided`, `Ansible`, `Terraform`).
+  - Good: `feat(portal): add Guided/Advanced forms for Terraform and Ansible`
+  - Bad: `feat(portal): Guided/Advanced forms for Terraform and Ansible`
+- Prefer matching the primary commit subject when opening the PR (`gh pr create --title`
+  is linted separately from commitlint — a valid commit does not fix a bad PR title).
 - Do **not** put **roadmap theme labels** or **unreleased product milestone numbers** in the title
   (for example avoid `v1.19`, `v1.18 portal`, `v1.25` as the feature name).
   Roadmap versions describe planning themes; GitHub **engine tags** (for example `v1.25.0`) come from

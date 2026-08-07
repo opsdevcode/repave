@@ -193,6 +193,9 @@
     data-blueprint-id="{{ blueprint.name }}"
     data-busy-label="Scaffolding…"
     data-busy-stages="Validating inputs…|Rendering template…|Running quality gates…|Finishing…"
+    {% if supports_form_mode %}
+    data-form-mode="{{ form_mode_default or 'guided' }}"
+    {% endif %}
     {% if form_stepper %}
     data-form-stepper
     data-form-stepper-kind="{{ form_stepper }}"
@@ -249,6 +252,34 @@
 
     <section class="form-section" aria-labelledby="inputs-heading">
       <h2 class="form-section__title" id="inputs-heading">Parameters</h2>
+
+      {% if supports_form_mode %}
+      <fieldset class="segmented publish-toggle" id="form-mode-toggle" aria-label="Form depth">
+        <legend class="hint">Form depth</legend>
+        <label class="segmented__option">
+          <input
+            type="radio"
+            data-form-mode-option
+            value="guided"
+            {% if (form_mode_default or 'guided') == 'guided' %}checked{% endif %}
+          />
+          Guided
+        </label>
+        <label class="segmented__option">
+          <input
+            type="radio"
+            data-form-mode-option
+            value="advanced"
+            {% if form_mode_default == 'advanced' %}checked{% endif %}
+          />
+          Advanced
+        </label>
+      </fieldset>
+      <p class="hint">
+        Guided shows core fields with safe defaults. Advanced reveals policy, catalog, and
+        platform options already on this golden path — not freeform extras.
+      </p>
+      {% endif %}
 
       {% if form_stepper == 'standard' %}
       <div class="form-step-panel" data-form-step="0">
@@ -546,6 +577,7 @@
         id="policy-customization"
         {% if policy_customization_optional %}hidden{% endif %}
         {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
+        {% if supports_form_mode %}data-form-advanced{% endif %}
       >
         <summary class="policy-customization__summary">
           <span class="policy-customization__title">Policy</span>
@@ -858,7 +890,11 @@
         <input type="hidden" id="pinned_roles" name="pinned_roles" value="[]" />
       </div>
       {% elif blueprint.artifact_type == "ansible-role" and ansible_role_patterns and ansible_catalog and field.name == "role_pattern_source" %}
-      <div class="field-block" id="ansible-role-pattern-block">
+      <div
+        class="field-block"
+        id="ansible-role-pattern-block"
+        {% if field.advanced %}data-form-advanced{% endif %}
+      >
         <label for="role_pattern_source">Role pattern</label>
         <p class="hint">Community patterns from <code>ansible/catalog.json</code>; filtered by Linux/Windows selection below.</p>
         <select class="select" id="role_pattern_source" name="role_pattern_source">
@@ -899,7 +935,11 @@
           <input type="hidden" id="support_windows" name="support_windows" value="false" />
           <input type="hidden" id="windows_server_generation" name="windows_server_generation" value="2022" />
         </div>
-        <details class="platform-advanced" id="platform-advanced-panel">
+        <details
+          class="platform-advanced"
+          id="platform-advanced-panel"
+          {% if supports_form_mode %}data-form-advanced{% endif %}
+        >
           <summary>Advanced Galaxy platforms</summary>
           <p class="hint">When any option is selected here, Linux/Windows presets above are ignored.</p>
           <select
@@ -930,7 +970,12 @@
         <div class="service-presets" id="service-presets" aria-label="Service selection presets"></div>
         <div id="provider-services" class="service-grid" aria-live="polite"></div>
         <p id="form-validation" class="form-validation" role="alert" hidden></p>
-        <div id="service-scope-panel" class="scope-panel" aria-live="polite"></div>
+        <div
+          id="service-scope-panel"
+          class="scope-panel"
+          aria-live="polite"
+          {% if supports_form_mode %}data-form-advanced{% endif %}
+        ></div>
         <input type="hidden" id="provider_services" name="provider_services" value="" />
       </div>
       {% else %}
@@ -941,6 +986,7 @@
         {% elif form_stepper == 'terraform' %}
         data-form-step="0"
         {% endif %}
+        {% if field.advanced %}data-form-advanced{% endif %}
         {% if blueprint.artifact_type == 'github-repo' and field.name in ('template_owner', 'template_repo') %}
         data-github-repo-when="template"
         {% endif %}

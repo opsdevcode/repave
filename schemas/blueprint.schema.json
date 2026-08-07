@@ -660,6 +660,10 @@
         "multi": {
           "type": "boolean",
           "description": "When true with enum, value is a comma-separated list of enum items."
+        },
+        "advanced": {
+          "type": "boolean",
+          "description": "When true, portal Guided mode hides this field until Advanced is selected (v1.88)."
         }
       }
     }

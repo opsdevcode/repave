@@ -77,7 +77,8 @@ docs-only roadmap/housecleaning commit.
 
 ## Commits and PRs
 
-- Conventional commits; PR titles validated by CI — see `.cursor/rules/pull-requests.mdc`.
+- Conventional commits; PR titles validated by CI (`semantic-pull-request` —
+  subject must not start with uppercase) — see `.cursor/rules/pull-requests.mdc`.
 - Ship **tests in the same PR** as new engine behavior unless the change is docs-only.
 
 Details: `CONTRIBUTING.md`; Python: `.cursor/rules/python-standards.mdc`, security: `.cursor/rules/python-security.mdc`; JavaScript: `.cursor/rules/javascript-standards.mdc`, security: `.cursor/rules/javascript-security.mdc`; Go: `.cursor/rules/golang-standards.mdc`, security: `.cursor/rules/golang-security.mdc`.

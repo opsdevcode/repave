@@ -25,6 +25,7 @@ spec:
     - name: role_pattern_source
       type: string
       required: false
+      advanced: true
       default: ""
       description: >-
         Role pattern from ansible/catalog.json; when empty, defaults to linux-service or
@@ -32,6 +33,7 @@ spec:
     - name: min_ansible_version
       type: string
       required: true
+      advanced: true
       description: Minimum supported Ansible core version (matches Molecule test image tag).
       default: "2.18"
       enum:
@@ -66,6 +68,7 @@ spec:
     - name: target_platforms_advanced
       type: string
       required: false
+      advanced: true
       multi: true
       description: Optional advanced Galaxy platform list (overrides Linux/Windows presets).
       default: ""

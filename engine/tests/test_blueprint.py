@@ -36,6 +36,15 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
         field for field in terraform_blueprint.inputs if field.name == "cloud_provider"
     )
     assert cloud_provider.enum == ("aws", "azure", "gcp")
+    assert cloud_provider.advanced is False
+    policy_pack = next(
+        field for field in terraform_blueprint.inputs if field.name == "policy_pack_source"
+    )
+    assert policy_pack.advanced is True
+    cost_center = next(field for field in terraform_blueprint.inputs if field.name == "cost_center")
+    assert cost_center.advanced is True
+    owner = next(field for field in terraform_blueprint.inputs if field.name == "owner")
+    assert owner.advanced is False
     assert (
         terraform_blueprint.output_title_template
         == "Bootstrap {cloud_provider} module {module_name} ({provider_services})"
@@ -528,8 +537,15 @@ def test_load_ansible_role_blueprint(ansible_blueprint) -> None:
         field for field in ansible_blueprint.inputs if field.name == "min_ansible_version"
     )
     assert min_ansible.default == "2.18"
+    assert min_ansible.advanced is True
     assert min_ansible.enum[0] == "2.18"
     assert "2.15" in min_ansible.enum
+    assert advanced.advanced is True
+    role_pattern = next(
+        field for field in ansible_blueprint.inputs if field.name == "role_pattern_source"
+    )
+    assert role_pattern.advanced is True
+    assert linux.advanced is False
 
 
 def test_validate_ansible_target_platforms_linux_defaults(ansible_blueprint) -> None:

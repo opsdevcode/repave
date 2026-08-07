@@ -3253,6 +3253,11 @@ details.file-panel summary {
   justify-content: center;
 }
 
+/* Guided mode: hide advanced blocks; inputs stay in the DOM so defaults submit. */
+form[data-form-mode="guided"] [data-form-advanced] {
+  display: none;
+}
+
 .scope-mode.segmented {
   display: flex;
   width: 100%;

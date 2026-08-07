@@ -27,6 +27,8 @@ class InputField:
     default: Any = None
     enum: tuple[str, ...] = ()
     multi: bool = False
+    # Guided form (v1.88): when True, field is hidden until Advanced mode.
+    advanced: bool = False
 
 
 @dataclass(frozen=True)
@@ -199,6 +201,7 @@ def load_blueprint(blueprint_path: Path, *, repo_root: Path | None = None) -> Bl
             default=item.get("default"),
             enum=tuple(item.get("enum", [])),
             multi=bool(item.get("multi", False)),
+            advanced=bool(item.get("advanced", False)),
         )
         for item in spec["inputs"]
     )

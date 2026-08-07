@@ -315,8 +315,12 @@ fix(gates): skip tflint when binary is unavailable
 feat!: rename blueprint input schema fields
 ```
 
-Pull request titles are also validated against Conventional Commits. Use the
+Pull request titles are also validated against Conventional Commits
+(`semantic-pull-request` in `.github/workflows/conventional-commits.yml`). Use the
 same pattern for PR titles (for example `feat: add local docker quickstart`).
+The subject after `: ` must **not** start with an uppercase letter
+(for example prefer `feat(portal): add Guided/Advanced forms…` over
+`feat(portal): Guided/Advanced forms…`).
 
 ## Maintainer setup
 

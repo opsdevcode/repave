@@ -1084,6 +1084,32 @@
     });
   }
 
+  function initFormModeToggle() {
+    var form = document.querySelector("form[data-form-mode]");
+    if (!form) {
+      return;
+    }
+    var options = document.querySelectorAll("[data-form-mode-option]");
+    if (!options.length) {
+      return;
+    }
+
+    function applyMode(mode) {
+      form.setAttribute("data-form-mode", mode);
+    }
+
+    options.forEach(function (input) {
+      input.addEventListener("change", function () {
+        if (input.checked) {
+          applyMode(input.value);
+        }
+      });
+      if (input.checked) {
+        applyMode(input.value);
+      }
+    });
+  }
+
   function initFormDraft() {
     var form = document.querySelector("[data-repave-form-draft]");
     if (!form) {
@@ -2038,6 +2064,7 @@
     initBundlePreview();
     initBusyForms();
     initFormStepper();
+    initFormModeToggle();
     initFormDryRun();
     initPortalFetchSubmit();
     initCatalogSearch();
