@@ -528,6 +528,7 @@ pre {
 
 .shell__main--home {
   --content-max-width: 92rem;
+  --home-catalog-max-width: 68rem;
 }
 
 /* Blueprint generate + result: use horizontal margin on large viewports */
@@ -1878,7 +1879,8 @@ details.file-panel summary {
 }
 
 .home-layout--catalog {
-  max-width: 52rem;
+  max-width: var(--home-catalog-max-width, 68rem);
+  margin-inline: auto;
 }
 
 .home-catalog {
