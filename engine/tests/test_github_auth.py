@@ -63,8 +63,8 @@ def test_oauth_pat_ignored_when_github_app_configured(monkeypatch: pytest.Monkey
     monkeypatch.setenv("GITHUB_APP_INSTALLATION_ID", "99")
     monkeypatch.setenv("GITHUB_APP_PRIVATE_KEY", pem)
     expires = (
-        datetime.now(tz=timezone.utc) + timedelta(hours=1)
-    ).isoformat().replace("+00:00", "Z")
+        (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    )
 
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -93,8 +93,8 @@ def test_prefer_github_app_env_over_pat(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("GITHUB_APP_INSTALLATION_ID", "99")
     monkeypatch.setenv("GITHUB_APP_PRIVATE_KEY", pem)
     expires = (
-        datetime.now(tz=timezone.utc) + timedelta(hours=1)
-    ).isoformat().replace("+00:00", "Z")
+        (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    )
 
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(

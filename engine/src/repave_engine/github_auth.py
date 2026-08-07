@@ -158,9 +158,12 @@ def resolve_github_access_token(explicit: str | None = None) -> str | None:
         return raw
     config = load_github_app_config()
     pat = os.environ.get("GITHUB_TOKEN", "").strip()
-    if pat and config is not None:
-        if _prefer_github_app_over_pat() or _pat_is_oauth_user_token(pat):
-            pat = ""
+    if (
+        pat
+        and config is not None
+        and (_prefer_github_app_over_pat() or _pat_is_oauth_user_token(pat))
+    ):
+        pat = ""
     if pat:
         return pat
     if config is None:
