@@ -6,7 +6,7 @@
   "README.md": "953dc7bef283c4cab812769548e6b929d68d1ba263f3cb3e9547288d99b96a7f",
   "RUNBOOK.md": "58b46994c50219d1c43411c7dc4c204ce79019ce871b82d5be794eaa1e17acbe",
   "buf.yaml": "835823ba596976c552e9c6cea39c1346720194d7fb8e784dbcf1b4474aaca9d4",
-  "catalog-info.yaml": "f3808372c39917bf982d00a71c5dd71dbeb1c6f39abbc65f24f41b817bd915fd",
+  "catalog-info.yaml": "560f0179147e59a0073a1ba3c783cf9b8146c652f5e2112975f03706950756e5",
   "cmd/server/main.go": "9ac0eff279b06fcf48474b526aed5bb84ae34c05342d29e9e73d50e62c0f62db",
   "cmd/server/main_test.go": "6ea6d364d982e0a54aaf9ef9d50973795db5c5044169ad96e44a697e25bffd08",
   "go.mod": "646385f03b3dc6a671ae8fa99cce05807d9f2cf40d44ecb93c2ffaad558bfed9",
