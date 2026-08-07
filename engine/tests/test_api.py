@@ -482,6 +482,8 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "formatPortalErrorDetail" in body
     assert "insufficient role" in body
     assert "generators group" in body
+    assert "pipelineStageLabels" in body
+    assert "Publishing to repository" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body

@@ -70,12 +70,12 @@
     </p>
   </div>
   <div class="card__body">
-    <div class="run-console__progress" data-run-progress>
+    <div class="run-console__progress" data-run-progress aria-busy="true">
       <div class="run-console__progress-track" aria-hidden="true">
         <div class="run-console__progress-bar" data-run-progress-bar style="width: 0%"></div>
       </div>
       <p class="run-console__progress-label hint" data-run-progress-label aria-live="polite">
-        {% if live_plan %}Waiting for live plan…{% elif environment_vend %}Waiting for environment vend…{% else %}Waiting for gates…{% endif %}
+        {% if live_plan %}Waiting for live plan…{% elif environment_vend %}Waiting for environment vend…{% else %}Starting apply…{% endif %}
       </p>
     </div>
 
@@ -94,10 +94,10 @@
     </ol>
     {% else %}
     <ol class="run-console__stages" aria-label="Pipeline stages">
-      <li class="run-console__stage" data-stage="validate">Validate inputs</li>
-      <li class="run-console__stage" data-stage="render">Render templates</li>
-      <li class="run-console__stage" data-stage="gates">Run gates</li>
-      <li class="run-console__stage" data-stage="publish">Publish</li>
+      <li class="run-console__stage" data-stage="validate"><span class="run-console__stage-index" aria-hidden="true">1</span> Validate inputs</li>
+      <li class="run-console__stage" data-stage="render"><span class="run-console__stage-index" aria-hidden="true">2</span> Render templates</li>
+      <li class="run-console__stage" data-stage="gates"><span class="run-console__stage-index" aria-hidden="true">3</span> Run gates</li>
+      <li class="run-console__stage" data-stage="publish"><span class="run-console__stage-index" aria-hidden="true">4</span> Publish</li>
     </ol>
     {% endif %}
 
@@ -122,7 +122,7 @@
     </div>
     {% endif %}
 
-    <pre class="run-console__log" id="run-console-log" aria-live="polite" aria-label="Run log"></pre>
+    <pre class="run-console__log" id="run-console-log" aria-live="polite" aria-label="Run log" hidden></pre>
 
     {% if run_record.error %}
     <p class="alert alert--fail" role="alert">{{ run_record.error }}</p>
