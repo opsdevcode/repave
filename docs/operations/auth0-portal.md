@@ -77,8 +77,8 @@ helm upgrade --install repave ./deploy/k8s/chart \
 | --- | --- |
 | `curl -sI https://<portal-host>/library` | `302` → `/auth/login` (no cookie) |
 | Browser open `/` | Auth0 login, then portal |
-| User without roles | `viewer` (read OK; generate/publish denied) |
-| User with `repave-generators` | Can dry-run / generate |
+| User without roles | Full access when `coarse_rbac_enabled` is false (default); otherwise `viewer` |
+| User with `repave-generators` | Full access (default); generate when coarse RBAC enabled |
 | Sign out | Clears portal session **and** Auth0 SSO for the app |
 | `curl https://<portal-host>/readyz` | `200` (no auth) |
 | CronJob with `REPAVE_API_TOKEN` | Still authorized as admin bearer |

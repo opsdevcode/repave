@@ -46,6 +46,7 @@ class AuthConfig:
     generator_groups: frozenset[str]
     session_https_only: bool = False
     oidc_logout_return_to: str = ""
+    coarse_rbac_enabled: bool = False
 
 
 def is_public_path(path: str) -> bool:
@@ -105,6 +106,16 @@ def role_for_groups(groups: list[str], config: AuthConfig) -> str:
     if normalized.intersection(generator):
         return ROLE_GENERATOR
     return ROLE_VIEWER
+
+
+def session_role_from_oidc_groups(groups: list[str], config: AuthConfig) -> str:
+    """Map IdP groups to a portal session role.
+
+    When coarse RBAC is off (default until FGA), any successful OIDC login is admin.
+    """
+    if not config.coarse_rbac_enabled:
+        return ROLE_ADMIN
+    return role_for_groups(groups, config)
 
 
 def groups_from_claims(claims: dict[str, Any], groups_claim: str) -> list[str]:
@@ -288,7 +299,7 @@ async def complete_oidc_callback(
 
     email = str(claims.get("email", subject)).strip()
     groups = groups_from_claims(claims, config.groups_claim)
-    role = role_for_groups(groups, config)
+    role = session_role_from_oidc_groups(groups, config)
     request.session["repave_user"] = {"sub": subject, "email": email, "role": role}
     if not next_path.startswith("/"):
         next_path = "/"

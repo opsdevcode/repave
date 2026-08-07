@@ -56,6 +56,7 @@ data:
     {{- if .Values.repave.auth.serviceMode }}
     auth:
       service_mode: true
+      coarse_rbac_enabled: {{ .Values.repave.auth.coarseRbacEnabled }}
       session_https_only: {{ .Values.repave.auth.sessionHttpsOnly }}
       oidc:
         issuer: {{ .Values.repave.auth.oidc.issuer | quote }}
