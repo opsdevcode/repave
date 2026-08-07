@@ -16,6 +16,8 @@ fullnameOverride: ""
 # Portal /api/v2 base URL (required for plan/apply upgrades).
 repave:
   apiUrl: http://repave.repave.svc.cluster.local:8088
+  github:
+    preferApp: false
   # Optional: local repo root and CLI path for in-cluster remediation (rare).
   repoRoot: ""
   cli: ""

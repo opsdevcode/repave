@@ -93,6 +93,7 @@ def fetch_installation_token(config: GitHubAppConfig) -> tuple[str, float]:
     token = str(data.get("token", "")).strip()
     if not token:
         raise ValueError("GitHub installation token response missing token")
+    _validate_installation_token_permissions(data)
     expires_at = _parse_github_expires(str(data.get("expires_at", "")).strip())
     return token, expires_at
 
@@ -122,15 +123,46 @@ class _InstallationTokenCache:
 _installation_token_cache = _InstallationTokenCache()
 
 
+def _env_truthy(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes"}
+
+
+def _prefer_github_app_over_pat() -> bool:
+    return _env_truthy("REPAVE_PREFER_GITHUB_APP") or _env_truthy("REPAVE_FORCE_GITHUB_APP")
+
+
+def _pat_is_oauth_user_token(token: str) -> bool:
+    # OAuth user-to-server tokens (gho_) cannot push to org repos via git in hosted mode.
+    return token.startswith("gho_")
+
+
+def _validate_installation_token_permissions(data: dict[str, object]) -> None:
+    if _env_truthy("REPAVE_SKIP_GITHUB_APP_PERMISSION_CHECK"):
+        return
+    perms = data.get("permissions")
+    if not isinstance(perms, dict):
+        return
+    contents = str(perms.get("contents", "")).lower()
+    if contents in {"write", "admin"}:
+        return
+    raise ValueError(
+        "GitHub App installation token lacks contents: write — set Repository permissions "
+        "→ Contents to Read and write on the app, save, and accept the org installation update"
+    )
+
+
 def resolve_github_access_token(explicit: str | None = None) -> str | None:
     """Return PAT, explicit token, or a cached GitHub App installation token."""
     raw = (explicit or "").strip()
     if raw:
         return raw
+    config = load_github_app_config()
     pat = os.environ.get("GITHUB_TOKEN", "").strip()
+    if pat and config is not None:
+        if _prefer_github_app_over_pat() or _pat_is_oauth_user_token(pat):
+            pat = ""
     if pat:
         return pat
-    config = load_github_app_config()
     if config is None:
         return None
     return _installation_token_cache.get(lambda: fetch_installation_token(config))

@@ -78,12 +78,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "repave-operator.githubAuthEnv" -}}
 {{- $secretName := include "repave-operator.secretName" . }}
 {{- if $secretName }}
+{{- if not .Values.repave.github.preferApp }}
 - name: GITHUB_TOKEN
   valueFrom:
     secretKeyRef:
       name: {{ $secretName }}
       key: github-token
       optional: true
+{{- end }}
+{{- if .Values.repave.github.preferApp }}
+- name: REPAVE_PREFER_GITHUB_APP
+  value: "1"
+{{- end }}
 - name: GITHUB_APP_ID
   valueFrom:
     secretKeyRef:
