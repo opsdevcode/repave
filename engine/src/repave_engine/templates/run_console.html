@@ -35,6 +35,7 @@
   data-run-id="{{ run_id }}"
   data-run-status="{{ run_record.status.value }}"
   data-result-url="/runs/{{ run_id }}/result"
+  {% if run_record.dry_run is defined %}data-dry-run="{{ run_record.dry_run | tojson }}"{% endif %}
   {% if live_plan %}data-live-plan="1"{% endif %}
   {% if environment_vend %}data-environment-vend="1"{% endif %}
   aria-labelledby="run-console-heading"
@@ -70,6 +71,28 @@
     </p>
   </div>
   <div class="card__body">
+    {% if publish_target and not live_plan and not environment_vend %}
+    <div class="run-console__outcome" data-run-outcome>
+      {% if run_record.dry_run %}
+      <p class="run-console__outcome-lead">
+        <span class="badge badge--skip">Plan</span>
+        Gates run for real; <strong>no GitHub repository is created</strong> in plan mode.
+      </p>
+      <p class="hint run-console__outcome-detail">
+        Target on apply:
+        <a href="{{ publish_target.url }}">{{ publish_target.org }}/{{ publish_target.name }}</a>
+      </p>
+      {% else %}
+      <p class="run-console__outcome-lead">
+        <span class="badge badge--pass">Apply</span>
+        On success, publishes to
+        <a href="{{ publish_target.url }}">{{ publish_target.org }}/{{ publish_target.name }}</a>.
+      </p>
+      {% endif %}
+      <p class="hint run-console__outcome-status" data-run-outcome-status hidden></p>
+    </div>
+    {% endif %}
+
     <div class="run-console__progress" data-run-progress aria-busy="true">
       <div class="run-console__progress-track" aria-hidden="true">
         <div class="run-console__progress-bar" data-run-progress-bar style="width: 0%"></div>
@@ -97,7 +120,7 @@
       <li class="run-console__stage" data-stage="validate"><span class="run-console__stage-index" aria-hidden="true">1</span> Validate inputs</li>
       <li class="run-console__stage" data-stage="render"><span class="run-console__stage-index" aria-hidden="true">2</span> Render templates</li>
       <li class="run-console__stage" data-stage="gates"><span class="run-console__stage-index" aria-hidden="true">3</span> Run gates</li>
-      <li class="run-console__stage" data-stage="publish"><span class="run-console__stage-index" aria-hidden="true">4</span> Publish</li>
+      <li class="run-console__stage" data-stage="publish"><span class="run-console__stage-index" aria-hidden="true">4</span> {% if run_record.dry_run %}Publish preview{% else %}Publish{% endif %}</li>
     </ol>
     {% endif %}
 

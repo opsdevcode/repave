@@ -25,6 +25,46 @@ from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttin
 from repave_engine.settings import OutputConfig
 
 
+@dataclass(frozen=True)
+class PublishTarget:
+    name: str
+    url: str
+    org: str
+
+
+def publish_target_for_run(
+    *,
+    blueprint: object,
+    payload: dict[str, object],
+    output_config: OutputConfig,
+) -> PublishTarget | None:
+    """Best-effort target repo for run-console copy (plan vs apply expectations)."""
+    from repave_engine.blueprint import Blueprint, primary_publish_name
+    from repave_engine.target_repo import resolve_module_repository
+
+    if not isinstance(blueprint, Blueprint):
+        return None
+    inputs_raw = payload.get("inputs")
+    if not isinstance(inputs_raw, dict):
+        return None
+    try:
+        normalized = {str(key): value for key, value in inputs_raw.items()}
+        module_name = primary_publish_name(blueprint, normalized)
+        repository = resolve_module_repository(
+            module_name=module_name,
+            config=output_config,
+            name_template=blueprint.output_repo_name_template,
+            template_values={key: str(value) for key, value in normalized.items()},
+        )
+    except (KeyError, TypeError, ValueError):
+        return None
+    return PublishTarget(
+        name=repository.name,
+        url=repository.web_url,
+        org=output_config.github_org,
+    )
+
+
 class GateToolchainCallout(Protocol):
     def __call__(self, gates: list[GateResult], *, dry_run: bool) -> str | None: ...
 

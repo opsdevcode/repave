@@ -4323,6 +4323,27 @@ body.repave-busy {
   margin-bottom: var(--space-4);
 }
 
+.run-console__outcome {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+}
+
+.run-console__outcome-lead {
+  margin: 0 0 var(--space-2);
+}
+
+.run-console__outcome-detail,
+.run-console__outcome-status {
+  margin: 0;
+}
+
+.run-console__outcome-status--fail {
+  color: var(--error);
+}
+
 .run-console.is-running .run-console__progress-label {
   color: var(--text);
 }

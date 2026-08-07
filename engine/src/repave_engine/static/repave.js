@@ -747,6 +747,27 @@
       setPlanSubmitMode(true);
     }
 
+    function forceApplyDryRun() {
+      form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+        radio.checked = radio.value === "false";
+      });
+      setPlanSubmitMode(false);
+    }
+
+    function isApplySubmitter(submitter) {
+      if (!submitter) {
+        return false;
+      }
+      if (
+        submitter === drySubmitBtn ||
+        submitter.getAttribute("data-dry-run-submit") !== null ||
+        submitter.getAttribute("data-dry-run-run") !== null
+      ) {
+        return false;
+      }
+      return submitter === submitBtn || submitter.type === "submit";
+    }
+
     function runDryRunFromForm() {
       if (!runStepperSubmitPipeline(null)) {
         return;
@@ -797,6 +818,11 @@
       form.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function () {
+        forceApplyDryRun();
+      });
+    }
     if (dryRunBtn) {
       dryRunBtn.addEventListener("click", runDryRunFromForm);
     }
@@ -813,7 +839,9 @@
             submitter.getAttribute("data-dry-run-submit") !== null ||
             submitter.getAttribute("data-dry-run-run") !== null);
         if (viaDryRunControl || current !== maxStep) {
-          setPlanSubmitMode(true);
+          forcePlanDryRun();
+        } else if (isApplySubmitter(submitter)) {
+          forceApplyDryRun();
         } else {
           setPlanSubmitMode(deliveryWantsPlan());
         }
@@ -1083,6 +1111,9 @@
             }
             form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
               radio.disabled = true;
+              if (radio.value === "true") {
+                radio.checked = true;
+              }
             });
           } else {
             if (dryForce) {
@@ -1094,6 +1125,9 @@
             }
             form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
               radio.disabled = false;
+              if (radio.value === "false") {
+                radio.checked = true;
+              }
             });
           }
         },
@@ -1443,6 +1477,8 @@
     var isLivePlan = root.getAttribute("data-live-plan") === "1";
     var isEnvironmentVend = root.getAttribute("data-environment-vend") === "1";
     var isPipelineRun = !isLivePlan && !isEnvironmentVend;
+    var isDryRun = root.getAttribute("data-dry-run") === "true";
+    var outcomeStatus = root.querySelector("[data-run-outcome-status]");
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
     var vendStages = isEnvironmentVend ? ["validate", "render", "gates", "gitops"] : [];
     var pipelineStages = isPipelineRun ? ["validate", "render", "gates", "publish"] : [];
@@ -1461,7 +1497,7 @@
       validate: "Validating inputs",
       render: "Rendering templates",
       gates: "Running gates",
-      publish: "Publishing to repository",
+      publish: isDryRun ? "Previewing publish target" : "Publishing to repository",
     };
     var runComplete = false;
     var progressRegion = root.querySelector("[data-run-progress]");
@@ -1521,9 +1557,26 @@
       });
     }
 
+    function setOutcomeStatus(message, succeeded) {
+      if (!outcomeStatus || !message) {
+        return;
+      }
+      outcomeStatus.textContent = message;
+      outcomeStatus.hidden = false;
+      outcomeStatus.classList.remove("run-console__outcome-status--fail");
+      if (succeeded === false) {
+        outcomeStatus.classList.add("run-console__outcome-status--fail");
+      }
+    }
+
     function stageLogLine(stage, started) {
       if (stage === "publish") {
-        return started ? "Publishing to repository…" : "Publish complete.";
+        if (started) {
+          return isDryRun
+            ? "Publish preview — planning target repository (no GitHub write)"
+            : "Publishing to repository…";
+        }
+        return isDryRun ? "Publish preview complete." : "Publish complete.";
       }
       var label = pipelineStageLabels[stage] || vendStageLabels[stage] || livePlanStageLabels[stage];
       if (label) {
@@ -1610,7 +1663,9 @@
           } else if (pipeActive) {
             progressLabel.textContent = (pipelineStageLabels[pipeActive] || pipeActive) + "…";
           } else if (pipeDone >= stageCount) {
-            progressLabel.textContent = "Finishing up…";
+            progressLabel.textContent = isDryRun
+              ? "Saving plan preview…"
+              : "Saving run results…";
           } else if (pipeDone > 0) {
             progressLabel.textContent =
               pipeDone + " of " + stageCount + " stages complete";
@@ -1717,6 +1772,18 @@
           setStage("gitops", "active");
         }
         updateProgressBar();
+      } else if (data.kind === "publish_progress") {
+        if (data.message) {
+          appendLog(data.message);
+        }
+        setOutcomeStatus(data.message || "", true);
+        updateProgressBar();
+      } else if (data.kind === "publish_finished") {
+        if (data.summary) {
+          appendLog(data.summary);
+          setOutcomeStatus(data.summary, data.succeeded !== false);
+        }
+        updateProgressBar();
       } else if (data.kind === "live_plan_started") {
         setStage("checkout", "done");
         setStage("plan", "active");
@@ -1783,6 +1850,11 @@
         setRunBusy(false);
         root.classList.add("is-complete");
         updateProgressBar();
+        if (progressLabel) {
+          progressLabel.textContent = isDryRun
+            ? "Plan complete — opening preview…"
+            : "Apply complete — opening result…";
+        }
         appendLog("Run complete.");
         if (completeActions) {
           completeActions.hidden = false;

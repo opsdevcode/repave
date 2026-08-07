@@ -183,6 +183,69 @@ def _emit_stage(on_event: RunEventCallback | None, stage: str, *, started: bool)
     on_event(kind, {"stage": stage})
 
 
+def _summarize_publish_message(
+    *,
+    dry_run: bool,
+    repository: ModuleRepository,
+    pr_message: str,
+) -> str:
+    lowered = pr_message.lower()
+    if "github publish failed" in lowered or "provisioning failed" in lowered:
+        return f"Publish failed for {repository.web_url} — open result for details"
+    if dry_run:
+        return f"Plan preview — no GitHub repo created. Target on apply: {repository.web_url}"
+    if "created github repository" in lowered:
+        return f"Created {repository.web_url}"
+    if "pushed initial commit" in lowered:
+        return f"Updated {repository.web_url}"
+    return f"Published to {repository.web_url}"
+
+
+def _emit_publish_progress(
+    on_event: RunEventCallback | None,
+    *,
+    dry_run: bool,
+    repository: ModuleRepository,
+    message: str,
+) -> None:
+    if on_event is None:
+        return
+    on_event(
+        "publish_progress",
+        {
+            "dry_run": dry_run,
+            "repository_name": repository.name,
+            "repository_url": repository.web_url,
+            "message": message,
+        },
+    )
+
+
+def _emit_publish_finished(
+    on_event: RunEventCallback | None,
+    *,
+    dry_run: bool,
+    repository: ModuleRepository,
+    pr_message: str,
+) -> None:
+    if on_event is None:
+        return
+    on_event(
+        "publish_finished",
+        {
+            "dry_run": dry_run,
+            "repository_name": repository.name,
+            "repository_url": repository.web_url,
+            "summary": _summarize_publish_message(
+                dry_run=dry_run,
+                repository=repository,
+                pr_message=pr_message,
+            ),
+            "succeeded": "failed" not in pr_message.lower(),
+        },
+    )
+
+
 def _publish_after_gates(
     *,
     blueprint: Blueprint,
@@ -214,6 +277,16 @@ def _publish_after_gates(
 
     with pipeline_span("repave.publish"):
         _emit_stage(on_event, "publish", started=True)
+        _emit_publish_progress(
+            on_event,
+            dry_run=dry_run,
+            repository=module_repository,
+            message=(
+                f"Planning publish target {module_repository.web_url} (no GitHub write)"
+                if dry_run
+                else f"Publishing to {module_repository.web_url}…"
+            ),
+        )
         if cached_message is not None:
             pr_message = cached_message
             published_repository = module_repository
@@ -282,6 +355,12 @@ def _publish_after_gates(
                     run_id=publish_idempotency.run_id,
                     client_request_id=publish_idempotency.client_request_id,
                 )
+        _emit_publish_finished(
+            on_event,
+            dry_run=dry_run,
+            repository=module_repository,
+            pr_message=pr_message,
+        )
         _emit_stage(on_event, "publish", started=False)
     return pr_message, published_repository
 

@@ -148,6 +148,7 @@ from repave_engine.portal_errors import (
 )
 from repave_engine.portal_generate import (
     PortalGenerateRedirect,
+    publish_target_for_run,
     run_portal_generate,
 )
 from repave_engine.portal_generate import (
@@ -1328,6 +1329,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             blueprint_dir(repo_root, record.blueprint_name),
             repo_root=repo_root,
         )
+        publish_target = publish_target_for_run(
+            blueprint=blueprint,
+            payload=record.payload,
+            output_config=resolved_output,
+        )
         return templates.TemplateResponse(
             request,
             "run_console.html",
@@ -1338,6 +1344,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 run_record=record,
                 blueprint=blueprint,
                 gate_names=blueprint.gates,
+                publish_target=publish_target,
             ),
         )
 
