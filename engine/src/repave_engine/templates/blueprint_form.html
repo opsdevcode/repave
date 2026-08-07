@@ -259,6 +259,7 @@
         <label class="segmented__option">
           <input
             type="radio"
+            name="form_mode"
             data-form-mode-option
             value="guided"
             {% if (form_mode_default or 'guided') == 'guided' %}checked{% endif %}
@@ -268,6 +269,7 @@
         <label class="segmented__option">
           <input
             type="radio"
+            name="form_mode"
             data-form-mode-option
             value="advanced"
             {% if form_mode_default == 'advanced' %}checked{% endif %}
