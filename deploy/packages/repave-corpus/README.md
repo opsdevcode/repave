@@ -13,6 +13,8 @@ tree). Contains only:
 - `standards/`
 - `policy/`
 - `schemas/`
+- `ansible/` (catalog + pattern templates)
+- `observability/` (catalog)
 
 No Python runtime, no gate CLIs, no portal code.
 

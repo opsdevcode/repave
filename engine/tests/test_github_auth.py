@@ -72,7 +72,7 @@ def test_oauth_pat_ignored_when_github_app_configured(monkeypatch: pytest.Monkey
             json={
                 "token": "ghs_installation",
                 "expires_at": expires,
-                "permissions": {"contents": "write"},
+                "permissions": {"contents": "write", "workflows": "write"},
             },
         )
 
@@ -102,7 +102,7 @@ def test_prefer_github_app_env_over_pat(monkeypatch: pytest.MonkeyPatch) -> None
             json={
                 "token": "ghs_installation",
                 "expires_at": expires,
-                "permissions": {"contents": "write"},
+                "permissions": {"contents": "write", "workflows": "write"},
             },
         )
 
@@ -115,7 +115,9 @@ def test_prefer_github_app_env_over_pat(monkeypatch: pytest.MonkeyPatch) -> None
     assert resolve_github_access_token() == "ghs_installation"
 
 
-def test_fetch_installation_token_requires_contents_write(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_fetch_installation_token_requires_contents_and_workflows_write(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     pem = _test_private_key_pem()
     config = GitHubAppConfig(app_id="42", installation_id="99", private_key_pem=pem)
 
@@ -125,7 +127,7 @@ def test_fetch_installation_token_requires_contents_write(monkeypatch: pytest.Mo
             json={
                 "token": "ghs_installation",
                 "expires_at": "2030-01-01T00:00:00Z",
-                "permissions": {"contents": "read"},
+                "permissions": {"contents": "read", "workflows": "write"},
             },
         )
 
@@ -135,7 +137,31 @@ def test_fetch_installation_token_requires_contents_write(monkeypatch: pytest.Mo
         lambda url, **kwargs: httpx.Client(transport=transport).post(url, **kwargs),
     )
 
-    with pytest.raises(ValueError, match="contents: write"):
+    with pytest.raises(ValueError, match="Contents"):
+        fetch_installation_token(config)
+
+
+def test_fetch_installation_token_requires_workflows_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    pem = _test_private_key_pem()
+    config = GitHubAppConfig(app_id="42", installation_id="99", private_key_pem=pem)
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            201,
+            json={
+                "token": "ghs_installation",
+                "expires_at": "2030-01-01T00:00:00Z",
+                "permissions": {"contents": "write", "workflows": "read"},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "repave_engine.github_auth.httpx.post",
+        lambda url, **kwargs: httpx.Client(transport=transport).post(url, **kwargs),
+    )
+
+    with pytest.raises(ValueError, match="Workflows"):
         fetch_installation_token(config)
 
 
@@ -172,7 +198,7 @@ def test_fetch_installation_token_uses_cache(monkeypatch: pytest.MonkeyPatch) ->
             json={
                 "token": "ghs_installation",
                 "expires_at": expires,
-                "permissions": {"contents": "write", "metadata": "read"},
+                "permissions": {"contents": "write", "workflows": "write", "metadata": "read"},
             },
         )
 

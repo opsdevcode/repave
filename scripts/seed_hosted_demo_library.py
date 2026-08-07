@@ -225,7 +225,7 @@ def main(argv: list[str] | None = None) -> int:
             "--blueprint",
             seed.blueprint,
         ]
-        if local_path.is_dir():
+        if local_path.is_dir() and "blueprint_version" not in seed.register_overrides:
             reg_cmd.extend(["--path", str(local_path)])
         for key, value in seed.register_overrides.items():
             if key == "blueprint_version":
@@ -275,7 +275,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(proc.stdout)
         summary = json.loads(proc.stdout)
-        print(f"registered {summary.get('count', '?')} repositories in {fleet_file}")
+        count = summary.get("count") if isinstance(summary, dict) else len(summary)
+        print(f"registered {count} repositories in {fleet_file}")
 
     print("done — open /activity and /fleet on the portal; apply fleet-manifests for operator GPRs")
     return 0

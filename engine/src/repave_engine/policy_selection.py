@@ -174,6 +174,8 @@ def _validate_platform_skips(
                     "remove it from repave.config.yaml gates.checkov.skip_checks"
                 )
     for rule_id in gate_overrides.blocked_policy_rule_skips:
+        if rule_id not in applicable:
+            continue
         if rule_id not in enabled_ids:
             raise ValueError(
                 f"Policy rule {rule_id!r} is required by platform gates.policy.required_rules"

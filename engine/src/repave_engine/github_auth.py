@@ -136,18 +136,27 @@ def _pat_is_oauth_user_token(token: str) -> bool:
     return token.startswith("gho_")
 
 
+def _permission_is_write(value: object) -> bool:
+    return str(value).lower() in {"write", "admin"}
+
+
 def _validate_installation_token_permissions(data: dict[str, object]) -> None:
     if _env_truthy("REPAVE_SKIP_GITHUB_APP_PERMISSION_CHECK"):
         return
     perms = data.get("permissions")
     if not isinstance(perms, dict):
         return
-    contents = str(perms.get("contents", "")).lower()
-    if contents in {"write", "admin"}:
+    missing: list[str] = []
+    if not _permission_is_write(perms.get("contents")):
+        missing.append("Contents → Read and write")
+    if not _permission_is_write(perms.get("workflows")):
+        missing.append("Workflows → Read and write")
+    if not missing:
         return
+    joined = "; ".join(missing)
     raise ValueError(
-        "GitHub App installation token lacks contents: write — set Repository permissions "
-        "→ Contents to Read and write on the app, save, and accept the org installation update"
+        f"GitHub App installation token lacks required permissions ({joined}) — "
+        "update Repository permissions on the app, save, and accept the org installation update"
     )
 
 

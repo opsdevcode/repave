@@ -109,6 +109,12 @@ app.kubernetes.io/component: portal
 - name: corpus-data
   mountPath: /app/policy
   subPath: policy
+- name: corpus-data
+  mountPath: /app/ansible
+  subPath: ansible
+- name: corpus-data
+  mountPath: /app/observability
+  subPath: observability
 {{- end }}
 {{- end }}
 

@@ -35,6 +35,8 @@ repos:
       owner: platform
     register:
       blueprint_version: "0.9.0"
+      standard_source: standards/terraform-standards
+      standard_version: "1.1.0"
 
   - id: tf-azure-net
     blueprint: terraform-module-generic
@@ -52,6 +54,10 @@ repos:
       role_name: webserver
       namespace: opsdevcode
       description: Demo webserver Ansible role with Molecule gates
+    register:
+      blueprint_version: "0.4.0"
+      standard_source: standards/ansible
+      standard_version: "1.1.0"
 
   - id: ansible-hardening
     blueprint: ansible-role-generic
@@ -59,6 +65,10 @@ repos:
       role_name: hardening
       namespace: opsdevcode
       description: Demo Linux hardening role for estate compliance story
+    register:
+      blueprint_version: "0.4.0"
+      standard_source: standards/ansible
+      standard_version: "1.1.0"
 
   # --- Policy family (Act 5 uses destructive_delete in portal; this is the pass path) ---
   - id: opa-guardrails
@@ -68,6 +78,10 @@ repos:
       organization: platform
       description: Platform OPA guardrails policy pack
       plan_demo: pass
+    register:
+      blueprint_version: "0.3.0"
+      standard_source: standards/policy/opa.md
+      standard_version: "1.2.0"
 
   - id: checkov-baseline
     blueprint: checkov-policy-generic
@@ -75,6 +89,10 @@ repos:
       policy_name: baseline
       organization: platform
       description: Checkov custom policy baseline for Terraform estates
+    register:
+      blueprint_version: "0.3.0"
+      standard_source: standards/policy/checkov.md
+      standard_version: "1.0.0"
 
   # --- Packaging / delivery ---
   - id: helm-payments

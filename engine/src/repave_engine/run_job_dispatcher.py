@@ -220,6 +220,8 @@ def _build_job_body(
             ("blueprints", "/app/blueprints"),
             ("standards", "/app/standards"),
             ("policy", "/app/policy"),
+            ("ansible", "/app/ansible"),
+            ("observability", "/app/observability"),
         ):
             volume_mounts.append(
                 {
