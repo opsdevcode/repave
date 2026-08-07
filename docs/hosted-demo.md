@@ -79,6 +79,28 @@ then **UpgradePlanned** and a remediation PR when remediation is enabled.
 | Generate 401 | Session expired — re-login; API needs browser session or `REPAVE_API_TOKEN` |
 | Operator idle / no GPR status | Leader-election RBAC; `kubectl logs -n repave-system deploy/repave-operator` |
 | Portal down after node drain | RWO PVCs pin portal+workers to one node — see demo-week notes in infra `repave-prod.yaml` |
+| Container publish failed on `main` | Re-run failed jobs: `gh run rerun <run-id> --failed`. Portal-only hotfix: **Actions → Container images → Run workflow → target `portal`**. Images tag `main` and `${{ github.sha }}` on every merge. |
+
+---
+
+## Weekend hotfix loop (pre-CTO demo)
+
+Merge fixes to `main` → **Container images** workflow publishes four GHCR images in **parallel**
+(`repave-engine-portal` is what the portal Deployment pulls).
+
+1. **After merge**, watch publish: `gh run list --workflow=container.yml --limit 1`
+2. **If push flakes** (403 on GHCR): `gh run rerun <run-id> --failed` — the workflow retries pushes and verifies manifests.
+3. **Portal-only** (fastest for UI/CSS): Actions → **Container images** → **Run workflow** → target **portal**.
+4. **Roll EKS** from `repave-aws-infra` once `main` tags are green:
+   ```bash
+   cd repave-aws-infra
+   export REPAVE_CHART_PATH=/path/to/repave/deploy/k8s/chart
+   ./scripts/sync-repave.sh
+   ```
+5. **Smoke:** `curl -fsS https://repave.opsdevco.de/health` and one dry-run generate in the browser.
+
+Published tags on every `main` push: `main`, commit SHA, and semver on release tags. Pin prod in
+`kubernetes/releases/prod.yaml` when you want a known digest; use `main` for rapid demo iteration.
 
 ---
 

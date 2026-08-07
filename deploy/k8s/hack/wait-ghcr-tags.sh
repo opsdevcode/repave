@@ -19,8 +19,7 @@ if [[ -z "${TOKEN}" ]]; then
   exit 1
 fi
 
-# ghcr.io expects Basic auth username+PAT to mint a pull token (GITHUB_ACTOR in Actions).
-USER_NAME="${GHCR_USER:-${GITHUB_ACTOR:-${GITHUB_USER:-x-access-token}}}"
+USER_NAME="${GHCR_USER:-${GITHUB_REPOSITORY_OWNER:-${GITHUB_ACTOR:-x-access-token}}}"
 
 IMAGES=(
   "opsdevcode/repave-engine"

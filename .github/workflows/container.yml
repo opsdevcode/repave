@@ -5,6 +5,17 @@ on:
     branches: [main]
     tags: ["v*.*.*"]
   workflow_dispatch:
+    inputs:
+      target:
+        description: Image to publish (all = full matrix)
+        type: choice
+        options:
+          - all
+          - engine
+          - portal
+          - corpus
+          - operator
+        default: all
 
 permissions:
   contents: read
@@ -16,23 +27,61 @@ concurrency:
 
 jobs:
   publish:
-    name: publish
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: engine
+            name: repave-engine
+            ghcr_image: opsdevcode/repave-engine
+            image: ghcr.io/opsdevcode/repave-engine
+            context: .
+            file: deploy/local/Dockerfile
+            build_args: |
+              INSTALL_GATE_TOOLCHAIN=1
+              INCLUDE_CORPUS=0
+            description: Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app).
+          - key: portal
+            name: repave-engine-portal
+            ghcr_image: opsdevcode/repave-engine-portal
+            image: ghcr.io/opsdevcode/repave-engine-portal
+            context: .
+            file: deploy/local/Dockerfile
+            build_args: |
+              INSTALL_GATE_TOOLCHAIN=0
+              INCLUDE_CORPUS=0
+            description: Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app).
+          - key: corpus
+            name: repave-corpus
+            ghcr_image: opsdevcode/repave-corpus
+            image: ghcr.io/opsdevcode/repave-corpus
+            context: .
+            file: deploy/local/Dockerfile.corpus
+            build_args: ""
+            description: Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts.
+          - key: operator
+            name: repave-operator
+            ghcr_image: opsdevcode/repave-operator
+            image: ghcr.io/opsdevcode/repave-operator
+            context: operator
+            file: Dockerfile
+            build_args: ""
+            description: Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests.
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.target == 'all' ||
+      github.event.inputs.target == matrix.key
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - id: meta-gate
+      - id: meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
         with:
-          images: ghcr.io/opsdevcode/repave-engine
+          images: ${{ matrix.image }}
           tags: |
             type=sha,prefix=
             type=ref,event=branch
@@ -40,85 +89,33 @@ jobs:
           labels: |
             org.opencontainers.image.source=https://github.com/opsdevcode/repave
             org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.description=Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app).
+            org.opencontainers.image.description=${{ matrix.description }}
 
-      - name: Build and push gate-toolchain image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-        with:
-          context: .
-          file: deploy/local/Dockerfile
-          push: true
-          tags: ${{ steps.meta-gate.outputs.tags }}
-          labels: ${{ steps.meta-gate.outputs.labels }}
-          build-args: |
-            INSTALL_GATE_TOOLCHAIN=1
-            INCLUDE_CORPUS=0
+      - name: Build and push image (retry on GHCR flake)
+        env:
+          CONTEXT: ${{ matrix.context }}
+          FILE: ${{ matrix.file }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+          BUILD_ARGS: ${{ matrix.build_args }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.repository_owner }}
+          PUSH_ATTEMPTS: "3"
+          PUSH_RETRY_WAIT_SECONDS: "45"
+        run: |
+          chmod +x deploy/k8s/hack/ghcr-login.sh deploy/k8s/hack/ghcr-build-push.sh
+          ./deploy/k8s/hack/ghcr-build-push.sh
 
-      - id: meta-portal
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
-        with:
-          images: ghcr.io/opsdevcode/repave-engine-portal
-          tags: |
-            type=sha,prefix=
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-          labels: |
-            org.opencontainers.image.source=https://github.com/opsdevcode/repave
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.description=Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app).
-
-      - name: Build and push portal-only image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-        with:
-          context: .
-          file: deploy/local/Dockerfile
-          push: true
-          tags: ${{ steps.meta-portal.outputs.tags }}
-          labels: ${{ steps.meta-portal.outputs.labels }}
-          build-args: |
-            INSTALL_GATE_TOOLCHAIN=0
-            INCLUDE_CORPUS=0
-
-      - id: meta-corpus
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
-        with:
-          images: ghcr.io/opsdevcode/repave-corpus
-          tags: |
-            type=sha,prefix=
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-          labels: |
-            org.opencontainers.image.source=https://github.com/opsdevcode/repave
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.description=Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts.
-
-      - name: Build and push corpus image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-        with:
-          context: .
-          file: deploy/local/Dockerfile.corpus
-          push: true
-          tags: ${{ steps.meta-corpus.outputs.tags }}
-          labels: ${{ steps.meta-corpus.outputs.labels }}
-
-      - id: meta-operator
-        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051
-        with:
-          images: ghcr.io/opsdevcode/repave-operator
-          tags: |
-            type=sha,prefix=
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-          labels: |
-            org.opencontainers.image.source=https://github.com/opsdevcode/repave
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.description=Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests.
-
-      - name: Build and push operator image
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
-        with:
-          context: operator
-          file: operator/Dockerfile
-          push: true
-          tags: ${{ steps.meta-operator.outputs.tags }}
-          labels: ${{ steps.meta-operator.outputs.labels }}
+      - name: Verify image on GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.repository_owner }}
+        run: |
+          chmod +x deploy/k8s/hack/verify-ghcr-tag.sh
+          ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${{ github.sha }}"
+          if [[ "${{ github.ref }}" == refs/heads/main ]]; then
+            ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "main"
+          fi
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${VERSION}"
+          fi

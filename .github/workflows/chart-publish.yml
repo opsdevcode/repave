@@ -25,7 +25,11 @@ jobs:
           version: v3.16.4
 
       - name: Log in to GHCR
-        run: helm registry login ghcr.io -u "${{ github.actor }}" -p "${{ secrets.GITHUB_TOKEN }}"
+        run: |
+          chmod +x deploy/k8s/hack/ghcr-login.sh
+          GHCR_USER="${{ github.repository_owner }}" \
+          GHCR_TOKEN="${{ secrets.GITHUB_TOKEN }}" \
+          ./deploy/k8s/hack/ghcr-login.sh
 
       - name: Package and push charts
         run: |
