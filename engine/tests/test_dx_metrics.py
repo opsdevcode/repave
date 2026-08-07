@@ -9,12 +9,14 @@ from fastapi.testclient import TestClient
 from repave_engine.api import create_app
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.dx_metrics import (
+    BlueprintFriction,
     build_dx_metrics_snapshot,
     collect_eligible_repo_urls,
     compute_adoption,
     compute_gate_friction,
     compute_plan_apply_funnels,
     compute_time_to_first_artifact,
+    gate_pass_rate_from_friction,
 )
 from repave_engine.dx_metrics_store import (
     capture_dx_metrics,
@@ -105,6 +107,17 @@ def test_compute_plan_apply_funnels_and_friction() -> None:
     friction = compute_gate_friction(entries)
     assert friction[0].blueprint_name == "app-service-generic"
     assert friction[0].failed == 1
+
+
+def test_gate_pass_rate_from_friction() -> None:
+    assert gate_pass_rate_from_friction(()) is None
+    rate = gate_pass_rate_from_friction(
+        (
+            BlueprintFriction("a", total=4, failed=1, fail_ratio=0.25),
+            BlueprintFriction("b", total=6, failed=1, fail_ratio=0.1667),
+        )
+    )
+    assert rate == 0.8
 
 
 def test_compute_time_to_first_artifact() -> None:
@@ -254,6 +267,43 @@ def test_platform_adoption_page_and_api(
     body = api.json()
     assert "adoption_ratio" in body
     assert body["audit_available"] in {True, False}
+
+
+def test_platform_stakeholder_pages_and_api(
+    repo_root: Path,
+    output_config,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "1")
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS_FILE", str(tmp_path / "snaps.jsonl"))
+    monkeypatch.setenv("REPAVE_FLEET_FILE", str(tmp_path / "fleet.jsonl"))
+    monkeypatch.delenv("REPAVE_AUDIT_FILE", raising=False)
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    compliance = client.get("/platform/compliance")
+    assert compliance.status_code == 200
+    assert "Compliance posture" in compliance.text
+    assert 'href="/platform/compliance"' in compliance.text
+
+    value_stream = client.get("/platform/value-stream")
+    assert value_stream.status_code == 200
+    assert "Value stream" in value_stream.text
+    assert 'href="/platform/value-stream"' in value_stream.text
+
+    compliance_api = client.get("/api/v2/platform/compliance")
+    assert compliance_api.status_code == 200
+    compliance_body = compliance_api.json()
+    assert compliance_body["metrics_enabled"] is True
+    assert "gate_pass_rate" in compliance_body
+    assert "bypass_count" in compliance_body
+
+    value_api = client.get("/api/v2/platform/value-stream")
+    assert value_api.status_code == 200
+    value_body = value_api.json()
+    assert value_body["metrics_enabled"] is True
+    assert "adoption_ratio" in value_body
+    assert "history" in value_body
 
 
 def test_platform_metrics_api_404_when_disabled(repo_root, output_config, monkeypatch) -> None:

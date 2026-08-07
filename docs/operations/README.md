@@ -32,7 +32,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | State store shared deploy (ADR 004) | [state-store-enablement.md](state-store-enablement.md) |
 | Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
 | github-repo apply without fleet register / missing GPR | [github-repo-fleet-validation.md](github-repo-fleet-validation.md) |
-| Golden-path adoption / DX metrics | [platform-metrics.md](../platform-metrics.md) |
+| Golden-path adoption / DX metrics / stakeholder views | [platform-metrics.md](../platform-metrics.md) |
 | Cost actuals / FinOps enablement | [../finops.md](../finops.md) |
 
 ## Runbooks

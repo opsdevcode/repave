@@ -152,11 +152,13 @@ from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_platform import (
     build_platform_adoption_page,
     build_platform_campaigns_page,
+    build_platform_compliance_page,
     build_platform_feedback_page,
     build_platform_fleet_page,
     build_platform_ops_page,
     build_platform_standards_detail,
     build_platform_standards_page,
+    build_platform_value_stream_page,
     find_campaign_in_snapshot,
     platform_admin_visible,
     register_fleet_entry_from_form,
@@ -383,6 +385,16 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     {"kind": "nav", "label": "Platform standards", "href": "/platform/standards"},
                     {"kind": "nav", "label": "Platform campaigns", "href": "/platform/campaigns"},
                     {"kind": "nav", "label": "Platform adoption", "href": "/platform/adoption"},
+                    {
+                        "kind": "nav",
+                        "label": "Platform compliance",
+                        "href": "/platform/compliance",
+                    },
+                    {
+                        "kind": "nav",
+                        "label": "Platform value stream",
+                        "href": "/platform/value-stream",
+                    },
                     {"kind": "nav", "label": "Platform feedback", "href": "/platform/feedback"},
                 ]
             )
@@ -2137,6 +2149,48 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="platform",
                 platform_nav="adoption",
                 adoption_page=adoption_page,
+            ),
+        )
+
+    @app.get("/platform/compliance", response_class=HTMLResponse)
+    async def platform_compliance_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        probe_token = resolve_github_access_token() if github_credentials_configured() else None
+        compliance_page = build_platform_compliance_page(
+            repo_root,
+            github_token=probe_token,
+            persist=False,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_compliance.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="compliance",
+                compliance_page=compliance_page,
+            ),
+        )
+
+    @app.get("/platform/value-stream", response_class=HTMLResponse)
+    async def platform_value_stream_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        probe_token = resolve_github_access_token() if github_credentials_configured() else None
+        value_stream_page = build_platform_value_stream_page(
+            repo_root,
+            github_token=probe_token,
+            persist=False,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_value_stream.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="value-stream",
+                value_stream_page=value_stream_page,
             ),
         )
 
