@@ -134,6 +134,7 @@ def test_terraform_form_guided_advanced_mode(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert 'data-form-mode="guided"' in response.text
     assert 'id="form-mode-toggle"' in response.text
+    assert 'name="form_mode"' in response.text
     assert "data-form-mode-option" in response.text
     assert "Guided" in response.text
     assert "Advanced" in response.text
@@ -154,6 +155,7 @@ def test_ansible_form_guided_advanced_mode(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert 'data-form-mode="guided"' in response.text
     assert 'id="form-mode-toggle"' in response.text
+    assert 'name="form_mode"' in response.text
     assert 'id="ansible-role-pattern-block"' in response.text
     assert "data-form-advanced" in response.text
     assert 'name="min_ansible_version"' in response.text

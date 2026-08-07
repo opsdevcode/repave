@@ -1089,25 +1089,33 @@
     if (!form) {
       return;
     }
-    var options = document.querySelectorAll("[data-form-mode-option]");
-    if (!options.length) {
+    var toggle = document.getElementById("form-mode-toggle");
+    if (!toggle) {
       return;
     }
 
     function applyMode(mode) {
+      if (mode !== "guided" && mode !== "advanced") {
+        return;
+      }
       form.setAttribute("data-form-mode", mode);
+      toggle.querySelectorAll("[data-form-mode-option]").forEach(function (input) {
+        input.checked = input.value === mode;
+      });
     }
 
-    options.forEach(function (input) {
-      input.addEventListener("change", function () {
-        if (input.checked) {
-          applyMode(input.value);
-        }
-      });
-      if (input.checked) {
-        applyMode(input.value);
+    toggle.addEventListener("change", function (event) {
+      var target = event.target;
+      if (!target || !target.matches("[data-form-mode-option]")) {
+        return;
+      }
+      if (target.checked) {
+        applyMode(target.value);
       }
     });
+
+    var checked = toggle.querySelector("[data-form-mode-option]:checked");
+    applyMode(checked ? checked.value : "guided");
   }
 
   function initFormDraft() {
