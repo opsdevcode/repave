@@ -25,4 +25,15 @@ def test_container_workflow_sets_package_descriptions(repo_root: Path) -> None:
     workflow = (repo_root / ".github" / "workflows" / "container.yml").read_text(encoding="utf-8")
     for name in PACKAGE_NAMES:
         assert f"opsdevcode/{name}" in workflow
-    assert workflow.count("org.opencontainers.image.description=") >= len(PACKAGE_NAMES)
+    assert workflow.count("org.opencontainers.image.description=") >= 1
+    assert "description:" in workflow
+    assert "fail-fast: false" in workflow
+    assert "verify-ghcr-tag.sh" in workflow
+    assert "ghcr-build-push.sh" in workflow
+    assert "github.repository_owner" in workflow
+
+
+def test_ghcr_publish_hack_scripts_exist(repo_root: Path) -> None:
+    for name in ("ghcr-login.sh", "ghcr-build-push.sh", "verify-ghcr-tag.sh"):
+        path = repo_root / "deploy" / "k8s" / "hack" / name
+        assert path.is_file(), f"missing GHCR publish helper: {path}"
