@@ -145,6 +145,9 @@ def test_run_console_contract(
     assert 'data-stage="publish"' in body
     assert "run-console__stage-index" in body
     assert "Starting apply" in body
+    assert 'data-dry-run="true"' in body
+    assert "run-console__outcome" in body
+    assert "no GitHub repository is created" in body
     assert f"/api/v1/runs/{run_id}/events" not in body
     assert 'data-run-id="' + run_id + '"' in body
 
