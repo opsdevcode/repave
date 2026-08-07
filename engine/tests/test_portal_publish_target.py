@@ -3,7 +3,6 @@ from __future__ import annotations
 from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.pipeline import _summarize_publish_message
 from repave_engine.portal_generate import publish_target_for_run
-from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import ModuleRepository
 
 

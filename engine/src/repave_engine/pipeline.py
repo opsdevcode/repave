@@ -193,10 +193,7 @@ def _summarize_publish_message(
     if "github publish failed" in lowered or "provisioning failed" in lowered:
         return f"Publish failed for {repository.web_url} — open result for details"
     if dry_run:
-        return (
-            f"Plan preview — no GitHub repo created. "
-            f"Target on apply: {repository.web_url}"
-        )
+        return f"Plan preview — no GitHub repo created. Target on apply: {repository.web_url}"
     if "created github repository" in lowered:
         return f"Created {repository.web_url}"
     if "pushed initial commit" in lowered:

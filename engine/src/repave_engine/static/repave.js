@@ -747,6 +747,27 @@
       setPlanSubmitMode(true);
     }
 
+    function forceApplyDryRun() {
+      form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
+        radio.checked = radio.value === "false";
+      });
+      setPlanSubmitMode(false);
+    }
+
+    function isApplySubmitter(submitter) {
+      if (!submitter) {
+        return false;
+      }
+      if (
+        submitter === drySubmitBtn ||
+        submitter.getAttribute("data-dry-run-submit") !== null ||
+        submitter.getAttribute("data-dry-run-run") !== null
+      ) {
+        return false;
+      }
+      return submitter === submitBtn || submitter.type === "submit";
+    }
+
     function runDryRunFromForm() {
       if (!runStepperSubmitPipeline(null)) {
         return;
@@ -797,6 +818,11 @@
       form.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
 
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function () {
+        forceApplyDryRun();
+      });
+    }
     if (dryRunBtn) {
       dryRunBtn.addEventListener("click", runDryRunFromForm);
     }
@@ -813,7 +839,9 @@
             submitter.getAttribute("data-dry-run-submit") !== null ||
             submitter.getAttribute("data-dry-run-run") !== null);
         if (viaDryRunControl || current !== maxStep) {
-          setPlanSubmitMode(true);
+          forcePlanDryRun();
+        } else if (isApplySubmitter(submitter)) {
+          forceApplyDryRun();
         } else {
           setPlanSubmitMode(deliveryWantsPlan());
         }
@@ -1083,6 +1111,9 @@
             }
             form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
               radio.disabled = true;
+              if (radio.value === "true") {
+                radio.checked = true;
+              }
             });
           } else {
             if (dryForce) {
@@ -1094,6 +1125,9 @@
             }
             form.querySelectorAll('input[name="dry_run"][type="radio"]').forEach(function (radio) {
               radio.disabled = false;
+              if (radio.value === "false") {
+                radio.checked = true;
+              }
             });
           }
         },

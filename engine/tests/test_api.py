@@ -443,7 +443,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "form-layout--split" in response.text
     assert "form-panel--terraform" in response.text
     assert "Plan (validate only)" in response.text
-    assert "Apply to modules root" in response.text
+    assert "Apply (publish to GitHub)" in response.text
     assert "chip" in response.text
     assert "service-presets" in response.text
     assert "form-validation" in response.text
@@ -486,6 +486,7 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "Publishing to repository" in body
     assert "publish_finished" in body
     assert "publish_progress" in body
+    assert "forceApplyDryRun" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
@@ -677,7 +678,7 @@ def test_ansible_role_form_single_page(repo_root, output_config) -> None:
     assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "Apply to modules root" in response.text
+    assert "Apply (publish to GitHub)" in response.text
     assert "form-actions__delivery" in response.text
     assert "form-actions__toolbar" in response.text
     assert "governance-card__gates-details" not in response.text
