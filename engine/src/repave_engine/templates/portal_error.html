@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Action blocked — repave{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/">← Catalog</a></p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Could not complete request</h1>
+    <p class="page-lead">
+      The portal could not process this action. Details are below.
+    </p>
+  </div>
+</header>
+
+<section class="card">
+  <div class="card__body">
+    <div
+      class="alert alert--fail portal-error-message"
+      role="alert"
+      data-portal-error-message="{{ portal_error_message }}"
+    >
+      {{ portal_error_message }}
+    </div>
+    {% if portal_error_status == 401 %}
+    <p class="muted">Sign in with an account that has the required role, then try again.</p>
+    <p><a class="btn btn--primary" href="/auth/login?next={{ portal_back_href | urlencode }}">Sign in</a></p>
+    {% elif portal_error_status == 403 %}
+    <p class="muted">
+      Generation and apply require the <strong>generator</strong> or <strong>admin</strong> role.
+      Viewers can browse the catalog and library.
+    </p>
+    {% endif %}
+    <p class="form-actions">
+      <a class="btn btn--secondary" href="{{ portal_back_href }}">← Go back</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

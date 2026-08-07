@@ -246,6 +246,24 @@
               };
             });
           }
+          if (contentType.indexOf("text/html") !== -1) {
+            return response.text().then(function (html) {
+              var doc = new DOMParser().parseFromString(html, "text/html");
+              var node = doc.querySelector("[data-portal-error-message]");
+              if (node) {
+                throw {
+                  portalError: true,
+                  message:
+                    node.getAttribute("data-portal-error-message") ||
+                    node.textContent.trim(),
+                };
+              }
+              throw {
+                portalError: true,
+                message: formatPortalErrorDetail(null, response.status),
+              };
+            });
+          }
           return response.text().then(function (text) {
             throw {
               portalError: true,

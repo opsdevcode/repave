@@ -139,6 +139,13 @@ from repave_engine.portal_context import (
     portal_recent_activity,
     resolve_entity_docs,
 )
+from repave_engine.portal_errors import (
+    PORTAL_FORM_POST_PATHS,
+    format_portal_error_message,
+    portal_back_href,
+    portal_login_redirect,
+    wants_portal_html_response,
+)
 from repave_engine.portal_generate import (
     PortalGenerateRedirect,
     run_portal_generate,
@@ -361,6 +368,26 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             **extra,
         }
 
+    @app.exception_handler(HTTPException)
+    async def portal_http_exception_handler(request: Request, exc: HTTPException) -> Response:
+        if not wants_portal_html_response(request):
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+        if exc.status_code == 401:
+            return portal_login_redirect(request)
+        message = format_portal_error_message(status_code=exc.status_code, detail=exc.detail)
+        return templates.TemplateResponse(
+            request,
+            "portal_error.html",
+            page_context(
+                request,
+                nav_active="catalog",
+                portal_error_message=message,
+                portal_error_status=exc.status_code,
+                portal_back_href=portal_back_href(request),
+            ),
+            status_code=exc.status_code,
+        )
+
     def command_palette_items(request: Request | None = None) -> list[dict[str, str]]:
         items: list[dict[str, str]] = [
             {"kind": "nav", "label": "Catalog", "href": "/"},
@@ -429,14 +456,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             return await call_next(request)
         user = authenticated_user(request, auth_config)
         if user is None:
-            if request.method == "POST" and path in {
-                "/generate",
-                "/update",
-                "/verify",
-                "/api/v1/generate",
-                "/api/v1/verify",
-                "/api/v2/generate",
-            }:
+            if request.method == "POST" and path in PORTAL_FORM_POST_PATHS:
+                if wants_portal_html_response(request):
+                    return portal_login_redirect(request)
                 return JSONResponse(
                     status_code=401,
                     content={"detail": "Authentication required"},
