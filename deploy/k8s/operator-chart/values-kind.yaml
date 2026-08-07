@@ -9,7 +9,7 @@
 replicaCount: 1
 
 manager:
-  leaderElect: false
+  leaderElect: true
   metrics:
     enabled: false
 

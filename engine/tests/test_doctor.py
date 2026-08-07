@@ -6,7 +6,15 @@ from repave_engine.doctor import CORE_GATE_TOOLS, ToolCheckResult, check_tools, 
 
 
 def test_core_gate_tools_match_installer() -> None:
-    assert CORE_GATE_TOOLS == ("terraform", "tflint", "checkov", "conftest", "helm")
+    assert CORE_GATE_TOOLS == (
+        "terraform",
+        "tflint",
+        "checkov",
+        "conftest",
+        "helm",
+        "ansible-lint",
+        "infracost",
+    )
 
 
 def test_tools_for_helm_blueprint_includes_actionlint(repo_root) -> None:

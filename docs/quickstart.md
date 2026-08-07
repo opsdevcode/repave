@@ -62,7 +62,7 @@ calls and stakeholder-specific talking points, see [Sales demo runbook](sales-de
    [examples/policy](../examples/policy/README.md)).
 4. **Repave an existing repo:** **Update repo** → **Use terraform-minimal** →
    **Preview upgrade** → copy **Apply locally** or **Open remediation PR**.
-5. **Backstage (optional):** on the Terraform form, set **Include Backstage
+5. **Backstage (optional):** on the Terraform form, switch to **Advanced**, set **Include Backstage
    catalog** to `true` and **owner** `group:platform` → dry-run → open
    `catalog-info.yaml` in the file preview.
 

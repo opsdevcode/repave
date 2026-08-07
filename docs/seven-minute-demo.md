@@ -83,9 +83,11 @@ Full policy family walkthrough: [policy-golden-paths-demo.md](policy-golden-path
 
 1. Open **terraform-module-generic** again.
 2. Fill Identity + Services as in act 2.
-3. On the form (Delivery step or governance section): **Include Backstage catalog**
-   → `true`, **owner** → `group:platform` (optional **system** / lifecycle).
-4. **Dry run preview** → in **Generated files**, open **`catalog-info.yaml`**.
+3. Switch the form to **Advanced** (top of the stepper) — Backstage and policy-pack
+   fields are advanced-only on Terraform blueprints.
+4. Set **Include Backstage catalog** → `true`, **owner** → `group:platform`
+   (optional **system** / lifecycle).
+5. **Dry run preview** → in **Generated files**, open **`catalog-info.yaml`**.
 
 **Say:** “Same paved road emits catalog metadata for Backstage — one generate, multiple IDP surfaces.”
 
@@ -96,6 +98,7 @@ Full policy family walkthrough: [policy-golden-paths-demo.md](policy-golden-path
 | Symptom | Fix |
 | --- | --- |
 | No **Dry run preview** button | Hard refresh; confirm `data-dry-run-run` in page source; restart compose / `make serve` on current `main`. |
+| **Backstage** fields missing on Terraform form | Switch to **Advanced** at the top of the form (v1.88 Guided/Advanced). |
 | **Scaffold** hidden, can't submit | Stepper CSS/JS mismatch — same as above. |
 | Gates all skip | Docker image missing terraform/checkov; use `docker compose up --build`. |
 | OPA act inconclusive | Host needs `conftest` for real OPA gate; engine skips with message if missing. |

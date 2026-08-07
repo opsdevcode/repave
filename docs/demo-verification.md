@@ -6,6 +6,8 @@ and the [Sales demo runbook](sales-demo.md).
 
 **Last verified on `main`:** 2026-07-27 (engine v2.33.0, terraform-module-generic v0.12.0).
 
+Hosted EKS path: [hosted-demo.md](hosted-demo.md).
+
 ---
 
 ## Portal smoke (acts 1–6)
@@ -20,7 +22,7 @@ Manual pass (≈7 minutes) — detail in [seven-minute-demo.md](seven-minute-dem
    Optional (when `durability.async_generation` or `REPAVE_ASYNC_GENERATION=true`): enable **Live run console** on the form and confirm `/runs/{id}` streams gate rows before the full result.
 4. **Act 4 — Update repo:** **Use terraform-minimal** → **Preview upgrade**.
 5. **Act 5 — OPA block:** **opa-policy-generic**, **plan demo** `destructive_delete` → dry-run → publish blocked.
-6. **Act 6 — Backstage:** Terraform form, **Include Backstage catalog** `true`, **owner** `group:platform` → dry-run → **`catalog-info.yaml`** in preview.
+6. **Act 6 — Backstage:** Terraform form → **Advanced** → **Include Backstage catalog** `true`, **owner** `group:platform` → dry-run → **`catalog-info.yaml`** in preview.
 
 **Policy family (optional add-on):** [policy-golden-paths-demo.md](policy-golden-paths-demo.md) — Checkov, OPA (`destructive_delete`), Azure samples; `pytest tests/test_policy_golden_paths.py`.
 

@@ -201,6 +201,20 @@ app.kubernetes.io/component: portal
 {{- end }}
 {{- end }}
 
+{{- define "repave.databaseUrlEnv" -}}
+{{- $secret := .Values.repave.durability.databaseUrlSecret -}}
+{{- if and $secret.name $secret.key }}
+- name: REPAVE_DATABASE_URL
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secret.name | quote }}
+      key: {{ $secret.key | quote }}
+{{- else if .Values.repave.durability.databaseUrl }}
+- name: REPAVE_DATABASE_URL
+  value: {{ .Values.repave.durability.databaseUrl | quote }}
+{{- end }}
+{{- end }}
+
 {{- define "repave.secretName" -}}
 {{- if .Values.secrets.existingSecret }}
 {{- .Values.secrets.existingSecret }}

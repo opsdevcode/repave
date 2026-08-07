@@ -66,6 +66,16 @@ if ! grep -q '\-\-leader-elect=true' "${rendered}"; then
   exit 1
 fi
 
+if ! grep -q 'kind: Role' "${rendered}" || ! grep -q 'leader-election' "${rendered}"; then
+  echo "default render must include leader-election Role when leader election is enabled" >&2
+  exit 1
+fi
+
+if ! grep -q 'coordination.k8s.io' "${rendered}"; then
+  echo "leader-election Role must grant coordination.k8s.io/leases" >&2
+  exit 1
+fi
+
 helm template repave-operator-day2 "${CHART}" \
   --namespace repave-system \
   -f "${CHART}/values-day2.yaml" \
@@ -97,8 +107,13 @@ helm template repave-operator-kind "${CHART}" \
   --set image.tag=dev \
   >"${kind_rendered}"
 
-if ! grep -q '\-\-leader-elect=false' "${kind_rendered}"; then
-  echo "values-kind.yaml must disable leader election" >&2
+if ! grep -q '\-\-leader-elect=true' "${kind_rendered}"; then
+  echo "values-kind.yaml must enable leader election (matches production default)" >&2
+  exit 1
+fi
+
+if ! grep -q 'kind: Role' "${kind_rendered}" || ! grep -q 'leader-election' "${kind_rendered}"; then
+  echo "values-kind.yaml must render leader-election Role" >&2
   exit 1
 fi
 

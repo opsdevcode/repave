@@ -134,6 +134,10 @@ repave:
     runsDb: /data/runs/runs.sqlite
     requireSessionSecret: false
     databaseUrl: ""
+    # Prefer secretKeyRef in production (EKS). When set, takes precedence over databaseUrl.
+    databaseUrlSecret:
+      name: ""
+      key: database-url
     exportJsonl: true
     workerMode: inline
     # inline | external (Deployment poll) | job (one Kubernetes Job per run)
