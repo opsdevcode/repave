@@ -35,7 +35,13 @@ Environment overrides: `REPAVE_SERVICE_MODE`, `REPAVE_SESSION_SECRET`,
 
 ## Roles
 
-| Role | Portal / API |
+Until **Auth0 FGA** (or another resource-level model) ships, hosted portals default to
+**login-only** access: any user who completes OIDC sign-in receives `admin` in the
+repave session (`auth.coarse_rbac_enabled: false`). Set `coarse_rbac_enabled: true`
+(or Helm `repave.auth.coarseRbacEnabled: true`) to restore group-based
+`viewer` / `generator` / `admin` mapping from the IdP.
+
+| Role | Portal / API (when `coarse_rbac_enabled: true`) |
 | --- | --- |
 | `viewer` | Read catalog and forms (default when no group match) |
 | `generator` | Dry-run/publish generate, update preview, `POST /api/v1/generate` |

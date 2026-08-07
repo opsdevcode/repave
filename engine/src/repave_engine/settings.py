@@ -1102,6 +1102,10 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
     if isinstance(block, dict) and "session_https_only" in block:
         session_https_only = bool(block.get("session_https_only"))
 
+    coarse_rbac_enabled = False
+    if isinstance(block, dict):
+        coarse_rbac_enabled = bool(block.get("coarse_rbac_enabled", False))
+
     if service_enabled and not all((issuer, client_id, client_secret, redirect_uri)):
         raise ValueError(
             "auth.service_mode requires oidc issuer, client_id, client_secret, and redirect_uri"
@@ -1122,6 +1126,7 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
             generator_groups=_groups("generator"),
             session_https_only=session_https_only,
             oidc_logout_return_to=logout_return_to,
+            coarse_rbac_enabled=coarse_rbac_enabled,
         )
 
     return AuthConfig(
@@ -1138,6 +1143,7 @@ def load_auth_config(repo_root: Path) -> AuthConfig | None:
         generator_groups=_groups("generator"),
         session_https_only=session_https_only,
         oidc_logout_return_to=logout_return_to,
+        coarse_rbac_enabled=coarse_rbac_enabled,
     )
 
 

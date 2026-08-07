@@ -155,6 +155,8 @@ repave:
     artifactStoreUri: ""
   auth:
     serviceMode: false
+    # When false (default), any successful OIDC login gets full portal access until FGA.
+    coarseRbacEnabled: false
     # Secure session cookies (Secure flag). Default true when serviceMode is enabled in app.
     sessionHttpsOnly: true
     oidc:

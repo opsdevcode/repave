@@ -14,7 +14,7 @@ EKS, RDS, ingress, and Helm desired state.
 ## Before the meeting
 
 1. Confirm portal health: `curl -fsS https://repave.opsdevco.de/health`
-2. Log in with an Auth0 user that has **`repave-generators`** (or **`repave-admins`**) role.
+2. Log in with any Auth0 user allowed on the application (coarse RBAC is off until FGA).
 3. Confirm `/readyz` from inside the cluster (maintainers): `kubectl exec -n repave deploy/repave -- curl -s localhost:8088/readyz`
 4. Run operator smoke if demoing drift: `kubectl get goldenpathrepo -A`
 5. Optional automated portal acts (local): `cd engine && uv run pytest tests/test_demo_acts.py -v`

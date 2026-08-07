@@ -8,6 +8,7 @@ import pytest
 from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
+    ROLE_VIEWER,
     AuthConfig,
     build_idp_logout_url,
     groups_from_claims,
@@ -23,6 +24,7 @@ def _auth_config(
     groups_claim: str = "groups",
     oidc_logout_return_to: str = "",
     session_https_only: bool = True,
+    coarse_rbac_enabled: bool = False,
 ) -> AuthConfig:
     return AuthConfig(
         service_enabled=True,
@@ -38,6 +40,7 @@ def _auth_config(
         generator_groups=frozenset({"repave-generators"}),
         session_https_only=session_https_only,
         oidc_logout_return_to=oidc_logout_return_to,
+        coarse_rbac_enabled=coarse_rbac_enabled,
     )
 
 
@@ -176,6 +179,21 @@ def test_merge_oidc_user_claims_prefers_userinfo_when_present() -> None:
         groups_claim="groups",
     )
     assert groups_from_claims(merged, "groups") == ["repave-admins"]
+
+
+def test_session_role_from_oidc_groups_grants_admin_when_coarse_rbac_disabled() -> None:
+    from repave_engine.auth import session_role_from_oidc_groups
+
+    config = _auth_config(coarse_rbac_enabled=False)
+    assert session_role_from_oidc_groups([], config) == ROLE_ADMIN
+
+
+def test_session_role_from_oidc_groups_honors_groups_when_coarse_rbac_enabled() -> None:
+    from repave_engine.auth import session_role_from_oidc_groups
+
+    config = _auth_config(coarse_rbac_enabled=True)
+    assert session_role_from_oidc_groups([], config) == ROLE_VIEWER
+    assert session_role_from_oidc_groups(["repave-generators"], config) == ROLE_GENERATOR
 
 
 def test_logout_return_to_derives_from_redirect_uri() -> None:

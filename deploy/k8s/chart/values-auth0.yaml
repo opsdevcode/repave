@@ -17,6 +17,8 @@ repave:
   auth:
     serviceMode: true
     sessionHttpsOnly: true
+    # Login-only gate until FGA; set true to enforce repave-admins/repave-generators roles.
+    coarseRbacEnabled: false
     oidc:
       issuer: https://YOUR_TENANT.us.auth0.com/
       clientId: YOUR_AUTH0_CLIENT_ID
