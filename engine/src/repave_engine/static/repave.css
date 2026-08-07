@@ -3299,6 +3299,30 @@ details.file-panel summary {
   border-bottom: none;
 }
 
+.activity-list__primary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.activity-list__artifact {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.activity-list__artifact-name {
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.activity-list__pin {
+  font-size: var(--text-xs);
+}
+
 .activity-list__meta {
   display: flex;
   flex-wrap: wrap;

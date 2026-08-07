@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.audit import AuditRecord, append_audit_record
+from repave_engine.audit_history import initial_artifact_version_for_audit
 from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import (
     Blueprint,
@@ -153,7 +154,10 @@ def _record_operability(
         audit_cfg = None
     if audit_cfg is None or not audit_cfg.enabled:
         return
-    extra: dict[str, Any] = {"duration_seconds": round(elapsed, 3)}
+    extra: dict[str, Any] = {
+        "duration_seconds": round(elapsed, 3),
+        "artifact_version": initial_artifact_version_for_audit(),
+    }
     extra.update(audit_extra_for_cost_estimate(cost_estimate_from_gates(gates)))
     append_audit_record(
         audit_cfg.file,

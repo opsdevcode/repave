@@ -40,6 +40,7 @@ from repave_engine.api_ops import build_ops_router
 from repave_engine.api_v1 import build_api_v1_router
 from repave_engine.api_v2 import build_api_v2_router
 from repave_engine.audit_history import (
+    HOME_ACTIVITY_LIMIT,
     AuditHistoryEntry,
     AuditQueryFilters,
     audit_filters_from_mapping,
@@ -528,7 +529,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 catalog_groups=catalog_groups,
                 catalog_bundles=catalog_bundles,
                 nav_active="catalog",
-                recent_activity=portal_recent_activity(repo_root),
+                recent_activity=portal_recent_activity(repo_root, limit=HOME_ACTIVITY_LIMIT),
             ),
         )
 

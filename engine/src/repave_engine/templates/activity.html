@@ -8,9 +8,9 @@
 <p class="breadcrumb"><a href="/">← Catalog</a></p>
 <header class="form-hero">
   <div>
-    <h1 class="page-title">Generation activity</h1>
+    <h1 class="page-title">Activity</h1>
     <p class="page-lead">
-      Recent runs from the audit log when <code>audit.enabled</code> is set in config.
+      Applies, plans, and imports recorded when <code>audit.enabled</code> is set in config.
     </p>
   </div>
 </header>
@@ -61,7 +61,7 @@
   {% if recent_activity %}
 <section class="card activity-card" aria-labelledby="activity-full-heading">
   <div class="card__header">
-    <h2 id="activity-full-heading">Recent generations</h2>
+    <h2 id="activity-full-heading">Audit log</h2>
     <p class="muted card__subtitle">
       Newest first · {{ activity_total }} matching · showing up to {{ activity_limit }} rows
     </p>

@@ -164,7 +164,12 @@
       <ul class="activity-list activity-list--compact">
         {% for row in recent_activity[:5] %}
         <li class="activity-list__item">
-          <a href="/blueprints/{{ row.blueprint_name }}"><code>{{ row.blueprint_name }}</code></a>
+          <a class="activity-list__artifact" href="{{ row.activity_href() }}">
+            <span class="activity-list__artifact-name">{{ row.activity_artifact_name() }}</span>
+            {% if row.activity_version_label() %}
+            <span class="badge badge--muted">{{ row.activity_version_label() }}</span>
+            {% endif %}
+          </a>
           <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
             {{ row.gates_outcome }}
           </span>
