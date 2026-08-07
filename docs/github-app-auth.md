@@ -13,8 +13,14 @@ instead of a long-lived personal access token (PAT).
 | `GITHUB_APP_PRIVATE_KEY` | PEM private key (`\\n` escapes allowed inline) |
 | `GITHUB_APP_PRIVATE_KEY_FILE` | Path to PEM file (alternative to inline key) |
 | `REPAVE_GITHUB_RATE_LIMIT_MIN_REMAINING` | Proactive REST backoff threshold (default `50`; matches engine) |
+| `REPAVE_PREFER_GITHUB_APP` | When `1`/`true`, use installation tokens even if `GITHUB_TOKEN` is set (Helm: `repave.github.preferApp`) |
+| `REPAVE_SKIP_GITHUB_APP_PERMISSION_CHECK` | Skip contents:write validation on minted tokens (tests only) |
 
-**Precedence:** explicit CLI/API token → `GITHUB_TOKEN` → minted installation token.
+**Precedence:** explicit CLI/API token → `GITHUB_TOKEN` (classic `ghp_` PAT) → minted installation token.
+
+When a GitHub App is configured, **OAuth user tokens** (`gho_…` in `GITHUB_TOKEN`) are ignored automatically — they cannot push to org repos via git. Hosted charts set `repave.github.preferApp: true` so pods never mount `github-token` and always mint installation tokens.
+
+On mint, the engine verifies the installation token includes **`contents: write`** and fails fast with a message naming the App permission to fix.
 
 Installation tokens are cached in-process and refreshed before expiry.
 
@@ -42,6 +48,9 @@ When `secrets.create: true`, optional keys are written alongside `github-token`:
 - `github-app-private-key`
 
 Values: `secrets.githubAppId`, `secrets.githubAppInstallationId`, `secrets.githubAppPrivateKey`.
+
+Hosted production: set `repave.github.preferApp: true` (portal and operator charts) so Deployments
+omit `GITHUB_TOKEN` and set `REPAVE_PREFER_GITHUB_APP=1`.
 
 Portal, worker, and per-run Job pods receive the corresponding `GITHUB_APP_*` env vars.
 

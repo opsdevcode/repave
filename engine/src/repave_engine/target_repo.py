@@ -133,9 +133,20 @@ def _git_executable() -> str:
     return git
 
 
+def _redact_git_credentials(text: str) -> str:
+    return re.sub(r"x-access-token:[^@\s]+", "x-access-token:***", text)
+
+
 def _run_git(args: list[str], *, cwd: Path) -> None:
+    cmd = [_git_executable(), *args]
     try:
-        run_subprocess([_git_executable(), *args], cwd=cwd, check=True, git=True)
+        run_subprocess(cmd, cwd=cwd, check=True, git=True)
+    except subprocess.CalledProcessError as exc:
+        detail = _redact_git_credentials((exc.stderr or exc.stdout or "").strip())
+        message = f"git {' '.join(args)} failed (exit {exc.returncode})"
+        if detail:
+            message = f"{message}: {detail}"
+        raise RuntimeError(message) from exc
     except subprocess.TimeoutExpired as exc:
         raise git_subprocess_error(args, exc) from exc
 

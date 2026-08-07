@@ -56,6 +56,89 @@ def test_pat_precedence_over_app(monkeypatch: pytest.MonkeyPatch) -> None:
     assert resolve_github_access_token() == "ghp_pat"
 
 
+def test_oauth_pat_ignored_when_github_app_configured(monkeypatch: pytest.MonkeyPatch) -> None:
+    pem = _test_private_key_pem()
+    monkeypatch.setenv("GITHUB_TOKEN", "gho_oauth_user")
+    monkeypatch.setenv("GITHUB_APP_ID", "42")
+    monkeypatch.setenv("GITHUB_APP_INSTALLATION_ID", "99")
+    monkeypatch.setenv("GITHUB_APP_PRIVATE_KEY", pem)
+    expires = (
+        (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    )
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            201,
+            json={
+                "token": "ghs_installation",
+                "expires_at": expires,
+                "permissions": {"contents": "write"},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "repave_engine.github_auth.httpx.post",
+        lambda url, **kwargs: httpx.Client(transport=transport).post(url, **kwargs),
+    )
+
+    assert resolve_github_access_token() == "ghs_installation"
+
+
+def test_prefer_github_app_env_over_pat(monkeypatch: pytest.MonkeyPatch) -> None:
+    pem = _test_private_key_pem()
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_pat")
+    monkeypatch.setenv("REPAVE_PREFER_GITHUB_APP", "1")
+    monkeypatch.setenv("GITHUB_APP_ID", "42")
+    monkeypatch.setenv("GITHUB_APP_INSTALLATION_ID", "99")
+    monkeypatch.setenv("GITHUB_APP_PRIVATE_KEY", pem)
+    expires = (
+        (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    )
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            201,
+            json={
+                "token": "ghs_installation",
+                "expires_at": expires,
+                "permissions": {"contents": "write"},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "repave_engine.github_auth.httpx.post",
+        lambda url, **kwargs: httpx.Client(transport=transport).post(url, **kwargs),
+    )
+
+    assert resolve_github_access_token() == "ghs_installation"
+
+
+def test_fetch_installation_token_requires_contents_write(monkeypatch: pytest.MonkeyPatch) -> None:
+    pem = _test_private_key_pem()
+    config = GitHubAppConfig(app_id="42", installation_id="99", private_key_pem=pem)
+
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            201,
+            json={
+                "token": "ghs_installation",
+                "expires_at": "2030-01-01T00:00:00Z",
+                "permissions": {"contents": "read"},
+            },
+        )
+
+    transport = httpx.MockTransport(handler)
+    monkeypatch.setattr(
+        "repave_engine.github_auth.httpx.post",
+        lambda url, **kwargs: httpx.Client(transport=transport).post(url, **kwargs),
+    )
+
+    with pytest.raises(ValueError, match="contents: write"):
+        fetch_installation_token(config)
+
+
 def test_explicit_token_precedence(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "ghp_pat")
     assert resolve_github_access_token("ghp_explicit") == "ghp_explicit"
@@ -84,7 +167,14 @@ def test_fetch_installation_token_uses_cache(monkeypatch: pytest.MonkeyPatch) ->
         expires = (
             (datetime.now(tz=timezone.utc) + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
         )
-        return httpx.Response(201, json={"token": "ghs_installation", "expires_at": expires})
+        return httpx.Response(
+            201,
+            json={
+                "token": "ghs_installation",
+                "expires_at": expires,
+                "permissions": {"contents": "write", "metadata": "read"},
+            },
+        )
 
     transport = httpx.MockTransport(handler)
     monkeypatch.setattr(

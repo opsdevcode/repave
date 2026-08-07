@@ -99,6 +99,9 @@ repave:
     githubOrg: your-github-org
     modulesRoot: /data/modules
     repoNameTemplate: "tf-{module_name}"
+  # Hosted: prefer GitHub App installation tokens over legacy github-token in the Secret.
+  github:
+    preferApp: false
   portal:
     density: default
   gates:
