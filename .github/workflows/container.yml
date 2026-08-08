@@ -26,53 +26,54 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Job-level `if:` cannot reference matrix (GitHub rejects the workflow).
+  # Shape the include list here so workflow_dispatch can target one image.
+  matrix:
+    name: Compute image matrix
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.build.outputs.include }}
+    steps:
+      - id: build
+        env:
+          EVENT: ${{ github.event_name }}
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          set -euo pipefail
+          full='[
+            {"key":"engine","name":"repave-engine","ghcr_image":"opsdevcode/repave-engine","image":"ghcr.io/opsdevcode/repave-engine","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=1\nINCLUDE_CORPUS=0","description":"Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app)."},
+            {"key":"portal","name":"repave-engine-portal","ghcr_image":"opsdevcode/repave-engine-portal","image":"ghcr.io/opsdevcode/repave-engine-portal","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=0\nINCLUDE_CORPUS=0","description":"Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app)."},
+            {"key":"corpus","name":"repave-corpus","ghcr_image":"opsdevcode/repave-corpus","image":"ghcr.io/opsdevcode/repave-corpus","context":".","file":"deploy/local/Dockerfile.corpus","build_args":"","description":"Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts."},
+            {"key":"operator","name":"repave-operator","ghcr_image":"opsdevcode/repave-operator","image":"ghcr.io/opsdevcode/repave-operator","context":"operator","file":"Dockerfile","build_args":"","description":"Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests."}
+          ]'
+          if [[ "$EVENT" == "workflow_dispatch" ]]; then
+            target="${TARGET:-all}"
+          else
+            target="all"
+          fi
+          if [[ "$target" == "all" ]]; then
+            include="$full"
+          else
+            include=$(echo "$full" | jq -c --arg key "$target" '[.[] | select(.key == $key)]')
+            if [[ "$(echo "$include" | jq 'length')" -eq 0 ]]; then
+              echo "unknown workflow_dispatch target: $target" >&2
+              exit 1
+            fi
+          fi
+          {
+            echo "include<<EOF"
+            echo "$include"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
   publish:
     name: ${{ matrix.name }}
+    needs: matrix
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - key: engine
-            name: repave-engine
-            ghcr_image: opsdevcode/repave-engine
-            image: ghcr.io/opsdevcode/repave-engine
-            context: .
-            file: deploy/local/Dockerfile
-            build_args: |
-              INSTALL_GATE_TOOLCHAIN=1
-              INCLUDE_CORPUS=0
-            description: Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app).
-          - key: portal
-            name: repave-engine-portal
-            ghcr_image: opsdevcode/repave-engine-portal
-            image: ghcr.io/opsdevcode/repave-engine-portal
-            context: .
-            file: deploy/local/Dockerfile
-            build_args: |
-              INSTALL_GATE_TOOLCHAIN=0
-              INCLUDE_CORPUS=0
-            description: Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app).
-          - key: corpus
-            name: repave-corpus
-            ghcr_image: opsdevcode/repave-corpus
-            image: ghcr.io/opsdevcode/repave-corpus
-            context: .
-            file: deploy/local/Dockerfile.corpus
-            build_args: ""
-            description: Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts.
-          - key: operator
-            name: repave-operator
-            ghcr_image: opsdevcode/repave-operator
-            image: ghcr.io/opsdevcode/repave-operator
-            context: operator
-            file: Dockerfile
-            build_args: ""
-            description: Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests.
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.target == 'all' ||
-      github.event.inputs.target == matrix.key
+        include: ${{ fromJson(needs.matrix.outputs.include) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
