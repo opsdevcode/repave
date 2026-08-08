@@ -44,7 +44,7 @@ jobs:
             {"key":"engine","name":"repave-engine","ghcr_image":"opsdevcode/repave-engine","image":"ghcr.io/opsdevcode/repave-engine","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=1\nINCLUDE_CORPUS=0","description":"Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app)."},
             {"key":"portal","name":"repave-engine-portal","ghcr_image":"opsdevcode/repave-engine-portal","image":"ghcr.io/opsdevcode/repave-engine-portal","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=0\nINCLUDE_CORPUS=0","description":"Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app)."},
             {"key":"corpus","name":"repave-corpus","ghcr_image":"opsdevcode/repave-corpus","image":"ghcr.io/opsdevcode/repave-corpus","context":".","file":"deploy/local/Dockerfile.corpus","build_args":"","description":"Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts."},
-            {"key":"operator","name":"repave-operator","ghcr_image":"opsdevcode/repave-operator","image":"ghcr.io/opsdevcode/repave-operator","context":"operator","file":"Dockerfile","build_args":"","description":"Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests."}
+            {"key":"operator","name":"repave-operator","ghcr_image":"opsdevcode/repave-operator","image":"ghcr.io/opsdevcode/repave-operator","context":"operator","file":"operator/Dockerfile","build_args":"","description":"Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests."}
           ]'
           if [[ "$EVENT" == "workflow_dispatch" ]]; then
             target="${TARGET:-all}"
@@ -112,7 +112,8 @@ jobs:
           GHCR_USER: ${{ github.repository_owner }}
         run: |
           chmod +x deploy/k8s/hack/verify-ghcr-tag.sh
-          ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${{ github.sha }}"
+          SHA_SHORT="${GITHUB_SHA::7}"
+          ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${SHA_SHORT}"
           if [[ "${{ github.ref }}" == refs/heads/main ]]; then
             ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "main"
           fi
