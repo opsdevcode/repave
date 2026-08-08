@@ -1625,7 +1625,7 @@ wheels = [
 
 [[package]]
 name = "repave-engine"
-version = "2.37.1"
+version = "2.37.2"
 source = { editable = "." }
 dependencies = [
     { name = "copier" },
