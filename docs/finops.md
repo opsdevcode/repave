@@ -22,7 +22,7 @@ Community anchors:
 | `gates.infracost.max_monthly_usd` | Org default monthly cap; blueprint `gate_config` can tighten |
 | Audit `extra` + PR evidence | Estimate summary on generation/import audit and PR checklist |
 | Upgrade / import cost delta | Preview delta vs prior `.repave/cost-estimate.json` when present |
-| `portal.cost_reader` (`url` / `aws` / `azure` / `k8s`) | Read-only L30D actuals for catalog entities |
+| `portal.cost_reader` (`url` / `aws` / `azure` / `k8s` / `focus`) | Read-only L30D actuals for catalog entities |
 | Library badges + Cloud spend scorecard | Showback signal on `/library` and entity detail |
 | Cost snapshot trends + budgets (v1.92) | Library sparklines, entity budget vs actual, `/platform/finops` rollup |
 | State graph blast-radius cost join | Join Infracost breakdown to graph resources |
@@ -137,20 +137,39 @@ Per-entity budget can also come from `repave.dev/monthly-budget-usd` on `catalog
 
 ## Thin FOCUS ingest (v1.93)
 
-Repave will accept FOCUS-shaped data produced **elsewhere** (cloud FOCUS export or
-[FOCUS converters](https://github.com/finopsfoundation/focus_converters)). It will not retain
+Repave accepts FOCUS-shaped data produced **elsewhere** (cloud FOCUS export or
+[FOCUS converters](https://github.com/finopsfoundation/focus_converters)). It does not retain
 multi-year CUR or run full FOCUS ETL.
 
-**Planned supported column subset** (exact list lands with v1.93 tests):
+```yaml
+portal:
+  cost_reader: focus
+  cost_focus:
+    file: data/focus/export.json   # or https://billing.example/focus.jsonl
+    lookback_days: 30
+    tag_key_owner: Owner
+    tag_key_service: Service
+```
+
+Env override: `REPAVE_COST_FOCUS_FILE` (path or HTTPS URL).
+
+**Supported formats:** JSON array, JSON object with `rows`/`data`/`records`, or JSONL.
+Parquet is not read in-process — convert to JSON/JSONL upstream.
+
+**Supported column subset** (case-insensitive; extra columns ignored):
 
 | FOCUS column | Use |
 | --- | --- |
-| `BilledCost` | Amount |
-| `BillingPeriodStart` / `ChargePeriodStart` | Period / as-of |
-| `ServiceName` | Service dimension |
-| `Tags` (or resource tags) | Map to owner / service allocation |
+| `BilledCost` | Amount summed per entity |
+| `BillingCurrency` | Currency (default `USD`) |
+| `ChargePeriodStart` / `BillingPeriodStart` | Lookback window filter |
+| `ChargePeriodEnd` / `BillingPeriodEnd` | `as_of` timestamp |
+| `ServiceName` | Service dimension fallback when service tag absent |
+| `Tags` | Map or key/value list → owner / service allocation |
 
-Currency and `BillingCurrency` handling follow the same rules as other cost readers.
+Rows match catalog entities using the same allocation rules as AWS/Azure readers
+(`portal.cost_allocation.tag_keys` / `cost_focus.tag_key_*`). L30D actuals feed library
+badges, entity detail, and `/platform/finops` rollup.
 
 ## Explicit non-goals
 

@@ -1,0 +1,46 @@
+[
+  {
+    "BilledCost": "80.00",
+    "BillingCurrency": "USD",
+    "ChargePeriodStart": "2026-07-15T00:00:00Z",
+    "ChargePeriodEnd": "2026-07-16T00:00:00Z",
+    "ServiceName": "Amazon Elastic Compute Cloud",
+    "Tags": {
+      "Owner": "platform",
+      "Service": "tf-vpc"
+    }
+  },
+  {
+    "BilledCost": "45.50",
+    "BillingCurrency": "USD",
+    "ChargePeriodStart": "2026-07-20T00:00:00Z",
+    "ChargePeriodEnd": "2026-07-21T00:00:00Z",
+    "ServiceName": "Amazon Elastic Compute Cloud",
+    "Tags": {
+      "Owner": "platform",
+      "Service": "tf-vpc"
+    }
+  },
+  {
+    "BilledCost": "200.00",
+    "BillingCurrency": "USD",
+    "ChargePeriodStart": "2026-07-18T00:00:00Z",
+    "ChargePeriodEnd": "2026-07-19T00:00:00Z",
+    "ServiceName": "Azure Kubernetes Service",
+    "Tags": {
+      "Owner": "payments",
+      "Service": "checkout-api"
+    }
+  },
+  {
+    "BilledCost": "12.00",
+    "BillingCurrency": "USD",
+    "ChargePeriodStart": "2026-01-01T00:00:00Z",
+    "ChargePeriodEnd": "2026-01-02T00:00:00Z",
+    "ServiceName": "Amazon Elastic Compute Cloud",
+    "Tags": {
+      "Owner": "platform",
+      "Service": "tf-vpc"
+    }
+  }
+]

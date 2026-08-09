@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal, Protocol
 
 import httpx
@@ -131,27 +132,46 @@ def fetch_entity_cost_actuals(
     return parse_cost_actuals_payload(payload, source_url=url, tag_coverage=coverage)
 
 
-CostReader = Literal["url", "aws", "azure", "k8s"]
+CostReader = Literal["url", "aws", "azure", "k8s", "focus"]
 
 
-def resolve_cost_reader(*, cost_reader: str, cost_actuals_url: str) -> CostReader | None:
+def resolve_cost_reader(
+    *,
+    cost_reader: str,
+    cost_actuals_url: str,
+    cost_focus_file: str = "",
+) -> CostReader | None:
     explicit = cost_reader.strip().lower()
-    if explicit in ("url", "aws", "azure", "k8s"):
+    if explicit in ("url", "aws", "azure", "k8s", "focus"):
+        if explicit == "focus" and not cost_focus_file.strip():
+            return None
         return explicit  # type: ignore[return-value]
     if cost_actuals_url.strip():
         return "url"
     return None
 
 
-def cost_reader_configured(*, cost_reader: str, cost_actuals_url: str) -> bool:
+def cost_reader_configured(
+    *,
+    cost_reader: str,
+    cost_actuals_url: str,
+    cost_focus_file: str = "",
+) -> bool:
     return (
-        resolve_cost_reader(cost_reader=cost_reader, cost_actuals_url=cost_actuals_url) is not None
+        resolve_cost_reader(
+            cost_reader=cost_reader,
+            cost_actuals_url=cost_actuals_url,
+            cost_focus_file=cost_focus_file,
+        )
+        is not None
     )
 
 
 def fetch_entity_cost_actuals_for_portal(
     portal_config: object,
     entity: CostEntity,
+    *,
+    repo_root: Path | None = None,
 ) -> CostActualsSummary | None:
     """Dispatch to URL, AWS, or Azure cost reader based on portal config."""
     from repave_engine.settings import PortalConfig
@@ -161,6 +181,7 @@ def fetch_entity_cost_actuals_for_portal(
     reader = resolve_cost_reader(
         cost_reader=portal_config.cost_reader,
         cost_actuals_url=portal_config.cost_actuals_url,
+        cost_focus_file=portal_config.cost_focus.file,
     )
     if reader is None:
         return None
@@ -174,6 +195,14 @@ def fetch_entity_cost_actuals_for_portal(
         from repave_engine.cost_actuals_azure import fetch_entity_cost_actuals_azure
 
         return fetch_entity_cost_actuals_azure(portal_config.cost_azure, entity)
+    if reader == "focus":
+        from repave_engine.cost_actuals_focus import fetch_entity_cost_actuals_focus
+
+        return fetch_entity_cost_actuals_focus(
+            portal_config.cost_focus,
+            entity,
+            repo_root=repo_root,
+        )
     from repave_engine.cost_actuals_k8s import fetch_entity_cost_actuals_k8s
 
     return fetch_entity_cost_actuals_k8s(portal_config.cost_k8s, entity)
