@@ -1548,7 +1548,13 @@
 
     var isLivePlan = root.getAttribute("data-live-plan") === "1";
     var isEnvironmentVend = root.getAttribute("data-environment-vend") === "1";
-    var isPipelineRun = !isLivePlan && !isEnvironmentVend;
+    var isFleetDriftConfirm = root.getAttribute("data-fleet-drift-confirm") === "1";
+    var isEnvironmentReclaim = root.getAttribute("data-environment-reclaim") === "1";
+    var isPipelineRun =
+      !isLivePlan &&
+      !isEnvironmentVend &&
+      !isFleetDriftConfirm &&
+      !isEnvironmentReclaim;
     var isDryRun = root.getAttribute("data-dry-run") === "true";
     var outcomeStatus = root.querySelector("[data-run-outcome-status]");
     var publishErrorEl = root.querySelector("[data-run-publish-error]");
@@ -1556,6 +1562,8 @@
     var publishChip = root.querySelector("[data-publish-chip]");
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
     var vendStages = isEnvironmentVend ? ["validate", "render", "gates", "gitops"] : [];
+    var fleetDriftStages = isFleetDriftConfirm ? ["verify"] : [];
+    var reclaimStages = isEnvironmentReclaim ? ["reclaim"] : [];
     var pipelineStages = isPipelineRun ? ["validate", "render", "gates", "publish"] : [];
     var livePlanStageLabels = {
       checkout: "Checkout target",
@@ -1573,6 +1581,12 @@
       render: "Rendering templates",
       gates: "Running gates",
       publish: isDryRun ? "Previewing publish target" : "Publishing to repository",
+    };
+    var fleetDriftStageLabels = {
+      verify: "Verifying repository pins",
+    };
+    var reclaimStageLabels = {
+      reclaim: "Reclaiming expired stacks",
     };
     var runComplete = false;
     var progressRegion = root.querySelector("[data-run-progress]");
@@ -1601,7 +1615,11 @@
         ? pipelineStages
         : isEnvironmentVend
           ? vendStages
-          : livePlanStages;
+          : isFleetDriftConfirm
+            ? fleetDriftStages
+            : isEnvironmentReclaim
+              ? reclaimStages
+              : livePlanStages;
       if (!stages.length) {
         return;
       }
@@ -1704,7 +1722,7 @@
         }
         return isDryRun ? "Publish preview complete." : "Publish complete.";
       }
-      var label = pipelineStageLabels[stage] || vendStageLabels[stage] || livePlanStageLabels[stage];
+      var label = pipelineStageLabels[stage] || vendStageLabels[stage] || livePlanStageLabels[stage] || fleetDriftStageLabels[stage] || reclaimStageLabels[stage];
       if (label) {
         return started ? label + "…" : label + " complete.";
       }
@@ -1756,6 +1774,40 @@
             progressLabel.textContent = "Environment vend complete";
           } else {
             progressLabel.textContent = "Waiting for environment vend…";
+          }
+        }
+      } else if (isFleetDriftConfirm && fleetDriftStages.length) {
+        var driftDone = countStagesDone(fleetDriftStages);
+        var driftActive = activeStageFrom(fleetDriftStages);
+        pct = driftActive
+          ? Math.round(((driftDone + 0.35) / fleetDriftStages.length) * 100)
+          : Math.round((driftDone / fleetDriftStages.length) * 100);
+        if (progressLabel) {
+          if (runComplete) {
+            progressLabel.textContent = "Drift confirm complete — opening result…";
+          } else if (driftActive) {
+            progressLabel.textContent = fleetDriftStageLabels[driftActive] + "…";
+          } else if (driftDone >= fleetDriftStages.length) {
+            progressLabel.textContent = "Drift confirm complete";
+          } else {
+            progressLabel.textContent = "Waiting for drift confirm…";
+          }
+        }
+      } else if (isEnvironmentReclaim && reclaimStages.length) {
+        var reclaimDone = countStagesDone(reclaimStages);
+        var reclaimActive = activeStageFrom(reclaimStages);
+        pct = reclaimActive
+          ? Math.round(((reclaimDone + 0.35) / reclaimStages.length) * 100)
+          : Math.round((reclaimDone / reclaimStages.length) * 100);
+        if (progressLabel) {
+          if (runComplete) {
+            progressLabel.textContent = "Reclaim complete — opening result…";
+          } else if (reclaimActive) {
+            progressLabel.textContent = reclaimStageLabels[reclaimActive] + "…";
+          } else if (reclaimDone >= reclaimStages.length) {
+            progressLabel.textContent = "Reclaim complete";
+          } else {
+            progressLabel.textContent = "Waiting for environment reclaim…";
           }
         }
       } else if (isPipelineRun && pipelineStages.length) {
@@ -1818,7 +1870,11 @@
           ? "Waiting for live plan…"
           : isEnvironmentVend
             ? "Waiting for environment vend…"
-            : "Starting apply…";
+            : isFleetDriftConfirm
+              ? "Waiting for drift confirm…"
+              : isEnvironmentReclaim
+                ? "Waiting for environment reclaim…"
+                : "Starting apply…";
       }
       pct = Math.max(0, Math.min(100, pct));
       if (progressBar) {
@@ -1963,6 +2019,38 @@
             (data.pull_request_url ? " → " + data.pull_request_url : "")
         );
         updateProgressBar();
+      } else if (data.kind === "fleet_drift_confirm_started") {
+        setStage("verify", "active");
+        appendLog(
+          "Fleet drift confirm started for " + (data.repo_count || 0) + " repositories"
+        );
+        updateProgressBar();
+      } else if (data.kind === "fleet_drift_confirm_finished") {
+        setStage("verify", "done");
+        appendLog(
+          "Fleet drift confirm finished: " +
+            (data.confirmed_current || 0) +
+            " current, " +
+            (data.confirmed_behind || 0) +
+            " behind"
+        );
+        updateProgressBar();
+      } else if (data.kind === "environment_reclaim_started") {
+        setStage("reclaim", "active");
+        appendLog(
+          "Environment reclaim started" + (data.dry_run ? " (dry run)" : "")
+        );
+        updateProgressBar();
+      } else if (data.kind === "environment_reclaim_finished") {
+        setStage("reclaim", "done");
+        appendLog(
+          "Environment reclaim finished: " +
+            (data.reclaimed_count || 0) +
+            " reclaimed, " +
+            (data.skipped_count || 0) +
+            " skipped"
+        );
+        updateProgressBar();
       } else if (data.kind === "gate_started") {
         currentGate = data.gate || "";
         setGateRow(data.gate, "running", "");
@@ -1981,14 +2069,24 @@
         runComplete = true;
         if (isPipelineRun) {
           markPipelineComplete();
+        } else if (isFleetDriftConfirm) {
+          setStage("verify", "done");
+        } else if (isEnvironmentReclaim) {
+          setStage("reclaim", "done");
         }
         setRunBusy(false);
         root.classList.add("is-complete");
         updateProgressBar();
         if (progressLabel) {
-          progressLabel.textContent = isDryRun
-            ? "Plan complete — opening preview…"
-            : "Apply complete — opening result…";
+          if (isFleetDriftConfirm) {
+            progressLabel.textContent = "Drift confirm complete — opening result…";
+          } else if (isEnvironmentReclaim) {
+            progressLabel.textContent = "Reclaim complete — opening result…";
+          } else {
+            progressLabel.textContent = isDryRun
+              ? "Plan complete — opening preview…"
+              : "Apply complete — opening result…";
+          }
         }
         appendLog("Run complete.");
         if (completeActions) {
@@ -2047,6 +2145,22 @@
             if (body.result && body.result.pull_request_url) {
               setStage("gitops", "done");
             }
+            updateProgressBar();
+            if (completeActions) {
+              completeActions.hidden = false;
+            }
+            return;
+          }
+          if (isFleetDriftConfirm || body.kind === "fleet_drift_confirm") {
+            setStage("verify", "done");
+            updateProgressBar();
+            if (completeActions) {
+              completeActions.hidden = false;
+            }
+            return;
+          }
+          if (isEnvironmentReclaim || body.kind === "environment_reclaim") {
+            setStage("reclaim", "done");
             updateProgressBar();
             if (completeActions) {
               completeActions.hidden = false;

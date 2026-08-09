@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from repave_engine.api import create_app
 from repave_engine.settings import (
     load_audit_config,
+    load_durability_config,
     load_fleet_config,
     load_platform_metrics_config,
     load_portal_config,
@@ -48,6 +49,11 @@ def test_platform_dev_config_loads(platform_dev_root: Path) -> None:
     metrics = load_platform_metrics_config(platform_dev_root)
     assert metrics is not None
     assert metrics.enabled is True
+    assert metrics.search_limit == 100
+
+    durability = load_durability_config(platform_dev_root)
+    assert durability is not None
+    assert durability.async_generation is True
 
     portal = load_portal_config(platform_dev_root)
     assert portal.cost_reader == "focus"
@@ -67,8 +73,12 @@ def test_platform_dev_pages_render(
     client = TestClient(create_app(repo_root=platform_dev_repo, output_config=output_config))
     for path, needle in (
         ("/platform/fleet", "Governed repositories"),
+        ("/platform/ops", "Estate health"),
+        ("/platform/standards", "Standards blast radius"),
         ("/platform/finops", "FinOps showback"),
         ("/platform/adoption", "Golden path adoption"),
+        ("/platform/compliance", "Compliance posture"),
+        ("/platform/value-stream", "Value stream"),
         ("/platform/feedback", "Developer feedback"),
         ("/platform/campaigns", "Operator campaigns"),
     ):
@@ -84,6 +94,8 @@ def test_platform_dev_pages_render(
     more_end = home.index("</details>", more_start)
     more_section = home[more_start:more_end]
     assert 'href="/platform/finops"' in more_section
+    assert 'href="/platform/compliance"' in more_section
+    assert 'href="/platform/value-stream"' in more_section
     assert 'href="/platform/feedback"' in more_section
     assert 'href="/platform/roadmap"' in more_section
 

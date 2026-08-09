@@ -211,7 +211,9 @@ from repave_engine.run_queue import (
 from repave_engine.run_store import RunStatus
 from repave_engine.run_submit import (
     is_bundle_run,
+    is_environment_reclaim_run,
     is_environment_vend_run,
+    is_fleet_drift_confirm_run,
     is_live_plan_run,
     submit_async_run,
 )
@@ -1378,6 +1380,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     gate_names=gate_names,
                 ),
             )
+        if is_fleet_drift_confirm_run(record):
+            return templates.TemplateResponse(
+                request,
+                "run_console.html",
+                page_context(
+                    request,
+                    nav_active="platform",
+                    run_id=run_id,
+                    run_record=record,
+                    fleet_drift_confirm=True,
+                    gate_names=[],
+                ),
+            )
+        if is_environment_reclaim_run(record):
+            return templates.TemplateResponse(
+                request,
+                "run_console.html",
+                page_context(
+                    request,
+                    nav_active="platform",
+                    run_id=run_id,
+                    run_record=record,
+                    environment_reclaim=True,
+                    gate_names=[],
+                ),
+            )
         blueprint = load_blueprint(
             blueprint_dir(repo_root, record.blueprint_name),
             repo_root=repo_root,
@@ -1440,6 +1468,32 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     run_id=run_id,
                     run_record=record,
                     environment_vend_summary=summary,
+                ),
+            )
+        if is_fleet_drift_confirm_run(record):
+            summary = record.result if isinstance(record.result, dict) else {}
+            return templates.TemplateResponse(
+                request,
+                "fleet_drift_confirm_result.html",
+                page_context(
+                    request,
+                    nav_active="platform",
+                    run_id=run_id,
+                    run_record=record,
+                    drift_summary=summary,
+                ),
+            )
+        if is_environment_reclaim_run(record):
+            summary = record.result if isinstance(record.result, dict) else {}
+            return templates.TemplateResponse(
+                request,
+                "environment_reclaim_result.html",
+                page_context(
+                    request,
+                    nav_active="platform",
+                    run_id=run_id,
+                    run_record=record,
+                    reclaim_summary=summary,
                 ),
             )
         if is_bundle_run(record):
@@ -2192,11 +2246,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 status_code=400, detail="No repositories selected for drift confirm"
             )
         acting = user.email if user else current_acting_user()
-        record = submit_async_run(
-            run_queue,
-            payload={"kind": "fleet_drift_confirm", "repo_urls": repo_urls},
-            acting_user=acting,
-        )
+        try:
+            record = submit_async_run(
+                run_queue,
+                payload={"kind": "fleet_drift_confirm", "repo_urls": repo_urls},
+                acting_user=acting,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         return RedirectResponse(url=f"/runs/{record.run_id}", status_code=303)
 
     @app.get("/platform/campaigns", response_class=HTMLResponse)
