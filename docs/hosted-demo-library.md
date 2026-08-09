@@ -142,6 +142,8 @@ kubectl cp repave-fleet/operator-status.json repave/$portal_pod:/data/fleet/oper
 | **Operator** | GPRs in `repave-system`; `tf-aws-eks-demo` → **OutOfDate** when catalog > `0.9.0` |
 | **GitHub org** | `opsdevcode/tf-*`, `ansible-role-*`, `opa-policy-*`, … with `repave.yaml` |
 
+Full **10-minute CTO arc** (Apply + Activity + OPA + fleet drift): [hosted-demo.md](hosted-demo.md#cto-demo-script-10-min).
+
 **Act 5 (OPA block):** still run live in the portal with `plan_demo=destructive_delete` — do not
 publish that variant; it is dry-run only.
 

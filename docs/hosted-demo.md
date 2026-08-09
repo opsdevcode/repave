@@ -150,3 +150,47 @@ Rotate RDS password after removing literal `REPAVE_DATABASE_URL` from live Deplo
 `./scripts/rotate-rds-password.sh`
 
 Demo-week PVC notes: `kubernetes/values/repave-demo-week.yaml`.
+
+---
+
+## CTO demo script (~10 min)
+
+Rehearse on **https://repave.opsdevco.de** (not localhost). Pre-login before the room.
+
+| Step | Surface | Wow line |
+| --- | --- | --- |
+| 1 | **Home** — catalog families | “Platform owns the paved roads; builders pick a golden path.” |
+| 2 | **terraform-module-generic** → Plan preview | Gates + lineage on the result — “same inputs, same artifact, receipt for auditors.” |
+| 3 | **Apply** + **Live run console** | Real repo under `opsdevcode` — stage stepper through publish. |
+| 4 | **Activity** (`/activity`) | Audit row for that apply — “every publish is receipted.” |
+| 5 | **opa-policy-generic** → `destructive_delete` | Gate blocks publish — “policy stops the line.” |
+| 6 | **Fleet** (`/fleet`) | Nine seeded repos with pins — “this is a governed estate.” |
+| 7 | **Operator** (optional kubectl) | `tf-aws-eks-demo` **OutOfDate** — “fleet drift, not surprise upgrades.” |
+
+**Apply tips:** use a fresh module name (`demo-cto-aug8`). Click **Apply** directly (radio syncs automatically on current builds).
+
+**Operator drift (step 7):**
+
+```bash
+kubectl get goldenpathrepo -n repave-system opsdevcode-tf-aws-eks-demo
+kubectl describe goldenpathrepo -n repave-system opsdevcode-tf-aws-eks-demo
+```
+
+Expect `OutOfDate` and an upgrade plan once `REPAVE_API_TOKEN` is wired (see below).
+
+### Operator API token (upgrade planning)
+
+Hosted portal uses Auth0 (`auth.service_mode`). The operator calls `/api/v2/upgrades/plan` with
+`REPAVE_API_TOKEN` — same bearer as portal CronJobs.
+
+```bash
+cd repave-aws-infra
+chmod +x scripts/ensure-api-token.sh
+./scripts/ensure-api-token.sh          # adds api-token to repave-prod/app in Secrets Manager
+./scripts/sync-platform.sh             # ExternalSecret → repave-secrets + repave-operator-secrets
+export REPAVE_CHART_PATH=/path/to/repave/deploy/k8s/chart
+export OPERATOR_CHART_PATH=/path/to/repave/deploy/k8s/operator-chart
+./scripts/sync-repave.sh
+```
+
+After sync, GPR `opsdevcode-tf-aws-eks-demo` should progress past `Authentication required` on upgrade planning.

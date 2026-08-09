@@ -111,6 +111,18 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 {{- end }}
 
+{{- define "repave-operator.apiTokenEnv" -}}
+{{- $secretName := include "repave-operator.secretName" . }}
+{{- if $secretName }}
+- name: REPAVE_API_TOKEN
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: api-token
+      optional: true
+{{- end }}
+{{- end }}
+
 {{- define "repave-operator.notifyEnv" -}}
 {{- if .Values.notify.enabled }}
 {{- if .Values.notify.slackWebhookUrl }}
