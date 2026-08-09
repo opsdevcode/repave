@@ -7,7 +7,9 @@ work, writing ADRs, and opening issues.
 **Current release:** v2.47.0  
 
 **In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
-[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); v3 work happens on the
+long-lived `next/v3` branch ([ADR 006](adr/006-v3-branching-release-and-testing.md),
+[`docs/v3-development.md`](v3-development.md)) and does not affect the v2.x line on `main`.
 **Shipped on `main`:** **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
 `GET /api/v2/platform/roadmap-evidence`, adoption citations per theme + sunset candidates
 ([`docs/platform-metrics.md`](platform-metrics.md)); **Guided / Advanced forms (v1.88)** — progressive disclosure on
@@ -2739,6 +2741,13 @@ that makes those v2 decisions checkable.
   [Planned](#planned) and stops being a v3 item
 - The only content that must stay accurate is the
   [breaking-change list](#breaking-at-v300), because v2 deprecation notices point at it
+
+**Where v3 work happens:** the long-lived `next/v3` branch, versioned as `3.0.0-rc.N` and
+merged back to `main` in one `feat!:` PR when the deprecation windows close — see
+[ADR 006](adr/006-v3-branching-release-and-testing.md) for the decision and
+[`docs/v3-development.md`](v3-development.md) for the working guide, testing obligations,
+and the foundation slice (risk classes, waiver expiry, deprecation registry) that is the
+first implementation. The branch existing does not commit any theme below to a release.
 
 ### Autonomous governed remediation
 
