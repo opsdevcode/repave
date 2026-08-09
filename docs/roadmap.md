@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.39.2  
+**Current release:** v2.40.0  
 
 **In progress:** [Platform as a product](#platform-as-a-product-v2x) follow-on (v1.89);
 [FinOps enablement](#finops-enablement-v2x) (v1.92–v1.94) paused after estimate policy.
