@@ -157,6 +157,7 @@ notifications:
 | `GET /api/v2/platform/finops/export` | FOCUS-friendly chargeback CSV/JSON (`?format=csv\|json`) |
 | WoW / MoM thresholds | Compare cost snapshot series; audit `finops_anomaly` + webhook when exceeded |
 | `/platform/finops` | Runs anomaly evaluation when `cost_anomalies.enabled` (best-effort) |
+| `/platform/finops` anomaly table | WoW / MoM breaches on snapshot series (display-only; audit + webhook on export) |
 
 Export columns: `Owner`, `ServiceName`, `BillingCurrency`, `BilledCost`,
 `ChargePeriodStart`, `ChargePeriodEnd`, `EntityId`, `MonthlyBudgetUsd`.

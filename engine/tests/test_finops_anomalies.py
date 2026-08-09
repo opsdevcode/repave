@@ -123,3 +123,45 @@ def test_evaluate_finops_anomalies_writes_audit_and_notifies(
     assert audit_entries[0].extra.get("kind") == "wow"
     notify_finops_anomalies(tmp_path, anomalies)
     assert posted == ["https://hooks.example.test/finops"]
+
+
+def test_collect_finops_anomalies_skips_audit_and_notify(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot_file = tmp_path / "cost-snapshots.jsonl"
+    _snapshots(snapshot_file)
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "audit:",
+                "  enabled: true",
+                "  file: audit/generation.jsonl",
+                "portal:",
+                "  cost_snapshots:",
+                "    enabled: true",
+                "    file: cost-snapshots.jsonl",
+                "  cost_anomalies:",
+                "    enabled: true",
+                "    wow_threshold_pct: 25",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    posted: list[str] = []
+    monkeypatch.setattr(
+        "repave_engine.notifications.httpx.post",
+        lambda url, **kwargs: posted.append(url) or MagicMock(status_code=200),
+    )
+    portal = PortalConfig(
+        density="default",
+        cost_snapshots_enabled=True,
+        cost_snapshots_file=snapshot_file,
+        cost_anomalies=CostAnomalyConfig(enabled=True, wow_threshold_pct=25.0),
+    )
+    from repave_engine.finops_anomalies import collect_finops_anomalies
+
+    anomalies = collect_finops_anomalies([_entity()], portal, repo_root=tmp_path)
+    assert len(anomalies) == 1
+    assert not (tmp_path / "audit" / "generation.jsonl").exists()
+    assert posted == []

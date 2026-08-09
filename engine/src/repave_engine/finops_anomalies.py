@@ -206,3 +206,19 @@ def evaluate_finops_anomalies(
 
         notify_finops_anomalies(repo_root, tuple(found))
     return tuple(found)
+
+
+def collect_finops_anomalies(
+    entities: Sequence[CatalogEntity],
+    portal_config: PortalConfig,
+    *,
+    repo_root: Path,
+) -> tuple[CostAnomaly, ...]:
+    """Detect anomalies for portal display without audit or webhook side effects."""
+    return evaluate_finops_anomalies(
+        entities,
+        portal_config,
+        repo_root=repo_root,
+        notify=False,
+        audit=False,
+    )

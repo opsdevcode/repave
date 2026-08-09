@@ -110,6 +110,9 @@ def test_platform_dev_pages_render(
     roadmap = client.get("/platform/roadmap").text
     assert "Roadmap evidence" in roadmap
     assert "Theme adoption evidence" in roadmap
+
+    finops = client.get("/platform/finops").text
+    assert "Cost anomalies" in finops
     assert "shell__footer-link" in home
     assert 'href="/platform/ops"' in home
     assert 'href="/platform/fleet"' in home
