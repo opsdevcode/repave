@@ -91,15 +91,7 @@ def parse_focus_tags(raw: Any) -> dict[str, str]:
         if isinstance(parsed, dict):
             return parse_focus_tags(parsed)
         if isinstance(parsed, list):
-            tags: dict[str, str] = {}
-            for item in parsed:
-                if not isinstance(item, dict):
-                    continue
-                key = str(item.get("Key", item.get("key", ""))).strip()
-                value = str(item.get("Value", item.get("value", ""))).strip()
-                if key:
-                    tags[key] = value
-            return tags
+            return parse_focus_tags(parsed)
     return {}
 
 
