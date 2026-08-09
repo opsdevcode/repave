@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
 from repave_engine.github_repo_provision import OrgTeam
+from repave_engine.org_import_scan import OrgScanResult, ScannedRepository
 
 
 def test_api_v2_metadata(repo_root, output_config) -> None:
@@ -27,6 +28,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/governance/annotations/{blueprint_name}" in payload["endpoints"]
     assert "GET /api/v2/github/teams" in payload["endpoints"]
     assert "GET /api/v2/github/teams/{slug}/members" in payload["endpoints"]
+    assert "POST /api/v2/github/org-scan" in payload["endpoints"]
     assert "GET /api/v2/fleet" in payload["endpoints"]
     assert "GET /api/v2/platform/metrics" in payload["endpoints"]
     assert "GET /api/v2/platform/compliance" in payload["endpoints"]
@@ -166,6 +168,47 @@ def test_api_v2_generate_async_matches_runs(async_v2_client) -> None:
         )
         assert response.status_code in (200, 202)
         assert "run_id" in response.json()
+
+
+def test_api_v2_github_org_scan(repo_root, output_config, monkeypatch) -> None:
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    with patch(
+        "repave_engine.api_v2.router.scan_github_org",
+        return_value=OrgScanResult(
+            org="acme",
+            listed=2,
+            limit=100,
+            truncated=False,
+            repos=(
+                ScannedRepository(
+                    url="https://github.com/acme/vpc",
+                    owner="acme",
+                    name="vpc",
+                    governed=False,
+                    classification_error=None,
+                    top_candidate=None,
+                ),
+            ),
+        ),
+    ) as scanned:
+        response = client.post(
+            "/api/v2/github/org-scan",
+            json={"org": "acme", "families": ["terraform"]},
+        )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["org"] == "acme"
+    assert body["listed"] == 2
+    assert len(body["repos"]) == 1
+    scanned.assert_called_once()
+
+
+def test_api_v2_github_org_scan_requires_org(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post("/api/v2/github/org-scan", json={})
+    assert response.status_code == 400
+    assert "org is required" in response.json()["detail"]
 
 
 def test_api_v2_github_teams(repo_root, output_config, monkeypatch) -> None:

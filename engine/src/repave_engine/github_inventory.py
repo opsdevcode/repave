@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
 
@@ -126,6 +127,90 @@ def inventory_github_paths(
         if len(paths) >= limit:
             break
     return tuple(sorted(paths))
+
+
+@dataclass(frozen=True)
+class OrgRepository:
+    owner: str
+    name: str
+    clone_url: str
+    html_url: str
+    archived: bool
+    fork: bool
+    default_branch: str
+
+
+def list_org_repositories(
+    org: str,
+    token: str,
+    *,
+    limit: int = 100,
+) -> tuple[OrgRepository, ...]:
+    """Return repositories for a GitHub organization or user account (paginated)."""
+    org_name = org.strip()
+    if not org_name:
+        raise GitHubInventoryError("org is required to list repositories")
+    if limit <= 0:
+        return ()
+    cap = min(limit, 1000)
+    repos: list[OrgRepository] = []
+    page = 1
+    list_paths = (
+        f"/orgs/{org_name}/repos",
+        f"/users/{org_name}/repos",
+    )
+    active_path = list_paths[0]
+    while page <= 10 and len(repos) < cap:
+        per_page = min(100, cap - len(repos))
+        path = f"{active_path}?per_page={per_page}&page={page}&type=all"
+        try:
+            payload = _github_get(path, token)
+        except GitHubError as exc:
+            if exc.status == 404 and active_path == list_paths[0] and page == 1:
+                active_path = list_paths[1]
+                path = f"{active_path}?per_page={per_page}&page={page}&type=all"
+                try:
+                    payload = _github_get(path, token)
+                except GitHubError as retry_exc:
+                    raise GitHubInventoryError(
+                        f"could not list repositories for {org_name}: HTTP {retry_exc.status}"
+                    ) from retry_exc
+            else:
+                raise GitHubInventoryError(
+                    f"could not list repositories for {org_name}: HTTP {exc.status}"
+                ) from exc
+        if not isinstance(payload, list) or not payload:
+            break
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            owner_payload = item.get("owner")
+            owner = (
+                str(owner_payload.get("login", "")).strip()
+                if isinstance(owner_payload, dict)
+                else org_name
+            )
+            name = str(item.get("name", "")).strip()
+            clone_url = str(item.get("clone_url", "")).strip()
+            if not owner or not name or not clone_url:
+                continue
+            repos.append(
+                OrgRepository(
+                    owner=owner,
+                    name=name,
+                    clone_url=clone_url,
+                    html_url=str(item.get("html_url", clone_url)).strip() or clone_url,
+                    archived=bool(item.get("archived")),
+                    fork=bool(item.get("fork")),
+                    default_branch=str(item.get("default_branch") or "main").strip() or "main",
+                )
+            )
+            if len(repos) >= cap:
+                break
+        if len(payload) < per_page or len(repos) >= cap:
+            break
+        page += 1
+    return tuple(repos)
 
 
 def fetch_github_file_text(

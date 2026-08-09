@@ -143,6 +143,9 @@ def test_import_batch_form_renders(client: TestClient) -> None:
     assert 'name="targets"' in body
     assert 'action="/import/batch"' in body
     assert "Preview batch" in body
+    assert "data-import-org-scan" in body
+    assert "data-import-org-scan-run" in body
+    assert "Scan org" in body
 
 
 def test_import_batch_preview_plans_multiple_repos(client: TestClient, tmp_path: Path) -> None:
@@ -228,6 +231,7 @@ def test_api_v2_advertises_the_import_endpoints(client: TestClient) -> None:
     assert "POST /api/v2/imports/apply" in payload["endpoints"]
     assert "POST /api/v2/imports/batch/plan" in payload["endpoints"]
     assert "POST /api/v2/imports/batch/apply" in payload["endpoints"]
+    assert "POST /api/v2/github/org-scan" in payload["endpoints"]
 
 
 def test_api_v2_import_plan_returns_the_plan(client: TestClient, legacy_repo: Path) -> None:

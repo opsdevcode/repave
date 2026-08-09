@@ -1687,11 +1687,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     def import_form_context(request: Request, **extra: object) -> dict[str, object]:
         groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+        scan_family_choices = [{"family": group.family, "title": group.title} for group in groups]
         return page_context(
             request,
             nav_active="import",
             catalog_groups=groups,
             catalog_json=import_catalog_json(),
+            scan_family_choices=scan_family_choices,
             **extra,
         )
 
