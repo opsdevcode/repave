@@ -11,12 +11,15 @@
       <span class="muted activity-list__pin">via {{ row.activity_blueprint_pin() }}</span>
     </div>
     <div class="activity-list__meta">
-      <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
-        {% if row.gates_outcome == 'failed' %}Failed{% elif row.gates_outcome == 'passed' %}Passed{% else %}{{ row.gates_outcome|capitalize }}{% endif %}
+      <span class="badge {% if row.activity_outcome_failed() %}badge--fail{% else %}badge--pass{% endif %}">
+        {{ row.activity_outcome_label() }}
       </span>
       <span class="badge badge--skip">{% if row.dry_run %}Plan{% else %}Applied{% endif %}</span>
       <span class="muted">{{ row.acting_user }}</span>
       <time class="muted" datetime="{{ row.timestamp }}">{{ row.timestamp[:19] }}</time>
+      {% if row.activity_run_href() %}
+      <a class="muted" href="{{ row.activity_run_href() }}">run</a>
+      {% endif %}
       {% if row.repository_url %}
       <a class="muted" href="{{ row.repository_url }}">repo</a>
       {% endif %}

@@ -489,6 +489,8 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "pipelineStageLabels" in body
     assert "Publishing to repository" in body
     assert "publish_finished" in body
+    assert "data-run-publish-error" in body
+    assert "publish_succeeded" in body
     assert "publish_progress" in body
     assert "initDemoPipeline" in body
     assert "initCatalogCardMotion" in body

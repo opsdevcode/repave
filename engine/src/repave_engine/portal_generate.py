@@ -21,6 +21,7 @@ from repave_engine.pipeline import (
     generate_from_bundle,
 )
 from repave_engine.portal_result import build_result_portal_context
+from repave_engine.publish_idempotency import publish_message_succeeded
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.settings import OutputConfig
 
@@ -289,6 +290,7 @@ def run_portal_generate(
             "result": result,
             "gate_summary": gate_summary(result.gates),
             "gates_ok": all_gates_passed(result.gates),
+            "publish_ok": result.dry_run or publish_message_succeeded(result.pr_message),
             "gate_toolchain_callout": gate_toolchain_callout(
                 result.gates,
                 dry_run=result.dry_run,

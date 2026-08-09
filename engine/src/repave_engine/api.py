@@ -177,6 +177,7 @@ from repave_engine.portal_platform import (
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
+from repave_engine.publish_idempotency import publish_message_succeeded
 from repave_engine.repo_add import (
     NotGovernedError,
     RepoAddError,
@@ -1519,6 +1520,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="catalog",
                 gate_summary=gate_summary(result.gates),
                 gates_ok=all_gates_passed(result.gates),
+                publish_ok=result.dry_run or publish_message_succeeded(result.pr_message),
                 gate_toolchain_callout=gate_toolchain_callout(
                     result.gates,
                     dry_run=result.dry_run,

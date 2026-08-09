@@ -2,20 +2,23 @@
   {% for row in recent_activity %}
   <li class="activity-story__item">
     <span
-      class="activity-story__dot{% if row.gates_outcome == 'failed' %} activity-story__dot--fail{% else %} activity-story__dot--pass{% endif %}"
+      class="activity-story__dot{% if row.activity_outcome_failed() %} activity-story__dot--fail{% else %} activity-story__dot--pass{% endif %}"
       aria-hidden="true"
     ></span>
     <div class="activity-story__content">
       <p class="activity-story__lead">
         <a href="{{ row.activity_href() }}">{{ row.activity_artifact_name() }}</a>
         <span class="badge badge--skip">{% if row.dry_run %}Plan{% else %}Applied{% endif %}</span>
-        <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
-          {% if row.gates_outcome == 'failed' %}Failed{% elif row.gates_outcome == 'passed' %}Passed{% else %}{{ row.gates_outcome|capitalize }}{% endif %}
+        <span class="badge {% if row.activity_outcome_failed() %}badge--fail{% else %}badge--pass{% endif %}">
+          {{ row.activity_outcome_label() }}
         </span>
       </p>
       <p class="activity-story__meta muted">
         via {{ row.activity_blueprint_pin() }} · {{ row.acting_user }}
         · <time datetime="{{ row.timestamp }}">{{ row.timestamp[:19] }}</time>
+        {% if row.activity_run_href() %}
+        · <a href="{{ row.activity_run_href() }}">run</a>
+        {% endif %}
         {% if row.repository_url %}
         · <a href="{{ row.repository_url }}">repo</a>
         {% endif %}
