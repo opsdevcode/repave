@@ -85,9 +85,9 @@ export GITHUB_TOKEN=ghp_...
 ## API (local portal backend)
 
 ```bash
+make platform-dev-setup   # optional: sample fleet, FinOps, adoption, feedback data
 repave serve --repo-root .. --host 0.0.0.0 --port 8088
 ```
 
-Open http://localhost:8088 for the bundled web portal (catalog, blueprint forms,
-results dashboard). Set `GITHUB_TOKEN` in the server environment to enable remote
-publish when dry-run is disabled in the form.
+Or from repo root: `make serve` (port 8089). Platform console enablement:
+[`docs/platform-console.md`](../docs/platform-console.md).

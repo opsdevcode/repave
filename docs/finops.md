@@ -28,7 +28,8 @@ Community anchors:
 | State graph blast-radius cost join | Join Infracost breakdown to graph resources |
 | Terraform tag standards | Required FinOps allocation tags on golden paths (v1.90) |
 
-Config examples: [`repave.config.yaml.example`](../repave.config.yaml.example).
+Config examples: [`repave.config.yaml.example`](../repave.config.yaml.example). Local UI
+walkthrough: [`platform-console.md`](platform-console.md) (`make platform-dev-setup`).
 
 ## Framework capabilities → repave
 
@@ -134,6 +135,34 @@ portal:
 
 Per-entity budget can also come from `repave.dev/monthly-budget-usd` on `catalog-info.yaml`
 (config overrides catalog; catalog overrides default).
+
+## Chargeback export and anomaly hooks (v1.94)
+
+```yaml
+portal:
+  cost_anomalies:
+    enabled: true
+    wow_threshold_pct: 25
+    mom_threshold_pct: 50
+
+notifications:
+  enabled: true
+  webhook_url: https://hooks.example/finops
+  events:
+    - finops_anomaly
+```
+
+| Surface | Role |
+| --- | --- |
+| `GET /api/v2/platform/finops/export` | FOCUS-friendly chargeback CSV/JSON (`?format=csv\|json`) |
+| WoW / MoM thresholds | Compare cost snapshot series; audit `finops_anomaly` + webhook when exceeded |
+| `/platform/finops` | Runs anomaly evaluation when `cost_anomalies.enabled` (best-effort) |
+
+Export columns: `Owner`, `ServiceName`, `BillingCurrency`, `BilledCost`,
+`ChargePeriodStart`, `ChargePeriodEnd`, `EntityId`, `MonthlyBudgetUsd`.
+
+Pass `?detect_anomalies=1` on export to force anomaly evaluation (also runs when
+`portal.cost_anomalies.enabled` is true).
 
 ## Thin FOCUS ingest (v1.93)
 

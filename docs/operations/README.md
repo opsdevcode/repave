@@ -33,6 +33,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | Deploy pipeline OIDC / GitOps promotion | [deploy-pipeline-oidc.md](deploy-pipeline-oidc.md) |
 | github-repo apply without fleet register / missing GPR | [github-repo-fleet-validation.md](github-repo-fleet-validation.md) |
 | Golden-path adoption / DX metrics / stakeholder views | [platform-metrics.md](../platform-metrics.md) |
+| Platform console (`/platform/*`) enablement | [platform-console.md](../platform-console.md) |
 | Cost actuals / FinOps enablement | [../finops.md](../finops.md) |
 
 ## Runbooks

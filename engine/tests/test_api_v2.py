@@ -32,6 +32,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/platform/compliance" in payload["endpoints"]
     assert "GET /api/v2/platform/value-stream" in payload["endpoints"]
     assert "GET /api/v2/platform/feedback" in payload["endpoints"]
+    assert "GET /api/v2/platform/finops/export" in payload["endpoints"]
     assert "POST /api/v2/platform/feedback" in payload["endpoints"]
 
 

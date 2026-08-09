@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 from repave_engine import __version__
 from repave_engine.api_read_models import (
@@ -137,6 +137,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/platform/value-stream",
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
+    "GET /api/v2/platform/finops/export",
 )
 
 
@@ -1152,6 +1153,64 @@ def build_api_v2_router(
             {
                 "rollup": rollup.to_public_dict(),
                 "events": [event.to_public_dict() for event in events],
+            }
+        )
+
+    @router.get("/platform/finops/export")
+    async def api_v2_platform_finops_export(request: Request) -> Response:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.finops_anomalies import evaluate_finops_anomalies
+        from repave_engine.finops_export import (
+            build_chargeback_export,
+            chargeback_export_to_csv,
+            chargeback_export_to_json,
+        )
+        from repave_engine.finops_rollup import build_finops_rollup
+
+        portal_cfg = load_portal_config(repo_root)
+        finops_active = (
+            cost_reader_configured(
+                cost_reader=portal_cfg.cost_reader,
+                cost_actuals_url=portal_cfg.cost_actuals_url,
+                cost_focus_file=portal_cfg.cost_focus.file,
+            )
+            or portal_cfg.cost_snapshots_file is not None
+        )
+        if not finops_active:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "FinOps is not configured (set portal.cost_reader or portal.cost_snapshots)"
+                ),
+            )
+        entities = build_portal_catalog_entities(repo_root, output_config)
+        rollup = build_finops_rollup(entities, portal_cfg, repo_root=repo_root)
+        rows = build_chargeback_export(rollup)
+        detect_raw = str(request.query_params.get("detect_anomalies", "")).strip().lower()
+        detect = detect_raw in {"1", "true", "yes", "on"} or portal_cfg.cost_anomalies.enabled
+        anomalies: list[dict[str, object]] = []
+        if detect and portal_cfg.cost_anomalies.enabled:
+            detected = evaluate_finops_anomalies(
+                entities,
+                portal_cfg,
+                repo_root=repo_root,
+            )
+            anomalies = [item.to_public_dict() for item in detected]
+        export_format = str(request.query_params.get("format", "json")).strip().lower()
+        if export_format == "csv":
+            return Response(
+                content=chargeback_export_to_csv(rows),
+                media_type="text/csv",
+                headers={"Content-Disposition": 'attachment; filename="finops-chargeback.csv"'},
+            )
+        if export_format not in ("json", ""):
+            raise HTTPException(status_code=400, detail="format must be json or csv")
+        return JSONResponse(
+            {
+                "count": len(rows),
+                "currency": rollup.currency,
+                "rows": chargeback_export_to_json(rows),
+                "anomalies": anomalies,
             }
         )
 

@@ -1,0 +1,51 @@
+# Local platform console dev profile — copy to repo root with:
+#   make platform-dev-setup
+# or: cp examples/platform-dev/repave.config.platform-dev.yaml repave.config.yaml
+#
+# Then: make serve  →  http://127.0.0.1:8089
+# Platform links: header **More** menu and footer (admin-visible; all users when auth is off).
+
+apiVersion: repave.dev/v1
+
+output:
+  github_org: opsdevcode
+  modules_root: ../repave-modules
+  repo_name_template: "tf-{cloud_provider}-{module_name}"
+
+fleet:
+  enabled: true
+  file: examples/platform-dev/fixtures/fleet/registry.jsonl
+  gitops_namespace: repave-system
+  operator_status_file: examples/platform-dev/fixtures/fleet/operator-status.json
+
+audit:
+  enabled: true
+  file: examples/platform-dev/fixtures/audit/generation.jsonl
+
+platform_metrics:
+  enabled: true
+  snapshot_file: examples/platform-dev/fixtures/platform-metrics/snapshots.jsonl
+  feedback_file: examples/platform-dev/fixtures/platform-metrics/feedback.jsonl
+  github_orgs: [acme]
+  github_topics: []
+  search_limit: 50
+  baseline_adoption_ratio: 0.6
+  baseline_plan_apply_ratio: 0.4
+
+portal:
+  cost_reader: focus
+  cost_focus:
+    file: examples/platform-dev/fixtures/focus/export.json
+    lookback_days: 30
+  cost_snapshots:
+    enabled: true
+    file: examples/platform-dev/fixtures/fleet/cost-snapshots.jsonl
+  cost_budgets:
+    default_monthly_usd: 250
+    entities:
+      acme-tf-vpc: 150
+      acme-checkout-api: 400
+  cost_anomalies:
+    enabled: true
+    wow_threshold_pct: 25
+    mom_threshold_pct: 50

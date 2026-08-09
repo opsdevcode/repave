@@ -154,6 +154,7 @@ def test_platform_fleet_page_renders(repo_root, output_config, registry: Path) -
     assert "/platform/ops" in body
     assert "/platform/adoption" in body
     assert "/platform/feedback" in body
+    assert "/platform/finops" in body
 
 
 def test_platform_fleet_register_and_unregister(repo_root, output_config, registry: Path) -> None:

@@ -348,6 +348,42 @@ pre {
   box-shadow: none;
 }
 
+/* Horizontal platform tabs on /platform/* (not the header More dropdown). */
+.platform-subnav {
+  position: static;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+  min-width: 0;
+  margin: 0 0 var(--space-4);
+  padding: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 45%, var(--surface));
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.platform-subnav a {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.platform-subnav a:hover {
+  color: var(--accent-hover);
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+}
+
+.platform-subnav a[aria-current="page"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 75%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
 .shell__nav--primary > a {
   display: inline-flex;
   align-items: center;

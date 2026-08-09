@@ -43,7 +43,12 @@
                 <a href="/runs" {% if nav_active == "runs" %}aria-current="page"{% endif %}>Runs</a>
                 {% endif %}
                 {% if platform_admin_visible %}
-                <a href="/platform/fleet" {% if nav_active == "platform" %}aria-current="page"{% endif %}>Platform</a>
+                {% for item in platform_nav_links %}
+                <a
+                  href="{{ item.href }}"
+                  {% if nav_active == "platform" and platform_nav == item.key %}aria-current="page"{% endif %}
+                >{{ item.label }}</a>
+                {% endfor %}
                 {% endif %}
               </nav>
             </details>
@@ -143,7 +148,12 @@
 
       <footer class="shell__footer">
         Governed golden paths · engine {{ app_version }}
-        · <a class="shell__footer-link" href="/health">health</a>
+        · <a class="shell__footer-link" href="/platform/ops">health</a>
+        {% if platform_admin_visible %}
+        {% for item in platform_nav_links %}
+        · <a class="shell__footer-link" href="{{ item.href }}">{{ item.label }}</a>
+        {% endfor %}
+        {% endif %}
       </footer>
     </div>
     {% block scripts %}{% endblock %}

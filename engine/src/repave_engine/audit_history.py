@@ -16,7 +16,7 @@ HOME_ACTIVITY_LIMIT = _HOME_ACTIVITY_LIMIT
 _INITIAL_ARTIFACT_VERSION = "0.1.0"
 _MAX_LINE_BYTES = 256_000
 _MAX_SCAN_ROWS = 10_000
-_GENERATION_EVENTS = frozenset({"generation", "bundle_generation", "import"})
+_GENERATION_EVENTS = frozenset({"generation", "bundle_generation", "import", "finops_anomaly"})
 
 
 def initial_artifact_version_for_audit() -> str:
@@ -57,7 +57,7 @@ class AuditHistoryEntry:
         if event not in _GENERATION_EVENTS:
             return None
         name = str(payload.get("blueprint_name", "")).strip()
-        if not name:
+        if event != "finops_anomaly" and not name:
             return None
         extra_raw = payload.get("extra")
         extra = dict(extra_raw) if isinstance(extra_raw, dict) else {}

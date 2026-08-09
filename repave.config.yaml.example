@@ -1,5 +1,9 @@
 # Copy to repave.config.yaml and adjust for your environment.
 #
+# Local platform console walkthrough (fleet, FinOps, adoption, feedback):
+#   make platform-dev-setup && make serve
+# See docs/platform-console.md and examples/platform-dev/README.md.
+#
 # v2 contract: apiVersion identifies the config schema line.
 apiVersion: repave.dev/v1
 #
@@ -61,6 +65,12 @@ output:
 #   #   default_monthly_usd: 250
 #   #   entities:
 #   #     opsdevcode-tf-aws-eks-demo: 600
+#   # WoW/MoM cost anomaly hooks (v1.94):
+#   # cost_anomalies:
+#   #   enabled: true
+#   #   wow_threshold_pct: 25
+#   #   mom_threshold_pct: 50
+#   # notifications.events may include finops_anomaly for webhook alerts
 #   # Deployment status (ADR 003 Phase 1) — read-only GitOps enrichment on entity detail:
 #   # deployment_reader: url   # or argocd | flux
 #   # deployment_status_url: "https://status.example/v1/services/{name}"
@@ -124,6 +134,7 @@ gates:
 # Acting user: REPAVE_ACTING_USER (falls back to USER; OIDC session when auth enabled)
 
 # Optional fleet registry of repositories repave governs (`repave register`, portal fleet API).
+# Required for /platform/fleet and catalog entities. See docs/platform-console.md.
 # fleet:
 #   enabled: true
 #   file: ../repave-fleet/registry.jsonl
@@ -132,8 +143,8 @@ gates:
 # Override path: REPAVE_FLEET_FILE, REPAVE_FLEET_OPERATOR_STATUS_FILE
 
 # Optional golden-path adoption / DX outcome metrics (platform-as-a-product).
-# See docs/platform-metrics.md. Surfaces: /platform/adoption, GET /api/v2/platform/metrics,
-# `repave metrics adoption`, Prometheus gauges.
+# See docs/platform-metrics.md and docs/platform-console.md. Surfaces: /platform/adoption,
+# GET /api/v2/platform/metrics, repave metrics adoption, Prometheus gauges (optional).
 # platform_metrics:
 #   enabled: true
 #   snapshot_file: data/platform-metrics/snapshots.jsonl

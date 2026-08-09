@@ -6,6 +6,9 @@ instead of only generation counts and queue depth.
 
 Roadmap theme: [v1.85 — Golden path adoption and DX metrics](roadmap.md#v185--golden-path-adoption-and-dx-metrics).
 
+Platform console enablement (fleet, auth, Prometheus optional):
+[`platform-console.md`](platform-console.md).
+
 ## What is measured
 
 | Metric | Meaning |

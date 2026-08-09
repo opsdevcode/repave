@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -88,6 +88,9 @@ cli-security:
 
 cli-quality: cli-lint cli-typecheck
 	@cd cli && uv run --no-project ruff format --check src tests
+
+platform-dev-setup:
+	bash scripts/setup-platform-dev.sh
 
 serve:
 	mkdir -p $(MODULES_ROOT)
