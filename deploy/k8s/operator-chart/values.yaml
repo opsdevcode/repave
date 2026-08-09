@@ -115,6 +115,8 @@ secrets:
   githubAppId: ""
   githubAppInstallationId: ""
   githubAppPrivateKey: ""
+  # Bearer token for /api/v2/* when portal auth.service_mode is on (same value as portal secrets.apiToken).
+  apiToken: ""
 
 # Operator notification webhooks (optional; mirror portal notify settings).
 notify:

@@ -73,6 +73,7 @@ spec:
               value: {{ .Values.repave.remoteResync | quote }}
             {{- end }}
             {{- include "repave-operator.githubAuthEnv" . | nindent 12 }}
+            {{- include "repave-operator.apiTokenEnv" . | nindent 12 }}
             {{- include "repave-operator.notifyEnv" . | nindent 12 }}
             {{- if .Values.fleetSync.enabled }}
             - name: REPAVE_FLEET_SYNC_ENABLED

@@ -21,7 +21,8 @@ helm lint "${CHART}" \
 rendered="$(mktemp)"
 day2_rendered="$(mktemp)"
 kind_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${day2_rendered}" "${kind_rendered}"' EXIT
+token_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${day2_rendered}" "${kind_rendered}" "${token_rendered}"' EXIT
 
 helm template repave-operator-test "${CHART}" \
   --namespace repave-system \
@@ -53,6 +54,19 @@ fi
 
 if ! grep -q 'name: REPAVE_API_URL' "${rendered}"; then
   echo "deployment must set REPAVE_API_URL" >&2
+  exit 1
+fi
+
+helm template repave-operator-token "${CHART}" \
+  --namespace repave-system \
+  --set repave.apiUrl=http://repave.repave.svc.cluster.local:8088 \
+  --set webhook.caBundle="${FAKE_CA}" \
+  --set secrets.create=true \
+  --set secrets.apiToken=chart-smoke-token \
+  >"${token_rendered}"
+
+if ! grep -q 'name: REPAVE_API_TOKEN' "${token_rendered}"; then
+  echo "deployment must set REPAVE_API_TOKEN when secrets.create supplies api-token" >&2
   exit 1
 fi
 
