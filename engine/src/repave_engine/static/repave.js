@@ -1129,6 +1129,12 @@
     var orgInput = root.querySelector("[data-import-org-scan-org]");
     var runBtn = root.querySelector("[data-import-org-scan-run]");
     var skipGoverned = root.querySelector("[data-import-org-scan-skip-governed]");
+    var excludeArchived = root.querySelector("[data-import-org-scan-exclude-archived]");
+    var excludeForks = root.querySelector("[data-import-org-scan-exclude-forks]");
+    var topicInput = root.querySelector("[data-import-org-scan-topic]");
+    var languageInput = root.querySelector("[data-import-org-scan-language]");
+    var pushedInput = root.querySelector("[data-import-org-scan-pushed]");
+    var batchTopicInput = root.querySelector("#batch-topic");
     var resultsWrap = root.querySelector("[data-import-org-scan-results]");
     var summary = root.querySelector("[data-import-org-scan-summary]");
     var tbody = root.querySelector("[data-import-org-scan-tbody]");
@@ -1163,6 +1169,20 @@
           return node.value;
         });
     }
+
+    root.querySelectorAll("[data-import-search-preset]").forEach(function (button) {
+      button.addEventListener("click", function () {
+        if (languageInput) {
+          languageInput.value = button.getAttribute("data-preset-language") || "";
+        }
+        if (topicInput) {
+          topicInput.value = button.getAttribute("data-preset-topic") || "";
+        }
+        if (batchTopicInput && topicInput && topicInput.value) {
+          batchTopicInput.value = topicInput.value;
+        }
+      });
+    });
 
     function renderRows(repos) {
       tbody.textContent = "";
@@ -1205,6 +1225,7 @@
       }
       runBtn.disabled = true;
       runBtn.textContent = "Scanning…";
+      var pushedSince = pushedInput && pushedInput.value ? pushedInput.value : "";
       fetch("/api/v2/github/org-scan", {
         method: "POST",
         credentials: "same-origin",
@@ -1215,6 +1236,11 @@
           skip_governed: skipGoverned ? skipGoverned.checked : true,
           min_confidence: 0,
           limit: 100,
+          topic: topicInput ? topicInput.value.trim() : "",
+          language: languageInput ? languageInput.value.trim() : "",
+          pushed_since: pushedSince,
+          exclude_archived: excludeArchived ? excludeArchived.checked : true,
+          exclude_forks: excludeForks ? excludeForks.checked : true,
         }),
       })
         .then(function (response) {
@@ -1231,8 +1257,13 @@
           if (summary) {
             var listed = payload.listed || 0;
             var truncated = payload.truncated ? " (limit reached)" : "";
+            var mode = payload.discovery_mode ? String(payload.discovery_mode) : "list";
+            var query = payload.search_query ? String(payload.search_query) : "";
             summary.textContent =
-              "Listed " +
+              "Discovery: " +
+              mode +
+              (query ? " (" + query + ")" : "") +
+              ". Listed " +
               listed +
               " repositories; " +
               repos.length +

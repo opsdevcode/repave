@@ -323,6 +323,11 @@ def build_api_v2_router(
             raise HTTPException(status_code=400, detail="limit must be an integer") from None
         if limit <= 0:
             raise HTTPException(status_code=400, detail="limit must be positive")
+        topic = str(payload.get("topic", "")).strip()
+        language = str(payload.get("language", "")).strip()
+        pushed_since = str(payload.get("pushed_since", "")).strip()
+        exclude_archived = bool(payload.get("exclude_archived", True))
+        exclude_forks = bool(payload.get("exclude_forks", True))
         try:
             result = scan_github_org(
                 org,
@@ -332,6 +337,11 @@ def build_api_v2_router(
                 skip_governed=skip_governed,
                 min_confidence=min_confidence,
                 limit=limit,
+                topic=topic,
+                language=language,
+                pushed_since=pushed_since,
+                exclude_archived=exclude_archived,
+                exclude_forks=exclude_forks,
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc

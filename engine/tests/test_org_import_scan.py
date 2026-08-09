@@ -8,7 +8,13 @@ from unittest.mock import patch
 import pytest
 
 from repave_engine.github_client import GitHubError, StaticGitHubRestClient
-from repave_engine.github_inventory import OrgRepository, list_org_repositories
+from repave_engine.github_inventory import (
+    GitHubRepoSearchFilters,
+    OrgRepository,
+    build_github_search_query,
+    list_org_repositories,
+    validate_pushed_since,
+)
 from repave_engine.org_import_scan import classify_remote_repository, scan_github_org
 
 
@@ -190,10 +196,71 @@ def test_scan_github_org_filters_by_family(repo_root: Path) -> None:
             limit=10,
         )
     assert result.listed == 2
+    assert result.discovery_mode == "list"
+    assert result.search_query is None
     assert len(result.repos) == 1
     assert result.repos[0].name == "vpc"
     assert result.repos[0].top_candidate is not None
     assert result.repos[0].top_candidate.family == "terraform"
+
+
+def test_build_github_search_query_composes_qualifiers() -> None:
+    query = build_github_search_query(
+        GitHubRepoSearchFilters(
+            org="acme",
+            topic="terraform",
+            language="HCL",
+            pushed_since="2026-01-01",
+            exclude_archived=True,
+            exclude_forks=True,
+        )
+    )
+    assert (
+        query
+        == "org:acme topic:terraform language:HCL archived:false fork:false pushed:>2026-01-01"
+    )
+
+
+def test_validate_pushed_since_rejects_bad_dates() -> None:
+    with pytest.raises(ValueError, match="YYYY-MM-DD"):
+        validate_pushed_since("01-01-2026")
+
+
+def test_scan_github_org_uses_search_discovery_for_language(repo_root: Path) -> None:
+    org_repos = (
+        OrgRepository(
+            owner="acme",
+            name="vpc",
+            clone_url="https://github.com/acme/vpc.git",
+            html_url="https://github.com/acme/vpc",
+            archived=False,
+            fork=False,
+            default_branch="main",
+        ),
+    )
+    responses, errors = _terraform_tree_responses("acme", "vpc")
+    client = StaticGitHubRestClient(responses=responses, errors=errors)
+
+    with (
+        patch(
+            "repave_engine.org_import_scan.search_org_repositories",
+            return_value=org_repos,
+        ) as searched,
+        patch("repave_engine.github_inventory._github_json", side_effect=client.request_json),
+    ):
+        result = scan_github_org(
+            "acme",
+            repo_root,
+            "token",
+            language="HCL",
+            families=frozenset({"terraform"}),
+            limit=10,
+        )
+    searched.assert_called_once()
+    assert result.discovery_mode == "search"
+    assert result.search_query is not None
+    assert "language:HCL" in result.search_query
+    assert len(result.repos) == 1
 
 
 def test_scan_github_org_rejects_unknown_families(repo_root: Path) -> None:

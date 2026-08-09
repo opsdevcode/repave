@@ -9,9 +9,14 @@ from repave_engine.blueprint import _ARTIFACT_FAMILY_ORDER, blueprints_dir, list
 from repave_engine.fleet import normalize_repo_url
 from repave_engine.github_inventory import (
     GitHubInventoryError,
+    GitHubRepoSearchFilters,
+    OrgRepository,
+    build_github_search_query,
     inventory_github_paths,
     list_org_repositories,
     remote_has_provenance,
+    search_org_repositories,
+    validate_pushed_since,
 )
 from repave_engine.import_detect import (
     BlueprintCandidate,
@@ -22,6 +27,27 @@ from repave_engine.import_detect import (
 DEFAULT_SCAN_LIMIT = 100
 DEFAULT_MIN_CONFIDENCE = 0.0
 SCAN_ARTIFACT_FAMILIES: frozenset[str] = frozenset(_ARTIFACT_FAMILY_ORDER)
+
+ORG_SCAN_SEARCH_PRESETS: tuple[dict[str, str], ...] = (
+    {
+        "id": "terraform",
+        "label": "Terraform (HCL)",
+        "language": "HCL",
+        "topic": "",
+    },
+    {
+        "id": "ansible",
+        "label": "Ansible",
+        "language": "",
+        "topic": "ansible",
+    },
+    {
+        "id": "helm",
+        "label": "Helm",
+        "language": "",
+        "topic": "helm",
+    },
+)
 
 
 @dataclass(frozen=True)
@@ -52,6 +78,8 @@ class OrgScanResult:
     listed: int
     limit: int
     truncated: bool
+    discovery_mode: str
+    search_query: str | None
     repos: tuple[ScannedRepository, ...]
 
     def to_json_dict(self) -> dict[str, object]:
@@ -60,6 +88,8 @@ class OrgScanResult:
             "listed": self.listed,
             "limit": self.limit,
             "truncated": self.truncated,
+            "discovery_mode": self.discovery_mode,
+            "search_query": self.search_query,
             "repos": [repo.to_json_dict() for repo in self.repos],
         }
 
@@ -136,6 +166,58 @@ def _matches_scan_filters(
     return not families or candidate.family in families
 
 
+def _uses_search_discovery(filters: GitHubRepoSearchFilters) -> bool:
+    return bool(filters.topic.strip() or filters.language.strip() or filters.pushed_since.strip())
+
+
+def _filter_listed_repositories(
+    repos: tuple[OrgRepository, ...],
+    *,
+    exclude_archived: bool,
+    exclude_forks: bool,
+) -> tuple[OrgRepository, ...]:
+    filtered: list[OrgRepository] = []
+    for entry in repos:
+        if exclude_archived and entry.archived:
+            continue
+        if exclude_forks and entry.fork:
+            continue
+        filtered.append(entry)
+    return tuple(filtered)
+
+
+def discover_org_repositories(
+    org: str,
+    token: str,
+    filters: GitHubRepoSearchFilters,
+    *,
+    limit: int,
+) -> tuple[tuple[OrgRepository, ...], str, str | None, bool]:
+    """Return repos to scan plus discovery metadata."""
+    org_name = org.strip()
+    if _uses_search_discovery(filters):
+        query = build_github_search_query(filters)
+        if not query:
+            raise ValueError("org is required when using GitHub search discovery")
+        listed = search_org_repositories(
+            query,
+            token,
+            limit=limit,
+            fallback_org=org_name,
+        )
+        truncated = len(listed) >= limit
+        return listed, "search", query, truncated
+
+    listed = list_org_repositories(org_name, token, limit=limit)
+    truncated = len(listed) >= limit
+    filtered = _filter_listed_repositories(
+        listed,
+        exclude_archived=filters.exclude_archived,
+        exclude_forks=filters.exclude_forks,
+    )
+    return filtered, "list", None, truncated
+
+
 def scan_github_org(
     org: str,
     repo_root: Path,
@@ -145,8 +227,13 @@ def scan_github_org(
     skip_governed: bool = True,
     min_confidence: float = DEFAULT_MIN_CONFIDENCE,
     limit: int = DEFAULT_SCAN_LIMIT,
+    topic: str = "",
+    language: str = "",
+    pushed_since: str = "",
+    exclude_archived: bool = True,
+    exclude_forks: bool = True,
 ) -> OrgScanResult:
-    """List org repositories, classify each, and return rows matching scan filters."""
+    """Discover org repositories, classify each, and return rows matching scan filters."""
     org_name = org.strip()
     if not org_name:
         raise ValueError("org is required to scan GitHub repositories")
@@ -160,8 +247,21 @@ def scan_github_org(
                 f"unknown artifact families: {', '.join(sorted(unknown))}; "
                 f"expected one of {', '.join(sorted(SCAN_ARTIFACT_FAMILIES))}"
             )
-    listed_repos = list_org_repositories(org_name, token, limit=limit)
-    truncated = len(listed_repos) >= limit
+    pushed = validate_pushed_since(pushed_since)
+    filters = GitHubRepoSearchFilters(
+        org=org_name,
+        topic=topic,
+        language=language,
+        pushed_since=pushed,
+        exclude_archived=exclude_archived,
+        exclude_forks=exclude_forks,
+    )
+    listed_repos, discovery_mode, search_query, truncated = discover_org_repositories(
+        org_name,
+        token,
+        filters,
+        limit=limit,
+    )
     scanned_rows: list[ScannedRepository] = []
     for entry in listed_repos:
         row = classify_remote_repository(entry.owner, entry.name, token, repo_root)
@@ -177,5 +277,7 @@ def scan_github_org(
         listed=len(listed_repos),
         limit=limit,
         truncated=truncated,
+        discovery_mode=discovery_mode,
+        search_query=search_query,
         repos=tuple(scanned_rows),
     )

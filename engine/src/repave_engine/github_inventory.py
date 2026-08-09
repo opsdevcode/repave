@@ -12,6 +12,7 @@ from repave_engine.github_rate_limit import wait_before_github_request
 from repave_engine.import_detect import _SKIP_DIRS, MAX_SCANNED_FILES
 
 _GITHUB_REMOTE = re.compile(r"github\.com[/:](?P<owner>[^/]+)/(?P<name>[^/.]+(?:\.git)?)")
+_PUSHED_SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class GitHubInventoryError(RuntimeError):
@@ -140,6 +141,72 @@ class OrgRepository:
     default_branch: str
 
 
+@dataclass(frozen=True)
+class GitHubRepoSearchFilters:
+    """GitHub repository search qualifiers for org discovery and batch targets."""
+
+    org: str = ""
+    topic: str = ""
+    language: str = ""
+    pushed_since: str = ""
+    exclude_archived: bool = True
+    exclude_forks: bool = True
+
+
+def build_github_search_query(filters: GitHubRepoSearchFilters) -> str:
+    """Compose a GitHub ``search/repositories`` query from structured filters."""
+    parts: list[str] = []
+    org = filters.org.strip()
+    if org:
+        parts.append(f"org:{org}")
+    topic = filters.topic.strip()
+    if topic:
+        parts.append(f"topic:{topic}")
+    language = filters.language.strip()
+    if language:
+        parts.append(f"language:{language}")
+    if filters.exclude_archived:
+        parts.append("archived:false")
+    if filters.exclude_forks:
+        parts.append("fork:false")
+    pushed_since = filters.pushed_since.strip()
+    if pushed_since:
+        parts.append(f"pushed:>{pushed_since}")
+    return " ".join(parts)
+
+
+def validate_pushed_since(value: str) -> str:
+    """Return a normalized ``YYYY-MM-DD`` pushed-since date or raise ValueError."""
+    text = value.strip()
+    if not text:
+        return ""
+    if not _PUSHED_SINCE_RE.match(text):
+        raise ValueError("pushed_since must be YYYY-MM-DD (for example 2026-01-01)")
+    return text
+
+
+def _org_repo_from_payload(item: dict[str, Any], fallback_org: str) -> OrgRepository | None:
+    owner_payload = item.get("owner")
+    owner = (
+        str(owner_payload.get("login", "")).strip()
+        if isinstance(owner_payload, dict)
+        else fallback_org
+    )
+    name = str(item.get("name", "")).strip()
+    clone_url = str(item.get("clone_url", "")).strip()
+    if not owner or not name or not clone_url:
+        return None
+    return OrgRepository(
+        owner=owner,
+        name=name,
+        clone_url=clone_url,
+        html_url=str(item.get("html_url", clone_url)).strip() or clone_url,
+        archived=bool(item.get("archived")),
+        fork=bool(item.get("fork")),
+        default_branch=str(item.get("default_branch") or "main").strip() or "main",
+    )
+
+
 def list_org_repositories(
     org: str,
     token: str,
@@ -238,6 +305,49 @@ def fetch_github_file_text(
         return ""
 
 
+def search_org_repositories(
+    query: str,
+    token: str,
+    *,
+    limit: int = 100,
+    fallback_org: str = "",
+) -> tuple[OrgRepository, ...]:
+    """Return repositories from a GitHub search query (paginated, up to 1000)."""
+    if not query.strip():
+        return ()
+    if limit <= 0:
+        return ()
+    cap = min(limit, 1000)
+    repos: list[OrgRepository] = []
+    page = 1
+    while page <= 10 and len(repos) < cap:
+        per_page = min(100, cap - len(repos))
+        wait_before_github_request()
+        payload = _github_json(
+            "GET",
+            f"/search/repositories?q={quote(query)}&per_page={per_page}&page={page}",
+            token,
+        )
+        if not isinstance(payload, dict):
+            break
+        items = payload.get("items")
+        if not isinstance(items, list) or not items:
+            break
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            entry = _org_repo_from_payload(item, fallback_org)
+            if entry is None:
+                continue
+            repos.append(entry)
+            if len(repos) >= cap:
+                break
+        if len(items) < per_page or len(repos) >= cap:
+            break
+        page += 1
+    return tuple(repos)
+
+
 def search_github_repositories(
     query: str,
     token: str,
@@ -247,27 +357,8 @@ def search_github_repositories(
     """Return clone URLs from a GitHub repository search query."""
     if not query.strip():
         return ()
-    wait_before_github_request()
-    payload = _github_json(
-        "GET",
-        f"/search/repositories?q={quote(query)}&per_page={min(limit, 100)}",
-        token,
-    )
-    if not isinstance(payload, dict):
-        return ()
-    items = payload.get("items")
-    if not isinstance(items, list):
-        return ()
-    urls: list[str] = []
-    for item in items:
-        if not isinstance(item, dict):
-            continue
-        clone_url = str(item.get("clone_url", "")).strip()
-        if clone_url:
-            urls.append(clone_url)
-        if len(urls) >= limit:
-            break
-    return tuple(urls)
+    repos = search_org_repositories(query, token, limit=limit)
+    return tuple(repo.clone_url for repo in repos)
 
 
 def resolve_batch_targets(
@@ -275,10 +366,14 @@ def resolve_batch_targets(
     *,
     org: str = "",
     topic: str = "",
+    language: str = "",
+    pushed_since: str = "",
+    exclude_archived: bool = True,
+    exclude_forks: bool = True,
     token: str | None = None,
     limit: int = 30,
 ) -> list[str]:
-    """Expand pasted targets plus optional org/topic query into a deduplicated repo list."""
+    """Expand pasted targets plus optional org/search query into a deduplicated repo list."""
     seen: set[str] = set()
     resolved: list[str] = []
     for line in raw_targets:
@@ -289,15 +384,17 @@ def resolve_batch_targets(
             seen.add(target)
             resolved.append(target)
 
-    org_query = org.strip()
-    topic_query = topic.strip()
-    if (org_query or topic_query) and token:
-        parts: list[str] = []
-        if org_query:
-            parts.append(f"org:{org_query}")
-        if topic_query:
-            parts.append(f"topic:{topic_query}")
-        for url in search_github_repositories(" ".join(parts), token, limit=limit):
+    filters = GitHubRepoSearchFilters(
+        org=org,
+        topic=topic,
+        language=language,
+        pushed_since=pushed_since,
+        exclude_archived=exclude_archived,
+        exclude_forks=exclude_forks,
+    )
+    query = build_github_search_query(filters)
+    if query and token:
+        for url in search_github_repositories(query, token, limit=limit):
             if url not in seen:
                 seen.add(url)
                 resolved.append(url)
