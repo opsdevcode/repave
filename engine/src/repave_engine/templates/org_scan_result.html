@@ -34,7 +34,7 @@
   </dl>
 </section>
 
-<section class="card stack-gap" aria-labelledby="org-scan-repos-heading">
+<section class="card stack-gap" aria-labelledby="org-scan-repos-heading" data-org-scan-result{% if org_scan_summary.repos %} data-org-scan-urls="{{ (org_scan_summary.repos | map(attribute='url') | list) | tojson }}"{% endif %}>
   <div class="card__header">
     <h2 id="org-scan-repos-heading" class="card__title">Matching repositories</h2>
     <p class="hint muted">
@@ -90,6 +90,11 @@
     </table>
     <p class="hint">
       <a class="btn btn--secondary" href="/import/batch">Return to batch import</a>
+      {% if org_scan_summary.repos %}
+      <button class="btn btn--primary" type="button" data-org-scan-add-to-batch>
+        Add all to batch import
+      </button>
+      {% endif %}
     </p>
     {% else %}
     <p class="muted">No repositories matched the scan filters.</p>

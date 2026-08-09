@@ -108,6 +108,8 @@ def cmd_import(args: argparse.Namespace) -> int:
     if args.batch_file:
         targets = _load_batch_targets(args.batch_file)
         token = resolve_github_access_token(args.github_token)
+        exclude_archived = not args.include_archived
+        exclude_forks = not args.include_forks
         try:
             if args.open_pr:
                 if not token:
@@ -124,6 +126,10 @@ def cmd_import(args: argparse.Namespace) -> int:
                     blueprint_name=args.blueprint,
                     org=args.org,
                     topic=args.topic,
+                    language=args.language,
+                    pushed_since=args.pushed_since,
+                    exclude_archived=exclude_archived,
+                    exclude_forks=exclude_forks,
                     with_gates=with_gates,
                 )
                 if args.format == "json":
@@ -144,6 +150,10 @@ def cmd_import(args: argparse.Namespace) -> int:
                 git_token=token,
                 org=args.org,
                 topic=args.topic,
+                language=args.language,
+                pushed_since=args.pushed_since,
+                exclude_archived=exclude_archived,
+                exclude_forks=exclude_forks,
                 with_gates=with_gates,
             )
         except (AlreadyGovernedError, RepoImportError) as exc:

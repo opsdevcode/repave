@@ -1121,6 +1121,77 @@
     }
   }
 
+  var IMPORT_BATCH_TARGETS_KEY = "repave:import-batch-targets";
+
+  function mergeTargetUrls(existingText, urls) {
+    var existing = existingText
+      .split(/\r?\n/)
+      .map(function (line) {
+        return line.trim();
+      })
+      .filter(Boolean);
+    var seen = {};
+    existing.forEach(function (url) {
+      seen[url] = true;
+    });
+    urls.forEach(function (url) {
+      var trimmed = String(url).trim();
+      if (trimmed && !seen[trimmed]) {
+        existing.push(trimmed);
+        seen[trimmed] = true;
+      }
+    });
+    return existing.join("\n");
+  }
+
+  function initImportBatchPrefill() {
+    var targets = document.getElementById("targets");
+    if (!targets) {
+      return;
+    }
+    try {
+      var raw = sessionStorage.getItem(IMPORT_BATCH_TARGETS_KEY);
+      if (!raw) {
+        return;
+      }
+      sessionStorage.removeItem(IMPORT_BATCH_TARGETS_KEY);
+      var urls = JSON.parse(raw);
+      if (!Array.isArray(urls) || !urls.length) {
+        return;
+      }
+      targets.value = mergeTargetUrls(targets.value, urls);
+      if (window.Repave && window.Repave.showToast) {
+        window.Repave.showToast("Added " + urls.length + " repositories to the batch list.");
+      }
+    } catch (_err) {
+      /* ignore invalid session payload */
+    }
+  }
+
+  function initOrgScanResult() {
+    var root = document.querySelector("[data-org-scan-result]");
+    if (!root) {
+      return;
+    }
+    var button = root.querySelector("[data-org-scan-add-to-batch]");
+    if (!button) {
+      return;
+    }
+    var raw = root.getAttribute("data-org-scan-urls") || "[]";
+    button.addEventListener("click", function () {
+      try {
+        var urls = JSON.parse(raw);
+        if (!Array.isArray(urls) || !urls.length) {
+          return;
+        }
+        sessionStorage.setItem(IMPORT_BATCH_TARGETS_KEY, JSON.stringify(urls));
+        window.location.href = "/import/batch";
+      } catch (_err) {
+        /* ignore */
+      }
+    });
+  }
+
   function initImportOrgScan() {
     var root = document.querySelector("[data-import-org-scan]");
     if (!root) {
@@ -2970,6 +3041,8 @@
     initCatalogCardMotion();
     initGateDashboard();
     initImportOrgScan();
+    initImportBatchPrefill();
+    initOrgScanResult();
     initFeedbackCapture();
     initFormDraft();
     initRunConsole();
