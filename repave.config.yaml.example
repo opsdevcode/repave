@@ -154,6 +154,15 @@ gates:
 #   search_limit: 100
 #   baseline_adoption_ratio: 0.6
 #   baseline_plan_apply_ratio: 0.4
+#   # Roadmap evidence loop (v1.89) — /platform/roadmap, GET /api/v2/platform/roadmap-evidence
+#   # roadmap_evidence:
+#   #   sunset_conversion_threshold: 0.25
+#   #   sunset_review_days: 90
+#   #   themes:
+#   #     - key: v185-adoption
+#   #       title: Golden path adoption (v1.85)
+#   #       requesting_team: platform
+#   #       evidence_kind: fleet_adoption
 # Or: REPAVE_PLATFORM_METRICS=1, REPAVE_PLATFORM_METRICS_FILE=..., REPAVE_PLATFORM_FEEDBACK_FILE=...
 
 # Optional async generation queue (see docs/durability.md).

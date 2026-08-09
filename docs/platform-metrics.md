@@ -62,9 +62,11 @@ SQL table; JSONL export follows `durability.export_jsonl`.
 | Portal (admin) | `/platform/adoption` |
 | Portal compliance (admin) | `/platform/compliance` |
 | Portal value stream (admin) | `/platform/value-stream` |
+| Portal roadmap evidence (admin) | `/platform/roadmap` |
 | API | `GET /api/v2/platform/metrics` (`?persist=1`, `?history=12`) |
 | API compliance | `GET /api/v2/platform/compliance` |
 | API value stream | `GET /api/v2/platform/value-stream` |
+| API roadmap evidence | `GET /api/v2/platform/roadmap-evidence` |
 | CLI | `repave metrics adoption [--persist] [--format json] [--history N]` |
 | Prometheus | `repave_golden_path_adoption_ratio`, `repave_plan_apply_conversion_ratio`, `repave_dx_time_to_first_artifact_seconds` |
 
@@ -137,6 +139,47 @@ behind platform-admin roles — without adding fields to the developer catalog o
 
 These slices reuse `capture_dx_metrics` / snapshot history; they do not introduce a separate
 store or role beyond existing platform admin.
+
+## Roadmap evidence loop (v1.89)
+
+Connect shipped platform themes to adoption metrics and surface low-adoption golden paths
+for sunset or simplification review.
+
+| Surface | Path / command |
+| --- | --- |
+| Portal (admin) | `/platform/roadmap` |
+| API | `GET /api/v2/platform/roadmap-evidence` |
+| Evidence source | `/platform/adoption` snapshot (fleet adoption, funnel, baselines) |
+
+### Configuration
+
+Optional block under `platform_metrics` (defaults ship v1.85–v1.88 theme rows):
+
+```yaml
+platform_metrics:
+  enabled: true
+  roadmap_evidence:
+    sunset_conversion_threshold: 0.25
+    sunset_min_plans: 1
+    sunset_review_days: 90
+    themes:
+      - key: v185-adoption
+        title: Golden path adoption and DX metrics (v1.85)
+        requesting_team: platform
+        evidence_kind: fleet_adoption
+      - key: v188-guided-forms
+        title: Cognitive load reduction (v1.88)
+        requesting_team: portal
+        evidence_kind: blueprint_funnel
+        blueprint_names: [terraform-module-generic, ansible-role-generic]
+```
+
+`evidence_kind`: `fleet_adoption`, `plan_apply`, or `blueprint_funnel` (requires
+`blueprint_names` for per-path funnel citation).
+
+Sunset candidates list blueprints whose plan→apply conversion is below
+`sunset_conversion_threshold` with at least `sunset_min_plans` audit plans; each row
+includes a `review_by` date `sunset_review_days` ahead.
 
 ## Baselines
 

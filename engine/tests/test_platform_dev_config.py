@@ -85,6 +85,11 @@ def test_platform_dev_pages_render(
     more_section = home[more_start:more_end]
     assert 'href="/platform/finops"' in more_section
     assert 'href="/platform/feedback"' in more_section
+    assert 'href="/platform/roadmap"' in more_section
+
+    roadmap = client.get("/platform/roadmap").text
+    assert "Roadmap evidence" in roadmap
+    assert "Theme adoption evidence" in roadmap
     assert "shell__footer-link" in home
     assert 'href="/platform/ops"' in home
     assert 'href="/platform/fleet"' in home

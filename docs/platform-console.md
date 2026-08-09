@@ -1,8 +1,8 @@
 # Platform console (`/platform/*`)
 
 Admin views for fleet governance, operational readiness, standards blast radius,
-operator campaigns, adoption/DX metrics, FinOps showback, compliance posture, value
-stream signals, and developer feedback.
+operator campaigns, adoption/DX metrics, roadmap evidence, FinOps showback, compliance
+posture, value stream signals, and developer feedback.
 
 Roadmap: [Platform as a product](roadmap.md#platform-as-a-product-v2x).
 
@@ -51,6 +51,7 @@ config show an inline hint naming the missing block.
 | **Adoption** | `platform_metrics.enabled: true` | `fleet`, `audit`, optional `github_orgs` + token for bypass list |
 | **Compliance** | `platform_metrics.enabled: true` | Same as adoption (gate friction from audit) |
 | **Value stream** | `platform_metrics.enabled: true` | Prior snapshots in `platform_metrics.snapshot_file` for trend sparkline |
+| **Roadmap evidence** | `platform_metrics.enabled: true` | Optional `platform_metrics.roadmap_evidence` themes + sunset thresholds |
 | **Feedback** | `platform_metrics.enabled: true` | `platform_metrics.feedback_file`; events from CSAT on result/run console |
 | **FinOps** | `portal.cost_reader` **or** `portal.cost_snapshots` | `fleet` entities; `cost_budgets` for budget column |
 | **FinOps export** | Same as FinOps | `GET /api/v2/platform/finops/export?format=csv\|json` |

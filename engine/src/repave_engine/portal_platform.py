@@ -56,6 +56,9 @@ PLATFORM_NAV_LINKS: tuple[PlatformNavLink, ...] = (
     PlatformNavLink("standards", "Standards", "/platform/standards", "Standards blast radius"),
     PlatformNavLink("campaigns", "Campaigns", "/platform/campaigns", "Operator upgrade campaigns"),
     PlatformNavLink("adoption", "Adoption", "/platform/adoption", "Golden path adoption metrics"),
+    PlatformNavLink(
+        "roadmap", "Roadmap", "/platform/roadmap", "Adoption evidence and sunset review"
+    ),
     PlatformNavLink("finops", "FinOps", "/platform/finops", "Cost vs budget rollup"),
     PlatformNavLink("compliance", "Compliance", "/platform/compliance", "Compliance posture"),
     PlatformNavLink("value-stream", "Value stream", "/platform/value-stream", "DORA-style signals"),
@@ -578,6 +581,43 @@ def build_platform_value_stream_page(
         snapshot=snapshot,
         history=history,
     )
+
+
+@dataclass(frozen=True)
+class PlatformRoadmapPage:
+    metrics_enabled: bool
+    report: object | None
+
+    def to_public_dict(self) -> dict[str, Any]:
+        if self.report is None or not hasattr(self.report, "to_public_dict"):
+            return {"metrics_enabled": self.metrics_enabled}
+        payload: dict[str, Any] = dict(self.report.to_public_dict())
+        payload["metrics_enabled"] = self.metrics_enabled
+        return payload
+
+
+def build_platform_roadmap_page(
+    repo_root: Path,
+    *,
+    github_token: str | None = None,
+    persist: bool = False,
+) -> PlatformRoadmapPage:
+    from repave_engine.dx_metrics_store import capture_dx_metrics
+    from repave_engine.roadmap_evidence import (
+        build_roadmap_evidence_report,
+        load_roadmap_evidence_settings,
+    )
+
+    settings = load_roadmap_evidence_settings(repo_root)
+    if settings is None:
+        return PlatformRoadmapPage(metrics_enabled=False, report=None)
+    snapshot = capture_dx_metrics(
+        repo_root,
+        github_token=github_token,
+        persist=persist,
+    )
+    report = build_roadmap_evidence_report(snapshot, settings)
+    return PlatformRoadmapPage(metrics_enabled=True, report=report)
 
 
 @dataclass(frozen=True)
