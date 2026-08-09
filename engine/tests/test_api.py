@@ -46,8 +46,8 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
     assert "home-hero" in response.text
-    assert "home-hero__wordmark" in response.text
-    assert 'id="golden-paths"' in response.text
+    assert "data-demo-pipeline" in response.text
+    assert "catalog-inventory__item-icon" in response.text
     assert "catalog-inventory__category" in response.text
     assert "catalog-inventory__summary" in response.text
     assert "<details" in response.text
@@ -486,7 +486,9 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "Publishing to repository" in body
     assert "publish_finished" in body
     assert "publish_progress" in body
-    assert "forceApplyDryRun" in body
+    assert "initDemoPipeline" in body
+    assert "initCatalogCardMotion" in body
+    assert "updateStepperFill" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
@@ -1220,9 +1222,9 @@ def test_result_dashboard_published_repo_card(
 
     assert response.status_code == 200
     assert "result-hero--passed" in response.text
-    assert "Applied locally" in response.text
-    assert "repo-card" in response.text
-    assert "Open on GitHub" in response.text
+    assert "Repository published" in response.text
+    assert "repo-preview" in response.text
+    assert "Open repository" in response.text
     assert "repo-local-path" in response.text
 
 

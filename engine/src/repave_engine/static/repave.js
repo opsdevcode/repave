@@ -873,6 +873,71 @@
     applyStep();
   }
 
+  function initDemoPipeline() {
+    var pipeline = document.querySelector("[data-demo-pipeline]");
+    if (!pipeline) {
+      return;
+    }
+    var steps = pipeline.querySelectorAll(".demo-pipeline__step");
+    if (!steps.length) {
+      return;
+    }
+    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      steps.forEach(function (step) {
+        step.classList.add("is-lit");
+      });
+      pipeline.classList.add("is-animated");
+      return;
+    }
+    var observer = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (entry) {
+          if (!entry.isIntersecting) {
+            return;
+          }
+          pipeline.classList.add("is-animated");
+          steps.forEach(function (step, index) {
+            window.setTimeout(function () {
+              step.classList.add("is-lit");
+            }, index * 420);
+          });
+          observer.disconnect();
+        });
+      },
+      { threshold: 0.35 }
+    );
+    observer.observe(pipeline);
+  }
+
+  function initCatalogCardMotion() {
+    var cards = document.querySelectorAll("[data-catalog-card]");
+    if (!cards.length) {
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    cards.forEach(function (card) {
+      card.addEventListener("mousemove", function (event) {
+        var rect = card.getBoundingClientRect();
+        var x = (event.clientX - rect.left) / rect.width - 0.5;
+        var y = (event.clientY - rect.top) / rect.height - 0.5;
+        card.classList.add("is-tilted");
+        card.style.transform =
+          "perspective(700px) rotateX(" +
+          (-y * 4).toFixed(2) +
+          "deg) rotateY(" +
+          (x * 4).toFixed(2) +
+          "deg) translateY(-2px)";
+      });
+      card.addEventListener("mouseleave", function () {
+        card.classList.remove("is-tilted");
+        card.style.transform = "";
+      });
+    });
+  }
+
   function initHomeResumeChip() {
     var mount = document.getElementById("home-resume-chip");
     if (!mount) {
@@ -1479,6 +1544,8 @@
     var isPipelineRun = !isLivePlan && !isEnvironmentVend;
     var isDryRun = root.getAttribute("data-dry-run") === "true";
     var outcomeStatus = root.querySelector("[data-run-outcome-status]");
+    var stepperFill = root.querySelector("[data-run-stepper-fill]");
+    var publishChip = root.querySelector("[data-publish-chip]");
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
     var vendStages = isEnvironmentVend ? ["validate", "render", "gates", "gitops"] : [];
     var pipelineStages = isPipelineRun ? ["validate", "render", "gates", "publish"] : [];
@@ -1501,6 +1568,44 @@
     };
     var runComplete = false;
     var progressRegion = root.querySelector("[data-run-progress]");
+
+    gateRows.forEach(function (row, index) {
+      row.classList.add("run-console__gate-row--stagger");
+      row.style.animationDelay = index * 45 + "ms";
+    });
+
+    function setPublishChipState(state) {
+      if (!publishChip || !state) {
+        if (publishChip) {
+          publishChip.classList.remove("is-live", "is-done");
+        }
+        return;
+      }
+      publishChip.classList.remove("is-live", "is-done");
+      publishChip.classList.add(state);
+    }
+
+    function updateStepperFill() {
+      if (!stepperFill) {
+        return;
+      }
+      var stages = isPipelineRun
+        ? pipelineStages
+        : isEnvironmentVend
+          ? vendStages
+          : livePlanStages;
+      if (!stages.length) {
+        return;
+      }
+      var done = countStagesDone(stages);
+      var active = activeStageFrom(stages);
+      var pct = done / stages.length;
+      if (active) {
+        pct += 0.35 / stages.length;
+      }
+      pct = Math.max(0, Math.min(100, Math.round(pct * 100)));
+      stepperFill.style.width = pct + "%";
+    }
 
     function countStagesDone(stages) {
       return stages.filter(function (stage) {
@@ -1698,6 +1803,7 @@
       if (progressBar) {
         progressBar.style.width = pct + "%";
       }
+      updateStepperFill();
     }
 
     function appendLog(line) {
@@ -1776,6 +1882,7 @@
         if (data.message) {
           appendLog(data.message);
         }
+        setPublishChipState("is-live");
         setOutcomeStatus(data.message || "", true);
         updateProgressBar();
       } else if (data.kind === "publish_finished") {
@@ -1783,6 +1890,7 @@
           appendLog(data.summary);
           setOutcomeStatus(data.summary, data.succeeded !== false);
         }
+        setPublishChipState(data.succeeded !== false ? "is-done" : "");
         updateProgressBar();
       } else if (data.kind === "live_plan_started") {
         setStage("checkout", "done");
@@ -2271,6 +2379,8 @@
     initFormDryRun();
     initPortalFetchSubmit();
     initCatalogSearch();
+    initDemoPipeline();
+    initCatalogCardMotion();
     initGateDashboard();
     initFeedbackCapture();
     initFormDraft();

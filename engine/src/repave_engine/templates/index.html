@@ -55,7 +55,7 @@
   </div>
 </section>
 
-<nav class="demo-pipeline" aria-label="How repave works">
+<nav class="demo-pipeline" data-demo-pipeline aria-label="How repave works">
   <ol class="demo-pipeline__steps">
     <li class="demo-pipeline__step">
       <span class="demo-pipeline__index">1</span>
@@ -140,12 +140,15 @@
         {% for bundle in catalog_bundles %}
         <li class="catalog-inventory__row" data-catalog-item>
           <a
-            class="catalog-inventory__item"
+            class="catalog-inventory__item catalog-inventory__item--bundle"
             href="/bundles/{{ bundle.name }}"
             data-catalog-card
             data-search-text="{{ bundle.name }} {{ bundle.description or '' }} bundle composite"
           >
-            <span class="catalog-inventory__item-name">{{ bundle.name }}</span>
+            <span class="catalog-inventory__item-head">
+              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--bundle" aria-hidden="true"></span>
+              <span class="catalog-inventory__item-name">{{ bundle.name }}</span>
+            </span>
             {% if bundle.description %}
             <span class="catalog-inventory__item-desc muted">{{ bundle.description }}</span>
             {% endif %}
@@ -182,7 +185,10 @@
             data-catalog-card
             data-search-text="{{ bp.name }} {{ bp.description or '' }} {{ bp.gates | join(' ') }} {{ bp.standard_source }}"
           >
-            <span class="catalog-inventory__item-name">{{ bp.name }}</span>
+            <span class="catalog-inventory__item-head">
+              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--{{ bp.artifact_type }}" aria-hidden="true"></span>
+              <span class="catalog-inventory__item-name">{{ bp.name }}</span>
+            </span>
             {% if bp.description %}
             <span class="catalog-inventory__item-desc muted">{{ bp.description }}</span>
             {% endif %}
