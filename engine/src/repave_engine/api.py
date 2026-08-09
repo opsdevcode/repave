@@ -167,6 +167,7 @@ from repave_engine.portal_platform import (
     build_platform_finops_page,
     build_platform_fleet_page,
     build_platform_ops_page,
+    build_platform_roadmap_page,
     build_platform_standards_detail,
     build_platform_standards_page,
     build_platform_value_stream_page,
@@ -2290,6 +2291,27 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="platform",
                 platform_nav="value-stream",
                 value_stream_page=value_stream_page,
+            ),
+        )
+
+    @app.get("/platform/roadmap", response_class=HTMLResponse)
+    async def platform_roadmap_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        probe_token = resolve_github_access_token() if github_credentials_configured() else None
+        roadmap_page = build_platform_roadmap_page(
+            repo_root,
+            github_token=probe_token,
+            persist=False,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_roadmap.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="roadmap",
+                roadmap_page=roadmap_page,
             ),
         )
 

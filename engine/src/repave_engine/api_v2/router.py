@@ -135,6 +135,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/platform/metrics",
     "GET /api/v2/platform/compliance",
     "GET /api/v2/platform/value-stream",
+    "GET /api/v2/platform/roadmap-evidence",
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
     "GET /api/v2/platform/finops/export",
@@ -1056,6 +1057,28 @@ def build_api_v2_router(
             )
         token = resolve_github_access_token(None)
         page = build_platform_value_stream_page(
+            repo_root,
+            github_token=token,
+            persist=False,
+        )
+        return JSONResponse(page.to_public_dict())
+
+    @router.get("/platform/roadmap-evidence")
+    async def api_v2_platform_roadmap_evidence(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.portal_platform import build_platform_roadmap_page
+        from repave_engine.roadmap_evidence import load_roadmap_evidence_settings
+
+        if load_roadmap_evidence_settings(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "platform_metrics is not configured "
+                    "(set platform_metrics.enabled or REPAVE_PLATFORM_METRICS=1)"
+                ),
+            )
+        token = resolve_github_access_token(None)
+        page = build_platform_roadmap_page(
             repo_root,
             github_token=token,
             persist=False,

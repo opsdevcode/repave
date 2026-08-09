@@ -6,10 +6,11 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.42.0  
 
-**In progress:** [Platform as a product](#platform-as-a-product-v2x) follow-on (v1.89).
-Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
+**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Guided / Advanced forms (v1.88)** — progressive disclosure on
+**Shipped on `main`:** **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
+`GET /api/v2/platform/roadmap-evidence`, adoption citations per theme + sunset candidates
+([`docs/platform-metrics.md`](platform-metrics.md)); **Guided / Advanced forms (v1.88)** — progressive disclosure on
 `terraform-module-generic` and `ansible-role-generic` (`InputField.advanced`, form depth toggle;
 freeform TF/Ansible extras deferred) ([`docs/portal-design.md`](portal-design.md));
 **Platform stakeholder interfaces (v1.87)** — `/platform/compliance`,
@@ -227,7 +228,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2.0.0 Platform GA** | shipped | Contract freeze + DR on `main`; engine tagged **`v2.0.0`** |
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
-| **Platform as a product** | Partial (v1.85–v1.88 shipped; v1.89 open) | Treat the IDP as a product: adoption/DX metrics, feedback, stakeholder views, and Guided/Advanced forms shipped; roadmap evidence open ([platform as a product](#platform-as-a-product-v2x)) |
+| **Platform as a product** | Shipped (v1.85–v1.89) | Treat the IDP as a product: adoption/DX metrics, feedback, stakeholder views, Guided/Advanced forms, and roadmap evidence ([platform as a product](#platform-as-a-product-v2x)) |
 | **FinOps enablement** | Shipped (v1.90–v1.94) | Hybrid FinOps: tags, estimate policy, showback/budgets, thin FOCUS ingest, and chargeback export/anomaly hooks — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
@@ -2405,7 +2406,7 @@ evolve continuously — including sunsetting unused surfaces.
 | --- | --- | --- |
 | 1 Customers | Partial | Bypass list shipped with v1.85; CSAT/friction capture shipped with v1.86 |
 | 2 Outcomes | Strong | Adoption + funnel gauges + stakeholder compliance/value-stream views (v1.87) |
-| 3 Continuous evolution | Strong | Living roadmap + deprecation windows; sunset policy added |
+| 3 Continuous evolution | Strong | Living roadmap + v1.89 evidence loop ties themes to adoption |
 | 4 Golden paths | Strong | Blueprints, bundles, gates, CLI/UI/API; Guided/Advanced on TF + Ansible role forms (v1.88) |
 | 5 DX metrics | Partial | Adoption ratio, funnel, TTF shipped; feedback loop shipped with v1.86 |
 
@@ -2512,7 +2513,8 @@ surfaced from low-adoption golden paths.
 **Done when:** At least one theme update cites adoption evidence from `/platform/adoption`, and
 one low-adoption path is marked for sunset or simplification with a dated window.
 
-**Status:** Not started.
+**Status:** Shipped on `main` (v1.89 — `/platform/roadmap`, `GET /api/v2/platform/roadmap-evidence`,
+theme rows with requesting-team attribution, sunset candidates from funnel conversion).
 
 **Depends on:** v1.85; optionally v1.86.
 
