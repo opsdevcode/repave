@@ -216,6 +216,7 @@ from repave_engine.run_submit import (
     is_environment_vend_run,
     is_fleet_drift_confirm_run,
     is_live_plan_run,
+    is_org_scan_run,
     submit_async_run,
 )
 from repave_engine.service_inventory import (
@@ -1394,6 +1395,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     gate_names=[],
                 ),
             )
+        if is_org_scan_run(record):
+            return templates.TemplateResponse(
+                request,
+                "run_console.html",
+                page_context(
+                    request,
+                    nav_active="import",
+                    run_id=run_id,
+                    run_record=record,
+                    org_scan=True,
+                    gate_names=[],
+                ),
+            )
         if is_environment_reclaim_run(record):
             return templates.TemplateResponse(
                 request,
@@ -1482,6 +1496,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     run_id=run_id,
                     run_record=record,
                     drift_summary=summary,
+                ),
+            )
+        if is_org_scan_run(record):
+            summary = record.result if isinstance(record.result, dict) else {}
+            return templates.TemplateResponse(
+                request,
+                "org_scan_result.html",
+                page_context(
+                    request,
+                    nav_active="import",
+                    run_id=run_id,
+                    run_record=record,
+                    org_scan_summary=summary,
                 ),
             )
         if is_environment_reclaim_run(record):
