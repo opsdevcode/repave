@@ -199,3 +199,12 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     assert "Golden paths home" in body
     assert "Resume last run" in body
     assert "terraform-module-generic" in body
+    assert '"/platform/finops"' in body
+    assert '"/platform/feedback"' in body
+    assert "shell__footer-link" in body
+    assert body.index('href="/platform/finops"') < body.index("shell__footer")
+    more_start = body.index("shell__nav-more")
+    more_end = body.index("</details>", more_start)
+    more_section = body[more_start:more_end]
+    assert 'href="/platform/finops"' in more_section
+    assert 'href="/platform/feedback"' in more_section

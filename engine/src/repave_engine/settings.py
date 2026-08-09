@@ -855,6 +855,28 @@ def _load_cost_budgets_config(block: dict[str, Any] | None) -> CostBudgetConfig:
     return CostBudgetConfig(default_monthly_usd=default_monthly, entities=entities)
 
 
+def _load_cost_anomalies_config(block: dict[str, Any] | None) -> CostAnomalyConfig:
+    if not isinstance(block, dict):
+        return CostAnomalyConfig()
+    enabled_raw = block.get("enabled", False)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("portal.cost_anomalies.enabled must be a boolean")
+    wow_raw = block.get("wow_threshold_pct", 25.0)
+    mom_raw = block.get("mom_threshold_pct", 50.0)
+    try:
+        wow_threshold = float(wow_raw)
+        mom_threshold = float(mom_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("portal.cost_anomalies thresholds must be numbers") from exc
+    if wow_threshold < 0 or mom_threshold < 0:
+        raise ValueError("portal.cost_anomalies thresholds must be >= 0")
+    return CostAnomalyConfig(
+        enabled=enabled_raw,
+        wow_threshold_pct=wow_threshold,
+        mom_threshold_pct=mom_threshold,
+    )
+
+
 @dataclass(frozen=True)
 class CostAwsConfig:
     tag_key_owner: str = "Owner"
@@ -902,6 +924,13 @@ class CostFocusConfig:
 
 
 @dataclass(frozen=True)
+class CostAnomalyConfig:
+    enabled: bool = False
+    wow_threshold_pct: float = 25.0
+    mom_threshold_pct: float = 50.0
+
+
+@dataclass(frozen=True)
 class CostBudgetConfig:
     default_monthly_usd: float | None = None
     entities: dict[str, float] = field(default_factory=dict)
@@ -922,6 +951,7 @@ class PortalConfig:
     cost_snapshots_enabled: bool = False
     cost_snapshots_file: Path | None = None
     cost_budgets: CostBudgetConfig = field(default_factory=CostBudgetConfig)
+    cost_anomalies: CostAnomalyConfig = field(default_factory=CostAnomalyConfig)
     deployment_reader: str = ""
     deployment_status_url: str = ""
     deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
@@ -943,6 +973,9 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     cost_alloc_block = block.get("cost_allocation", {})
     cost_budgets = _load_cost_budgets_config(
         block.get("cost_budgets") if isinstance(block.get("cost_budgets"), dict) else None
+    )
+    cost_anomalies = _load_cost_anomalies_config(
+        block.get("cost_anomalies") if isinstance(block.get("cost_anomalies"), dict) else None
     )
     cost_allocation = _load_cost_allocation_config(
         cost_alloc_block if isinstance(cost_alloc_block, dict) else {}
@@ -1149,6 +1182,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         cost_snapshots_enabled=cost_snapshots_enabled,
         cost_snapshots_file=cost_snapshots_file,
         cost_budgets=cost_budgets,
+        cost_anomalies=cost_anomalies,
         deployment_reader=deployment_reader,
         deployment_status_url=deployment_status_url,
         deployment_argocd=deployment_argocd,

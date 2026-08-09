@@ -1,0 +1,8 @@
+{"entity_id":"acme-tf-vpc","captured_at":"2026-07-02T00:00:00Z","currency":"USD","amount_30d":"100.00"}
+{"entity_id":"acme-tf-vpc","captured_at":"2026-07-09T00:00:00Z","currency":"USD","amount_30d":"120.00"}
+{"entity_id":"acme-tf-vpc","captured_at":"2026-07-16T00:00:00Z","currency":"USD","amount_30d":"135.00"}
+{"entity_id":"acme-tf-vpc","captured_at":"2026-07-23T00:00:00Z","currency":"USD","amount_30d":"150.00"}
+{"entity_id":"acme-tf-vpc","captured_at":"2026-07-30T00:00:00Z","currency":"USD","amount_30d":"175.00"}
+{"entity_id":"acme-tf-vpc","captured_at":"2026-08-06T00:00:00Z","currency":"USD","amount_30d":"200.00"}
+{"entity_id":"acme-checkout-api","captured_at":"2026-07-30T00:00:00Z","currency":"USD","amount_30d":"180.00"}
+{"entity_id":"acme-checkout-api","captured_at":"2026-08-06T00:00:00Z","currency":"USD","amount_30d":"200.00"}

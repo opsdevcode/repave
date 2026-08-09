@@ -1,11 +1,5 @@
 <nav class="shell__nav shell__nav--secondary platform-subnav" aria-label="Platform">
-  <a href="/platform/fleet" {% if platform_nav == "fleet" %}aria-current="page"{% endif %}>Fleet</a>
-  <a href="/platform/ops" {% if platform_nav == "ops" %}aria-current="page"{% endif %}>Ops</a>
-  <a href="/platform/standards" {% if platform_nav == "standards" %}aria-current="page"{% endif %}>Standards</a>
-  <a href="/platform/campaigns" {% if platform_nav == "campaigns" %}aria-current="page"{% endif %}>Campaigns</a>
-  <a href="/platform/adoption" {% if platform_nav == "adoption" %}aria-current="page"{% endif %}>Adoption</a>
-  <a href="/platform/finops" {% if platform_nav == "finops" %}aria-current="page"{% endif %}>FinOps</a>
-  <a href="/platform/compliance" {% if platform_nav == "compliance" %}aria-current="page"{% endif %}>Compliance</a>
-  <a href="/platform/value-stream" {% if platform_nav == "value-stream" %}aria-current="page"{% endif %}>Value stream</a>
-  <a href="/platform/feedback" {% if platform_nav == "feedback" %}aria-current="page"{% endif %}>Feedback</a>
+  {% for item in platform_nav_links %}
+  <a href="{{ item.href }}" {% if platform_nav == item.key %}aria-current="page"{% endif %}>{{ item.label }}</a>
+  {% endfor %}
 </nav>

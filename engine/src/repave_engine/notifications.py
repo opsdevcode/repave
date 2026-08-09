@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,7 @@ from urllib.parse import urlparse
 import httpx
 
 from repave_engine.blueprint import Blueprint
+from repave_engine.finops_anomalies import CostAnomaly
 from repave_engine.gates import GateResult, gate_summary
 from repave_engine.settings import NotificationsConfig, load_notifications_config
 
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 _EVENT_PUBLISH_COMPLETE = "publish_complete"
 _EVENT_GENERATION_FAILED = "generation_failed"
 _EVENT_GENERATION_SUCCEEDED = "generation_succeeded"
+_EVENT_FINOPS_ANOMALY = "finops_anomaly"
 
 
 def publish_succeeded(*, pr_message: str, dry_run: bool) -> bool:
@@ -144,6 +147,48 @@ def notify_after_generation(
         "message": context.pr_message.strip(),
     }
 
+    for url in resolved.webhook_urls():
+        if "office.com" in url or "office365.com" in url or "webhook.office.com" in url:
+            _post_webhook(url, _teams_payload(text), label="teams")
+        elif "hooks.slack.com" in url:
+            _post_webhook(url, _slack_payload(text), label="slack")
+        else:
+            _post_webhook(url, generic_payload, label="webhook")
+
+
+def notify_finops_anomalies(
+    repo_root: Path,
+    anomalies: Sequence[CostAnomaly],
+    *,
+    config: NotificationsConfig | None = None,
+) -> None:
+    """Send configured webhooks for cost spikes; never raises."""
+    if not anomalies:
+        return
+    try:
+        resolved = config if config is not None else load_notifications_config(repo_root)
+    except ValueError as exc:
+        logger.warning("Skipping finops notifications: %s", exc)
+        return
+    if resolved is None or not resolved.enabled:
+        return
+    if _EVENT_FINOPS_ANOMALY not in resolved.events:
+        return
+
+    lines = ["*FinOps cost anomaly detected*"]
+    for anomaly in anomalies:
+        lines.append(
+            f"- `{anomaly.display_name}` ({anomaly.owner or 'no owner'}): "
+            f"{anomaly.kind.upper()} +{anomaly.change_pct:.1f}% "
+            f"({anomaly.currency} {anomaly.baseline_amount:.2f} → "
+            f"{anomaly.current_amount:.2f}; threshold {anomaly.threshold_pct:.0f}%)"
+        )
+    text = "\n".join(lines)
+    generic_payload = {
+        "event": _EVENT_FINOPS_ANOMALY,
+        "anomalies": [item.to_public_dict() for item in anomalies],
+        "message": text,
+    }
     for url in resolved.webhook_urls():
         if "office.com" in url or "office365.com" in url or "webhook.office.com" in url:
             _post_webhook(url, _teams_payload(text), label="teams")

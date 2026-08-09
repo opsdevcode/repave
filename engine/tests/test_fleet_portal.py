@@ -115,8 +115,10 @@ def test_nav_exposes_library_link(repo_root, output_config, registry: Path) -> N
 
     assert 'href="/library"' in body
     assert "Library" in body
-    assert ">Fleet</a>" not in body
-    assert body.index("Library") < body.index("shell__nav-more")
+    more_idx = body.index("shell__nav-more")
+    primary = body[:more_idx]
+    assert ">Fleet</a>" not in primary
+    assert body.index("Library") < more_idx
 
 
 def test_library_page_marks_nav_current(repo_root, output_config, registry: Path) -> None:

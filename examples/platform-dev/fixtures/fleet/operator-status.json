@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "updated_at": "2026-08-09T16:00:00+00:00",
+  "repos": [
+    {
+      "repo_url": "https://github.com/acme/tf-vpc",
+      "phase": "OutOfDate",
+      "message": "Blueprint pin 0.9.0 differs from cluster desired state",
+      "remediation_pr_url": "https://github.com/acme/tf-vpc/pull/42",
+      "resource_name": "acme-tf-vpc",
+      "namespace": "repave-system"
+    },
+    {
+      "repo_url": "https://github.com/acme/opa-guardrails",
+      "phase": "Ready",
+      "message": "In sync with declared pins",
+      "resource_name": "acme-opa-guardrails",
+      "namespace": "repave-system"
+    },
+    {
+      "repo_url": "https://github.com/acme/checkout-api",
+      "phase": "Ready",
+      "message": "In sync with declared pins",
+      "resource_name": "acme-checkout-api",
+      "namespace": "repave-system"
+    }
+  ],
+  "campaigns": [
+    {
+      "name": "platform-rollout",
+      "namespace": "repave-system",
+      "phase": "Active",
+      "open_pr_count": 2,
+      "out_of_date_count": 1,
+      "paused": false,
+      "blueprint_name": "terraform-module-generic"
+    }
+  ]
+}

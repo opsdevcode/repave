@@ -172,6 +172,7 @@ from repave_engine.portal_platform import (
     build_platform_value_stream_page,
     find_campaign_in_snapshot,
     platform_admin_visible,
+    platform_nav_links,
     register_fleet_entry_from_form,
     require_platform_admin,
     unregister_fleet_entry,
@@ -349,6 +350,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
         auth_user = session_user(request) if request is not None else None
         presenter = False
+        admin_visible = platform_admin_visible(auth_config, auth_user)
         if request is not None:
             presenter = request.query_params.get("presenter", "").strip().lower() in (
                 "1",
@@ -364,7 +366,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "presenter_mode": presenter,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
-            "platform_admin_visible": platform_admin_visible(auth_config, auth_user),
+            "platform_admin_visible": admin_visible,
+            "platform_nav_links": platform_nav_links() if admin_visible else (),
             "async_generation_enabled": run_queue is not None,
             "async_generation_required": worker_execution_mode and run_queue is not None,
             "worker_execution_mode": worker_execution_mode,
@@ -451,24 +454,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         auth_user = session_user(request) if request is not None else None
         if platform_admin_visible(auth_config, auth_user):
             items.extend(
-                [
-                    {"kind": "nav", "label": "Platform fleet", "href": "/platform/fleet"},
-                    {"kind": "nav", "label": "Platform ops", "href": "/platform/ops"},
-                    {"kind": "nav", "label": "Platform standards", "href": "/platform/standards"},
-                    {"kind": "nav", "label": "Platform campaigns", "href": "/platform/campaigns"},
-                    {"kind": "nav", "label": "Platform adoption", "href": "/platform/adoption"},
-                    {
-                        "kind": "nav",
-                        "label": "Platform compliance",
-                        "href": "/platform/compliance",
-                    },
-                    {
-                        "kind": "nav",
-                        "label": "Platform value stream",
-                        "href": "/platform/value-stream",
-                    },
-                    {"kind": "nav", "label": "Platform feedback", "href": "/platform/feedback"},
-                ]
+                {
+                    "kind": "nav",
+                    "label": f"Platform {link.label.lower()}",
+                    "href": link.href,
+                    "subtitle": link.subtitle,
+                }
+                for link in platform_nav_links()
             )
         for blueprint in list_blueprints(blueprints_dir(repo_root)):
             items.append(

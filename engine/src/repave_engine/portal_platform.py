@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -37,6 +38,33 @@ from repave_engine.settings import (
     load_environment_vending_config,
     load_fleet_config,
 )
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class PlatformNavLink:
+    key: str
+    label: str
+    href: str
+    subtitle: str = ""
+
+
+PLATFORM_NAV_LINKS: tuple[PlatformNavLink, ...] = (
+    PlatformNavLink("fleet", "Fleet", "/platform/fleet", "Governed repositories"),
+    PlatformNavLink("ops", "Ops", "/platform/ops", "Operational readiness"),
+    PlatformNavLink("standards", "Standards", "/platform/standards", "Standards blast radius"),
+    PlatformNavLink("campaigns", "Campaigns", "/platform/campaigns", "Operator upgrade campaigns"),
+    PlatformNavLink("adoption", "Adoption", "/platform/adoption", "Golden path adoption metrics"),
+    PlatformNavLink("finops", "FinOps", "/platform/finops", "Cost vs budget rollup"),
+    PlatformNavLink("compliance", "Compliance", "/platform/compliance", "Compliance posture"),
+    PlatformNavLink("value-stream", "Value stream", "/platform/value-stream", "DORA-style signals"),
+    PlatformNavLink("feedback", "Feedback", "/platform/feedback", "CSAT and friction signals"),
+)
+
+
+def platform_nav_links() -> tuple[PlatformNavLink, ...]:
+    return PLATFORM_NAV_LINKS
 
 
 def platform_admin_visible(
@@ -564,6 +592,7 @@ def build_platform_finops_page(
     resolved_output: OutputConfig,
 ) -> PlatformFinOpsPage:
     from repave_engine.cost_actuals import cost_reader_configured
+    from repave_engine.finops_anomalies import evaluate_finops_anomalies
     from repave_engine.finops_rollup import build_finops_rollup
     from repave_engine.metrics import record_finops_rollup
     from repave_engine.portal_context import build_portal_catalog_entities
@@ -573,6 +602,7 @@ def build_platform_finops_page(
     cost_configured = cost_reader_configured(
         cost_reader=portal_config.cost_reader,
         cost_actuals_url=portal_config.cost_actuals_url,
+        cost_focus_file=portal_config.cost_focus.file,
     )
     entities = build_portal_catalog_entities(
         repo_root,
@@ -581,6 +611,15 @@ def build_platform_finops_page(
     )
     rollup = build_finops_rollup(entities, portal_config, repo_root=repo_root)
     record_finops_rollup(rollup)
+    if portal_config.cost_anomalies.enabled:
+        try:
+            evaluate_finops_anomalies(
+                entities,
+                portal_config,
+                repo_root=repo_root,
+            )
+        except OSError as exc:
+            logger.warning("FinOps anomaly evaluation skipped: %s", exc)
     return PlatformFinOpsPage(
         snapshots_enabled=portal_config.cost_snapshots_file is not None,
         rollup=rollup,
