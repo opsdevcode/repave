@@ -30,15 +30,33 @@ def test_platform_finops_page_renders(
     output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, registry: Path
 ) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
+    snapshot_file = tmp_path / "data" / "fleet" / "cost-snapshots.jsonl"
+    snapshot_file.parent.mkdir(parents=True)
+    snapshot_file.write_text(
+        "\n".join(
+            [
+                '{"entity_id":"acme-tf-vpc","captured_at":"2026-07-09T00:00:00Z",'
+                '"currency":"USD","amount_30d":"120.00"}',
+                '{"entity_id":"acme-tf-vpc","captured_at":"2026-08-06T00:00:00Z",'
+                '"currency":"USD","amount_30d":"200.00"}',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     (tmp_path / "repave.config.yaml").write_text(
         (
             f"fleet:\n  enabled: true\n  file: {registry}\n"
             "portal:\n"
             "  cost_snapshots:\n"
             "    enabled: true\n"
-            "    file: data/fleet/cost-snapshots.jsonl\n"
+            f"    file: {snapshot_file}\n"
             "  cost_budgets:\n"
             "    default_monthly_usd: 100\n"
+            "  cost_anomalies:\n"
+            "    enabled: true\n"
+            "    wow_threshold_pct: 25\n"
+            "    mom_threshold_pct: 50\n"
         ),
         encoding="utf-8",
     )
@@ -49,6 +67,9 @@ def test_platform_finops_page_renders(
     assert "FinOps showback" in response.text
     assert "Fleet rollup" in response.text
     assert "tf-vpc" in response.text
+    assert "Cost anomalies" in response.text
+    assert "Month over month" in response.text
+    assert "+66.7%" in response.text
 
 
 def test_estate_map_page_lists_tiles(

@@ -623,7 +623,9 @@ def build_platform_roadmap_page(
 @dataclass(frozen=True)
 class PlatformFinOpsPage:
     snapshots_enabled: bool
+    anomalies_enabled: bool
     rollup: object | None
+    anomalies: tuple[object, ...] = ()
 
 
 def build_platform_finops_page(
@@ -632,7 +634,7 @@ def build_platform_finops_page(
     resolved_output: OutputConfig,
 ) -> PlatformFinOpsPage:
     from repave_engine.cost_actuals import cost_reader_configured
-    from repave_engine.finops_anomalies import evaluate_finops_anomalies
+    from repave_engine.finops_anomalies import collect_finops_anomalies
     from repave_engine.finops_rollup import build_finops_rollup
     from repave_engine.metrics import record_finops_rollup
     from repave_engine.portal_context import build_portal_catalog_entities
@@ -651,9 +653,10 @@ def build_platform_finops_page(
     )
     rollup = build_finops_rollup(entities, portal_config, repo_root=repo_root)
     record_finops_rollup(rollup)
+    anomalies: tuple[object, ...] = ()
     if portal_config.cost_anomalies.enabled:
         try:
-            evaluate_finops_anomalies(
+            anomalies = collect_finops_anomalies(
                 entities,
                 portal_config,
                 repo_root=repo_root,
@@ -662,5 +665,7 @@ def build_platform_finops_page(
             logger.warning("FinOps anomaly evaluation skipped: %s", exc)
     return PlatformFinOpsPage(
         snapshots_enabled=portal_config.cost_snapshots_file is not None,
+        anomalies_enabled=portal_config.cost_anomalies.enabled,
         rollup=rollup,
+        anomalies=anomalies,
     )

@@ -66,9 +66,71 @@
           {% endif %}
         </dd>
       </div>
+      {% if finops_page.anomalies_enabled %}
+      <div>
+        <dt class="muted">Cost anomalies</dt>
+        <dd>
+          {% if finops_page.anomalies %}
+          <span class="badge badge--fail">{{ finops_page.anomalies|length }}</span>
+          {% else %}
+          <span class="badge badge--pass">0</span>
+          {% endif %}
+        </dd>
+      </div>
+      {% endif %}
     </dl>
   </div>
 </section>
+
+{% if finops_page.anomalies_enabled %}
+<section class="card" aria-labelledby="finops-anomalies-heading">
+  <div class="card__header">
+    <h2 id="finops-anomalies-heading">Cost anomalies</h2>
+    <p class="muted card__subtitle">
+      WoW / MoM spikes on snapshot series (display only — use export or a scheduled job for
+      audit + webhook).
+    </p>
+  </div>
+  <div class="card__body">
+    {% if finops_page.anomalies %}
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col" data-sortable data-sort-type="text">Entity</th>
+          <th scope="col" data-sortable data-sort-type="text">Owner</th>
+          <th scope="col" data-sortable data-sort-type="text">Signal</th>
+          <th scope="col" data-sortable data-sort-type="number">Change</th>
+          <th scope="col" data-sortable data-sort-type="number">Baseline → current</th>
+          <th scope="col" data-sortable data-sort-type="text">Threshold</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for anomaly in finops_page.anomalies %}
+        <tr>
+          <td>
+            <a href="/services/{{ anomaly.entity_id }}"><code>{{ anomaly.display_name }}</code></a>
+          </td>
+          <td>{{ anomaly.owner or '—' }}</td>
+          <td>
+            <span class="badge badge--fail">
+              {% if anomaly.kind == 'wow' %}Week over week{% else %}Month over month{% endif %}
+            </span>
+          </td>
+          <td>+{{ '%.1f'|format(anomaly.change_pct) }}%</td>
+          <td>
+            {{ anomaly.currency }} {{ anomaly.baseline_amount }} → {{ anomaly.current_amount }}
+          </td>
+          <td>{{ '%.0f'|format(anomaly.threshold_pct) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No WoW or MoM threshold breaches on the latest snapshot series.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
 
 <section class="card" aria-labelledby="finops-entities-heading">
   <div class="card__header">
