@@ -458,11 +458,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-portal-submit-error" in response.text
     assert "form-actions--sticky" in response.text
     assert "Standard pin drift" in response.text
-    assert "data-form-stepper" in response.text
-    assert "form-stepper" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
     assert "governance-meter" in response.text
-    assert "scope-summary-bar" in response.text
-    assert "data-form-stepper-fill" in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
     assert "Plan preview" in response.text

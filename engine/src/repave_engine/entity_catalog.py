@@ -285,6 +285,89 @@ def _latest_audit_for_name(
     return None
 
 
+def audit_apply_published(entry: AuditHistoryEntry) -> bool:
+    """True when audit records a successful apply that targeted a repository URL."""
+    if entry.dry_run or entry.gates_outcome != "passed" or not entry.repository_url:
+        return False
+    publish_ok = entry.extra.get("publish_succeeded")
+    if publish_ok is False:
+        return False
+    publish_error = entry.extra.get("publish_error")
+    if isinstance(publish_error, str) and publish_error.strip():
+        return False
+    error = entry.extra.get("error")
+    return not (isinstance(error, str) and error.strip())
+
+
+def build_catalog_from_audit_applies(
+    audit_entries: tuple[AuditHistoryEntry, ...],
+    *,
+    known_urls: set[str],
+    modules_root: Path,
+    operator_by_url: dict[str, FleetOperatorStatus] | None = None,
+    cost_actuals_configured: bool = False,
+) -> list[CatalogEntity]:
+    """Surface successful applies from audit when fleet register was missed."""
+    lookup = operator_by_url or {}
+    found: list[CatalogEntity] = []
+    seen_urls: set[str] = set(known_urls)
+    for entry in audit_entries:
+        if not audit_apply_published(entry):
+            continue
+        repo_url = str(entry.repository_url or "").strip()
+        if not repo_url:
+            continue
+        normalized = normalize_repo_url(repo_url)
+        if normalized in seen_urls:
+            continue
+        seen_urls.add(normalized)
+        repo_dir = _match_local_dir(modules_root, repo_url)
+        operator = lookup.get(repo_url) or lookup.get(normalized)
+        meta = _catalog_metadata(repo_dir) if repo_dir else {}
+        display = meta.get("display_name") or entry.activity_artifact_name()
+        fleet_entry = FleetEntry(
+            repo_url=repo_url,
+            blueprint_name=entry.blueprint_name,
+            blueprint_version=entry.blueprint_version,
+            standard_source="",
+            standard_version="",
+        )
+        found.append(
+            CatalogEntity(
+                entity_id=entity_id_for_repo_url(repo_url),
+                display_name=display,
+                repo_url=repo_url,
+                local_path=repo_dir,
+                owner=meta.get("owner", ""),
+                blueprint_name=entry.blueprint_name,
+                blueprint_version=entry.blueprint_version,
+                standard_source="",
+                standard_version="",
+                component_type=meta.get("component_type", "component"),
+                lifecycle=meta.get("lifecycle", ""),
+                operator_phase=operator.phase if operator else "",
+                operator_message=operator.message if operator else "",
+                remediation_pr_url=operator.remediation_pr_url if operator else "",
+                manifest_name=display,
+                manifest_namespace="default",
+                source="audit",
+                scorecard=build_scorecard(
+                    repo_dir=repo_dir,
+                    fleet_entry=fleet_entry,
+                    operator=operator,
+                    audit=entry,
+                    owner=meta.get("owner", ""),
+                    display_name=display,
+                    cost_actuals_configured=cost_actuals_configured,
+                ),
+                readme_preview=_readme_excerpt(repo_dir) if repo_dir else "",
+                last_generation_at=entry.timestamp[:19],
+                last_generation_outcome=entry.gates_outcome,
+            )
+        )
+    return found
+
+
 def _cost_scorecard_dimension(
     *,
     owner: str,

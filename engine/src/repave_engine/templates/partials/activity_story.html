@@ -23,6 +23,16 @@
         · <a href="{{ row.repository_url }}">repo</a>
         {% endif %}
       </p>
+      {% if row.activity_has_details() %}
+      <dl class="activity-story__details muted">
+        {% for label, value in row.activity_details() %}
+        <div class="activity-story__detail-row">
+          <dt>{{ label }}</dt>
+          <dd>{% if label in ("Publish error", "Error") %}<pre class="activity-list__detail-pre">{{ value }}</pre>{% else %}{{ value }}{% endif %}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+      {% endif %}
     </div>
   </li>
   {% endfor %}
