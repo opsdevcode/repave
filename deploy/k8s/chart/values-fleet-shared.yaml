@@ -19,6 +19,13 @@ repave:
     costSnapshots:
       enabled: true
       file: /data/fleet/cost-snapshots.jsonl
+    costBudgets:
+      enabled: true
+      defaultMonthlyUsd: 120
+      entities:
+        opsdevcode-tf-aws-eks-demo: 500
+        opsdevcode-tf-aws-vpc-demo: 100
+        opsdevcode-helm-payments-api: 40
 
 fleetOperatorSnapshot:
   cronJob:

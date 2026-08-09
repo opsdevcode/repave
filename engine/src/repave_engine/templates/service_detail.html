@@ -441,6 +441,29 @@
       <span class="muted">as of <time datetime="{{ cost_actuals.as_of }}">{{ cost_actuals.as_of[:19] }}</time></span>
       {% endif %}
     </p>
+    {% if cost_showback and cost_showback.monthly_budget_usd is not none %}
+    <p class="entity-cost__budget">
+      <span class="badge badge--{% if cost_showback.budget_level == 'unknown' %}muted{% else %}{{ cost_showback.budget_level }}{% endif %}">
+        Budget {{ cost_actuals.currency }} {{ '%.2f'|format(cost_showback.monthly_budget_usd) }}/mo
+        {% if cost_showback.budget_used_pct is not none %}
+        · {{ cost_showback.budget_used_pct }}% of budget
+        {% endif %}
+      </span>
+    </p>
+    <p class="muted">{{ cost_showback.budget_detail }}</p>
+    {% endif %}
+    {% if cost_showback and cost_showback.sparkline %}
+    <div
+      class="cost-sparkline cost-sparkline--detail"
+      role="img"
+      aria-label="{{ cost_showback.sparkline_detail or 'Cost trend' }}"
+      title="{{ cost_showback.sparkline_detail }}"
+    >
+      {% for height in cost_showback.sparkline %}
+      <span class="cost-spark" style="--cost-spark-height: {{ height }}%"></span>
+      {% endfor %}
+    </div>
+    {% endif %}
     {% if cost_actuals.detail %}
     <p class="muted">{{ cost_actuals.detail }}</p>
     {% endif %}

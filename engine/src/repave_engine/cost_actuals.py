@@ -40,6 +40,12 @@ class CostActualsSummary:
             "source_url": self.source_url,
         }
 
+    def amount_float(self) -> float | None:
+        try:
+            return float(self.amount_30d)
+        except ValueError:
+            return None
+
 
 def entity_tag_coverage(entity: CostEntity) -> tuple[TagCoverage, str]:
     return tag_coverage_for_fields(entity.owner, entity.display_name)

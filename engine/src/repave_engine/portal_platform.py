@@ -33,6 +33,7 @@ from repave_engine.run_queue import RunQueue
 from repave_engine.run_store import RunRecord, RunStatus
 from repave_engine.settings import (
     FleetConfig,
+    OutputConfig,
     load_environment_vending_config,
     load_fleet_config,
 )
@@ -548,4 +549,39 @@ def build_platform_value_stream_page(
         metrics_enabled=True,
         snapshot=snapshot,
         history=history,
+    )
+
+
+@dataclass(frozen=True)
+class PlatformFinOpsPage:
+    snapshots_enabled: bool
+    rollup: object | None
+
+
+def build_platform_finops_page(
+    repo_root: Path,
+    *,
+    resolved_output: OutputConfig,
+) -> PlatformFinOpsPage:
+    from repave_engine.cost_actuals import cost_reader_configured
+    from repave_engine.finops_rollup import build_finops_rollup
+    from repave_engine.metrics import record_finops_rollup
+    from repave_engine.portal_context import build_portal_catalog_entities
+    from repave_engine.settings import load_portal_config
+
+    portal_config = load_portal_config(repo_root)
+    cost_configured = cost_reader_configured(
+        cost_reader=portal_config.cost_reader,
+        cost_actuals_url=portal_config.cost_actuals_url,
+    )
+    entities = build_portal_catalog_entities(
+        repo_root,
+        resolved_output,
+        cost_actuals_configured=cost_configured,
+    )
+    rollup = build_finops_rollup(entities, portal_config, repo_root=repo_root)
+    record_finops_rollup(rollup)
+    return PlatformFinOpsPage(
+        snapshots_enabled=portal_config.cost_snapshots_file is not None,
+        rollup=rollup,
     )

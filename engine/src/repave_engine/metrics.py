@@ -45,6 +45,18 @@ TIME_TO_FIRST_ARTIFACT_SECONDS = Gauge(
     "repave_dx_time_to_first_artifact_seconds",
     "p50 seconds from first audit event to first successful apply per user",
 )
+FINOPS_FLEET_ACTUAL_30D_USD = Gauge(
+    "repave_finops_fleet_actual_30d_usd",
+    "Sum of latest L30D actuals across catalog entities with cost data",
+)
+FINOPS_FLEET_BUDGET_MONTHLY_USD = Gauge(
+    "repave_finops_fleet_budget_monthly_usd",
+    "Sum of configured monthly budgets across catalog entities",
+)
+FINOPS_OVER_BUDGET_ENTITIES = Gauge(
+    "repave_finops_over_budget_entities",
+    "Catalog entities whose L30D actual exceeds monthly budget",
+)
 
 
 def record_jsonl_append_failure(store: str) -> None:
@@ -66,3 +78,13 @@ def record_dx_metrics(snapshot: DxMetricsSnapshot) -> None:
         PLAN_APPLY_CONVERSION_RATIO.set(snapshot.plan_apply_ratio)
     if snapshot.time_to_first_artifact_seconds_p50 is not None:
         TIME_TO_FIRST_ARTIFACT_SECONDS.set(snapshot.time_to_first_artifact_seconds_p50)
+
+
+def record_finops_rollup(rollup: object) -> None:
+    from repave_engine.finops_rollup import FinOpsRollup
+
+    if not isinstance(rollup, FinOpsRollup):
+        return
+    FINOPS_FLEET_ACTUAL_30D_USD.set(rollup.total_actual_30d)
+    FINOPS_FLEET_BUDGET_MONTHLY_USD.set(rollup.total_budget_monthly)
+    FINOPS_OVER_BUDGET_ENTITIES.set(rollup.over_budget_count)

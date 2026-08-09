@@ -17,6 +17,16 @@ data:
         enabled: {{ .Values.repave.portal.costSnapshots.enabled }}
         file: {{ .Values.repave.portal.costSnapshots.file | quote }}
       {{- end }}
+      {{- if .Values.repave.portal.costBudgets.enabled }}
+      cost_budgets:
+        {{- if .Values.repave.portal.costBudgets.defaultMonthlyUsd }}
+        default_monthly_usd: {{ .Values.repave.portal.costBudgets.defaultMonthlyUsd }}
+        {{- end }}
+        {{- if .Values.repave.portal.costBudgets.entities }}
+        entities:
+{{ toYaml .Values.repave.portal.costBudgets.entities | indent 10 }}
+        {{- end }}
+      {{- end }}
     gates:
       checkov:
         skip_checks:

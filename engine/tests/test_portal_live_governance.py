@@ -26,9 +26,41 @@ def registry(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return path
 
 
-def test_estate_map_page_lists_tiles(repo_root, output_config, registry: Path) -> None:
+def test_platform_finops_page_renders(
+    output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, registry: Path
+) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    (tmp_path / "repave.config.yaml").write_text(
+        (
+            f"fleet:\n  enabled: true\n  file: {registry}\n"
+            "portal:\n"
+            "  cost_snapshots:\n"
+            "    enabled: true\n"
+            "    file: data/fleet/cost-snapshots.jsonl\n"
+            "  cost_budgets:\n"
+            "    default_monthly_usd: 100\n"
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+    response = client.get("/platform/finops")
+    assert response.status_code == 200
+    assert "FinOps showback" in response.text
+    assert "Fleet rollup" in response.text
+    assert "tf-vpc" in response.text
+
+
+def test_estate_map_page_lists_tiles(
+    output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, registry: Path
+) -> None:
+    register_repo(registry, PROVENANCE_ENTRY)
+    (tmp_path / "repave.config.yaml").write_text(
+        f"fleet:\n  enabled: true\n  file: {registry}\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
     response = client.get("/estate")
 

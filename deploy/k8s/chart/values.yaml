@@ -107,6 +107,10 @@ repave:
     costSnapshots:
       enabled: false
       file: /data/fleet/cost-snapshots.jsonl
+    costBudgets:
+      enabled: false
+      defaultMonthlyUsd: 0
+      entities: {}
   gates:
     checkov:
       skipChecks: []

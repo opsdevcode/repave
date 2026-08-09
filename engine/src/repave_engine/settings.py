@@ -822,6 +822,39 @@ def _load_cost_allocation_config(block: dict[str, Any] | None) -> CostAllocation
     )
 
 
+def _load_cost_budgets_config(block: dict[str, Any] | None) -> CostBudgetConfig:
+    if not isinstance(block, dict):
+        return CostBudgetConfig()
+    default_raw = block.get("default_monthly_usd")
+    default_monthly: float | None = None
+    if default_raw is not None:
+        try:
+            default_monthly = float(default_raw)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("portal.cost_budgets.default_monthly_usd must be a number") from exc
+        if default_monthly < 0:
+            raise ValueError("portal.cost_budgets.default_monthly_usd must be >= 0")
+    entities_raw = block.get("entities", {})
+    if entities_raw is not None and not isinstance(entities_raw, dict):
+        raise ValueError("portal.cost_budgets.entities must be a mapping")
+    entities: dict[str, float] = {}
+    if isinstance(entities_raw, dict):
+        for key, value in entities_raw.items():
+            entity_id = str(key).strip()
+            if not entity_id:
+                continue
+            try:
+                amount = float(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"portal.cost_budgets.entities.{entity_id} must be a number"
+                ) from exc
+            if amount < 0:
+                raise ValueError(f"portal.cost_budgets.entities.{entity_id} must be >= 0")
+            entities[entity_id] = amount
+    return CostBudgetConfig(default_monthly_usd=default_monthly, entities=entities)
+
+
 @dataclass(frozen=True)
 class CostAwsConfig:
     tag_key_owner: str = "Owner"
@@ -860,6 +893,12 @@ class DeploymentFluxConfig:
 
 
 @dataclass(frozen=True)
+class CostBudgetConfig:
+    default_monthly_usd: float | None = None
+    entities: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class PortalConfig:
     density: str
     observability_dashboard_url: str = ""
@@ -872,6 +911,7 @@ class PortalConfig:
     cost_k8s: CostK8sConfig = field(default_factory=CostK8sConfig)
     cost_snapshots_enabled: bool = False
     cost_snapshots_file: Path | None = None
+    cost_budgets: CostBudgetConfig = field(default_factory=CostBudgetConfig)
     deployment_reader: str = ""
     deployment_status_url: str = ""
     deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
@@ -891,6 +931,9 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     cost_url = str(block.get("cost_actuals_url", "")).strip()
     cost_reader = str(block.get("cost_reader", "")).strip().lower()
     cost_alloc_block = block.get("cost_allocation", {})
+    cost_budgets = _load_cost_budgets_config(
+        block.get("cost_budgets") if isinstance(block.get("cost_budgets"), dict) else None
+    )
     cost_allocation = _load_cost_allocation_config(
         cost_alloc_block if isinstance(cost_alloc_block, dict) else {}
     )
@@ -1056,6 +1099,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         cost_k8s=cost_k8s,
         cost_snapshots_enabled=cost_snapshots_enabled,
         cost_snapshots_file=cost_snapshots_file,
+        cost_budgets=cost_budgets,
         deployment_reader=deployment_reader,
         deployment_status_url=deployment_status_url,
         deployment_argocd=deployment_argocd,

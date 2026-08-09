@@ -7,7 +7,7 @@ work, writing ADRs, and opening issues.
 **Current release:** v2.39.2  
 
 **In progress:** [Platform as a product](#platform-as-a-product-v2x) follow-on (v1.89);
-[FinOps enablement](#finops-enablement-v2x) (v1.92–v1.94) paused after estimate policy.
+[FinOps enablement](#finops-enablement-v2x) (v1.93–v1.94) after v1.92 showback.
 Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **Guided / Advanced forms (v1.88)** — progressive disclosure on
@@ -17,7 +17,9 @@ freeform TF/Ansible extras deferred) ([`docs/portal-design.md`](portal-design.md
 `/platform/value-stream`, `GET /api/v2/platform/compliance|value-stream`
 ([`docs/platform-metrics.md`](platform-metrics.md)); **FinOps estimate policy (v1.91)** — `gates.infracost` org floor
 (`required` / `max_monthly_usd`), estimate in audit + PR evidence, upgrade/import cost delta
-([`docs/finops.md`](finops.md)); **FinOps tag governance (v1.90)** — required allocation tags on terraform/helm
+([`docs/finops.md`](finops.md)); **FinOps showback (v1.92)** — cost snapshot SQL mirror,
+entity budgets, `/platform/finops` rollup, service-detail trend vs budget, fleet Prometheus
+gauges ([`docs/finops.md`](finops.md)); **FinOps tag governance (v1.90)** — required allocation tags on terraform/helm
 golden paths, Checkov `CKV2_REPAVE_13`, OPA `allocation_tags`, `portal.cost_allocation.tag_keys`,
 scorecard fail on incomplete tags ([`docs/finops.md`](finops.md)); **Platform feedback loop (v1.86)** — CSAT + friction capture on result/run-console,
 `/platform/feedback`, `GET|POST /api/v2/platform/feedback` ([`docs/platform-metrics.md`](platform-metrics.md));
@@ -224,7 +226,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **v2.1+ environment lifecycle** | Shipped | Deployment status, live plan, environment vending/reclaim, cost badges, and post-merge registry finalize ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)) |
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **Platform as a product** | Partial (v1.85–v1.88 shipped; v1.89 open) | Treat the IDP as a product: adoption/DX metrics, feedback, stakeholder views, and Guided/Advanced forms shipped; roadmap evidence open ([platform as a product](#platform-as-a-product-v2x)) |
-| **FinOps enablement** | Partial (v1.90–v1.91 shipped; v1.92–v1.94 open) | Hybrid FinOps: tags + estimate policy shipped; showback/budgets, thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
+| **FinOps enablement** | Partial (v1.90–v1.92 shipped; v1.93–v1.94 open) | Hybrid FinOps: tags, estimate policy, and showback/budgets shipped; thin FOCUS ingest, chargeback export — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
 
@@ -2542,7 +2544,7 @@ cloud FOCUS exports, commercial platforms).
 | --- | --- | --- |
 | Planning & estimating | Strong | Infracost + optional `max_monthly_usd`; org floor is v1.91 |
 | Allocation | Partial | v1.90 gate-enforced tags; CE/OpenCost tag filters |
-| Reporting & analytics | Weak | Single L30D snapshot — v1.92 trends/budgets |
+| Reporting & analytics | Partial | v1.92 trends/budgets + `/platform/finops`; library sparklines |
 | Data ingestion / FOCUS | Absent | v1.93 thin adapter |
 | Anomaly / chargeback | Absent | v1.94 lightweight hooks + export |
 | Rate optimization | Out of scope | External FinOps tools |
@@ -2611,7 +2613,8 @@ evidence, upgrade/import cost delta).
 **Done when:** An admin sees fleet cost vs budget rollup; entity detail shows trend vs budget
 without external BI.
 
-**Status:** Not started.
+**Status:** Shipped on `main` (v1.92 showback — cost snapshot SQL mirror, entity budgets,
+`/platform/finops` rollup, service-detail trend vs budget, fleet Prometheus gauges).
 
 **Depends on:** v1.90; [v1.85 adoption/DX metrics](#v185--golden-path-adoption-and-dx-metrics)
 snapshot patterns.
