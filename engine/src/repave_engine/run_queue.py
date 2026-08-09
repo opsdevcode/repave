@@ -38,6 +38,8 @@ from repave_engine.metrics import (
     record_run_queue_depth,
     record_run_terminal,
 )
+from repave_engine.org_import_scan import is_org_scan_run as is_org_scan_payload
+from repave_engine.org_import_scan import run_org_scan
 from repave_engine.platform_runs import (
     is_environment_reclaim_run,
     is_fleet_drift_confirm_run,
@@ -130,7 +132,13 @@ class RunQueue:
         error: str | None = None,
     ) -> None:
         kind = str(record.payload.get("kind", "")).strip()
-        if kind in ("live_plan", "environment_vend", "environment_reclaim", "fleet_drift_confirm"):
+        if kind in (
+            "live_plan",
+            "environment_vend",
+            "environment_reclaim",
+            "fleet_drift_confirm",
+            "org_scan",
+        ):
             return
         blueprint_name = record.blueprint_name or str(record.payload.get("bundle", "")).strip()
         if not blueprint_name:
@@ -276,7 +284,7 @@ class RunQueue:
         elif run_kind == "environment_vend":
             if not blueprint_name:
                 raise ValueError("environment_vend runs require blueprint_name sentinel")
-        elif run_kind in ("environment_reclaim", "fleet_drift_confirm"):
+        elif run_kind in ("environment_reclaim", "fleet_drift_confirm", "org_scan"):
             if not blueprint_name:
                 raise ValueError(f"{run_kind} runs require blueprint_name sentinel")
         elif blueprint_name and bundle_name:
@@ -322,6 +330,12 @@ class RunQueue:
         elif run_kind == "fleet_drift_confirm":
             payload = {
                 "kind": "fleet_drift_confirm",
+                "inputs": inputs,
+                "dry_run": True,
+            }
+        elif run_kind == "org_scan":
+            payload = {
+                "kind": "org_scan",
                 "inputs": inputs,
                 "dry_run": True,
             }
@@ -419,6 +433,7 @@ class RunQueue:
                 if (
                     (is_environment_vend_payload(record.payload) and not record.dry_run)
                     or (is_environment_reclaim_run(record.payload) and not record.dry_run)
+                    or is_org_scan_payload(record.payload)
                 )
                 else (None if record.dry_run else resolve_github_access_token())
             )
@@ -568,6 +583,18 @@ class RunQueue:
                             "confirmed_behind": confirm.confirmed_behind,
                             "confirmed_current": confirm.confirmed_current,
                         },
+                    )
+                elif is_org_scan_payload(record.payload):
+                    if not github_token:
+                        raise ValueError(
+                            "GitHub credentials are not configured; set GITHUB_TOKEN or "
+                            "GitHub App env vars to scan organization repositories"
+                        )
+                    result = run_org_scan(
+                        self._repo_root,
+                        token=github_token,
+                        inputs=inputs_raw,
+                        on_event=on_event,
                     )
                 else:
                     bundle_name = str(record.payload.get("bundle", "")).strip()

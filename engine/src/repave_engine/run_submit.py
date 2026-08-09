@@ -10,6 +10,7 @@ from repave_engine.environment_vend import (
 )
 from repave_engine.live_plan import LIVE_PLAN_BLUEPRINT_SENTINEL
 from repave_engine.live_plan_pr import parse_pull_request_ref
+from repave_engine.org_import_scan import ORG_SCAN_SENTINEL
 from repave_engine.platform_runs import (
     ENVIRONMENT_RECLAIM_SENTINEL,
     FLEET_DRIFT_CONFIRM_SENTINEL,
@@ -68,6 +69,13 @@ def submit_async_run(
         )
     if kind == "fleet_drift_confirm":
         return _submit_fleet_drift_confirm(
+            queue,
+            payload=payload,
+            acting_user=acting_user,
+            client_request_id=client_request_id,
+        )
+    if kind == "org_scan":
+        return _submit_org_scan(
             queue,
             payload=payload,
             acting_user=acting_user,
@@ -217,6 +225,10 @@ def is_fleet_drift_confirm_run(record: RunRecord) -> bool:
     return str(record.payload.get("kind", "")).strip() == "fleet_drift_confirm"
 
 
+def is_org_scan_run(record: RunRecord) -> bool:
+    return str(record.payload.get("kind", "")).strip() == "org_scan"
+
+
 def _submit_environment_reclaim(
     queue: RunQueue,
     *,
@@ -264,4 +276,27 @@ def _submit_fleet_drift_confirm(
         acting_user=acting_user,
         client_request_id=client_request_id,
         kind="fleet_drift_confirm",
+    )
+
+
+def _submit_org_scan(
+    queue: RunQueue,
+    *,
+    payload: dict[str, Any],
+    acting_user: str,
+    client_request_id: str | None,
+) -> RunRecord:
+    inputs_raw = payload.get("inputs", {})
+    if not isinstance(inputs_raw, dict):
+        raise ValueError("inputs must be an object")
+    org = str(inputs_raw.get("org", "")).strip()
+    if not org:
+        raise ValueError("inputs.org is required for kind=org_scan")
+    return queue.submit(
+        blueprint_name=ORG_SCAN_SENTINEL,
+        inputs=dict(inputs_raw),
+        dry_run=True,
+        acting_user=acting_user,
+        client_request_id=client_request_id,
+        kind="org_scan",
     )

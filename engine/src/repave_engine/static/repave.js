@@ -1226,24 +1226,36 @@
       runBtn.disabled = true;
       runBtn.textContent = "Scanning…";
       var pushedSince = pushedInput && pushedInput.value ? pushedInput.value : "";
+      var scanPayload = {
+        org: org,
+        families: selectedFamilies(),
+        skip_governed: skipGoverned ? skipGoverned.checked : true,
+        min_confidence: 0,
+        limit: 100,
+        topic: topicInput ? topicInput.value.trim() : "",
+        language: languageInput ? languageInput.value.trim() : "",
+        pushed_since: pushedSince,
+        exclude_archived: excludeArchived ? excludeArchived.checked : true,
+        exclude_forks: excludeForks ? excludeForks.checked : true,
+        async: true,
+      };
       fetch("/api/v2/github/org-scan", {
         method: "POST",
         credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          org: org,
-          families: selectedFamilies(),
-          skip_governed: skipGoverned ? skipGoverned.checked : true,
-          min_confidence: 0,
-          limit: 100,
-          topic: topicInput ? topicInput.value.trim() : "",
-          language: languageInput ? languageInput.value.trim() : "",
-          pushed_since: pushedSince,
-          exclude_archived: excludeArchived ? excludeArchived.checked : true,
-          exclude_forks: excludeForks ? excludeForks.checked : true,
-        }),
+        body: JSON.stringify(scanPayload),
       })
         .then(function (response) {
+          if (response.status === 202) {
+            return response.json().then(function (payload) {
+              var runId = payload && payload.run_id ? String(payload.run_id) : "";
+              if (runId) {
+                window.location.href = "/runs/" + encodeURIComponent(runId);
+                return null;
+              }
+              throw new Error("Async scan did not return a run id.");
+            });
+          }
           if (!response.ok) {
             return response.json().then(function (payload) {
               var detail = payload && payload.detail ? payload.detail : "Scan failed.";
@@ -1253,6 +1265,9 @@
           return response.json();
         })
         .then(function (payload) {
+          if (!payload) {
+            return;
+          }
           var repos = Array.isArray(payload.repos) ? payload.repos : [];
           if (summary) {
             var listed = payload.listed || 0;
@@ -1751,11 +1766,13 @@
     var isLivePlan = root.getAttribute("data-live-plan") === "1";
     var isEnvironmentVend = root.getAttribute("data-environment-vend") === "1";
     var isFleetDriftConfirm = root.getAttribute("data-fleet-drift-confirm") === "1";
+    var isOrgScan = root.getAttribute("data-org-scan") === "1";
     var isEnvironmentReclaim = root.getAttribute("data-environment-reclaim") === "1";
     var isPipelineRun =
       !isLivePlan &&
       !isEnvironmentVend &&
       !isFleetDriftConfirm &&
+      !isOrgScan &&
       !isEnvironmentReclaim;
     var isDryRun = root.getAttribute("data-dry-run") === "true";
     var outcomeStatus = root.querySelector("[data-run-outcome-status]");
@@ -1765,6 +1782,7 @@
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
     var vendStages = isEnvironmentVend ? ["validate", "render", "gates", "gitops"] : [];
     var fleetDriftStages = isFleetDriftConfirm ? ["verify"] : [];
+    var orgScanStages = isOrgScan ? ["discover", "classify"] : [];
     var reclaimStages = isEnvironmentReclaim ? ["reclaim"] : [];
     var pipelineStages = isPipelineRun ? ["validate", "render", "gates", "publish"] : [];
     var livePlanStageLabels = {
@@ -1787,10 +1805,17 @@
     var fleetDriftStageLabels = {
       verify: "Verifying repository pins",
     };
+    var orgScanStageLabels = {
+      discover: "Discovering repositories",
+      classify: "Classifying repositories",
+    };
     var reclaimStageLabels = {
       reclaim: "Reclaiming expired stacks",
     };
     var runComplete = false;
+    var orgScanListed = 0;
+    var orgScanProgressIndex = 0;
+    var orgScanProgressTotal = 0;
     var progressRegion = root.querySelector("[data-run-progress]");
 
     gateRows.forEach(function (row, index) {
@@ -1819,9 +1844,11 @@
           ? vendStages
           : isFleetDriftConfirm
             ? fleetDriftStages
-            : isEnvironmentReclaim
-              ? reclaimStages
-              : livePlanStages;
+            : isOrgScan
+              ? orgScanStages
+              : isEnvironmentReclaim
+                ? reclaimStages
+                : livePlanStages;
       if (!stages.length) {
         return;
       }
@@ -1924,7 +1951,7 @@
         }
         return isDryRun ? "Publish preview complete." : "Publish complete.";
       }
-      var label = pipelineStageLabels[stage] || vendStageLabels[stage] || livePlanStageLabels[stage] || fleetDriftStageLabels[stage] || reclaimStageLabels[stage];
+      var label = pipelineStageLabels[stage] || vendStageLabels[stage] || livePlanStageLabels[stage] || fleetDriftStageLabels[stage] || orgScanStageLabels[stage] || reclaimStageLabels[stage];
       if (label) {
         return started ? label + "…" : label + " complete.";
       }
@@ -1993,6 +2020,36 @@
             progressLabel.textContent = "Drift confirm complete";
           } else {
             progressLabel.textContent = "Waiting for drift confirm…";
+          }
+        }
+      } else if (isOrgScan && orgScanStages.length) {
+        var orgDone = countStagesDone(orgScanStages);
+        var orgActive = activeStageFrom(orgScanStages);
+        if (orgScanProgressTotal > 0 && orgActive === "classify") {
+          pct = Math.round(
+            ((orgDone + orgScanProgressIndex / orgScanProgressTotal) / orgScanStages.length) * 100
+          );
+        } else {
+          pct = orgActive
+            ? Math.round(((orgDone + 0.35) / orgScanStages.length) * 100)
+            : Math.round((orgDone / orgScanStages.length) * 100);
+        }
+        if (progressLabel) {
+          if (runComplete) {
+            progressLabel.textContent = "Org scan complete — opening result…";
+          } else if (orgActive === "classify" && orgScanProgressTotal > 0) {
+            progressLabel.textContent =
+              "Classifying " +
+              orgScanProgressIndex +
+              " of " +
+              orgScanProgressTotal +
+              " repositories…";
+          } else if (orgActive) {
+            progressLabel.textContent = orgScanStageLabels[orgActive] + "…";
+          } else if (orgDone >= orgScanStages.length) {
+            progressLabel.textContent = "Org scan complete";
+          } else {
+            progressLabel.textContent = "Waiting for org scan…";
           }
         }
       } else if (isEnvironmentReclaim && reclaimStages.length) {
@@ -2074,7 +2131,9 @@
             ? "Waiting for environment vend…"
             : isFleetDriftConfirm
               ? "Waiting for drift confirm…"
-              : isEnvironmentReclaim
+              : isOrgScan
+                ? "Waiting for org scan…"
+                : isEnvironmentReclaim
                 ? "Waiting for environment reclaim…"
                 : "Starting apply…";
       }
@@ -2237,6 +2296,41 @@
             " behind"
         );
         updateProgressBar();
+      } else if (data.kind === "org_scan_started") {
+        setStage("discover", "active");
+        orgScanListed = data.listed || 0;
+        appendLog(
+          "Org scan started for " +
+            (data.org || "organization") +
+            (data.discovery_mode ? " (" + data.discovery_mode + ")" : "") +
+            (orgScanListed ? " — listed " + orgScanListed : "")
+        );
+        updateProgressBar();
+      } else if (data.kind === "org_scan_progress") {
+        setStage("discover", "done");
+        setStage("classify", "active");
+        orgScanProgressIndex = data.index || 0;
+        orgScanProgressTotal = data.total || 0;
+        if (data.repo) {
+          appendLog(
+            "Classified " +
+              (data.repo || "repository") +
+              (data.matched ? " (match)" : "")
+          );
+        }
+        updateProgressBar();
+      } else if (data.kind === "org_scan_finished") {
+        setStage("discover", "done");
+        setStage("classify", "done");
+        appendLog(
+          "Org scan finished: " +
+            (data.matched || 0) +
+            " matched of " +
+            (data.listed || orgScanListed || 0) +
+            " listed" +
+            (data.truncated ? " (limit reached)" : "")
+        );
+        updateProgressBar();
       } else if (data.kind === "environment_reclaim_started") {
         setStage("reclaim", "active");
         appendLog(
@@ -2273,6 +2367,9 @@
           markPipelineComplete();
         } else if (isFleetDriftConfirm) {
           setStage("verify", "done");
+        } else if (isOrgScan) {
+          setStage("discover", "done");
+          setStage("classify", "done");
         } else if (isEnvironmentReclaim) {
           setStage("reclaim", "done");
         }
@@ -2282,6 +2379,8 @@
         if (progressLabel) {
           if (isFleetDriftConfirm) {
             progressLabel.textContent = "Drift confirm complete — opening result…";
+          } else if (isOrgScan) {
+            progressLabel.textContent = "Org scan complete — opening result…";
           } else if (isEnvironmentReclaim) {
             progressLabel.textContent = "Reclaim complete — opening result…";
           } else {
@@ -2355,6 +2454,15 @@
           }
           if (isFleetDriftConfirm || body.kind === "fleet_drift_confirm") {
             setStage("verify", "done");
+            updateProgressBar();
+            if (completeActions) {
+              completeActions.hidden = false;
+            }
+            return;
+          }
+          if (isOrgScan || body.kind === "org_scan") {
+            setStage("discover", "done");
+            setStage("classify", "done");
             updateProgressBar();
             if (completeActions) {
               completeActions.hidden = false;

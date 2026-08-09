@@ -328,6 +328,40 @@ def build_api_v2_router(
         pushed_since = str(payload.get("pushed_since", "")).strip()
         exclude_archived = bool(payload.get("exclude_archived", True))
         exclude_forks = bool(payload.get("exclude_forks", True))
+        use_async = bool(payload.get("async", False))
+        queue = _run_queue(request)
+        if use_async:
+            if queue is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Async org scan requires durability.async_generation",
+                )
+            scan_inputs: dict[str, Any] = {
+                "org": org,
+                "families": families or [],
+                "skip_governed": skip_governed,
+                "min_confidence": min_confidence,
+                "limit": limit,
+                "topic": topic,
+                "language": language,
+                "pushed_since": pushed_since,
+                "exclude_archived": exclude_archived,
+                "exclude_forks": exclude_forks,
+            }
+            try:
+                record = submit_async_run(
+                    queue,
+                    payload={"kind": "org_scan", "inputs": scan_inputs},
+                    acting_user=_acting_user(request),
+                    repo_root=repo_root,
+                )
+            except RunQueueFullError as exc:
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            except RunQueueShuttingDownError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            return JSONResponse(record.to_public_dict(), status_code=202)
         try:
             result = scan_github_org(
                 org,
@@ -426,7 +460,14 @@ def build_api_v2_router(
             )
         payload = await _parse_json_object(request)
         kind = str(payload.get("kind", "")).strip()
-        if kind != "live_plan" and kind != "environment_vend":
+        platform_kinds = (
+            "live_plan",
+            "environment_vend",
+            "environment_reclaim",
+            "fleet_drift_confirm",
+            "org_scan",
+        )
+        if kind not in platform_kinds:
             try:
                 parse_run_target(payload)
             except ValueError as exc:

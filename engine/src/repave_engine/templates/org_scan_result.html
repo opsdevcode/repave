@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Org scan — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/import/batch">← Batch import</a>
+  ·
+  <a href="/runs/{{ run_id }}">Run console</a>
+</p>
+
+<section class="result-hero result-hero--passed" aria-labelledby="org-scan-result-heading">
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">Organization scan</p>
+    <h1 id="org-scan-result-heading" class="result-hero__title">
+      {{ org_scan_summary.org or "Organization" }} scan complete
+    </h1>
+    <p class="result-hero__banner">
+      <span class="badge badge--pass">Scanned</span>
+      <span class="muted">· async classification</span>
+    </p>
+  </div>
+  <dl class="result-hero__counts" aria-label="Scan summary">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Listed</dt>
+      <dd>{{ org_scan_summary.listed or 0 }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Matched</dt>
+      <dd>{{ org_scan_summary.repos | length }}</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card stack-gap" aria-labelledby="org-scan-repos-heading">
+  <div class="card__header">
+    <h2 id="org-scan-repos-heading" class="card__title">Matching repositories</h2>
+    <p class="hint muted">
+      Discovery: {{ org_scan_summary.discovery_mode or "list" }}
+      {% if org_scan_summary.search_query %}
+      · {{ org_scan_summary.search_query }}
+      {% endif %}
+      {% if org_scan_summary.truncated %}
+      · limit reached
+      {% endif %}
+    </p>
+  </div>
+  <div class="card__body">
+    {% if org_scan_summary.repos %}
+    <table class="pin-diff-table">
+      <thead>
+        <tr>
+          <th scope="col">Repository</th>
+          <th scope="col">Family</th>
+          <th scope="col">Artifact</th>
+          <th scope="col">Evidence</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in org_scan_summary.repos %}
+        <tr>
+          <td><a href="{{ row.url }}">{{ row.name }}</a></td>
+          <td>
+            {% if row.top_candidate and row.top_candidate.family %}
+            {{ row.top_candidate.family }}
+            {% else %}
+            <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.top_candidate and row.top_candidate.artifact_type %}
+            {{ row.top_candidate.artifact_type }}
+            ({{ row.top_candidate.percent }}%)
+            {% else %}
+            <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td class="muted">
+            {% if row.top_candidate and row.top_candidate.evidence %}
+            {{ row.top_candidate.evidence[:2] | join(", ") }}
+            {% else %}
+            —
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="hint">
+      <a class="btn btn--secondary" href="/import/batch">Return to batch import</a>
+    </p>
+    {% else %}
+    <p class="muted">No repositories matched the scan filters.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
