@@ -350,15 +350,15 @@ def _publish_after_gates(
                 )
             else:
                 pr_body = create_pull_request(pr_plan, github_token=github_token)
-                if blueprint.artifact_type == "github-repo" and publish_message_succeeded(pr_body):
-                    fleet_line = _fleet_message_after_github_repo_publish(
-                        repo_root=repo_root,
-                        blueprint=blueprint,
-                        repository=module_repository,
-                    )
-                    pr_body = f"{pr_body}\n{fleet_line}"
             pr_message = f"{publish_message}\n\n{pr_body}"
             published_repository = module_repository
+            if not dry_run and publish_message_succeeded(pr_message):
+                fleet_line = _fleet_message_after_github_repo_publish(
+                    repo_root=repo_root,
+                    blueprint=blueprint,
+                    repository=module_repository,
+                )
+                pr_message = f"{pr_message}\n{fleet_line}"
             if (
                 store is not None
                 and publish_idempotency is not None

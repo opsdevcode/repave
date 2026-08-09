@@ -15,6 +15,7 @@ from repave_engine.audit_history import (
 from repave_engine.entity_catalog import (
     CatalogEntity,
     build_catalog_entities,
+    build_catalog_from_audit_applies,
     build_catalog_from_environments,
     build_catalog_from_fleet,
     fetch_remote_entity_docs,
@@ -22,8 +23,8 @@ from repave_engine.entity_catalog import (
     read_entity_docs,
 )
 from repave_engine.environment_registry import read_environments
-from repave_engine.fleet import read_fleet
-from repave_engine.fleet_operator_status import load_operator_status_file
+from repave_engine.fleet import normalize_repo_url, read_fleet
+from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.settings import (
     OutputConfig,
@@ -135,15 +136,20 @@ def build_portal_catalog_entities(
         except ValueError:
             audit_cfg = None
         if audit_cfg is not None:
-            audit_entries = read_recent_audit_entries(audit_cfg.file, limit=100)
+            audit_entries = read_recent_audit_entries(
+                audit_cfg.file,
+                limit=250,
+                repo_root=repo_root,
+            )
     modules_root = output_config.modules_root
     try:
         fleet_cfg = load_fleet_config(repo_root)
     except ValueError:
         fleet_cfg = None
+    operator_by_url: dict[str, FleetOperatorStatus] = {}
     if fleet_cfg is not None and fleet_cfg.enabled:
         entries = read_fleet(fleet_cfg.file)
-        operator_by = (
+        operator_by_url = (
             load_operator_status_file(fleet_cfg.operator_status_file)
             if fleet_cfg.operator_status_file is not None
             else {}
@@ -151,7 +157,7 @@ def build_portal_catalog_entities(
         entities = build_catalog_from_fleet(
             entries,
             modules_root=modules_root,
-            operator_by_url=operator_by,
+            operator_by_url=operator_by_url,
             namespace=fleet_cfg.gitops_namespace,
             audit_entries=audit_entries,
             cost_actuals_configured=cost_actuals_configured,
@@ -164,6 +170,16 @@ def build_portal_catalog_entities(
             audit_entries=audit_entries,
             cost_actuals_configured=cost_actuals_configured,
         )
+    known_urls = {normalize_repo_url(entity.repo_url) for entity in entities if entity.repo_url}
+    audit_entities = build_catalog_from_audit_applies(
+        audit_entries,
+        known_urls=known_urls,
+        modules_root=modules_root,
+        operator_by_url=operator_by_url,
+        cost_actuals_configured=cost_actuals_configured,
+    )
+    if audit_entities:
+        entities = merge_catalog_entities(entities, audit_entities)
     try:
         vend_cfg = load_environment_vending_config(repo_root)
     except ValueError:

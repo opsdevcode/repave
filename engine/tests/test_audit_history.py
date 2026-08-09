@@ -107,8 +107,34 @@ def test_audit_entry_activity_outcome_publish_failed() -> None:
         gates_outcome="passed",
         acting_user="alice",
         repository_url="https://github.com/opsdevcode/tf-aws-eks",
-        extra={"publish_succeeded": False, "run_id": "run-123"},
+        extra={
+            "publish_succeeded": False,
+            "run_id": "run-123",
+            "publish_error": "GitHub publish failed.\nError (403): denied",
+        },
     )
     assert entry.activity_outcome_failed() is True
     assert entry.activity_outcome_label() == "Publish failed"
     assert entry.activity_run_href() == "/runs/run-123/result"
+    assert entry.activity_has_details() is True
+    details = dict(entry.activity_details())
+    assert details["Run"] == "run-123"
+    assert "403" in details["Publish error"]
+
+
+def test_audit_entry_activity_details_omit_metadata_only() -> None:
+    from repave_engine.audit_history import AuditHistoryEntry
+
+    entry = AuditHistoryEntry(
+        timestamp="2026-01-01T00:00:00+00:00",
+        event="generation",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.12.0",
+        module_name="tf-demo",
+        dry_run=True,
+        gates_outcome="passed",
+        acting_user="bob",
+        repository_url=None,
+        extra={"artifact_version": "0.1.0"},
+    )
+    assert entry.activity_has_details() is False

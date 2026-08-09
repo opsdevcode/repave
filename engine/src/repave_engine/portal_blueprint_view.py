@@ -110,8 +110,6 @@ def build_blueprint_form_extras(
         )
     provider_catalog = load_provider_catalog(blueprint.path)
     form_stepper = None
-    if blueprint.artifact_type == "terraform-module" and provider_catalog:
-        form_stepper = "terraform"
     # v1.88: Guided/Advanced progressive disclosure for terraform + ansible-role paths.
     supports_form_mode = blueprint.artifact_type in (
         "terraform-module",

@@ -24,10 +24,22 @@
       <a class="muted" href="{{ row.repository_url }}">repo</a>
       {% endif %}
     </div>
-    {% if row.extra %}
+    {% if row.activity_has_details() %}
     <details class="activity-list__detail">
       <summary class="muted">Details</summary>
-      <pre class="activity-list__extra">{{ row.extra | tojson(indent=2) }}</pre>
+      <dl class="activity-list__detail-grid">
+        {% for label, value in row.activity_details() %}
+        <div class="activity-list__detail-row">
+          <dt>{{ label }}</dt>
+          <dd>{% if label in ("Publish error", "Error") %}<pre class="activity-list__detail-pre">{{ value }}</pre>{% else %}{{ value }}{% endif %}</dd>
+        </div>
+        {% endfor %}
+      </dl>
+      {% if row.activity_run_href() %}
+      <p class="activity-list__detail-actions">
+        <a class="btn btn--ghost btn--sm" href="{{ row.activity_run_href() }}">Open run result</a>
+      </p>
+      {% endif %}
     </details>
     {% endif %}
   </li>

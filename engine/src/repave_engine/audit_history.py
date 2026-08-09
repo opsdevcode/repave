@@ -147,6 +147,42 @@ class AuditHistoryEntry:
             return None
         return f"/runs/{run_id.strip()}/result"
 
+    def activity_details(self) -> tuple[tuple[str, str], ...]:
+        """Human-readable detail rows for the activity feed (omit internal metadata)."""
+        lines: list[tuple[str, str]] = []
+        run_id = self.extra.get("run_id")
+        if isinstance(run_id, str) and run_id.strip():
+            lines.append(("Run", run_id.strip()))
+        duration = self.extra.get("duration_seconds")
+        if isinstance(duration, (int, float)):
+            lines.append(("Duration", f"{float(duration):.1f}s"))
+        monthly = self.extra.get("cost_estimate_monthly")
+        currency = self.extra.get("cost_estimate_currency")
+        if monthly and currency:
+            cost_line = f"{currency} {monthly}/month"
+            resources = self.extra.get("cost_estimate_resources")
+            if isinstance(resources, int) and resources > 0:
+                cost_line = f"{cost_line} ({resources} resources)"
+            lines.append(("Cost estimate", cost_line))
+        else:
+            cost_detail = self.extra.get("cost_estimate_detail")
+            if isinstance(cost_detail, str) and cost_detail.strip():
+                lines.append(("Cost estimate", cost_detail.strip()))
+        error = self.extra.get("error")
+        if isinstance(error, str) and error.strip():
+            lines.append(("Error", error.strip()))
+        publish_error = self.extra.get("publish_error")
+        if isinstance(publish_error, str) and publish_error.strip():
+            lines.append(("Publish error", publish_error.strip()))
+        elif not self.dry_run and self.extra.get("publish_succeeded") is False:
+            lines.append(("Publish", "GitHub publish did not succeed."))
+        if len(lines) == 1 and lines[0][0] == "Run":
+            return ()
+        return tuple(lines)
+
+    def activity_has_details(self) -> bool:
+        return bool(self.activity_details())
+
 
 @dataclass(frozen=True)
 class AuditQueryFilters:

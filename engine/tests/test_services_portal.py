@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
+from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.entity_catalog import entity_id_for_repo_url
 from repave_engine.fleet import FleetEntry, register_repo
 
@@ -82,6 +83,39 @@ def test_services_redirects_to_library(repo_root, output_config) -> None:
 
     assert response.status_code == 302
     assert response.headers["location"] == "/library"
+
+
+def test_library_lists_successful_apply_from_audit_without_fleet(
+    repo_root,
+    output_config,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    audit_path = tmp_path / "audit.jsonl"
+    fleet_path = tmp_path / "fleet.jsonl"
+    monkeypatch.setenv("REPAVE_AUDIT_FILE", str(audit_path))
+    monkeypatch.setenv("REPAVE_FLEET_FILE", str(fleet_path))
+    append_audit_record(
+        audit_path,
+        AuditRecord(
+            event="generation",
+            blueprint_name="terraform-module-generic",
+            blueprint_version="0.12.0",
+            module_name="tf-aws-eks",
+            dry_run=False,
+            gates_outcome="passed",
+            repository_url="https://github.com/opsdevcode/tf-aws-eks",
+            acting_user="alice",
+            extra={"publish_succeeded": True, "run_id": "run-yesterday"},
+        ),
+        repo_root=repo_root,
+    )
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/library")
+    assert response.status_code == 200
+    assert "tf-aws-eks" in response.text
+    entity_id = entity_id_for_repo_url("https://github.com/opsdevcode/tf-aws-eks")
+    assert f"/services/{entity_id}" in response.text
 
 
 def test_catalog_entities_redirect(repo_root, output_config) -> None:

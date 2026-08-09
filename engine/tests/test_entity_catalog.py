@@ -9,7 +9,9 @@ from repave_engine.entity_catalog import (
     CatalogEntity,
     ScorecardDimension,
     ScoreLevel,
+    audit_apply_published,
     build_catalog_entities,
+    build_catalog_from_audit_applies,
     build_catalog_from_environments,
     build_scorecard,
     entity_id_for_repo_url,
@@ -414,3 +416,69 @@ def test_merge_catalog_entities_skips_duplicate_ids() -> None:
         "env-aws-sandbox-alice",
         "env-aws-sandbox-bob",
     }
+
+
+def test_audit_apply_published_rejects_plan_and_publish_failure() -> None:
+    passed_apply = AuditHistoryEntry(
+        timestamp="2026-01-01T00:00:00+00:00",
+        event="generation",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.12.0",
+        module_name="tf-aws-eks",
+        dry_run=False,
+        gates_outcome="passed",
+        acting_user="alice",
+        repository_url="https://github.com/opsdevcode/tf-aws-eks",
+        extra={"publish_succeeded": True},
+    )
+    assert audit_apply_published(passed_apply) is True
+    publish_failed = AuditHistoryEntry(
+        timestamp=passed_apply.timestamp,
+        event=passed_apply.event,
+        blueprint_name=passed_apply.blueprint_name,
+        blueprint_version=passed_apply.blueprint_version,
+        module_name=passed_apply.module_name,
+        dry_run=passed_apply.dry_run,
+        gates_outcome=passed_apply.gates_outcome,
+        acting_user=passed_apply.acting_user,
+        repository_url=passed_apply.repository_url,
+        extra={"publish_succeeded": False, "publish_error": "denied"},
+    )
+    assert audit_apply_published(publish_failed) is False
+    plan_only = AuditHistoryEntry(
+        timestamp=passed_apply.timestamp,
+        event=passed_apply.event,
+        blueprint_name=passed_apply.blueprint_name,
+        blueprint_version=passed_apply.blueprint_version,
+        module_name=passed_apply.module_name,
+        dry_run=True,
+        gates_outcome=passed_apply.gates_outcome,
+        acting_user=passed_apply.acting_user,
+        repository_url=passed_apply.repository_url,
+        extra=passed_apply.extra,
+    )
+    assert audit_apply_published(plan_only) is False
+
+
+def test_build_catalog_from_audit_applies(tmp_path: Path) -> None:
+    entry = AuditHistoryEntry(
+        timestamp="2026-01-02T12:00:00+00:00",
+        event="generation",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.12.0",
+        module_name="tf-aws-eks",
+        dry_run=False,
+        gates_outcome="passed",
+        acting_user="alice",
+        repository_url="https://github.com/opsdevcode/tf-aws-eks",
+        extra={"publish_succeeded": True, "run_id": "run-abc"},
+    )
+    entities = build_catalog_from_audit_applies(
+        (entry,),
+        known_urls=set(),
+        modules_root=tmp_path / "modules",
+    )
+    assert len(entities) == 1
+    assert entities[0].display_name == "tf-aws-eks"
+    assert entities[0].source == "audit"
+    assert entities[0].repo_url == "https://github.com/opsdevcode/tf-aws-eks"
