@@ -80,13 +80,17 @@
       </p>
       <p class="hint run-console__outcome-detail">
         Target on apply:
-        <a href="{{ publish_target.url }}">{{ publish_target.org }}/{{ publish_target.name }}</a>
+        <span class="run-console__publish-chip" data-publish-chip>
+          <span class="run-console__publish-chip-label">{{ publish_target.org }}/{{ publish_target.name }}</span>
+        </span>
       </p>
       {% else %}
       <p class="run-console__outcome-lead">
         <span class="badge badge--pass">Apply</span>
         On success, publishes to
-        <a href="{{ publish_target.url }}">{{ publish_target.org }}/{{ publish_target.name }}</a>.
+        <span class="run-console__publish-chip" data-publish-chip>
+          <span class="run-console__publish-chip-label">{{ publish_target.org }}/{{ publish_target.name }}</span>
+        </span>.
       </p>
       {% endif %}
       <p class="hint run-console__outcome-status" data-run-outcome-status hidden></p>
@@ -116,12 +120,17 @@
       <li class="run-console__stage" data-stage="gitops">GitOps PR</li>
     </ol>
     {% else %}
-    <ol class="run-console__stages" aria-label="Pipeline stages">
-      <li class="run-console__stage" data-stage="validate"><span class="run-console__stage-index" aria-hidden="true">1</span> Validate inputs</li>
-      <li class="run-console__stage" data-stage="render"><span class="run-console__stage-index" aria-hidden="true">2</span> Render templates</li>
-      <li class="run-console__stage" data-stage="gates"><span class="run-console__stage-index" aria-hidden="true">3</span> Run gates</li>
-      <li class="run-console__stage" data-stage="publish"><span class="run-console__stage-index" aria-hidden="true">4</span> {% if run_record.dry_run %}Publish preview{% else %}Publish{% endif %}</li>
-    </ol>
+    <div class="run-console__stepper" data-run-stepper>
+      <div class="run-console__stepper-track" aria-hidden="true">
+        <div class="run-console__stepper-fill" data-run-stepper-fill style="width: 0%"></div>
+      </div>
+      <ol class="run-console__stages run-console__stages--mission" aria-label="Pipeline stages">
+        <li class="run-console__stage" data-stage="validate"><span class="run-console__stage-index" aria-hidden="true">1</span><span class="run-console__stage-label">Validate inputs</span></li>
+        <li class="run-console__stage" data-stage="render"><span class="run-console__stage-index" aria-hidden="true">2</span><span class="run-console__stage-label">Render templates</span></li>
+        <li class="run-console__stage" data-stage="gates"><span class="run-console__stage-index" aria-hidden="true">3</span><span class="run-console__stage-label">Run gates</span></li>
+        <li class="run-console__stage" data-stage="publish"><span class="run-console__stage-index" aria-hidden="true">4</span><span class="run-console__stage-label">{% if run_record.dry_run %}Publish preview{% else %}Publish{% endif %}</span></li>
+      </ol>
+    </div>
     {% endif %}
 
     {% if not live_plan %}

@@ -12,7 +12,7 @@
 </p>
 
 <section
-  class="result-hero result-hero--{{ gate_summary.outcome }}"
+  class="result-hero result-hero--{{ gate_summary.outcome }}{% if gates_ok and result.module_repository and not result.dry_run %} result-hero--with-repo{% endif %}"
   aria-labelledby="result-heading"
 >
   <div class="result-hero__main">
@@ -21,7 +21,7 @@
       {% if gate_summary.outcome == "failed" %}
       Generation failed
       {% elif gate_summary.outcome == "passed" %}
-      {% if result.dry_run %}Plan complete{% else %}Applied locally{% endif %}
+      {% if result.dry_run %}Plan complete{% else %}Repository published{% endif %}
       {% else %}
       Generation result
       {% endif %}
@@ -32,14 +32,53 @@
       Files rendered in memory; nothing was written to the module repository.
       {% elif gates_ok and result.module_repository %}
       <span class="badge badge--pass">Applied</span>
-      Output written under the configured modules root.
+      Gates passed and output is live on GitHub.
       {% else %}
       <span class="badge badge--fail">Apply blocked</span>
       Gates did not pass; the repository was not updated.
       {% endif %}
     </p>
+    {% if result.gates %}
+    <dl class="result-hero__counts result-hero__counts--inline" aria-label="Gate summary">
+      <div class="result-hero__count result-hero__count--pass">
+        <dt>Passed</dt>
+        <dd>{{ gate_summary.passed }}</dd>
+      </div>
+      <div class="result-hero__count result-hero__count--fail">
+        <dt>Failed</dt>
+        <dd>{{ gate_summary.failed }}</dd>
+      </div>
+      <div class="result-hero__count result-hero__count--skip">
+        <dt>Skipped</dt>
+        <dd>{{ gate_summary.skipped }}</dd>
+      </div>
+    </dl>
+    {% endif %}
   </div>
-  {% if result.gates %}
+  {% if gates_ok and result.module_repository and not result.dry_run %}
+  <aside class="repo-preview" aria-label="Published repository">
+    <div class="repo-preview__chrome">
+      <span class="repo-preview__provider">GitHub</span>
+      <span class="repo-preview__status badge badge--pass">Published</span>
+    </div>
+    <p class="repo-preview__owner muted">{{ result.module_repository.owner }}</p>
+    <p class="repo-preview__name">{{ result.module_repository.name }}</p>
+    <div class="repo-preview__actions">
+      <a
+        class="btn btn--primary btn--glow"
+        href="{{ result.module_repository.web_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Open repository
+      </a>
+    </div>
+    <p class="repo-preview__hint hint">
+      Local checkout:
+      <code>{{ result.module_repository.local_path }}</code>
+    </p>
+  </aside>
+  {% elif result.gates %}
   <dl class="result-hero__counts" aria-label="Gate summary">
     <div class="result-hero__count result-hero__count--pass">
       <dt>Passed</dt>
@@ -206,22 +245,11 @@
 {% endif %}
 
 {% if result.module_repository and gates_ok and not result.dry_run %}
-<section class="card repo-card" aria-labelledby="repo-heading">
+<section class="card repo-card repo-card--compact" aria-labelledby="repo-heading">
   <div class="card__header">
-    <h2 id="repo-heading">Module repository</h2>
+    <h2 id="repo-heading" class="card__title--sm">Repository details</h2>
   </div>
   <div class="card__body repo-card__body">
-    <p class="repo-card__name"><code>{{ result.module_repository.name }}</code></p>
-    <div class="repo-card__actions">
-      <a
-        class="btn btn--primary"
-        href="{{ result.module_repository.web_url }}"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Open on GitHub
-      </a>
-    </div>
     <div class="copy-row">
       <span class="copy-row__label muted">Local path</span>
       <code class="copy-row__value" id="repo-local-path">{{ result.module_repository.local_path }}</code>
@@ -229,6 +257,12 @@
         Copy
       </button>
     </div>
+    <p class="hint">
+      Remote:
+      <a href="{{ result.module_repository.web_url }}" target="_blank" rel="noopener noreferrer">
+        {{ result.module_repository.web_url }}
+      </a>
+    </p>
   </div>
 </section>
 {% elif result.dry_run %}
