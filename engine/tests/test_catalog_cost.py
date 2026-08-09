@@ -125,7 +125,7 @@ def test_enrich_environment_entity_with_cost_url_reader() -> None:
         cost_actuals_url="https://cost.example/{stack_name}",
     )
 
-    def _fetch(_portal: object, cost_entity: object) -> CostActualsSummary | None:
+    def _fetch(_portal: object, cost_entity: object, **kwargs: object) -> CostActualsSummary | None:
         assert cost_entity.display_name == "sandbox-alice"
         return CostActualsSummary(
             currency="USD",
@@ -176,7 +176,7 @@ def test_enrich_catalog_entities_attach_cost_sparkline(tmp_path) -> None:
     )
     entity = _entity()
 
-    def _fetch(_portal: object, cost_entity: object) -> CostActualsSummary | None:
+    def _fetch(_portal: object, cost_entity: object, **kwargs: object) -> CostActualsSummary | None:
         return _actuals_for_sparkline("12.00")
 
     import repave_engine.catalog_cost as catalog_cost

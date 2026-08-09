@@ -152,7 +152,11 @@ def build_finops_rollup(
     over_budget = 0
 
     for entity in entities:
-        patched, actuals, _estimate = enrich_entity_cost(entity, portal_config)
+        patched, actuals, _estimate = enrich_entity_cost(
+            entity,
+            portal_config,
+            repo_root=repo_root,
+        )
         amount_float = actuals.amount_float() if actuals is not None else None
         amount_label = actuals.amount_30d if actuals is not None else "—"
         if actuals is not None:

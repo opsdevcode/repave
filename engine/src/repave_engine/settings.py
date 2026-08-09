@@ -893,6 +893,15 @@ class DeploymentFluxConfig:
 
 
 @dataclass(frozen=True)
+class CostFocusConfig:
+    file: str = ""
+    tag_key_owner: str = "Owner"
+    tag_key_service: str = "Service"
+    lookback_days: int = 30
+    currency: str = "USD"
+
+
+@dataclass(frozen=True)
 class CostBudgetConfig:
     default_monthly_usd: float | None = None
     entities: dict[str, float] = field(default_factory=dict)
@@ -909,6 +918,7 @@ class PortalConfig:
     cost_aws: CostAwsConfig = field(default_factory=CostAwsConfig)
     cost_azure: CostAzureConfig = field(default_factory=CostAzureConfig)
     cost_k8s: CostK8sConfig = field(default_factory=CostK8sConfig)
+    cost_focus: CostFocusConfig = field(default_factory=CostFocusConfig)
     cost_snapshots_enabled: bool = False
     cost_snapshots_file: Path | None = None
     cost_budgets: CostBudgetConfig = field(default_factory=CostBudgetConfig)
@@ -940,6 +950,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     aws_block = block.get("cost_aws", {})
     azure_block = block.get("cost_azure", {})
     k8s_block = block.get("cost_k8s", {})
+    focus_block = block.get("cost_focus", {})
     cost_aws = CostAwsConfig(
         tag_key_owner=_coerce_tag_key(
             aws_block.get("tag_key_owner") if isinstance(aws_block, dict) else None,
@@ -978,6 +989,31 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         else "30d",
         currency=str(k8s_block.get("currency", "USD")).strip() or "USD"
         if isinstance(k8s_block, dict)
+        else "USD",
+    )
+    focus_file = str(focus_block.get("file", "")).strip() if isinstance(focus_block, dict) else ""
+    focus_lookback_raw = (
+        focus_block.get("lookback_days", 30) if isinstance(focus_block, dict) else 30
+    )
+    try:
+        focus_lookback = int(focus_lookback_raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("portal.cost_focus.lookback_days must be an integer") from exc
+    if focus_lookback <= 0:
+        raise ValueError("portal.cost_focus.lookback_days must be > 0")
+    cost_focus = CostFocusConfig(
+        file=focus_file,
+        tag_key_owner=_coerce_tag_key(
+            focus_block.get("tag_key_owner") if isinstance(focus_block, dict) else None,
+            default=cost_allocation.tag_key_owner,
+        ),
+        tag_key_service=_coerce_tag_key(
+            focus_block.get("tag_key_service") if isinstance(focus_block, dict) else None,
+            default=cost_allocation.tag_key_service,
+        ),
+        lookback_days=focus_lookback,
+        currency=str(focus_block.get("currency", "USD")).strip() or "USD"
+        if isinstance(focus_block, dict)
         else "USD",
     )
     deployment_status_url = str(block.get("deployment_status_url", "")).strip()
@@ -1027,6 +1063,15 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
             window=cost_k8s.window,
             currency=cost_k8s.currency,
         )
+    env_focus_file = os.environ.get("REPAVE_COST_FOCUS_FILE", "").strip()
+    if env_focus_file:
+        cost_focus = CostFocusConfig(
+            file=env_focus_file,
+            tag_key_owner=cost_focus.tag_key_owner,
+            tag_key_service=cost_focus.tag_key_service,
+            lookback_days=cost_focus.lookback_days,
+            currency=cost_focus.currency,
+        )
     env_deploy_url = os.environ.get("REPAVE_DEPLOYMENT_STATUS_URL", "").strip()
     if env_deploy_url:
         deployment_status_url = env_deploy_url
@@ -1047,8 +1092,10 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
             name=deployment_flux.name,
             kind=deployment_flux.kind,
         )
-    if cost_reader not in ("", "url", "aws", "azure", "k8s"):
-        raise ValueError("portal.cost_reader must be 'url', 'aws', 'azure', or 'k8s'")
+    if cost_reader not in ("", "url", "aws", "azure", "k8s", "focus"):
+        raise ValueError("portal.cost_reader must be 'url', 'aws', 'azure', 'k8s', or 'focus'")
+    if cost_reader == "focus" and not cost_focus.file.strip():
+        raise ValueError("portal.cost_focus.file is required when cost_reader is 'focus'")
     if deployment_reader not in ("", "url", "argocd", "flux"):
         raise ValueError("portal.deployment_reader must be 'url', 'argocd', or 'flux'")
     if deployment_flux.kind not in ("kustomization", "helmrelease"):
@@ -1058,6 +1105,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     cost_reader_active = cost_reader_configured(
         cost_reader=cost_reader,
         cost_actuals_url=cost_url,
+        cost_focus_file=cost_focus.file,
     )
     snapshots_block = block.get("cost_snapshots", {})
     cost_snapshots_enabled = False
@@ -1097,6 +1145,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         cost_aws=cost_aws,
         cost_azure=cost_azure,
         cost_k8s=cost_k8s,
+        cost_focus=cost_focus,
         cost_snapshots_enabled=cost_snapshots_enabled,
         cost_snapshots_file=cost_snapshots_file,
         cost_budgets=cost_budgets,

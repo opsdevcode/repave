@@ -57,7 +57,7 @@ def test_build_finops_rollup_counts_over_budget(tmp_path: Path) -> None:
         cost_budgets=CostBudgetConfig(default_monthly_usd=100.0, entities={}),
     )
 
-    def _fetch(_portal: object, _entity: object) -> CostActualsSummary | None:
+    def _fetch(_portal: object, _entity: object, **kwargs: object) -> CostActualsSummary | None:
         return CostActualsSummary(
             currency="USD",
             amount_30d="150.00",

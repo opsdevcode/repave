@@ -51,16 +51,22 @@ def enrich_entity_cost(
     portal_config: PortalConfig,
     *,
     cost_actuals: CostActualsSummary | None = None,
+    repo_root: Path | None = None,
 ) -> tuple[CatalogEntity, CostActualsSummary | None, CostEstimate | None]:
     """Apply cost badge and scorecard dimension from reader actuals and/or local estimate."""
     configured = cost_reader_configured(
         cost_reader=portal_config.cost_reader,
         cost_actuals_url=portal_config.cost_actuals_url,
+        cost_focus_file=portal_config.cost_focus.file,
     )
     actuals = (
         cost_actuals
         if cost_actuals is not None
-        else (fetch_entity_cost_actuals_for_portal(portal_config, entity) if configured else None)
+        else (
+            fetch_entity_cost_actuals_for_portal(portal_config, entity, repo_root=repo_root)
+            if configured
+            else None
+        )
     )
     estimate = local_cost_estimate(entity)
     badge, badge_detail = format_cost_badge(actuals=actuals, estimate=estimate)
@@ -114,7 +120,11 @@ def enrich_catalog_entities_with_cost(
     enriched: list[CatalogEntity] = []
     capture_pairs: list[tuple[str, CostActualsSummary]] = []
     for entity in entities:
-        patched, actuals, _estimate = enrich_entity_cost(entity, portal_config)
+        patched, actuals, _estimate = enrich_entity_cost(
+            entity,
+            portal_config,
+            repo_root=repo_root,
+        )
         if (
             actuals is not None
             and portal_config.cost_snapshots_enabled
