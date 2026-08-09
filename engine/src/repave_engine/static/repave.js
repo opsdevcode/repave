@@ -1121,6 +1121,177 @@
     }
   }
 
+  function initImportOrgScan() {
+    var root = document.querySelector("[data-import-org-scan]");
+    if (!root) {
+      return;
+    }
+    var orgInput = root.querySelector("[data-import-org-scan-org]");
+    var runBtn = root.querySelector("[data-import-org-scan-run]");
+    var skipGoverned = root.querySelector("[data-import-org-scan-skip-governed]");
+    var resultsWrap = root.querySelector("[data-import-org-scan-results]");
+    var summary = root.querySelector("[data-import-org-scan-summary]");
+    var tbody = root.querySelector("[data-import-org-scan-tbody]");
+    var errorNode = root.querySelector("[data-import-org-scan-error]");
+    var addBtn = root.querySelector("[data-import-org-scan-add]");
+    var selectAll = root.querySelector("[data-import-org-scan-select-all]");
+    var targets = root.querySelector("#targets");
+    if (!orgInput || !runBtn || !resultsWrap || !tbody || !targets) {
+      return;
+    }
+
+    function hideError() {
+      if (!errorNode) {
+        return;
+      }
+      errorNode.hidden = true;
+      errorNode.textContent = "";
+    }
+
+    function showError(message) {
+      if (!errorNode) {
+        return;
+      }
+      errorNode.hidden = false;
+      errorNode.textContent = message;
+    }
+
+    function selectedFamilies() {
+      return Array.prototype.slice
+        .call(root.querySelectorAll("[data-import-family]:checked"))
+        .map(function (node) {
+          return node.value;
+        });
+    }
+
+    function renderRows(repos) {
+      tbody.textContent = "";
+      repos.forEach(function (repo) {
+        var row = document.createElement("tr");
+        var candidate = repo && repo.top_candidate ? repo.top_candidate : null;
+        var family = candidate && candidate.family ? String(candidate.family) : "—";
+        var artifact = candidate && candidate.artifact_type ? String(candidate.artifact_type) : "—";
+        var percent = candidate && candidate.percent ? String(candidate.percent) : "0";
+        var evidence = candidate && Array.isArray(candidate.evidence) ? candidate.evidence.slice(0, 2) : [];
+        var evidenceText = evidence.length ? evidence.join(", ") : "—";
+        row.innerHTML =
+          "<td><input type=\"checkbox\" data-import-org-scan-row checked value=\"" +
+          String(repo.url).replace(/"/g, "&quot;") +
+          "\" /></td>" +
+          "<td><code>" +
+          String(repo.name) +
+          "</code></td>" +
+          "<td>" +
+          family +
+          "</td>" +
+          "<td>" +
+          artifact +
+          " (" +
+          percent +
+          "%)</td>" +
+          "<td class=\"muted\">" +
+          evidenceText +
+          "</td>";
+        tbody.appendChild(row);
+      });
+    }
+
+    runBtn.addEventListener("click", function () {
+      hideError();
+      var org = orgInput.value.trim();
+      if (!org) {
+        showError("Enter a GitHub organization to scan.");
+        return;
+      }
+      runBtn.disabled = true;
+      runBtn.textContent = "Scanning…";
+      fetch("/api/v2/github/org-scan", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          org: org,
+          families: selectedFamilies(),
+          skip_governed: skipGoverned ? skipGoverned.checked : true,
+          min_confidence: 0,
+          limit: 100,
+        }),
+      })
+        .then(function (response) {
+          if (!response.ok) {
+            return response.json().then(function (payload) {
+              var detail = payload && payload.detail ? payload.detail : "Scan failed.";
+              throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+            });
+          }
+          return response.json();
+        })
+        .then(function (payload) {
+          var repos = Array.isArray(payload.repos) ? payload.repos : [];
+          if (summary) {
+            var listed = payload.listed || 0;
+            var truncated = payload.truncated ? " (limit reached)" : "";
+            summary.textContent =
+              "Listed " +
+              listed +
+              " repositories; " +
+              repos.length +
+              " match your filters" +
+              truncated +
+              ".";
+          }
+          renderRows(repos);
+          resultsWrap.hidden = repos.length === 0;
+          if (repos.length === 0) {
+            showError("No repositories matched the scan filters.");
+          }
+        })
+        .catch(function (err) {
+          showError(err && err.message ? err.message : "Scan failed.");
+          resultsWrap.hidden = true;
+        })
+        .finally(function () {
+          runBtn.disabled = false;
+          runBtn.textContent = "Scan org";
+        });
+    });
+
+    if (selectAll) {
+      selectAll.addEventListener("change", function () {
+        var checked = selectAll.checked;
+        tbody.querySelectorAll("[data-import-org-scan-row]").forEach(function (node) {
+          node.checked = checked;
+        });
+      });
+    }
+
+    if (addBtn) {
+      addBtn.addEventListener("click", function () {
+        var existing = targets.value
+          .split(/\r?\n/)
+          .map(function (line) {
+            return line.trim();
+          })
+          .filter(Boolean);
+        var seen = {};
+        existing.forEach(function (url) {
+          seen[url] = true;
+        });
+        tbody.querySelectorAll("[data-import-org-scan-row]:checked").forEach(function (node) {
+          var url = node.value.trim();
+          if (url && !seen[url]) {
+            existing.push(url);
+            seen[url] = true;
+          }
+        });
+        targets.value = existing.join("\n");
+        if (window.Repave && window.Repave.showToast) {
+          window.Repave.showToast("Repositories added to the batch list");
+        }
+      });
+    }
+  }
+
   function initFormDryRun() {
     document.querySelectorAll("[data-repave-busy-form]").forEach(function (form) {
       if (form.hasAttribute("data-form-stepper")) {
@@ -2659,6 +2830,7 @@
     initDemoPipeline();
     initCatalogCardMotion();
     initGateDashboard();
+    initImportOrgScan();
     initFeedbackCapture();
     initFormDraft();
     initRunConsole();

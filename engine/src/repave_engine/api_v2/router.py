@@ -58,9 +58,11 @@ from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.github_client import GitHubError
+from repave_engine.github_inventory import GitHubInventoryError
 from repave_engine.github_repo_provision import list_org_teams, list_team_members
 from repave_engine.import_rules import parse_path_overrides
 from repave_engine.observability_slo import fetch_entity_slo_summary
+from repave_engine.org_import_scan import DEFAULT_SCAN_LIMIT, scan_github_org
 from repave_engine.portal_context import (
     audit_file_or_http404,
     build_portal_catalog_entities,
@@ -128,6 +130,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/governance/annotations/{blueprint_name}",
     "GET /api/v2/github/teams",
     "GET /api/v2/github/teams/{slug}/members",
+    "POST /api/v2/github/org-scan",
     "GET /api/v2/fleet",
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
@@ -286,6 +289,55 @@ def build_api_v2_router(
                 "count": len(members),
             }
         )
+
+    @router.post("/github/org-scan")
+    async def api_v2_github_org_scan(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        payload = await _parse_json_object(request)
+        org = str(payload.get("org", "")).strip()
+        if not org:
+            raise HTTPException(status_code=400, detail="org is required")
+        token = resolve_github_access_token(str(payload.get("github_token", "")).strip() or None)
+        if not token:
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    "GitHub credentials are not configured; set GITHUB_TOKEN or "
+                    "GitHub App env vars to scan organization repositories"
+                ),
+            )
+        families_raw = payload.get("families")
+        families: list[str] | None = None
+        if isinstance(families_raw, list):
+            families = [str(item).strip() for item in families_raw if str(item).strip()]
+        skip_governed = bool(payload.get("skip_governed", True))
+        min_confidence_raw = payload.get("min_confidence", 0)
+        try:
+            min_confidence = float(min_confidence_raw)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="min_confidence must be a number") from None
+        limit_raw = payload.get("limit", DEFAULT_SCAN_LIMIT)
+        try:
+            limit = int(limit_raw)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="limit must be an integer") from None
+        if limit <= 0:
+            raise HTTPException(status_code=400, detail="limit must be positive")
+        try:
+            result = scan_github_org(
+                org,
+                repo_root,
+                token,
+                families=frozenset(families or ()),
+                skip_governed=skip_governed,
+                min_confidence=min_confidence,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except GitHubInventoryError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return JSONResponse(result.to_json_dict())
 
     @router.post("/generate")
     async def api_v2_generate(request: Request) -> JSONResponse:
