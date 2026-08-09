@@ -86,4 +86,6 @@ def test_platform_dev_pages_render(
     assert 'href="/platform/finops"' in more_section
     assert 'href="/platform/feedback"' in more_section
     assert "shell__footer-link" in home
+    assert 'href="/platform/ops"' in home
     assert 'href="/platform/fleet"' in home
+    assert 'class="platform-subnav shell__nav"' in client.get("/platform/fleet").text

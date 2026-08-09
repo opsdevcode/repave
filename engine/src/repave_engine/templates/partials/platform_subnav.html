@@ -1,4 +1,4 @@
-<nav class="shell__nav shell__nav--secondary platform-subnav" aria-label="Platform">
+<nav class="platform-subnav shell__nav" aria-label="Platform">
   {% for item in platform_nav_links %}
   <a href="{{ item.href }}" {% if platform_nav == item.key %}aria-current="page"{% endif %}>{{ item.label }}</a>
   {% endfor %}
