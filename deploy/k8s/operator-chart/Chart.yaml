@@ -2,5 +2,5 @@ apiVersion: v2
 name: repave-operator
 description: repave Kubernetes operator for GoldenPathRepo and Blueprint reconciliation
 type: application
-version: 2.37.4
-appVersion: "2.37.4"
+version: 2.37.5
+appVersion: "2.37.5"
