@@ -1551,6 +1551,7 @@
     var isPipelineRun = !isLivePlan && !isEnvironmentVend;
     var isDryRun = root.getAttribute("data-dry-run") === "true";
     var outcomeStatus = root.querySelector("[data-run-outcome-status]");
+    var publishErrorEl = root.querySelector("[data-run-publish-error]");
     var stepperFill = root.querySelector("[data-run-stepper-fill]");
     var publishChip = root.querySelector("[data-publish-chip]");
     var livePlanStages = isLivePlan ? ["checkout", "plan", "policy"] : [];
@@ -1667,6 +1668,19 @@
       pipelineStages.forEach(function (stage) {
         setStage(stage, "done");
       });
+    }
+
+    function setPublishErrorDetail(detail) {
+      if (!publishErrorEl) {
+        return;
+      }
+      if (!detail) {
+        publishErrorEl.hidden = true;
+        publishErrorEl.textContent = "";
+        return;
+      }
+      publishErrorEl.textContent = detail;
+      publishErrorEl.hidden = false;
     }
 
     function setOutcomeStatus(message, succeeded) {
@@ -1897,6 +1911,12 @@
           appendLog(data.summary);
           setOutcomeStatus(data.summary, data.succeeded !== false);
         }
+        if (data.succeeded === false && data.detail) {
+          appendLog(data.detail);
+          setPublishErrorDetail(data.detail);
+        } else {
+          setPublishErrorDetail("");
+        }
         setPublishChipState(data.succeeded !== false ? "is-done" : "");
         updateProgressBar();
       } else if (data.kind === "live_plan_started") {
@@ -1976,9 +1996,16 @@
         }
         showRunConsoleFeedback(data.gates_outcome || "");
         if (resultUrl && data.status === "succeeded") {
-          window.setTimeout(function () {
-            window.location.href = resultUrl;
-          }, 800);
+          if (data.publish_succeeded === false) {
+            if (progressLabel) {
+              progressLabel.textContent = "Gates passed — publish failed (see error below)";
+            }
+            appendLog("Publish failed — review the error above or open the result page.");
+          } else {
+            window.setTimeout(function () {
+              window.location.href = resultUrl;
+            }, 800);
+          }
         }
       } else if (data.kind === "run_failed") {
         setRunBusy(false);

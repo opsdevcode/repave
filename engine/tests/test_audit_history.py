@@ -92,3 +92,23 @@ def test_audit_entry_activity_labels_fall_back_to_repo_slug() -> None:
     )
     assert entry.activity_artifact_name() == "tf-aws-vpc-demo"
     assert entry.activity_version_label() is None
+
+
+def test_audit_entry_activity_outcome_publish_failed() -> None:
+    from repave_engine.audit_history import AuditHistoryEntry
+
+    entry = AuditHistoryEntry(
+        timestamp="2026-01-01T00:00:00+00:00",
+        event="generation",
+        blueprint_name="terraform-module-generic",
+        blueprint_version="0.12.0",
+        module_name="tf-aws-eks",
+        dry_run=False,
+        gates_outcome="passed",
+        acting_user="alice",
+        repository_url="https://github.com/opsdevcode/tf-aws-eks",
+        extra={"publish_succeeded": False, "run_id": "run-123"},
+    )
+    assert entry.activity_outcome_failed() is True
+    assert entry.activity_outcome_label() == "Publish failed"
+    assert entry.activity_run_href() == "/runs/run-123/result"

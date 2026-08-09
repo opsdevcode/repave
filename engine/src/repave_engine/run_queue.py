@@ -23,13 +23,16 @@ from repave_engine.environment_registry import (
 )
 from repave_engine.environment_vend import (
     DEFAULT_VEND_BLUEPRINT,
-    is_environment_vend_run,
     run_environment_vend,
+)
+from repave_engine.environment_vend import (
+    is_environment_vend_run as is_environment_vend_payload,
 )
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.generate_api import run_bundle_api, run_generate_api
 from repave_engine.github_auth import resolve_github_access_token
-from repave_engine.live_plan import is_live_plan_run, run_live_plan
+from repave_engine.live_plan import is_live_plan_run as is_live_plan_payload
+from repave_engine.live_plan import run_live_plan
 from repave_engine.live_plan_pr import PullRequestRef, attach_live_plan_to_pull_request
 from repave_engine.metrics import (
     record_run_queue_depth,
@@ -42,7 +45,12 @@ from repave_engine.platform_runs import (
     run_environment_reclaim,
     run_fleet_drift_confirm,
 )
-from repave_engine.publish_idempotency import PublishIdempotencyContext, PublishIdempotencyStore
+from repave_engine.publish_idempotency import (
+    PublishIdempotencyContext,
+    PublishIdempotencyStore,
+    publish_message_succeeded,
+)
+from repave_engine.run_audit import record_async_run_audit
 from repave_engine.run_events import RunEventStore, build_run_event_store
 from repave_engine.run_job_dispatcher import RunJobDispatcher, build_run_job_dispatcher
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
@@ -113,6 +121,51 @@ class RunQueue:
         if self._event_store is None:
             return
         self._event_store.append(run_id, kind, payload or {})
+
+    def _emit_run_audit(
+        self,
+        record: RunRecord,
+        *,
+        merged: dict[str, Any] | None = None,
+        error: str | None = None,
+    ) -> None:
+        kind = str(record.payload.get("kind", "")).strip()
+        if kind in ("live_plan", "environment_vend", "environment_reclaim", "fleet_drift_confirm"):
+            return
+        blueprint_name = record.blueprint_name or str(record.payload.get("bundle", "")).strip()
+        if not blueprint_name:
+            return
+        event = "bundle_generation" if record.payload.get("bundle") else "generation"
+        if merged is not None:
+            blueprint_version = str(
+                merged.get("blueprint_version") or merged.get("bundle_version") or ""
+            )
+            module_name = str(merged.get("module_name") or blueprint_name)
+            gates_outcome = str(merged.get("gates_outcome", "unknown"))
+            pr_message = str(merged.get("pr_message", ""))
+            repository_url = merged.get("repository_url")
+            if not isinstance(repository_url, str) or not repository_url.strip():
+                repository_url = None
+        else:
+            blueprint_version = ""
+            module_name = blueprint_name
+            gates_outcome = "failed"
+            pr_message = ""
+            repository_url = None
+        record_async_run_audit(
+            self._repo_root,
+            run_id=record.run_id,
+            blueprint_name=blueprint_name,
+            blueprint_version=blueprint_version,
+            module_name=module_name,
+            dry_run=record.dry_run,
+            gates_outcome=gates_outcome,
+            repository_url=repository_url,
+            acting_user=record.acting_user,
+            pr_message=pr_message,
+            error=error,
+            event=event,
+        )
 
     def stop_accepting(self) -> None:
         self._accepting = False
@@ -364,7 +417,7 @@ class RunQueue:
             github_token = (
                 resolve_github_access_token()
                 if (
-                    (is_environment_vend_run(record.payload) and not record.dry_run)
+                    (is_environment_vend_payload(record.payload) and not record.dry_run)
                     or (is_environment_reclaim_run(record.payload) and not record.dry_run)
                 )
                 else (None if record.dry_run else resolve_github_access_token())
@@ -376,7 +429,7 @@ class RunQueue:
                 client_request_id=record.client_request_id,
             )
             try:
-                if is_live_plan_run(record.payload):
+                if is_live_plan_payload(record.payload):
                     entity_id = str(inputs_raw.get("entity_id", "")).strip()
                     target = str(inputs_raw.get("target", "")).strip()
                     policies_dir = str(
@@ -420,7 +473,7 @@ class RunQueue:
                             "resource_destroy": summary.resource_destroy,
                         },
                     )
-                elif is_environment_vend_run(record.payload):
+                elif is_environment_vend_payload(record.payload):
                     vend_blueprint = (
                         str(record.payload.get("blueprint", DEFAULT_VEND_BLUEPRINT)).strip()
                         or DEFAULT_VEND_BLUEPRINT
@@ -554,6 +607,8 @@ class RunQueue:
                     )
                     self._emit_event(run_id, "run_failed", {"error": str(exc)})
                     record_run_terminal("dead_letter", record.blueprint_name if record else "")
+                    if record is not None:
+                        self._emit_run_audit(record, error=str(exc))
                 else:
                     self._schedule_retry(run_id, attempt_count=attempt, error=str(exc))
                     if not self._enqueue_only and self._executor is not None:
@@ -572,12 +627,19 @@ class RunQueue:
                     result=merged,
                 )
                 outcome = str(merged.get("gates_outcome", "unknown"))
+                pr_message = str(merged.get("pr_message", ""))
+                publish_ok = record.dry_run or publish_message_succeeded(pr_message)
                 self._emit_event(
                     run_id,
                     "run_finished",
-                    {"status": "succeeded", "gates_outcome": outcome},
+                    {
+                        "status": "succeeded",
+                        "gates_outcome": outcome,
+                        "publish_succeeded": publish_ok,
+                    },
                 )
                 record_run_terminal(outcome, record.blueprint_name)
+                self._emit_run_audit(record, merged=merged)
         finally:
             reset_acting_user(token)
             self._refresh_metrics()

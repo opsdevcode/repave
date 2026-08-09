@@ -60,6 +60,7 @@ def run_generate_api(
         on_event=on_event,
         staging_root=staging_root,
         publish_idempotency=publish_idempotency,
+        record_operability=staging_root is None,
     )
     return serialize_generation_result(
         blueprint,
@@ -99,6 +100,9 @@ def serialize_generation_result(
     if persist_artifact:
         body["artifact_root"] = str(result.render.output_dir)
         body["pr_message"] = result.pr_message
+        if result.module_repository is not None:
+            body["module_name"] = result.module_repository.name
+            body["repository_url"] = result.module_repository.web_url
         body["rendered_files"] = [
             {
                 "path": rendered.path,
@@ -136,6 +140,7 @@ def run_bundle_api(
         require_run=dry_run,
         github_token=github_token,
         staging_root=staging_root,
+        record_bundle_operability=staging_root is None,
     )
     if on_event is not None:
         on_event(

@@ -134,7 +134,7 @@ class BundleGenerationResult:
 
 
 def _record_operability(
-    catalog_root: Path,
+    config_root: Path,
     *,
     blueprint: Blueprint,
     module_name: str,
@@ -149,7 +149,7 @@ def _record_operability(
     GENERATION_TOTAL.labels(outcome=outcome, blueprint=blueprint.name).inc()
 
     try:
-        audit_cfg = load_audit_config(catalog_root)
+        audit_cfg = load_audit_config(config_root)
     except ValueError:
         audit_cfg = None
     if audit_cfg is None or not audit_cfg.enabled:
@@ -172,7 +172,7 @@ def _record_operability(
             acting_user=current_acting_user(),
             extra=extra,
         ),
-        repo_root=catalog_root,
+        repo_root=config_root,
     )
 
 
@@ -183,6 +183,17 @@ def _emit_stage(on_event: RunEventCallback | None, stage: str, *, started: bool)
     on_event(kind, {"stage": stage})
 
 
+def _publish_error_detail(pr_message: str) -> str:
+    lowered = pr_message.lower()
+    if "github publish failed" not in lowered and "provisioning failed" not in lowered:
+        return ""
+    lines = [line.strip() for line in pr_message.splitlines() if line.strip()]
+    for index, line in enumerate(lines):
+        if "github publish failed" in line.lower() or "provisioning failed" in line.lower():
+            return "\n".join(lines[index:])
+    return pr_message.strip()
+
+
 def _summarize_publish_message(
     *,
     dry_run: bool,
@@ -191,7 +202,11 @@ def _summarize_publish_message(
 ) -> str:
     lowered = pr_message.lower()
     if "github publish failed" in lowered or "provisioning failed" in lowered:
-        return f"Publish failed for {repository.web_url} — open result for details"
+        detail = _publish_error_detail(pr_message)
+        error_line = detail.splitlines()[-1] if detail else ""
+        if error_line.lower().startswith("error"):
+            return f"Publish failed — {error_line}"
+        return f"Publish failed for {repository.web_url}"
     if dry_run:
         return f"Plan preview — no GitHub repo created. Target on apply: {repository.web_url}"
     if "created github repository" in lowered:
@@ -230,6 +245,7 @@ def _emit_publish_finished(
 ) -> None:
     if on_event is None:
         return
+    detail = _publish_error_detail(pr_message)
     on_event(
         "publish_finished",
         {
@@ -241,7 +257,8 @@ def _emit_publish_finished(
                 repository=repository,
                 pr_message=pr_message,
             ),
-            "succeeded": "failed" not in pr_message.lower(),
+            "detail": detail,
+            "succeeded": publish_message_succeeded(pr_message),
         },
     )
 
@@ -522,7 +539,7 @@ def generate_from_blueprint(
 
         if record_operability:
             _record_operability(
-                catalog_root,
+                pack_root,
                 blueprint=blueprint,
                 module_name=module_name,
                 dry_run=dry_run,
@@ -623,6 +640,7 @@ def generate_from_bundle(
     require_run: bool | None = None,
     github_token: str | None = None,
     staging_root: Path | None = None,
+    record_bundle_operability: bool = True,
 ) -> BundleGenerationResult:
     started_at = time.perf_counter()
     catalog_root = repo_root
@@ -683,15 +701,16 @@ def generate_from_bundle(
         ),
     )
 
-    _record_bundle_operability(
-        catalog_root,
-        bundle=bundle,
-        dry_run=dry_run,
-        gates=combined,
-        started_at=started_at,
-        shared_inputs=shared,
-        member_results=tuple(member_results),
-    )
+    if record_bundle_operability:
+        _record_bundle_operability(
+            catalog_root,
+            bundle=bundle,
+            dry_run=dry_run,
+            gates=combined,
+            started_at=started_at,
+            shared_inputs=shared,
+            member_results=tuple(member_results),
+        )
 
     return BundleGenerationResult(
         bundle=bundle,

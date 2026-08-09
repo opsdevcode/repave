@@ -123,6 +123,30 @@ class AuditHistoryEntry:
             return f"/services/{entity_id_for_repo_url(self.repository_url)}"
         return f"/blueprints/{self.blueprint_name}"
 
+    def activity_outcome_failed(self) -> bool:
+        if self.gates_outcome == "failed":
+            return True
+        publish_ok = self.extra.get("publish_succeeded")
+        return not self.dry_run and publish_ok is False
+
+    def activity_outcome_label(self) -> str:
+        if self.gates_outcome == "failed":
+            return "Failed"
+        publish_ok = self.extra.get("publish_succeeded")
+        if not self.dry_run and publish_ok is False:
+            return "Publish failed"
+        if self.gates_outcome == "passed":
+            return "Passed"
+        if self.gates_outcome:
+            return self.gates_outcome.capitalize()
+        return "Unknown"
+
+    def activity_run_href(self) -> str | None:
+        run_id = self.extra.get("run_id")
+        if not isinstance(run_id, str) or not run_id.strip():
+            return None
+        return f"/runs/{run_id.strip()}/result"
+
 
 @dataclass(frozen=True)
 class AuditQueryFilters:

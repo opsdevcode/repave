@@ -11,8 +11,18 @@
   <a href="/blueprints/{{ result.blueprint.name }}">← {{ result.blueprint.name }}</a>
 </p>
 
+{% if gates_ok and not result.dry_run and not publish_ok %}
+<section class="alert alert--fail stack-gap" role="alert" aria-labelledby="publish-error-heading">
+  <h2 id="publish-error-heading" class="h3">GitHub publish failed</h2>
+  <p>Gates passed, but the module repository was not updated on GitHub.</p>
+  {% if result.pr_message %}
+  <pre class="panel-code publish-error__detail">{{ result.pr_message }}</pre>
+  {% endif %}
+</section>
+{% endif %}
+
 <section
-  class="result-hero result-hero--{{ gate_summary.outcome }}{% if gates_ok and result.module_repository and not result.dry_run %} result-hero--with-repo{% endif %}"
+  class="result-hero result-hero--{{ gate_summary.outcome }}{% if gates_ok and publish_ok and result.module_repository and not result.dry_run %} result-hero--with-repo{% endif %}"
   aria-labelledby="result-heading"
 >
   <div class="result-hero__main">
@@ -21,7 +31,13 @@
       {% if gate_summary.outcome == "failed" %}
       Generation failed
       {% elif gate_summary.outcome == "passed" %}
-      {% if result.dry_run %}Plan complete{% else %}Repository published{% endif %}
+      {% if result.dry_run %}
+      Plan complete
+      {% elif publish_ok %}
+      Repository published
+      {% else %}
+      Publish failed
+      {% endif %}
       {% else %}
       Generation result
       {% endif %}
@@ -30,9 +46,12 @@
       {% if result.dry_run %}
       <span class="badge badge--skip">Plan only</span>
       Files rendered in memory; nothing was written to the module repository.
-      {% elif gates_ok and result.module_repository %}
+      {% elif gates_ok and publish_ok and result.module_repository %}
       <span class="badge badge--pass">Applied</span>
       Gates passed and output is live on GitHub.
+      {% elif gates_ok and not publish_ok %}
+      <span class="badge badge--fail">Publish failed</span>
+      Gates passed, but GitHub publish did not succeed.
       {% else %}
       <span class="badge badge--fail">Apply blocked</span>
       Gates did not pass; the repository was not updated.
@@ -55,7 +74,7 @@
     </dl>
     {% endif %}
   </div>
-  {% if gates_ok and result.module_repository and not result.dry_run %}
+  {% if gates_ok and publish_ok and result.module_repository and not result.dry_run %}
   <aside class="repo-preview" aria-label="Published repository">
     <div class="repo-preview__chrome">
       <span class="repo-preview__provider">GitHub</span>
@@ -482,10 +501,18 @@
 
 {% if result.pr_message %}
 <section class="card stack-gap" aria-labelledby="pr-description-heading">
-  <details class="publish-plan" open>
+  <details class="publish-plan" {% if gates_ok and not result.dry_run and not publish_ok %}open{% endif %}>
     <summary class="publish-plan__summary">
-      <h2 id="pr-description-heading" class="publish-plan__title">PR description</h2>
-      <span class="muted">Preview of the pull request body</span>
+      <h2 id="pr-description-heading" class="publish-plan__title">
+        {% if gates_ok and not result.dry_run and not publish_ok %}Publish log{% else %}PR description{% endif %}
+      </h2>
+      <span class="muted">
+        {% if gates_ok and not result.dry_run and not publish_ok %}
+        Full publish output including the GitHub error
+        {% else %}
+        Preview of the pull request body
+        {% endif %}
+      </span>
     </summary>
     <div class="publish-plan__body publish-plan__body--markdown">
       <pre class="panel-code publish-plan__markdown">{{ result.pr_message }}</pre>
