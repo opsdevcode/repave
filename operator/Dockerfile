@@ -15,7 +15,8 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /git-libs \
-    && ldd /usr/bin/git | awk '/=> \/lib/ {print $3}' | xargs -I '{}' cp --parents '{}' /git-libs/
+    && { ldd /usr/bin/git; find /usr/lib/git-core -type f -executable -exec ldd {} \; 2>/dev/null; } \
+    | awk '/=> \/lib/ {print $3}' | sort -u | xargs -I '{}' cp --parents '{}' /git-libs/
 
 FROM gcr.io/distroless/base-debian12:nonroot@sha256:63f52bd27b6aa6555f5d56500b70d7bb0afe51c654905be88a2c1cf967a77b1a
 LABEL org.opencontainers.image.source=https://github.com/opsdevcode/repave
@@ -24,6 +25,7 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY --from=git /usr/bin/git /usr/bin/git
 COPY --from=git /usr/lib/git-core /usr/lib/git-core
+COPY --from=git /usr/share/git-core /usr/share/git-core
 COPY --from=git /git-libs/lib /lib
 COPY --from=git /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 USER 65532:65532
