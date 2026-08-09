@@ -175,3 +175,70 @@ def test_api_v2_github_org_scan_async(tmp_path, output_config, monkeypatch) -> N
     assert body["kind"] == "org_scan"
     assert body["run_id"]
     assert body["status"] == "queued"
+
+
+def test_org_scan_result_page(tmp_path, output_config, monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    from repave_engine.api import create_app
+    from repave_engine.run_store import RunStatus
+    from repave_engine.run_submit import submit_async_run
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "durability:\n  async_generation: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_test")
+    client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
+    queue = client.app.state.run_queue
+    assert queue is not None
+    fake_result = {
+        "org": "acme",
+        "listed": 2,
+        "limit": 100,
+        "truncated": False,
+        "discovery_mode": "search",
+        "search_query": "org:acme language:HCL",
+        "repos": [
+            {
+                "url": "https://github.com/acme/vpc",
+                "owner": "acme",
+                "name": "vpc",
+                "governed": False,
+                "classification_error": None,
+                "top_candidate": {
+                    "family": "terraform",
+                    "artifact_type": "terraform-module",
+                    "percent": 100,
+                    "evidence": ["main.tf"],
+                },
+            }
+        ],
+    }
+    try:
+        with patch("repave_engine.run_queue.run_org_scan", return_value=fake_result):
+            record = submit_async_run(
+                queue,
+                payload={
+                    "kind": "org_scan",
+                    "inputs": {"org": "acme", "families": ["terraform"]},
+                },
+                acting_user="tester",
+                repo_root=tmp_path,
+            )
+            deadline = time.time() + 5.0
+            while time.time() < deadline:
+                terminal = queue.get(record.run_id)
+                if terminal and terminal.status == RunStatus.SUCCEEDED:
+                    break
+                time.sleep(0.05)
+            assert terminal is not None
+            assert terminal.status == RunStatus.SUCCEEDED
+
+            page = client.get(f"/runs/{record.run_id}/result")
+            assert page.status_code == 200
+            assert "Organization scan" in page.text
+            assert "data-org-scan-add-to-batch" in page.text
+            assert "https://github.com/acme/vpc" in page.text
+    finally:
+        queue.close()
