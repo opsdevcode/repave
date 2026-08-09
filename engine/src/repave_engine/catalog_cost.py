@@ -116,4 +116,3 @@ def enrich_catalog_entities_with_cost(
     if portal_config.cost_snapshots_file is not None:
         enriched = [attach_cost_sparkline(entity, portal_config) for entity in enriched]
     return tuple(enriched)
-    return tuple(enriched)
