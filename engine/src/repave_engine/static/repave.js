@@ -612,6 +612,7 @@
     var drySubmitBtn = form.querySelector("[data-dry-run-submit]");
     var dryRunForceField = form.querySelector("[data-dry-run-force]");
     var progressEl = form.querySelector("[data-stepper-progress]");
+    var stepperFill = form.querySelector("[data-form-stepper-fill]");
     var current = 0;
     var maxStep = parseInt(form.getAttribute("data-form-stepper-max") || "2", 10);
     if (Number.isNaN(maxStep)) {
@@ -784,6 +785,7 @@
       navSteps.forEach(function (node) {
         var index = Number(node.getAttribute("data-stepper-index"));
         node.classList.toggle("is-active", index === current);
+        node.classList.toggle("is-done", index < current);
         node.setAttribute("aria-current", index === current ? "step" : "false");
       });
       if (backBtn) {
@@ -809,6 +811,11 @@
           " of " +
           (maxStep + 1) +
           (label ? " · " + label : "");
+      }
+      if (stepperFill) {
+        var totalSteps = maxStep + 1;
+        var fillPct = Math.round(((current + 0.35) / totalSteps) * 100);
+        stepperFill.style.width = Math.min(100, fillPct) + "%";
       }
       form.dispatchEvent(
         new CustomEvent("repave:stepper-change", {
@@ -2251,13 +2258,29 @@
         li.setAttribute("role", "option");
         li.setAttribute("aria-selected", index === activeIndex ? "true" : "false");
         li.id = "command-palette-opt-" + index;
+        var icon = document.createElement("span");
+        icon.className =
+          "command-palette__item-icon command-palette__item-icon--" + (item.kind || "item");
+        icon.setAttribute("aria-hidden", "true");
+        li.appendChild(icon);
+        var body = document.createElement("div");
+        body.className = "command-palette__item-body";
         var labelSpan = document.createElement("span");
+        labelSpan.className = "command-palette__item-label";
         labelSpan.textContent = item.label || "";
-        li.appendChild(labelSpan);
-        var kind = document.createElement("span");
-        kind.className = "command-palette__item-kind";
-        kind.textContent = item.kind || item.action || "item";
-        li.appendChild(kind);
+        body.appendChild(labelSpan);
+        if (item.subtitle) {
+          var subtitle = document.createElement("span");
+          subtitle.className = "command-palette__item-subtitle";
+          subtitle.textContent = item.subtitle;
+          body.appendChild(subtitle);
+        } else {
+          var kind = document.createElement("span");
+          kind.className = "command-palette__item-kind";
+          kind.textContent = item.kind || item.action || "item";
+          body.appendChild(kind);
+        }
+        li.appendChild(body);
         li.addEventListener("click", function () {
           runItem(item);
         });
@@ -2272,7 +2295,9 @@
       var query = input.value || "";
       filtered = items
         .map(function (item) {
-          return { item: item, score: fuzzyMatchScore(query, item.label || "") };
+          var labelScore = fuzzyMatchScore(query, item.label || "");
+          var subtitleScore = fuzzyMatchScore(query, item.subtitle || "");
+          return { item: item, score: Math.max(labelScore, subtitleScore) };
         })
         .filter(function (row) {
           return row.score > 0;
@@ -2341,6 +2366,34 @@
     });
   }
 
+  function initPortalViewToggle() {
+    document.querySelectorAll("[data-portal-view-toggle]").forEach(function (root) {
+      var buttons = root.querySelectorAll("[data-view-mode]");
+      var panels = root.querySelectorAll("[data-view-panel]");
+      if (!buttons.length || panels.length < 2) {
+        return;
+      }
+      function setMode(mode) {
+        buttons.forEach(function (button) {
+          var active = button.getAttribute("data-view-mode") === mode;
+          button.classList.toggle("is-active", active);
+          button.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        panels.forEach(function (panel) {
+          var show = panel.getAttribute("data-view-panel") === mode;
+          panel.hidden = !show;
+        });
+      }
+      buttons.forEach(function (button) {
+        button.addEventListener("click", function () {
+          setMode(button.getAttribute("data-view-mode") || "list");
+        });
+      });
+      var initial = root.querySelector("[data-view-mode].is-active");
+      setMode(initial ? initial.getAttribute("data-view-mode") || "list" : "list");
+    });
+  }
+
   window.repavePortal = {
     saveLastRun: function (payload) {
       try {
@@ -2389,5 +2442,6 @@
     initRelativeTimes();
     initSortableTables();
     initCommandPalette();
+    initPortalViewToggle();
   });
 })();

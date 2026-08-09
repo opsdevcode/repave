@@ -123,6 +123,8 @@ def test_runs_index_lists_recent_runs(async_client) -> None:
             body = async_client.get("/runs").text
             if run_id in body and "Async runs" in body:
                 assert "terraform-module-generic" in body
+                assert "data-portal-view-toggle" in body
+                assert "runs-timeline" in body
                 return
             time.sleep(0.05)
         pytest.fail("run did not appear on /runs index")
