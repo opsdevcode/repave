@@ -180,6 +180,8 @@ def test_api_v2_github_org_scan(repo_root, output_config, monkeypatch) -> None:
             listed=2,
             limit=100,
             truncated=False,
+            discovery_mode="search",
+            search_query="org:acme language:HCL archived:false fork:false",
             repos=(
                 ScannedRepository(
                     url="https://github.com/acme/vpc",

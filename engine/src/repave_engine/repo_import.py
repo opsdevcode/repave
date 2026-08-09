@@ -69,6 +69,7 @@ from repave_engine.github_inventory import (
     parse_github_repository,
     remote_has_provenance,
     resolve_batch_targets,
+    validate_pushed_since,
 )
 from repave_engine.github_rate_limit import wait_before_github_request
 from repave_engine.import_detect import (
@@ -1038,12 +1039,27 @@ def plan_import_batch(
     git_token: str | None = None,
     org: str = "",
     topic: str = "",
+    language: str = "",
+    pushed_since: str = "",
+    exclude_archived: bool = True,
+    exclude_forks: bool = True,
     with_gates: bool = True,
     limit: int = 30,
 ) -> ImportBatchPlan:
     """Plan several imports, collecting per-target failures instead of aborting."""
     token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
-    resolved = resolve_batch_targets(targets, org=org, topic=topic, token=token, limit=limit)
+    pushed = validate_pushed_since(pushed_since)
+    resolved = resolve_batch_targets(
+        targets,
+        org=org,
+        topic=topic,
+        language=language,
+        pushed_since=pushed,
+        exclude_archived=exclude_archived,
+        exclude_forks=exclude_forks,
+        token=token,
+        limit=limit,
+    )
     if not resolved:
         raise RepoImportError("at least one repository target is required")
 
@@ -1636,6 +1652,10 @@ def import_repository_batch(
     values: Mapping[str, Any] | None = None,
     org: str = "",
     topic: str = "",
+    language: str = "",
+    pushed_since: str = "",
+    exclude_archived: bool = True,
+    exclude_forks: bool = True,
     with_gates: bool = True,
     limit: int = 30,
 ) -> ImportBatchPublishResult:
@@ -1648,6 +1668,10 @@ def import_repository_batch(
         git_token=github_token,
         org=org,
         topic=topic,
+        language=language,
+        pushed_since=pushed_since,
+        exclude_archived=exclude_archived,
+        exclude_forks=exclude_forks,
         with_gates=with_gates,
         limit=limit,
     )

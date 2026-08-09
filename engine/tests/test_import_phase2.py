@@ -97,6 +97,38 @@ def test_resolve_batch_targets_deduplicates() -> None:
     assert targets == ["https://github.com/acme/a"]
 
 
+def test_resolve_batch_targets_appends_search_results() -> None:
+    client = StaticGitHubRestClient(
+        responses={
+            (
+                "GET",
+                "/search/repositories?q=org%3Aacme%20language%3AHCL%20archived%3Afalse%20fork%3Afalse&per_page=2&page=1",
+            ): {
+                "items": [
+                    {
+                        "name": "mod-a",
+                        "clone_url": "https://github.com/acme/mod-a.git",
+                        "html_url": "https://github.com/acme/mod-a",
+                        "owner": {"login": "acme"},
+                        "archived": False,
+                        "fork": False,
+                        "default_branch": "main",
+                    },
+                ],
+            },
+        }
+    )
+    with patch("repave_engine.github_inventory._github_json", side_effect=client.request_json):
+        targets = resolve_batch_targets(
+            [],
+            org="acme",
+            language="HCL",
+            token="token",
+            limit=2,
+        )
+    assert targets == ["https://github.com/acme/mod-a.git"]
+
+
 def test_rate_limit_tracker_waits_when_remaining_is_low(monkeypatch: pytest.MonkeyPatch) -> None:
     clear_rate_limit_tracker()
     tracker = GitHubRateLimitTracker()

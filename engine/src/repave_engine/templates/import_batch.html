@@ -11,7 +11,7 @@
     <h1 class="page-title">Batch import</h1>
     <p class="page-lead">
       Plan imports for many repositories at once. Scan a GitHub organization, filter by
-      artifact family, or paste a URL list.
+      artifact family or GitHub search, or paste a URL list.
     </p>
   </div>
 </header>
@@ -44,9 +44,65 @@
         />
       </div>
 
+      {% if scan_search_presets %}
+      <div class="field">
+        <span class="field__label">GitHub search presets</span>
+        <div class="chip-row" data-import-org-scan-presets>
+          {% for preset in scan_search_presets %}
+          <button
+            class="chip"
+            type="button"
+            data-import-search-preset
+            data-preset-language="{{ preset.language }}"
+            data-preset-topic="{{ preset.topic }}"
+          >
+            {{ preset.label }}
+          </button>
+          {% endfor %}
+        </div>
+        <p class="field__hint muted">
+          Presets set GitHub search qualifiers before scan. Classification still uses marker
+          files in each repository.
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="field">
+        <label class="field__label" for="scan-topic">Topic (GitHub search)</label>
+        <input
+          class="field__input"
+          type="text"
+          id="scan-topic"
+          data-import-org-scan-topic
+          placeholder="terraform"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="scan-language">Language (GitHub search)</label>
+        <input
+          class="field__input"
+          type="text"
+          id="scan-language"
+          data-import-org-scan-language
+          placeholder="HCL"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="scan-pushed">Pushed since</label>
+        <input
+          class="field__input"
+          type="date"
+          id="scan-pushed"
+          data-import-org-scan-pushed
+        />
+        <p class="field__hint muted">Optional. Uses GitHub <code>pushed:&gt;YYYY-MM-DD</code> search.</p>
+      </div>
+
       {% if scan_family_choices %}
       <div class="field">
-        <span class="field__label">Artifact families</span>
+        <span class="field__label">Artifact families (post-scan filter)</span>
         <div class="chip-row" data-import-org-scan-families>
           {% for choice in scan_family_choices %}
           <label class="chip">
@@ -61,10 +117,6 @@
           </label>
           {% endfor %}
         </div>
-        <p class="field__hint muted">
-          Scan classifies each repository from marker files (for example <code>*.tf</code> or
-          Ansible role layout), not GitHub language stats.
-        </p>
       </div>
       {% endif %}
 
@@ -72,6 +124,20 @@
         <label class="chip">
           <input type="checkbox" data-import-org-scan-skip-governed checked />
           Skip repositories that already have <code>repave.yaml</code>
+        </label>
+      </div>
+
+      <div class="field">
+        <label class="chip">
+          <input type="checkbox" data-import-org-scan-exclude-archived checked />
+          Exclude archived repositories
+        </label>
+      </div>
+
+      <div class="field">
+        <label class="chip">
+          <input type="checkbox" data-import-org-scan-exclude-forks checked />
+          Exclude forked repositories
         </label>
       </div>
 
@@ -116,7 +182,7 @@
     <input class="field__input" type="text" id="batch-topic" name="topic" value="{{ topic or '' }}" placeholder="terraform" />
     <p class="field__hint muted">
       When topic is set, matching repositories are appended during batch preview (in addition to
-      the list above).
+      the list above). Uses the same GitHub search qualifiers as org scan.
     </p>
   </div>
 

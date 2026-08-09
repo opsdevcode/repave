@@ -146,6 +146,8 @@ def test_import_batch_form_renders(client: TestClient) -> None:
     assert "data-import-org-scan" in body
     assert "data-import-org-scan-run" in body
     assert "Scan org" in body
+    assert "data-import-search-preset" in body
+    assert "Terraform (HCL)" in body
 
 
 def test_import_batch_preview_plans_multiple_repos(client: TestClient, tmp_path: Path) -> None:

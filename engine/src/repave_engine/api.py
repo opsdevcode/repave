@@ -117,6 +117,7 @@ from repave_engine.observability_selection import (
     observability_input_defaults,
 )
 from repave_engine.observability_slo import fetch_entity_slo_summary
+from repave_engine.org_import_scan import ORG_SCAN_SEARCH_PRESETS
 from repave_engine.pipeline import generate_from_blueprint, generate_from_bundle
 from repave_engine.policy_catalog import (
     catalog_for_api,
@@ -1694,6 +1695,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             catalog_groups=groups,
             catalog_json=import_catalog_json(),
             scan_family_choices=scan_family_choices,
+            scan_search_presets=list(ORG_SCAN_SEARCH_PRESETS),
             **extra,
         )
 
