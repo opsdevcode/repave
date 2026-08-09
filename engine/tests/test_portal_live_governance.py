@@ -37,6 +37,9 @@ def test_estate_map_page_lists_tiles(repo_root, output_config, registry: Path) -
     assert "Which governed repositories are current" in response.text
     assert "tf-vpc" in response.text
     assert "estate-tile" in response.text
+    assert "estate-summary" in response.text
+    assert "data-estate-map" in response.text
+    assert 'data-view-mode="table"' in response.text
     assert "/blueprints/terraform-module-generic" in response.text
     assert "/update?target_repo=" in response.text
 

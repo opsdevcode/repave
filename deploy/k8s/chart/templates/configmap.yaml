@@ -12,6 +12,11 @@ data:
       repo_name_template: {{ .Values.repave.output.repoNameTemplate | quote }}
     portal:
       density: {{ .Values.repave.portal.density | quote }}
+      {{- if .Values.repave.portal.costSnapshots.enabled }}
+      cost_snapshots:
+        enabled: {{ .Values.repave.portal.costSnapshots.enabled }}
+        file: {{ .Values.repave.portal.costSnapshots.file | quote }}
+      {{- end }}
     gates:
       checkov:
         skip_checks:

@@ -870,6 +870,8 @@ class PortalConfig:
     cost_aws: CostAwsConfig = field(default_factory=CostAwsConfig)
     cost_azure: CostAzureConfig = field(default_factory=CostAzureConfig)
     cost_k8s: CostK8sConfig = field(default_factory=CostK8sConfig)
+    cost_snapshots_enabled: bool = False
+    cost_snapshots_file: Path | None = None
     deployment_reader: str = ""
     deployment_status_url: str = ""
     deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
@@ -1008,6 +1010,40 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         raise ValueError("portal.deployment_reader must be 'url', 'argocd', or 'flux'")
     if deployment_flux.kind not in ("kustomization", "helmrelease"):
         raise ValueError("portal.deployment_flux.kind must be 'kustomization' or 'helmrelease'")
+    from repave_engine.cost_actuals import cost_reader_configured
+
+    cost_reader_active = cost_reader_configured(
+        cost_reader=cost_reader,
+        cost_actuals_url=cost_url,
+    )
+    snapshots_block = block.get("cost_snapshots", {})
+    cost_snapshots_enabled = False
+    cost_snapshots_file: Path | None = None
+    default_snapshots = (repo_root / "data/fleet/cost-snapshots.jsonl").resolve()
+    env_snapshots_file = os.environ.get("REPAVE_COST_SNAPSHOTS_FILE", "").strip()
+    snapshots_explicit = isinstance(snapshots_block, dict)
+    snapshots_enabled_flag = snapshots_block.get("enabled") if snapshots_explicit else None
+    if (
+        snapshots_explicit
+        and not isinstance(snapshots_enabled_flag, bool)
+        and snapshots_enabled_flag is not None
+    ):
+        raise ValueError("portal.cost_snapshots.enabled must be a boolean")
+    should_enable_snapshots = cost_reader_active or snapshots_enabled_flag is True
+    if should_enable_snapshots:
+        cost_snapshots_enabled = (
+            snapshots_enabled_flag if snapshots_enabled_flag is not None else True
+        )
+        file_value = str(snapshots_block.get("file", "")).strip() if snapshots_explicit else ""
+        if env_snapshots_file:
+            path = Path(env_snapshots_file).expanduser()
+            cost_snapshots_file = path if path.is_absolute() else (repo_root / path).resolve()
+            cost_snapshots_enabled = True
+        elif file_value:
+            path = Path(file_value).expanduser()
+            cost_snapshots_file = path if path.is_absolute() else (repo_root / path).resolve()
+        elif cost_snapshots_enabled:
+            cost_snapshots_file = default_snapshots
     return PortalConfig(
         density=density,
         observability_dashboard_url=obs_url,
@@ -1018,6 +1054,8 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         cost_aws=cost_aws,
         cost_azure=cost_azure,
         cost_k8s=cost_k8s,
+        cost_snapshots_enabled=cost_snapshots_enabled,
+        cost_snapshots_file=cost_snapshots_file,
         deployment_reader=deployment_reader,
         deployment_status_url=deployment_status_url,
         deployment_argocd=deployment_argocd,

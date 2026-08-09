@@ -15,6 +15,10 @@ repave:
     enabled: true
     file: /data/fleet/registry.jsonl
     operatorStatusFile: /data/fleet/operator-status.json
+  portal:
+    costSnapshots:
+      enabled: true
+      file: /data/fleet/cost-snapshots.jsonl
 
 fleetOperatorSnapshot:
   cronJob:

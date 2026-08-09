@@ -1,4 +1,4 @@
-"""Library catalog cost badges: actuals, local estimates, and batch enrichment."""
+"""Library catalog cost badges: actuals, local estimates, trends, and batch enrichment."""
 
 from __future__ import annotations
 
@@ -13,6 +13,12 @@ from repave_engine.cost_actuals import (
     fetch_entity_cost_actuals_for_portal,
 )
 from repave_engine.cost_estimate import CostEstimate, load_cost_estimate_file
+from repave_engine.cost_snapshot_store import (
+    build_cost_sparkline,
+    capture_cost_snapshots,
+    cost_sparkline_detail,
+    read_entity_cost_snapshots,
+)
 from repave_engine.entity_catalog import CatalogEntity, apply_cost_to_scorecard
 
 if TYPE_CHECKING:
@@ -74,9 +80,39 @@ def enrich_entity_cost(
     return patched, actuals, estimate
 
 
+def attach_cost_sparkline(entity: CatalogEntity, portal_config: PortalConfig) -> CatalogEntity:
+    if not portal_config.cost_snapshots_enabled or portal_config.cost_snapshots_file is None:
+        return entity
+    snapshots = read_entity_cost_snapshots(portal_config.cost_snapshots_file, entity.entity_id)
+    sparkline = build_cost_sparkline(snapshots)
+    if not sparkline:
+        return entity
+    currency = snapshots[-1].currency if snapshots else "USD"
+    return replace(
+        entity,
+        cost_sparkline=sparkline,
+        cost_sparkline_detail=cost_sparkline_detail(snapshots, currency=currency),
+    )
+
+
 def enrich_catalog_entities_with_cost(
     entities: Sequence[CatalogEntity],
     portal_config: PortalConfig,
 ) -> tuple[CatalogEntity, ...]:
-    """Fetch cost actuals (cached) and local estimates; patch scorecards and tile badges."""
-    return tuple(enrich_entity_cost(entity, portal_config)[0] for entity in entities)
+    """Fetch cost actuals (cached) and local estimates; patch scorecards, badges, and trends."""
+    enriched: list[CatalogEntity] = []
+    capture_pairs: list[tuple[str, CostActualsSummary]] = []
+    for entity in entities:
+        patched, actuals, _estimate = enrich_entity_cost(entity, portal_config)
+        if (
+            actuals is not None
+            and portal_config.cost_snapshots_enabled
+            and portal_config.cost_snapshots_file is not None
+        ):
+            capture_pairs.append((patched.entity_id, actuals))
+        enriched.append(patched)
+    if capture_pairs and portal_config.cost_snapshots_file is not None:
+        capture_cost_snapshots(portal_config.cost_snapshots_file, capture_pairs)
+    if portal_config.cost_snapshots_file is not None:
+        enriched = [attach_cost_sparkline(entity, portal_config) for entity in enriched]
+    return tuple(enriched)

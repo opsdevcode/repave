@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from repave_engine.audit_history import AuditHistoryEntry
-from repave_engine.estate_map import build_estate_tiles, status_label_for_phase
+from repave_engine.estate_map import (
+    build_estate_tiles,
+    status_label_for_phase,
+    summarize_estate_tiles,
+)
 
 
 def test_status_label_for_phase() -> None:
@@ -62,3 +66,37 @@ def test_build_estate_tiles_unknown_operator_phase() -> None:
     assert tiles[0].freshness == "unknown"
     assert tiles[0].status_label == ""
     assert tiles[0].freshness_detail == "Upgrade status not available yet"
+
+
+def test_summarize_estate_tiles() -> None:
+    rows = [
+        {
+            "repo_url": "https://github.com/acme/tf-a",
+            "blueprint_name": "terraform-module-generic",
+            "blueprint_version": "1.0.0",
+            "owner": "platform",
+            "operator_phase": "Ready",
+            "registered_at": "2026-01-01T00:00:00Z",
+        },
+        {
+            "repo_url": "https://github.com/acme/tf-b",
+            "blueprint_name": "terraform-module-generic",
+            "blueprint_version": "1.0.0",
+            "owner": "platform",
+            "operator_phase": "OutOfDate",
+            "registered_at": "2026-01-01T00:00:00Z",
+        },
+        {
+            "repo_url": "https://github.com/acme/tf-c",
+            "blueprint_name": "terraform-module-generic",
+            "blueprint_version": "1.0.0",
+            "owner": "platform",
+            "operator_phase": "Error",
+            "registered_at": "2026-01-01T00:00:00Z",
+        },
+    ]
+    summary = summarize_estate_tiles(build_estate_tiles(rows))
+    assert summary.total == 3
+    assert summary.fresh_count == 1
+    assert summary.drift_count == 1
+    assert summary.error_count == 1

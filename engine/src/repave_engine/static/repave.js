@@ -2393,6 +2393,89 @@
     });
   }
 
+  function initEstateMap() {
+    var root = document.querySelector("[data-estate-map]");
+    if (!root) {
+      return;
+    }
+    var input = root.querySelector("[data-estate-search-input]");
+    var meta = root.querySelector("[data-estate-filter-meta]");
+    var emptyState = document.querySelector("[data-estate-empty]");
+    var tiles = document.querySelectorAll("[data-estate-tile]");
+    var rows = document.querySelectorAll("[data-estate-row]");
+    var chips = root.querySelectorAll("[data-estate-filter]");
+    var activeFilter = "all";
+
+    function normalize(value) {
+      return (value || "").toLowerCase().trim();
+    }
+
+    function matchesSearch(node) {
+      if (!input) {
+        return true;
+      }
+      var query = normalize(input.value);
+      var terms = query ? query.split(/\s+/).filter(Boolean) : [];
+      if (!terms.length) {
+        return true;
+      }
+      var haystack = normalize(node.getAttribute("data-search-text"));
+      return terms.every(function (term) {
+        return haystack.indexOf(term) !== -1;
+      });
+    }
+
+    function matchesFilter(node) {
+      if (activeFilter === "all") {
+        return true;
+      }
+      return node.getAttribute("data-estate-freshness") === activeFilter;
+    }
+
+    function applyFilters() {
+      var visible = 0;
+      tiles.forEach(function (tile) {
+        var show = matchesSearch(tile) && matchesFilter(tile);
+        tile.hidden = !show;
+        if (show) {
+          visible += 1;
+        }
+      });
+      rows.forEach(function (row) {
+        row.hidden = !(matchesSearch(row) && matchesFilter(row));
+      });
+      if (meta) {
+        if (visible === 0) {
+          meta.hidden = false;
+          meta.textContent = "No repositories match the current search or filter.";
+        } else {
+          meta.hidden = true;
+          meta.textContent = "";
+        }
+      }
+      if (emptyState) {
+        emptyState.hidden = visible > 0;
+      }
+    }
+
+    chips.forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        activeFilter = chip.getAttribute("data-estate-filter") || "all";
+        chips.forEach(function (item) {
+          var active = item === chip;
+          item.classList.toggle("is-active", active);
+          item.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        applyFilters();
+      });
+    });
+
+    if (input) {
+      input.addEventListener("input", applyFilters);
+    }
+    applyFilters();
+  }
+
   function initPortalViewToggle() {
     document.querySelectorAll("[data-portal-view-toggle]").forEach(function (root) {
       var buttons = root.querySelectorAll("[data-view-mode]");
@@ -2470,5 +2553,6 @@
     initSortableTables();
     initCommandPalette();
     initPortalViewToggle();
+    initEstateMap();
   });
 })();

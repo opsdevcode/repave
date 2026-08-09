@@ -91,7 +91,7 @@ from repave_engine.entity_catalog import (
 )
 from repave_engine.environment_reclaim import reclaim_expired_environments
 from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
-from repave_engine.estate_map import build_estate_tiles
+from repave_engine.estate_map import build_estate_tiles, summarize_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.fleet import FleetError
 from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
@@ -654,6 +654,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if audit_portal_enabled(repo_root):
             audit_entries = portal_recent_activity(repo_root, limit=80)
         tiles = build_estate_tiles(fleet_repos, audit_entries=audit_entries) if enabled else []
+        summary = summarize_estate_tiles(tiles)
         return templates.TemplateResponse(
             request,
             "estate_map.html",
@@ -662,6 +663,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="estate",
                 estate_enabled=enabled,
                 estate_tiles=tiles,
+                estate_summary=summary,
                 audit_sparklines_enabled=audit_portal_enabled(repo_root),
             ),
         )
