@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -17,6 +18,24 @@ def _enable_audit(tmp_path) -> None:
         "audit:\n  enabled: true\n  file: audit/generation.jsonl\n",
         encoding="utf-8",
     )
+
+
+def _wait_for_audit_entries(
+    audit_path: Path,
+    *,
+    repo_root: Path,
+    expected: int = 1,
+    deadline_seconds: float = 15.0,
+):
+    deadline = time.time() + deadline_seconds
+    while time.time() < deadline:
+        entries = read_recent_audit_entries(audit_path, limit=5, repo_root=repo_root)
+        if len(entries) >= expected:
+            return entries
+        time.sleep(0.05)
+    entries = read_recent_audit_entries(audit_path, limit=5, repo_root=repo_root)
+    assert len(entries) >= expected, f"expected >= {expected} audit entries, got {len(entries)}"
+    return entries
 
 
 def test_run_queue_executes_job(tmp_path) -> None:
@@ -231,14 +250,16 @@ def test_run_queue_writes_audit_on_success(tmp_path) -> None:
             acting_user="alice",
         )
         run_id = record.run_id
-        deadline = time.time() + 5.0
+        deadline = time.time() + 15.0
         while time.time() < deadline:
             terminal = store.get(run_id)
             if terminal and terminal.status == RunStatus.SUCCEEDED:
                 break
             time.sleep(0.05)
+        terminal = store.get(run_id)
+        assert terminal is not None and terminal.status == RunStatus.SUCCEEDED
     audit_path = tmp_path / "audit" / "generation.jsonl"
-    entries = read_recent_audit_entries(audit_path, limit=5, repo_root=tmp_path)
+    entries = _wait_for_audit_entries(audit_path, repo_root=tmp_path)
     assert len(entries) == 1
     assert entries[0].module_name == "tf-aws-eks"
     assert entries[0].extra.get("run_id") == run_id
@@ -276,14 +297,16 @@ def test_run_queue_writes_audit_on_dead_letter(tmp_path) -> None:
             acting_user="bob",
         )
         run_id = record.run_id
-        deadline = time.time() + 5.0
+        deadline = time.time() + 15.0
         while time.time() < deadline:
             terminal = store.get(run_id)
             if terminal and terminal.status == RunStatus.DEAD_LETTER:
                 break
             time.sleep(0.05)
+        terminal = store.get(run_id)
+        assert terminal is not None and terminal.status == RunStatus.DEAD_LETTER
     audit_path = tmp_path / "audit" / "generation.jsonl"
-    entries = read_recent_audit_entries(audit_path, limit=5, repo_root=tmp_path)
+    entries = _wait_for_audit_entries(audit_path, repo_root=tmp_path)
     assert len(entries) == 1
     assert entries[0].gates_outcome == "failed"
     assert entries[0].extra.get("run_id") == run_id

@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Platform FinOps — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb"><a href="/platform/fleet">← Platform</a></p>
+{% include "partials/platform_subnav.html" %}
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">FinOps showback</h1>
+    <p class="page-lead">
+      Fleet cost vs budget rollup from catalog entities, L30D actuals, and snapshot trends.
+      Cardinality-safe gauges export to <code>/metrics</code>.
+    </p>
+  </div>
+</header>
+
+{% set rollup = finops_page.rollup %}
+{% if rollup.entity_count == 0 %}
+<div class="alert alert--info">
+  No catalog entities yet. Publish golden-path repos or enable
+  <code>portal.cost_snapshots</code> and <code>portal.cost_budgets</code> in
+  <code>repave.config.yaml</code>.
+</div>
+{% else %}
+<section class="card" aria-labelledby="finops-summary-heading">
+  <div class="card__header">
+    <h2 id="finops-summary-heading">Fleet rollup</h2>
+    <p class="muted card__subtitle">
+      {{ rollup.entity_count }} entities · {{ rollup.entities_with_actuals }} with L30D actuals ·
+      {{ rollup.entities_with_budget }} with budgets
+    </p>
+  </div>
+  <div class="card__body">
+    <dl class="finops-summary-grid">
+      <div>
+        <dt class="muted">Total L30D actual</dt>
+        <dd><strong>{{ rollup.currency }} {{ '%.2f'|format(rollup.total_actual_30d) }}</strong></dd>
+      </div>
+      <div>
+        <dt class="muted">Total monthly budget</dt>
+        <dd><strong>{{ rollup.currency }} {{ '%.2f'|format(rollup.total_budget_monthly) }}</strong></dd>
+      </div>
+      <div>
+        <dt class="muted">Over budget</dt>
+        <dd>
+          {% if rollup.over_budget_count %}
+          <span class="badge badge--fail">{{ rollup.over_budget_count }}</span>
+          {% else %}
+          <span class="badge badge--pass">0</span>
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt class="muted">Snapshots</dt>
+        <dd>
+          {% if finops_page.snapshots_enabled %}
+          <span class="badge badge--pass">Enabled</span>
+          {% else %}
+          <span class="badge badge--muted">Not configured</span>
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="finops-entities-heading">
+  <div class="card__header">
+    <h2 id="finops-entities-heading">Entities</h2>
+    <p class="muted card__subtitle">Sorted with over-budget rows first</p>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col" data-sortable data-sort-type="text">Entity</th>
+          <th scope="col" data-sortable data-sort-type="text">Owner</th>
+          <th scope="col" data-sortable data-sort-type="number">L30D actual</th>
+          <th scope="col" data-sortable data-sort-type="number">Monthly budget</th>
+          <th scope="col">Trend</th>
+          <th scope="col" data-sortable data-sort-type="text">Budget status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rollup.rows %}
+        <tr>
+          <td><a href="/services/{{ row.entity_id }}"><code>{{ row.display_name }}</code></a></td>
+          <td>{{ row.owner or '—' }}</td>
+          <td>{{ row.currency }} {{ row.amount_30d }}</td>
+          <td>
+            {% if row.monthly_budget_usd is not none %}
+            {{ rollup.currency }} {{ '%.2f'|format(row.monthly_budget_usd) }}
+            {% else %}
+            <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.sparkline %}
+            <span
+              class="cost-sparkline cost-sparkline--table"
+              role="img"
+              aria-label="{{ row.sparkline_detail or 'Cost trend' }}"
+              title="{{ row.sparkline_detail }}"
+            >
+              {% for height in row.sparkline %}
+              <span class="cost-spark" style="--cost-spark-height: {{ height }}%"></span>
+              {% endfor %}
+            </span>
+            {% else %}
+            <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge badge--{% if row.budget_level == 'unknown' %}muted{% else %}{{ row.budget_level }}{% endif %}" title="{{ row.budget_detail }}">
+              {% if row.budget_level == 'pass' %}Under budget
+              {% elif row.budget_level == 'fail' %}Over budget
+              {% else %}No budget{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

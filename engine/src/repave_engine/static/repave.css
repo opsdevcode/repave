@@ -5710,6 +5710,23 @@ body.repave-busy {
   margin-left: 0;
 }
 
+.cost-sparkline--detail {
+  height: 2.5rem;
+  margin-top: var(--space-3);
+  max-width: 14rem;
+}
+
+.cost-sparkline--table {
+  height: 1.1rem;
+  max-width: 6rem;
+}
+
+.finops-summary-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+
 .preflight-panel__row--wide {
   grid-column: 1 / -1;
 }

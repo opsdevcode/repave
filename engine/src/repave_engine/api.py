@@ -93,6 +93,7 @@ from repave_engine.environment_reclaim import reclaim_expired_environments
 from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
 from repave_engine.estate_map import build_estate_tiles, summarize_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
+from repave_engine.finops_rollup import build_entity_cost_showback
 from repave_engine.fleet import FleetError
 from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
@@ -163,6 +164,7 @@ from repave_engine.portal_platform import (
     build_platform_campaigns_page,
     build_platform_compliance_page,
     build_platform_feedback_page,
+    build_platform_finops_page,
     build_platform_fleet_page,
     build_platform_ops_page,
     build_platform_standards_detail,
@@ -681,7 +683,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
         if owner.strip():
             entities = filter_entities_by_owner(entities, owner)
-        entities = list(enrich_catalog_entities_with_cost(entities, portal_config))
+        entities = list(
+            enrich_catalog_entities_with_cost(entities, portal_config, repo_root=repo_root)
+        )
         entities = list(enrich_catalog_entities_with_deployment(entities, portal_config))
         blueprint_types = {
             blueprint.name: blueprint.artifact_type
@@ -725,6 +729,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if entity is None:
             raise HTTPException(status_code=404, detail="Entity not found")
         entity, cost_actuals, cost_estimate = enrich_entity_cost(entity, portal_config)
+        cost_showback = build_entity_cost_showback(
+            entity,
+            portal_config,
+            repo_root=repo_root,
+            amount_float=cost_actuals.amount_float() if cost_actuals is not None else None,
+            currency=cost_actuals.currency if cost_actuals is not None else "USD",
+        )
         entity, deployment_status = deployment_scorecard_for_entity(entity, portal_config)
         token = resolve_github_access_token()
         docs = resolve_entity_docs(entity, github_token=token)
@@ -775,6 +786,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 slo_summary=slo_summary,
                 cost_actuals=cost_actuals,
                 cost_estimate=cost_estimate,
+                cost_showback=cost_showback,
                 deployment_status=deployment_status,
                 live_plan_available=live_plan_available,
                 live_plan_env=live_plan_env,
@@ -2207,6 +2219,22 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="platform",
                 platform_nav="campaigns",
                 campaigns_page=campaigns_page,
+            ),
+        )
+
+    @app.get("/platform/finops", response_class=HTMLResponse)
+    async def platform_finops_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        finops_page = build_platform_finops_page(repo_root, resolved_output=resolved_output)
+        return templates.TemplateResponse(
+            request,
+            "platform_finops.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="finops",
+                finops_page=finops_page,
             ),
         )
 

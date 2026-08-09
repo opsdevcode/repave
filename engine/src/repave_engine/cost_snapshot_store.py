@@ -70,8 +70,31 @@ def snapshot_from_dict(payload: dict[str, object]) -> CostSnapshotEntry | None:
     )
 
 
-def append_cost_snapshot(path: Path, entry: CostSnapshotEntry) -> None:
-    line = json.dumps(entry.to_public_dict(), separators=(",", ":"))
+def append_cost_snapshot(
+    path: Path,
+    entry: CostSnapshotEntry,
+    *,
+    repo_root: Path | None = None,
+) -> None:
+    payload = entry.to_public_dict()
+    line = json.dumps(payload, separators=(",", ":"))
+    created_at = entry.captured_at or _utc_now()
+    if repo_root is not None:
+        from repave_engine.durability_store import load_durability_store_settings
+        from repave_engine.sql_store import append_cost_snapshot_line, connect
+
+        settings = load_durability_store_settings(repo_root)
+        if settings is not None:
+            with connect(settings.database) as conn:
+                append_cost_snapshot_line(
+                    conn,
+                    entry.entity_id,
+                    payload,
+                    created_at=created_at,
+                )
+                conn.commit()
+            if not settings.export_jsonl:
+                return
     append_jsonl_line(path, line, store="cost_snapshots")
 
 
@@ -79,9 +102,32 @@ def read_entity_cost_snapshots(
     path: Path,
     entity_id: str,
     *,
+    repo_root: Path | None = None,
     limit: int = _DEFAULT_SLOTS,
 ) -> tuple[CostSnapshotEntry, ...]:
     safe_limit = max(1, min(limit, 32))
+    if repo_root is not None:
+        from repave_engine.durability_store import load_durability_store_settings
+        from repave_engine.sql_store import connect, scan_entity_cost_snapshots
+
+        settings = load_durability_store_settings(repo_root)
+        if settings is not None:
+            try:
+                with connect(settings.database) as conn:
+                    payloads = scan_entity_cost_snapshots(
+                        conn,
+                        entity_id=entity_id,
+                        max_rows=safe_limit,
+                    )
+            except OSError as exc:
+                logger.warning("Cost snapshot SQL read failed: %s", exc)
+            else:
+                snapshots = [
+                    snap
+                    for payload in reversed(payloads)
+                    if (snap := snapshot_from_dict(payload)) is not None
+                ]
+                return tuple(snapshots[-safe_limit:])
     if not path.is_file():
         return ()
     try:
@@ -110,9 +156,68 @@ def read_entity_cost_snapshots(
     return tuple(matches)
 
 
-def latest_entity_cost_snapshot(path: Path, entity_id: str) -> CostSnapshotEntry | None:
-    snapshots = read_entity_cost_snapshots(path, entity_id, limit=1)
+def latest_entity_cost_snapshot(
+    path: Path,
+    entity_id: str,
+    *,
+    repo_root: Path | None = None,
+) -> CostSnapshotEntry | None:
+    snapshots = read_entity_cost_snapshots(
+        path,
+        entity_id,
+        repo_root=repo_root,
+        limit=1,
+    )
     return snapshots[-1] if snapshots else None
+
+
+def read_latest_cost_snapshots(
+    path: Path,
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, CostSnapshotEntry]:
+    """Return the newest snapshot per entity_id."""
+    if repo_root is not None:
+        from repave_engine.durability_store import load_durability_store_settings
+        from repave_engine.sql_store import connect, scan_latest_cost_snapshots
+
+        settings = load_durability_store_settings(repo_root)
+        if settings is not None:
+            try:
+                with connect(settings.database) as conn:
+                    payloads = scan_latest_cost_snapshots(conn, max_entities=_MAX_SCAN)
+            except OSError as exc:
+                logger.warning("Cost snapshot SQL latest read failed: %s", exc)
+            else:
+                out: dict[str, CostSnapshotEntry] = {}
+                for payload in payloads:
+                    entry = snapshot_from_dict(payload)
+                    if entry is not None:
+                        out[entry.entity_id] = entry
+                return out
+    if not path.is_file():
+        return {}
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        logger.warning("Cost snapshot read failed (%s): %s", path, exc)
+        return {}
+    latest: dict[str, CostSnapshotEntry] = {}
+    for line in lines[-_MAX_SCAN:]:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        entry = snapshot_from_dict(payload)
+        if entry is None:
+            continue
+        latest[entry.entity_id] = entry
+    return latest
 
 
 def capture_cost_snapshots(
@@ -120,6 +225,7 @@ def capture_cost_snapshots(
     entries: Sequence[tuple[str, CostActualsSummary]],
     *,
     captured_at: str | None = None,
+    repo_root: Path | None = None,
 ) -> int:
     """Append one snapshot per entity when amount changed or no snapshot exists today."""
     timestamp = captured_at or _utc_now()
@@ -128,7 +234,7 @@ def capture_cost_snapshots(
         normalized_id = entity_id.strip()
         if not normalized_id:
             continue
-        latest = latest_entity_cost_snapshot(path, normalized_id)
+        latest = latest_entity_cost_snapshot(path, normalized_id, repo_root=repo_root)
         if (
             latest is not None
             and _same_utc_day(latest.captured_at, timestamp)
@@ -144,6 +250,7 @@ def capture_cost_snapshots(
                 currency=actuals.currency,
                 amount_30d=actuals.amount_30d,
             ),
+            repo_root=repo_root,
         )
         written += 1
     return written

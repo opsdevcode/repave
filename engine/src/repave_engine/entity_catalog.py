@@ -150,6 +150,7 @@ class CatalogEntity:
     cost_badge_detail: str = ""
     cost_sparkline: tuple[int, ...] = ()
     cost_sparkline_detail: str = ""
+    monthly_budget_usd: str = ""
     readme_preview: str = ""
     last_generation_at: str = ""
     last_generation_outcome: str = ""
@@ -229,6 +230,9 @@ def _catalog_metadata(repo_dir: Path) -> dict[str, str]:
         annotations = metadata.get("annotations")
         if isinstance(annotations, dict):
             out["blueprint"] = str(annotations.get("repave.dev/blueprint", "")).strip()
+            out["monthly_budget_usd"] = str(
+                annotations.get("repave.dev/monthly-budget-usd", "")
+            ).strip()
     if isinstance(spec, dict):
         out["component_type"] = str(spec.get("type", "")).strip()
         out["lifecycle"] = str(spec.get("lifecycle", "")).strip()
@@ -367,6 +371,7 @@ def build_catalog_from_audit_applies(
                 readme_preview=_readme_excerpt(repo_dir) if repo_dir else "",
                 last_generation_at=entry.timestamp[:19],
                 last_generation_outcome=entry.gates_outcome,
+                monthly_budget_usd=meta.get("monthly_budget_usd", ""),
             )
         )
     return found
@@ -741,6 +746,7 @@ def _entity_from_fleet_row(
         readme_preview=_readme_excerpt(repo_dir) if repo_dir else "",
         last_generation_at=audit.timestamp[:19] if audit else "",
         last_generation_outcome=audit.gates_outcome if audit else "",
+        monthly_budget_usd=meta.get("monthly_budget_usd", ""),
     )
 
 
@@ -806,6 +812,7 @@ def _discover_local_entities(
             readme_preview=_readme_excerpt(entry),
             last_generation_at=audit.timestamp[:19] if audit else "",
             last_generation_outcome=audit.gates_outcome if audit else "",
+            monthly_budget_usd=meta.get("monthly_budget_usd", ""),
         )
         found.append(entity)
     return found

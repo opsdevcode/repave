@@ -24,6 +24,7 @@ Community anchors:
 | Upgrade / import cost delta | Preview delta vs prior `.repave/cost-estimate.json` when present |
 | `portal.cost_reader` (`url` / `aws` / `azure` / `k8s`) | Read-only L30D actuals for catalog entities |
 | Library badges + Cloud spend scorecard | Showback signal on `/library` and entity detail |
+| Cost snapshot trends + budgets (v1.92) | Library sparklines, entity budget vs actual, `/platform/finops` rollup |
 | State graph blast-radius cost join | Join Infracost breakdown to graph resources |
 | Terraform tag standards | Required FinOps allocation tags on golden paths (v1.90) |
 
@@ -35,7 +36,7 @@ Config examples: [`repave.config.yaml.example`](../repave.config.yaml.example).
 | --- | --- | --- |
 | **Planning & estimating** | Infracost gate; org floor (v1.91) | Detailed rate cards, custom pricing sheets |
 | **Allocation** | Tag governance (v1.90); CE/OpenCost tag filters | Shared-cost models, idle pool allocation |
-| **Reporting & analytics** | Entity L30D + trends/budgets (v1.92) | Executive BI, multi-year history |
+| **Reporting & analytics** | Entity L30D + trends/budgets + `/platform/finops` (v1.92) | Executive BI, multi-year history |
 | **Data ingestion** | Thin FOCUS reader (v1.93) | CUR → FOCUS ETL, vendor FOCUS warehouses |
 | **Budgeting** | Entity / fleet budgets vs actual (v1.92) | Finance systems of record |
 | **Anomaly management** | WoW/MoM threshold + webhook (v1.94) | Advanced ML anomaly products |
@@ -110,6 +111,29 @@ gates:
 Blueprint `gate_config.infracost.max_monthly_usd` still wins when set (stricter per path).
 Estimates land in audit `extra` (`cost_estimate_*`), the generate PR evidence checklist,
 and upgrade/import preview deltas when a prior `.repave/cost-estimate.json` exists.
+
+## Showback: trends and budgets (v1.92)
+
+```yaml
+portal:
+  cost_snapshots:
+    enabled: true
+    file: data/fleet/cost-snapshots.jsonl
+  cost_budgets:
+    default_monthly_usd: 250
+    entities:
+      opsdevcode-tf-aws-eks-demo: 600
+```
+
+| Surface | Role |
+| --- | --- |
+| Library sparklines | 8-point L30D trend from snapshot JSONL/SQL |
+| Entity detail | Budget vs actual badge + trend sparkline |
+| `/platform/finops` | Fleet rollup table; over-budget entities first |
+| `/metrics` | `repave_finops_fleet_actual_30d_usd`, `repave_finops_fleet_budget_monthly_usd`, `repave_finops_over_budget_entities` |
+
+Per-entity budget can also come from `repave.dev/monthly-budget-usd` on `catalog-info.yaml`
+(config overrides catalog; catalog overrides default).
 
 ## Thin FOCUS ingest (v1.93)
 

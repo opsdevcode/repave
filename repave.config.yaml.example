@@ -50,6 +50,12 @@ output:
 #   # cost_snapshots:
 #   #   enabled: true
 #   #   file: data/fleet/cost-snapshots.jsonl
+#   # Monthly budgets for showback (v1.92) — config overrides catalog annotation
+#   # repave.dev/monthly-budget-usd on catalog-info.yaml:
+#   # cost_budgets:
+#   #   default_monthly_usd: 250
+#   #   entities:
+#   #     opsdevcode-tf-aws-eks-demo: 600
 #   # Deployment status (ADR 003 Phase 1) — read-only GitOps enrichment on entity detail:
 #   # deployment_reader: url   # or argocd | flux
 #   # deployment_status_url: "https://status.example/v1/services/{name}"

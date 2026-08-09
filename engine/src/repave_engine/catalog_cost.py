@@ -80,10 +80,19 @@ def enrich_entity_cost(
     return patched, actuals, estimate
 
 
-def attach_cost_sparkline(entity: CatalogEntity, portal_config: PortalConfig) -> CatalogEntity:
-    if not portal_config.cost_snapshots_enabled or portal_config.cost_snapshots_file is None:
+def attach_cost_sparkline(
+    entity: CatalogEntity,
+    portal_config: PortalConfig,
+    *,
+    repo_root: Path | None = None,
+) -> CatalogEntity:
+    if portal_config.cost_snapshots_file is None:
         return entity
-    snapshots = read_entity_cost_snapshots(portal_config.cost_snapshots_file, entity.entity_id)
+    snapshots = read_entity_cost_snapshots(
+        portal_config.cost_snapshots_file,
+        entity.entity_id,
+        repo_root=repo_root,
+    )
     sparkline = build_cost_sparkline(snapshots)
     if not sparkline:
         return entity
@@ -98,6 +107,8 @@ def attach_cost_sparkline(entity: CatalogEntity, portal_config: PortalConfig) ->
 def enrich_catalog_entities_with_cost(
     entities: Sequence[CatalogEntity],
     portal_config: PortalConfig,
+    *,
+    repo_root: Path | None = None,
 ) -> tuple[CatalogEntity, ...]:
     """Fetch cost actuals (cached) and local estimates; patch scorecards, badges, and trends."""
     enriched: list[CatalogEntity] = []
@@ -112,7 +123,13 @@ def enrich_catalog_entities_with_cost(
             capture_pairs.append((patched.entity_id, actuals))
         enriched.append(patched)
     if capture_pairs and portal_config.cost_snapshots_file is not None:
-        capture_cost_snapshots(portal_config.cost_snapshots_file, capture_pairs)
+        capture_cost_snapshots(
+            portal_config.cost_snapshots_file,
+            capture_pairs,
+            repo_root=repo_root,
+        )
     if portal_config.cost_snapshots_file is not None:
-        enriched = [attach_cost_sparkline(entity, portal_config) for entity in enriched]
+        enriched = [
+            attach_cost_sparkline(entity, portal_config, repo_root=repo_root) for entity in enriched
+        ]
     return tuple(enriched)
