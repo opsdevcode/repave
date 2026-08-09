@@ -208,9 +208,13 @@ class PlatformMetricsConfig:
 
 def load_platform_metrics_config(repo_root: Path) -> PlatformMetricsConfig | None:
     """Resolve platform_metrics from repave.config.yaml and env overrides."""
+    env_flag = os.environ.get("REPAVE_PLATFORM_METRICS", "").strip().lower()
+    if env_flag in {"0", "false", "no", "off"}:
+        return None
+
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("platform_metrics")
-    env_enabled = os.environ.get("REPAVE_PLATFORM_METRICS", "").strip().lower() in {
+    env_enabled = env_flag in {
         "1",
         "true",
         "yes",

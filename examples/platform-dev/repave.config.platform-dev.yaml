@@ -22,19 +22,41 @@ audit:
   enabled: true
   file: examples/platform-dev/fixtures/audit/generation.jsonl
 
+durability:
+  async_generation: true
+  runs_db: examples/platform-dev/fixtures/runs.sqlite
+
 platform_metrics:
   enabled: true
   snapshot_file: examples/platform-dev/fixtures/platform-metrics/snapshots.jsonl
   feedback_file: examples/platform-dev/fixtures/platform-metrics/feedback.jsonl
   github_orgs: [acme]
   github_topics: []
-  search_limit: 50
+  search_limit: 100
   baseline_adoption_ratio: 0.6
   baseline_plan_apply_ratio: 0.4
-  # Optional v1.89 roadmap evidence (defaults include v1.85-v1.88 themes)
-  # roadmap_evidence:
-  #   sunset_conversion_threshold: 0.25
-  #   sunset_review_days: 90
+  roadmap_evidence:
+    sunset_conversion_threshold: 0.25
+    sunset_min_plans: 1
+    sunset_review_days: 90
+    themes:
+      - key: v185-adoption
+        title: Golden path adoption and DX metrics (v1.85)
+        requesting_team: platform
+        evidence_kind: fleet_adoption
+      - key: v186-feedback
+        title: Developer feedback loop (v1.86)
+        requesting_team: platform
+        evidence_kind: plan_apply
+      - key: v187-stakeholder
+        title: Platform stakeholder interfaces (v1.87)
+        requesting_team: platform
+        evidence_kind: fleet_adoption
+      - key: v188-guided-forms
+        title: Cognitive load reduction (v1.88)
+        requesting_team: portal
+        evidence_kind: blueprint_funnel
+        blueprint_names: [terraform-module-generic, ansible-role-generic]
 
 portal:
   cost_reader: focus

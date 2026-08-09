@@ -211,6 +211,13 @@ def test_load_platform_metrics_config(tmp_path: Path, monkeypatch) -> None:
     assert overridden is not None
     assert overridden.snapshot_file == tmp_path / "override.jsonl"
 
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\nplatform_metrics:\n  enabled: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
+    assert load_platform_metrics_config(tmp_path) is None
+
 
 def test_snapshot_roundtrip_jsonl(tmp_path: Path) -> None:
     (tmp_path / "repave.config.yaml").write_text(
@@ -307,7 +314,7 @@ def test_platform_stakeholder_pages_and_api(
 
 
 def test_platform_metrics_api_404_when_disabled(repo_root, output_config, monkeypatch) -> None:
-    monkeypatch.delenv("REPAVE_PLATFORM_METRICS", raising=False)
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
     monkeypatch.delenv("REPAVE_PLATFORM_METRICS_FILE", raising=False)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/api/v2/platform/metrics")

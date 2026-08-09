@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Fleet drift confirm — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/platform/standards">← Standards</a>
+  ·
+  <a href="/runs/{{ run_id }}">Run console</a>
+</p>
+
+<section class="result-hero result-hero--passed" aria-labelledby="drift-result-heading">
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">Fleet drift confirm</p>
+    <h1 id="drift-result-heading" class="result-hero__title">Live pin verification complete</h1>
+    <p class="result-hero__banner">
+      <span class="badge badge--pass">Verified</span>
+      <span class="muted">· async verify fan-out</span>
+    </p>
+  </div>
+  <dl class="result-hero__counts" aria-label="Drift summary">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Current</dt>
+      <dd>{{ drift_summary.confirmed_current or 0 }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Behind</dt>
+      <dd>{{ drift_summary.confirmed_behind or 0 }}</dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card stack-gap" aria-labelledby="drift-repos-heading">
+  <div class="card__header">
+    <h2 id="drift-repos-heading" class="card__title">Repositories</h2>
+  </div>
+  <div class="card__body">
+    {% if drift_summary.repos %}
+    <table class="pin-diff-table">
+      <thead>
+        <tr>
+          <th scope="col">Repository</th>
+          <th scope="col">Pins aligned</th>
+          <th scope="col">Gates</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in drift_summary.repos %}
+        <tr>
+          <td><a href="{{ row.repo_url }}">{{ row.repo_url }}</a></td>
+          <td>
+            {% if row.error %}
+            <span class="badge badge--fail">Error</span>
+            {% elif row.pins_aligned %}
+            <span class="badge badge--pass">Yes</span>
+            {% else %}
+            <span class="badge badge--fail">Behind</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if row.error %}
+            <span class="muted">{{ row.error }}</span>
+            {% elif row.gates_passed %}
+            <span class="badge badge--pass">Passed</span>
+            {% else %}
+            <span class="badge badge--muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No repository results recorded.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -57,6 +57,7 @@
               method="post"
               action="/platform/standards/{{ summary.blueprint_name }}/confirm-drift"
               class="form-actions"
+              data-repave-native-submit
             >
               {% for row in summary.behind_repos %}
               <input type="hidden" name="repo_urls" value="{{ row.repo_url }}" />
