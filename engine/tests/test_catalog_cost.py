@@ -149,3 +149,60 @@ def test_enrich_environment_entity_with_cost_url_reader() -> None:
     cost_dim = next(dim for dim in enriched.scorecard if dim.key == "cost")
     assert cost_dim.level == "pass"
     assert "12.50" in cost_dim.detail
+
+
+def test_enrich_catalog_entities_attach_cost_sparkline(tmp_path) -> None:
+    from repave_engine.cost_actuals import CostActualsSummary
+    from repave_engine.cost_snapshot_store import capture_cost_snapshots
+    from repave_engine.settings import PortalConfig
+
+    snapshot_file = tmp_path / "cost-snapshots.jsonl"
+    capture_cost_snapshots(
+        snapshot_file,
+        [("acme-tf-vpc", _actuals_for_sparkline("8.00"))],
+        captured_at="2026-08-01T00:00:00Z",
+    )
+    capture_cost_snapshots(
+        snapshot_file,
+        [("acme-tf-vpc", _actuals_for_sparkline("12.00"))],
+        captured_at="2026-08-02T00:00:00Z",
+    )
+    portal = PortalConfig(
+        density="default",
+        cost_reader="url",
+        cost_actuals_url="https://cost.example/{name}",
+        cost_snapshots_enabled=True,
+        cost_snapshots_file=snapshot_file,
+    )
+    entity = _entity()
+
+    def _fetch(_portal: object, cost_entity: object) -> CostActualsSummary | None:
+        return _actuals_for_sparkline("12.00")
+
+    import repave_engine.catalog_cost as catalog_cost
+
+    original = catalog_cost.fetch_entity_cost_actuals_for_portal
+    catalog_cost.fetch_entity_cost_actuals_for_portal = _fetch
+    try:
+        enriched = enrich_catalog_entities_with_cost([entity], portal)[0]
+    finally:
+        catalog_cost.fetch_entity_cost_actuals_for_portal = original
+
+    assert enriched.cost_sparkline
+    assert len(enriched.cost_sparkline) == 8
+    assert enriched.cost_sparkline[-1] == 100
+    assert enriched.cost_sparkline[0] == 0
+    assert "L30D trend" in enriched.cost_sparkline_detail
+
+
+def _actuals_for_sparkline(amount: str):
+    from repave_engine.cost_actuals import CostActualsSummary
+
+    return CostActualsSummary(
+        currency="USD",
+        amount_30d=amount,
+        as_of="2026-08-09T00:00:00Z",
+        detail="ok",
+        tag_coverage="complete",
+        source_url="",
+    )

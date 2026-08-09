@@ -80,5 +80,21 @@ if [[ "${SEED_APPLY_MANIFESTS:-}" == "1" ]]; then
   kubectl apply -k "${MANIFESTS_DIR}"
 fi
 
+if [[ "${SEED_SKIP_COST_SNAPSHOTS:-}" != "1" ]]; then
+  kubectl cp "${ROOT}/scripts/seed_hosted_demo_cost_snapshots.py" \
+    "${NAMESPACE}/${pod}:${TMP_PREFIX}/seed_hosted_demo_cost_snapshots.py"
+  cost_args=(
+    python3 "${TMP_PREFIX}/seed_hosted_demo_cost_snapshots.py"
+    --repo-root /app
+    --catalog "${TMP_PREFIX}/hosted-demo-library.yaml"
+    --output /data/fleet/cost-snapshots.jsonl
+  )
+  if [[ "${SEED_DRY_RUN:-}" == "1" ]]; then
+    cost_args+=(--dry-run)
+  fi
+  kubectl exec -n "${NAMESPACE}" "${pod}" -- "${cost_args[@]}"
+fi
+
 echo "Fleet registry on portal PVC: /data/fleet/registry.jsonl"
+echo "Cost snapshots on portal PVC: /data/fleet/cost-snapshots.jsonl"
 echo "GPR manifests: ${MANIFESTS_DIR} (kubectl apply -k when ready)"

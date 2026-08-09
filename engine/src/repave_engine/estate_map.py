@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 from urllib.parse import urlparse
@@ -105,6 +107,38 @@ def _audit_sparkline(
     empty_slot: SparkValue = 2
     padded: list[SparkValue] = [empty_slot] * (slots - len(relevant)) + relevant
     return tuple(padded[-slots:])
+
+
+@dataclass(frozen=True)
+class EstateMapSummary:
+    total: int
+    fresh_count: int
+    drift_count: int
+    aging_count: int
+    error_count: int
+    unknown_count: int
+
+    def to_public_dict(self) -> dict[str, int]:
+        return {
+            "total": self.total,
+            "fresh_count": self.fresh_count,
+            "drift_count": self.drift_count,
+            "aging_count": self.aging_count,
+            "error_count": self.error_count,
+            "unknown_count": self.unknown_count,
+        }
+
+
+def summarize_estate_tiles(tiles: Sequence[EstateTile]) -> EstateMapSummary:
+    counts = Counter(tile.freshness for tile in tiles)
+    return EstateMapSummary(
+        total=len(tiles),
+        fresh_count=counts.get("fresh", 0),
+        drift_count=counts.get("drift", 0),
+        aging_count=counts.get("aging", 0),
+        error_count=counts.get("error", 0),
+        unknown_count=counts.get("unknown", 0),
+    )
 
 
 def build_estate_tiles(

@@ -46,6 +46,10 @@ output:
 #   #   allocation_key: "{name}"   # key in the allocation response map
 #   #   window: 30d
 #   #   currency: USD
+#   # Cost trend sparklines on /library (JSONL snapshots; enabled when cost_reader is set):
+#   # cost_snapshots:
+#   #   enabled: true
+#   #   file: data/fleet/cost-snapshots.jsonl
 #   # Deployment status (ADR 003 Phase 1) — read-only GitOps enrichment on entity detail:
 #   # deployment_reader: url   # or argocd | flux
 #   # deployment_status_url: "https://status.example/v1/services/{name}"

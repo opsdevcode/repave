@@ -62,7 +62,11 @@ Writes:
 - published repos under `opsdevcode` (GitHub App installation)
 - modules under `/data/modules` on the portal PVC
 - fleet registry at `/data/fleet/registry.jsonl`
+- cost snapshot history at `/data/fleet/cost-snapshots.jsonl` (library FinOps sparklines)
 - GPR manifests copied to `./fleet-manifests` on your laptop for `kubectl apply`
+
+Enable sparklines on the portal chart (`repave.portal.costSnapshots.enabled: true`) or in
+`repave.config.yaml` (`portal.cost_snapshots.enabled: true`).
 
 ---
 
@@ -87,6 +91,17 @@ python3 scripts/seed_hosted_demo_library.py \
 ```
 
 Or `./scripts/seed-hosted-demo-library.sh` when `GITHUB_APP_*` or `GITHUB_TOKEN` is set locally.
+
+### Cost snapshot history only
+
+When repos are already published and registered:
+
+```bash
+cd engine && uv run python ../scripts/seed_hosted_demo_cost_snapshots.py \
+  --output ../data/fleet/cost-snapshots.jsonl
+```
+
+On repave-prod the k8s seed script runs this automatically (skip with `SEED_SKIP_COST_SNAPSHOTS=1`).
 
 ---
 
@@ -139,6 +154,7 @@ kubectl cp repave-fleet/operator-status.json repave/$portal_pod:/data/fleet/oper
 | --- | --- |
 | **Home / Activity** (`/activity`) | One audit row per publish (`dry_run=false`, `repository_url`, gates outcome) |
 | **Fleet** (`/fleet`) | Nine governed repos with blueprint/standard pins and owner |
+| **Library** (`/library`) | Cost trend sparklines when `cost_snapshots` is enabled and seeded |
 | **Operator** | GPRs in `repave-system`; `tf-aws-eks-demo` → **OutOfDate** when catalog > `0.9.0` |
 | **GitHub org** | `opsdevcode/tf-*`, `ansible-role-*`, `opa-policy-*`, … with `repave.yaml` |
 

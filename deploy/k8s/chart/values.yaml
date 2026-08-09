@@ -104,6 +104,9 @@ repave:
     preferApp: false
   portal:
     density: default
+    costSnapshots:
+      enabled: false
+      file: /data/fleet/cost-snapshots.jsonl
   gates:
     checkov:
       skipChecks: []

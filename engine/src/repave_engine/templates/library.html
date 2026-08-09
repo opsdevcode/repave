@@ -146,6 +146,18 @@
                 title="{{ entity.cost_badge_detail }}"
               >{{ entity.cost_badge }}</span>
               {% endif %}
+              {% if entity.cost_sparkline %}
+              <span
+                class="cost-sparkline"
+                role="img"
+                aria-label="{{ entity.cost_sparkline_detail or 'Cost trend' }}"
+                title="{{ entity.cost_sparkline_detail }}"
+              >
+                {% for height in entity.cost_sparkline %}
+                <span class="cost-spark" style="--cost-spark-height: {{ height }}%"></span>
+                {% endfor %}
+              </span>
+              {% endif %}
               {% for dim in entity.scorecard if dim.key in ('cost', 'deployment') %}
               <span
                 class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}"
