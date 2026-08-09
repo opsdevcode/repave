@@ -105,6 +105,7 @@ def test_activity_page(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "Activity" in response.text
     assert 'href="/activity"' in response.text
+    assert "data-portal-view-toggle" in response.text or "audit.enabled" in response.text
 
 
 def test_home_recent_activity_uses_artifact_labels(
@@ -457,8 +458,11 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-portal-submit-error" in response.text
     assert "form-actions--sticky" in response.text
     assert "Standard pin drift" in response.text
-    assert "data-form-stepper" not in response.text
-    assert "form-stepper" not in response.text
+    assert "data-form-stepper" in response.text
+    assert "form-stepper" in response.text
+    assert "governance-meter" in response.text
+    assert "scope-summary-bar" in response.text
+    assert "data-form-stepper-fill" in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
     assert "Plan preview" in response.text
@@ -488,7 +492,7 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "publish_progress" in body
     assert "initDemoPipeline" in body
     assert "initCatalogCardMotion" in body
-    assert "updateStepperFill" in body
+    assert "initPortalViewToggle" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body

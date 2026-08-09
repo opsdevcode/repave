@@ -43,13 +43,22 @@
   </div>
 </form>
 
-<section class="card" aria-labelledby="runs-table-heading">
-  <div class="card__header">
-    <h2 id="runs-table-heading">Recent runs</h2>
-    <p class="muted card__subtitle">Newest first · up to 50 rows</p>
+<section class="card" data-portal-view-toggle aria-labelledby="runs-table-heading">
+  <div class="card__header card__header--toolbar">
+    <div>
+      <h2 id="runs-table-heading">Recent runs</h2>
+      <p class="muted card__subtitle">Newest first · up to 50 rows</p>
+    </div>
+    {% if runs %}
+    <div class="portal-view-toggle" role="toolbar" aria-label="Runs view">
+      <button type="button" class="chip portal-view-toggle__btn is-active" data-view-mode="table">Table</button>
+      <button type="button" class="chip portal-view-toggle__btn" data-view-mode="timeline">Timeline</button>
+    </div>
+    {% endif %}
   </div>
   <div class="card__body">
     {% if runs %}
+    <div data-view-panel="table">
     <table class="pin-diff-table" data-sortable>
       <thead>
         <tr>
@@ -95,6 +104,46 @@
         {% endfor %}
       </tbody>
     </table>
+    </div>
+    <ol class="runs-timeline" data-view-panel="timeline" hidden aria-label="Runs timeline">
+      {% for run in runs %}
+      <li class="runs-timeline__item">
+        <span
+          class="runs-timeline__dot{% if run.status.value == 'succeeded' %} runs-timeline__dot--pass{% elif run.status.value in ('failed', 'dead_letter') %} runs-timeline__dot--fail{% else %} runs-timeline__dot--active{% endif %}"
+          aria-hidden="true"
+        ></span>
+        <div class="runs-timeline__content">
+          <p class="runs-timeline__lead">
+            <code>{{ run.blueprint_name }}</code>
+            <span class="badge badge--{% if run.status.value == 'succeeded' %}pass{% elif run.status.value in ('failed', 'dead_letter') %}fail{% else %}muted{% endif %}">
+              {% if run.status.value == 'dead_letter' %}Dead letter
+              {% elif run.status.value == 'queued' %}Queued
+              {% elif run.status.value == 'running' %}Running
+              {% elif run.status.value == 'succeeded' %}Succeeded
+              {% elif run.status.value == 'failed' %}Failed
+              {% else %}{{ run.status.value }}{% endif %}
+            </span>
+          </p>
+          <p class="runs-timeline__meta muted">
+            {{ run.acting_user }}
+            · <time datetime="{{ run.updated_at }}">{{ run.updated_at }}</time>
+            · {{ run.attempt_count }} attempt{{ '' if run.attempt_count == 1 else 's' }}
+          </p>
+          {% if run.error and run.status.value in ('failed', 'dead_letter') %}
+          <p class="runs-timeline__error muted"><code>{{ run.error }}</code></p>
+          {% endif %}
+          <div class="runs-timeline__actions">
+            <a class="btn btn--ghost btn--sm" href="/runs/{{ run.run_id }}">Open</a>
+            {% if can_replay_runs and run.status.value in ('failed', 'dead_letter') %}
+            <form method="post" action="/runs/{{ run.run_id }}/replay" style="display:inline">
+              <button class="btn btn--secondary btn--sm" type="submit">Replay</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
     {% else %}
     <div class="alert alert--info" role="status">No runs matched this filter yet.</div>
     {% endif %}

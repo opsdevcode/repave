@@ -160,5 +160,7 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     body = client.get("/").text
     assert "command-palette" in body
     assert "command-palette-data" in body
+    assert '"subtitle"' in body
+    assert "Golden paths home" in body
     assert "Resume last run" in body
     assert "terraform-module-generic" in body

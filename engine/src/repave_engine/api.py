@@ -391,19 +391,59 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     def command_palette_items(request: Request | None = None) -> list[dict[str, str]]:
         items: list[dict[str, str]] = [
-            {"kind": "nav", "label": "Catalog", "href": "/"},
-            {"kind": "nav", "label": "Library", "href": "/library"},
-            {"kind": "nav", "label": "Import", "href": "/import"},
-            {"kind": "nav", "label": "Upgrade", "href": "/update"},
-            {"kind": "nav", "label": "Verify", "href": "/verify"},
-            {"kind": "nav", "label": "Repo status", "href": "/estate"},
-            {"kind": "nav", "label": "Activity", "href": "/activity"},
-            {"kind": "action", "label": "Resume last run", "action": "resume-last-run"},
+            {"kind": "nav", "label": "Catalog", "href": "/", "subtitle": "Golden paths home"},
+            {
+                "kind": "nav",
+                "label": "Library",
+                "href": "/library",
+                "subtitle": "Created repositories",
+            },
+            {
+                "kind": "nav",
+                "label": "Import",
+                "href": "/import",
+                "subtitle": "Adopt an existing repo",
+            },
+            {
+                "kind": "nav",
+                "label": "Upgrade",
+                "href": "/update",
+                "subtitle": "Plan a standards upgrade",
+            },
+            {
+                "kind": "nav",
+                "label": "Verify",
+                "href": "/verify",
+                "subtitle": "Run verify against a repo",
+            },
+            {
+                "kind": "nav",
+                "label": "Repo status",
+                "href": "/estate",
+                "subtitle": "Fleet estate map",
+            },
+            {
+                "kind": "nav",
+                "label": "Activity",
+                "href": "/activity",
+                "subtitle": "Audit-backed generation history",
+            },
+            {
+                "kind": "action",
+                "label": "Resume last run",
+                "action": "resume-last-run",
+                "subtitle": "Return to your last blueprint in this browser",
+            },
         ]
         if run_queue is not None:
             items.insert(
                 len(items) - 1,
-                {"kind": "nav", "label": "Runs", "href": "/runs"},
+                {
+                    "kind": "nav",
+                    "label": "Runs",
+                    "href": "/runs",
+                    "subtitle": "Async generation jobs and live console",
+                },
             )
         auth_user = session_user(request) if request is not None else None
         if platform_admin_visible(auth_config, auth_user):
@@ -433,6 +473,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     "kind": "blueprint",
                     "label": blueprint.name,
                     "href": f"/blueprints/{blueprint.name}",
+                    "subtitle": (
+                        f"{blueprint.artifact_type} · v{blueprint.version} · "
+                        f"{len(blueprint.gates)} gates"
+                    ),
                 }
             )
         for bundle in list_bundles(repo_root):
@@ -441,6 +485,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     "kind": "bundle",
                     "label": bundle.name,
                     "href": f"/bundles/{bundle.name}",
+                    "subtitle": f"bundle · v{bundle.version} · {len(bundle.members)} members",
                 }
             )
         return items

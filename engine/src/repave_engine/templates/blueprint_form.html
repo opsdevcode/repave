@@ -50,8 +50,44 @@
           {%- if blueprint.azure_policy_pack %} · Azure Policy{%- endif -%}
           · {{ blueprint.gates|length }} gates
         </span>
+        {% set governance_meter_penalty = 0 %}
+        {% if standards_diff.available and standards_diff.has_changes %}
+        {% set governance_meter_penalty = governance_meter_penalty + 20 %}
+        {% endif %}
+        {% if not governance_preflight.tools_ready %}
+        {% set governance_meter_penalty = governance_meter_penalty + 25 %}
+        {% endif %}
+        {% set governance_meter_pct = [100 - governance_meter_penalty, 35]|max %}
+        <span class="governance-meter governance-meter--compact" role="status" aria-label="Governance readiness {{ governance_meter_pct }} percent">
+          <span class="governance-meter__track" aria-hidden="true">
+            <span class="governance-meter__fill" style="width: {{ governance_meter_pct }}%"></span>
+          </span>
+          <span class="governance-meter__label muted">{{ governance_meter_pct }}% ready</span>
+        </span>
       </summary>
       <div class="governance-card__expand">
+        {% set governance_meter_penalty = 0 %}
+        {% if standards_diff.available and standards_diff.has_changes %}
+        {% set governance_meter_penalty = governance_meter_penalty + 20 %}
+        {% endif %}
+        {% if not governance_preflight.tools_ready %}
+        {% set governance_meter_penalty = governance_meter_penalty + 25 %}
+        {% endif %}
+        {% set governance_meter_pct = [100 - governance_meter_penalty, 35]|max %}
+        <div class="governance-meter" role="status" aria-label="Governance readiness {{ governance_meter_pct }} percent">
+          <div class="governance-meter__header">
+            <span class="governance-meter__title">Readiness</span>
+            <span class="governance-meter__value">{{ governance_meter_pct }}%</span>
+          </div>
+          <div class="governance-meter__track" aria-hidden="true">
+            <div class="governance-meter__fill" style="width: {{ governance_meter_pct }}%"></div>
+          </div>
+          <p class="hint governance-meter__hint">
+            {{ blueprint.gates|length }} gates on apply · {{ governance_preflight.policy_profile }}
+            {%- if standards_diff.available and standards_diff.has_changes %} · standard pin drift detected{% endif -%}
+            {%- if not governance_preflight.tools_ready %} · gate toolchain missing on worker{% endif -%}
+          </p>
+        </div>
     {% else %}
     <h2 class="governance-card__title" id="governance-heading">Controls &amp; lineage</h2>
     {% endif %}
@@ -217,36 +253,49 @@
 
     {% if form_stepper %}
     <nav class="form-stepper" aria-label="Generation steps">
-      <ol class="form-stepper__list">
+      <div class="form-stepper__visual" data-form-stepper-visual>
+        <div class="form-stepper__track" aria-hidden="true">
+          <div class="form-stepper__fill" data-form-stepper-fill style="width: 0%"></div>
+        </div>
+        <ol class="form-stepper__list">
         {% if form_stepper == 'terraform' %}
         <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__index" aria-hidden="true">1</span>
           <span class="form-stepper__label">Identity</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__index" aria-hidden="true">2</span>
           <span class="form-stepper__label">Services &amp; scope</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="2">
+          <span class="form-stepper__index" aria-hidden="true">3</span>
           <span class="form-stepper__label">Delivery</span>
         </li>
         {% elif form_stepper == 'observability' %}
         <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__index" aria-hidden="true">1</span>
           <span class="form-stepper__label">Service context</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__index" aria-hidden="true">2</span>
           <span class="form-stepper__label">Alert routing</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="2">
+          <span class="form-stepper__index" aria-hidden="true">3</span>
           <span class="form-stepper__label">Delivery</span>
         </li>
         {% else %}
         <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__index" aria-hidden="true">1</span>
           <span class="form-stepper__label">Parameters</span>
         </li>
         <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__index" aria-hidden="true">2</span>
           <span class="form-stepper__label">Delivery</span>
         </li>
         {% endif %}
-      </ol>
+        </ol>
+      </div>
       <p class="form-stepper__progress muted" data-stepper-progress aria-live="polite"></p>
       <div class="form-stepper__actions">
         <button type="button" class="btn btn--ghost btn--sm" data-stepper-back hidden>Back</button>
@@ -974,6 +1023,7 @@
           <input type="text" class="input" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
           <span id="provider-services-count" class="service-count"></span>
         </div>
+        <div id="scope-summary-bar" class="scope-summary-bar" hidden aria-live="polite"></div>
         <div class="service-presets" id="service-presets" aria-label="Service selection presets"></div>
         <div id="provider-services" class="service-grid" aria-live="polite"></div>
         <p id="form-validation" class="form-validation" role="alert" hidden></p>
@@ -1829,6 +1879,7 @@
   const resourceCache = new Map();
   const validationBanner = document.getElementById("form-validation");
   const presetsContainer = document.getElementById("service-presets");
+  const scopeSummaryBar = document.getElementById("scope-summary-bar");
   const SERVICE_PRESETS = {
     aws: [
       { label: "Compute + storage", services: ["ec2", "s3"] },
@@ -2147,6 +2198,39 @@
     servicesInput.value = selectedServices().join(",");
   }
 
+  function updateScopeSummaryBar() {
+    if (!scopeSummaryBar) {
+      return;
+    }
+    const selected = selectedServices();
+    if (!selected.length) {
+      scopeSummaryBar.hidden = true;
+      scopeSummaryBar.textContent = "";
+      return;
+    }
+    let resourceTotal = 0;
+    let customCount = 0;
+    for (const service of selected) {
+      const state = scopeState.get(service);
+      if (!state) {
+        continue;
+      }
+      resourceTotal += state.resources ? state.resources.size : 0;
+      if (!state.includeBasic) {
+        customCount += 1;
+      }
+    }
+    const parts = [
+      selected.length + " service" + (selected.length === 1 ? "" : "s"),
+      resourceTotal + " resource" + (resourceTotal === 1 ? "" : "s"),
+    ];
+    if (customCount) {
+      parts.push(customCount + " custom scope");
+    }
+    scopeSummaryBar.textContent = parts.join(" · ");
+    scopeSummaryBar.hidden = false;
+  }
+
   function syncScopeInput() {
     const payload = {};
     for (const service of selectedServices()) {
@@ -2167,9 +2251,8 @@
       }
     }
     scopeInput.value = JSON.stringify(payload);
+    updateScopeSummaryBar();
   }
-
-  providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
   servicesFilter.addEventListener("input", applyServiceFilter);
   servicesContainer.addEventListener("change", async () => {
     syncServicesInput();
