@@ -82,9 +82,11 @@ from repave_engine.repo_import import (
     RepoImportError,
     import_repository,
     import_repository_batch,
+    parse_target_blueprints,
     plan_import,
     plan_import_batch,
     record_import,
+    resolve_batch_import_blueprint_options,
 )
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
@@ -744,13 +746,23 @@ def build_api_v2_router(
         )
         org = str(payload.get("org", "")).strip()
         topic = str(payload.get("topic", "")).strip()
-        blueprint_name = str(payload.get("blueprint", "")).strip() or None
+        blueprint_raw = str(payload.get("blueprint", "")).strip() or None
+        use_family_blueprints = bool(payload.get("use_family_blueprints", False))
+        blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
+            repo_root,
+            blueprint=blueprint_raw,
+            family_blueprints_raw=payload.get("family_blueprints"),
+            use_family_blueprints=use_family_blueprints,
+        )
+        target_blueprints = parse_target_blueprints(payload.get("target_blueprints"))
         with_gates = bool(payload.get("with_gates", True))
         try:
             batch = plan_import_batch(
                 targets,
                 repo_root,
                 blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints or None,
                 values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
                 path_overrides=parse_path_overrides(payload.get("overrides")),
                 git_token=resolve_github_access_token(
@@ -780,11 +792,22 @@ def build_api_v2_router(
                 status_code=400, detail="a GitHub token is required for batch apply"
             )
         try:
+            blueprint_raw = str(payload.get("blueprint", "")).strip() or None
+            use_family_blueprints = bool(payload.get("use_family_blueprints", False))
+            blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
+                repo_root,
+                blueprint=blueprint_raw,
+                family_blueprints_raw=payload.get("family_blueprints"),
+                use_family_blueprints=use_family_blueprints,
+            )
+            target_blueprints = parse_target_blueprints(payload.get("target_blueprints"))
             batch_result = import_repository_batch(
                 targets,
                 repo_root,
                 github_token=token,
-                blueprint_name=str(payload.get("blueprint", "")).strip() or None,
+                blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints or None,
                 values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
                 org=str(payload.get("org", "")).strip(),
                 topic=str(payload.get("topic", "")).strip(),

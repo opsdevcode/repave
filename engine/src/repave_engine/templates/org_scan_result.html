@@ -34,7 +34,7 @@
   </dl>
 </section>
 
-<section class="card stack-gap" aria-labelledby="org-scan-repos-heading" data-org-scan-result{% if org_scan_summary.repos %} data-org-scan-urls="{{ (org_scan_summary.repos | map(attribute='url') | list) | tojson }}"{% endif %}>
+<section class="card stack-gap" aria-labelledby="org-scan-repos-heading" data-org-scan-result{% if org_scan_summary.repos %} data-org-scan-urls="{{ (org_scan_summary.repos | map(attribute='url') | list) | tojson }}"{% if org_scan_target_blueprints %} data-org-scan-target-blueprints="{{ org_scan_target_blueprints | tojson }}"{% endif %}{% endif %}>
   <div class="card__header">
     <h2 id="org-scan-repos-heading" class="card__title">Matching repositories</h2>
     <p class="hint muted">

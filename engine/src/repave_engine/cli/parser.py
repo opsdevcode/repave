@@ -480,6 +480,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="With --batch-file or --org, include fork repositories in discovery",
     )
+    import_cmd.add_argument(
+        "--map-by-family",
+        action="store_true",
+        help=(
+            "With --batch-file, map each repository to the default golden path "
+            "for its artifact family"
+        ),
+    )
+    import_cmd.add_argument(
+        "--family-blueprints",
+        default=None,
+        help="JSON object mapping artifact family to blueprint for batch import",
+    )
     import_cmd.set_defaults(func=cmd_import)
 
     add_cmd = sub.add_parser(

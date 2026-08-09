@@ -192,15 +192,20 @@ from repave_engine.repo_add import (
     suggested_add_branch,
 )
 from repave_engine.repo_import import (
+    FAMILY_BLUEPRINT_MAP_SENTINEL,
     AlreadyGovernedError,
     ImportPlan,
     RepoImportError,
+    build_default_family_blueprint_map,
     import_repository,
     import_repository_batch,
+    parse_target_blueprints,
     plan_import,
     plan_import_batch,
     record_import,
+    resolve_batch_import_blueprint_options,
     suggested_import_branch,
+    target_blueprints_from_org_scan,
 )
 from repave_engine.run_queue import (
     RunQueue,
@@ -1509,6 +1514,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     run_id=run_id,
                     run_record=record,
                     org_scan_summary=summary,
+                    org_scan_target_blueprints=target_blueprints_from_org_scan(summary),
                 ),
             )
         if is_environment_reclaim_run(record):
@@ -1723,6 +1729,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             catalog_json=import_catalog_json(),
             scan_family_choices=scan_family_choices,
             scan_search_presets=list(ORG_SCAN_SEARCH_PRESETS),
+            default_family_blueprints=build_default_family_blueprint_map(repo_root),
+            family_blueprint_map_sentinel=FAMILY_BLUEPRINT_MAP_SENTINEL,
             **extra,
         )
 
@@ -1916,6 +1924,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.post("/import/batch", response_class=HTMLResponse)
     async def import_batch_preview(request: Request) -> HTMLResponse:
+        import json
+
         user = session_user(request)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
@@ -1924,7 +1934,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         org = str(form.get("org", "")).strip()
         topic = str(form.get("topic", "")).strip()
         blueprint_override = str(form.get("blueprint", "")).strip() or None
-        targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
+        target_blueprints_raw = str(form.get("target_blueprints_json", "")).strip()
+        target_blueprints: dict[str, str] | None = None
+        if target_blueprints_raw:
+            try:
+                target_blueprints = parse_target_blueprints(json.loads(target_blueprints_raw))
+            except json.JSONDecodeError:
+                target_blueprints = None
 
         def batch_error(message: str) -> HTMLResponse:
             return templates.TemplateResponse(
@@ -1937,8 +1953,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     org=org,
                     topic=topic,
                     selected_blueprint=blueprint_override or "",
+                    target_blueprints_json=target_blueprints_raw,
                 ),
             )
+
+        if target_blueprints_raw and target_blueprints is None:
+            return batch_error("target_blueprints_json must be valid JSON")
+
+        blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
+            repo_root,
+            blueprint=blueprint_override,
+        )
+        targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
 
         if not targets and not org and not topic:
             return batch_error("Paste at least one repository URL or provide an org/topic query.")
@@ -1947,7 +1973,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             batch = plan_import_batch(
                 targets,
                 repo_root,
-                blueprint_name=blueprint_override,
+                blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints,
                 org=org,
                 topic=topic,
                 git_token=resolve_github_access_token(None),
@@ -1966,11 +1994,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 org=org,
                 topic=topic,
                 selected_blueprint=blueprint_override or "",
+                target_blueprints_json=target_blueprints_raw,
             ),
         )
 
     @app.post("/import/batch/apply", response_class=HTMLResponse)
     async def import_batch_apply(request: Request) -> HTMLResponse:
+        import json
+
         user = session_user(request)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
@@ -1979,6 +2010,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         org = str(form.get("org", "")).strip()
         topic = str(form.get("topic", "")).strip()
         blueprint_override = str(form.get("blueprint", "")).strip() or None
+        target_blueprints_raw = str(form.get("target_blueprints_json", "")).strip()
+        target_blueprints: dict[str, str] | None = None
+        if target_blueprints_raw:
+            try:
+                target_blueprints = parse_target_blueprints(json.loads(target_blueprints_raw))
+            except json.JSONDecodeError:
+                target_blueprints = None
+        blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
+            repo_root,
+            blueprint=blueprint_override,
+        )
         targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
 
         token = resolve_github_access_token(None)
@@ -1998,12 +2040,29 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 ),
             )
 
+        if target_blueprints_raw and target_blueprints is None:
+            return templates.TemplateResponse(
+                request,
+                "import_batch.html",
+                import_form_context(
+                    request,
+                    error_message="target_blueprints_json must be valid JSON",
+                    targets=targets_raw,
+                    org=org,
+                    topic=topic,
+                    selected_blueprint=blueprint_override or "",
+                    target_blueprints_json=target_blueprints_raw,
+                ),
+            )
+
         try:
             batch_result = import_repository_batch(
                 targets,
                 repo_root,
                 github_token=token,
-                blueprint_name=blueprint_override,
+                blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints,
                 org=org,
                 topic=topic,
             )

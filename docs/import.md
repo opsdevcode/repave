@@ -279,6 +279,33 @@ curl -sS -X POST "$REPAVE_URL/api/v2/github/org-scan" \
 Poll `GET /api/v1/runs/{run_id}` or open `/runs/{run_id}` in the portal until status is
 `succeeded`; results are on `/runs/{run_id}/result`.
 
+## Per-family blueprint mapping (batch)
+
+When a batch mixes Terraform, Ansible, Helm, and other artifact types, map each repository
+to the right golden path in one preview:
+
+Portal: on [`/import/batch`](/import/batch), choose **Map by artifact family** in the golden
+path dropdown. After an org scan, **Add all to batch import** on the result page carries
+per-repository blueprint picks from classification when available.
+
+CLI:
+
+```bash
+repave import placeholder --batch-file repos.txt --map-by-family
+repave import placeholder --batch-file repos.txt \
+  --family-blueprints '{"terraform":"terraform-module-generic","ansible":"ansible-role-generic"}'
+```
+
+API batch plan/apply:
+
+- `use_family_blueprints: true` — default catalog map per artifact family
+- `family_blueprints` — override or extend the map (`terraform` → blueprint name)
+- `target_blueprints` — per-repository overrides (`https://github.com/acme/vpc` → blueprint)
+- `blueprint: "__family_map__"` — same as `use_family_blueprints` with catalog defaults
+
+Resolution order per repository: explicit `blueprint` (all repos) → `target_blueprints` →
+`family_blueprints` by detected family → detect per repository.
+
 ## Pre-flight guards
 
 All of these run before the expensive work:
