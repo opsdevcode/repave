@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 
+from repave_engine import settings
 from repave_engine.api import create_app
 from repave_engine.settings import (
     load_audit_config,
@@ -28,16 +31,21 @@ def platform_dev_root(repo_root: Path, tmp_path: Path, monkeypatch: pytest.Monke
 
 
 @pytest.fixture
-def platform_dev_repo(repo_root: Path) -> Path:
-    dest = repo_root / "repave.config.yaml"
-    src = repo_root / "examples" / "platform-dev" / "repave.config.platform-dev.yaml"
-    prior = dest.read_text(encoding="utf-8") if dest.is_file() else None
-    dest.write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
-    yield repo_root
-    if prior is None:
-        dest.unlink(missing_ok=True)
-    else:
-        dest.write_text(prior, encoding="utf-8")
+def platform_dev_repo(repo_root: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Inject platform-dev config without writing repave.config.yaml (parallel-safe)."""
+    dev_yaml = repo_root / "examples" / "platform-dev" / "repave.config.platform-dev.yaml"
+    dev_data = yaml.safe_load(dev_yaml.read_text(encoding="utf-8"))
+    assert isinstance(dev_data, dict)
+    config_path = (repo_root / "repave.config.yaml").resolve()
+    real_load = settings._load_config_file
+
+    def patched_load(path: Path) -> dict[str, Any]:
+        if path.resolve() == config_path:
+            return dev_data
+        return real_load(path)
+
+    monkeypatch.setattr(settings, "_load_config_file", patched_load)
+    return repo_root
 
 
 def test_platform_dev_config_loads(platform_dev_root: Path) -> None:
