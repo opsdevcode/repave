@@ -523,6 +523,10 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "chip" in response.text
     assert "service-presets" in response.text
     assert "form-validation" in response.text
+    assert (
+        'providerSelect.addEventListener("change", () => renderServices(providerSelect.value))'
+        in response.text
+    )
     assert "scope-resource-filter" in response.text
     assert "policy-rules-list" in response.text
     assert 'id="policy-rules-advanced"' in response.text
