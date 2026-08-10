@@ -9,7 +9,7 @@ from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, creat
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
-from repave_engine.render import RenderResult
+from repave_engine.render import RenderedFile, RenderResult
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import ModuleRepository
 
@@ -1252,6 +1252,70 @@ def test_result_dashboard_failed_gate_excerpt(
     assert "fmt failed" in response.text
 
 
+def test_plan_preview_with_files_surfaces_copyable_explorer(
+    repo_root,
+    output_config,
+    sample_inputs,
+    monkeypatch,
+) -> None:
+    """Plan preview with rendered files must not look like a dead-end failure."""
+
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=output_config.modules_root, values=values),
+            gates=[
+                GateResult("docs-drift", True, False, "README present"),
+                GateResult("terraform-fmt", False, False, "terraform not available"),
+            ],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="",
+            dry_run=True,
+            rendered_files=(
+                RenderedFile(path="README.md", content="# demo module\n", truncated=False),
+                RenderedFile(
+                    path="main.tf",
+                    content='resource "null_resource" "x" {}\n',
+                    truncated=False,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", fake_generate)
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            **sample_inputs,
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Plan preview ready" in response.text
+    assert "Browse and copy generated files below" in response.text
+    assert "result-hero--preview" in response.text
+    assert "Generation failed" not in response.text
+    assert "Generated files" in response.text
+    assert 'data-copy-target="#file-explorer-content-0"' in response.text
+    assert "# demo module" in response.text
+    files_idx = response.text.index("Generated files")
+    gates_idx = response.text.index('aria-labelledby="gates-heading"')
+    assert files_idx < gates_idx
+
+
 def test_result_dashboard_published_repo_card(
     repo_root,
     output_config,
@@ -1649,3 +1713,6 @@ def test_run_result_view_reuses_async_artifact_without_regenerating(
     assert page.status_code == 200
     assert regen_calls == 0
     assert "terraform-module-generic" in page.text
+    assert "Generated files" in page.text
+    assert "data-copy-target" in page.text
+    assert "Browse and copy generated files below" in page.text

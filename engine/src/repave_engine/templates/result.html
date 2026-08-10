@@ -16,13 +16,19 @@
 {% endif %}
 
 <section
-  class="result-hero result-hero--{{ gate_summary.outcome }}{% if gates_ok and publish_ok and result.module_repository and not result.dry_run %} result-hero--with-repo{% endif %}"
+  class="result-hero result-hero--{% if result.dry_run and result.rendered_files and gate_summary.outcome != 'passed' %}preview{% else %}{{ gate_summary.outcome }}{% endif %}{% if gates_ok and publish_ok and result.module_repository and not result.dry_run %} result-hero--with-repo{% endif %}"
   aria-labelledby="result-heading"
 >
   <div class="result-hero__main">
     <p class="result-hero__eyebrow">{{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
     <h1 id="result-heading" class="result-hero__title">
-      {% if gate_summary.outcome == "failed" %}
+      {% if result.dry_run and result.rendered_files %}
+      {% if gate_summary.outcome == "passed" %}
+      Plan complete
+      {% else %}
+      Plan preview ready
+      {% endif %}
+      {% elif gate_summary.outcome == "failed" %}
       Generation failed
       {% elif gate_summary.outcome == "passed" %}
       {% if result.dry_run %}
@@ -39,7 +45,14 @@
     <p class="result-hero__banner">
       {% if result.dry_run %}
       <span class="badge badge--skip">Plan only</span>
-      Files rendered in memory; nothing was written to the module repository.
+      {% if result.rendered_files %}
+      Browse and copy generated files below. Nothing was published to GitHub.
+      {% if gate_summary.outcome != "passed" %}
+      Gate issues are listed under Gates.
+      {% endif %}
+      {% else %}
+      Nothing was published to GitHub.
+      {% endif %}
       {% elif gates_ok and publish_ok and result.module_repository %}
       <span class="badge badge--pass">Applied</span>
       Gates passed and output is live on GitHub.
@@ -135,6 +148,10 @@
   <h2 id="toolchain-heading" class="form-section__subtitle">Gate toolchain</h2>
   <p class="hint">{{ gate_toolchain_callout }}</p>
 </section>
+{% endif %}
+
+{% if result.rendered_files %}
+{% include "partials/generated_files.html" %}
 {% endif %}
 
 {% if portal_runtime and not portal_runtime.in_container and result.dry_run and '/var/folders/' in (result.render.output_dir | string) %}
@@ -416,82 +433,6 @@
     </div>
   </div>
 </section>
-
-{% if result.rendered_files %}
-<section class="card stack-gap" aria-labelledby="files-heading">
-  <div class="card__header">
-    <h2 id="files-heading">Generated files</h2>
-  </div>
-  <div class="card__body">
-    <div class="file-explorer" data-file-explorer>
-      <ul class="file-explorer__tree" role="tablist" aria-label="Generated file paths">
-        {% for file in result.rendered_files %}
-        <li role="presentation">
-          <button
-            type="button"
-            class="file-explorer__tab{% if loop.first %} is-active{% endif %}{% if file.path == 'catalog-info.yaml' %} file-explorer__tab--backstage{% endif %}"
-            role="tab"
-            aria-selected="{{ 'true' if loop.first else 'false' }}"
-            data-file-index="{{ loop.index0 }}"
-            {% if file.path == 'catalog-info.yaml' %}data-backstage-file{% endif %}
-          >
-            {{ file.path }}
-            {% if file.truncated %}
-            <span class="badge badge--skip">truncated</span>
-            {% endif %}
-          </button>
-        </li>
-        {% endfor %}
-      </ul>
-      <div class="file-explorer__preview">
-        {% for file in result.rendered_files %}
-        <div
-          class="file-explorer__pane{% if loop.first %} is-active{% endif %}"
-          role="tabpanel"
-          data-file-pane="{{ loop.index0 }}"
-          {% if not loop.first %}hidden{% endif %}
-        >
-          <div class="file-preview__toolbar">
-            <button
-              type="button"
-              class="btn btn--ghost btn--sm"
-              data-copy-target="#file-explorer-content-{{ loop.index0 }}"
-            >
-              Copy
-            </button>
-          </div>
-          <pre class="panel-code" id="file-explorer-content-{{ loop.index0 }}">{{ file.content }}</pre>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    <div class="file-explorer-fallback">
-      {% for file in result.rendered_files %}
-      <details class="file-panel motion-panel"{% if loop.first %} open{% endif %}>
-        <summary>
-          {{ file.path }}
-          {% if file.truncated %}
-          <span class="badge badge--skip">truncated</span>
-          {% endif %}
-        </summary>
-        <div class="file-preview__body">
-          <div class="file-preview__toolbar">
-            <button
-              type="button"
-              class="btn btn--ghost btn--sm"
-              data-copy-target="#file-fallback-content-{{ loop.index0 }}"
-            >
-              Copy
-            </button>
-          </div>
-          <pre class="panel-code" id="file-fallback-content-{{ loop.index0 }}">{{ file.content }}</pre>
-        </div>
-      </details>
-      {% endfor %}
-    </div>
-  </div>
-</section>
-{% endif %}
 
 {% if result.pr_message %}
 <section class="card stack-gap" aria-labelledby="pr-description-heading">

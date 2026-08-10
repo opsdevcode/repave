@@ -1406,6 +1406,16 @@
     border-left: 4px solid var(--error);
   }
 
+  .result-hero--preview {
+    border-left: 4px solid var(--accent);
+    background:
+      radial-gradient(
+        480px 200px at 100% 0%,
+        color-mix(in srgb, var(--accent) 12%, transparent),
+        transparent 70%
+      );
+  }
+
   .result-hero--empty {
     border-left: 4px solid var(--border);
   }

@@ -344,6 +344,39 @@
     });
   }
 
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).catch(function () {
+        return fallbackCopyText(text);
+      });
+    }
+    return fallbackCopyText(text);
+  }
+
+  function fallbackCopyText(text) {
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        if (document.execCommand("copy")) {
+          resolve();
+        } else {
+          reject(new Error("execCommand copy failed"));
+        }
+      } catch (err) {
+        reject(err);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    });
+  }
+
   function initCopyButtons() {
     document.querySelectorAll("[data-copy-target]").forEach(function (button) {
       if (button.dataset.repaveCopyBound) {
@@ -368,9 +401,9 @@
           }, 2000);
         }
 
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(onCopied).catch(function () {});
-        }
+        copyTextToClipboard(text).then(onCopied).catch(function () {
+          showToast("Copy failed — select the text and copy manually");
+        });
       });
     });
   }
