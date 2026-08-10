@@ -5,12 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  <a href="/">← Catalog</a>
-  ·
-  <a href="/bundles/{{ bundle_result.bundle.name }}">← {{ bundle_result.bundle.name }}</a>
-</p>
-
 <section
   class="result-hero result-hero--{{ gate_summary.outcome }}"
   aria-labelledby="result-heading"

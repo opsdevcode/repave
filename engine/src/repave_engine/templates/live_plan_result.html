@@ -5,16 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  {% if live_plan_summary.entity_id %}
-  <a href="/services/{{ live_plan_summary.entity_id }}">← {{ live_plan_summary.entity_id }}</a>
-  {% else %}
-  <a href="/library">← Library</a>
-  {% endif %}
-  ·
-  <a href="/runs/{{ run_id }}">Run console</a>
-</p>
-
 <section
   class="result-hero result-hero--{% if live_plan_summary.gates_outcome == 'passed' %}passed{% else %}failed{% endif %}"
   aria-labelledby="live-plan-result-heading"

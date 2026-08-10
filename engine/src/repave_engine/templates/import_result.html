@@ -5,8 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/import">← Import repository</a></p>
-
 <section
   class="result-hero {% if plan.ok %}result-hero--passed{% else %}result-hero--failed{% endif %}"
   aria-labelledby="import-heading"

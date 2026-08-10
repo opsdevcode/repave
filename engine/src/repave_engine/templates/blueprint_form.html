@@ -6,7 +6,6 @@
 
 {% block content %}
 {% set publish_step = 2 if form_stepper in ('terraform', 'observability') else 1 %}
-<p class="breadcrumb"><a href="/">← Catalog</a></p>
 <header class="form-hero">
   <div>
     <h1 class="page-title page-title--from-catalog">{{ blueprint.name }}</h1>

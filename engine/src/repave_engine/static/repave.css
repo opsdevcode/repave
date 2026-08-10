@@ -651,33 +651,11 @@
     padding-right: max(var(--space-5), clamp(var(--space-4), 4vw, var(--space-6)));
   }
 
-  .shell__main--golden-path > .breadcrumb {
-    margin-bottom: var(--space-4);
-    padding-bottom: var(--space-3);
-    border-bottom: 1px solid transparent;
-    background-image: linear-gradient(var(--border), var(--border));
-    background-position: left bottom;
-    background-repeat: no-repeat;
-    background-size: 0% 1px;
-  }
-
   @media (prefers-reduced-motion: no-preference) {
-    .shell__main--golden-path > .breadcrumb {
-      animation:
-        page-enter 360ms ease-out both,
-        flow-trail-grow 720ms ease-out 180ms forwards;
-    }
-
     .shell__main--golden-path > .result-hero,
     .shell__main--golden-path > .run-console,
     .shell__main--golden-path > .card:first-of-type {
       animation: page-enter 420ms ease-out 90ms both;
-    }
-  }
-
-  @keyframes flow-trail-grow {
-    to {
-      background-size: 100% 1px;
     }
   }
 
@@ -760,29 +738,6 @@
     color: var(--text-muted);
     margin: 0 0 var(--space-5);
     max-width: 40rem;
-  }
-
-  .breadcrumb {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin: 0 0 var(--space-4);
-    font-size: 0.95rem;
-    font-weight: 600;
-    font-family: var(--font-mono);
-  }
-
-  .breadcrumb a {
-    color: var(--text-muted);
-  }
-
-  .breadcrumb {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2);
-    margin: 0 0 var(--space-4);
-    font-size: 0.92rem;
   }
 
   .muted {

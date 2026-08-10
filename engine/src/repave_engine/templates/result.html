@@ -5,12 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  <a href="/">← Catalog</a>
-  ·
-  <a href="/blueprints/{{ result.blueprint.name }}">← {{ result.blueprint.name }}</a>
-</p>
-
 {% if gates_ok and not result.dry_run and not publish_ok %}
 <section class="alert alert--fail stack-gap" role="alert" aria-labelledby="publish-error-heading">
   <h2 id="publish-error-heading" class="h3">GitHub publish failed</h2>
