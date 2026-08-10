@@ -8,7 +8,11 @@ work, writing ADRs, and opening issues.
 
 **In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
+**Shipped on `main`:** **Mass GitHub org import** — classify org repos by artifact family,
+portal picker on `/import/batch`, `POST /api/v2/github/org-scan` (sync + async `kind: org_scan`
+queue runs), GitHub search filters and batch discovery, per-family and per-repo blueprint
+mapping on batch import ([#557](https://github.com/opsdevcode/repave/pull/557)–[#565](https://github.com/opsdevcode/repave/pull/565));
+[`docs/import.md`](import.md); **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
 `GET /api/v2/platform/roadmap-evidence`, adoption citations per theme + sunset candidates
 ([`docs/platform-metrics.md`](platform-metrics.md)); **Guided / Advanced forms (v1.88)** — progressive disclosure on
 `terraform-module-generic` and `ansible-role-generic` (`InputField.advanced`, form depth toggle;
@@ -74,8 +78,9 @@ hosted SQL requirement, **provenance required on publish**, [`docs/blueprint-ver
 **Postgres DR** ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md),
 `make postgres-dr-drill`); **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
-PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
-preview, batch import, rate-limit backoff — `repave import`, `/import`, `/import/batch`,
+PrometheusRule, runbooks); **repo import to golden path** (Phase 1–4: overrides, trees-API
+preview, batch import, org scan classify + async runs, per-family blueprint map, rate-limit
+backoff — `repave import`, `/import`, `/import/batch`, `/api/v2/github/org-scan`,
 `/api/v2/imports/*`); **operator production Helm chart** (`deploy/k8s/operator-chart/`,
 `values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks);
 **operator fleet campaigns** (`UpgradeCampaign` CRD, Blueprint controller, bounded
@@ -183,7 +188,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ supply chain    shipped — GitHub App auth, governed PR, digest-pinned CI/images/chart
   ├─ fleet scale     shipped — Blueprint controller; upgrade campaigns; drift SLO metrics
   ├─ portal surfaces shipped — catalog, rendered docs, scorecards, observability read
-  ├─ reach           shipped — repave verify; repo import; repave add; composite golden paths
+  ├─ reach           shipped — repave verify; repo import + mass org scan; repave add; composite golden paths
   ├─ usability       shipped — `repave doctor`; queryable audit history
   ├─ cost            shipped — Infracost + actuals readers; library cost badges
   ├─ v2 contract     /api/v2 freeze, v1 migration docs, config v1, provenance-on-publish, blueprint schema (shipped)
@@ -215,7 +220,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
 | **Estate control plane** | v1.72–v1.73+ shipped | Remote observe/plan/remediate; fleet registry; operator continuous fleet sync + GPR prune |
 | **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
-| **Brownfield onboarding** | shipped (Phase 1–3) | `repave import` + batch portal/API; per-file overrides; trees-API preview; GitHub rate-limit backoff for fleet-scale REST |
+| **Brownfield onboarding** | shipped (Phase 1–4) | `repave import` + batch portal/API; org scan classify + async queue; GitHub search filters; per-family batch blueprint map; per-file overrides; trees-API preview; rate-limit backoff |
 | **Hardening** | shipped (groups A–B) | Group A: toolchain pins, subprocess timeouts, coverage gate, docs; group B: gate_runners package, API/CLI splits, Python 3.12 floor |
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
@@ -452,8 +457,8 @@ campaign deferral both track `X-RateLimit-*` and backoff on low quota / HTTP 429
 
 ### Repo import to golden path
 
-**Status:** Shipped on `main` (Phase 1–3 — `repave import`, portal `/import` and `/import/batch`,
-`/api/v2/imports/*`). Detail: [`docs/import.md`](import.md).
+**Status:** Shipped on `main` (Phase 1–4 — `repave import`, portal `/import` and `/import/batch`,
+`/api/v2/github/org-scan`, `/api/v2/imports/*`). Detail: [`docs/import.md`](import.md).
 
 Brownfield onboarding: adopt a repository repave did not generate by rearranging its files
 into a golden path layout, adding the governance scaffold it lacks, and opening a pull
@@ -483,10 +488,21 @@ request on the source repo.
   to `spec.import.overrides` in `repave.yaml` (portal, CLI `--overrides`, API `overrides`)
 - **Trees-API preview (Phase 2)** — remote `github.com` URLs plan without cloning; apply
   shallow-clones for scorecard and gates (`preview_limited`; `--force-clone` for full local preview)
-- **Batch import (Phase 3)** — plan or open PRs for many repos via `/import/batch`, CLI
+- **Batch import URLs (Phase 3)** — plan or open PRs for many repos via `/import/batch`, CLI
   `--batch-file`, or `/api/v2/imports/batch/*`; org/topic discovery on GitHub
-- **Rate-limit backoff** — per-installation `X-RateLimit-*` tracking for batch import and fleet
-  campaigns (429 retry with backoff)
+- **Org scan classify (Phase 1–2)** — `POST /api/v2/github/org-scan` scores each org repo by
+  artifact family; portal picker on `/import/batch`; GitHub search presets (`language`, `topic`,
+  `pushed_since`, archived/forks); list or search API discovery ([#557](https://github.com/opsdevcode/repave/pull/557),
+  [#559](https://github.com/opsdevcode/repave/pull/559))
+- **Async org scan (Phase 3)** — `kind: org_scan` on the durability queue; SSE progress on the
+  run console; result page with **Add all to batch import** handoff ([#562](https://github.com/opsdevcode/repave/pull/562))
+- **Batch import polish (Phase 3)** — CLI `--language` / `--pushed-since` on batch import;
+  scan result → batch URL + per-repo blueprint prefill via session storage ([#564](https://github.com/opsdevcode/repave/pull/564))
+- **Per-family blueprint map (Phase 4)** — one batch preview assigns golden paths by detected
+  family or org-scan `target_blueprints`; portal **Map by artifact family**; CLI
+  `--map-by-family` / `--family-blueprints` ([#565](https://github.com/opsdevcode/repave/pull/565))
+- **Rate-limit backoff** — per-installation `X-RateLimit-*` tracking for batch import, org scan,
+  and fleet campaigns (429 retry with backoff)
 
 ### `repave add` — multi-component brownfield (engine v1.82+)
 
@@ -2288,7 +2304,7 @@ effect is that every blueprint is available only to greenfield work.
 - Never overwrites a file that is not generator-owned without `--force`; every add records an
   audit entry and a governed PR
 
-**Dependencies:** Repo import Phase 1–3; `apply-upgrade`; v1.14 provenance;
+**Dependencies:** Repo import Phase 1–4; `apply-upgrade`; v1.14 provenance;
 [governed PR conventions](#governed-pr-conventions).
 
 **Done when:** Adding `helm-chart-generic` to an existing app-service repository produces a
