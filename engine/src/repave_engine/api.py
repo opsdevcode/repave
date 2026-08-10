@@ -393,6 +393,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "local_toolchain_warning": local_portal_toolchain_warning(),
             "portal_runtime": portal_runtime_info(),
             "portal_density": portal_config.density,
+            "portal_logo_url": portal_config.logo_url,
+            "portal_accent_color": portal_config.accent_color,
             "presenter_mode": presenter,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,

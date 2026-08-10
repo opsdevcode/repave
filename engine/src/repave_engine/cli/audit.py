@@ -7,6 +7,7 @@ from pathlib import Path
 
 from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.cli._common import _audit_file
+from repave_engine.cli._style import brand, error, muted, success
 
 
 def cmd_audit_query(args: argparse.Namespace) -> int:
@@ -39,13 +40,18 @@ def cmd_audit_query(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2))
         return 0
     if not result.entries:
-        print("No matching audit entries.")
+        print(muted("No matching audit entries."))
         return 0
     for entry in result.entries:
         mode = "dry-run" if entry.dry_run else "publish"
+        outcome = entry.gates_outcome
+        if outcome == "passed":
+            outcome = success(outcome)
+        elif outcome == "failed":
+            outcome = error(outcome)
         print(
-            f"{entry.timestamp}  {entry.blueprint_name}@{entry.blueprint_version}  "
-            f"{entry.gates_outcome}  {mode}  user={entry.acting_user}  "
+            f"{entry.timestamp}  {brand(entry.blueprint_name)}@{entry.blueprint_version}  "
+            f"{outcome}  {mode}  user={entry.acting_user}  "
             f"module={entry.module_name}"
         )
     print(f"\n{result.total} matching (showing {len(result.entries)})")

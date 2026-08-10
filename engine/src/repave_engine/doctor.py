@@ -174,6 +174,8 @@ def doctor_exit_code(results: tuple[ToolCheckResult, ...], *, strict: bool) -> i
 
 
 def format_doctor_report(results: tuple[ToolCheckResult, ...]) -> str:
+    from repave_engine.cli._style import gate_status
+
     lines: list[str] = []
     for row in results:
         if not row.present:
@@ -186,7 +188,7 @@ def format_doctor_report(results: tuple[ToolCheckResult, ...]) -> str:
             status = "OK" if row.present else "MISSING"
         pin = f" (pin {row.pinned_version})" if row.pinned_version else ""
         detected = f" detected={row.detected_version}" if row.detected_version else ""
-        lines.append(f"[{status}] {row.tool}{pin}{detected}")
+        lines.append(f"[{gate_status(status)}] {row.tool}{pin}{detected}")
         if not row.present:
             lines.append(f"  → {row.install_hint}")
         elif row.version_match is False and row.pinned_version:

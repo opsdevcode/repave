@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from repave_engine.cli._style import brand, error, gate_status, heading, success
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.import_rules import parse_path_overrides
 from repave_engine.repo_import import (
@@ -52,33 +53,35 @@ def _print_plan(plan: ImportPlan) -> None:
             else "Source: GitHub trees API"
         )
     label = "detected" if plan.detected else "requested"
-    print(f"Golden path: {plan.blueprint_name}@{plan.blueprint_version} ({label})")
+    print(
+        f"{heading('Golden path:')} {brand(plan.blueprint_name)}@{plan.blueprint_version} ({label})"
+    )
     if plan.detected and plan.candidates:
         top = plan.candidates[0]
         evidence = ", ".join(top.evidence[:4])
         print(f"  {top.percent}% confidence — matched {evidence}")
     print(plan.summary)
     if plan.path_overrides:
-        print("Overrides:")
+        print(heading("Overrides:"))
         for source, destination in sorted(plan.path_overrides.items()):
             print(f"  {source} -> {destination}")
 
     if plan.conflicts:
-        print("Conflicts (import blocked):")
+        print(error("Conflicts (import blocked):"))
         for line in plan.conflicts:
             print(f"  {line}")
         return
 
     if plan.renames:
-        print("Moves (content unchanged):")
+        print(heading("Moves (content unchanged):"))
         for move in plan.renames:
             print(f"  {move.source} -> {move.destination}  ({move.reason})")
     if plan.scaffold_added:
-        print("Added scaffold:")
+        print(heading("Added scaffold:"))
         for rel in plan.scaffold_added:
             print(f"  + {rel}")
     if plan.unmapped:
-        print("Left in place (no rule matched):")
+        print(heading("Left in place (no rule matched):"))
         for rel in plan.unmapped:
             print(f"  = {rel}")
     if plan.scorecard.total:
@@ -87,18 +90,18 @@ def _print_plan(plan: ImportPlan) -> None:
             f"{plan.scorecard.passing_after} of {plan.scorecard.total} after this PR"
         )
     if plan.gates:
-        print("Gates on the reorganized tree:")
+        print(heading("Gates on the reorganized tree:"))
         for gate in plan.gates:
             status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
-            print(f"  [{status}] {gate.name}: {gate.message}")
+            print(f"  [{gate_status(status)}] {gate.name}: {gate.message}")
 
 
 def _print_batch(batch: ImportBatchPlan) -> None:
     print(f"Batch: {len(batch.items)} planned, {len(batch.failures)} failed")
     for plan in batch.items:
         print(f"- {plan.target}: {plan.summary}")
-    for target, error in batch.failures:
-        print(f"! {target}: {error}")
+    for target, error_msg in batch.failures:
+        print(f"! {target}: {error_msg}")
 
 
 def cmd_import(args: argparse.Namespace) -> int:
@@ -149,9 +152,9 @@ def cmd_import(args: argparse.Namespace) -> int:
                 else:
                     for item in batch_result.items:
                         _print_plan(item.apply.plan)
-                        print(f"Pull request: {item.pull_request_url}")
-                    for target, error in batch_result.failures:
-                        print(f"FAILED {target}: {error}", file=sys.stderr)
+                        print(success(f"Pull request: {item.pull_request_url}"))
+                    for target, error_msg in batch_result.failures:
+                        print(f"FAILED {target}: {error_msg}", file=sys.stderr)
                 return 0 if batch_result.ok else 1
 
             batch = plan_import_batch(
@@ -246,14 +249,14 @@ def cmd_import(args: argparse.Namespace) -> int:
         print(json.dumps(payload, indent=2))
     else:
         _print_plan(result.apply.plan)
-        print(f"Branch: {result.apply.git_branch}")
+        print(f"{heading('Branch:')} {result.apply.git_branch}")
         print(
-            f"Move commit {result.apply.move_commit_sha[:12]} — "
+            f"{heading('Move commit')} {result.apply.move_commit_sha[:12]} — "
             f"{result.apply.verified_moves} file(s) verified byte-identical"
         )
-        print(f"Scaffold commit {result.apply.scaffold_commit_sha[:12]}")
+        print(f"{heading('Scaffold commit')} {result.apply.scaffold_commit_sha[:12]}")
         draft = " (draft — gates did not pass)" if result.draft else ""
-        print(f"Pull request: {result.pull_request_url}{draft}")
+        print(success(f"Pull request: {result.pull_request_url}{draft}"))
         if registered:
-            print("Registered in the fleet registry")
+            print(success("Registered in the fleet registry"))
     return 0

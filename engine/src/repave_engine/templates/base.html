@@ -8,7 +8,26 @@
     <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/static/brand/favicon-32x32.png" type="image/png" sizes="32x32" />
     <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png" sizes="180x180" />
-    <meta name="theme-color" content="#0F172A" />
+    <meta name="theme-color" content="{% if portal_accent_color %}{{ portal_accent_color }}{% else %}#0F172A{% endif %}" />
+    <meta
+      name="description"
+      content="Governed, repeatable platform engineering — golden paths for many, not just the few."
+    />
+    <meta property="og:title" content="repave" />
+    <meta
+      property="og:description"
+      content="Governed, repeatable platform engineering — golden paths for many, not just the few."
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="{{ request.base_url }}static/brand/social/repave-social-card.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:image"
+      content="{{ request.base_url }}static/brand/social/repave-social-card.png"
+    />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -16,6 +35,20 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/repave.css?v={{ app_version }}" />
+    {% if portal_accent_color %}
+    <style>
+      [data-theme="dark"] {
+        --brand-primary: {{ portal_accent_color }};
+        --brand-primary-hover: color-mix(in srgb, {{ portal_accent_color }} 82%, white);
+        --brand-primary-muted: color-mix(in srgb, {{ portal_accent_color }} 22%, var(--ink-950));
+        --accent: var(--brand-primary);
+        --accent-hover: var(--brand-primary-hover);
+        --accent-soft: var(--brand-primary-muted);
+        --accent-deep: color-mix(in srgb, {{ portal_accent_color }} 72%, black);
+        --btn-bg: var(--brand-primary);
+      }
+    </style>
+    {% endif %}
     <script id="command-palette-data" type="application/json">{{ command_palette_items | tojson }}</script>
     <script src="/static/repave.js?v={{ app_version }}" defer></script>
     {% block head %}{% endblock %}
@@ -29,7 +62,7 @@
           <a class="shell__brand" href="/" aria-label="repave home">
             <img
               class="shell__mark"
-              src="/static/brand/svg/repave-mark.svg"
+              src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark.svg' }}"
               width="96"
               height="40"
               alt=""

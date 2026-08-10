@@ -104,6 +104,9 @@ repave:
     preferApp: false
   portal:
     density: default
+    # Optional white-label (empty = Converge defaults). See docs/brand/README.md.
+    logoUrl: ""
+    accentColor: ""
     costSnapshots:
       enabled: false
       file: /data/fleet/cost-snapshots.jsonl

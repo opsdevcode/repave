@@ -51,6 +51,9 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "/static/brand/svg/repave-mark.svg" in response.text
     assert "shell__wordmark" in response.text
     assert "From fragmented to governed" in response.text
+    assert 'property="og:image"' in response.text
+    assert "static/brand/social/repave-social-card.png" in response.text
+    assert 'name="twitter:card"' in response.text
     assert "data-demo-pipeline" in response.text
     assert "catalog-inventory__item-icon" in response.text
     assert "catalog-inventory__category" in response.text
@@ -243,10 +246,25 @@ def test_brand_static_assets_served(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     mark = client.get("/static/brand/svg/repave-mark.svg")
     favicon = client.get("/static/brand/favicon.svg")
+    social = client.get("/static/brand/social/repave-social-card.png")
     assert mark.status_code == 200
     assert "Converge" in mark.text or "viewBox" in mark.text
     assert favicon.status_code == 200
     assert favicon.headers["content-type"].startswith("image/")
+    assert social.status_code == 200
+
+
+def test_portal_white_label_logo_and_accent(
+    repo_root, output_config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_PORTAL_LOGO_URL", "/static/brand/svg/repave-mark-monochrome.svg")
+    monkeypatch.setenv("REPAVE_PORTAL_ACCENT_COLOR", "#0ea5e9")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert '/static/brand/svg/repave-mark-monochrome.svg"' in response.text
+    assert "--brand-primary: #0ea5e9" in response.text
+    assert 'content="#0ea5e9"' in response.text
 
 
 def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> None:

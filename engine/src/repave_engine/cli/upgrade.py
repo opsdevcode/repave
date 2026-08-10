@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from repave_engine.cli._common import _github_token_from_args
+from repave_engine.cli._style import heading, muted, success
 from repave_engine.upgrade_plan import apply_upgrade, open_upgrade_pull_request, plan_upgrade
 
 
@@ -25,15 +26,15 @@ def cmd_plan_upgrade(args: argparse.Namespace) -> int:
     else:
         print(result.summary)
         if result.added:
-            print("Added:")
+            print(heading("Added:"))
             for path in result.added:
                 print(f"  + {path}")
         if result.modified:
-            print("Modified:")
+            print(heading("Modified:"))
             for path in result.modified:
                 print(f"  ~ {path}")
         if result.removed:
-            print("Removed:")
+            print(heading("Removed:"))
             for path in result.removed:
                 print(f"  - {path}")
 
@@ -63,9 +64,9 @@ def _cmd_open_upgrade_pull_request(args: argparse.Namespace) -> int:
         print(json.dumps(result.to_json_dict(), indent=2))
     else:
         print(result.summary)
-        print(f"Branch: {result.apply.git_branch}")
-        print(f"Commit: {result.apply.commit_sha}")
-        print(f"Pull request: {result.pull_request_url}")
+        print(f"{heading('Branch:')} {result.apply.git_branch}")
+        print(f"{heading('Commit:')} {result.apply.commit_sha}")
+        print(success(f"Pull request: {result.pull_request_url}"))
 
     return 0
 
@@ -95,10 +96,10 @@ def cmd_apply_upgrade(args: argparse.Namespace) -> int:
         print(json.dumps(result.to_json_dict(), indent=2))
     else:
         print(result.summary)
-        print(f"Branch: {result.git_branch}")
-        print(f"Commit: {result.commit_sha}")
+        print(f"{heading('Branch:')} {result.git_branch}")
+        print(f"{heading('Commit:')} {result.commit_sha}")
         if result.preserved_local:
-            print("Preserved local edits (blueprint copies under .repave/upgrade-staging/):")
+            print(muted("Preserved local edits (blueprint copies under .repave/upgrade-staging/):"))
             for path in result.preserved_local:
                 print(f"  * {path}")
 
