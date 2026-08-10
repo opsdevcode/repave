@@ -127,8 +127,9 @@ repave:
     # JSON snapshot for operator GPR/campaign status (portal /platform/campaigns).
     operatorStatusFile: /data/fleet/operator-status.json
   # Golden-path adoption / DX metrics (see docs/platform-metrics.md).
+  # On by default so /platform/adoption|roadmap|feedback render without a values override.
   platformMetrics:
-    enabled: false
+    enabled: true
     snapshotFile: /data/fleet/platform-metrics.jsonl
     feedbackFile: /data/fleet/platform-feedback.jsonl
     githubOrgs: []
@@ -245,10 +246,10 @@ fleetOperatorSnapshot:
         memory: 512Mi
 
 # Golden-path adoption / DX metrics snapshots (platform-as-a-product).
-# Enable with repave.platformMetrics.enabled and platformMetricsSnapshot.cronJob.enabled.
+# On when repave.platformMetrics.enabled is true (default).
 platformMetricsSnapshot:
   cronJob:
-    enabled: false
+    enabled: true
     schedule: "0 * * * *"
     concurrencyPolicy: Forbid
     successfulJobsHistoryLimit: 3

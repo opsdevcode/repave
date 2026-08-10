@@ -31,8 +31,11 @@
             <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>Library</a>
             <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>Upgrade</a>
             <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>Verify</a>
+            {% if platform_admin_visible %}
+            <a href="/platform/fleet" {% if nav_active == "platform" %}aria-current="page"{% endif %}>Platform</a>
+            {% endif %}
             <details
-              class="shell__nav-more{% if nav_active in ('import', 'estate', 'activity', 'runs', 'platform') %} shell__nav-more--active{% endif %}"
+              class="shell__nav-more{% if nav_active in ('import', 'estate', 'activity', 'runs') %} shell__nav-more--active{% endif %}"
             >
               <summary class="shell__nav-more__summary">More</summary>
               <nav class="shell__nav shell__nav--secondary" aria-label="More">
@@ -41,14 +44,6 @@
                 <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>Activity</a>
                 {% if async_generation_enabled %}
                 <a href="/runs" {% if nav_active == "runs" %}aria-current="page"{% endif %}>Runs</a>
-                {% endif %}
-                {% if platform_admin_visible %}
-                {% for item in platform_nav_links %}
-                <a
-                  href="{{ item.href }}"
-                  {% if nav_active == "platform" and platform_nav == item.key %}aria-current="page"{% endif %}
-                >{{ item.label }}</a>
-                {% endfor %}
                 {% endif %}
               </nav>
             </details>

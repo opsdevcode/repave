@@ -222,6 +222,7 @@ def test_platform_feedback_page_without_metrics(repo_root, output_config, monkey
     assert "Developer feedback" in body
     assert "platform_metrics" in body
     assert "make platform-dev-setup" in body
+    assert "repave.platformMetrics.enabled: false" in body
 
 
 def test_find_campaign_in_snapshot() -> None:
@@ -331,19 +332,14 @@ def test_platform_standards_confirm_drift_submits_run(
 def test_nav_shows_platform_link(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/").text
-    assert 'href="/platform/fleet"' in body
-    assert "Platform" in body
-
-
-def test_platform_pages_share_catalog_platform_breadcrumb(
-    repo_root, output_config, monkeypatch
-) -> None:
-    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
-    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    primary = body.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert 'href="/platform/fleet"' in primary
+    assert ">Platform<" in primary
+    more = body[
+        body.index("shell__nav-more") : body.index("</details>", body.index("shell__nav-more"))
+    ]
+    assert 'href="/platform/fleet"' not in more
+    assert "← Catalog" not in client.get("/update").text
     fleet = client.get("/platform/fleet").text
-    adoption = client.get("/platform/adoption").text
-    assert 'href="/">← Catalog</a>' in fleet
-    assert 'href="/">← Catalog</a>' in adoption
-    assert "·" in fleet and "Platform" in fleet
-    assert 'href="/platform/fleet">Platform</a>' in adoption
-    assert "make platform-dev-setup" in adoption
+    assert "← Catalog" not in fleet
+    assert "platform-subnav" in fleet

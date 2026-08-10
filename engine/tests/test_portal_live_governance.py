@@ -223,9 +223,14 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     assert '"/platform/finops"' in body
     assert '"/platform/feedback"' in body
     assert "shell__footer-link" in body
-    assert body.index('href="/platform/finops"') < body.index("shell__footer")
+    footer = body[body.index("shell__footer") :]
+    assert 'href="/platform/finops"' in footer
+    assert 'href="/platform/feedback"' in footer
+    primary = body.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert 'href="/platform/fleet"' in primary
+    assert ">Platform<" in primary
     more_start = body.index("shell__nav-more")
     more_end = body.index("</details>", more_start)
     more_section = body[more_start:more_end]
-    assert 'href="/platform/finops"' in more_section
-    assert 'href="/platform/feedback"' in more_section
+    assert 'href="/platform/finops"' not in more_section
+    assert 'href="/platform/feedback"' not in more_section
