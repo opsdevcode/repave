@@ -149,6 +149,7 @@ spec:
                   key: oidc-client-secret
                   optional: true
             {{- include "repave.apiTokenEnv" . | nindent 12 }}
+            {{- include "repave.infracostApiKeyEnv" . | nindent 12 }}
             {{- end }}
             {{- include "repave.stateStoreEnv" . | nindent 12 }}
           {{- if .Values.lifecycle.preStop.enabled }}

@@ -133,6 +133,7 @@ def _github_auth_env(secret_name: str) -> list[dict[str, Any]]:
         ("GITHUB_APP_ID", "github-app-id"),
         ("GITHUB_APP_INSTALLATION_ID", "github-app-installation-id"),
         ("GITHUB_APP_PRIVATE_KEY", "github-app-private-key"),
+        ("INFRACOST_API_KEY", "infracost-api-key"),
     )
     env: list[dict[str, Any]] = []
     for env_name, secret_key in specs:

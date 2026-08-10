@@ -5,36 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  {% if live_plan %}
-  {% if live_plan_entity_id %}
-  <a href="/services/{{ live_plan_entity_id }}">← {{ live_plan_entity_id }}</a>
-  {% else %}
-  <a href="/library">← Library</a>
-  {% endif %}
-  {% elif environment_vend %}
-  {% if environment_vend_entity_id %}
-  <a href="/services/{{ environment_vend_entity_id }}">← {{ environment_vend_entity_id }}</a>
-  {% else %}
-  <a href="/library">← Library</a>
-  {% endif %}
-  {% elif fleet_drift_confirm %}
-  <a href="/platform/standards">← Standards</a>
-  {% elif org_scan %}
-  <a href="/import/batch">← Batch import</a>
-  {% elif environment_reclaim %}
-  <a href="/platform/ops">← Ops</a>
-  {% else %}
-  <a href="/">← Catalog</a>
-  ·
-  {% if bundle %}
-  <a href="/bundles/{{ bundle.name }}">← {{ bundle.name }}</a>
-  {% else %}
-  <a href="/blueprints/{{ blueprint.name }}">← {{ blueprint.name }}</a>
-  {% endif %}
-  {% endif %}
-</p>
-
 <section
   class="run-console card"
   data-run-console

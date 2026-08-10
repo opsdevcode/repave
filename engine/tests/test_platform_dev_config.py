@@ -125,14 +125,17 @@ def test_platform_dev_pages_render(
     more_section = home[more_start:more_end]
     assert 'href="/platform/finops"' not in more_section
     assert 'href="/import"' in more_section
-    # Deep platform routes stay in the footer and platform subnav.
-    assert 'href="/platform/finops"' in home
-    assert 'href="/platform/compliance"' in home
-    assert 'href="/platform/value-stream"' in home
-    assert 'href="/platform/feedback"' in home
-    assert 'href="/platform/roadmap"' in home
-    assert 'href="/platform/maturity"' in home
-    assert 'href="/platform/initiatives"' in home
+    # Deep platform routes live in the command palette and platform subnav.
+    assert '"/platform/finops"' in home
+    assert '"/platform/compliance"' in home
+    assert '"/platform/value-stream"' in home
+    assert '"/platform/feedback"' in home
+    assert '"/platform/roadmap"' in home
+    assert '"/platform/maturity"' in home
+    assert '"/platform/initiatives"' in home
+    footer = home[home.index("shell__footer") :]
+    assert "repave · engine" in footer
+    assert "shell__footer-link" not in footer
 
     roadmap = client.get("/platform/roadmap").text
     assert "Roadmap evidence" in roadmap
@@ -140,7 +143,5 @@ def test_platform_dev_pages_render(
 
     finops = client.get("/platform/finops").text
     assert "Cost anomalies" in finops
-    assert "shell__footer-link" in home
-    assert 'href="/platform/ops"' in home
-    assert 'href="/platform/fleet"' in home
+    assert 'href="/platform/fleet"' in primary
     assert 'class="platform-subnav shell__nav"' in client.get("/platform/fleet").text

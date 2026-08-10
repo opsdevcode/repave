@@ -46,6 +46,9 @@ def test_build_job_body_includes_run_id_command() -> None:
     env_names = {item["name"] for item in container["env"]}
     assert "GITHUB_TOKEN" in env_names
     assert "GITHUB_APP_ID" in env_names
+    assert "INFRACOST_API_KEY" in env_names
+    infracost = next(item for item in container["env"] if item["name"] == "INFRACOST_API_KEY")
+    assert infracost["valueFrom"]["secretKeyRef"]["key"] == "infracost-api-key"
     assert "envFrom" not in container
 
     live_body = _build_job_body(

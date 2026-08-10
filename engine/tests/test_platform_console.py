@@ -339,7 +339,9 @@ def test_nav_shows_platform_link(repo_root, output_config) -> None:
         body.index("shell__nav-more") : body.index("</details>", body.index("shell__nav-more"))
     ]
     assert 'href="/platform/fleet"' not in more
-    assert "← Catalog" not in client.get("/update").text
+    for path in ("/update", "/verify", "/library", "/import", "/platform/fleet"):
+        page = client.get(path).text
+        assert 'class="breadcrumb"' not in page
+        assert "← Catalog" not in page
     fleet = client.get("/platform/fleet").text
-    assert "← Catalog" not in fleet
     assert "platform-subnav" in fleet
