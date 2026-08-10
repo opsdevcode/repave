@@ -28,9 +28,11 @@ from repave_engine.fleet_operator_status import FleetOperatorStatus, load_operat
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.settings import (
     OutputConfig,
+    PortalConfig,
     load_audit_config,
     load_environment_vending_config,
     load_fleet_config,
+    load_service_catalog_config,
 )
 
 
@@ -193,6 +195,32 @@ def build_portal_catalog_entities(
             )
             entities = merge_catalog_entities(entities, env_entities)
     return sorted(entities, key=lambda item: item.display_name.lower())
+
+
+def build_enriched_portal_catalog_entities(
+    repo_root: Path,
+    output_config: OutputConfig,
+    portal_config: PortalConfig,
+    *,
+    cost_actuals_configured: bool = False,
+) -> list[CatalogEntity]:
+    """Catalog entities with cost, deployment, and optional service-catalog overlay."""
+    from repave_engine.catalog_cost import enrich_catalog_entities_with_cost
+    from repave_engine.catalog_deployment import enrich_catalog_entities_with_deployment
+    from repave_engine.service_catalog_overlay import enrich_catalog_entities_with_overlay
+
+    entities = build_portal_catalog_entities(
+        repo_root,
+        output_config,
+        cost_actuals_configured=cost_actuals_configured,
+    )
+    entities = list(enrich_catalog_entities_with_cost(entities, portal_config, repo_root=repo_root))
+    entities = list(enrich_catalog_entities_with_deployment(entities, portal_config))
+    try:
+        catalog_cfg = load_service_catalog_config(repo_root)
+    except ValueError:
+        catalog_cfg = None
+    return enrich_catalog_entities_with_overlay(entities, catalog_cfg)
 
 
 def resolve_entity_docs(entity: CatalogEntity, *, github_token: str | None) -> dict[str, str]:

@@ -59,6 +59,8 @@ PLATFORM_NAV_LINKS: tuple[PlatformNavLink, ...] = (
     PlatformNavLink(
         "roadmap", "Roadmap", "/platform/roadmap", "Adoption evidence and sunset review"
     ),
+    PlatformNavLink("maturity", "Maturity", "/platform/maturity", "Service maturity distribution"),
+    PlatformNavLink("initiatives", "Initiatives", "/platform/initiatives", "Improvement programs"),
     PlatformNavLink("finops", "FinOps", "/platform/finops", "Cost vs budget rollup"),
     PlatformNavLink("compliance", "Compliance", "/platform/compliance", "Compliance posture"),
     PlatformNavLink("value-stream", "Value stream", "/platform/value-stream", "DORA-style signals"),
@@ -626,6 +628,174 @@ class PlatformFinOpsPage:
     anomalies_enabled: bool
     rollup: object | None
     anomalies: tuple[object, ...] = ()
+
+
+@dataclass(frozen=True)
+class PlatformMaturityPage:
+    catalog_enabled: bool
+    entity_count: int
+    average_level: float
+    by_level: tuple[dict[str, Any], ...]
+    bottom_entities: tuple[dict[str, Any], ...]
+    heatmap: tuple[dict[str, Any], ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "catalog_enabled": self.catalog_enabled,
+            "entity_count": self.entity_count,
+            "average_level": self.average_level,
+            "by_level": list(self.by_level),
+            "bottom_entities": list(self.bottom_entities),
+            "heatmap": list(self.heatmap),
+        }
+
+
+def build_platform_maturity_page(
+    repo_root: Path,
+    *,
+    resolved_output: OutputConfig,
+) -> PlatformMaturityPage:
+    from repave_engine.cost_actuals import cost_reader_configured
+    from repave_engine.portal_context import build_enriched_portal_catalog_entities
+    from repave_engine.service_catalog_overlay import maturity_distribution
+    from repave_engine.settings import load_portal_config, load_service_catalog_config
+
+    try:
+        catalog_cfg = load_service_catalog_config(repo_root)
+    except ValueError:
+        catalog_cfg = None
+    if catalog_cfg is None:
+        return PlatformMaturityPage(
+            catalog_enabled=False,
+            entity_count=0,
+            average_level=0.0,
+            by_level=(),
+            bottom_entities=(),
+            heatmap=(),
+        )
+    portal_config = load_portal_config(repo_root)
+    cost_configured = cost_reader_configured(
+        cost_reader=portal_config.cost_reader,
+        cost_actuals_url=portal_config.cost_actuals_url,
+        cost_focus_file=portal_config.cost_focus.file,
+    )
+    entities = build_enriched_portal_catalog_entities(
+        repo_root,
+        resolved_output,
+        portal_config,
+        cost_actuals_configured=cost_configured,
+    )
+    dist = maturity_distribution(entities)
+    sorted_bottom = sorted(
+        entities,
+        key=lambda item: (item.maturity_level, item.display_name.lower()),
+    )[:12]
+    bottom = tuple(
+        {
+            "entity_id": item.entity_id,
+            "display_name": item.display_name,
+            "owner": item.owner,
+            "team_slug": item.team_slug,
+            "maturity_level": item.maturity_level,
+            "maturity_label": item.maturity_label,
+        }
+        for item in sorted_bottom
+    )
+    dim_keys: list[str] = []
+    seen: set[str] = set()
+    for entity in entities:
+        for dim in entity.scorecard:
+            if dim.key not in seen:
+                seen.add(dim.key)
+                dim_keys.append(dim.key)
+    heatmap: list[dict[str, Any]] = []
+    for key in dim_keys:
+        pass_count = warn_count = fail_count = unknown_count = 0
+        for entity in entities:
+            level = next((dim.level for dim in entity.scorecard if dim.key == key), "unknown")
+            if level == "pass":
+                pass_count += 1
+            elif level == "warn":
+                warn_count += 1
+            elif level == "fail":
+                fail_count += 1
+            else:
+                unknown_count += 1
+        heatmap.append(
+            {
+                "key": key,
+                "pass": pass_count,
+                "warn": warn_count,
+                "fail": fail_count,
+                "unknown": unknown_count,
+            }
+        )
+    return PlatformMaturityPage(
+        catalog_enabled=True,
+        entity_count=int(dist["entity_count"]),
+        average_level=float(dist["average_level"]),
+        by_level=tuple(dist["by_level"]),
+        bottom_entities=bottom,
+        heatmap=tuple(heatmap),
+    )
+
+
+@dataclass(frozen=True)
+class PlatformInitiativesPage:
+    catalog_enabled: bool
+    initiatives_path: str
+    rows: tuple[dict[str, Any], ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "catalog_enabled": self.catalog_enabled,
+            "initiatives_path": self.initiatives_path,
+            "initiatives": list(self.rows),
+        }
+
+
+def build_platform_initiatives_page(
+    repo_root: Path,
+    *,
+    resolved_output: OutputConfig,
+) -> PlatformInitiativesPage:
+    from repave_engine.cost_actuals import cost_reader_configured
+    from repave_engine.initiatives import initiative_progress, read_initiatives
+    from repave_engine.maturity_rubric import load_maturity_rubric
+    from repave_engine.portal_context import build_enriched_portal_catalog_entities
+    from repave_engine.settings import load_portal_config, load_service_catalog_config
+
+    try:
+        catalog_cfg = load_service_catalog_config(repo_root)
+    except ValueError:
+        catalog_cfg = None
+    if catalog_cfg is None:
+        return PlatformInitiativesPage(
+            catalog_enabled=False,
+            initiatives_path="",
+            rows=(),
+        )
+    portal_config = load_portal_config(repo_root)
+    cost_configured = cost_reader_configured(
+        cost_reader=portal_config.cost_reader,
+        cost_actuals_url=portal_config.cost_actuals_url,
+        cost_focus_file=portal_config.cost_focus.file,
+    )
+    entities = build_enriched_portal_catalog_entities(
+        repo_root,
+        resolved_output,
+        portal_config,
+        cost_actuals_configured=cost_configured,
+    )
+    rubric = load_maturity_rubric(catalog_cfg.maturity_rubric)
+    path = catalog_cfg.initiatives
+    initiatives = read_initiatives(path) if path is not None else ()
+    rows = tuple(initiative_progress(item, entities, rubric) for item in initiatives if item.active)
+    return PlatformInitiativesPage(
+        catalog_enabled=True,
+        initiatives_path=str(path) if path is not None else "",
+        rows=rows,
+    )
 
 
 def build_platform_finops_page(

@@ -9,7 +9,7 @@ apiVersion: repave.dev/v1
 
 output:
   github_org: opsdevcode
-  modules_root: ../repave-modules
+  modules_root: examples/platform-dev/fixtures/modules
   repo_name_template: "tf-{cloud_provider}-{module_name}"
 
 fleet:
@@ -25,6 +25,25 @@ audit:
 durability:
   async_generation: true
   runs_db: examples/platform-dev/fixtures/runs.sqlite
+
+service_catalog:
+  enabled: true
+  maturity_rubric: examples/platform-dev/config/maturity-rubric.yaml
+  workload_profiles: examples/platform-dev/config/workload-profiles.yaml
+  deployment_sets: examples/platform-dev/config/deployment-sets.yaml
+  initiatives: examples/platform-dev/fixtures/platform-metrics/initiatives.jsonl
+  default_team: platform
+
+environment_vending:
+  enabled: true
+  gitops_repo: https://github.com/example/platform-gitops
+  base_branch: main
+  path_prefix: environments
+  file: examples/platform-dev/fixtures/environments/registry.jsonl
+  default_ttl_hours: 168
+  ttl_hours_by_class:
+    sandbox: 168
+  auto_reclaim_classes: [sandbox]
 
 platform_metrics:
   enabled: true

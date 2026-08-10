@@ -1,0 +1,18 @@
+sets:
+  - id: api-sandbox-7d
+    label: API sandbox (7 days)
+    description: Default developer sandbox for API workloads.
+    workload_profile: api-sandbox
+    class: sandbox
+    ttl_hours: 168
+    cloud_provider: aws
+    environment: dev
+    pinned_modules: "[]"
+  - id: data-sandbox-3d
+    label: Data sandbox (3 days)
+    workload_profile: data-sandbox
+    class: sandbox
+    ttl_hours: 72
+    cloud_provider: aws
+    environment: dev
+    pinned_modules: "[]"

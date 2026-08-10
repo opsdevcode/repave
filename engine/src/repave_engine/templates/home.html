@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}My services — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--catalog-hub{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/">← Catalog</a>
+  ·
+  <a href="/library">Library</a>
+  ·
+  <a href="/sandbox">Sandbox</a>
+</p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">My services</h1>
+    <p class="page-lead">
+      Services you own on the platform — open a scorecard, request a sandbox, or jump to your team.
+      {% if not auth_enabled %}
+      Showing the <code>{{ default_team }}</code> team (sign in to filter by your account).
+      {% endif %}
+    </p>
+  </div>
+  <div class="form-hero__actions">
+    <a class="btn btn--secondary" href="/sandbox">Request sandbox</a>
+    <a class="btn btn--ghost" href="/library">Full library</a>
+  </div>
+</header>
+
+<form class="catalog-owner-filter stack-gap" method="get" action="/home">
+  <label class="field__label" for="home-owner-filter">Filter by owner or team</label>
+  <div class="catalog-owner-filter__row">
+    <input
+      class="field__input"
+      type="search"
+      id="home-owner-filter"
+      name="owner"
+      value="{{ home_owner_filter or '' }}"
+      placeholder="group:platform or team slug"
+    />
+    <button class="btn btn--secondary btn--sm" type="submit">Apply</button>
+    {% if home_owner_filter %}
+    <a class="btn btn--ghost btn--sm" href="/home">Clear</a>
+    {% endif %}
+  </div>
+</form>
+
+{% if my_services %}
+<ul class="service-hub-grid">
+  {% for entity in my_services %}
+  <li class="service-hub-card card">
+    <a class="service-hub-card__link" href="/services/{{ entity.entity_id }}">
+      <span class="service-hub-card__name">{{ entity.display_name }}</span>
+      <span class="muted service-hub-card__meta">
+        {% if entity.owner %}{{ entity.owner }}{% endif %}
+        {% if entity.blueprint_name %} · {{ entity.blueprint_name }}{% endif %}
+      </span>
+      <span class="service-hub-card__badges">
+        {% if entity.maturity_label %}
+        <span class="badge badge--maturity" title="{{ entity.maturity_passing }}/{{ entity.maturity_total }} rules">
+          L{{ entity.maturity_level }} {{ entity.maturity_label }}
+        </span>
+        {% endif %}
+        {% if entity.team_slug %}
+        <span class="badge badge--muted">{{ entity.team_slug }}</span>
+        {% endif %}
+        {% for badge in entity.initiative_badges[:2] %}
+        <span class="badge badge--initiative">{{ badge }}</span>
+        {% endfor %}
+      </span>
+      {% if entity.maturity_total %}
+      <span
+        class="maturity-bar"
+        role="img"
+        aria-label="Maturity {{ entity.maturity_passing }} of {{ entity.maturity_total }}"
+      >
+        <span
+          class="maturity-bar__fill"
+          style="--maturity-pct: {{ (entity.maturity_passing / entity.maturity_total * 100)|round|int }}%"
+        ></span>
+      </span>
+      {% endif %}
+    </a>
+    {% if entity.team_slug %}
+    <a class="service-hub-card__team" href="/teams/{{ entity.team_slug }}">Team {{ entity.team_slug }}</a>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">No matching services yet. Import a repository or open the <a href="/library">library</a>.</p>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

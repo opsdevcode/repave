@@ -164,6 +164,15 @@ class CatalogEntity:
     vend_run_id: str = ""
     pull_request_url: str = ""
     source_entity_id: str = ""
+    oncall: str = ""
+    team_slug: str = ""
+    dependencies: tuple[str, ...] = ()
+    maturity_level: int = 0
+    maturity_label: str = ""
+    maturity_passing: int = 0
+    maturity_total: int = 0
+    workload_profile: str = ""
+    initiative_badges: tuple[str, ...] = ()
 
     def to_public_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -186,11 +195,23 @@ class CatalogEntity:
             "cost_badge_detail": self.cost_badge_detail,
             "cost_sparkline": list(self.cost_sparkline),
             "cost_sparkline_detail": self.cost_sparkline_detail,
+            "oncall": self.oncall,
+            "team_slug": self.team_slug,
+            "dependencies": list(self.dependencies),
+            "workload_profile": self.workload_profile,
+            "initiative_badges": list(self.initiative_badges),
             "scorecard": [
                 {"key": dim.key, "label": dim.label, "level": dim.level, "detail": dim.detail}
                 for dim in self.scorecard
             ],
         }
+        if self.maturity_level or self.maturity_label:
+            payload["maturity"] = {
+                "level": self.maturity_level,
+                "label": self.maturity_label,
+                "passing_rules": self.maturity_passing,
+                "total_rules": self.maturity_total,
+            }
         if self.source == "environment":
             payload["environment"] = {
                 "cloud_provider": self.cloud_provider,

@@ -1,0 +1,11 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tf-vpc
+  description: Sample VPC module
+  annotations:
+    repave.dev/blueprint: terraform-module-generic
+spec:
+  type: library
+  lifecycle: production
+  owner: group:platform

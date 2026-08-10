@@ -559,6 +559,75 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
 
 
 @dataclass(frozen=True)
+class ServiceCatalogConfig:
+    """Service catalog overlay: maturity, profiles, initiatives (ADR 006)."""
+
+    enabled: bool
+    maturity_rubric: Path | None = None
+    workload_profiles: Path | None = None
+    deployment_sets: Path | None = None
+    initiatives: Path | None = None
+    default_team: str = "platform"
+
+
+def load_service_catalog_config(repo_root: Path) -> ServiceCatalogConfig | None:
+    """Optional service catalog overlay; off unless enabled in config or env."""
+    env_flag = os.environ.get("REPAVE_SERVICE_CATALOG", "").strip().lower()
+    if env_flag in {"0", "false", "no", "off"}:
+        return None
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("service_catalog")
+    env_enabled = env_flag in {"1", "true", "yes", "on"}
+    if block is None and not env_enabled:
+        return None
+    if block is not None and not isinstance(block, dict):
+        raise ValueError("service_catalog must be a mapping in repave.config.yaml")
+
+    def _resolve(value: str) -> Path:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        return path
+
+    enabled = env_enabled
+    maturity_rubric: Path | None = None
+    workload_profiles: Path | None = None
+    deployment_sets: Path | None = None
+    initiatives: Path | None = None
+    default_team = "platform"
+    if isinstance(block, dict):
+        enabled_raw = block.get("enabled", True)
+        if not isinstance(enabled_raw, bool):
+            raise ValueError("service_catalog.enabled must be a boolean")
+        enabled = enabled_raw or env_enabled
+        rubric_raw = block.get("maturity_rubric")
+        if isinstance(rubric_raw, str) and rubric_raw.strip():
+            maturity_rubric = _resolve(rubric_raw.strip())
+        profiles_raw = block.get("workload_profiles")
+        if isinstance(profiles_raw, str) and profiles_raw.strip():
+            workload_profiles = _resolve(profiles_raw.strip())
+        sets_raw = block.get("deployment_sets")
+        if isinstance(sets_raw, str) and sets_raw.strip():
+            deployment_sets = _resolve(sets_raw.strip())
+        initiatives_raw = block.get("initiatives")
+        if isinstance(initiatives_raw, str) and initiatives_raw.strip():
+            initiatives = _resolve(initiatives_raw.strip())
+        default_team = str(block.get("default_team", default_team)).strip() or default_team
+    if not enabled:
+        return None
+    if initiatives is None and env_enabled:
+        initiatives = _resolve("data/initiatives.jsonl")
+    return ServiceCatalogConfig(
+        enabled=True,
+        maturity_rubric=maturity_rubric,
+        workload_profiles=workload_profiles,
+        deployment_sets=deployment_sets,
+        initiatives=initiatives,
+        default_team=default_team,
+    )
+
+
+@dataclass(frozen=True)
 class DurabilityConfig:
     async_generation: bool
     max_concurrent_runs: int

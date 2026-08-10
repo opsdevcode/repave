@@ -73,10 +73,9 @@ from repave_engine.bundle_portal import (
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
-from repave_engine.catalog_cost import enrich_catalog_entities_with_cost, enrich_entity_cost
+from repave_engine.catalog_cost import enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
-    enrich_catalog_entities_with_deployment,
 )
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
@@ -136,6 +135,7 @@ from repave_engine.portal_components import (
 from repave_engine.portal_context import (
     audit_file_or_http404,
     audit_portal_enabled,
+    build_enriched_portal_catalog_entities,
     build_portal_catalog_entities,
     portal_fleet_context,
     portal_recent_activity,
@@ -167,6 +167,8 @@ from repave_engine.portal_platform import (
     build_platform_feedback_page,
     build_platform_finops_page,
     build_platform_fleet_page,
+    build_platform_initiatives_page,
+    build_platform_maturity_page,
     build_platform_ops_page,
     build_platform_roadmap_page,
     build_platform_standards_detail,
@@ -224,6 +226,12 @@ from repave_engine.run_submit import (
     is_org_scan_run,
     submit_async_run,
 )
+from repave_engine.service_catalog_overlay import (
+    enrich_entity_with_overlay,
+    entity_initiative_statuses,
+    filter_entities_by_team,
+    filter_entities_for_user,
+)
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -237,6 +245,7 @@ from repave_engine.settings import (
     load_live_plan_config,
     load_output_config,
     load_portal_config,
+    load_service_catalog_config,
     load_tracing_config,
     validate_hosted_service_config,
 )
@@ -244,6 +253,13 @@ from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
+from repave_engine.workload_profiles import (
+    build_vend_payload_from_deployment_set,
+    find_deployment_set,
+    find_workload_profile,
+    load_deployment_sets,
+    load_workload_profiles,
+)
 
 
 def _default_environment_stack_name(entity_id: str, display_name: str) -> str:
@@ -263,6 +279,10 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     templates.env.globals["policy_kind_label"] = policy_kind_label
     resolved_output = output_config or load_output_config(repo_root)
     portal_config = load_portal_config(repo_root)
+    try:
+        service_catalog_config = load_service_catalog_config(repo_root)
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
     try:
         auth_config = load_auth_config(repo_root)
     except ValueError as exc:
@@ -378,6 +398,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "auth_user": auth_user,
             "platform_admin_visible": admin_visible,
             "platform_nav_links": platform_nav_links() if admin_visible else (),
+            "service_catalog_enabled": service_catalog_config is not None,
             "async_generation_enabled": run_queue is not None,
             "async_generation_required": worker_execution_mode and run_queue is not None,
             "worker_execution_mode": worker_execution_mode,
@@ -414,43 +435,64 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "href": "/library",
                 "subtitle": "Created repositories",
             },
-            {
-                "kind": "nav",
-                "label": "Import",
-                "href": "/import",
-                "subtitle": "Adopt an existing repo",
-            },
-            {
-                "kind": "nav",
-                "label": "Upgrade",
-                "href": "/update",
-                "subtitle": "Plan a standards upgrade",
-            },
-            {
-                "kind": "nav",
-                "label": "Verify",
-                "href": "/verify",
-                "subtitle": "Run verify against a repo",
-            },
-            {
-                "kind": "nav",
-                "label": "Repo status",
-                "href": "/estate",
-                "subtitle": "Fleet estate map",
-            },
-            {
-                "kind": "nav",
-                "label": "Activity",
-                "href": "/activity",
-                "subtitle": "Audit-backed generation history",
-            },
-            {
-                "kind": "action",
-                "label": "Resume last run",
-                "action": "resume-last-run",
-                "subtitle": "Return to your last blueprint in this browser",
-            },
         ]
+        if service_catalog_config is not None:
+            items.extend(
+                (
+                    {
+                        "kind": "nav",
+                        "label": "My services",
+                        "href": "/home",
+                        "subtitle": "Services you own",
+                    },
+                    {
+                        "kind": "nav",
+                        "label": "Sandbox",
+                        "href": "/sandbox",
+                        "subtitle": "Request an ephemeral environment",
+                    },
+                )
+            )
+        items.extend(
+            (
+                {
+                    "kind": "nav",
+                    "label": "Import",
+                    "href": "/import",
+                    "subtitle": "Adopt an existing repo",
+                },
+                {
+                    "kind": "nav",
+                    "label": "Upgrade",
+                    "href": "/update",
+                    "subtitle": "Plan a standards upgrade",
+                },
+                {
+                    "kind": "nav",
+                    "label": "Verify",
+                    "href": "/verify",
+                    "subtitle": "Run verify against a repo",
+                },
+                {
+                    "kind": "nav",
+                    "label": "Repo status",
+                    "href": "/estate",
+                    "subtitle": "Fleet estate map",
+                },
+                {
+                    "kind": "nav",
+                    "label": "Activity",
+                    "href": "/activity",
+                    "subtitle": "Audit-backed generation history",
+                },
+                {
+                    "kind": "action",
+                    "label": "Resume last run",
+                    "action": "resume-last-run",
+                    "subtitle": "Return to your last blueprint in this browser",
+                },
+            )
+        )
         if run_queue is not None:
             items.insert(
                 len(items) - 1,
@@ -677,18 +719,16 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
         )
-        entities = build_portal_catalog_entities(
+        entities = build_enriched_portal_catalog_entities(
             repo_root,
             resolved_output,
+            portal_config,
             cost_actuals_configured=cost_configured,
         )
         if owner.strip():
             entities = filter_entities_by_owner(entities, owner)
-        entities = list(
-            enrich_catalog_entities_with_cost(entities, portal_config, repo_root=repo_root)
-        )
-        entities = list(enrich_catalog_entities_with_deployment(entities, portal_config))
         blueprint_types = {
             blueprint.name: blueprint.artifact_type
             for blueprint in list_blueprints(blueprints_dir(repo_root))
@@ -721,10 +761,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
         )
-        entities = build_portal_catalog_entities(
+        entities = build_enriched_portal_catalog_entities(
             repo_root,
             resolved_output,
+            portal_config,
             cost_actuals_configured=cost_configured,
         )
         entity = find_catalog_entity(entities, entity_id)
@@ -739,6 +781,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             currency=cost_actuals.currency if cost_actuals is not None else "USD",
         )
         entity, deployment_status = deployment_scorecard_for_entity(entity, portal_config)
+        if service_catalog_config is not None:
+            from repave_engine.initiatives import read_initiatives
+            from repave_engine.maturity_rubric import load_maturity_rubric
+
+            entity = enrich_entity_with_overlay(
+                entity,
+                config=service_catalog_config,
+                rubric=load_maturity_rubric(service_catalog_config.maturity_rubric),
+                initiatives=(
+                    read_initiatives(service_catalog_config.initiatives)
+                    if service_catalog_config.initiatives
+                    else ()
+                ),
+            )
+        initiative_statuses = entity_initiative_statuses(entity, service_catalog_config)
         token = resolve_github_access_token()
         docs = resolve_entity_docs(entity, github_token=token)
         readme_html = render_portal_markdown(docs["readme"]) if docs.get("readme") else ""
@@ -802,9 +859,199 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 environment_vend_blueprint=DEFAULT_VEND_BLUEPRINT,
                 default_stack_name=default_stack_name,
                 default_vend_path=default_vend_path,
+                initiative_statuses=initiative_statuses,
                 **component_add.to_template_dict(),
             ),
         )
+
+    @app.get("/home", response_class=HTMLResponse)
+    async def developer_home_page(request: Request, owner: str = "") -> HTMLResponse:
+        if service_catalog_config is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Service catalog is not enabled (set service_catalog.enabled)",
+            )
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
+        )
+        entities = build_enriched_portal_catalog_entities(
+            repo_root,
+            resolved_output,
+            portal_config,
+            cost_actuals_configured=cost_configured,
+        )
+        auth_user = session_user(request)
+        email = auth_user.email if auth_user is not None else ""
+        mine = filter_entities_for_user(
+            entities,
+            email=email,
+            owner_filter=owner,
+            default_team=service_catalog_config.default_team,
+        )
+        return templates.TemplateResponse(
+            request,
+            "home.html",
+            page_context(
+                request,
+                nav_active="home",
+                my_services=mine,
+                home_owner_filter=owner.strip(),
+                default_team=service_catalog_config.default_team,
+            ),
+        )
+
+    @app.get("/teams/{team_slug}", response_class=HTMLResponse)
+    async def team_page(request: Request, team_slug: str) -> HTMLResponse:
+        if service_catalog_config is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Service catalog is not enabled (set service_catalog.enabled)",
+            )
+        cost_configured = cost_reader_configured(
+            cost_reader=portal_config.cost_reader,
+            cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
+        )
+        entities = build_enriched_portal_catalog_entities(
+            repo_root,
+            resolved_output,
+            portal_config,
+            cost_actuals_configured=cost_configured,
+        )
+        team_entities = filter_entities_by_team(
+            entities,
+            team_slug,
+            default_team=service_catalog_config.default_team,
+        )
+        avg = (
+            sum(item.maturity_level for item in team_entities) / len(team_entities)
+            if team_entities
+            else 0.0
+        )
+        from repave_engine.initiatives import initiative_progress, read_initiatives
+        from repave_engine.maturity_rubric import load_maturity_rubric
+
+        rubric = load_maturity_rubric(service_catalog_config.maturity_rubric)
+        initiatives = (
+            read_initiatives(service_catalog_config.initiatives)
+            if service_catalog_config.initiatives
+            else ()
+        )
+        team_initiatives = [
+            initiative_progress(item, team_entities, rubric)
+            for item in initiatives
+            if item.active
+            and (
+                not item.owning_team
+                or item.owning_team.lower() == team_slug.lower()
+                or item.owning_team.lower() in team_slug.lower()
+            )
+        ]
+        return templates.TemplateResponse(
+            request,
+            "team.html",
+            page_context(
+                request,
+                nav_active="home",
+                team_slug=team_slug,
+                team_entities=team_entities,
+                team_average_maturity=avg,
+                team_initiatives=team_initiatives,
+            ),
+        )
+
+    @app.get("/sandbox", response_class=HTMLResponse)
+    async def sandbox_page(request: Request) -> HTMLResponse:
+        if service_catalog_config is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Service catalog is not enabled (set service_catalog.enabled)",
+            )
+        profiles = load_workload_profiles(service_catalog_config.workload_profiles)
+        sets = load_deployment_sets(service_catalog_config.deployment_sets)
+        vend_cfg = load_environment_vending_config(repo_root)
+        auth_user = session_user(request)
+        default_owner = (
+            auth_user.email
+            if auth_user is not None and auth_user.email
+            else f"group:{service_catalog_config.default_team}"
+        )
+        return templates.TemplateResponse(
+            request,
+            "sandbox.html",
+            page_context(
+                request,
+                nav_active="sandbox",
+                workload_profiles=profiles,
+                deployment_sets=sets,
+                environment_vend_available=bool(run_queue is not None and vend_cfg is not None),
+                environment_vend_cfg=vend_cfg,
+                default_sandbox_owner=default_owner,
+            ),
+        )
+
+    @app.post("/sandbox/request")
+    async def sandbox_request(request: Request) -> RedirectResponse:
+        user = session_user(request)
+        if auth_config and auth_config.service_enabled:
+            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
+        if service_catalog_config is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Service catalog is not enabled (set service_catalog.enabled)",
+            )
+        if run_queue is None:
+            raise HTTPException(status_code=503, detail="Async runs are not enabled")
+        form = await request.form()
+        set_id = str(form.get("deployment_set", "")).strip()
+        stack_name = str(form.get("stack_name", "")).strip()
+        owner = str(form.get("owner", "")).strip()
+        dry_run = str(form.get("dry_run", "1")).strip().lower() in {
+            "1",
+            "true",
+            "on",
+            "yes",
+        }
+        sets = load_deployment_sets(service_catalog_config.deployment_sets)
+        profiles = load_workload_profiles(service_catalog_config.workload_profiles)
+        deployment_set = find_deployment_set(sets, set_id)
+        if deployment_set is None:
+            raise HTTPException(status_code=400, detail=f"Unknown deployment set: {set_id}")
+        profile = find_workload_profile(profiles, deployment_set.workload_profile)
+        if profile is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown workload profile: {deployment_set.workload_profile}",
+            )
+        if not stack_name:
+            raise HTTPException(status_code=400, detail="stack_name is required")
+        vend_cfg = load_environment_vending_config(repo_root)
+        gitops_repo = vend_cfg.gitops_repo if vend_cfg is not None else ""
+        payload = build_vend_payload_from_deployment_set(
+            deployment_set,
+            profile,
+            stack_name=stack_name,
+            owner=owner,
+            gitops_repo=gitops_repo,
+            dry_run=dry_run,
+        )
+        acting = user.subject if user else current_acting_user()
+        try:
+            record = submit_async_run(
+                run_queue,
+                payload=payload,
+                acting_user=acting,
+                repo_root=repo_root,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return RedirectResponse(url=f"/runs/{record.run_id}", status_code=303)
 
     @app.post("/services/{entity_id}/live-plan")
     async def service_live_plan(request: Request, entity_id: str) -> RedirectResponse:
@@ -2481,6 +2728,63 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 feedback_page=feedback_page,
             ),
         )
+
+    @app.get("/platform/maturity", response_class=HTMLResponse)
+    async def platform_maturity_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        maturity_page = build_platform_maturity_page(
+            repo_root,
+            resolved_output=resolved_output,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_maturity.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="maturity",
+                maturity_page=maturity_page,
+            ),
+        )
+
+    @app.get("/platform/initiatives", response_class=HTMLResponse)
+    async def platform_initiatives_page(request: Request) -> HTMLResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        initiatives_page = build_platform_initiatives_page(
+            repo_root,
+            resolved_output=resolved_output,
+        )
+        return templates.TemplateResponse(
+            request,
+            "platform_initiatives.html",
+            page_context(
+                request,
+                nav_active="platform",
+                platform_nav="initiatives",
+                initiatives_page=initiatives_page,
+            ),
+        )
+
+    @app.post("/platform/initiatives")
+    async def platform_initiatives_create(request: Request) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        if service_catalog_config is None or service_catalog_config.initiatives is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Initiatives store is not configured (service_catalog.initiatives)",
+            )
+        form = await request.form()
+        from repave_engine.initiatives import append_initiative, build_initiative_from_form
+
+        try:
+            initiative = build_initiative_from_form({key: str(form.get(key, "")) for key in form})
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        append_initiative(service_catalog_config.initiatives, initiative)
+        return RedirectResponse(url="/platform/initiatives", status_code=303)
 
     @app.post("/platform/campaigns/{namespace}/{name}/paused")
     async def platform_campaign_set_paused(

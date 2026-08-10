@@ -1,10 +1,13 @@
 # Platform console (`/platform/*`)
 
 Admin views for fleet governance, operational readiness, standards blast radius,
-operator campaigns, adoption/DX metrics, roadmap evidence, FinOps showback, compliance
-posture, value stream signals, and developer feedback.
+operator campaigns, adoption/DX metrics, roadmap evidence, service maturity,
+initiatives, FinOps showback, compliance posture, value stream signals, and developer
+feedback.
 
-Roadmap: [Platform as a product](roadmap.md#platform-as-a-product-v2x).
+Roadmap: [Platform as a product](roadmap.md#platform-as-a-product-v2x) ·
+[Service catalog maturity](roadmap.md#service-catalog-maturity-v2x) ·
+[`docs/service-catalog.md`](service-catalog.md).
 
 ## Quick start (local UI walkthrough)
 
@@ -13,8 +16,9 @@ make platform-dev-setup   # repave.config.yaml from examples/platform-dev/
 make serve                # http://127.0.0.1:8089
 ```
 
-Platform links appear in the header **More** menu and the footer when you have admin
-visibility (everyone when auth is off; signed-in `admin` when auth is on). See
+Platform links appear in the primary nav (**Platform**) and the footer when you have
+admin visibility (everyone when auth is off; signed-in `admin` when auth is on). With
+`service_catalog.enabled`, builders also get **My services** and **Sandbox**. See
 [`examples/platform-dev/README.md`](../examples/platform-dev/README.md) for sample data.
 
 ## Do I need Prometheus?
@@ -52,6 +56,8 @@ config show an inline hint naming the missing block.
 | **Compliance** | `platform_metrics.enabled: true` | Same as adoption (gate friction from audit) |
 | **Value stream** | `platform_metrics.enabled: true` | Prior snapshots in `platform_metrics.snapshot_file` for trend sparkline |
 | **Roadmap evidence** | `platform_metrics.enabled: true` | Optional `platform_metrics.roadmap_evidence` themes + sunset thresholds |
+| **Maturity** | `service_catalog.enabled: true` | Rubric file + fleet/library entities |
+| **Initiatives** | `service_catalog.enabled: true` + `initiatives` path | JSONL store; create form on the page |
 | **Feedback** | `platform_metrics.enabled: true` | `platform_metrics.feedback_file`; events from CSAT on result/run console |
 | **FinOps** | `portal.cost_reader` **or** `portal.cost_snapshots` | `fleet` entities; `cost_budgets` for budget column |
 | **FinOps export** | Same as FinOps | `GET /api/v2/platform/finops/export?format=csv\|json` |
