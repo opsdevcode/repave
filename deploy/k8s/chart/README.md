@@ -159,11 +159,13 @@ See also [`docs/operations/README.md`](../../../docs/operations/README.md) for S
 | `repave.fleet.operatorStatusFile` | Operator GPR/campaign snapshot for `/platform/campaigns` |
 | `repave.platformMetrics.enabled` | Platform metrics ConfigMap block (default **on**); set `githubOrgs` in values |
 | `platformMetricsSnapshot.cronJob.enabled` | Hourly `repave metrics adoption --persist` (default **on** with metrics) |
+| `repave.gates.infracost.*` | Org floor for Infracost gate (`required`, `maxMonthlyUsd`) |
+| `secrets` / `infracost-api-key` | Injected as `INFRACOST_API_KEY` on portal/worker |
 | `repave.auth.serviceMode` | OIDC login; requires `secrets.sessionSecret` and OIDC issuer/client |
 | `repave.auth.sessionHttpsOnly` | Session cookie `Secure` flag (`REPAVE_SESSION_HTTPS_ONLY`); default `true` |
 | `repave.auth.oidc.scopes` | OIDC scopes rendered into ConfigMap (default `openid`/`profile`/`email`) |
 | `repave.auth.oidc.logoutReturnTo` | Post-logout URL (Auth0 Allowed Logout URLs) |
-| `secrets.existingSecret` | Pre-created Secret with keys `github-token`, `session-secret`, `oidc-client-secret` |
+| `secrets.existingSecret` | Pre-created Secret (`github-token`, session/OIDC, optional `infracost-api-key`) |
 | `persistence.modules` | PVC for module staging (`modules_root`); use `emptyDir` when `enabled: false` |
 | `ingress.enabled` | Expose the Service via Ingress |
 
@@ -176,7 +178,8 @@ operators who prefer env-only overrides.
 kubectl create secret generic repave-secrets -n repave \
   --from-literal=github-token="$GITHUB_TOKEN" \
   --from-literal=session-secret="$REPAVE_SESSION_SECRET" \
-  --from-literal=oidc-client-secret="$REPAVE_OIDC_CLIENT_SECRET"
+  --from-literal=oidc-client-secret="$REPAVE_OIDC_CLIENT_SECRET" \
+  --from-literal=infracost-api-key="$INFRACOST_API_KEY"
 
 helm upgrade --install repave ./deploy/k8s/chart \
   --set secrets.existingSecret=repave-secrets \
@@ -185,6 +188,21 @@ helm upgrade --install repave ./deploy/k8s/chart \
 ```
 
 Do not commit real tokens in `values.yaml`. Use `secrets.create: true` only on kind.
+
+### Infracost gate (FinOps estimates)
+
+Workers read `INFRACOST_API_KEY` from Secret key `infracost-api-key` (optional). Set
+`repave.gates.infracost.required: true` (enabled in `values-decomposed-day2.yaml`) so
+missing CLI/key fails instead of skipping. See [`docs/finops.md`](../../../docs/finops.md).
+
+```bash
+# Add or rotate the key on an existing Secret (does not print the value):
+kubectl -n repave get secret repave-secrets -o json \
+  | jq --arg k "$(printf %s "$INFRACOST_API_KEY" | base64)" \
+    '.data["infracost-api-key"]=$k' \
+  | kubectl apply -f -
+kubectl -n repave rollout restart deploy -l app.kubernetes.io/name=repave
+```
 
 ### Auth0 portal access
 

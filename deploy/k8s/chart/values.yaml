@@ -118,6 +118,10 @@ repave:
       requiredRules:
         - checkov:CKV2_REPAVE_1
         - opa:destructive_changes
+    # FinOps estimate policy (docs/finops.md). Workers need infracost-api-key in secrets.
+    infracost:
+      required: false
+      maxMonthlyUsd: ""
   audit:
     enabled: false
     file: /data/audit/generation.jsonl
@@ -353,6 +357,8 @@ secrets:
   # Required when repave.stateStore.enabled; never commit a real key.
   stateKek: ""
   stateKekId: "default"
+  # Infracost CLI / API token for the infracost gate (INFRACOST_API_KEY). Never commit a real key.
+  infracostApiKey: ""
 
 probes:
   liveness:

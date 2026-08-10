@@ -23,6 +23,10 @@ repave:
     workerMode: external
     executionMode: worker
     requireSessionSecret: true
+  gates:
+    infracost:
+      required: true
+      maxMonthlyUsd: 500
   audit:
     enabled: true
   auth:

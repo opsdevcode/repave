@@ -76,6 +76,7 @@ then **UpgradePlanned** and a remediation PR when remediation is enabled.
 | --- | --- |
 | Redirect loop / login fails | Auth0 callback `https://repave.opsdevco.de/auth/callback`; check `repave-secrets` OIDC client secret |
 | Gates all skip | Worker pods unhealthy; `kubectl logs -n repave deploy/repave-worker` |
+| Infracost skipped / fails required | Add `infracost-api-key` to `repave-secrets`; ensure chart has `gates.infracost` ([`docs/finops.md`](finops.md)) |
 | Generate 401 | Session expired — re-login; API needs browser session or `REPAVE_API_TOKEN` |
 | Operator idle / no GPR status | Leader-election RBAC; `kubectl logs -n repave-system deploy/repave-operator` |
 | Portal down after node drain | RWO PVCs pin portal+workers to one node — see demo-week notes in infra `repave-prod.yaml` |

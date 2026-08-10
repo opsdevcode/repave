@@ -58,6 +58,7 @@ spec:
             {{- $secretName := include "repave.secretName" . }}
             {{- if $secretName }}
             {{- include "repave.githubAuthEnv" . | nindent 12 }}
+            {{- include "repave.infracostApiKeyEnv" . | nindent 12 }}
             {{- end }}
           volumeMounts:
             - name: config
