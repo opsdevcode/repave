@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from repave_engine.cli._style import brand, gate_status, heading, muted
 from repave_engine.verify import VerifyError, verify_target
 
 
@@ -30,16 +31,17 @@ def cmd_verify(args: argparse.Namespace) -> int:
         if result.remote:
             print("Source: shallow git clone (read-only)")
         print(
-            f"Catalog blueprint: {result.catalog_blueprint_name}@{result.catalog_blueprint_version}"
+            f"{heading('Catalog blueprint:')} "
+            f"{brand(result.catalog_blueprint_name)}@{result.catalog_blueprint_version}"
         )
         if not result.provenance_present:
-            print("Provenance: (none — gates from catalog only)")
-        print("Gates:")
+            print(muted("Provenance: (none — gates from catalog only)"))
+        print(heading("Gates:"))
         for gate in result.gates:
             status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
-            print(f"  [{status}] {gate.name}: {gate.message}")
+            print(f"  [{gate_status(status)}] {gate.name}: {gate.message}")
         if result.pin_changes:
-            print("Pin drift (observed vs catalog):")
+            print(heading("Pin drift (observed vs catalog):"))
             for row in result.pin_changes:
                 print(f"  {row.field}: {row.before} → {row.after}")
         else:
@@ -87,6 +89,6 @@ def cmd_gates(args: argparse.Namespace) -> int:
     else:
         for gate in results:
             status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
-            print(f"[{status}] {gate.name}: {gate.message}")
+            print(f"[{gate_status(status)}] {gate.name}: {gate.message}")
 
     return 0 if all_gates_passed(results) else 1

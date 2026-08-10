@@ -63,10 +63,10 @@ def muted(text: str, *, stream: TextIO | None = None) -> str:
 
 
 def gate_status(status: str, *, stream: TextIO | None = None) -> str:
-    """Color a gate status token without removing the plain label."""
+    """Color a gate or doctor status token without removing the plain label."""
     key = status.strip().upper()
-    if key == "PASS":
+    if key in ("PASS", "OK"):
         return success(status, stream=stream)
-    if key == "FAIL":
+    if key in ("FAIL", "MISSING", "MISMATCH"):
         return error(status, stream=stream)
     return muted(status, stream=stream)

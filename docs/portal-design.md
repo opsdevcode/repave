@@ -20,9 +20,9 @@ and the shell shows a “Last run in this browser” snippet on home and form ro
 Fleet-wide history is available via the JSONL audit sink, portal `/activity`, and hosted
 `/runs` when durability SQL is configured (roadmap v1.30 — shipped).
 
-**Deferred (Phase 5+):** white-label accents, standards diff UI, light theme,
-Backstage-adjacent density, conversational entry — see
-[Phase 5](#phase-5--polish-and-extensions).
+**Deferred (Phase 5+):** standards diff UI, light theme, conversational entry — see
+[Phase 5](#phase-5--polish-and-extensions). White-label logo URL + accent override
+shipped (see [brand guidelines](brand/README.md)).
 
 **Target:** a coherent product surface without mandating a SPA rewrite — shared
 static assets, CSS tokens, and a base layout template.
@@ -262,9 +262,9 @@ metrics for golden-path adoption — see [`platform-metrics.md`](platform-metric
 viewer, tables), `badge--warn`, live-plan result hero, entity live-plan preflight +
 busy overlay, command palette shell button, relative timestamps, sortable `/runs`
 table; `engine/tests/test_portal_css_tokens.py` guards undefined `var()` references.
-White-label / compact density and light theme remain optional. **Compact density**
-(`portal.density: compact`) ships for Backstage-adjacent layouts; **white-label**
-accents move to v2.
+**Compact density** (`portal.density: compact`) ships for Backstage-adjacent layouts.
+**White-label** — optional `portal.logo_url` and `portal.accent_color` (Converge defaults
+when unset). Light theme remains optional.
 
 Pick based on audience and hosting model (v1.25+).
 
@@ -292,7 +292,7 @@ holds Search (⌘K), session, and environment badges.
 | **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth on terraform + ansible-role generics (v1.88) |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
-| **White-label** | Deferred to **v2** — optional logo URL and accent override (not v1.18 scope) |
+| **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
 | **Conversational UI (v2)** | Chat entry in same shell; results reuse Phase 4 dashboard |

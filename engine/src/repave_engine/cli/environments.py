@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from repave_engine.cli._style import muted, success
 from repave_engine.environment_reclaim import (
     EnvironmentReclaimError,
     reclaim_expired_environments,
@@ -57,14 +58,14 @@ def cmd_environments_reclaim(args: argparse.Namespace) -> int:
         return 0
 
     if not summary.results:
-        print("No expired environments eligible for auto-reclaim.")
+        print(muted("No expired environments eligible for auto-reclaim."))
         return 0
 
     for item in summary.results:
         if item.mode == "registry_finalize" and item.reclaimed:
-            state = "finalized"
+            state = success("finalized")
         elif item.reclaimed:
-            state = "reclaimed"
+            state = success("reclaimed")
         elif item.skipped:
             state = "skipped"
         elif item.mode == "decommission_review":

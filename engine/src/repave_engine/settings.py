@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import secrets
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -15,6 +16,41 @@ logger = logging.getLogger(__name__)
 
 CONFIG_API_VERSION = "repave.dev/v1"
 SUPPORTED_CONFIG_API_VERSIONS = frozenset({CONFIG_API_VERSION})
+_ACCENT_HEX_RE = re.compile(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
+
+
+def normalize_portal_logo_url(raw: str) -> str:
+    """Accept same-origin paths or http(s) URLs for white-label logos."""
+    value = raw.strip()
+    if not value:
+        return ""
+    lower = value.lower()
+    if lower.startswith(("javascript:", "data:", "vbscript:")):
+        raise ValueError(
+            "portal.logo_url must be an http(s) URL or a root-relative path "
+            "(for example /static/brand/custom.svg)"
+        )
+    if value.startswith("/"):
+        return value
+    if lower.startswith("https://") or lower.startswith("http://"):
+        return value
+    raise ValueError(
+        "portal.logo_url must be an http(s) URL or a root-relative path "
+        "(for example /static/brand/custom.svg)"
+    )
+
+
+def normalize_portal_accent_color(raw: str) -> str:
+    """Accept #RGB or #RRGGBB brand accent overrides."""
+    value = raw.strip()
+    if not value:
+        return ""
+    if not _ACCENT_HEX_RE.fullmatch(value):
+        raise ValueError(
+            "portal.accent_color must be a hex color like #F59E0B or #F90 "
+            "(set portal.accent_color or REPAVE_PORTAL_ACCENT_COLOR)"
+        )
+    return value.lower() if len(value) == 4 else f"#{value[1:].lower()}"
 
 
 @dataclass(frozen=True)
@@ -1014,6 +1050,9 @@ class PortalConfig:
     density: str
     observability_dashboard_url: str = ""
     observability_slo_url: str = ""
+    # Optional white-label (parking lot → shipped): empty keeps Converge defaults.
+    logo_url: str = ""
+    accent_color: str = ""
     cost_reader: str = ""
     cost_actuals_url: str = ""
     cost_allocation: CostAllocationConfig = field(default_factory=CostAllocationConfig)
@@ -1035,10 +1074,18 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("portal")
     if not isinstance(block, dict):
-        return PortalConfig(density="default")
+        block = {}
     density = str(block.get("density", "default")).strip().lower()
     if density not in ("default", "compact"):
         raise ValueError("portal.density must be 'default' or 'compact'")
+    logo_url = normalize_portal_logo_url(str(block.get("logo_url", "")))
+    accent_color = normalize_portal_accent_color(str(block.get("accent_color", "")))
+    env_logo = os.environ.get("REPAVE_PORTAL_LOGO_URL", "").strip()
+    if env_logo:
+        logo_url = normalize_portal_logo_url(env_logo)
+    env_accent = os.environ.get("REPAVE_PORTAL_ACCENT_COLOR", "").strip()
+    if env_accent:
+        accent_color = normalize_portal_accent_color(env_accent)
     obs_url = str(block.get("observability_dashboard_url", "")).strip()
     slo_url = str(block.get("observability_slo_url", "")).strip()
     cost_url = str(block.get("cost_actuals_url", "")).strip()
@@ -1245,6 +1292,8 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
         density=density,
         observability_dashboard_url=obs_url,
         observability_slo_url=slo_url,
+        logo_url=logo_url,
+        accent_color=accent_color,
         cost_reader=cost_reader,
         cost_actuals_url=cost_url,
         cost_allocation=cost_allocation,

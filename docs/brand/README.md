@@ -111,6 +111,48 @@ Portal serves dark-friendly favicons from `/static/brand/`:
 At 16px the mark is **simplified** (three fragments, three strokes, arrow). Do not
 force the full-detail mark into a favicon.
 
+## Social and GitHub avatar
+
+Canonical files:
+
+| Asset | Path |
+| --- | --- |
+| Dark GitHub avatar (preferred) | [`assets/social/github-avatar.png`](assets/social/github-avatar.png) |
+| Light GitHub avatar | [`assets/social/github-avatar-light.png`](assets/social/github-avatar-light.png) |
+| Open Graph / social card | [`assets/social/repave-social-card.png`](assets/social/repave-social-card.png) |
+
+Portal also serves copies at `/static/brand/social/` for Open Graph meta tags on every
+page (`og:image`, `twitter:card`).
+
+### Apply the GitHub organization avatar
+
+1. Open the org **Settings → Profile**.
+2. Upload `docs/brand/assets/social/github-avatar.png` (dark navy circle + Converge mark).
+3. Optionally set the social preview / website image to `repave-social-card.png`.
+
+This cannot be automated from the monorepo without org-admin credentials; keep the
+files in `docs/brand/assets/social/` as the source of truth.
+
+## Portal white-label
+
+Optional overrides in `repave.config.yaml` (empty = Converge defaults):
+
+```yaml
+portal:
+  logo_url: "/static/brand/custom-mark.svg"   # or https://cdn.example.com/mark.svg
+  accent_color: "#F59E0B"                     # #RGB or #RRGGBB
+```
+
+Env overrides: `REPAVE_PORTAL_LOGO_URL`, `REPAVE_PORTAL_ACCENT_COLOR`.
+
+Helm: `repave.portal.logoUrl`, `repave.portal.accentColor`.
+
+Rules:
+
+- `logo_url` must be `http(s)://…` or a root-relative path (`/…`). `javascript:` / `data:` rejected.
+- Accent overrides brand CTAs/nav emphasis only — do not treat it as success/warning/error.
+- Prefer scarce accents; semantic status colors stay green / orange / rose.
+
 ## Product UI accent rules
 
 Night-ops console stays dark and calm. Brand evolves the shell; it does not rewrite

@@ -42,10 +42,15 @@ def cmd_generate(args: argparse.Namespace) -> int:
             github_token=github_token,
             staging_root=staging_root,
         )
-        print(f"{heading('Bundle:')} {bundle_result.bundle.name}@{bundle_result.bundle.version}")
+        print(
+            f"{heading('Bundle:')} "
+            f"{brand(bundle_result.bundle.name)}@{bundle_result.bundle.version}"
+        )
         exit_code = 0
         for member in bundle_result.members:
-            print(f"\nMember: {member.member_id} ({member.result.blueprint.name})")
+            print(
+                f"\n{heading('Member:')} {member.member_id} ({brand(member.result.blueprint.name)})"
+            )
             if member.result.module_repository:
                 print(f"  Repository: {member.result.module_repository.web_url}")
             print(f"  {heading('Gates:')}")
@@ -73,16 +78,16 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
     print(f"{heading('Blueprint:')} {brand(result.blueprint.name)}@{result.blueprint.version}")
     if result.module_repository:
-        print(f"Module repository: {result.module_repository.web_url}")
-        print(f"Local path: {result.module_repository.local_path}")
+        print(f"{heading('Module repository:')} {result.module_repository.web_url}")
+        print(f"{heading('Local path:')} {result.module_repository.local_path}")
     else:
-        print(f"Staging output: {result.render.output_dir}")
+        print(f"{heading('Staging output:')} {result.render.output_dir}")
     print(heading("Gates:"))
     for gate in result.gates:
         status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
         print(f"  - [{gate_status(status)}] {gate.name}: {gate.message}")
     if result.rendered_files:
-        print("Generated files:")
+        print(heading("Generated files:"))
         for rendered in result.rendered_files:
             suffix = " (truncated)" if rendered.truncated else ""
             print(f"  - {rendered.path}{suffix}")

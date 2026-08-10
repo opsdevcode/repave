@@ -12,8 +12,9 @@ work, writing ADRs, and opening issues.
     [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **Converge brand identity** — primary mark, favicons, navy night-ops
 tokens with scarce amber golden-path accents, portal shell/hero, brand kit under
-[`docs/brand/`](brand/README.md) (config white-label logo URL still in the
-[parking lot](#parking-lot));
+[`docs/brand/`](brand/README.md); **portal white-label** — optional `portal.logo_url` /
+`portal.accent_color` (Helm `logoUrl` / `accentColor`, env overrides); OG social card +
+CLI brand highlights (`NO_COLOR`-safe);
 **Mass GitHub org import** — classify org repos by artifact family,
 portal picker on `/import/batch`, `POST /api/v2/github/org-scan` (sync + async `kind: org_scan`
 queue runs), GitHub search filters and batch discovery, per-family and per-repo blueprint
@@ -2895,8 +2896,8 @@ there is an owner and a target release. Two of these (**multi-tenant repave** an
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); they stay here
 until someone owns them, since a v3 mention is not a commitment.
 
-- **Portal white-label** — custom logo URL and accent color override via config
-  (deferred from v1.18 Phase 5; target v2 theming)
+- **Portal white-label** — **Shipped** — `portal.logo_url` + `portal.accent_color`
+  (see [`docs/brand/README.md`](brand/README.md); was deferred from v1.18 Phase 5)
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
 - **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
   an alternative to in-app OIDC

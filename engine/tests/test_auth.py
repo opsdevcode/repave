@@ -50,6 +50,48 @@ def test_load_portal_config_compact(tmp_path: Path) -> None:
     assert cfg.density == "compact"
 
 
+def test_load_portal_config_white_label(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "portal:\n  logo_url: /static/brand/custom.svg\n  accent_color: '#F59E0B'\n",
+        encoding="utf-8",
+    )
+    cfg = load_portal_config(tmp_path)
+    assert cfg.logo_url == "/static/brand/custom.svg"
+    assert cfg.accent_color == "#f59e0b"
+
+
+def test_load_portal_config_white_label_env_overrides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "portal:\n  logo_url: /static/from-file.svg\n  accent_color: '#111111'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_PORTAL_LOGO_URL", "https://cdn.example.com/mark.svg")
+    monkeypatch.setenv("REPAVE_PORTAL_ACCENT_COLOR", "#0ea5e9")
+    cfg = load_portal_config(tmp_path)
+    assert cfg.logo_url == "https://cdn.example.com/mark.svg"
+    assert cfg.accent_color == "#0ea5e9"
+
+
+def test_load_portal_config_rejects_unsafe_logo_url(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "portal:\n  logo_url: javascript:alert(1)\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="logo_url"):
+        load_portal_config(tmp_path)
+
+
+def test_load_portal_config_rejects_invalid_accent(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "portal:\n  accent_color: orange\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="accent_color"):
+        load_portal_config(tmp_path)
+
+
 def test_load_portal_config_invalid_density(tmp_path: Path) -> None:
     (tmp_path / "repave.config.yaml").write_text("portal:\n  density: wide\n", encoding="utf-8")
     with pytest.raises(ValueError, match="density"):

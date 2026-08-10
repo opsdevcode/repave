@@ -17,9 +17,13 @@ output:
   modules_root: ../repave-modules
   repo_name_template: "tf-{cloud_provider}-{module_name}"
 
-# Optional portal layout (Backstage-adjacent density without white-label theming).
+# Optional portal layout (Backstage-adjacent density + optional white-label).
 # portal:
 #   density: compact   # default | compact
+#   # White-label (optional): custom mark URL and brand accent hex.
+#   # logo_url: "/static/brand/custom-mark.svg"   # or https://cdn.example.com/mark.svg
+#   # accent_color: "#F59E0B"                     # #RGB or #RRGGBB; scarce brand CTAs only
+#   # Env overrides: REPAVE_PORTAL_LOGO_URL, REPAVE_PORTAL_ACCENT_COLOR
 #   # Template for per-entity dashboard links ({name}, {service}, {entity_id}).
 #   observability_dashboard_url: "https://grafana.example.com/d/svc?var-service={name}"
 #   # JSON SLO summary URL (same placeholders). Response: status, slo_target, slo_current, detail.

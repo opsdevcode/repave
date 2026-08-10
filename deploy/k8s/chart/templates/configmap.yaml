@@ -12,6 +12,12 @@ data:
       repo_name_template: {{ .Values.repave.output.repoNameTemplate | quote }}
     portal:
       density: {{ .Values.repave.portal.density | quote }}
+      {{- if .Values.repave.portal.logoUrl }}
+      logo_url: {{ .Values.repave.portal.logoUrl | quote }}
+      {{- end }}
+      {{- if .Values.repave.portal.accentColor }}
+      accent_color: {{ .Values.repave.portal.accentColor | quote }}
+      {{- end }}
       {{- if .Values.repave.portal.costSnapshots.enabled }}
       cost_snapshots:
         enabled: {{ .Values.repave.portal.costSnapshots.enabled }}

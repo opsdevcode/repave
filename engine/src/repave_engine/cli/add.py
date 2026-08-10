@@ -6,6 +6,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from repave_engine.cli._style import brand, error, heading, success
 from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
 from repave_engine.repo_add import (
     AddPlan,
@@ -21,19 +22,19 @@ from repave_engine.repo_add import (
 def _print_plan(plan: AddPlan) -> None:
     print(f"Target: {plan.target}")
     print(f"Component: {plan.component_id}")
-    print(f"Blueprint: {plan.blueprint_name}@{plan.blueprint_version}")
+    print(f"{heading('Blueprint:')} {brand(plan.blueprint_name)}@{plan.blueprint_version}")
     print(plan.summary)
     if plan.conflicts:
-        print("Conflicts (add blocked):")
+        print(error("Conflicts (add blocked):"))
         for line in plan.conflicts:
             print(f"  {line}")
         return
     if plan.files_added:
-        print("Files to add:")
+        print(heading("Files to add:"))
         for rel in plan.files_added:
             print(f"  + {rel}")
     if plan.files_overwritten:
-        print("Files to overwrite (--force):")
+        print(heading("Files to overwrite (--force):"))
         for rel in plan.files_overwritten:
             print(f"  ~ {rel}")
 
@@ -112,5 +113,5 @@ def cmd_add(args: argparse.Namespace) -> int:
             )
         )
     else:
-        print(f"Committed on branch {result.git_branch} ({result.commit_sha[:12]})")
+        print(success(f"Committed on branch {result.git_branch} ({result.commit_sha[:12]})"))
     return 0
