@@ -46,6 +46,11 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
     assert "home-hero" in response.text
+    assert 'rel="icon"' in response.text
+    assert "/static/brand/favicon.svg" in response.text
+    assert "/static/brand/svg/repave-mark.svg" in response.text
+    assert "shell__wordmark" in response.text
+    assert "From fragmented to governed" in response.text
     assert "data-demo-pipeline" in response.text
     assert "catalog-inventory__item-icon" in response.text
     assert "catalog-inventory__category" in response.text
@@ -218,6 +223,7 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
 
     assert response.status_code == 200
     assert "--accent" in response.text
+    assert "--brand-primary" in response.text
     assert "--teal-500" in response.text
     assert "--dur-fast" in response.text
     assert "--btn-primary-fg" in response.text
@@ -231,6 +237,16 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert ".gate-table-wrap" in response.text
     assert 'form[data-form-mode="guided"]' in response.text
     assert ".gate-list" not in response.text
+
+
+def test_brand_static_assets_served(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    mark = client.get("/static/brand/svg/repave-mark.svg")
+    favicon = client.get("/static/brand/favicon.svg")
+    assert mark.status_code == 200
+    assert "Converge" in mark.text or "viewBox" in mark.text
+    assert favicon.status_code == 200
+    assert favicon.headers["content-type"].startswith("image/")
 
 
 def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> None:
