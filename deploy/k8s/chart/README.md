@@ -157,6 +157,8 @@ See also [`docs/operations/README.md`](../../../docs/operations/README.md) for S
 | `repave.audit.enabled` | JSONL generation audit at `repave.audit.file` |
 | `repave.fleet.enabled` | Fleet registry JSONL at `repave.fleet.file` |
 | `repave.fleet.operatorStatusFile` | Operator GPR/campaign snapshot for `/platform/campaigns` |
+| `repave.platformMetrics.enabled` | Platform metrics ConfigMap block (default **on**); set `githubOrgs` in values |
+| `platformMetricsSnapshot.cronJob.enabled` | Hourly `repave metrics adoption --persist` (default **on** with metrics) |
 | `repave.auth.serviceMode` | OIDC login; requires `secrets.sessionSecret` and OIDC issuer/client |
 | `repave.auth.sessionHttpsOnly` | Session cookie `Secure` flag (`REPAVE_SESSION_HTTPS_ONLY`); default `true` |
 | `repave.auth.oidc.scopes` | OIDC scopes rendered into ConfigMap (default `openid`/`profile`/`email`) |

@@ -72,6 +72,10 @@ SQL table; JSONL export follows `durability.export_jsonl`.
 
 ## Helm
 
+Chart defaults turn metrics **on** (`repave.platformMetrics.enabled` and
+`platformMetricsSnapshot.cronJob.enabled`). Set `githubOrgs` (and optional baselines)
+in your release values:
+
 ```yaml
 repave:
   platformMetrics:
@@ -87,7 +91,8 @@ platformMetricsSnapshot:
 ```
 
 The CronJob runs `repave metrics adoption --persist` so `/platform/adoption` can show
-trend sparklines (at/above baseline = pass).
+trend sparklines (at/above baseline = pass). Set `enabled: false` only when you want
+the portal empty-state instead of metrics pages.
 
 ## Feedback loop (v1.86)
 

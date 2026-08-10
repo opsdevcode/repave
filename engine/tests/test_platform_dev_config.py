@@ -98,14 +98,20 @@ def test_platform_dev_pages_render(
     assert "platform-rollout" in campaigns
 
     home = client.get("/").text
+    primary = home.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert 'href="/platform/fleet"' in primary
+    assert ">Platform<" in primary
     more_start = home.index("shell__nav-more")
     more_end = home.index("</details>", more_start)
     more_section = home[more_start:more_end]
-    assert 'href="/platform/finops"' in more_section
-    assert 'href="/platform/compliance"' in more_section
-    assert 'href="/platform/value-stream"' in more_section
-    assert 'href="/platform/feedback"' in more_section
-    assert 'href="/platform/roadmap"' in more_section
+    assert 'href="/platform/finops"' not in more_section
+    assert 'href="/import"' in more_section
+    # Deep platform routes stay in the footer and platform subnav.
+    assert 'href="/platform/finops"' in home
+    assert 'href="/platform/compliance"' in home
+    assert 'href="/platform/value-stream"' in home
+    assert 'href="/platform/feedback"' in home
+    assert 'href="/platform/roadmap"' in home
 
     roadmap = client.get("/platform/roadmap").text
     assert "Roadmap evidence" in roadmap
