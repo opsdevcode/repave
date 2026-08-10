@@ -189,7 +189,10 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption / DX outcome metrics (`?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 | `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity distribution — see [`service-catalog.md`](service-catalog.md) |
-| `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress rollup |
+| `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress rollup (+ inactive list) |
+| `POST` | `/api/v2/platform/initiatives` | admin | Create initiative (`title` required) |
+| `PATCH` | `/api/v2/platform/initiatives/{id}` | admin | Partial update (title, targets, `active`, …) |
+| `DELETE` | `/api/v2/platform/initiatives/{id}` | admin | Soft-deactivate (`active: false`) |
 
 ## `/api/v1` deprecation
 

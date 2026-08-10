@@ -41,7 +41,7 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `/library` | Builders | Maturity pills + initiative chips on entities |
 | `/services/{id}` | Builders | Tabs: overview, scorecard, dependencies, initiatives |
 | `/platform/maturity` | Admins | Fleet maturity distribution + heatmap |
-| `/platform/initiatives` | Admins | Progress rollup + create initiative |
+| `/platform/initiatives` | Admins | Progress rollup + create / edit / deactivate |
 
 ## APIs
 
@@ -51,6 +51,9 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `GET` | `/api/v2/catalog/entities/{id}` | viewer+ (includes `maturity`, `initiatives`) |
 | `GET` | `/api/v2/platform/maturity` | admin |
 | `GET` | `/api/v2/platform/initiatives` | admin |
+| `POST` | `/api/v2/platform/initiatives` | admin |
+| `PATCH` | `/api/v2/platform/initiatives/{id}` | admin |
+| `DELETE` | `/api/v2/platform/initiatives/{id}` | admin (soft-deactivate) |
 
 ## Maturity rubric
 
@@ -67,8 +70,10 @@ payload — GitOps PR only; no apply credentials in repave.
 ## Initiatives
 
 JSONL store of improvement programs (`title`, `target_level`, `target_rule_keys`,
-`due_date`, `owning_team`). Admins create rows from `/platform/initiatives`;
-entity detail shows pass/fail per active initiative.
+`due_date`, `owning_team`, `active`). Admins create, edit, and soft-deactivate rows from
+`/platform/initiatives` or the v2 API. Inactive programs are hidden from entity chips and
+active rollups; the portal lists them under **Inactive** with a reactivate action.
+Entity detail shows pass/fail per active initiative.
 
 ## Related
 

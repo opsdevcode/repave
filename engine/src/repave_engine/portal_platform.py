@@ -745,12 +745,14 @@ class PlatformInitiativesPage:
     catalog_enabled: bool
     initiatives_path: str
     rows: tuple[dict[str, Any], ...]
+    inactive: tuple[dict[str, Any], ...] = ()
 
     def to_public_dict(self) -> dict[str, Any]:
         return {
             "catalog_enabled": self.catalog_enabled,
             "initiatives_path": self.initiatives_path,
             "initiatives": list(self.rows),
+            "inactive": list(self.inactive),
         }
 
 
@@ -774,6 +776,7 @@ def build_platform_initiatives_page(
             catalog_enabled=False,
             initiatives_path="",
             rows=(),
+            inactive=(),
         )
     portal_config = load_portal_config(repo_root)
     cost_configured = cost_reader_configured(
@@ -791,10 +794,12 @@ def build_platform_initiatives_page(
     path = catalog_cfg.initiatives
     initiatives = read_initiatives(path) if path is not None else ()
     rows = tuple(initiative_progress(item, entities, rubric) for item in initiatives if item.active)
+    inactive = tuple(item.to_public_dict() for item in initiatives if not item.active)
     return PlatformInitiativesPage(
         catalog_enabled=True,
         initiatives_path=str(path) if path is not None else "",
         rows=rows,
+        inactive=inactive,
     )
 
 

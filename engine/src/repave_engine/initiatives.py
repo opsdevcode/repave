@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import fcntl
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
 from repave_engine.entity_catalog import CatalogEntity
+from repave_engine.jsonl_lock import append_jsonl_line
 from repave_engine.maturity_rubric import MaturityResult, MaturityRubric, evaluate_maturity
 
 logger = logging.getLogger(__name__)
@@ -83,10 +85,20 @@ def _parse_initiative(raw: dict[str, Any]) -> Initiative | None:
     )
 
 
+def _truthy(value: object, *, default: bool = True) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
 def read_initiatives(path: Path) -> tuple[Initiative, ...]:
+    """Load initiatives; last line wins when the same id appears more than once."""
     if not path.is_file():
         return ()
-    items: list[Initiative] = []
+    by_id: dict[str, Initiative] = {}
+    order: list[str] = []
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -104,15 +116,119 @@ def read_initiatives(path: Path) -> tuple[Initiative, ...]:
         if not isinstance(raw, dict):
             continue
         parsed = _parse_initiative(raw)
-        if parsed is not None:
-            items.append(parsed)
-    return tuple(items)
+        if parsed is None:
+            continue
+        if parsed.id not in by_id:
+            order.append(parsed.id)
+        by_id[parsed.id] = parsed
+    return tuple(by_id[item_id] for item_id in order)
+
+
+def write_initiatives(path: Path, initiatives: tuple[Initiative, ...]) -> None:
+    """Rewrite the initiatives JSONL under an exclusive lock."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lines = [json.dumps(item.to_public_dict(), sort_keys=True) + "\n" for item in initiatives]
+    with path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            handle.seek(0)
+            handle.truncate()
+            handle.writelines(lines)
+            handle.flush()
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def append_initiative(path: Path, initiative: Initiative) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(initiative.to_public_dict(), sort_keys=True) + "\n")
+    append_jsonl_line(
+        path,
+        json.dumps(initiative.to_public_dict(), sort_keys=True),
+        store="initiatives",
+    )
+
+
+def get_initiative(path: Path, initiative_id: str) -> Initiative | None:
+    needle = initiative_id.strip()
+    if not needle:
+        return None
+    for item in read_initiatives(path):
+        if item.id == needle:
+            return item
+    return None
+
+
+def upsert_initiative(path: Path, initiative: Initiative) -> Initiative:
+    """Replace an existing id or append a new row; rewrites the store for a clean file."""
+    current = list(read_initiatives(path))
+    replaced = False
+    next_items: list[Initiative] = []
+    for item in current:
+        if item.id == initiative.id:
+            next_items.append(initiative)
+            replaced = True
+        else:
+            next_items.append(item)
+    if not replaced:
+        next_items.append(initiative)
+    write_initiatives(path, tuple(next_items))
+    return initiative
+
+
+def deactivate_initiative(path: Path, initiative_id: str) -> Initiative:
+    existing = get_initiative(path, initiative_id)
+    if existing is None:
+        raise ValueError(f"initiative not found: {initiative_id}")
+    if not existing.active:
+        return existing
+    return upsert_initiative(path, replace(existing, active=False))
+
+
+def apply_initiative_patch(existing: Initiative, patch: dict[str, Any]) -> Initiative:
+    """Apply a partial update. Raises ValueError when fields are invalid."""
+    title = existing.title
+    if "title" in patch:
+        title = str(patch.get("title", "")).strip()
+        if not title:
+            raise ValueError("title is required")
+    description = (
+        str(patch.get("description", "")).strip()
+        if "description" in patch
+        else existing.description
+    )
+    owning_team = (
+        str(patch.get("owning_team", "")).strip()
+        if "owning_team" in patch
+        else existing.owning_team
+    )
+    due_date = str(patch.get("due_date", "")).strip() if "due_date" in patch else existing.due_date
+    target_level = existing.target_level
+    if "target_level" in patch:
+        try:
+            target_level = max(0, int(patch.get("target_level", 0) or 0))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("target_level must be an integer") from exc
+    rules = existing.target_rule_keys
+    if "target_rule_keys" in patch:
+        rules_raw = patch.get("target_rule_keys", "")
+        if isinstance(rules_raw, str):
+            rules = tuple(part.strip() for part in rules_raw.split(",") if part.strip())
+        elif isinstance(rules_raw, list):
+            rules = tuple(str(item).strip() for item in rules_raw if str(item).strip())
+        else:
+            raise ValueError("target_rule_keys must be a string or list")
+    active = existing.active
+    if "active" in patch:
+        active = _truthy(patch.get("active"), default=existing.active)
+    return replace(
+        existing,
+        title=title,
+        description=description,
+        owning_team=owning_team,
+        due_date=due_date,
+        target_level=target_level,
+        target_rule_keys=rules,
+        active=active,
+    )
 
 
 def build_initiative_from_form(payload: dict[str, Any]) -> Initiative:
@@ -139,7 +255,7 @@ def build_initiative_from_form(payload: dict[str, Any]) -> Initiative:
         due_date=str(payload.get("due_date", "")).strip(),
         target_level=max(0, target_level),
         target_rule_keys=rules,
-        active=True,
+        active=_truthy(payload.get("active", True), default=True),
     )
 
 

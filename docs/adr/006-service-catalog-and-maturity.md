@@ -1,6 +1,6 @@
 # ADR 006: Service catalog overlay, maturity, and GitOps sandboxes
 
-**Status:** Accepted — Phase 1 implementation in progress  
+**Status:** Accepted — Phase 1 + Phase 2 (initiatives CRUD) shipped on `main`  
 **Date:** 2026-08-10  
 **Scope:** portal catalog read models, `repave.config.yaml` `service_catalog` block,
 environment vending parameterization, platform console maturity surfaces — v2.x line
@@ -66,7 +66,8 @@ YAML catalogs name blueprint + default inputs (`workload_profiles`) and stack cl
 - `GET /home` — services matching the session user (email / owner substring) or
   `default_team` when auth is off.
 - `GET /teams/{slug}` — filtered library + maturity summary.
-- Initiatives JSONL store with admin list/create on `/platform/initiatives` (Phase 2 CRUD).
+- Initiatives JSONL store with admin list/create/update/deactivate on
+  `/platform/initiatives` and `/api/v2/platform/initiatives` (POST/PATCH/DELETE soft-deactivate).
 
 ### AI deferral
 
@@ -78,6 +79,8 @@ Rule evaluation and rubric scoring stay deterministic forever.
 - Library and catalog APIs gain additive fields; existing clients ignore unknown keys.
 - Platform-dev enables `service_catalog` + fixture vending for local demos without live GitOps.
 - Entity detail gains dependency and initiative panels without a SPA rewrite.
+- Initiative deactivation is soft (`active: false`); inactive rows stay in the JSONL for audit
+  and can be reactivated from the portal.
 
 ## Non-goals
 
