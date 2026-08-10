@@ -222,10 +222,10 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     assert "terraform-module-generic" in body
     assert '"/platform/finops"' in body
     assert '"/platform/feedback"' in body
-    assert "shell__footer-link" in body
     footer = body[body.index("shell__footer") :]
-    assert 'href="/platform/finops"' in footer
-    assert 'href="/platform/feedback"' in footer
+    assert "repave · engine" in footer
+    assert "shell__footer-link" not in footer
+    assert 'href="/platform/' not in footer
     primary = body.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
     assert 'href="/platform/fleet"' in primary
     assert ">Platform<" in primary

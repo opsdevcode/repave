@@ -493,12 +493,6 @@
     outline-offset: 2px;
   }
 
-  .shell__footer-link:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    border-radius: 2px;
-  }
-
   .shell__meta {
     display: flex;
     flex-wrap: nowrap;
@@ -3512,16 +3506,6 @@
 
   .shell--compact .form-section__title {
     font-size: 1.05rem;
-  }
-
-  .shell__footer-link {
-    color: var(--text-muted);
-    font-weight: 600;
-  }
-
-  .shell__footer-link:hover {
-    color: var(--accent);
-    text-decoration: none;
   }
 
   .page-title--from-catalog {
