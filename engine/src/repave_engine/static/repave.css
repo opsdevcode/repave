@@ -3070,6 +3070,16 @@
     margin: 0;
   }
 
+  .runs-live-hint {
+    display: inline-block;
+    margin-left: var(--space-2);
+    font-size: 0.78rem;
+  }
+
+  .runs-live-hint::before {
+    content: "· ";
+  }
+
   .runs-timeline {
     list-style: none;
     margin: 0;
