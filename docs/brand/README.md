@@ -34,7 +34,9 @@ the portal `static/brand/` copies. Do not embed the concept-board raster into SV
 - `repave-logo.svg` / `repave-logo-light.svg` / `repave-logo-dark.svg` — mark +
   **repave** + amber rule + `FROM FRAGMENTED TO GOVERNED`
 - `repave-logo-compact.svg` / `repave-logo-compact-dark.svg` — mark + wordmark only
-  (product shell, README header)
+  (product shell, README header). On GitHub, the README uses a `<picture>` element so
+  dark mode loads the `-dark` lockup (light wordmark) and light mode keeps the
+  navy wordmark.
 
 ### Secondary mark
 

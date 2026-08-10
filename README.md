@@ -1,11 +1,17 @@
 # repave
 
 <p>
-  <img
-    src="docs/brand/assets/svg/repave-logo-compact.svg"
-    alt="repave — Converge mark and wordmark"
-    width="280"
-  />
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="docs/brand/assets/svg/repave-logo-compact-dark.svg"
+    />
+    <img
+      src="docs/brand/assets/svg/repave-logo-compact.svg"
+      alt="repave — Converge mark and wordmark"
+      width="280"
+    />
+  </picture>
 </p>
 
 **Governed golden paths for everyone who builds platform automation.**
