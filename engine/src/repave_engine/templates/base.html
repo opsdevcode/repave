@@ -5,10 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <title>{% block title %}repave{% endblock %}</title>
+    <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/static/brand/favicon-32x32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png" sizes="180x180" />
+    <meta name="theme-color" content="#0F172A" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/repave.css?v={{ app_version }}" />
@@ -23,7 +27,14 @@
       <header class="shell__bar">
         <div class="shell__bar-start">
           <a class="shell__brand" href="/" aria-label="repave home">
-            <span class="shell__mark" aria-hidden="true"></span>
+            <img
+              class="shell__mark"
+              src="/static/brand/svg/repave-mark.svg"
+              width="96"
+              height="40"
+              alt=""
+              aria-hidden="true"
+            />
             <span class="shell__wordmark">repave</span>
           </a>
           <nav class="shell__nav shell__nav--primary" aria-label="Primary">

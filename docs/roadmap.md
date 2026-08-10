@@ -10,7 +10,11 @@ work, writing ADRs, and opening issues.
     rubrics, Cortex-density hub, Humanitec-style GitOps sandboxes — no AI); fine-grained Auth0 FGA
     stays in the [parking lot](#parking-lot). v3 themes under
     [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Mass GitHub org import** — classify org repos by artifact family,
+**Shipped on `main`:** **Converge brand identity** — primary mark, favicons, navy night-ops
+tokens with scarce amber golden-path accents, portal shell/hero, brand kit under
+[`docs/brand/`](brand/README.md) (config white-label logo URL still in the
+[parking lot](#parking-lot));
+**Mass GitHub org import** — classify org repos by artifact family,
 portal picker on `/import/batch`, `POST /api/v2/github/org-scan` (sync + async `kind: org_scan`
 queue runs), GitHub search filters and batch discovery, per-family and per-repo blueprint
 mapping on batch import ([#557](https://github.com/opsdevcode/repave/pull/557)–[#565](https://github.com/opsdevcode/repave/pull/565));

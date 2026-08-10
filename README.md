@@ -1,6 +1,18 @@
 # repave
 
+<p>
+  <img
+    src="docs/brand/assets/svg/repave-logo-compact.svg"
+    alt="repave — Converge mark and wordmark"
+    width="280"
+  />
+</p>
+
 **Governed golden paths for everyone who builds platform automation.**
+
+From fragmented to governed — golden paths for many, not just the few.
+
+Brand kit: [docs/brand/README.md](docs/brand/README.md)
 
 ## Why "repave"?
 

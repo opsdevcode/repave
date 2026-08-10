@@ -70,22 +70,29 @@ v1.18-polish       home hero, scope presets, browser last-run snippet
 
 ### Design tokens (CSS custom properties)
 
-Default theme is **night-ops** (`color-scheme: dark` on `:root`):
+Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with the
+**Converge** brand (see [brand guidelines](brand/README.md)):
 
-- **Color:** charcoal `--bg` / `--surface`, light `--text`, electric teal
-  `--accent`, crisp `--success` / `--warning` / `--error` / `--skip`
-- **Atmosphere:** vignette + fine grid overlay (`.shell__atmosphere`); scan
-  hairline on the sticky bar
-- **Type:** Fraunces (display), Source Sans 3, IBM Plex Mono
+- **Surfaces:** deep navy `--bg` / `--surface` / `--surface-raised`
+- **Brand:** `--brand-primary` (`#F59E0B`) for golden-path CTAs, active nav accent,
+  and scarce identity chrome; aliased to `--accent` for existing component hooks
+- **Links:** cool `--link` / `--link-hover` (not blanket amber)
+- **Semantic:** `--success` (green), `--warning` (orange — distinct from brand gold),
+  `--error` (rose), `--info`, `--skip`
+- **Atmosphere:** restrained vignette + fine grid (`.shell__atmosphere`); low amber wash
+- **Type:** Source Sans 3 (UI + wordmark), IBM Plex Mono
 - **Layout:** `--radius`, `--space-1` … `--space-6`, `--content-max-width`
 - Optional light theme / toggle remains Phase 5 polish if needed
 
 ### App shell
 
-- Top bar: wordmark, primary nav (Catalog, Library, …), optional environment badge
-  (for example `local` when running under Docker Compose).
+- Top bar: Converge mark + **repave** wordmark, primary nav (Catalog, Library, …),
+  optional environment badge (for example `local` when running under Docker Compose).
+  Favicons under `/static/brand/`.
 - Content area: consistent max width and horizontal padding; mobile single column.
 - Breadcrumb or back link styled consistently (not bare `<a>` above `<h1>`).
+- Tagline (`FROM FRAGMENTED TO GOVERNED`) stays on marketing/docs surfaces — not the
+  product sidebar.
 
 ### Core components (CSS-first)
 
