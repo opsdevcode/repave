@@ -880,169 +880,13 @@
     applyStep();
   }
 
-  function initDemoPipeline() {
-    var pipeline = document.querySelector("[data-demo-pipeline]");
-    if (!pipeline) {
-      return;
+  function refreshHomeResumeChip() {
+    if (
+      window.repaveHome &&
+      typeof window.repaveHome.refreshResumeChip === "function"
+    ) {
+      window.repaveHome.refreshResumeChip();
     }
-    var steps = pipeline.querySelectorAll(".demo-pipeline__step");
-    if (!steps.length) {
-      return;
-    }
-    var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) {
-      steps.forEach(function (step) {
-        step.classList.add("is-lit");
-      });
-      pipeline.classList.add("is-animated");
-      return;
-    }
-    var observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (!entry.isIntersecting) {
-            return;
-          }
-          pipeline.classList.add("is-animated");
-          steps.forEach(function (step, index) {
-            window.setTimeout(function () {
-              step.classList.add("is-lit");
-            }, index * 420);
-          });
-          observer.disconnect();
-        });
-      },
-      { threshold: 0.35 }
-    );
-    observer.observe(pipeline);
-  }
-
-  function initCatalogCardMotion() {
-    var cards = document.querySelectorAll("[data-catalog-card]");
-    if (!cards.length) {
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      return;
-    }
-    cards.forEach(function (card) {
-      card.addEventListener("mousemove", function (event) {
-        var rect = card.getBoundingClientRect();
-        var x = (event.clientX - rect.left) / rect.width - 0.5;
-        var y = (event.clientY - rect.top) / rect.height - 0.5;
-        card.classList.add("is-tilted");
-        card.style.transform =
-          "perspective(700px) rotateX(" +
-          (-y * 4).toFixed(2) +
-          "deg) rotateY(" +
-          (x * 4).toFixed(2) +
-          "deg) translateY(-2px)";
-      });
-      card.addEventListener("mouseleave", function () {
-        card.classList.remove("is-tilted");
-        card.style.transform = "";
-      });
-    });
-  }
-
-  function initHomeResumeChip() {
-    var mount = document.getElementById("home-resume-chip");
-    if (!mount) {
-      return;
-    }
-    var run = readLastRun();
-    if (!run || !run.blueprint) {
-      mount.hidden = true;
-      mount.innerHTML = "";
-      return;
-    }
-    var href = "/blueprints/" + encodeURIComponent(run.blueprint);
-    mount.innerHTML =
-      '<a class="btn btn--secondary" href="' +
-      href +
-      '">Resume <code>' +
-      run.blueprint +
-      "</code></a>";
-    mount.hidden = false;
-  }
-
-  function initCatalogSearch() {
-    var root = document.querySelector("[data-catalog-search]");
-    var input = document.querySelector("[data-catalog-search-input]");
-    if (!root || !input) {
-      return;
-    }
-    var meta = root.querySelector("[data-catalog-search-meta]");
-    var emptyState = document.getElementById("catalog-search-empty");
-    var cards = document.querySelectorAll("[data-catalog-card]");
-    var groups = document.querySelectorAll("[data-catalog-group]");
-
-    if (window.location.hash === "#golden-paths") {
-      var goldenPaths = document.getElementById("golden-paths");
-      if (goldenPaths) {
-        goldenPaths.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }
-
-    function normalize(value) {
-      return (value || "").toLowerCase().trim();
-    }
-
-    function applyFilter() {
-      var query = normalize(input.value);
-      var terms = query ? query.split(/\s+/).filter(Boolean) : [];
-      var visibleCards = 0;
-
-      cards.forEach(function (card) {
-        var haystack = normalize(card.getAttribute("data-search-text"));
-        var match =
-          terms.length === 0 ||
-          terms.every(function (term) {
-            return haystack.indexOf(term) !== -1;
-          });
-        var row = card.closest("[data-catalog-item]");
-        if (row) {
-          row.hidden = !match;
-        } else {
-          card.hidden = !match;
-        }
-        if (match) {
-          visibleCards += 1;
-        }
-      });
-
-      groups.forEach(function (group) {
-        var items = group.querySelectorAll("[data-catalog-item]");
-        var anyVisible = false;
-        items.forEach(function (item) {
-          if (!item.hidden) {
-            anyVisible = true;
-          }
-        });
-        group.hidden = !anyVisible && terms.length > 0;
-        if (terms.length > 0 && anyVisible && group.tagName === "DETAILS") {
-          group.open = true;
-        }
-      });
-
-      if (meta) {
-        if (terms.length === 0) {
-          meta.hidden = true;
-        } else {
-          meta.hidden = false;
-          meta.textContent =
-            visibleCards === 1
-              ? "1 artifact matches"
-              : visibleCards + " artifacts match";
-        }
-      }
-      if (emptyState) {
-        emptyState.hidden = !(terms.length > 0 && visibleCards === 0);
-      }
-    }
-
-    input.addEventListener("input", applyFilter);
-    applyFilter();
   }
 
   function initGateDashboard() {
@@ -3027,11 +2871,11 @@
         /* ignore quota / private mode */
       }
       renderLastRun();
-      initHomeResumeChip();
+      refreshHomeResumeChip();
     },
     renderLastRun: function () {
       renderLastRun();
-      initHomeResumeChip();
+      refreshHomeResumeChip();
     },
     showToast: showToast,
     showSubmitError: showPortalSubmitError,
@@ -3040,7 +2884,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     renderLastRun();
-    initHomeResumeChip();
+    refreshHomeResumeChip();
     initCopyButtons();
     initLineageReceiptCopy();
     initFileExplorer();
@@ -3051,9 +2895,6 @@
     initFormModeToggle();
     initFormDryRun();
     initPortalFetchSubmit();
-    initCatalogSearch();
-    initDemoPipeline();
-    initCatalogCardMotion();
     initGateDashboard();
     initImportOrgScan();
     initImportBatchPrefill();

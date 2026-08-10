@@ -93,9 +93,21 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "initCopyButtons" in response.text
     assert "initBusyForms" in response.text
     assert "initFormStepper" in response.text
-    assert "initCatalogSearch" in response.text
+    assert "refreshHomeResumeChip" in response.text
     assert "initGateDashboard" in response.text
     assert "initFormDraft" in response.text
+
+
+def test_static_repave_home_mjs_served(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/static/repave-home.mjs")
+
+    assert response.status_code == 200
+    assert "initCatalogSearch" in response.text
+    assert "repave-metric" in response.text
+    assert "repave:recentPaths" in response.text
+    assert "startViewTransition" in response.text
+    assert "data-catalog-peek" in response.text
 
 
 def test_activity_page(repo_root, output_config) -> None:
@@ -146,6 +158,12 @@ def test_index_catalog_search(repo_root, output_config) -> None:
     assert "data-catalog-search" in response.text
     assert "data-catalog-card" in response.text
     assert "home-hero__mesh" in response.text
+    assert "/static/repave-home.mjs" in response.text
+    assert 'type="module"' in response.text
+    assert "data-recent-paths" in response.text
+    assert "data-peek-name=" in response.text
+    assert "<repave-metric" in response.text
+    assert "@view-transition" in response.text
 
 
 def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) -> None:
@@ -200,6 +218,11 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
 
     assert response.status_code == 200
     assert "--accent" in response.text
+    assert "--teal-500" in response.text
+    assert "--dur-fast" in response.text
+    assert "--btn-primary-fg" in response.text
+    assert "@layer tokens, base, components, pages, utilities;" in response.text
+    assert '[data-theme="dark"]' in response.text
     assert ".shell__wordmark" in response.text
     assert ".home-hero" in response.text
     assert "color-scheme: dark" in response.text
@@ -490,12 +513,16 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "data-run-publish-error" in body
     assert "publish_succeeded" in body
     assert "publish_progress" in body
-    assert "initDemoPipeline" in body
-    assert "initCatalogCardMotion" in body
+    assert "refreshHomeResumeChip" in body
     assert "initPortalViewToggle" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
+
+    home = client.get("/static/repave-home.mjs")
+    assert home.status_code == 200
+    assert "initDemoPipelineFallback" in home.text
+    assert "initCatalogCardMotion" in home.text
 
 
 def test_portal_generate_viewer_returns_json_insufficient_role(

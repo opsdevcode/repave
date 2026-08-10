@@ -57,14 +57,16 @@ def test_root_defines_semantic_alias_tokens() -> None:
     root_match = re.search(r":root\s*\{([^}]+)\}", css, re.DOTALL)
     assert root_match is not None
     root_names = set(_CSS_DEF.findall(root_match.group(1)))
-    for token in (
-        "--border-subtle",
-        "--status-pass",
-        "--status-fail",
-        "--radius-lg",
-        "--text-sm",
-    ):
+    # Layout / type primitives stay on :root (tier 1).
+    for token in ("--radius-lg", "--text-sm", "--dur-fast", "--teal-500"):
         assert token in root_names
+
+    theme_match = re.search(r'\[data-theme="dark"\]\s*\{([^}]+)\}', css, re.DOTALL)
+    assert theme_match is not None
+    theme_names = set(_CSS_DEF.findall(theme_match.group(1)))
+    # Semantic aliases live on the theme seam (tier 2).
+    for token in ("--border-subtle", "--status-pass", "--status-fail", "--accent"):
+        assert token in theme_names
 
 
 def test_var_refs_without_fallback_resolve_in_stylesheet() -> None:
