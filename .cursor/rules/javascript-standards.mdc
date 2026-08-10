@@ -17,19 +17,27 @@ Lint config: root **`eslint.config.js`** — run **`make js-lint`** (or `npm run
 
 | Path | Role |
 |------|------|
-| `engine/src/repave_engine/static/repave.js` | Portal UI (IIFE, no bundler, served as static asset) |
+| `engine/src/repave_engine/static/repave.js` | Shared portal UI (IIFE, no bundler, served as static asset) |
+| `engine/src/repave_engine/static/*.mjs` | Page-scoped native ES modules (no bundler; loaded only from the pages that need them) |
 | `.github/commitlint.config.mjs` | Commitlint config (ESM, Node) |
 
 Do not add npm build steps or frontend frameworks to the portal static bundle without an explicit design decision.
 
 ## Portal script (`repave.js`)
 
-- **Single IIFE**, **`defer`** load from `base.html` — keep globals minimal; expose **`window.repavePortal`** only for template hooks.
+- **Shared IIFE**, **`defer`** load from `base.html` — keep globals minimal; expose **`window.repavePortal`** only for template hooks.
 - **DOM:** prefer **`querySelector` / `addEventListener`**; use **`hidden`**, **`classList`**, and **`aria-*`** for stepper/tabs (see existing `initFormStepper`, file explorer).
 - **Custom events:** preserve **`repave:stepper-*`** and related contracts — templates and tests depend on them.
 - **Storage:** wrap **`sessionStorage` / `localStorage`** in try/catch (private mode, quota).
 - **Forms:** stepper forms use **`novalidate`** + JS validation in `initFormStepper`; do not re-enable native validation that blocks dry-run from early steps.
 - **Style:** existing file uses **`var`**; prefer **`const` / `let`** in **new** functions; match surrounding code when editing legacy blocks.
+
+## Page-scoped modules (`static/*.mjs`)
+
+- Load with **`<script type="module">`** from a template `{% block scripts %}` — not from `base.html` for every page.
+- Prefer **`const` / `let`**; feature-detect modern APIs and respect **`prefers-reduced-motion`**.
+- May set a small page global (for example **`window.repaveHome`**) when shared portal code must call back into the page module.
+- No bundler; browsers resolve bare relative imports natively if used.
 
 ## Node / ESM (`.github/*.mjs`)
 

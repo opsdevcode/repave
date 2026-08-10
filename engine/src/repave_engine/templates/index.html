@@ -2,6 +2,14 @@
 
 {% block title %}repave{% endblock %}
 
+{% block head %}
+<style>
+  @view-transition {
+    navigation: auto;
+  }
+</style>
+{% endblock %}
+
 {% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
@@ -40,11 +48,11 @@
     {% endfor %}
     <ul class="home-hero__metrics" aria-label="Catalog summary">
       <li>
-        <span class="home-hero__metric-value">{{ stats.paths }}</span>
+        <repave-metric class="home-hero__metric-value" value="{{ stats.paths }}">{{ stats.paths }}</repave-metric>
         <span class="home-hero__metric-label">golden paths</span>
       </li>
       <li>
-        <span class="home-hero__metric-value">{{ catalog_groups|length }}</span>
+        <repave-metric class="home-hero__metric-value" value="{{ catalog_groups|length }}">{{ catalog_groups|length }}</repave-metric>
         <span class="home-hero__metric-label">artifact families</span>
       </li>
       <li class="home-hero__metric-note">
@@ -81,13 +89,27 @@
     class="catalog-search__input field__input"
     type="search"
     id="catalog-search-input"
-    placeholder="Name, description, or gate…"
+    placeholder="Name, description, or gate… (press / to focus)"
     autocomplete="off"
     data-catalog-search-input
   />
   <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
 </div>
 {% endif %}
+
+<section
+  class="recent-paths"
+  data-recent-paths
+  aria-labelledby="recent-paths-heading"
+  hidden
+>
+  <header class="recent-paths__header">
+    <h2 id="recent-paths-heading" class="recent-paths__title">Jump back in</h2>
+    <p class="muted recent-paths__lead">Recently opened golden paths on this device</p>
+  </header>
+  <ul class="recent-paths__list" data-recent-paths-list></ul>
+</section>
+
 {% if recent_activity %}
 <section class="activity-card card" id="recent-activity" aria-labelledby="activity-heading">
   <div class="card__header">
@@ -143,6 +165,11 @@
             class="catalog-inventory__item catalog-inventory__item--bundle"
             href="/bundles/{{ bundle.name }}"
             data-catalog-card
+            data-peek-name="{{ bundle.name }}"
+            data-peek-version="{{ bundle.version }}"
+            data-peek-gates="{{ bundle.members|length }} members"
+            data-peek-standard="composite bundle"
+            data-peek-description="{{ bundle.description or '' }}"
             data-search-text="{{ bundle.name }} {{ bundle.description or '' }} bundle composite"
           >
             <span class="catalog-inventory__item-head">
@@ -183,6 +210,11 @@
             class="catalog-inventory__item catalog-inventory__item--{{ bp.artifact_type }}"
             href="/blueprints/{{ bp.name }}"
             data-catalog-card
+            data-peek-name="{{ bp.name }}"
+            data-peek-version="{{ bp.version }}"
+            data-peek-gates="{{ bp.gates|join(', ') }}"
+            data-peek-standard="{{ bp.standard_source.rsplit('/', 1)[-1] }}"
+            data-peek-description="{{ bp.description or '' }}"
             data-search-text="{{ bp.name }} {{ bp.description or '' }} {{ bp.gates | join(' ') }} {{ bp.standard_source }}"
           >
             <span class="catalog-inventory__item-head">
@@ -219,4 +251,8 @@
 </section>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/repave-home.mjs?v={{ app_version }}"></script>
 {% endblock %}

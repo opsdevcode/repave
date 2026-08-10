@@ -32,11 +32,12 @@ make test-fast      # includes portal HTTP tests (test_api.py)
 
 CI runs **`npm ci && npm run lint:js`** in **Python quality and security** when `ci_needed` is true.
 
-## Portal (`repave.js`)
+## Portal (`repave.js` + page modules)
 
-- Loaded with **`defer`** from `templates/base.html`.
+- Shared bundle loaded with **`defer`** from `templates/base.html`.
 - Initialization on **`DOMContentLoaded`**; feature entrypoints **`init*`** functions.
 - **`window.repavePortal`**: `saveLastRun`, `renderLastRun`, `showToast` — keep API stable for templates.
+- Page-scoped native ES modules (for example `repave-home.mjs`) load from template `{% block scripts %}` only on pages that need them; may expose a small page global such as **`window.repaveHome`**.
 - Stepper / dry-run / apply flows must stay aligned with **`engine/tests/test_api.py`** and **portal-ui-behavior** rule.
 
 ## Security (summary)
