@@ -2591,13 +2591,6 @@
     display: none;
   }
 
-  .form-actions__preflight .form-actions__stream {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-3);
-  }
-
   .form-actions__toolbar .form-actions__delivery .segmented__option {
     padding: 0.35rem 0.55rem;
     font-size: 0.82rem;

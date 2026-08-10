@@ -332,7 +332,8 @@ Portal strings are **product copy**, not engine documentation.
   in `docs/` or code comments only.
 - **Plan / Apply:** sticky bar exposes only **Plan preview** and **Apply** CTAs
   (no Plan/Apply radio group). Wire fields `dry_run` / `data-dry-run-*` stay; buttons
-  set mode on submit. Optional stream-gates lives under Preflight when not required.
+  set mode on submit. When the run queue is enabled, `stream=1` is always submitted
+  (no Stream gates checkbox).
 
 Governance rail **Lineage** row: engine version + `repave.yaml` — same terms as
 the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.

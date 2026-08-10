@@ -8,11 +8,5 @@
   </summary>
   <div class="form-actions__preflight">
     {% include "partials/governance_preflight.html" %}
-    {% if async_generation_enabled and not async_generation_required %}
-    <label class="form-actions__stream hint">
-      <input type="checkbox" name="stream" value="1" />
-      Stream gates (live console)
-    </label>
-    {% endif %}
   </div>
 </details>

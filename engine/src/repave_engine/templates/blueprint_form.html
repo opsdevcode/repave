@@ -1111,7 +1111,7 @@
       <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
       <div class="form-actions__toolbar form-actions__toolbar--solo">
-        {% if async_generation_enabled and async_generation_required %}
+        {% if async_generation_enabled %}
         <input type="hidden" name="stream" value="1" />
         {% endif %}
         {% include "partials/delivery_mode_toggle.html" %}

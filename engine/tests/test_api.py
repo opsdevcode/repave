@@ -545,6 +545,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert 'name="dry_run" value="true"' in response.text
     assert 'name="dry_run" value="false"' in response.text
     assert "form-actions__delivery--wire" in response.text
+    assert "Stream gates" not in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
@@ -572,6 +573,8 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
+    assert 'streamBox.type === "checkbox"' in body
+    assert "hidden stream=1 always forces" in body
 
     home = client.get("/static/repave-home.mjs")
     assert home.status_code == 200
