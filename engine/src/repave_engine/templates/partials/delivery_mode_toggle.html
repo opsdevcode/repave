@@ -1,14 +1,5 @@
-<div
-  class="segmented publish-toggle form-actions__delivery"
-  role="radiogroup"
-  aria-label="Delivery mode"
->
-  <label class="segmented__option">
-    <input type="radio" name="dry_run" value="true" checked data-delivery-plan />
-    Plan (validate only)
-  </label>
-  <label class="segmented__option">
-    <input type="radio" name="dry_run" value="false" data-delivery-apply />
-    Apply (publish to GitHub)
-  </label>
+{# Hidden wire for dry_run; sticky CTAs set Plan vs Apply via JS (data-dry-run-*). #}
+<div class="form-actions__delivery form-actions__delivery--wire" hidden>
+  <input type="radio" name="dry_run" value="true" checked data-delivery-plan tabindex="-1" />
+  <input type="radio" name="dry_run" value="false" data-delivery-apply tabindex="-1" />
 </div>

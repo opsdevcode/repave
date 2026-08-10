@@ -2581,10 +2581,21 @@
     width: 100%;
   }
 
-  .form-actions__toolbar .form-actions__delivery {
+  .form-actions__toolbar .form-actions__delivery:not([hidden]) {
     flex: 1 1 auto;
     min-width: min(100%, 18rem);
     max-width: 26rem;
+  }
+
+  .form-actions__delivery--wire {
+    display: none;
+  }
+
+  .form-actions__preflight .form-actions__stream {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
   }
 
   .form-actions__toolbar .form-actions__delivery .segmented__option {

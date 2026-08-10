@@ -518,8 +518,8 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "governance-card__summary-meta" in response.text
     assert "form-layout--split" in response.text
     assert "form-panel--terraform" in response.text
-    assert "Plan (validate only)" in response.text
-    assert "Apply (publish to GitHub)" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Apply (publish to GitHub)" not in response.text
     assert "chip" in response.text
     assert "service-presets" in response.text
     assert "form-validation" in response.text
@@ -541,8 +541,10 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "Plan preview" in response.text
     assert ">Apply<" in response.text or ">Apply</button>" in response.text
     assert "form-actions__preflight-details" in response.text
-    assert "form-actions__toolbar" in response.text
-    assert "form-actions__delivery" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert 'name="dry_run" value="true"' in response.text
+    assert 'name="dry_run" value="false"' in response.text
+    assert "form-actions__delivery--wire" in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
@@ -763,9 +765,10 @@ def test_ansible_role_form_single_page(repo_root, output_config) -> None:
     assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "Apply (publish to GitHub)" in response.text
-    assert "form-actions__delivery" in response.text
-    assert "form-actions__toolbar" in response.text
+    assert "Apply (publish to GitHub)" not in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert "Plan preview" in response.text
     assert "governance-card__gates-details" not in response.text
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
@@ -1135,7 +1138,8 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert "Backstage catalog" in response.text
     assert "governance-card__details" in response.text
     assert "data-form-stepper" not in response.text
-    assert "Plan (validate only)" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Plan preview" in response.text
     assert "data-dry-run-run" in response.text
     assert 'id="catalog_lifecycle"' in response.text
     assert 'id="runtime"' in response.text

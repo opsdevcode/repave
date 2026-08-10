@@ -12,7 +12,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Route | Template | Highlights |
 | --- | --- | --- |
 | Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
-| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** + Delivery plan/apply; scope filter, presets, validation |
+| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** / **Apply** (no mode radios); scope filter, presets, validation |
 | Generation result | `result.html` | Status hero, lineage + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
@@ -330,8 +330,9 @@ Portal strings are **product copy**, not engine documentation.
 - **Hide:** README section titles (`## Provenance`), “synced on generate”, render
   pipeline steps, the word “receipt”, and other implementation details that belong
   in `docs/` or code comments only.
-- **Plan / Apply:** validate-only mode is **Plan** (CTA **Plan preview**); write
-  mode is **Apply**. Keep wire fields `dry_run` / `data-dry-run-*` unchanged.
+- **Plan / Apply:** sticky bar exposes only **Plan preview** and **Apply** CTAs
+  (no Plan/Apply radio group). Wire fields `dry_run` / `data-dry-run-*` stay; buttons
+  set mode on submit. Optional stream-gates lives under Preflight when not required.
 
 Governance rail **Lineage** row: engine version + `repave.yaml` — same terms as
 the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
