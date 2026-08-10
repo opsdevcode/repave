@@ -3,8 +3,8 @@
  * Loaded only from index.html. Shared chrome stays in repave.js.
  */
 const RECENT_PATHS_KEY = "repave:recentPaths";
-/** Last N opened golden paths shown in the Jump back in strip (oldest → newest). */
-const RECENT_PATHS_MAX = 4;
+/** Last N opened golden paths in the compact quick strip. */
+const RECENT_PATHS_MAX = 3;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -80,6 +80,7 @@ function recordRecentPath(entry) {
 
 function initHomeResumeChip() {
   const mount = document.getElementById("home-resume-chip");
+  const quick = document.querySelector("[data-home-quick]");
   if (!mount) {
     return;
   }
@@ -87,58 +88,33 @@ function initHomeResumeChip() {
   const run = readLastRun();
   if (!run || !run.blueprint) {
     mount.hidden = true;
+    syncHomeQuickVisibility(quick);
     return;
   }
   const href = "/blueprints/" + encodeURIComponent(run.blueprint);
+  const label = document.createElement("span");
+  label.className = "home-quick__label muted";
+  label.textContent = "Resume";
   const link = document.createElement("a");
-  link.className = "btn btn--secondary";
+  link.className = "home-quick__link";
   link.href = href;
-  link.append("Resume ");
   const code = document.createElement("code");
   code.textContent = run.blueprint;
   link.append(code);
-  mount.append(link);
+  mount.append(label, link);
   mount.hidden = false;
+  syncHomeQuickVisibility(quick);
 }
 
-function initDemoPipelineFallback() {
-  const pipeline = document.querySelector("[data-demo-pipeline]");
-  if (!pipeline) {
+function syncHomeQuickVisibility(quick) {
+  if (!quick) {
     return;
   }
-  const steps = pipeline.querySelectorAll(".demo-pipeline__step");
-  if (!steps.length) {
-    return;
-  }
-  if (prefersReducedMotion()) {
-    steps.forEach((step) => step.classList.add("is-lit"));
-    pipeline.classList.add("is-animated");
-    return;
-  }
-  // Scroll-driven CSS handles browsers with animation-timeline: view().
-  // IntersectionObserver remains the progressive enhancement fallback.
-  if (CSS.supports && CSS.supports("animation-timeline: view()")) {
-    pipeline.classList.add("is-scroll-driven");
-    return;
-  }
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) {
-          return;
-        }
-        pipeline.classList.add("is-animated");
-        steps.forEach((step, index) => {
-          window.setTimeout(() => {
-            step.classList.add("is-lit");
-          }, index * 420);
-        });
-        observer.disconnect();
-      });
-    },
-    { threshold: 0.35 }
-  );
-  observer.observe(pipeline);
+  const resume = document.getElementById("home-resume-chip");
+  const list = quick.querySelector("[data-recent-paths-list]");
+  const hasResume = resume && !resume.hidden && resume.childElementCount > 0;
+  const hasRecent = list && list.children.length > 0;
+  quick.hidden = !(hasResume || hasRecent);
 }
 
 function initCatalogCardMotion() {
@@ -432,11 +408,6 @@ function initCatalogPeeks() {
 }
 
 function initCatalogNavigation() {
-  const wordmark = document.querySelector(".home-hero__wordmark");
-  if (wordmark) {
-    wordmark.style.viewTransitionName = "repave-wordmark";
-  }
-
   document.querySelectorAll("[data-catalog-card]").forEach((card) => {
     card.addEventListener("click", () => {
       const name = card.getAttribute("data-peek-name") || card.textContent.trim();
@@ -457,42 +428,38 @@ function initCatalogNavigation() {
 }
 
 function initRecentRail() {
-  const mount = document.querySelector("[data-recent-paths]");
-  if (!mount) {
-    return;
-  }
-  const list = mount.querySelector("[data-recent-paths-list]");
+  const quick = document.querySelector("[data-home-quick]");
+  const list = document.querySelector("[data-recent-paths-list]");
   if (!list) {
     return;
   }
   list.replaceChildren();
-  // Storage is newest-first; render oldest→newest so each new path grows to the right.
-  const entries = readRecentPaths().slice(0, RECENT_PATHS_MAX).reverse();
+  const entries = readRecentPaths().slice(0, RECENT_PATHS_MAX);
   if (!entries.length) {
-    mount.hidden = true;
+    syncHomeQuickVisibility(quick);
     return;
   }
+  const label = document.createElement("li");
+  label.className = "home-quick__label-item";
+  const labelSpan = document.createElement("span");
+  labelSpan.className = "home-quick__label muted";
+  labelSpan.textContent = "Recent";
+  label.append(labelSpan);
+  list.append(label);
   entries.forEach((entry) => {
     if (!entry || !entry.href || !entry.name) {
       return;
     }
     const li = document.createElement("li");
-    li.className = "recent-paths__item";
+    li.className = "home-quick__item";
     const a = document.createElement("a");
-    a.className = "recent-paths__link";
+    a.className = "home-quick__link";
     a.href = entry.href;
     a.textContent = entry.name;
-    if (entry.version) {
-      const ver = document.createElement("span");
-      ver.className = "badge badge--muted";
-      ver.textContent = "v" + entry.version;
-      a.append(" ");
-      a.append(ver);
-    }
     li.append(a);
     list.append(li);
   });
-  mount.hidden = list.children.length === 0;
+  syncHomeQuickVisibility(quick);
 }
 
 class RepaveMetric extends HTMLElement {
@@ -545,7 +512,6 @@ function registerMetricElement() {
 function boot() {
   registerMetricElement();
   initHomeResumeChip();
-  initDemoPipelineFallback();
   initCatalogCardMotion();
   initCatalogSearch();
   initCatalogPeeks();

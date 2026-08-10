@@ -82,7 +82,6 @@ def test_import_nav_entry_is_present(client: TestClient) -> None:
 
     assert 'href="/import"' in body
     assert ">Import</a>" in body
-    assert "Import existing repo" in body
 
 
 def test_import_requires_a_target(client: TestClient) -> None:

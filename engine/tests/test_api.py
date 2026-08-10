@@ -45,23 +45,23 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'id="repave-toast"' in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
-    assert "home-hero" in response.text
+    assert "home-console" in response.text
     assert 'rel="icon"' in response.text
     assert "/static/brand/favicon.svg" in response.text
     assert "/static/brand/svg/repave-mark.svg" in response.text
     assert "shell__wordmark" in response.text
-    assert "From fragmented to governed" in response.text
+    assert "Golden paths" in response.text
     assert 'property="og:image"' in response.text
     assert "static/brand/social/repave-social-card.png" in response.text
     assert 'name="twitter:card"' in response.text
-    assert "data-demo-pipeline" in response.text
+    assert "data-home-quick" in response.text
     assert "catalog-inventory__item-icon" in response.text
     assert "catalog-inventory__category" in response.text
     assert "catalog-inventory__summary" in response.text
     assert "<details" in response.text
     assert "Golden paths" in response.text
     assert 'href="/library"' in response.text
-    assert "Browse library" in response.text
+    assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text
     assert "shell__bar-start" in response.text
     assert "shell__search" in response.text
@@ -128,7 +128,7 @@ def test_activity_page(repo_root, output_config) -> None:
     assert "data-portal-view-toggle" in response.text or "audit.enabled" in response.text
 
 
-def test_home_recent_activity_uses_artifact_labels(
+def test_home_does_not_embed_activity_feed(
     repo_root, output_config, tmp_path: Path, monkeypatch
 ) -> None:
     audit_path = tmp_path / "audit.jsonl"
@@ -151,29 +151,17 @@ def test_home_recent_activity_uses_artifact_labels(
     )
     response = client.get("/")
     assert response.status_code == 200
-    assert "Recent activity" in response.text
-    assert 'class="home-activity"' in response.text
-    assert 'class="activity-story"' in response.text
-    assert ">vpc-demo<" in response.text
-    assert "via terraform-module-generic@0.12.0" in response.text
-    assert "terraform-module-generic @ 0.12.0" not in response.text
-    assert "activity-list__detail" not in response.text
-    assert "Latest applies and publishes across this portal" in response.text
+    assert 'class="home-activity"' not in response.text
+    assert 'class="activity-story"' not in response.text
+    assert ">vpc-demo<" not in response.text
+    assert 'href="/activity"' in response.text
 
 
-def test_home_recent_activity_empty_when_audit_enabled(
-    repo_root, output_config, tmp_path: Path, monkeypatch
-) -> None:
-    audit_path = tmp_path / "audit.jsonl"
-    audit_path.write_text("", encoding="utf-8")
-    monkeypatch.setenv("REPAVE_AUDIT_FILE", str(audit_path))
+def test_home_no_activity_link_when_audit_disabled(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
     assert response.status_code == 200
-    assert "Recent activity" in response.text
-    assert "No applies yet" in response.text
-    assert 'href="#golden-paths"' in response.text
-    assert 'class="activity-story"' not in response.text
+    assert 'class="home-activity"' not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:
@@ -183,12 +171,11 @@ def test_index_catalog_search(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "data-catalog-search" in response.text
     assert "data-catalog-card" in response.text
-    assert "home-hero__mesh" in response.text
+    assert "home-console__title" in response.text
     assert "/static/repave-home.mjs" in response.text
     assert 'type="module"' in response.text
-    assert "data-recent-paths" in response.text
+    assert "data-home-quick" in response.text
     assert "data-peek-name=" in response.text
-    assert "<repave-metric" in response.text
     assert "@view-transition" in response.text
 
 
@@ -251,7 +238,7 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert "@layer tokens, base, components, pages, utilities;" in response.text
     assert '[data-theme="dark"]' in response.text
     assert ".shell__wordmark" in response.text
-    assert ".home-hero" in response.text
+    assert ".home-console" in response.text
     assert "color-scheme: dark" in response.text
     assert ".shell__atmosphere" in response.text
     assert ".alert--fail" in response.text
@@ -582,7 +569,7 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
 
     home = client.get("/static/repave-home.mjs")
     assert home.status_code == 200
-    assert "initDemoPipelineFallback" in home.text
+    assert "syncHomeQuickVisibility" in home.text
     assert "initCatalogCardMotion" in home.text
 
 
