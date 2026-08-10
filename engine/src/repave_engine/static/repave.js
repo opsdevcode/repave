@@ -1716,6 +1716,260 @@
     bindFeedbackCapture(root);
   }
 
+  function runStatusLabel(status) {
+    if (status === "dead_letter") {
+      return "Dead letter";
+    }
+    if (status === "queued") {
+      return "Queued";
+    }
+    if (status === "running") {
+      return "Running";
+    }
+    if (status === "succeeded") {
+      return "Succeeded";
+    }
+    if (status === "failed") {
+      return "Failed";
+    }
+    return status || "Unknown";
+  }
+
+  function runStatusBadgeClass(status) {
+    if (status === "succeeded") {
+      return "badge badge--pass";
+    }
+    if (status === "failed" || status === "dead_letter") {
+      return "badge badge--fail";
+    }
+    return "badge badge--muted";
+  }
+
+  function runTimelineDotClass(status) {
+    if (status === "succeeded") {
+      return "runs-timeline__dot runs-timeline__dot--pass";
+    }
+    if (status === "failed" || status === "dead_letter") {
+      return "runs-timeline__dot runs-timeline__dot--fail";
+    }
+    return "runs-timeline__dot runs-timeline__dot--active";
+  }
+
+  function formatRelativeUpdated(iso) {
+    if (!iso) {
+      return "";
+    }
+    var then = Date.parse(iso);
+    if (Number.isNaN(then)) {
+      return iso;
+    }
+    var seconds = Math.max(0, Math.round((Date.now() - then) / 1000));
+    if (seconds < 45) {
+      return "just now";
+    }
+    if (seconds < 3600) {
+      return Math.round(seconds / 60) + "m ago";
+    }
+    if (seconds < 86400) {
+      return Math.round(seconds / 3600) + "h ago";
+    }
+    return iso;
+  }
+
+  function initRunsIndex() {
+    var root = document.querySelector("[data-runs-index]");
+    if (!root) {
+      return;
+    }
+    var statusFilter = root.getAttribute("data-status-filter") || "";
+    var canReplay = root.getAttribute("data-can-replay") === "1";
+    var liveHint = root.querySelector("[data-runs-live-hint]");
+    var pollMs = 3000;
+    var inFlight = false;
+    var timer = null;
+    var lastFingerprint = "";
+
+    function collectDomIds() {
+      var ids = {};
+      root.querySelectorAll("[data-run-id]").forEach(function (el) {
+        var id = el.getAttribute("data-run-id");
+        if (id) {
+          ids[id] = true;
+        }
+      });
+      return ids;
+    }
+
+    function ensureReplayForm(actions, runId, status) {
+      if (!actions) {
+        return;
+      }
+      var existing = actions.querySelector("[data-run-replay]");
+      var terminalFail = status === "failed" || status === "dead_letter";
+      if (!canReplay || !terminalFail) {
+        if (existing) {
+          existing.remove();
+        }
+        return;
+      }
+      if (existing) {
+        return;
+      }
+      var form = document.createElement("form");
+      form.method = "post";
+      form.action = "/runs/" + encodeURIComponent(runId) + "/replay";
+      form.style.display = "inline";
+      form.setAttribute("data-run-replay", "");
+      var button = document.createElement("button");
+      button.className = "btn btn--secondary btn--sm";
+      button.type = "submit";
+      button.textContent = "Replay";
+      form.appendChild(button);
+      actions.appendChild(form);
+    }
+
+    function updateBadges(scope, run) {
+      scope.querySelectorAll("[data-run-status-badge]").forEach(function (badge) {
+        badge.className = runStatusBadgeClass(run.status);
+        badge.setAttribute("data-status", run.status);
+        badge.textContent = runStatusLabel(run.status);
+      });
+      scope.querySelectorAll("[data-run-updated]").forEach(function (timeEl) {
+        timeEl.setAttribute("datetime", run.updated_at || "");
+        timeEl.setAttribute("data-sort-value", run.updated_at || "");
+        timeEl.textContent = formatRelativeUpdated(run.updated_at) || run.updated_at || "";
+      });
+      scope.querySelectorAll("[data-run-attempts]").forEach(function (attemptsEl) {
+        attemptsEl.setAttribute("data-sort-value", String(run.attempt_count || 0));
+        attemptsEl.textContent = String(run.attempt_count || 0);
+      });
+      scope.querySelectorAll("[data-run-attempts-label]").forEach(function (labelEl) {
+        var count = run.attempt_count || 0;
+        labelEl.textContent = count + (count === 1 ? " attempt" : " attempts");
+      });
+      scope.querySelectorAll("[data-run-timeline-dot]").forEach(function (dot) {
+        dot.className = runTimelineDotClass(run.status);
+      });
+      scope.querySelectorAll("[data-run-actions]").forEach(function (actions) {
+        ensureReplayForm(actions, run.run_id, run.status);
+      });
+      var errorCode = scope.querySelector("[data-run-error]");
+      if (errorCode && run.error) {
+        errorCode.textContent = run.error;
+      }
+    }
+
+    function fingerprint(runs) {
+      return runs
+        .map(function (run) {
+          return [
+            run.run_id,
+            run.status,
+            run.updated_at || "",
+            String(run.attempt_count || 0),
+            run.error || "",
+          ].join(":");
+        })
+        .join("|");
+    }
+
+    function syncRuns(runs) {
+      if (!Array.isArray(runs)) {
+        return;
+      }
+      var domIds = collectDomIds();
+      var apiIds = {};
+      var needsReload = false;
+      runs.forEach(function (run) {
+        if (!run || !run.run_id) {
+          return;
+        }
+        apiIds[run.run_id] = true;
+        if (!domIds[run.run_id]) {
+          needsReload = true;
+        }
+      });
+      Object.keys(domIds).forEach(function (id) {
+        if (!apiIds[id]) {
+          needsReload = true;
+        }
+      });
+      if (needsReload) {
+        window.location.reload();
+        return;
+      }
+      var next = fingerprint(runs);
+      if (next === lastFingerprint) {
+        if (liveHint) {
+          liveHint.hidden = false;
+          liveHint.textContent = "live";
+        }
+        return;
+      }
+      lastFingerprint = next;
+      runs.forEach(function (run) {
+        var escaped =
+          typeof CSS !== "undefined" && CSS.escape
+            ? CSS.escape(run.run_id)
+            : String(run.run_id).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+        root.querySelectorAll('[data-run-id="' + escaped + '"]').forEach(function (node) {
+          updateBadges(node, run);
+        });
+      });
+      if (liveHint) {
+        liveHint.hidden = false;
+        liveHint.textContent = "updated " + formatRelativeUpdated(new Date().toISOString());
+      }
+    }
+
+    function poll() {
+      if (document.hidden || inFlight) {
+        return;
+      }
+      inFlight = true;
+      var url = "/api/v1/runs?limit=50";
+      if (statusFilter) {
+        url += "&status=" + encodeURIComponent(statusFilter);
+      }
+      fetch(url, { credentials: "same-origin" })
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error("runs list failed");
+          }
+          return res.json();
+        })
+        .then(function (body) {
+          syncRuns((body && body.runs) || []);
+        })
+        .catch(function () {
+          if (liveHint) {
+            liveHint.hidden = false;
+            liveHint.textContent = "refresh paused";
+          }
+        })
+        .finally(function () {
+          inFlight = false;
+        });
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) {
+        poll();
+      }
+    });
+    poll();
+    timer = window.setInterval(poll, pollMs);
+    window.addEventListener(
+      "beforeunload",
+      function () {
+        if (timer) {
+          window.clearInterval(timer);
+        }
+      },
+      { once: true }
+    );
+  }
+
   function initRunConsole() {
     var root = document.querySelector("[data-run-console]");
     if (!root) {
@@ -2333,6 +2587,7 @@
         currentGate = "";
         finishedGates = totalGates;
         runComplete = true;
+        stopStatusPolling();
         if (isPipelineRun) {
           markPipelineComplete();
         } else if (isFleetDriftConfirm) {
@@ -2371,12 +2626,12 @@
             }
             appendLog("Publish failed — review the error above or open the result page.");
           } else {
-            window.setTimeout(function () {
-              window.location.href = resultUrl;
-            }, 800);
+            scheduleResultRedirect();
           }
         }
       } else if (data.kind === "run_failed") {
+        runComplete = true;
+        stopStatusPolling();
         setRunBusy(false);
         root.classList.add("is-failed");
         if (progressLabel) {
@@ -2390,88 +2645,157 @@
       }
     }
 
+    var pollTimer = null;
+    var redirectScheduled = false;
+
+    function stopStatusPolling() {
+      if (pollTimer) {
+        window.clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    function scheduleResultRedirect() {
+      if (redirectScheduled || !resultUrl) {
+        return;
+      }
+      redirectScheduled = true;
+      window.setTimeout(function () {
+        window.location.href = resultUrl;
+      }, 800);
+    }
+
+    function applyTerminalFromPoll(body) {
+      var status = body.status || "";
+      root.setAttribute("data-run-status", status);
+      setRunBusy(false);
+      if (completeActions) {
+        completeActions.hidden = false;
+      }
+      if (status === "failed" || status === "dead_letter") {
+        runComplete = true;
+        root.classList.add("is-failed");
+        if (progressLabel) {
+          progressLabel.textContent = "Run failed";
+        }
+        appendLog("Run failed: " + (body.error || "unknown error"));
+        if (body.result && body.result.gates) {
+          body.result.gates.forEach(function (gate) {
+            var gateStatus = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
+            setGateRow(gate.name, gateStatus, gate.message || "");
+          });
+        }
+        updateProgressBar();
+        stopStatusPolling();
+        return;
+      }
+      if (status !== "succeeded") {
+        return;
+      }
+      runComplete = true;
+      root.classList.add("is-complete");
+      if (isLivePlan || body.kind === "live_plan") {
+        setStage("checkout", "done");
+        setStage("plan", "done");
+        setStage("policy", "done");
+        updateProgressBar();
+        stopStatusPolling();
+        scheduleResultRedirect();
+        return;
+      }
+      if (isEnvironmentVend || body.kind === "environment_vend") {
+        setStage("validate", "done");
+        setStage("render", "done");
+        setStage("gates", "done");
+        if (body.result && body.result.pull_request_url) {
+          setStage("gitops", "done");
+        }
+        updateProgressBar();
+        stopStatusPolling();
+        scheduleResultRedirect();
+        return;
+      }
+      if (isFleetDriftConfirm || body.kind === "fleet_drift_confirm") {
+        setStage("verify", "done");
+        updateProgressBar();
+        stopStatusPolling();
+        scheduleResultRedirect();
+        return;
+      }
+      if (isOrgScan || body.kind === "org_scan") {
+        setStage("discover", "done");
+        setStage("classify", "done");
+        updateProgressBar();
+        stopStatusPolling();
+        scheduleResultRedirect();
+        return;
+      }
+      if (isEnvironmentReclaim || body.kind === "environment_reclaim") {
+        setStage("reclaim", "done");
+        updateProgressBar();
+        stopStatusPolling();
+        scheduleResultRedirect();
+        return;
+      }
+      if (body.result && body.result.gates) {
+        finishedGates = 0;
+        body.result.gates.forEach(function (gate) {
+          var gateStatus = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
+          setGateRow(gate.name, gateStatus, gate.message || "");
+          finishedGates += 1;
+        });
+        currentGate = "";
+        if (isPipelineRun) {
+          markPipelineComplete();
+        }
+        updateProgressBar();
+      }
+      stopStatusPolling();
+      scheduleResultRedirect();
+    }
+
     function pollStatus() {
       fetch("/api/v1/runs/" + encodeURIComponent(runId), { credentials: "same-origin" })
         .then(function (res) {
           return res.json();
         })
         .then(function (body) {
-          if (!body || body.status !== "succeeded" || !body.result) {
+          if (!body || !body.status) {
             return;
           }
-          if (isLivePlan || body.kind === "live_plan") {
-            setStage("checkout", "done");
-            setStage("plan", "done");
-            setStage("policy", "done");
-            updateProgressBar();
-            if (completeActions) {
-              completeActions.hidden = false;
-            }
-            return;
-          }
-          if (isEnvironmentVend || body.kind === "environment_vend") {
-            setStage("validate", "done");
-            setStage("render", "done");
-            setStage("gates", "done");
-            if (body.result && body.result.pull_request_url) {
-              setStage("gitops", "done");
-            }
-            updateProgressBar();
-            if (completeActions) {
-              completeActions.hidden = false;
+          root.setAttribute("data-run-status", body.status);
+          if (body.status === "queued" || body.status === "running") {
+            if (progressLabel && !runComplete) {
+              progressLabel.textContent =
+                body.status === "queued" ? "Queued…" : progressLabel.textContent || "Running…";
             }
             return;
           }
-          if (isFleetDriftConfirm || body.kind === "fleet_drift_confirm") {
-            setStage("verify", "done");
-            updateProgressBar();
-            if (completeActions) {
-              completeActions.hidden = false;
-            }
-            return;
-          }
-          if (isOrgScan || body.kind === "org_scan") {
-            setStage("discover", "done");
-            setStage("classify", "done");
-            updateProgressBar();
-            if (completeActions) {
-              completeActions.hidden = false;
-            }
-            return;
-          }
-          if (isEnvironmentReclaim || body.kind === "environment_reclaim") {
-            setStage("reclaim", "done");
-            updateProgressBar();
-            if (completeActions) {
-              completeActions.hidden = false;
-            }
-            return;
-          }
-          if (body.result.gates) {
-            finishedGates = 0;
-            body.result.gates.forEach(function (gate) {
-              var gateStatus = gate.skipped ? "skipped" : gate.passed ? "passed" : "failed";
-              setGateRow(gate.name, gateStatus, gate.message || "");
-              finishedGates += 1;
-            });
-            currentGate = "";
-            if (isPipelineRun) {
-              runComplete = true;
-              markPipelineComplete();
-              root.classList.add("is-complete");
-            }
-            updateProgressBar();
-            if (completeActions) {
-              completeActions.hidden = false;
-            }
-          }
+          applyTerminalFromPoll(body);
         })
         .catch(function () {
-          /* ignore */
+          /* ignore transient poll errors */
         });
     }
 
-    if (initialStatus === "succeeded" || initialStatus === "dead_letter") {
+    function startStatusPolling() {
+      if (pollTimer || runComplete) {
+        return;
+      }
+      pollTimer = window.setInterval(function () {
+        if (runComplete) {
+          stopStatusPolling();
+          return;
+        }
+        pollStatus();
+      }, 4000);
+    }
+
+    if (
+      initialStatus === "succeeded" ||
+      initialStatus === "failed" ||
+      initialStatus === "dead_letter"
+    ) {
       runComplete = initialStatus === "succeeded";
       setRunBusy(false);
       root.classList.add(initialStatus === "succeeded" ? "is-complete" : "is-failed");
@@ -2492,10 +2816,12 @@
       }
     };
     source.onerror = function () {
-      source.close();
+      // Keep EventSource open so the browser can reconnect; poll fills gaps.
       pollStatus();
+      startStatusPolling();
     };
 
+    startStatusPolling();
     updateProgressBar();
   }
 
@@ -2941,6 +3267,7 @@
     initOrgScanResult();
     initFeedbackCapture();
     initFormDraft();
+    initRunsIndex();
     initRunConsole();
     initResultGateAnimations();
     initRelativeTimes();

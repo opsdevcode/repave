@@ -124,7 +124,12 @@ def test_runs_index_lists_recent_runs(async_client) -> None:
             if run_id in body and "Async runs" in body:
                 assert "terraform-module-generic" in body
                 assert "data-portal-view-toggle" in body
+                assert "data-runs-index" in body
+                assert 'data-run-id="' + run_id + '"' in body
+                assert "data-run-status-badge" in body
+                assert "data-runs-live-hint" in body
                 assert "runs-timeline" in body
+                assert "initRunsIndex" in async_client.get("/static/repave.js").text
                 return
             time.sleep(0.05)
         pytest.fail("run did not appear on /runs index")

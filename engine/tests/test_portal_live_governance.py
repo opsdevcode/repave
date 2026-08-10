@@ -209,6 +209,9 @@ def test_run_console_contract(
     assert "no GitHub repository is created" in body
     assert f"/api/v1/runs/{run_id}/events" not in body
     assert 'data-run-id="' + run_id + '"' in body
+    js = client.get("/static/repave.js").text
+    assert "startStatusPolling" in js
+    assert "source.close()" not in js.split("source.onerror")[1].split("startStatusPolling")[0]
 
 
 def test_command_palette_contract(repo_root, output_config) -> None:
