@@ -121,7 +121,8 @@ layout or IA.
 - Active nav: thin amber indicator or muted amber wash — not a full amber bar.
 - Links in body copy: cool/neutral link tokens, not blanket amber.
 - Atmosphere/glow: keep low; prefer hierarchy over decoration.
-- Artifact-family badge colors stay independent of brand amber.
+- Artifact-family badge colors stay independent of brand amber (observability uses
+  teal, not gold).
 
 ## CLI guidance
 

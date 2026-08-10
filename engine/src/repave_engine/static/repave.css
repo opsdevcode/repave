@@ -94,8 +94,9 @@
     --family-ansible-text: #a8e6d9;
     --family-policy: #c4a8e8;
     --family-policy-text: #e2d4f5;
-    --family-observability: #e8a84a;
-    --family-observability-text: #ffe8c8;
+    /* Teal — distinct from brand amber (#F59E0B) so family chrome ≠ golden path */
+    --family-observability: #2dd4bf;
+    --family-observability-text: #99f6e4;
     --family-helm: #326ce5;
     --family-helm-text: #c8d8ff;
     --family-gitops: #ef7b4d;
