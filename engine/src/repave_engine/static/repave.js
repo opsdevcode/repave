@@ -193,7 +193,14 @@
       return true;
     }
     var streamBox = form.querySelector('input[name="stream"][value="1"]');
-    return Boolean(streamBox && streamBox.checked);
+    if (!streamBox || streamBox.disabled) {
+      return false;
+    }
+    // Checkbox was optional; hidden stream=1 always forces the live console path.
+    if (streamBox.type === "checkbox") {
+      return Boolean(streamBox.checked);
+    }
+    return true;
   }
 
   function applyPortalSuccessResponse(response, html) {

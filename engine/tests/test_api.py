@@ -152,10 +152,28 @@ def test_home_recent_activity_uses_artifact_labels(
     response = client.get("/")
     assert response.status_code == 200
     assert "Recent activity" in response.text
-    assert 'activity-list__artifact-name">vpc-demo<' in response.text
-    assert 'badge--muted">v0.1.0<' in response.text
+    assert 'class="home-activity"' in response.text
+    assert 'class="activity-story"' in response.text
+    assert ">vpc-demo<" in response.text
     assert "via terraform-module-generic@0.12.0" in response.text
     assert "terraform-module-generic @ 0.12.0" not in response.text
+    assert "activity-list__detail" not in response.text
+    assert "Latest applies and publishes across this portal" in response.text
+
+
+def test_home_recent_activity_empty_when_audit_enabled(
+    repo_root, output_config, tmp_path: Path, monkeypatch
+) -> None:
+    audit_path = tmp_path / "audit.jsonl"
+    audit_path.write_text("", encoding="utf-8")
+    monkeypatch.setenv("REPAVE_AUDIT_FILE", str(audit_path))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Recent activity" in response.text
+    assert "No applies yet" in response.text
+    assert 'href="#golden-paths"' in response.text
+    assert 'class="activity-story"' not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:
@@ -500,8 +518,8 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "governance-card__summary-meta" in response.text
     assert "form-layout--split" in response.text
     assert "form-panel--terraform" in response.text
-    assert "Plan (validate only)" in response.text
-    assert "Apply (publish to GitHub)" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Apply (publish to GitHub)" not in response.text
     assert "chip" in response.text
     assert "service-presets" in response.text
     assert "form-validation" in response.text
@@ -523,8 +541,11 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "Plan preview" in response.text
     assert ">Apply<" in response.text or ">Apply</button>" in response.text
     assert "form-actions__preflight-details" in response.text
-    assert "form-actions__toolbar" in response.text
-    assert "form-actions__delivery" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert 'name="dry_run" value="true"' in response.text
+    assert 'name="dry_run" value="false"' in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "Stream gates" not in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
@@ -552,6 +573,8 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
+    assert 'streamBox.type === "checkbox"' in body
+    assert "hidden stream=1 always forces" in body
 
     home = client.get("/static/repave-home.mjs")
     assert home.status_code == 200
@@ -745,9 +768,10 @@ def test_ansible_role_form_single_page(repo_root, output_config) -> None:
     assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "Apply (publish to GitHub)" in response.text
-    assert "form-actions__delivery" in response.text
-    assert "form-actions__toolbar" in response.text
+    assert "Apply (publish to GitHub)" not in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert "Plan preview" in response.text
     assert "governance-card__gates-details" not in response.text
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
@@ -1117,7 +1141,8 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert "Backstage catalog" in response.text
     assert "governance-card__details" in response.text
     assert "data-form-stepper" not in response.text
-    assert "Plan (validate only)" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Plan preview" in response.text
     assert "data-dry-run-run" in response.text
     assert 'id="catalog_lifecycle"' in response.text
     assert 'id="runtime"' in response.text

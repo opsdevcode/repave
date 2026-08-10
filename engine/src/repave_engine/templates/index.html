@@ -122,17 +122,23 @@
   <ul class="recent-paths__list" data-recent-paths-list></ul>
 </section>
 
-{% if recent_activity %}
-<section class="activity-card card" id="recent-activity" aria-labelledby="activity-heading">
-  <div class="card__header">
-    <h2 id="activity-heading">Recent activity</h2>
-    <p class="muted card__subtitle">
-      Latest applies and publishes from the audit log · <a href="/activity">View all activity</a>
+{% if audit_enabled %}
+<section class="home-activity" id="recent-activity" aria-labelledby="activity-heading">
+  <header class="home-activity__header">
+    <h2 id="activity-heading" class="home-activity__title">Recent activity</h2>
+    <p class="muted home-activity__lead">
+      Latest applies and publishes across this portal · <a href="/activity">View all activity</a>
     </p>
-  </div>
-  <div class="card__body">
-    {% include "partials/activity_list.html" %}
-  </div>
+  </header>
+  {% if recent_activity %}
+  {% set story_omit_details = true %}
+  {% include "partials/activity_story.html" %}
+  {% else %}
+  <p class="muted home-activity__empty">
+    No applies yet —
+    <a href="#golden-paths">plan or apply a golden path</a>
+  </p>
+  {% endif %}
 </section>
 {% endif %}
 

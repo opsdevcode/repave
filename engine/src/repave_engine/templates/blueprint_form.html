@@ -1099,8 +1099,8 @@
     >
       <h2 class="form-section__title" id="publish-heading">Delivery</h2>
       <p class="hint">
-        Use <strong>Plan preview</strong> to validate gates without creating a GitHub repo.
-        Click <strong>Apply</strong> to publish under your configured GitHub org (worker needs
+        <strong>Plan preview</strong> validates gates without creating a GitHub repo.
+        <strong>Apply</strong> publishes under your configured GitHub org (worker needs
         GitHub App or token).
       </p>
     </section>
@@ -1110,12 +1110,9 @@
       {% include "partials/governance_preflight_collapsible.html" %}
       <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
       <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
-      <div class="form-actions__toolbar">
+      <div class="form-actions__toolbar form-actions__toolbar--solo">
         {% if async_generation_enabled %}
-        <label class="form-actions__stream hint">
-          <input type="checkbox" name="stream" value="1"{% if async_generation_required %} checked{% endif %} />
-          {% if async_generation_required %}Stream gates (required){% else %}Stream gates{% endif %}
-        </label>
+        <input type="hidden" name="stream" value="1" />
         {% endif %}
         {% include "partials/delivery_mode_toggle.html" %}
         <div class="form-actions__buttons form-actions__buttons--stack">

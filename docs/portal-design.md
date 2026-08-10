@@ -12,7 +12,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Route | Template | Highlights |
 | --- | --- | --- |
 | Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
-| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** + Delivery plan/apply; scope filter, presets, validation |
+| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** / **Apply** (no mode radios); scope filter, presets, validation |
 | Generation result | `result.html` | Status hero, lineage + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
@@ -253,8 +253,12 @@ feedback, generate/update busy states, sticky generate bar, skip link, upgrade
 diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity,
 standards drift diff, staged generate labels, catalog search, resume chip,
 **`/activity`** page, standards drift two-pane layout, form draft restore, result
-gate filters, and update busy stages shipped. Unused home quick-nav sidebar was
-**removed** (sunset). **Platform stakeholder views** (`/platform/compliance`,
+gate filters, and update busy stages shipped. Home **Recent activity** uses a
+compact timeline strip (no detail expanders; soft empty state when audit is on);
+full list, timeline toggle, and filters stay on `/activity`. **Jump back in**
+keeps a horizontal strip of the last four device-local golden paths (newest grows
+to the right). Unused home quick-nav sidebar was **removed** (sunset).
+**Platform stakeholder views** (`/platform/compliance`,
 `/platform/value-stream`) package metrics for security and leadership without catalog chrome.
 **Platform adoption** (`/platform/adoption`) ships outcome
 metrics for golden-path adoption — see [`platform-metrics.md`](platform-metrics.md).
@@ -326,8 +330,10 @@ Portal strings are **product copy**, not engine documentation.
 - **Hide:** README section titles (`## Provenance`), “synced on generate”, render
   pipeline steps, the word “receipt”, and other implementation details that belong
   in `docs/` or code comments only.
-- **Plan / Apply:** validate-only mode is **Plan** (CTA **Plan preview**); write
-  mode is **Apply**. Keep wire fields `dry_run` / `data-dry-run-*` unchanged.
+- **Plan / Apply:** sticky bar exposes only **Plan preview** and **Apply** CTAs
+  (no Plan/Apply radio group). Wire fields `dry_run` / `data-dry-run-*` stay; buttons
+  set mode on submit. When the run queue is enabled, `stream=1` is always submitted
+  (no Stream gates checkbox).
 
 Governance rail **Lineage** row: engine version + `repave.yaml` — same terms as
 the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
