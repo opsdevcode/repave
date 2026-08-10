@@ -1,0 +1,74 @@
+<section class="card stack-gap" aria-labelledby="files-heading">
+  <div class="card__header">
+    <h2 id="files-heading">Generated files</h2>
+    <p class="muted card__subtitle">Select a path, then Copy to paste into your editor.</p>
+  </div>
+  <div class="card__body">
+    <div class="file-explorer" data-file-explorer>
+      <ul class="file-explorer__tree" role="tablist" aria-label="Generated file paths">
+        {% for file in result.rendered_files %}
+        <li role="presentation">
+          <button
+            type="button"
+            class="file-explorer__tab{% if loop.first %} is-active{% endif %}{% if file.path == 'catalog-info.yaml' %} file-explorer__tab--backstage{% endif %}"
+            role="tab"
+            aria-selected="{{ 'true' if loop.first else 'false' }}"
+            data-file-index="{{ loop.index0 }}"
+            {% if file.path == 'catalog-info.yaml' %}data-backstage-file{% endif %}
+          >
+            {{ file.path }}
+            {% if file.truncated %}
+            <span class="badge badge--skip">truncated</span>
+            {% endif %}
+          </button>
+        </li>
+        {% endfor %}
+      </ul>
+      <div class="file-explorer__preview">
+        {% for file in result.rendered_files %}
+        <div
+          class="file-explorer__pane{% if loop.first %} is-active{% endif %}"
+          role="tabpanel"
+          data-file-pane="{{ loop.index0 }}"
+          {% if not loop.first %}hidden{% endif %}
+        >
+          <div class="file-preview__toolbar">
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              data-copy-target="#file-explorer-content-{{ loop.index0 }}"
+            >
+              Copy
+            </button>
+          </div>
+          <pre class="panel-code" id="file-explorer-content-{{ loop.index0 }}">{{ file.content }}</pre>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="file-explorer-fallback">
+      {% for file in result.rendered_files %}
+      <details class="file-panel motion-panel"{% if loop.first %} open{% endif %}>
+        <summary>
+          {{ file.path }}
+          {% if file.truncated %}
+          <span class="badge badge--skip">truncated</span>
+          {% endif %}
+        </summary>
+        <div class="file-preview__body">
+          <div class="file-preview__toolbar">
+            <button
+              type="button"
+              class="btn btn--ghost btn--sm"
+              data-copy-target="#file-fallback-content-{{ loop.index0 }}"
+            >
+              Copy
+            </button>
+          </div>
+          <pre class="panel-code" id="file-fallback-content-{{ loop.index0 }}">{{ file.content }}</pre>
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+  </div>
+</section>
