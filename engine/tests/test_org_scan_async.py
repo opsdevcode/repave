@@ -207,6 +207,7 @@ def test_org_scan_result_page(tmp_path, output_config, monkeypatch) -> None:
                 "governed": False,
                 "classification_error": None,
                 "top_candidate": {
+                    "blueprint_name": "terraform-module-generic",
                     "family": "terraform",
                     "artifact_type": "terraform-module",
                     "percent": 100,
@@ -239,6 +240,7 @@ def test_org_scan_result_page(tmp_path, output_config, monkeypatch) -> None:
             assert page.status_code == 200
             assert "Organization scan" in page.text
             assert "data-org-scan-add-to-batch" in page.text
+            assert "data-org-scan-target-blueprints" in page.text
             assert "https://github.com/acme/vpc" in page.text
     finally:
         queue.close()

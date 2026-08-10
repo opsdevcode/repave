@@ -12,10 +12,12 @@ from repave_engine.repo_import import (
     ImportBatchPlan,
     ImportPlan,
     RepoImportError,
+    build_default_family_blueprint_map,
     build_import_plan,
     import_repository_batch,
     materialize_import_target,
     open_import_pull_request,
+    parse_family_blueprints,
     plan_import,
     plan_import_batch,
     record_import,
@@ -110,6 +112,15 @@ def cmd_import(args: argparse.Namespace) -> int:
         token = resolve_github_access_token(args.github_token)
         exclude_archived = not args.include_archived
         exclude_forks = not args.include_forks
+        family_blueprints: dict[str, str] | None = None
+        if args.map_by_family:
+            family_blueprints = build_default_family_blueprint_map(repo_root)
+        if args.family_blueprints:
+            try:
+                family_blueprints = parse_family_blueprints(json.loads(args.family_blueprints))
+            except json.JSONDecodeError as exc:
+                print(f"invalid --family-blueprints JSON: {exc}", file=sys.stderr)
+                return 2
         try:
             if args.open_pr:
                 if not token:
@@ -124,6 +135,7 @@ def cmd_import(args: argparse.Namespace) -> int:
                     repo_root,
                     github_token=token,
                     blueprint_name=args.blueprint,
+                    family_blueprints=family_blueprints,
                     org=args.org,
                     topic=args.topic,
                     language=args.language,
@@ -146,6 +158,7 @@ def cmd_import(args: argparse.Namespace) -> int:
                 targets,
                 repo_root,
                 blueprint_name=args.blueprint,
+                family_blueprints=family_blueprints,
                 path_overrides=overrides,
                 git_token=token,
                 org=args.org,

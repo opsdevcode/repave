@@ -1122,6 +1122,7 @@
   }
 
   var IMPORT_BATCH_TARGETS_KEY = "repave:import-batch-targets";
+  var IMPORT_BATCH_BLUEPRINTS_KEY = "repave:import-batch-target-blueprints";
 
   function mergeTargetUrls(existingText, urls) {
     var existing = existingText
@@ -1151,15 +1152,24 @@
     }
     try {
       var raw = sessionStorage.getItem(IMPORT_BATCH_TARGETS_KEY);
+      var blueprintRaw = sessionStorage.getItem(IMPORT_BATCH_BLUEPRINTS_KEY);
       if (!raw) {
         return;
       }
       sessionStorage.removeItem(IMPORT_BATCH_TARGETS_KEY);
+      sessionStorage.removeItem(IMPORT_BATCH_BLUEPRINTS_KEY);
       var urls = JSON.parse(raw);
       if (!Array.isArray(urls) || !urls.length) {
         return;
       }
       targets.value = mergeTargetUrls(targets.value, urls);
+      var blueprintField = document.getElementById("target-blueprints-json");
+      if (blueprintField && blueprintRaw) {
+        var blueprints = JSON.parse(blueprintRaw);
+        if (blueprints && typeof blueprints === "object") {
+          blueprintField.value = JSON.stringify(blueprints);
+        }
+      }
       if (window.Repave && window.Repave.showToast) {
         window.Repave.showToast("Added " + urls.length + " repositories to the batch list.");
       }
@@ -1178,6 +1188,7 @@
       return;
     }
     var raw = root.getAttribute("data-org-scan-urls") || "[]";
+    var blueprintRaw = root.getAttribute("data-org-scan-target-blueprints") || "{}";
     button.addEventListener("click", function () {
       try {
         var urls = JSON.parse(raw);
@@ -1185,6 +1196,10 @@
           return;
         }
         sessionStorage.setItem(IMPORT_BATCH_TARGETS_KEY, JSON.stringify(urls));
+        var blueprints = JSON.parse(blueprintRaw);
+        if (blueprints && typeof blueprints === "object" && Object.keys(blueprints).length) {
+          sessionStorage.setItem(IMPORT_BATCH_BLUEPRINTS_KEY, JSON.stringify(blueprints));
+        }
         window.location.href = "/import/batch";
       } catch (_err) {
         /* ignore */

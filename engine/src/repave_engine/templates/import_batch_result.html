@@ -66,6 +66,7 @@
       <input type="hidden" name="org" value="{{ org }}" />
       <input type="hidden" name="topic" value="{{ topic }}" />
       <input type="hidden" name="blueprint" value="{{ selected_blueprint }}" />
+      <input type="hidden" name="target_blueprints_json" value="{{ target_blueprints_json or '' }}" />
       <p class="hint muted">Requires push access via <code>GITHUB_TOKEN</code> or GitHub App credentials.</p>
       <button class="btn btn--primary" type="submit">Open pull requests</button>
     </form>

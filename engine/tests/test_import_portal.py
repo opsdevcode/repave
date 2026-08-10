@@ -148,6 +148,7 @@ def test_import_batch_form_renders(client: TestClient) -> None:
     assert "Scan org" in body
     assert "data-import-search-preset" in body
     assert "Terraform (HCL)" in body
+    assert "Map by artifact family" in body
 
 
 def test_import_batch_preview_plans_multiple_repos(client: TestClient, tmp_path: Path) -> None:
