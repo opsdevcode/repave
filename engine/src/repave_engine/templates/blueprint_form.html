@@ -2249,6 +2249,8 @@
     scopeInput.value = JSON.stringify(payload);
     updateScopeSummaryBar();
   }
+
+  providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
   servicesFilter.addEventListener("input", applyServiceFilter);
   servicesContainer.addEventListener("change", async () => {
     syncServicesInput();
