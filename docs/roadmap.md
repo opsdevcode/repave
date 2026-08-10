@@ -4,7 +4,7 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.54.0  
+**Current release:** v2.55.0  
 
 **In progress:** [Service catalog maturity](#service-catalog-maturity-v2x) (OpsLevel-style
     rubrics, Cortex-density hub, Humanitec-style GitOps sandboxes — no AI); fine-grained Auth0 FGA
