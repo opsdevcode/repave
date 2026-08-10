@@ -1,0 +1,11 @@
+apiVersion: repave.dev/v1
+kind: Provenance
+spec:
+  artifactType: terraform-module
+  blueprint: terraform-module-generic
+  blueprintVersion: 0.1.0
+  standardSource: standards/terraform-module-standard.md
+  standardVersion: 0.1.0
+  inputs:
+    module_name: vpc
+    owner: group:platform

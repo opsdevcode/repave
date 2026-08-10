@@ -1,0 +1,17 @@
+profiles:
+  - id: api-sandbox
+    label: API sandbox
+    description: Ephemeral API stack from the environment golden path.
+    blueprint: terraform-environment-stack
+    policy_profile: standard
+    default_inputs:
+      description: Developer API sandbox
+      owner: group:platform
+  - id: data-sandbox
+    label: Data sandbox
+    description: Short-lived data plane stack for experiments.
+    blueprint: terraform-environment-stack
+    policy_profile: standard
+    default_inputs:
+      description: Developer data sandbox
+      owner: group:data

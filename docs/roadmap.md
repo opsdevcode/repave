@@ -6,8 +6,10 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.51.1  
 
-**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
-[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
+**In progress:** [Service catalog maturity](#service-catalog-maturity-v2x) (OpsLevel-style
+    rubrics, Cortex-density hub, Humanitec-style GitOps sandboxes — no AI); fine-grained Auth0 FGA
+    stays in the [parking lot](#parking-lot). v3 themes under
+    [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
 **Shipped on `main`:** **Mass GitHub org import** — classify org repos by artifact family,
 portal picker on `/import/batch`, `POST /api/v2/github/org-scan` (sync + async `kind: org_scan`
 queue runs), GitHub search filters and batch discovery, per-family and per-repo blueprint
@@ -2392,6 +2394,35 @@ promote without new discovery:
 - **Organization blueprint packs** — [forked and remote blueprint packs](#forked-and-remote-blueprint-packs)
   is the one item that lets adopters pave roads this cluster does not; pull it ahead of
   everything above if external demand appears, since nothing here substitutes for it.
+
+---
+
+## Service catalog maturity (v2.x)
+
+**Status:** **In progress on `main`** — Phase 1 foundation (catalog overlay, maturity,
+developer hub, GitOps sandboxes, initiatives admin). See
+[ADR 006](adr/006-service-catalog-and-maturity.md) and [`docs/service-catalog.md`](service-catalog.md).
+
+**Problem:** The library and fixed scorecards answer pin/cost/deployment health, but not
+OpsLevel-style maturity rubrics, Cortex-style “my services” / team / initiative views, or
+Humanitec-style named sandbox profiles — without pulling conversational AI from v3.
+
+**Approach:**
+
+- Thin `service_catalog` config overlay on `CatalogEntity` (on-call, dependsOn, maturity,
+  initiative badges, workload profile)
+- Declarative maturity rubric over existing scorecard dimensions + `/platform/maturity`
+- Workload profiles + deployment sets parameterize ADR 003 environment vending; `/sandbox`
+  self-service (GitOps-only)
+- `/home` and `/teams/{slug}` with night-ops density patterns (not a vendor rebrand)
+- Initiatives JSONL + `/platform/initiatives` CRUD (admin create)
+- platform-dev fixtures enable the full walkthrough without live GitOps
+
+**Non-goals:** runtime apply, Backstage UI replacement, AI suggestions (v3).
+
+**Done when (Phase 1):** `make platform-dev-setup && make serve` demos hub, maturity,
+sandbox request (dry-run), and initiatives; APIs expose maturity and filtered catalog
+entities; ADR 006 documents AI deferral.
 
 ---
 

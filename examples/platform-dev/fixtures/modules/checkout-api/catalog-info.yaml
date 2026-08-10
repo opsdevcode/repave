@@ -1,0 +1,15 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: checkout-api
+  description: Sample checkout API for platform-dev demos
+  annotations:
+    repave.dev/blueprint: app-service-generic
+    repave.dev/oncall: platform-oncall
+    repave.dev/workload-profile: api-sandbox
+spec:
+  type: service
+  lifecycle: production
+  owner: group:platform
+  dependsOn:
+    - component:default/tf-vpc

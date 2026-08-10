@@ -12,8 +12,8 @@ make platform-dev-setup   # copies examples/platform-dev/repave.config.platform-
 make serve                # http://127.0.0.1:8089
 ```
 
-Open **More** in the header (or links in the footer) for Fleet, Ops, FinOps, Adoption,
-Feedback, and the rest of the platform console.
+Open **My services** / **Sandbox** in the primary nav (service catalog) and **Platform**
+for Fleet, Ops, Maturity, Initiatives, FinOps, Adoption, and Feedback.
 
 ## What is enabled
 
@@ -21,6 +21,8 @@ Feedback, and the rest of the platform console.
 | --- | --- |
 | `fleet` | `/platform/fleet`, library catalog entities, campaigns (with operator snapshot) |
 | `audit` | Activity funnel, adoption time-to-first-artifact |
+| `service_catalog` | `/home`, `/teams/{slug}`, `/sandbox`, maturity overlay, initiatives |
+| `environment_vending` | Sandbox request flow + fixture registry entity in library |
 | `platform_metrics` | `/platform/adoption`, `/platform/compliance`, `/platform/value-stream`, `/platform/feedback` |
 | `portal.cost_reader: focus` + `cost_focus.file` | L30D actuals on library + FinOps rollup |
 | `portal.cost_snapshots` | Sparklines, WoW/MoM anomaly evaluation on `/platform/finops` |
@@ -35,11 +37,17 @@ FinOps or adoption pages; scrape them only if you want external dashboards.
 | --- | --- |
 | `fixtures/fleet/registry.jsonl` | Three governed repos (tf-vpc, opa-guardrails, checkout-api) |
 | `fixtures/fleet/operator-status.json` | Drift + active upgrade campaign for `/platform/campaigns` |
+| `fixtures/modules/` | Local checkouts with `catalog-info.yaml` (on-call, dependsOn) |
+| `fixtures/environments/registry.jsonl` | Sample sandbox environment for library TTL |
+| `config/maturity-rubric.yaml` | Maturity levels for `/platform/maturity` |
+| `config/workload-profiles.yaml` / `deployment-sets.yaml` | Sandbox presets on `/sandbox` |
+| `fixtures/platform-metrics/initiatives.jsonl` | Sample improvement programs |
 | `fixtures/focus/export.json` | FOCUS-shaped billing rows for cost actuals |
 | `fixtures/fleet/cost-snapshots.jsonl` | Trend series (includes a WoW spike on tf-vpc) |
 | `fixtures/audit/generation.jsonl` | Plan/apply funnel sample events |
 | `fixtures/platform-metrics/feedback.jsonl` | CSAT + friction events for `/platform/feedback` |
 
+Operator guide: [`docs/service-catalog.md`](../../docs/service-catalog.md).
 Full enablement matrix: [`docs/platform-console.md`](../../docs/platform-console.md).
 
 ## Customize

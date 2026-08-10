@@ -29,6 +29,10 @@
           <nav class="shell__nav shell__nav--primary" aria-label="Primary">
             <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>Catalog</a>
             <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>Library</a>
+            {% if service_catalog_enabled %}
+            <a href="/home" {% if nav_active == "home" %}aria-current="page"{% endif %}>My services</a>
+            <a href="/sandbox" {% if nav_active == "sandbox" %}aria-current="page"{% endif %}>Sandbox</a>
+            {% endif %}
             <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>Upgrade</a>
             <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>Verify</a>
             {% if platform_admin_visible %}

@@ -1,0 +1,2 @@
+{"id": "init-runbooks", "title": "Runbook coverage", "description": "Every governed service has an operable runbook.", "owning_team": "platform", "due_date": "2026-12-31", "target_level": 3, "target_rule_keys": ["has-runbook"], "active": true}
+{"id": "init-slo", "title": "SLO as code", "description": "Raise Reliable maturity with SLO specs.", "owning_team": "platform", "due_date": "2026-09-30", "target_level": 4, "target_rule_keys": ["has-slo"], "active": true}

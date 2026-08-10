@@ -19,11 +19,20 @@
       Local entity under <code>modules_root</code>
       {% endif %}
       {% if entity.owner %} · owner {{ entity.owner }}{% endif %}
+      {% if entity.team_slug %} · <a href="/teams/{{ entity.team_slug }}">team {{ entity.team_slug }}</a>{% endif %}
+      {% if entity.oncall %} · on-call {{ entity.oncall }}{% endif %}
     </p>
   </div>
 </header>
 
-<section class="card" aria-labelledby="pins-heading">
+<nav class="entity-tabs" aria-label="Entity sections">
+  <a href="#overview">Overview</a>
+  <a href="#scorecard">Scorecard</a>
+  <a href="#dependencies">Dependencies</a>
+  <a href="#initiatives">Initiatives</a>
+</nav>
+
+<section class="card" id="overview" aria-labelledby="pins-heading">
   <div class="card__header">
     <h2 id="pins-heading">Pins and governance</h2>
   </div>
@@ -132,11 +141,30 @@
 </section>
 {% endif %}
 
-<section class="card" aria-labelledby="scorecard-heading">
+<section class="card" id="scorecard" aria-labelledby="scorecard-heading">
   <div class="card__header">
     <h2 id="scorecard-heading">Scorecard</h2>
+    {% if entity.maturity_label %}
+    <p class="muted card__subtitle">
+      Maturity
+      <span class="badge badge--maturity">L{{ entity.maturity_level }} {{ entity.maturity_label }}</span>
+      ({{ entity.maturity_passing }}/{{ entity.maturity_total }} rules)
+    </p>
+    {% endif %}
   </div>
   <div class="card__body">
+    {% if entity.maturity_total %}
+    <span
+      class="maturity-bar maturity-bar--wide"
+      role="img"
+      aria-label="Maturity {{ entity.maturity_passing }} of {{ entity.maturity_total }}"
+    >
+      <span
+        class="maturity-bar__fill"
+        style="--maturity-pct: {{ (entity.maturity_passing / entity.maturity_total * 100)|round|int }}%"
+      ></span>
+    </span>
+    {% endif %}
     <ul class="scorecard-grid">
       {% for dim in entity.scorecard %}
       <li class="scorecard-grid__item">
@@ -145,6 +173,53 @@
       </li>
       {% endfor %}
     </ul>
+  </div>
+</section>
+
+<section class="card" id="dependencies" aria-labelledby="dependencies-heading">
+  <div class="card__header">
+    <h2 id="dependencies-heading">Dependencies</h2>
+    <p class="muted card__subtitle">From <code>catalog-info.yaml</code> <code>spec.dependsOn</code> when present.</p>
+  </div>
+  <div class="card__body">
+    {% if entity.dependencies %}
+    <ul class="initiative-list">
+      {% for dep in entity.dependencies %}
+      <li><code>{{ dep }}</code></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No dependencies declared.</p>
+    {% endif %}
+    {% if entity.oncall %}
+    <p>On-call: <strong>{{ entity.oncall }}</strong></p>
+    {% endif %}
+    {% if entity.workload_profile %}
+    <p class="muted">Workload profile: <code>{{ entity.workload_profile }}</code></p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" id="initiatives" aria-labelledby="entity-initiatives-heading">
+  <div class="card__header">
+    <h2 id="entity-initiatives-heading">Initiatives</h2>
+  </div>
+  <div class="card__body">
+    {% if initiative_statuses %}
+    <ul class="initiative-list">
+      {% for status in initiative_statuses %}
+      <li>
+        <span class="badge badge--{% if status.passed %}pass{% else %}warn{% endif %}">
+          {% if status.passed %}passing{% else %}open{% endif %}
+        </span>
+        <strong>{{ status.title }}</strong>
+        <span class="muted">{{ status.detail }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No active initiatives for this entity.</p>
+    {% endif %}
   </div>
 </section>
 

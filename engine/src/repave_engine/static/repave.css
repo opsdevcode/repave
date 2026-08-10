@@ -6058,4 +6058,154 @@
   }
 }
 
+/* Service catalog hub (ADR 006) — Cortex-density patterns, night-ops tokens */
+
+.shell__main--catalog-hub {
+  max-width: var(--content-max-width);
+}
+
+.badge--maturity {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.badge--initiative {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 80%, var(--accent-soft));
+  border: 1px solid color-mix(in srgb, var(--border) 90%, var(--accent));
+}
+
+.maturity-bar {
+  display: block;
+  height: 0.35rem;
+  margin-top: 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+  overflow: hidden;
+}
+
+.maturity-bar--wide {
+  margin: 0 0 var(--space-3);
+  height: 0.5rem;
+}
+
+.maturity-bar__fill {
+  display: block;
+  height: 100%;
+  width: var(--maturity-pct, 0%);
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--accent) 85%, var(--success)),
+    var(--accent)
+  );
+}
+
+.maturity-level-bars {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.maturity-level-bars li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.service-hub-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+  gap: var(--space-3);
+}
+
+.service-hub-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.service-hub-card__link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: var(--space-3);
+  color: inherit;
+  text-decoration: none;
+  flex: 1;
+}
+
+.service-hub-card__link:hover {
+  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
+}
+
+.service-hub-card__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.service-hub-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.service-hub-card__team {
+  padding: 0.45rem var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.service-hub-card__team:hover {
+  background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+}
+
+.entity-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 var(--space-4);
+  padding: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 45%, var(--surface));
+}
+
+.entity-tabs a {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.entity-tabs a:hover {
+  color: var(--accent-hover);
+  background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+}
+
+.initiative-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.initiative-list li {
+  display: grid;
+  gap: 0.25rem;
+}
+
 /* utilities layer reserved; .visually-hidden stays in components for now */

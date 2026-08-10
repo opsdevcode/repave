@@ -29,10 +29,9 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
-from repave_engine.catalog_cost import enrich_catalog_entities_with_cost, enrich_entity_cost
+from repave_engine.catalog_cost import enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
-    enrich_catalog_entities_with_deployment,
 )
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.entity_catalog import (
@@ -65,8 +64,13 @@ from repave_engine.observability_slo import fetch_entity_slo_summary
 from repave_engine.org_import_scan import DEFAULT_SCAN_LIMIT, scan_github_org
 from repave_engine.portal_context import (
     audit_file_or_http404,
+    build_enriched_portal_catalog_entities,
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
+)
+from repave_engine.portal_platform import (
+    build_platform_initiatives_page,
+    build_platform_maturity_page,
 )
 from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
 from repave_engine.repo_add import (
@@ -92,11 +96,17 @@ from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
 from repave_engine.run_submit import parse_run_target, submit_async_run
+from repave_engine.service_catalog_overlay import (
+    entity_initiative_statuses,
+    filter_entities_by_team,
+    filter_entities_for_user,
+)
 from repave_engine.settings import (
     OutputConfig,
     load_environment_vending_config,
     load_fleet_config,
     load_portal_config,
+    load_service_catalog_config,
 )
 from repave_engine.upgrade_api import (
     UpgradeTargetError,
@@ -141,6 +151,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/platform/compliance",
     "GET /api/v2/platform/value-stream",
     "GET /api/v2/platform/roadmap-evidence",
+    "GET /api/v2/platform/maturity",
+    "GET /api/v2/platform/initiatives",
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
     "GET /api/v2/platform/finops/export",
@@ -929,20 +941,32 @@ def build_api_v2_router(
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
         )
-        entities = list(
-            enrich_catalog_entities_with_deployment(
-                enrich_catalog_entities_with_cost(
-                    build_portal_catalog_entities(
-                        repo_root,
-                        output_config,
-                        cost_actuals_configured=cost_configured,
-                    ),
-                    portal_config,
-                ),
-                portal_config,
+        entities = build_enriched_portal_catalog_entities(
+            repo_root,
+            output_config,
+            portal_config,
+            cost_actuals_configured=cost_configured,
+        )
+        team = str(request.query_params.get("team", "")).strip()
+        owner = str(request.query_params.get("owner", "")).strip()
+        try:
+            catalog_cfg = load_service_catalog_config(repo_root)
+        except ValueError:
+            catalog_cfg = None
+        if team and catalog_cfg is not None:
+            entities = filter_entities_by_team(
+                entities,
+                team,
+                default_team=catalog_cfg.default_team,
             )
-        )
+        elif owner:
+            entities = filter_entities_for_user(
+                entities,
+                owner_filter=owner,
+                default_team=catalog_cfg.default_team if catalog_cfg else "platform",
+            )
         return JSONResponse(
             {
                 "count": len(entities),
@@ -956,10 +980,12 @@ def build_api_v2_router(
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
         )
-        entities = build_portal_catalog_entities(
+        entities = build_enriched_portal_catalog_entities(
             repo_root,
             output_config,
+            portal_config,
             cost_actuals_configured=cost_configured,
         )
         entity = find_catalog_entity(entities, entity_id)
@@ -968,6 +994,13 @@ def build_api_v2_router(
         entity, cost, cost_estimate = enrich_entity_cost(entity, portal_config)
         entity, deployment = deployment_scorecard_for_entity(entity, portal_config)
         body = entity.to_public_dict()
+        try:
+            catalog_cfg = load_service_catalog_config(repo_root)
+        except ValueError:
+            catalog_cfg = None
+        statuses = entity_initiative_statuses(entity, catalog_cfg)
+        if statuses:
+            body["initiatives"] = [item.to_public_dict() for item in statuses]
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
         if obs_url:
             body["observability_url"] = obs_url
@@ -1209,6 +1242,34 @@ def build_api_v2_router(
             github_token=token,
             persist=False,
         )
+        return JSONResponse(page.to_public_dict())
+
+    @router.get("/platform/maturity")
+    async def api_v2_platform_maturity(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        if load_service_catalog_config(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "service_catalog is not configured "
+                    "(set service_catalog.enabled or REPAVE_SERVICE_CATALOG=1)"
+                ),
+            )
+        page = build_platform_maturity_page(repo_root, resolved_output=output_config)
+        return JSONResponse(page.to_public_dict())
+
+    @router.get("/platform/initiatives")
+    async def api_v2_platform_initiatives(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        if load_service_catalog_config(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "service_catalog is not configured "
+                    "(set service_catalog.enabled or REPAVE_SERVICE_CATALOG=1)"
+                ),
+            )
+        page = build_platform_initiatives_page(repo_root, resolved_output=output_config)
         return JSONResponse(page.to_public_dict())
 
     @router.post("/platform/feedback")

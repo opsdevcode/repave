@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Sandbox — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--catalog-hub{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/home">← My services</a>
+  ·
+  <a href="/library">Library</a>
+</p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Request a sandbox</h1>
+    <p class="page-lead">
+      Pick a deployment set — a named workload profile plus environment stack.
+      Repave opens a GitOps pull request; your CD toolchain applies it. Sandboxes expire
+      and reclaim automatically when configured.
+    </p>
+  </div>
+</header>
+
+{% if not environment_vend_available %}
+<section class="card">
+  <div class="card__body">
+    <p class="alert alert--info">
+      Environment vending needs <code>environment_vending</code> enabled and async runs
+      (<code>durability.async_generation</code>). Profiles below still describe what you can request
+      once vending is on.
+    </p>
+  </div>
+</section>
+{% endif %}
+
+{% if deployment_sets %}
+<section class="card" aria-labelledby="sandbox-request-heading">
+  <div class="card__header">
+    <h2 id="sandbox-request-heading">Deployment set</h2>
+  </div>
+  <div class="card__body">
+    <form method="post" action="/sandbox/request" class="stack-gap">
+      <label class="field">
+        <span class="field__label" for="deployment_set">Deployment set</span>
+        <select class="field__input" id="deployment_set" name="deployment_set" required>
+          {% for item in deployment_sets %}
+          <option value="{{ item.id }}">
+            {{ item.label }} — {{ item.workload_profile }} ({{ item.env_class }}, {{ item.ttl_hours }}h)
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="field">
+        <span class="field__label" for="stack_name">Stack name</span>
+        <input
+          class="field__input"
+          id="stack_name"
+          name="stack_name"
+          required
+          pattern="[a-z0-9][a-z0-9-]{1,61}[a-z0-9]"
+          placeholder="my-feature-sandbox"
+        />
+        <span class="hint">Lowercase letters, numbers, and hyphens.</span>
+      </label>
+      <label class="field">
+        <span class="field__label" for="owner">Owner</span>
+        <input
+          class="field__input"
+          id="owner"
+          name="owner"
+          value="{{ default_sandbox_owner }}"
+          placeholder="group:platform"
+        />
+      </label>
+      <label class="field field--checkbox">
+        <input type="checkbox" name="dry_run" value="1" checked />
+        <span>Plan only (dry-run — no GitOps PR)</span>
+      </label>
+      <div class="form-actions">
+        <button
+          class="btn btn--primary"
+          type="submit"
+          {% if not environment_vend_available %}disabled{% endif %}
+        >
+          Request sandbox
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">
+      No deployment sets configured. Add <code>service_catalog.deployment_sets</code> in
+      <code>repave.config.yaml</code>.
+    </p>
+  </div>
+</section>
+{% endif %}
+
+{% if workload_profiles %}
+<section class="card" aria-labelledby="profiles-heading">
+  <div class="card__header">
+    <h2 id="profiles-heading">Workload profiles</h2>
+  </div>
+  <div class="card__body">
+    <ul class="initiative-list">
+      {% for profile in workload_profiles %}
+      <li>
+        <strong>{{ profile.label }}</strong>
+        <span class="muted"> · {{ profile.blueprint }}</span>
+        {% if profile.description %}
+        <p class="muted">{{ profile.description }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

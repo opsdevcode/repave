@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Team {{ team_slug }} — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--catalog-hub{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+  <a href="/home">← My services</a>
+  ·
+  <a href="/library">Library</a>
+</p>
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Team {{ team_slug }}</h1>
+    <p class="page-lead">
+      {{ team_entities | length }} service{{ '' if team_entities | length == 1 else 's' }}
+      · average maturity L{{ '%.1f'|format(team_average_maturity) }}
+    </p>
+  </div>
+</header>
+
+{% if team_initiatives %}
+<section class="card" aria-labelledby="team-initiatives-heading">
+  <div class="card__header">
+    <h2 id="team-initiatives-heading">Initiatives</h2>
+  </div>
+  <div class="card__body">
+    <ul class="initiative-list">
+      {% for row in team_initiatives %}
+      <li>
+        <strong>{{ row.initiative.title }}</strong>
+        <span class="muted">
+          {{ row.passed }} / {{ row.total }} passing
+          {% if row.overdue %} · <span class="badge badge--fail">overdue</span>{% endif %}
+        </span>
+        <span
+          class="maturity-bar"
+          role="img"
+          aria-label="{{ row.passed }} of {{ row.total }}"
+        >
+          <span
+            class="maturity-bar__fill"
+            style="--maturity-pct: {{ (row.ratio * 100)|round|int }}%"
+          ></span>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="team-services-heading">
+  <div class="card__header">
+    <h2 id="team-services-heading">Services</h2>
+  </div>
+  <div class="card__body">
+    {% if team_entities %}
+    <ul class="catalog-inventory__items">
+      {% for entity in team_entities %}
+      <li class="catalog-inventory__row">
+        <a class="catalog-inventory__item" href="/services/{{ entity.entity_id }}">
+          <span class="catalog-inventory__item-name">{{ entity.display_name }}</span>
+          <span class="catalog-inventory__item-desc muted">
+            {% if entity.owner %}{{ entity.owner }}{% endif %}
+            {% if entity.oncall %} · on-call {{ entity.oncall }}{% endif %}
+          </span>
+          <span class="catalog-inventory__item-meta">
+            {% if entity.maturity_label %}
+            <span class="badge badge--maturity">L{{ entity.maturity_level }} {{ entity.maturity_label }}</span>
+            {% endif %}
+            {% for badge in entity.initiative_badges[:2] %}
+            <span class="badge badge--initiative">{{ badge }}</span>
+            {% endfor %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No services for this team yet.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}
