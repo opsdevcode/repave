@@ -1,0 +1,8 @@
+<div class="alert alert--info">
+  No <code>platform_metrics</code> block in the repo-root
+  <code>repave.config.yaml</code> the portal is using
+  (or set <code>REPAVE_PLATFORM_METRICS=1</code>).
+  {% if platform_metrics_purpose %}{{ platform_metrics_purpose }}{% endif %}
+  For local demos run <code>make platform-dev-setup</code>, then restart
+  <code>make serve</code>. See <code>docs/platform-metrics.md</code>.
+</div>

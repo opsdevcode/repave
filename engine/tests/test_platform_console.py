@@ -200,7 +200,14 @@ def test_platform_standards_page_renders(repo_root, output_config, registry: Pat
     assert page.summaries
 
 
-def test_platform_campaigns_page_without_snapshot(repo_root, output_config) -> None:
+def test_platform_campaigns_page_without_snapshot(
+    repo_root, output_config, tmp_path, monkeypatch
+) -> None:
+    # Ignore local platform-dev operator snapshot under repo root.
+    monkeypatch.setenv(
+        "REPAVE_FLEET_OPERATOR_STATUS_FILE",
+        str(tmp_path / "missing-operator-status.json"),
+    )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/platform/campaigns").text
     assert "Operator campaigns" in body
@@ -208,11 +215,13 @@ def test_platform_campaigns_page_without_snapshot(repo_root, output_config) -> N
 
 
 def test_platform_feedback_page_without_metrics(repo_root, output_config, monkeypatch) -> None:
-    monkeypatch.delenv("REPAVE_PLATFORM_METRICS", raising=False)
+    # Force-disable even when a local (gitignored) repave.config.yaml enables metrics.
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/platform/feedback").text
     assert "Developer feedback" in body
     assert "platform_metrics" in body
+    assert "make platform-dev-setup" in body
 
 
 def test_find_campaign_in_snapshot() -> None:
@@ -324,3 +333,17 @@ def test_nav_shows_platform_link(repo_root, output_config) -> None:
     body = client.get("/").text
     assert 'href="/platform/fleet"' in body
     assert "Platform" in body
+
+
+def test_platform_pages_share_catalog_platform_breadcrumb(
+    repo_root, output_config, monkeypatch
+) -> None:
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    fleet = client.get("/platform/fleet").text
+    adoption = client.get("/platform/adoption").text
+    assert 'href="/">← Catalog</a>' in fleet
+    assert 'href="/">← Catalog</a>' in adoption
+    assert "·" in fleet and "Platform" in fleet
+    assert 'href="/platform/fleet">Platform</a>' in adoption
+    assert "make platform-dev-setup" in adoption
