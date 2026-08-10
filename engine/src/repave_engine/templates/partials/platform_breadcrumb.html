@@ -1,0 +1,12 @@
+<p class="breadcrumb">
+  <a href="/">← Catalog</a>
+  ·
+  {% if platform_nav == "fleet" %}
+  Platform
+  {% else %}
+  <a href="/platform/fleet">Platform</a>
+  {% endif %}
+  {% if platform_nav == "roadmap" %}
+  · <a href="/platform/adoption">Adoption</a>
+  {% endif %}
+</p>
