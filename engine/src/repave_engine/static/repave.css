@@ -6234,9 +6234,37 @@
   gap: var(--space-3);
 }
 
-.initiative-list li {
+.initiative-list li,
+.initiative-list__item {
   display: grid;
   gap: 0.25rem;
+}
+
+.initiative-list__item {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.initiative-list__item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.initiative-list__edit {
+  margin-top: var(--space-2);
+}
+
+.initiative-list__edit-form {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.initiative-list__deactivate,
+.initiative-list__reactivate {
+  margin: 0;
 }
 
 /* utilities layer reserved; .visually-hidden stays in components for now */

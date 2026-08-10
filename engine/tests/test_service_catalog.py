@@ -11,9 +11,12 @@ from repave_engine.api import create_app
 from repave_engine.entity_catalog import CatalogEntity, ScorecardDimension
 from repave_engine.initiatives import (
     append_initiative,
+    apply_initiative_patch,
     build_initiative_from_form,
+    deactivate_initiative,
     evaluate_initiative_for_entity,
     read_initiatives,
+    upsert_initiative,
 )
 from repave_engine.maturity_rubric import evaluate_maturity, load_maturity_rubric
 from repave_engine.service_catalog_overlay import (
@@ -128,6 +131,35 @@ def test_initiatives_roundtrip(tmp_path: Path) -> None:
     assert status.passed is True
 
 
+def test_initiatives_update_deactivate_and_dedupe(tmp_path: Path) -> None:
+    path = tmp_path / "initiatives.jsonl"
+    first = build_initiative_from_form(
+        {"id": "init-demo", "title": "Original", "target_level": "2"}
+    )
+    append_initiative(path, first)
+    updated = apply_initiative_patch(
+        first,
+        {"title": "Updated title", "target_level": "4", "target_rule_keys": "has-runbook"},
+    )
+    upsert_initiative(path, updated)
+    loaded = read_initiatives(path)
+    assert len(loaded) == 1
+    assert loaded[0].title == "Updated title"
+    assert loaded[0].target_level == 4
+    assert loaded[0].target_rule_keys == ("has-runbook",)
+
+    deactivated = deactivate_initiative(path, "init-demo")
+    assert deactivated.active is False
+    assert read_initiatives(path)[0].active is False
+
+    # Duplicate appends: last line wins for the same id.
+    append_initiative(path, build_initiative_from_form({"id": "init-demo", "title": "Again"}))
+    again = read_initiatives(path)
+    assert len(again) == 1
+    assert again[0].title == "Again"
+    assert again[0].active is True
+
+
 def test_extract_overlay_from_checkout(repo_root: Path) -> None:
     checkout = repo_root / "examples/platform-dev/fixtures/modules/checkout-api"
     fields = extract_catalog_overlay_fields(checkout)
@@ -210,6 +242,94 @@ def test_portal_service_catalog_pages(
     team = client.get("/teams/platform")
     assert team.status_code == 200
     assert "Team platform" in team.text
+
+
+def test_initiatives_portal_and_api_crud(
+    platform_dev_repo: Path,
+    output_config,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    store = tmp_path / "initiatives.jsonl"
+    base = load_service_catalog_config(platform_dev_repo)
+    assert base is not None
+    patched = ServiceCatalogConfig(
+        enabled=True,
+        maturity_rubric=base.maturity_rubric,
+        workload_profiles=base.workload_profiles,
+        deployment_sets=base.deployment_sets,
+        initiatives=store,
+        default_team=base.default_team,
+    )
+
+    def _load(_root: Path) -> ServiceCatalogConfig:
+        return patched
+
+    monkeypatch.setattr("repave_engine.api.load_service_catalog_config", _load)
+    monkeypatch.setattr("repave_engine.settings.load_service_catalog_config", _load)
+    monkeypatch.setattr("repave_engine.api_v2.router.load_service_catalog_config", _load)
+
+    client = TestClient(create_app(repo_root=platform_dev_repo, output_config=output_config))
+
+    created = client.post(
+        "/api/v2/platform/initiatives",
+        json={
+            "title": "API runbooks",
+            "target_level": 3,
+            "target_rule_keys": ["has-runbook"],
+            "owning_team": "platform",
+        },
+    )
+    assert created.status_code == 201
+    initiative_id = created.json()["id"]
+    assert created.json()["title"] == "API runbooks"
+
+    listing = client.get("/api/v2/platform/initiatives")
+    assert listing.status_code == 200
+    assert listing.json()["catalog_enabled"] is True
+    assert any(row["initiative"]["id"] == initiative_id for row in listing.json()["initiatives"])
+
+    patched_resp = client.patch(
+        f"/api/v2/platform/initiatives/{initiative_id}",
+        json={"title": "API runbooks v2", "target_level": 4},
+    )
+    assert patched_resp.status_code == 200
+    assert patched_resp.json()["title"] == "API runbooks v2"
+    assert patched_resp.json()["target_level"] == 4
+
+    page = client.get("/platform/initiatives")
+    assert page.status_code == 200
+    assert "API runbooks v2" in page.text
+    assert "Edit" in page.text
+    assert "Deactivate" in page.text
+
+    portal_update = client.post(
+        f"/platform/initiatives/{initiative_id}",
+        data={
+            "title": "Portal title",
+            "description": "from portal",
+            "owning_team": "platform",
+            "due_date": "2030-01-01",
+            "target_level": "3",
+            "target_rule_keys": "has-runbook",
+        },
+        follow_redirects=False,
+    )
+    assert portal_update.status_code == 303
+
+    deleted = client.delete(f"/api/v2/platform/initiatives/{initiative_id}")
+    assert deleted.status_code == 200
+    assert deleted.json()["active"] is False
+
+    after = client.get("/api/v2/platform/initiatives")
+    assert after.status_code == 200
+    assert after.json()["initiatives"] == []
+    assert any(item["id"] == initiative_id for item in after.json()["inactive"])
+
+    inactive_page = client.get("/platform/initiatives")
+    assert inactive_page.status_code == 200
+    assert "Inactive" in inactive_page.text
+    assert "Reactivate" in inactive_page.text
 
 
 @pytest.fixture

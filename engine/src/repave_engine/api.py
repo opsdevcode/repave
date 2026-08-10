@@ -2770,15 +2770,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
-    @app.post("/platform/initiatives")
-    async def platform_initiatives_create(request: Request) -> RedirectResponse:
-        user = session_user(request)
-        require_platform_admin(user, auth_config)
+    def _initiatives_store_path() -> Path:
         if service_catalog_config is None or service_catalog_config.initiatives is None:
             raise HTTPException(
                 status_code=404,
                 detail="Initiatives store is not configured (service_catalog.initiatives)",
             )
+        return service_catalog_config.initiatives
+
+    @app.post("/platform/initiatives")
+    async def platform_initiatives_create(request: Request) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        store_path = _initiatives_store_path()
         form = await request.form()
         from repave_engine.initiatives import append_initiative, build_initiative_from_form
 
@@ -2786,7 +2790,51 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             initiative = build_initiative_from_form({key: str(form.get(key, "")) for key in form})
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        append_initiative(service_catalog_config.initiatives, initiative)
+        append_initiative(store_path, initiative)
+        return RedirectResponse(url="/platform/initiatives", status_code=303)
+
+    @app.post("/platform/initiatives/{initiative_id}")
+    async def platform_initiatives_update(
+        request: Request,
+        initiative_id: str,
+    ) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        store_path = _initiatives_store_path()
+        form = await request.form()
+        from repave_engine.initiatives import (
+            apply_initiative_patch,
+            get_initiative,
+            upsert_initiative,
+        )
+
+        existing = get_initiative(store_path, initiative_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail=f"initiative not found: {initiative_id}")
+        try:
+            updated = apply_initiative_patch(
+                existing,
+                {key: str(form.get(key, "")) for key in form},
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        upsert_initiative(store_path, updated)
+        return RedirectResponse(url="/platform/initiatives", status_code=303)
+
+    @app.post("/platform/initiatives/{initiative_id}/deactivate")
+    async def platform_initiatives_deactivate(
+        request: Request,
+        initiative_id: str,
+    ) -> RedirectResponse:
+        user = session_user(request)
+        require_platform_admin(user, auth_config)
+        store_path = _initiatives_store_path()
+        from repave_engine.initiatives import deactivate_initiative
+
+        try:
+            deactivate_initiative(store_path, initiative_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
         return RedirectResponse(url="/platform/initiatives", status_code=303)
 
     @app.post("/platform/campaigns/{namespace}/{name}/paused")

@@ -153,6 +153,9 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/platform/roadmap-evidence",
     "GET /api/v2/platform/maturity",
     "GET /api/v2/platform/initiatives",
+    "POST /api/v2/platform/initiatives",
+    "PATCH /api/v2/platform/initiatives/{initiative_id}",
+    "DELETE /api/v2/platform/initiatives/{initiative_id}",
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
     "GET /api/v2/platform/finops/export",
@@ -1258,6 +1261,18 @@ def build_api_v2_router(
         page = build_platform_maturity_page(repo_root, resolved_output=output_config)
         return JSONResponse(page.to_public_dict())
 
+    def _initiatives_store_or_404() -> Path:
+        catalog_cfg = load_service_catalog_config(repo_root)
+        if catalog_cfg is None or catalog_cfg.initiatives is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Initiatives store is not configured "
+                    "(set service_catalog.enabled and service_catalog.initiatives)"
+                ),
+            )
+        return catalog_cfg.initiatives
+
     @router.get("/platform/initiatives")
     async def api_v2_platform_initiatives(request: Request) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_ADMIN)
@@ -1271,6 +1286,89 @@ def build_api_v2_router(
             )
         page = build_platform_initiatives_page(repo_root, resolved_output=output_config)
         return JSONResponse(page.to_public_dict())
+
+    @router.post("/platform/initiatives")
+    async def api_v2_platform_initiatives_create(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.initiatives import append_initiative, build_initiative_from_form
+
+        store_path = _initiatives_store_or_404()
+        try:
+            body = await request.json()
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="JSON body required") from exc
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="JSON object required")
+        try:
+            initiative = build_initiative_from_form(body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            append_initiative(store_path, initiative)
+        except OSError as exc:
+            logger.warning("Failed to persist initiative: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to persist initiative",
+            ) from exc
+        return JSONResponse(initiative.to_public_dict(), status_code=201)
+
+    @router.patch("/platform/initiatives/{initiative_id}")
+    async def api_v2_platform_initiatives_patch(
+        request: Request,
+        initiative_id: str,
+    ) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.initiatives import (
+            apply_initiative_patch,
+            get_initiative,
+            upsert_initiative,
+        )
+
+        store_path = _initiatives_store_or_404()
+        existing = get_initiative(store_path, initiative_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail=f"initiative not found: {initiative_id}")
+        try:
+            body = await request.json()
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="JSON body required") from exc
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="JSON object required")
+        try:
+            updated = apply_initiative_patch(existing, body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            upsert_initiative(store_path, updated)
+        except OSError as exc:
+            logger.warning("Failed to update initiative: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to update initiative",
+            ) from exc
+        return JSONResponse(updated.to_public_dict())
+
+    @router.delete("/platform/initiatives/{initiative_id}")
+    async def api_v2_platform_initiatives_delete(
+        request: Request,
+        initiative_id: str,
+    ) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.initiatives import deactivate_initiative
+
+        store_path = _initiatives_store_or_404()
+        try:
+            deactivated = deactivate_initiative(store_path, initiative_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except OSError as exc:
+            logger.warning("Failed to deactivate initiative: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to deactivate initiative",
+            ) from exc
+        return JSONResponse(deactivated.to_public_dict())
 
     @router.post("/platform/feedback")
     async def api_v2_platform_feedback_post(request: Request) -> JSONResponse:

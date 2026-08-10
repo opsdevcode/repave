@@ -6,11 +6,12 @@ work, writing ADRs, and opening issues.
 
 **Current release:** v2.57.0  
 
-**In progress:** [Service catalog maturity](#service-catalog-maturity-v2x) (OpsLevel-style
-    rubrics, Cortex-density hub, Humanitec-style GitOps sandboxes — no AI); fine-grained Auth0 FGA
-    stays in the [parking lot](#parking-lot). v3 themes under
+**In progress:** fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
     [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-**Shipped on `main`:** **Converge brand identity** — primary mark, favicons, navy night-ops
+**Shipped on `main`:** **Service catalog maturity** — OpsLevel-style rubrics, `/home` +
+`/teams/{slug}` hub, GitOps `/sandbox`, `/platform/maturity`, initiatives CRUD
+([ADR 006](adr/006-service-catalog-and-maturity.md), [`docs/service-catalog.md`](service-catalog.md));
+**Converge brand identity** — primary mark, favicons, navy night-ops
 tokens with scarce amber golden-path accents, portal shell/hero, brand kit under
 [`docs/brand/`](brand/README.md); **portal white-label** — optional `portal.logo_url` /
 `portal.accent_color` (Helm `logoUrl` / `accentColor`, env overrides); OG social card +
@@ -2404,8 +2405,7 @@ promote without new discovery:
 
 ## Service catalog maturity (v2.x)
 
-**Status:** **In progress on `main`** — Phase 1 foundation (catalog overlay, maturity,
-developer hub, GitOps sandboxes, initiatives admin). See
+**Status:** **Shipped on `main`** — Phase 1 foundation + Phase 2 initiatives CRUD. See
 [ADR 006](adr/006-service-catalog-and-maturity.md) and [`docs/service-catalog.md`](service-catalog.md).
 
 **Problem:** The library and fixed scorecards answer pin/cost/deployment health, but not
@@ -2420,7 +2420,8 @@ Humanitec-style named sandbox profiles — without pulling conversational AI fro
 - Workload profiles + deployment sets parameterize ADR 003 environment vending; `/sandbox`
   self-service (GitOps-only)
 - `/home` and `/teams/{slug}` with night-ops density patterns (not a vendor rebrand)
-- Initiatives JSONL + `/platform/initiatives` CRUD (admin create)
+- Initiatives JSONL + `/platform/initiatives` + `/api/v2/platform/initiatives` CRUD
+  (create / update / soft-deactivate)
 - platform-dev fixtures enable the full walkthrough without live GitOps
 
 **Non-goals:** runtime apply, Backstage UI replacement, AI suggestions (v3).
@@ -2428,6 +2429,10 @@ Humanitec-style named sandbox profiles — without pulling conversational AI fro
 **Done when (Phase 1):** `make platform-dev-setup && make serve` demos hub, maturity,
 sandbox request (dry-run), and initiatives; APIs expose maturity and filtered catalog
 entities; ADR 006 documents AI deferral.
+
+**Done when (Phase 2):** Admins can create, edit, and deactivate initiatives from the portal
+and `/api/v2/platform/initiatives` (POST/PATCH/DELETE); inactive programs drop from entity
+chips and active rollups.
 
 ---
 
