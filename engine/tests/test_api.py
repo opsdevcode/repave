@@ -152,10 +152,28 @@ def test_home_recent_activity_uses_artifact_labels(
     response = client.get("/")
     assert response.status_code == 200
     assert "Recent activity" in response.text
-    assert 'activity-list__artifact-name">vpc-demo<' in response.text
-    assert 'badge--muted">v0.1.0<' in response.text
+    assert 'class="home-activity"' in response.text
+    assert 'class="activity-story"' in response.text
+    assert ">vpc-demo<" in response.text
     assert "via terraform-module-generic@0.12.0" in response.text
     assert "terraform-module-generic @ 0.12.0" not in response.text
+    assert "activity-list__detail" not in response.text
+    assert "Latest applies and publishes across this portal" in response.text
+
+
+def test_home_recent_activity_empty_when_audit_enabled(
+    repo_root, output_config, tmp_path: Path, monkeypatch
+) -> None:
+    audit_path = tmp_path / "audit.jsonl"
+    audit_path.write_text("", encoding="utf-8")
+    monkeypatch.setenv("REPAVE_AUDIT_FILE", str(audit_path))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "Recent activity" in response.text
+    assert "No applies yet" in response.text
+    assert 'href="#golden-paths"' in response.text
+    assert 'class="activity-story"' not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:

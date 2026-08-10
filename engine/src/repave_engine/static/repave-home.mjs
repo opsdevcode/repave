@@ -3,7 +3,8 @@
  * Loaded only from index.html. Shared chrome stays in repave.js.
  */
 const RECENT_PATHS_KEY = "repave:recentPaths";
-const RECENT_PATHS_MAX = 8;
+/** Last N opened golden paths shown in the Jump back in strip (oldest → newest). */
+const RECENT_PATHS_MAX = 4;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -465,7 +466,8 @@ function initRecentRail() {
     return;
   }
   list.replaceChildren();
-  const entries = readRecentPaths();
+  // Storage is newest-first; render oldest→newest so each new path grows to the right.
+  const entries = readRecentPaths().slice(0, RECENT_PATHS_MAX).reverse();
   if (!entries.length) {
     mount.hidden = true;
     return;

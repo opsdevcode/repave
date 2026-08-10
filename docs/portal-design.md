@@ -253,8 +253,12 @@ feedback, generate/update busy states, sticky generate bar, skip link, upgrade
 diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity,
 standards drift diff, staged generate labels, catalog search, resume chip,
 **`/activity`** page, standards drift two-pane layout, form draft restore, result
-gate filters, and update busy stages shipped. Unused home quick-nav sidebar was
-**removed** (sunset). **Platform stakeholder views** (`/platform/compliance`,
+gate filters, and update busy stages shipped. Home **Recent activity** uses a
+compact timeline strip (no detail expanders; soft empty state when audit is on);
+full list, timeline toggle, and filters stay on `/activity`. **Jump back in**
+keeps a horizontal strip of the last four device-local golden paths (newest grows
+to the right). Unused home quick-nav sidebar was **removed** (sunset).
+**Platform stakeholder views** (`/platform/compliance`,
 `/platform/value-stream`) package metrics for security and leadership without catalog chrome.
 **Platform adoption** (`/platform/adoption`) ships outcome
 metrics for golden-path adoption — see [`platform-metrics.md`](platform-metrics.md).

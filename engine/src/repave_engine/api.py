@@ -647,6 +647,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 catalog_bundles=catalog_bundles,
                 nav_active="catalog",
                 recent_activity=portal_recent_activity(repo_root, limit=HOME_ACTIVITY_LIMIT),
+                audit_enabled=audit_portal_enabled(repo_root),
             ),
         )
 
