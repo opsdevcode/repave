@@ -268,6 +268,118 @@ def test_run_queue_writes_audit_on_success(tmp_path) -> None:
     queue.close()
 
 
+def test_run_queue_marks_succeeded_before_artifact_persist_failure(tmp_path) -> None:
+    store = RunStore(tmp_path / "runs.sqlite")
+    output = OutputConfig(
+        github_org="example",
+        modules_root=tmp_path / "modules",
+    )
+    queue = RunQueue(
+        repo_root=tmp_path,
+        output_config=output,
+        store=store,
+        config=RunQueueConfig(max_concurrent_runs=1, queue_max_depth=4),
+    )
+    fake_result = {
+        "blueprint": "terraform-module-generic",
+        "gates_outcome": "passed",
+        "gates_passed": True,
+        "gates": [{"name": "docs-drift", "passed": True, "skipped": False, "message": "ok"}],
+        "rendered_files": [{"path": "main.tf", "content": "# hi\n", "truncated": False}],
+        "output_dir": str(tmp_path / "out"),
+        "pr_message": "dry-run",
+    }
+
+    class BoomArtifacts:
+        def local_staging_dir(self, repo_root: Path, run_id: str) -> Path:
+            path = repo_root / "data" / "async-run-artifacts" / run_id
+            path.mkdir(parents=True, exist_ok=True)
+            return path
+
+        def persist_run_artifacts(self, run_id: str, staging_dir: Path) -> dict[str, str]:
+            raise RuntimeError("s3 unavailable")
+
+        def materialize_run_artifacts(self, stored: dict[str, object]) -> Path | None:
+            return None
+
+    queue._artifact_store = BoomArtifacts()  # type: ignore[method-assign]
+    with patch("repave_engine.run_queue.run_generate_api", return_value=fake_result):
+        record = queue.submit(
+            blueprint_name="terraform-module-generic",
+            inputs={"module_name": "demo"},
+            dry_run=True,
+            acting_user="tester",
+        )
+        run_id = record.run_id
+        deadline = time.time() + 5.0
+        terminal = None
+        while time.time() < deadline:
+            terminal = store.get(run_id)
+            if terminal and terminal.status == RunStatus.SUCCEEDED:
+                break
+            time.sleep(0.05)
+        assert terminal is not None
+        assert terminal.status == RunStatus.SUCCEEDED
+        assert terminal.result is not None
+        assert terminal.result.get("rendered_files")
+    queue.close()
+
+
+def test_run_queue_recovers_stalled_after_publish(tmp_path) -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from repave_engine.run_events import build_run_event_store
+
+    db = tmp_path / "runs.sqlite"
+    store = RunStore(db)
+    events = build_run_event_store(db)
+    output = OutputConfig(github_org="example", modules_root=tmp_path / "modules")
+    queue = RunQueue(
+        repo_root=tmp_path,
+        output_config=output,
+        store=store,
+        config=RunQueueConfig(max_concurrent_runs=1, queue_max_depth=4, enqueue_only=True),
+        event_store=events,
+    )
+    record = store.create_run(
+        blueprint_name="terraform-module-generic",
+        dry_run=True,
+        payload={"inputs": {"module_name": "demo", "cloud_provider": "aws"}},
+        acting_user="tester",
+    )
+    store.update_status(record.run_id, RunStatus.RUNNING)
+    stale = (datetime.now(timezone.utc) - timedelta(seconds=45)).isoformat()
+    with store._lock, store._connect() as conn:
+        conn.execute(
+            "UPDATE runs SET updated_at = ? WHERE run_id = ?",
+            (stale, record.run_id),
+        )
+        conn.commit()
+    staging = queue._artifact_store.local_staging_dir(tmp_path, record.run_id)
+    (staging / "main.tf").write_text("# recovered\n", encoding="utf-8")
+    events.append(record.run_id, "stage_finished", {"stage": "gates"})
+    events.append(
+        record.run_id,
+        "gate_finished",
+        {"gate": "docs-drift", "passed": True, "skipped": False, "message": "ok"},
+    )
+    events.append(record.run_id, "stage_finished", {"stage": "publish"})
+    events.append(
+        record.run_id,
+        "publish_finished",
+        {"summary": "Plan preview — recovered", "succeeded": True},
+    )
+
+    recovered = queue.get(record.run_id)
+    assert recovered is not None
+    assert recovered.status == RunStatus.SUCCEEDED
+    assert recovered.result is not None
+    assert recovered.result.get("recovered_after_publish_stall") is True
+    assert recovered.result["rendered_files"][0]["path"] == "main.tf"
+    assert any(event.kind == "run_finished" for event in events.list_from(record.run_id))
+    queue.close()
+
+
 def test_run_queue_writes_audit_on_dead_letter(tmp_path) -> None:
     _enable_audit(tmp_path)
     store = RunStore(tmp_path / "runs.sqlite")

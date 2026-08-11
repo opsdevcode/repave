@@ -641,6 +641,7 @@ def generate_from_bundle(
     github_token: str | None = None,
     staging_root: Path | None = None,
     record_bundle_operability: bool = True,
+    send_notification: bool = True,
 ) -> BundleGenerationResult:
     started_at = time.perf_counter()
     catalog_root = repo_root
@@ -689,17 +690,18 @@ def generate_from_bundle(
     for item in member_results:
         combined.extend(item.result.gates)
 
-    notify_after_generation(
-        catalog_root,
-        context=GenerationNotificationContext(
-            blueprint=plan_members[0][1],
-            gates=combined,
-            dry_run=dry_run,
-            pr_message=f"Bundle {bundle.name} ({len(member_results)} members)",
-            repository_web_url=None,
-            module_name=bundle.name,
-        ),
-    )
+    if send_notification:
+        notify_after_generation(
+            catalog_root,
+            context=GenerationNotificationContext(
+                blueprint=plan_members[0][1],
+                gates=combined,
+                dry_run=dry_run,
+                pr_message=f"Bundle {bundle.name} ({len(member_results)} members)",
+                repository_web_url=None,
+                module_name=bundle.name,
+            ),
+        )
 
     if record_bundle_operability:
         _record_bundle_operability(

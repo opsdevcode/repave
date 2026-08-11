@@ -14,6 +14,7 @@ from repave_engine.bundle import load_bundle
 from repave_engine.bundle_portal import build_bundle_result_portal_context, bundle_member_previews
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.gates import GateResult, all_gates_passed, gate_summary
+from repave_engine.generate_api import preview_file_dicts_from_stored
 from repave_engine.pipeline import (
     BundleGenerationResult,
     GenerationResult,
@@ -27,7 +28,11 @@ from repave_engine.run_store import RunRecord, RunStatus
 from repave_engine.settings import OutputConfig
 
 
-def console_preview_files_from_record(record: RunRecord) -> tuple[dict[str, object], ...]:
+def console_preview_files_from_record(
+    record: RunRecord,
+    *,
+    repo_root: Path | None = None,
+) -> tuple[dict[str, object], ...]:
     """Snapshot files for run-console SSR when a dry-run has already succeeded."""
     if not record.dry_run or record.status != RunStatus.SUCCEEDED:
         return ()
@@ -35,24 +40,53 @@ def console_preview_files_from_record(record: RunRecord) -> tuple[dict[str, obje
     if not isinstance(stored, dict):
         return ()
     raw = stored.get("rendered_files")
-    if not isinstance(raw, list):
+    if isinstance(raw, list):
+        files: list[dict[str, object]] = []
+        for row in raw:
+            if not isinstance(row, dict):
+                continue
+            path = row.get("path")
+            content = row.get("content")
+            if not isinstance(path, str) or not isinstance(content, str):
+                continue
+            files.append(
+                {
+                    "path": path,
+                    "content": content,
+                    "truncated": bool(row.get("truncated", False)),
+                }
+            )
+        if files:
+            return tuple(files)
+    if repo_root is None:
         return ()
-    files: list[dict[str, object]] = []
-    for row in raw:
-        if not isinstance(row, dict):
-            continue
-        path = row.get("path")
-        content = row.get("content")
-        if not isinstance(path, str) or not isinstance(content, str):
-            continue
-        files.append(
-            {
-                "path": path,
-                "content": content,
-                "truncated": bool(row.get("truncated", False)),
-            }
-        )
-    return tuple(files)
+    return preview_file_dicts_from_stored(
+        stored=stored,
+        repo_root=repo_root,
+        blueprint_name=record.blueprint_name,
+        dry_run=True,
+    )
+
+
+def public_run_dict_with_preview_files(
+    record: RunRecord,
+    *,
+    repo_root: Path,
+) -> dict[str, object]:
+    """Run public dict with dry-run rendered_files rehydrated for portal poll/preview."""
+    body: dict[str, object] = dict(record.to_public_dict())
+    if not record.dry_run or record.status != RunStatus.SUCCEEDED:
+        return body
+    stored = record.result
+    if not isinstance(stored, dict):
+        return body
+    files = console_preview_files_from_record(record, repo_root=repo_root)
+    if not files:
+        return body
+    result = dict(stored)
+    result["rendered_files"] = list(files)
+    body["result"] = result
+    return body
 
 
 @dataclass(frozen=True)
