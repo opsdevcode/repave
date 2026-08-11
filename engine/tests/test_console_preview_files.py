@@ -132,3 +132,13 @@ def test_run_console_js_polls_dry_run_preview_after_run_complete() -> None:
     assert "if (runComplete && !isDryRun)" in js
     assert "Plan complete — loading file preview…" in js
     assert "Plan preview ready — browse files below" in js
+
+
+def test_run_console_js_browse_waits_until_succeeded() -> None:
+    """Browse must not navigate while RUNNING — /result 303s back to the console."""
+    js = _REPAVE_JS.read_text(encoding="utf-8")
+    assert "browsePending" in js
+    assert "runStatusIsSucceeded" in js
+    assert "Still saving preview — opening Browse when ready…" in js
+    assert "Never unhide Browse while status is still running" in js
+    assert "/result → console 303 loop" in js

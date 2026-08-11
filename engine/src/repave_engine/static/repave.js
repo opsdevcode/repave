@@ -2830,6 +2830,9 @@
         currentGate = "";
         finishedGates = totalGates;
         runComplete = true;
+        if (data.status) {
+          root.setAttribute("data-run-status", data.status);
+        }
         // Dry-run still needs status polls to load rendered_files into the preview.
         if (!(isDryRun && isPipelineRun)) {
           stopStatusPolling();
@@ -2861,7 +2864,7 @@
           }
         }
         appendLog("Run complete.");
-        if (completeActions) {
+        if (completeActions && data.status === "succeeded") {
           completeActions.hidden = false;
         }
         showRunConsoleFeedback(data.gates_outcome || "");
@@ -2900,6 +2903,9 @@
     var pollTimer = null;
     var redirectScheduled = false;
     var previewSettled = false;
+    var browsePending = false;
+    var dryRunPollWaves = 0;
+    var resultCta = root.querySelector("[data-run-result-cta]");
 
     function stopStatusPolling() {
       if (pollTimer) {
@@ -2919,8 +2925,33 @@
       }, typeof delayMs === "number" ? delayMs : 800);
     }
 
+    function runStatusIsSucceeded() {
+      return (root.getAttribute("data-run-status") || "") === "succeeded";
+    }
+
     function revealDryRunBrowseFallback() {
       if (!isDryRun) {
+        return;
+      }
+      // Never unhide Browse while status is still running — /result 303s back here.
+      if (!runStatusIsSucceeded()) {
+        dryRunPollWaves += 1;
+        if (dryRunPollWaves < 4) {
+          if (progressLabel) {
+            progressLabel.textContent = "Plan complete — still saving preview…";
+          }
+          pollUntilTerminal(30, 750);
+          return;
+        }
+        previewSettled = true;
+        setRunBusy(false);
+        if (progressLabel) {
+          progressLabel.textContent =
+            "Preview save is taking longer than expected — refresh this page";
+        }
+        appendLog(
+          "Run status has not reached succeeded yet — refresh, then use Browse generated files."
+        );
         return;
       }
       previewSettled = true;
@@ -2930,6 +2961,9 @@
       }
       if (progressLabel) {
         progressLabel.textContent = "Plan complete — open Browse for generated files";
+      }
+      if (browsePending) {
+        scheduleResultRedirect(0);
       }
     }
 
@@ -2959,6 +2993,24 @@
         revealDryRunBrowseFallback();
       }
       tick();
+    }
+
+    if (resultCta) {
+      resultCta.addEventListener("click", function (event) {
+        if (runStatusIsSucceeded()) {
+          return;
+        }
+        // Avoid the /result → console 303 loop while the worker finalizes the run.
+        event.preventDefault();
+        browsePending = true;
+        previewSettled = false;
+        dryRunPollWaves = 0;
+        if (progressLabel) {
+          progressLabel.textContent = "Still saving preview — opening Browse when ready…";
+        }
+        showToast("Preview is still saving — opening when ready…");
+        pollUntilTerminal(40, 500);
+      });
     }
 
     var filePreviewRoot = root.querySelector("[data-run-file-preview]");
@@ -3153,13 +3205,23 @@
         if (progressLabel) {
           progressLabel.textContent = "Plan preview ready — browse files below";
         }
+        if (browsePending) {
+          scheduleResultRedirect(0);
+          return;
+        }
         // Keep dry-run previews on the console; full result is one click away.
         return;
       }
       if (isDryRun) {
         // Snapshot may be a count or empty while artifacts rehydrate on /result.
-        revealDryRunBrowseFallback();
-        scheduleResultRedirect(1200);
+        if (completeActions) {
+          completeActions.hidden = false;
+        }
+        if (progressLabel) {
+          progressLabel.textContent = "Plan complete — opening full result…";
+        }
+        previewSettled = true;
+        scheduleResultRedirect(browsePending ? 0 : 800);
         return;
       }
       scheduleResultRedirect();
