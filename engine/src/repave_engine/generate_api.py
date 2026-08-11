@@ -277,8 +277,8 @@ def _resolve_stored_rendered_files(
     )
     if from_artifacts is not None:
         return from_artifacts
-    if isinstance(raw, list):
-        return snapshot if snapshot is not None else ()
+    # Empty/malformed snapshot with unreachable artifacts → None so /result can
+    # regenerate instead of rendering a blank "Generated files" section.
     return None
 
 
