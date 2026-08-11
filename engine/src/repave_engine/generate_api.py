@@ -61,6 +61,8 @@ def run_generate_api(
         staging_root=staging_root,
         publish_idempotency=publish_idempotency,
         record_operability=staging_root is None,
+        # Async workers must not block SUCCEEDED on outbound webhooks.
+        send_notification=staging_root is None,
     )
     return serialize_generation_result(
         blueprint,
@@ -141,6 +143,7 @@ def run_bundle_api(
         github_token=github_token,
         staging_root=staging_root,
         record_bundle_operability=staging_root is None,
+        send_notification=staging_root is None,
     )
     if on_event is not None:
         on_event(
@@ -280,6 +283,38 @@ def _resolve_stored_rendered_files(
     # Empty/malformed snapshot with unreachable artifacts → None so /result can
     # regenerate instead of rendering a blank "Generated files" section.
     return None
+
+
+def preview_file_dicts_from_stored(
+    *,
+    stored: dict[str, object],
+    repo_root: Path,
+    blueprint_name: str,
+    dry_run: bool,
+) -> tuple[dict[str, object], ...]:
+    """Resolve dry-run preview files from snapshot and/or on-disk artifacts."""
+    if not dry_run or not blueprint_name.strip():
+        return ()
+    try:
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
+    except (OSError, ValueError):
+        return ()
+    resolved = _resolve_stored_rendered_files(
+        stored=stored,
+        repo_root=repo_root,
+        blueprint=blueprint,
+        dry_run=True,
+    )
+    if not resolved:
+        return ()
+    return tuple(
+        {
+            "path": item.path,
+            "content": item.content,
+            "truncated": item.truncated,
+        }
+        for item in resolved
+    )
 
 
 def _stored_output_dir(stored: dict[str, object]) -> Path:

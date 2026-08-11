@@ -52,13 +52,18 @@ from repave_engine.publish_idempotency import (
     PublishIdempotencyStore,
     publish_message_succeeded,
 )
+from repave_engine.render import collect_rendered_files
 from repave_engine.run_audit import record_async_run_audit
-from repave_engine.run_events import RunEventStore, build_run_event_store
+from repave_engine.run_events import TERMINAL_EVENT_KINDS, RunEventStore, build_run_event_store
 from repave_engine.run_job_dispatcher import RunJobDispatcher, build_run_job_dispatcher
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
 from repave_engine.settings import OutputConfig, load_environment_vending_config
 
 logger = logging.getLogger(__name__)
+
+# Publish SSE can complete while the worker is still finalizing (notify/S3/OOM).
+# After this age, refresh/poll may recover a dry-run from staging artifacts.
+_STALLED_AFTER_PUBLISH_SECONDS = 20.0
 
 
 @dataclass(frozen=True)
@@ -385,7 +390,105 @@ class RunQueue:
         return updated
 
     def get(self, run_id: str) -> RunRecord | None:
-        return self._store.get(run_id)
+        record = self._store.get(run_id)
+        if record is None:
+            return None
+        if record.status == RunStatus.RUNNING:
+            recovered = self._recover_stalled_after_publish(record)
+            if recovered is not None:
+                return recovered
+        return record
+
+    def _recover_stalled_after_publish(self, record: RunRecord) -> RunRecord | None:
+        """Finalize dry-runs stuck RUNNING after publish SSE (worker hang/crash)."""
+        if not record.dry_run or self._event_store is None:
+            return None
+        try:
+            updated = datetime.fromisoformat(record.updated_at.replace("Z", "+00:00"))
+            age = (datetime.now(timezone.utc) - updated).total_seconds()
+        except ValueError:
+            return None
+        if age < _STALLED_AFTER_PUBLISH_SECONDS:
+            return None
+        events = self._event_store.list_from(record.run_id, after_seq=0)
+        if any(event.kind in TERMINAL_EVENT_KINDS for event in events):
+            return None
+        publish_done = any(
+            event.kind == "stage_finished" and event.payload.get("stage") == "publish"
+            for event in events
+        )
+        if not publish_done:
+            return None
+        artifact_dir = self._artifact_store.local_staging_dir(self._repo_root, record.run_id)
+        if not artifact_dir.is_dir():
+            logger.warning(
+                "async run %s stalled after publish; staging missing at %s",
+                record.run_id,
+                artifact_dir,
+            )
+            return None
+        gates: list[dict[str, Any]] = []
+        for event in events:
+            if event.kind != "gate_finished":
+                continue
+            gate_name = str(event.payload.get("gate", "")).strip()
+            if not gate_name:
+                continue
+            gates.append(
+                {
+                    "name": gate_name,
+                    "passed": bool(event.payload.get("passed")),
+                    "skipped": bool(event.payload.get("skipped")),
+                    "message": str(event.payload.get("message", "")),
+                }
+            )
+        if not gates:
+            return None
+        rendered = collect_rendered_files(artifact_dir)
+        pr_message = ""
+        for event in reversed(events):
+            if event.kind == "publish_finished":
+                pr_message = str(event.payload.get("summary") or event.payload.get("detail") or "")
+                break
+        gates_passed = all(row["passed"] or row["skipped"] for row in gates)
+        result: dict[str, Any] = {
+            "blueprint": record.blueprint_name,
+            "dry_run": True,
+            "gates_outcome": "passed" if gates_passed else "failed",
+            "gates_passed": gates_passed,
+            "gates": gates,
+            "output_dir": str(artifact_dir),
+            "artifact_root": str(artifact_dir),
+            "pr_message": pr_message or "Plan preview recovered after worker stall",
+            "rendered_files": [
+                {
+                    "path": item.path,
+                    "content": item.content,
+                    "truncated": item.truncated,
+                }
+                for item in rendered
+            ],
+            "recovered_after_publish_stall": True,
+        }
+        logger.warning(
+            "async run %s: recovering SUCCEEDED after publish stall (age=%.0fs, files=%d)",
+            record.run_id,
+            age,
+            len(rendered),
+        )
+        self._store.update_status(record.run_id, RunStatus.SUCCEEDED, result=result)
+        self._emit_event(
+            record.run_id,
+            "run_finished",
+            {
+                "status": "succeeded",
+                "gates_outcome": result["gates_outcome"],
+                "publish_succeeded": True,
+                "recovered_after_publish_stall": True,
+            },
+        )
+        record_run_terminal(str(result["gates_outcome"]), record.blueprint_name)
+        return self._store.get(record.run_id)
 
     def list_runs(
         self,
@@ -624,6 +727,9 @@ class RunQueue:
             except Exception as exc:
                 logger.exception("async run %s failed", run_id)
                 record = self._store.get(run_id)
+                if record is not None and record.status == RunStatus.SUCCEEDED:
+                    # Stall recovery (or a prior finalize) already committed success.
+                    return
                 attempt = (record.attempt_count if record else 0) + 1
                 if attempt >= self._config.max_attempts:
                     self._store.update_status(
@@ -646,15 +752,21 @@ class RunQueue:
                             attempt,
                         )
             else:
-                artifact_fields = self._artifact_store.persist_run_artifacts(run_id, artifact_dir)
-                merged = {**result, **artifact_fields}
+                # Mark terminal before object-store upload so S3 hangs cannot leave
+                # the run RUNNING after publish SSE already completed.
+                if "artifact_root" not in result:
+                    result = {**result, "artifact_root": str(artifact_dir)}
+                logger.info(
+                    "async run %s: generation complete — marking succeeded",
+                    run_id,
+                )
                 self._store.update_status(
                     run_id,
                     RunStatus.SUCCEEDED,
-                    result=merged,
+                    result=result,
                 )
-                outcome = str(merged.get("gates_outcome", "unknown"))
-                pr_message = str(merged.get("pr_message", ""))
+                outcome = str(result.get("gates_outcome", "unknown"))
+                pr_message = str(result.get("pr_message", ""))
                 publish_ok = record.dry_run or publish_message_succeeded(pr_message)
                 self._emit_event(
                     run_id,
@@ -666,7 +778,24 @@ class RunQueue:
                     },
                 )
                 record_run_terminal(outcome, record.blueprint_name)
-                self._emit_run_audit(record, merged=merged)
+                try:
+                    artifact_fields = self._artifact_store.persist_run_artifacts(
+                        run_id, artifact_dir
+                    )
+                    if artifact_fields:
+                        merged = {**result, **artifact_fields}
+                        self._store.update_status(
+                            run_id,
+                            RunStatus.SUCCEEDED,
+                            result=merged,
+                        )
+                        result = merged
+                except Exception:
+                    logger.exception(
+                        "async run %s: artifact persist failed (run already succeeded)",
+                        run_id,
+                    )
+                self._emit_run_audit(record, merged=result)
         finally:
             reset_acting_user(token)
             self._refresh_metrics()

@@ -63,6 +63,7 @@ from repave_engine.portal_context import (
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
 )
+from repave_engine.portal_generate import public_run_dict_with_preview_files
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
@@ -258,7 +259,7 @@ def build_api_v1_router(
         record = queue.get(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
-        return JSONResponse(record.to_public_dict())
+        return JSONResponse(public_run_dict_with_preview_files(record, repo_root=repo_root))
 
     @router.post("/runs/{run_id}/replay")
     async def api_runs_replay(run_id: str, request: Request) -> JSONResponse:

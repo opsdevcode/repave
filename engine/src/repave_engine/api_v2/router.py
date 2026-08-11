@@ -68,6 +68,7 @@ from repave_engine.portal_context import (
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
 )
+from repave_engine.portal_generate import public_run_dict_with_preview_files
 from repave_engine.portal_platform import (
     build_platform_initiatives_page,
     build_platform_maturity_page,
@@ -549,7 +550,7 @@ def build_api_v2_router(
         record = queue.get(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
-        return JSONResponse(record.to_public_dict())
+        return JSONResponse(public_run_dict_with_preview_files(record, repo_root=repo_root))
 
     @router.post("/runs/{run_id}/replay")
     async def api_v2_runs_replay(run_id: str, request: Request) -> JSONResponse:
