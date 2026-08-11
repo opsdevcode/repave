@@ -166,23 +166,44 @@
     <p class="alert alert--fail" role="alert">{{ run_record.error }}</p>
     {% endif %}
 
-    <section class="run-console__preview card stack-gap" data-run-file-preview hidden>
+    {% set preview_files = console_preview_files if console_preview_files is defined else () %}
+    {% set run_succeeded = run_record.status.value == "succeeded" %}
+    <section
+      class="run-console__preview card stack-gap"
+      data-run-file-preview
+      {% if not preview_files %}hidden{% endif %}
+    >
       <div class="card__header">
         <h2 class="h3" data-run-file-preview-heading>Generated files</h2>
-        <p class="muted card__subtitle">Copy paths below, or open the full result for the complete explorer.</p>
+        <p class="muted card__subtitle">Copy a path below, or open the full result for the complete explorer.</p>
       </div>
       <div class="card__body">
-        <ul class="run-console__preview-list" data-run-file-preview-list></ul>
-        <div class="run-console__preview-pane" data-run-file-preview-pane hidden>
+        {% if preview_files %}
+        <script type="application/json" data-run-file-preview-json>{{ preview_files | tojson }}</script>
+        {% endif %}
+        <ul class="run-console__preview-list" data-run-file-preview-list>
+          {% for file in preview_files %}
+          <li>
+            <button
+              type="button"
+              class="run-console__preview-tab{% if loop.first %} is-active{% endif %}"
+              data-preview-index="{{ loop.index0 }}"
+            >
+              {{ file.path }}
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+        <div class="run-console__preview-pane" data-run-file-preview-pane {% if not preview_files %}hidden{% endif %}>
           <div class="file-preview__toolbar">
             <button type="button" class="btn btn--ghost btn--sm" data-run-file-preview-copy>Copy</button>
           </div>
-          <pre class="panel-code" data-run-file-preview-content></pre>
+          <pre class="panel-code" data-run-file-preview-content>{% if preview_files %}{{ preview_files[0].content }}{% endif %}</pre>
         </div>
       </div>
     </section>
 
-    <p class="run-console__actions" hidden data-run-complete-actions>
+    <p class="run-console__actions" data-run-complete-actions {% if not run_succeeded %}hidden{% endif %}>
       <a class="btn btn--primary" href="/runs/{{ run_id }}/result" data-run-result-cta>
         {% if run_record.dry_run %}Browse generated files{% else %}View full result{% endif %}
       </a>
