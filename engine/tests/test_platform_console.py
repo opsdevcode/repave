@@ -190,6 +190,22 @@ def test_platform_ops_page_renders(repo_root, output_config) -> None:
     assert "Gate toolchain" in body
 
 
+def test_platform_ops_queue_live_markers(
+    repo_root, output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/platform/ops").text
+    assert "data-platform-ops-queue" in body
+    assert 'data-async-queue="1"' in body
+    assert "data-ops-queue-summary" in body
+    assert "data-ops-queue-live-hint" in body
+    js = client.get("/static/repave.js").text
+    assert "initPlatformOpsQueue" in js
+    assert "fetchQueuedAndRunning" in js
+
+
 def test_platform_standards_page_renders(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))

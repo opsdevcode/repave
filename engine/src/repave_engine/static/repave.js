@@ -1776,6 +1776,237 @@
     return iso;
   }
 
+  function runDisplayName(run) {
+    if (!run) {
+      return "run";
+    }
+    return run.blueprint || run.bundle || run.kind || "run";
+  }
+
+  function fetchRunsByStatus(status, limit) {
+    var url = "/api/v1/runs?limit=" + encodeURIComponent(String(limit || 50));
+    if (status) {
+      url += "&status=" + encodeURIComponent(status);
+    }
+    return fetch(url, { credentials: "same-origin" }).then(function (res) {
+      if (!res.ok) {
+        throw new Error("runs list failed");
+      }
+      return res.json();
+    });
+  }
+
+  function fetchQueuedAndRunning(limit) {
+    var lim = limit || 50;
+    return Promise.all([
+      fetchRunsByStatus("queued", lim),
+      fetchRunsByStatus("running", lim),
+    ]).then(function (parts) {
+      var runs = [];
+      parts.forEach(function (body) {
+        if (body && Array.isArray(body.runs)) {
+          runs = runs.concat(body.runs);
+        }
+      });
+      runs.sort(function (a, b) {
+        return String(b.updated_at || "").localeCompare(String(a.updated_at || ""));
+      });
+      return {
+        queued: (parts[0] && typeof parts[0].count === "number" ? parts[0].count : 0) || 0,
+        running: (parts[1] && typeof parts[1].count === "number" ? parts[1].count : 0) || 0,
+        runs: runs,
+      };
+    });
+  }
+
+  function startLivePoll(options) {
+    var pollMs = options.pollMs || 3000;
+    var tick = options.tick;
+    var onError = options.onError;
+    var inFlight = false;
+    var timer = null;
+
+    function poll() {
+      if (document.hidden || inFlight) {
+        return;
+      }
+      inFlight = true;
+      Promise.resolve()
+        .then(tick)
+        .catch(function () {
+          if (typeof onError === "function") {
+            onError();
+          }
+        })
+        .finally(function () {
+          inFlight = false;
+        });
+    }
+
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) {
+        poll();
+      }
+    });
+    poll();
+    timer = window.setInterval(poll, pollMs);
+    window.addEventListener(
+      "beforeunload",
+      function () {
+        if (timer) {
+          window.clearInterval(timer);
+        }
+      },
+      { once: true }
+    );
+  }
+
+  function setLiveHint(el, text) {
+    if (!el) {
+      return;
+    }
+    el.hidden = false;
+    el.textContent = text;
+  }
+
+  function initPlatformOpsQueue() {
+    var root = document.querySelector('[data-platform-ops-queue][data-async-queue="1"]');
+    if (!root) {
+      return;
+    }
+    var summary = root.querySelector("[data-ops-queue-summary]");
+    var liveHint = root.querySelector("[data-ops-queue-live-hint]");
+    var lastFingerprint = "";
+
+    startLivePoll({
+      pollMs: 3000,
+      tick: function () {
+        return fetchQueuedAndRunning(200).then(function (payload) {
+          var queued = payload.queued || 0;
+          var running = payload.running || 0;
+          var inflight = queued + running;
+          var next = queued + ":" + running + ":" + inflight;
+          if (summary && next !== lastFingerprint) {
+            summary.textContent =
+              queued + " queued · " + running + " running · " + inflight + " in flight";
+            lastFingerprint = next;
+            setLiveHint(liveHint, "updated " + formatRelativeUpdated(new Date().toISOString()));
+          } else {
+            setLiveHint(liveHint, "live");
+          }
+        });
+      },
+      onError: function () {
+        setLiveHint(liveHint, "refresh paused");
+      },
+    });
+  }
+
+  function initActivityInflight() {
+    var root = document.querySelector("[data-activity-inflight]");
+    if (!root) {
+      return;
+    }
+    var emptyEl = root.querySelector("[data-activity-inflight-empty]");
+    var listEl = root.querySelector("[data-activity-inflight-list]");
+    var liveHint = root.querySelector("[data-activity-inflight-hint]");
+    var lastFingerprint = "";
+
+    function fingerprint(runs) {
+      return runs
+        .map(function (run) {
+          return [
+            run.run_id,
+            run.status,
+            run.updated_at || "",
+            String(run.attempt_count || 0),
+          ].join(":");
+        })
+        .join("|");
+    }
+
+    function renderRuns(runs) {
+      if (!listEl || !emptyEl) {
+        return;
+      }
+      while (listEl.firstChild) {
+        listEl.removeChild(listEl.firstChild);
+      }
+      if (!runs.length) {
+        emptyEl.hidden = false;
+        emptyEl.textContent = "No runs in flight.";
+        listEl.hidden = true;
+        return;
+      }
+      emptyEl.hidden = true;
+      listEl.hidden = false;
+      runs.forEach(function (run) {
+        var item = document.createElement("li");
+        item.className = "activity-inflight-list__item";
+        item.setAttribute("data-run-id", run.run_id || "");
+
+        var lead = document.createElement("p");
+        lead.className = "activity-inflight-list__lead";
+        var name = document.createElement("code");
+        name.textContent = runDisplayName(run);
+        var badge = document.createElement("span");
+        badge.className = runStatusBadgeClass(run.status);
+        badge.textContent = runStatusLabel(run.status);
+        lead.appendChild(name);
+        lead.appendChild(badge);
+
+        var meta = document.createElement("p");
+        meta.className = "activity-inflight-list__meta muted";
+        var user = document.createElement("span");
+        user.textContent = run.acting_user || "unknown";
+        var sep = document.createTextNode(" · ");
+        var time = document.createElement("time");
+        time.setAttribute("datetime", run.updated_at || "");
+        time.textContent = formatRelativeUpdated(run.updated_at) || run.updated_at || "";
+        meta.appendChild(user);
+        meta.appendChild(sep);
+        meta.appendChild(time);
+
+        var actions = document.createElement("div");
+        var open = document.createElement("a");
+        open.className = "btn btn--ghost btn--sm";
+        open.href = "/runs/" + encodeURIComponent(run.run_id || "");
+        open.textContent = "Open";
+        actions.appendChild(open);
+
+        item.appendChild(lead);
+        item.appendChild(meta);
+        item.appendChild(actions);
+        listEl.appendChild(item);
+      });
+    }
+
+    startLivePoll({
+      pollMs: 3000,
+      tick: function () {
+        return fetchQueuedAndRunning(50).then(function (payload) {
+          var runs = payload.runs || [];
+          var next = fingerprint(runs);
+          if (next !== lastFingerprint) {
+            renderRuns(runs);
+            lastFingerprint = next;
+            setLiveHint(liveHint, "updated " + formatRelativeUpdated(new Date().toISOString()));
+          } else {
+            setLiveHint(liveHint, "live");
+          }
+        });
+      },
+      onError: function () {
+        if (emptyEl && listEl && !lastFingerprint) {
+          emptyEl.hidden = false;
+          emptyEl.textContent = "In-flight runs unavailable.";
+          listEl.hidden = true;
+        }
+        setLiveHint(liveHint, "refresh paused");
+      },
+    });
+  }
+
   function initRunsIndex() {
     var root = document.querySelector("[data-runs-index]");
     if (!root) {
@@ -3268,6 +3499,8 @@
     initFeedbackCapture();
     initFormDraft();
     initRunsIndex();
+    initPlatformOpsQueue();
+    initActivityInflight();
     initRunConsole();
     initResultGateAnimations();
     initRelativeTimes();

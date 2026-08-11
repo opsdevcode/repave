@@ -14,6 +14,25 @@
   </div>
 </header>
 
+{% if async_generation_enabled %}
+<section class="card" data-activity-inflight aria-labelledby="activity-inflight-heading">
+  <div class="card__header card__header--toolbar">
+    <div>
+      <h2 id="activity-inflight-heading">In-flight runs</h2>
+      <p class="muted card__subtitle">
+        Queued and running async jobs
+        <span class="runs-live-hint" data-activity-inflight-hint hidden aria-live="polite"></span>
+      </p>
+    </div>
+    <a class="btn btn--ghost btn--sm" href="/runs?status=running">Open runs</a>
+  </div>
+  <div class="card__body">
+    <p class="muted" data-activity-inflight-empty>Loading in-flight runs…</p>
+    <ul class="activity-inflight-list" data-activity-inflight-list hidden aria-label="In-flight async runs"></ul>
+  </div>
+</section>
+{% endif %}
+
 {% if audit_enabled %}
 <form class="card activity-filters" method="get" action="/activity" aria-labelledby="activity-filter-heading">
   <div class="card__header">
