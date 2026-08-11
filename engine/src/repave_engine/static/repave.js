@@ -2670,15 +2670,13 @@
         if (isEnvironmentVend && data.stage === "gates") {
           setStage("gitops", "active");
         }
-        // Publish is the last pipeline stage — surface the result CTA immediately
-        // even if the terminal run_finished event is delayed or dropped.
+        // Publish events can arrive before status flips to succeeded — poll until
+        // terminal, but do not unhide Browse/result until the store says succeeded.
         if (isPipelineRun && data.stage === "publish") {
-          if (completeActions) {
-            completeActions.hidden = false;
+          if (progressLabel && isDryRun) {
+            progressLabel.textContent = "Plan complete — finalizing preview…";
           }
-          if (isDryRun) {
-            pollStatus();
-          }
+          pollUntilTerminal(30, 500);
         }
         updateProgressBar();
       } else if (data.kind === "publish_progress") {
@@ -2871,7 +2869,7 @@
               progressLabel.textContent = "Plan complete — loading file preview…";
             }
             // Pull full result (including rendered_files) instead of racing to redirect.
-            pollStatus();
+            pollUntilTerminal(20, 400);
           } else {
             scheduleResultRedirect();
           }
@@ -2910,6 +2908,21 @@
       window.setTimeout(function () {
         window.location.href = resultUrl;
       }, typeof delayMs === "number" ? delayMs : 800);
+    }
+
+    function pollUntilTerminal(maxAttempts, delayMs) {
+      var attempts = 0;
+      function tick() {
+        if (runComplete) {
+          return;
+        }
+        pollStatus();
+        attempts += 1;
+        if (!runComplete && attempts < maxAttempts) {
+          window.setTimeout(tick, delayMs || 500);
+        }
+      }
+      tick();
     }
 
     var filePreviewRoot = root.querySelector("[data-run-file-preview]");

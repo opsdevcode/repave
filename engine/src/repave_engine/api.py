@@ -1701,7 +1701,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
 
     @app.get("/runs/{run_id}/result", response_class=HTMLResponse)
-    async def run_result_view(run_id: str, request: Request) -> HTMLResponse:
+    async def run_result_view(run_id: str, request: Request) -> Response:
         user = session_user(request)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
@@ -1710,8 +1710,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         record = run_queue.get(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
+        if record.status in {RunStatus.QUEUED, RunStatus.RUNNING}:
+            # Browse/result links can race ahead of the SUCCEEDED write — send
+            # operators back to the live console instead of a dead-end error.
+            return RedirectResponse(f"/runs/{run_id}", status_code=303)
         if record.status != RunStatus.SUCCEEDED:
-            raise HTTPException(status_code=400, detail="Run is not complete")
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Run ended with status {record.status.value}; open /runs/{run_id} for logs"
+                ),
+            )
         if is_live_plan_run(record):
             summary = record.result if isinstance(record.result, dict) else {}
             return templates.TemplateResponse(
