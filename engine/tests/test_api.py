@@ -128,6 +128,22 @@ def test_activity_page(repo_root, output_config) -> None:
     assert "data-portal-view-toggle" in response.text or "audit.enabled" in response.text
 
 
+def test_activity_inflight_strip_when_async_enabled(
+    repo_root, output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/activity").text
+    assert "data-activity-inflight" in body
+    assert "In-flight runs" in body
+    assert "data-activity-inflight-list" in body
+    assert "data-activity-inflight-hint" in body
+    js = client.get("/static/repave.js").text
+    assert "initActivityInflight" in js
+    assert "fetchQueuedAndRunning" in js
+
+
 def test_home_does_not_embed_activity_feed(
     repo_root, output_config, tmp_path: Path, monkeypatch
 ) -> None:
