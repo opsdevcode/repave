@@ -1,12 +1,16 @@
-<section class="card stack-gap" aria-labelledby="files-heading">
+{# Expects `files` (rendered file list). Optional: files_heading, files_id_prefix. #}
+{% set files = files if files is defined else result.rendered_files %}
+{% set files_heading = files_heading if files_heading is defined else "Generated files" %}
+{% set files_id_prefix = files_id_prefix if files_id_prefix is defined else "file" %}
+<section class="card stack-gap" aria-labelledby="{{ files_id_prefix }}-files-heading">
   <div class="card__header">
-    <h2 id="files-heading">Generated files</h2>
+    <h2 id="{{ files_id_prefix }}-files-heading">{{ files_heading }}</h2>
     <p class="muted card__subtitle">Select a path, then Copy to paste into your editor.</p>
   </div>
   <div class="card__body">
     <div class="file-explorer" data-file-explorer>
       <ul class="file-explorer__tree" role="tablist" aria-label="Generated file paths">
-        {% for file in result.rendered_files %}
+        {% for file in files %}
         <li role="presentation">
           <button
             type="button"
@@ -25,7 +29,7 @@
         {% endfor %}
       </ul>
       <div class="file-explorer__preview">
-        {% for file in result.rendered_files %}
+        {% for file in files %}
         <div
           class="file-explorer__pane{% if loop.first %} is-active{% endif %}"
           role="tabpanel"
@@ -36,18 +40,18 @@
             <button
               type="button"
               class="btn btn--ghost btn--sm"
-              data-copy-target="#file-explorer-content-{{ loop.index0 }}"
+              data-copy-target="#{{ files_id_prefix }}-explorer-content-{{ loop.index0 }}"
             >
               Copy
             </button>
           </div>
-          <pre class="panel-code" id="file-explorer-content-{{ loop.index0 }}">{{ file.content }}</pre>
+          <pre class="panel-code" id="{{ files_id_prefix }}-explorer-content-{{ loop.index0 }}">{{ file.content }}</pre>
         </div>
         {% endfor %}
       </div>
     </div>
     <div class="file-explorer-fallback">
-      {% for file in result.rendered_files %}
+      {% for file in files %}
       <details class="file-panel motion-panel"{% if loop.first %} open{% endif %}>
         <summary>
           {{ file.path }}
@@ -60,12 +64,12 @@
             <button
               type="button"
               class="btn btn--ghost btn--sm"
-              data-copy-target="#file-fallback-content-{{ loop.index0 }}"
+              data-copy-target="#{{ files_id_prefix }}-fallback-content-{{ loop.index0 }}"
             >
               Copy
             </button>
           </div>
-          <pre class="panel-code" id="file-fallback-content-{{ loop.index0 }}">{{ file.content }}</pre>
+          <pre class="panel-code" id="{{ files_id_prefix }}-fallback-content-{{ loop.index0 }}">{{ file.content }}</pre>
         </div>
       </details>
       {% endfor %}

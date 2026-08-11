@@ -153,6 +153,10 @@ def test_bundle_result_includes_topology(repo_root, output_config) -> None:
     )
     assert response.status_code == 200
     assert "bundle-topology" in response.text
+    # Dry-run with rendered member files should invite copy, not read as a dead-end failure.
+    if "data-copy-target" in response.text or "Generated files" in response.text:
+        assert "Plan preview ready" in response.text or "Plan complete" in response.text
+        assert "Bundle generation failed" not in response.text
 
 
 def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:

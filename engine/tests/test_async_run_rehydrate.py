@@ -43,6 +43,44 @@ def test_generation_result_from_stored_run_uses_snapshot(repo_root: Path) -> Non
     assert rebuilt.rendered_files[0].content == "# stub\n"
 
 
+def test_generation_result_from_stored_run_empty_list_falls_back_to_artifacts(
+    repo_root: Path, tmp_path: Path
+) -> None:
+    """Empty rendered_files list must not block artifact rehydrate (plan preview)."""
+    artifact = tmp_path / "staging-empty-list"
+    artifact.mkdir()
+    (artifact / "main.tf").write_text("# from disk\n", encoding="utf-8")
+    record = RunRecord(
+        run_id="run-empty-list",
+        status=RunStatus.SUCCEEDED,
+        blueprint_name="terraform-module-generic",
+        dry_run=True,
+        client_request_id=None,
+        acting_user="tester",
+        created_at="2026-01-01T00:00:00Z",
+        updated_at="2026-01-01T00:00:00Z",
+        payload={"inputs": {"module_name": "demo-mod", "cloud_provider": "aws"}},
+        result={
+            "artifact_root": str(artifact),
+            "rendered_files": [],
+            "gates": [
+                {"name": "terraform-fmt", "passed": False, "skipped": False, "message": "fmt"},
+            ],
+            "pr_message": "dry-run",
+        },
+    )
+    output = OutputConfig(github_org="test-org", modules_root=repo_root / "modules")
+    rebuilt = generation_result_from_stored_run(
+        record=record,
+        repo_root=repo_root,
+        output_config=output,
+    )
+    assert rebuilt is not None
+    assert len(rebuilt.rendered_files) >= 1
+    assert rebuilt.rendered_files[0].path == "main.tf"
+    assert rebuilt.rendered_files[0].content == "# from disk\n"
+
+
 def test_generation_result_from_stored_run_falls_back_to_artifact_root(
     repo_root: Path, tmp_path: Path
 ) -> None:

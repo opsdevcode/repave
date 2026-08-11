@@ -2856,6 +2856,12 @@
               progressLabel.textContent = "Gates passed — publish failed (see error below)";
             }
             appendLog("Publish failed — review the error above or open the result page.");
+          } else if (isDryRun) {
+            if (progressLabel) {
+              progressLabel.textContent = "Plan complete — loading file preview…";
+            }
+            // Pull full result (including rendered_files) instead of racing to redirect.
+            pollStatus();
           } else {
             scheduleResultRedirect();
           }
@@ -2886,14 +2892,88 @@
       }
     }
 
-    function scheduleResultRedirect() {
+    function scheduleResultRedirect(delayMs) {
       if (redirectScheduled || !resultUrl) {
         return;
       }
       redirectScheduled = true;
       window.setTimeout(function () {
         window.location.href = resultUrl;
-      }, 800);
+      }, typeof delayMs === "number" ? delayMs : 800);
+    }
+
+    var filePreviewRoot = root.querySelector("[data-run-file-preview]");
+    var filePreviewList = root.querySelector("[data-run-file-preview-list]");
+    var filePreviewPane = root.querySelector("[data-run-file-preview-pane]");
+    var filePreviewContent = root.querySelector("[data-run-file-preview-content]");
+    var filePreviewCopy = root.querySelector("[data-run-file-preview-copy]");
+    var previewFiles = [];
+    var previewIndex = 0;
+
+    function renderRunFilePreview(files) {
+      if (!filePreviewRoot || !filePreviewList || !Array.isArray(files) || !files.length) {
+        return false;
+      }
+      var usable = files.filter(function (file) {
+        return file && typeof file.path === "string" && typeof file.content === "string";
+      });
+      if (!usable.length) {
+        return false;
+      }
+      previewFiles = usable;
+      previewIndex = 0;
+      while (filePreviewList.firstChild) {
+        filePreviewList.removeChild(filePreviewList.firstChild);
+      }
+      usable.forEach(function (file, index) {
+        var item = document.createElement("li");
+        var button = document.createElement("button");
+        button.type = "button";
+        button.className =
+          "run-console__preview-tab" + (index === 0 ? " is-active" : "");
+        button.textContent = file.path;
+        button.setAttribute("data-preview-index", String(index));
+        button.addEventListener("click", function () {
+          previewIndex = index;
+          Array.prototype.forEach.call(
+            filePreviewList.querySelectorAll(".run-console__preview-tab"),
+            function (tab, tabIndex) {
+              tab.classList.toggle("is-active", tabIndex === index);
+            }
+          );
+          if (filePreviewContent) {
+            filePreviewContent.textContent = previewFiles[index].content || "";
+          }
+        });
+        item.appendChild(button);
+        filePreviewList.appendChild(item);
+      });
+      if (filePreviewContent) {
+        filePreviewContent.textContent = usable[0].content || "";
+      }
+      if (filePreviewPane) {
+        filePreviewPane.hidden = false;
+      }
+      filePreviewRoot.hidden = false;
+      return true;
+    }
+
+    if (filePreviewCopy && filePreviewContent) {
+      filePreviewCopy.addEventListener("click", function () {
+        var text = filePreviewContent.textContent || "";
+        if (!text) {
+          return;
+        }
+        copyTextToClipboard(text)
+          .then(function () {
+            showToast("Copied " + (previewFiles[previewIndex] && previewFiles[previewIndex].path
+              ? previewFiles[previewIndex].path
+              : "file"));
+          })
+          .catch(function () {
+            showToast("Copy failed — select the text and copy manually");
+          });
+      });
     }
 
     function applyTerminalFromPoll(body) {
@@ -2982,6 +3062,17 @@
         updateProgressBar();
       }
       stopStatusPolling();
+      var showedPreview =
+        isDryRun &&
+        body.result &&
+        renderRunFilePreview(body.result.rendered_files);
+      if (showedPreview) {
+        if (progressLabel) {
+          progressLabel.textContent = "Plan preview ready — browse files below";
+        }
+        // Keep dry-run previews on the console; full result is one click away.
+        return;
+      }
       scheduleResultRedirect();
     }
 
