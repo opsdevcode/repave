@@ -8,6 +8,8 @@ from repave_engine.api import create_app
 from repave_engine.portal_generate import console_preview_files_from_record
 from repave_engine.run_store import RunRecord, RunStatus
 
+_REPAVE_JS = Path(__file__).resolve().parents[1] / "src" / "repave_engine" / "static" / "repave.js"
+
 
 def test_console_preview_files_from_record_dry_run_snapshot() -> None:
     record = RunRecord(
@@ -118,3 +120,15 @@ def test_run_result_redirects_while_still_running(
     page = client.get(f"/runs/{record.run_id}/result", follow_redirects=False)
     assert page.status_code == 303
     assert page.headers.get("location") == f"/runs/{record.run_id}"
+
+
+def test_run_console_js_polls_dry_run_preview_after_run_complete() -> None:
+    """run_finished sets runComplete before rendered_files exist — polling must continue."""
+    js = _REPAVE_JS.read_text(encoding="utf-8")
+    assert "function pollUntilTerminal" in js
+    assert "previewSettled" in js
+    assert "revealDryRunBrowseFallback" in js
+    # Guard must be dry-run aware; a bare `if (runComplete) return` re-broke plan preview.
+    assert "if (runComplete && !isDryRun)" in js
+    assert "Plan complete — loading file preview…" in js
+    assert "Plan preview ready — browse files below" in js

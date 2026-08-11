@@ -2540,7 +2540,9 @@
         }
         if (progressLabel) {
           if (runComplete) {
-            progressLabel.textContent = "Apply complete — opening result…";
+            progressLabel.textContent = isDryRun
+              ? "Plan complete — loading file preview…"
+              : "Apply complete — opening result…";
           } else if (pipeActive === "gates" && currentGate) {
             progressLabel.textContent =
               "Running " +
@@ -2556,7 +2558,7 @@
             progressLabel.textContent = (pipelineStageLabels[pipeActive] || pipeActive) + "…";
           } else if (pipeDone >= stageCount) {
             progressLabel.textContent = isDryRun
-              ? "Saving plan preview…"
+              ? "Plan complete — finalizing preview…"
               : "Saving run results…";
           } else if (pipeDone > 0) {
             progressLabel.textContent =
@@ -2673,10 +2675,12 @@
         // Publish events can arrive before status flips to succeeded — poll until
         // terminal, but do not unhide Browse/result until the store says succeeded.
         if (isPipelineRun && data.stage === "publish") {
+          updateProgressBar();
           if (progressLabel && isDryRun) {
             progressLabel.textContent = "Plan complete — finalizing preview…";
           }
           pollUntilTerminal(30, 500);
+          return;
         }
         updateProgressBar();
       } else if (data.kind === "publish_progress") {
@@ -2826,7 +2830,10 @@
         currentGate = "";
         finishedGates = totalGates;
         runComplete = true;
-        stopStatusPolling();
+        // Dry-run still needs status polls to load rendered_files into the preview.
+        if (!(isDryRun && isPipelineRun)) {
+          stopStatusPolling();
+        }
         if (isPipelineRun) {
           markPipelineComplete();
         } else if (isFleetDriftConfirm) {
@@ -2849,7 +2856,7 @@
             progressLabel.textContent = "Reclaim complete — opening result…";
           } else {
             progressLabel.textContent = isDryRun
-              ? "Plan complete — opening preview…"
+              ? "Plan complete — loading file preview…"
               : "Apply complete — opening result…";
           }
         }
@@ -2868,8 +2875,8 @@
             if (progressLabel) {
               progressLabel.textContent = "Plan complete — loading file preview…";
             }
-            // Pull full result (including rendered_files) instead of racing to redirect.
-            pollUntilTerminal(20, 400);
+            // Must keep polling after runComplete — see pollUntilTerminal.
+            pollUntilTerminal(25, 400);
           } else {
             scheduleResultRedirect();
           }
@@ -2892,6 +2899,7 @@
 
     var pollTimer = null;
     var redirectScheduled = false;
+    var previewSettled = false;
 
     function stopStatusPolling() {
       if (pollTimer) {
@@ -2905,22 +2913,50 @@
         return;
       }
       redirectScheduled = true;
+      previewSettled = true;
       window.setTimeout(function () {
         window.location.href = resultUrl;
       }, typeof delayMs === "number" ? delayMs : 800);
     }
 
+    function revealDryRunBrowseFallback() {
+      if (!isDryRun) {
+        return;
+      }
+      previewSettled = true;
+      setRunBusy(false);
+      if (completeActions) {
+        completeActions.hidden = false;
+      }
+      if (progressLabel) {
+        progressLabel.textContent = "Plan complete — open Browse for generated files";
+      }
+    }
+
     function pollUntilTerminal(maxAttempts, delayMs) {
       var attempts = 0;
       function tick() {
-        if (runComplete) {
+        // Do not bail on runComplete for dry-run: run_finished sets that flag before
+        // rendered_files are available on GET /api/v1/runs/{id}.
+        if (redirectScheduled || previewSettled) {
+          return;
+        }
+        if (runComplete && !isDryRun) {
           return;
         }
         pollStatus();
         attempts += 1;
-        if (!runComplete && attempts < maxAttempts) {
-          window.setTimeout(tick, delayMs || 500);
+        if (redirectScheduled || previewSettled) {
+          return;
         }
+        if (runComplete && !isDryRun) {
+          return;
+        }
+        if (attempts < maxAttempts) {
+          window.setTimeout(tick, delayMs || 500);
+          return;
+        }
+        revealDryRunBrowseFallback();
       }
       tick();
     }
@@ -3110,10 +3146,20 @@
         body.result &&
         renderRunFilePreview(body.result.rendered_files);
       if (showedPreview) {
+        previewSettled = true;
+        if (completeActions) {
+          completeActions.hidden = false;
+        }
         if (progressLabel) {
           progressLabel.textContent = "Plan preview ready — browse files below";
         }
         // Keep dry-run previews on the console; full result is one click away.
+        return;
+      }
+      if (isDryRun) {
+        // Snapshot may be a count or empty while artifacts rehydrate on /result.
+        revealDryRunBrowseFallback();
+        scheduleResultRedirect(1200);
         return;
       }
       scheduleResultRedirect();
@@ -3144,11 +3190,18 @@
     }
 
     function startStatusPolling() {
-      if (pollTimer || runComplete) {
+      if (pollTimer || previewSettled || redirectScheduled) {
+        return;
+      }
+      if (runComplete && !isDryRun) {
         return;
       }
       pollTimer = window.setInterval(function () {
-        if (runComplete) {
+        if (previewSettled || redirectScheduled) {
+          stopStatusPolling();
+          return;
+        }
+        if (runComplete && !isDryRun) {
           stopStatusPolling();
           return;
         }
