@@ -23,7 +23,36 @@ from repave_engine.pipeline import (
 from repave_engine.portal_result import build_result_portal_context
 from repave_engine.publish_idempotency import publish_message_succeeded
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
+from repave_engine.run_store import RunRecord, RunStatus
 from repave_engine.settings import OutputConfig
+
+
+def console_preview_files_from_record(record: RunRecord) -> tuple[dict[str, object], ...]:
+    """Snapshot files for run-console SSR when a dry-run has already succeeded."""
+    if not record.dry_run or record.status != RunStatus.SUCCEEDED:
+        return ()
+    stored = record.result
+    if not isinstance(stored, dict):
+        return ()
+    raw = stored.get("rendered_files")
+    if not isinstance(raw, list):
+        return ()
+    files: list[dict[str, object]] = []
+    for row in raw:
+        if not isinstance(row, dict):
+            continue
+        path = row.get("path")
+        content = row.get("content")
+        if not isinstance(path, str) or not isinstance(content, str):
+            continue
+        files.append(
+            {
+                "path": path,
+                "content": content,
+                "truncated": bool(row.get("truncated", False)),
+            }
+        )
+    return tuple(files)
 
 
 @dataclass(frozen=True)

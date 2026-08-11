@@ -2670,6 +2670,16 @@
         if (isEnvironmentVend && data.stage === "gates") {
           setStage("gitops", "active");
         }
+        // Publish is the last pipeline stage — surface the result CTA immediately
+        // even if the terminal run_finished event is delayed or dropped.
+        if (isPipelineRun && data.stage === "publish") {
+          if (completeActions) {
+            completeActions.hidden = false;
+          }
+          if (isDryRun) {
+            pollStatus();
+          }
+        }
         updateProgressBar();
       } else if (data.kind === "publish_progress") {
         if (data.message) {
@@ -2910,6 +2920,21 @@
     var previewFiles = [];
     var previewIndex = 0;
 
+    function bindPreviewTab(button, index) {
+      button.addEventListener("click", function () {
+        previewIndex = index;
+        Array.prototype.forEach.call(
+          filePreviewList.querySelectorAll(".run-console__preview-tab"),
+          function (tab, tabIndex) {
+            tab.classList.toggle("is-active", tabIndex === index);
+          }
+        );
+        if (filePreviewContent) {
+          filePreviewContent.textContent = previewFiles[index].content || "";
+        }
+      });
+    }
+
     function renderRunFilePreview(files) {
       if (!filePreviewRoot || !filePreviewList || !Array.isArray(files) || !files.length) {
         return false;
@@ -2933,18 +2958,7 @@
           "run-console__preview-tab" + (index === 0 ? " is-active" : "");
         button.textContent = file.path;
         button.setAttribute("data-preview-index", String(index));
-        button.addEventListener("click", function () {
-          previewIndex = index;
-          Array.prototype.forEach.call(
-            filePreviewList.querySelectorAll(".run-console__preview-tab"),
-            function (tab, tabIndex) {
-              tab.classList.toggle("is-active", tabIndex === index);
-            }
-          );
-          if (filePreviewContent) {
-            filePreviewContent.textContent = previewFiles[index].content || "";
-          }
-        });
+        bindPreviewTab(button, index);
         item.appendChild(button);
         filePreviewList.appendChild(item);
       });
@@ -2956,6 +2970,22 @@
       }
       filePreviewRoot.hidden = false;
       return true;
+    }
+
+    var previewJsonEl = root.querySelector("[data-run-file-preview-json]");
+    if (previewJsonEl) {
+      try {
+        renderRunFilePreview(JSON.parse(previewJsonEl.textContent || "[]"));
+      } catch (_err) {
+        /* keep SSR markup; clicks may be unbound */
+        Array.prototype.forEach.call(
+          filePreviewList ? filePreviewList.querySelectorAll(".run-console__preview-tab") : [],
+          function (tab) {
+            var index = Number(tab.getAttribute("data-preview-index") || "0");
+            bindPreviewTab(tab, index);
+          }
+        );
+      }
     }
 
     if (filePreviewCopy && filePreviewContent) {
@@ -3143,6 +3173,8 @@
       startStatusPolling();
     };
 
+    // Immediate status check — do not wait for the first 4s interval tick.
+    pollStatus();
     startStatusPolling();
     updateProgressBar();
   }

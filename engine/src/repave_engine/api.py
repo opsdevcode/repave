@@ -149,6 +149,7 @@ from repave_engine.portal_errors import (
 )
 from repave_engine.portal_generate import (
     PortalGenerateRedirect,
+    console_preview_files_from_record,
     publish_target_for_run,
     run_portal_generate,
 )
@@ -1633,6 +1634,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     run_record=record,
                     bundle=bundle,
                     gate_names=gate_names,
+                    console_preview_files=console_preview_files_from_record(record),
                 ),
             )
         if is_fleet_drift_confirm_run(record):
@@ -1694,6 +1696,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 blueprint=blueprint,
                 gate_names=blueprint.gates,
                 publish_target=publish_target,
+                console_preview_files=console_preview_files_from_record(record),
             ),
         )
 
