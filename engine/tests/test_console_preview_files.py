@@ -94,3 +94,27 @@ def test_run_console_ssr_preview_when_succeeded(
     assert "Browse generated files" in page.text
     # Succeeded runs must not keep the CTA / preview shell hidden.
     assert "data-run-complete-actions hidden" not in page.text
+
+
+def test_run_result_redirects_while_still_running(
+    repo_root: Path,
+    output_config,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """Browse/result must not 400 with 'Run is not complete' during the succeed race."""
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    queue = client.app.state.run_queue
+    assert queue is not None
+    record = queue._store.create_run(
+        blueprint_name="terraform-module-generic",
+        dry_run=True,
+        payload={"inputs": {"module_name": "demo", "cloud_provider": "aws"}},
+        acting_user="tester",
+    )
+    queue._store.update_status(record.run_id, RunStatus.RUNNING)
+    page = client.get(f"/runs/{record.run_id}/result", follow_redirects=False)
+    assert page.status_code == 303
+    assert page.headers.get("location") == f"/runs/{record.run_id}"
