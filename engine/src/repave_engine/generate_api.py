@@ -243,6 +243,19 @@ def _rendered_files_from_snapshot(raw: object) -> tuple[RenderedFile, ...] | Non
     return tuple(files)
 
 
+def _collect_from_artifacts(
+    *,
+    stored: dict[str, object],
+    repo_root: Path,
+    blueprint: Blueprint,
+) -> tuple[RenderedFile, ...] | None:
+    artifact_store = resolve_artifact_store(repo_root)
+    artifact_root = artifact_store.materialize_run_artifacts(stored)
+    if artifact_root is None:
+        return None
+    return collect_rendered_files(artifact_root, artifact_type=blueprint.artifact_type)
+
+
 def _resolve_stored_rendered_files(
     *,
     stored: dict[str, object],
@@ -252,14 +265,21 @@ def _resolve_stored_rendered_files(
 ) -> tuple[RenderedFile, ...] | None:
     if not dry_run:
         return ()
-    snapshot = _rendered_files_from_snapshot(stored.get("rendered_files"))
-    if isinstance(stored.get("rendered_files"), list):
+    raw = stored.get("rendered_files")
+    snapshot = _rendered_files_from_snapshot(raw)
+    if isinstance(raw, list) and snapshot:
+        return snapshot
+    # Empty/malformed list or legacy count → rebuild from on-disk/object artifacts.
+    from_artifacts = _collect_from_artifacts(
+        stored=stored,
+        repo_root=repo_root,
+        blueprint=blueprint,
+    )
+    if from_artifacts is not None:
+        return from_artifacts
+    if isinstance(raw, list):
         return snapshot if snapshot is not None else ()
-    artifact_store = resolve_artifact_store(repo_root)
-    artifact_root = artifact_store.materialize_run_artifacts(stored)
-    if artifact_root is None:
-        return None
-    return collect_rendered_files(artifact_root, artifact_type=blueprint.artifact_type)
+    return None
 
 
 def _stored_output_dir(stored: dict[str, object]) -> Path:
@@ -301,12 +321,17 @@ def _member_generation_from_stored(
     if not isinstance(gates_raw, list) or not gates_raw:
         return None
     blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
+    output_dir = Path(str(member_row.get("output_dir", ".")))
     rendered_files = _rendered_files_from_snapshot(member_row.get("rendered_files"))
+    if not rendered_files and dry_run and output_dir.is_dir():
+        rendered_files = collect_rendered_files(
+            output_dir,
+            artifact_type=blueprint.artifact_type,
+        )
     if isinstance(member_row.get("rendered_files"), list) and rendered_files is None:
         return None
     if rendered_files is None:
         rendered_files = ()
-    output_dir = Path(str(member_row.get("output_dir", ".")))
     module_name = primary_publish_name(blueprint, template_values)
     module_repository = resolve_module_repository(
         module_name=module_name,

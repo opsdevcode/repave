@@ -166,8 +166,26 @@
     <p class="alert alert--fail" role="alert">{{ run_record.error }}</p>
     {% endif %}
 
+    <section class="run-console__preview card stack-gap" data-run-file-preview hidden>
+      <div class="card__header">
+        <h2 class="h3" data-run-file-preview-heading>Generated files</h2>
+        <p class="muted card__subtitle">Copy paths below, or open the full result for the complete explorer.</p>
+      </div>
+      <div class="card__body">
+        <ul class="run-console__preview-list" data-run-file-preview-list></ul>
+        <div class="run-console__preview-pane" data-run-file-preview-pane hidden>
+          <div class="file-preview__toolbar">
+            <button type="button" class="btn btn--ghost btn--sm" data-run-file-preview-copy>Copy</button>
+          </div>
+          <pre class="panel-code" data-run-file-preview-content></pre>
+        </div>
+      </div>
+    </section>
+
     <p class="run-console__actions" hidden data-run-complete-actions>
-      <a class="btn btn--primary" href="/runs/{{ run_id }}/result">View full result</a>
+      <a class="btn btn--primary" href="/runs/{{ run_id }}/result" data-run-result-cta>
+        {% if run_record.dry_run %}Browse generated files{% else %}View full result{% endif %}
+      </a>
     </p>
 
     {% if blueprint is defined %}

@@ -1641,6 +1641,8 @@ def test_run_console_page_when_async_enabled(
     assert "data-run-console" in page.text
     assert "data-run-progress" in page.text
     assert "command-palette" in page.text
+    assert "data-run-file-preview" in page.text
+    assert "Browse generated files" in page.text
 
 
 @pytest.mark.slow
