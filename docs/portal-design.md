@@ -4,7 +4,7 @@ Planning document for the repave web portal (Jinja templates under
 `engine/src/repave_engine/templates/`). The [roadmap](roadmap.md) tracks release
 labels; this file holds **visual layout**, **component patterns**, and
 **acceptance signals** for portal work shipped under the **v1.18 theme**
-(engine tags through **v2.47.0**).
+(engine tags through **v2.60.6**).
 
 **Current UI (shipped):** night-ops console — shared `base.html`, `/static/repave.css`,
 `/static/repave.js`, sticky shell with optional environment badge.
@@ -12,7 +12,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Route | Template | Highlights |
 | --- | --- | --- |
 | Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
-| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** + Delivery plan/apply; scope filter, presets, validation |
+| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** / **Apply** (no mode radios); scope filter, presets, validation |
 | Generation result | `result.html` | Status hero, lineage + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
@@ -20,9 +20,9 @@ and the shell shows a “Last run in this browser” snippet on home and form ro
 Fleet-wide history is available via the JSONL audit sink, portal `/activity`, and hosted
 `/runs` when durability SQL is configured (roadmap v1.30 — shipped).
 
-**Deferred (Phase 5+):** white-label accents, standards diff UI, light theme,
-Backstage-adjacent density, conversational entry — see
-[Phase 5](#phase-5--polish-and-extensions).
+**Deferred (Phase 5+):** standards diff UI, light theme, conversational entry — see
+[Phase 5](#phase-5--polish-and-extensions). White-label logo URL + accent override
+shipped (see [brand guidelines](brand/README.md)).
 
 **Target:** a coherent product surface without mandating a SPA rewrite — shared
 static assets, CSS tokens, and a base layout template.
@@ -70,22 +70,29 @@ v1.18-polish       home hero, scope presets, browser last-run snippet
 
 ### Design tokens (CSS custom properties)
 
-Default theme is **night-ops** (`color-scheme: dark` on `:root`):
+Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with the
+**Converge** brand (see [brand guidelines](brand/README.md)):
 
-- **Color:** charcoal `--bg` / `--surface`, light `--text`, electric teal
-  `--accent`, crisp `--success` / `--warning` / `--error` / `--skip`
-- **Atmosphere:** vignette + fine grid overlay (`.shell__atmosphere`); scan
-  hairline on the sticky bar
-- **Type:** Fraunces (display), Source Sans 3, IBM Plex Mono
+- **Surfaces:** deep navy `--bg` / `--surface` / `--surface-raised`
+- **Brand:** `--brand-primary` (`#F59E0B`) for golden-path CTAs, active nav accent,
+  and scarce identity chrome; aliased to `--accent` for existing component hooks
+- **Links:** cool `--link` / `--link-hover` (not blanket amber)
+- **Semantic:** `--success` (green), `--warning` (orange — distinct from brand gold),
+  `--error` (rose), `--info`, `--skip`
+- **Atmosphere:** restrained vignette + fine grid (`.shell__atmosphere`); low amber wash
+- **Type:** Source Sans 3 (UI + wordmark), IBM Plex Mono
 - **Layout:** `--radius`, `--space-1` … `--space-6`, `--content-max-width`
 - Optional light theme / toggle remains Phase 5 polish if needed
 
 ### App shell
 
-- Top bar: wordmark, primary nav (Catalog, Library, …), optional environment badge
-  (for example `local` when running under Docker Compose).
+- Top bar: Converge mark + **repave** wordmark, primary nav (Catalog, Library, …),
+  optional environment badge (for example `local` when running under Docker Compose).
+  Favicons under `/static/brand/`.
 - Content area: consistent max width and horizontal padding; mobile single column.
 - Breadcrumb or back link styled consistently (not bare `<a>` above `<h1>`).
+- Tagline (`FROM FRAGMENTED TO GOVERNED`) stays on marketing/docs surfaces — not the
+  product sidebar.
 
 ### Core components (CSS-first)
 
@@ -246,8 +253,12 @@ feedback, generate/update busy states, sticky generate bar, skip link, upgrade
 diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity,
 standards drift diff, staged generate labels, catalog search, resume chip,
 **`/activity`** page, standards drift two-pane layout, form draft restore, result
-gate filters, and update busy stages shipped. Unused home quick-nav sidebar was
-**removed** (sunset). **Platform stakeholder views** (`/platform/compliance`,
+gate filters, and update busy stages shipped. Home **Recent activity** uses a
+compact timeline strip (no detail expanders; soft empty state when audit is on);
+full list, timeline toggle, and filters stay on `/activity`. **Jump back in**
+keeps a horizontal strip of the last four device-local golden paths (newest grows
+to the right). Unused home quick-nav sidebar was **removed** (sunset).
+**Platform stakeholder views** (`/platform/compliance`,
 `/platform/value-stream`) package metrics for security and leadership without catalog chrome.
 **Platform adoption** (`/platform/adoption`) ships outcome
 metrics for golden-path adoption — see [`platform-metrics.md`](platform-metrics.md).
@@ -255,9 +266,9 @@ metrics for golden-path adoption — see [`platform-metrics.md`](platform-metric
 viewer, tables), `badge--warn`, live-plan result hero, entity live-plan preflight +
 busy overlay, command palette shell button, relative timestamps, sortable `/runs`
 table; `engine/tests/test_portal_css_tokens.py` guards undefined `var()` references.
-White-label / compact density and light theme remain optional. **Compact density**
-(`portal.density: compact`) ships for Backstage-adjacent layouts; **white-label**
-accents move to v2.
+**Compact density** (`portal.density: compact`) ships for Backstage-adjacent layouts.
+**White-label** — optional `portal.logo_url` and `portal.accent_color` (Converge defaults
+when unset). Light theme remains optional.
 
 Pick based on audience and hosting model (v1.25+).
 
@@ -285,7 +296,7 @@ holds Search (⌘K), session, and environment badges.
 | **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth on terraform + ansible-role generics (v1.88) |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
-| **White-label** | Deferred to **v2** — optional logo URL and accent override (not v1.18 scope) |
+| **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
 | **Conversational UI (v2)** | Chat entry in same shell; results reuse Phase 4 dashboard |
@@ -319,8 +330,10 @@ Portal strings are **product copy**, not engine documentation.
 - **Hide:** README section titles (`## Provenance`), “synced on generate”, render
   pipeline steps, the word “receipt”, and other implementation details that belong
   in `docs/` or code comments only.
-- **Plan / Apply:** validate-only mode is **Plan** (CTA **Plan preview**); write
-  mode is **Apply**. Keep wire fields `dry_run` / `data-dry-run-*` unchanged.
+- **Plan / Apply:** sticky bar exposes only **Plan preview** and **Apply** CTAs
+  (no Plan/Apply radio group). Wire fields `dry_run` / `data-dry-run-*` stay; buttons
+  set mode on submit. When the run queue is enabled, `stream=1` is always submitted
+  (no Stream gates checkbox).
 
 Governance rail **Lineage** row: engine version + `repave.yaml` — same terms as
 the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.

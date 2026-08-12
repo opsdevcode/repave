@@ -106,12 +106,25 @@ gates:
 
 | Env | Effect |
 | --- | --- |
+| `INFRACOST_API_KEY` | Required at runtime for `infracost breakdown` (skip/fail without it) |
 | `REPAVE_INFRACOST_REQUIRED=1` | Same as `required: true` |
 | `REPAVE_INFRACOST_MAX_MONTHLY_USD` | Overrides org `max_monthly_usd` |
 
 Blueprint `gate_config.infracost.max_monthly_usd` still wins when set (stricter per path).
 Estimates land in audit `extra` (`cost_estimate_*`), the generate PR evidence checklist,
 and upgrade/import preview deltas when a prior `.repave/cost-estimate.json` exists.
+
+### Hosted EKS (`repave.opsdevco.de`)
+
+1. Put the Infracost CLI/API token in `repave-secrets` as key `infracost-api-key`
+   (never commit the value; rotate if it was pasted into chat).
+2. Chart injects it as `INFRACOST_API_KEY` on portal/worker (and per-run Jobs).
+3. `values-decomposed-day2.yaml` sets `repave.gates.infracost.required: true` and a
+   default `maxMonthlyUsd`. Sync via `repave-aws-infra` `./scripts/sync-repave.sh`
+   (or `helm upgrade` with the chart) after the Secret exists.
+
+Without the Secret key, terraform dry-runs still show `INFRACOST_API_KEY not set; skipped`
+(or fail when `required: true`).
 
 ## Showback: trends and budgets (v1.92)
 

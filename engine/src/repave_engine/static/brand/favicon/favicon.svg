@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="title desc">
+  <title id="title">Repave favicon (dark)</title>
+  <desc id="desc">Simplified Converge mark for dark browser chrome.</desc>
+  <g fill="#E2E8F0">
+    <rect x="2" y="7" width="4" height="4" rx="0.6"/>
+    <rect x="3" y="14" width="3.5" height="3.5" rx="0.6"/>
+    <rect x="2" y="21" width="4" height="4" rx="0.6"/>
+  </g>
+  <path d="M9 9 H15 L18 15" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M9 16 H18" fill="none" stroke="#F59E0B" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M9 23 H15 L18 17" fill="none" stroke="#64748B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 10 L28 16 L19 22 Z" fill="#E2E8F0"/>
+</svg>

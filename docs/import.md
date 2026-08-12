@@ -214,24 +214,97 @@ repave import https://github.com/acme/legacy-vpc --force-clone
 
 Plan or open pull requests for many repositories at once.
 
-Portal: [`/import/batch`](/import/batch) — paste URLs and optionally filter by GitHub org
-and topic.
+Portal: [`/import/batch`](/import/batch) — scan a GitHub organization (with artifact-family
+and GitHub search filters), or paste a URL list.
 
 CLI:
 
 ```bash
 repave import placeholder --batch-file repos.txt --org acme --topic terraform
+repave import placeholder --batch-file repos.txt --org acme --language HCL --pushed-since 2026-01-01
 ```
 
 (`placeholder` is ignored when `--batch-file` is set.)
 
+Optional discovery flags with `--org` or when the batch file is combined with org search:
+
+| Flag | Purpose |
+| --- | --- |
+| `--topic` | GitHub topic filter |
+| `--language` | GitHub language filter (for example `HCL` for Terraform) |
+| `--pushed-since` | Repos pushed after `YYYY-MM-DD` |
+| `--include-archived` | Include archived repositories (default: excluded) |
+| `--include-forks` | Include fork repositories (default: excluded) |
+
 API:
 
-- `POST /api/v2/imports/batch/plan` — body: `{ "targets": ["..."], "org": "acme", "topic": "terraform" }`
+- `POST /api/v2/imports/batch/plan` — body includes `targets`, optional `org`, `topic`,
+  `language`, `pushed_since`, `exclude_archived`, `exclude_forks`
 - `POST /api/v2/imports/batch/apply` — same fields plus `github_token`
 
 Batch planning respects GitHub rate limits: the engine tracks `X-RateLimit-*` headers per
 installation and backs off when quota is low or GitHub returns 429.
+
+## Organization scan
+
+Classify repositories in a GitHub organization by artifact family before batch import.
+
+Portal: on [`/import/batch`](/import/batch), use **Scan organization** to enqueue an async
+job (when `durability.async_generation` is enabled). Progress appears on the run console;
+results open on a dedicated result page with an **Add all to batch import** action.
+
+API:
+
+- `POST /api/v2/github/org-scan` — synchronous JSON by default; pass `async: true` for a
+  **202** response with `run_id` when async generation is enabled
+- `POST /api/v2/runs` with `kind: "org_scan"` and scan filters in `inputs` (same fields as
+  org-scan)
+
+Sync example:
+
+```bash
+curl -sS -X POST "$REPAVE_URL/api/v2/github/org-scan" \
+  -H "Content-Type: application/json" \
+  -d '{"org":"acme","families":["terraform"],"language":"HCL","limit":100}'
+```
+
+Async example (requires async generation):
+
+```bash
+curl -sS -X POST "$REPAVE_URL/api/v2/github/org-scan" \
+  -H "Content-Type: application/json" \
+  -d '{"org":"acme","families":["terraform"],"async":true}'
+```
+
+Poll `GET /api/v1/runs/{run_id}` or open `/runs/{run_id}` in the portal until status is
+`succeeded`; results are on `/runs/{run_id}/result`.
+
+## Per-family blueprint mapping (batch)
+
+When a batch mixes Terraform, Ansible, Helm, and other artifact types, map each repository
+to the right golden path in one preview:
+
+Portal: on [`/import/batch`](/import/batch), choose **Map by artifact family** in the golden
+path dropdown. After an org scan, **Add all to batch import** on the result page carries
+per-repository blueprint picks from classification when available.
+
+CLI:
+
+```bash
+repave import placeholder --batch-file repos.txt --map-by-family
+repave import placeholder --batch-file repos.txt \
+  --family-blueprints '{"terraform":"terraform-module-generic","ansible":"ansible-role-generic"}'
+```
+
+API batch plan/apply:
+
+- `use_family_blueprints: true` — default catalog map per artifact family
+- `family_blueprints` — override or extend the map (`terraform` → blueprint name)
+- `target_blueprints` — per-repository overrides (`https://github.com/acme/vpc` → blueprint)
+- `blueprint: "__family_map__"` — same as `use_family_blueprints` with catalog defaults
+
+Resolution order per repository: explicit `blueprint` (all repos) → `target_blueprints` →
+`family_blueprints` by detected family → detect per repository.
 
 ## Pre-flight guards
 

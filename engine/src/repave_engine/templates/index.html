@@ -2,119 +2,65 @@
 
 {% block title %}repave{% endblock %}
 
+{% block head %}
+<style>
+  @view-transition {
+    navigation: auto;
+  }
+</style>
+{% endblock %}
+
 {% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-<section class="home-hero" aria-labelledby="home-hero-title">
-  <div class="home-hero__mesh" aria-hidden="true"></div>
-  <div class="home-hero__layout">
-    <div class="home-hero__primary">
-      <h1 id="home-hero-title" class="home-hero__wordmark">repave</h1>
-      <p class="home-hero__tagline">
-        Pick a golden path, run the gates, and ship compliant automation—no CLI required.
+<section class="home-console" aria-labelledby="home-console-title">
+  <header class="home-console__header">
+    <div class="home-console__intro">
+      <h1 id="home-console-title" class="home-console__title">Golden paths</h1>
+      <p class="home-console__lead muted">
+        Search, pick a path, run the gates.
+        Created repos live in the <a href="/library">library</a>.
       </p>
-      <div class="home-hero__actions">
-        <a class="btn btn--primary btn--glow" href="/library">Browse library</a>
-        <a class="btn btn--secondary" href="/import">Import existing repo</a>
-        <a class="btn btn--secondary" href="/update">Upgrade existing repo</a>
-        <span id="home-resume-chip" class="home-resume-chip" hidden></span>
-        {% if catalog_groups %}
-        {% set ns = namespace(starter=none) %}
-        {% for group in catalog_groups %}
-          {% for bp in group.blueprints %}
-            {% if ns.starter is none %}{% set ns.starter = bp %}{% endif %}
-          {% endfor %}
-        {% endfor %}
-        {% if ns.starter %}
-        <a class="btn btn--secondary" href="/blueprints/{{ ns.starter.name }}">
-          Start with {{ ns.starter.name }}
-        </a>
-        {% endif %}
-        {% endif %}
-      </div>
     </div>
-    {% if catalog_groups %}
-    {% set stats = namespace(paths=0) %}
-    {% for group in catalog_groups %}
-      {% set stats.paths = stats.paths + group.blueprints|length %}
-    {% endfor %}
-    <ul class="home-hero__metrics" aria-label="Catalog summary">
-      <li>
-        <span class="home-hero__metric-value">{{ stats.paths }}</span>
-        <span class="home-hero__metric-label">golden paths</span>
-      </li>
-      <li>
-        <span class="home-hero__metric-value">{{ catalog_groups|length }}</span>
-        <span class="home-hero__metric-label">artifact families</span>
-      </li>
-      <li class="home-hero__metric-note">
-        Gates on every apply
-      </li>
-    </ul>
-    {% endif %}
+    <nav class="home-console__actions" aria-label="Catalog shortcuts">
+      <a class="btn btn--ghost btn--sm" href="/import">Import</a>
+      <a class="btn btn--ghost btn--sm" href="/update">Upgrade</a>
+      {% if audit_enabled %}
+      <a class="btn btn--ghost btn--sm" href="/activity">Activity</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  {% if catalog_groups or catalog_bundles %}
+  <div class="catalog-search home-console__search" data-catalog-search>
+    <label class="visually-hidden" for="catalog-search-input">Search golden paths</label>
+    <input
+      class="catalog-search__input field__input"
+      type="search"
+      id="catalog-search-input"
+      placeholder="Search paths — name, gate, standard… (press /)"
+      autocomplete="off"
+      data-catalog-search-input
+      autofocus
+    />
+    <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
+  </div>
+  {% endif %}
+
+  <div class="home-quick" data-home-quick hidden>
+    <div class="home-quick__resume" id="home-resume-chip" hidden></div>
+    <ul class="home-quick__recent" data-recent-paths-list aria-label="Recently opened paths"></ul>
   </div>
 </section>
-
-<nav class="demo-pipeline" data-demo-pipeline aria-label="How repave works">
-  <ol class="demo-pipeline__steps">
-    <li class="demo-pipeline__step">
-      <span class="demo-pipeline__index">1</span>
-      <span><strong>Select</strong> a golden path to plan or apply</span>
-    </li>
-    <li class="demo-pipeline__step">
-      <span class="demo-pipeline__index">2</span>
-      <span><strong>Configure</strong> service scope and policy pins</span>
-    </li>
-    <li class="demo-pipeline__step">
-      <span class="demo-pipeline__index">3</span>
-      <span><strong>Apply</strong> — render, gates, delivery</span>
-    </li>
-  </ol>
-</nav>
 
 <div class="home-layout home-layout--catalog" data-home-layout>
   <div class="home-layout__main">
-{% if catalog_groups or catalog_bundles %}
-<div class="catalog-search" data-catalog-search>
-  <label class="catalog-search__label" for="catalog-search-input">Search golden paths</label>
-  <input
-    class="catalog-search__input field__input"
-    type="search"
-    id="catalog-search-input"
-    placeholder="Name, description, or gate…"
-    autocomplete="off"
-    data-catalog-search-input
-  />
-  <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
-</div>
-{% endif %}
-{% if recent_activity %}
-<section class="activity-card card" id="recent-activity" aria-labelledby="activity-heading">
-  <div class="card__header">
-    <h2 id="activity-heading">Recent activity</h2>
-    <p class="muted card__subtitle">
-      Latest applies and publishes from the audit log · <a href="/activity">View all activity</a>
-    </p>
-  </div>
-  <div class="card__body">
-    {% include "partials/activity_list.html" %}
-  </div>
-</section>
-{% endif %}
-
 <section
   id="golden-paths"
   class="catalog-inventory home-catalog"
   aria-labelledby="golden-paths-heading"
 >
-  <header class="catalog-inventory__header">
-    <h2 id="golden-paths-heading" class="catalog-inventory__title">Golden paths</h2>
-    <p class="catalog-inventory__lead muted">
-      Golden paths grouped by family — expand a category to plan or apply a new artifact.
-      Already created repos live in the
-      <a href="/library">library</a>.
-    </p>
-  </header>
+  <h2 id="golden-paths-heading" class="visually-hidden">Browse by family</h2>
 
   {% if catalog_bundles or catalog_groups %}
   <div class="catalog-inventory__list">
@@ -143,6 +89,11 @@
             class="catalog-inventory__item catalog-inventory__item--bundle"
             href="/bundles/{{ bundle.name }}"
             data-catalog-card
+            data-peek-name="{{ bundle.name }}"
+            data-peek-version="{{ bundle.version }}"
+            data-peek-gates="{{ bundle.members|length }} members"
+            data-peek-standard="composite bundle"
+            data-peek-description="{{ bundle.description or '' }}"
             data-search-text="{{ bundle.name }} {{ bundle.description or '' }} bundle composite"
           >
             <span class="catalog-inventory__item-head">
@@ -168,6 +119,7 @@
       class="catalog-inventory__category catalog-inventory__category--{{ group.family }}"
       id="catalog-{{ group.family }}"
       data-catalog-group="{{ group.family }}"
+      {% if loop.first %}open{% endif %}
     >
       <summary class="catalog-inventory__summary">
         <span class="catalog-inventory__summary-main">
@@ -183,6 +135,11 @@
             class="catalog-inventory__item catalog-inventory__item--{{ bp.artifact_type }}"
             href="/blueprints/{{ bp.name }}"
             data-catalog-card
+            data-peek-name="{{ bp.name }}"
+            data-peek-version="{{ bp.version }}"
+            data-peek-gates="{{ bp.gates|join(', ') }}"
+            data-peek-standard="{{ bp.standard_source.rsplit('/', 1)[-1] }}"
+            data-peek-description="{{ bp.description or '' }}"
             data-search-text="{{ bp.name }} {{ bp.description or '' }} {{ bp.gates | join(' ') }} {{ bp.standard_source }}"
           >
             <span class="catalog-inventory__item-head">
@@ -219,4 +176,8 @@
 </section>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="module" src="/static/repave-home.mjs?v={{ app_version }}"></script>
 {% endblock %}

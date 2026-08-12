@@ -12,6 +12,12 @@ data:
       repo_name_template: {{ .Values.repave.output.repoNameTemplate | quote }}
     portal:
       density: {{ .Values.repave.portal.density | quote }}
+      {{- if .Values.repave.portal.logoUrl }}
+      logo_url: {{ .Values.repave.portal.logoUrl | quote }}
+      {{- end }}
+      {{- if .Values.repave.portal.accentColor }}
+      accent_color: {{ .Values.repave.portal.accentColor | quote }}
+      {{- end }}
       {{- if .Values.repave.portal.costSnapshots.enabled }}
       cost_snapshots:
         enabled: {{ .Values.repave.portal.costSnapshots.enabled }}
@@ -34,6 +40,13 @@ data:
       policy:
         required_rules:
 {{ toYaml .Values.repave.gates.policy.requiredRules | indent 10 }}
+      {{- if or .Values.repave.gates.infracost.required .Values.repave.gates.infracost.maxMonthlyUsd }}
+      infracost:
+        required: {{ .Values.repave.gates.infracost.required }}
+        {{- if .Values.repave.gates.infracost.maxMonthlyUsd }}
+        max_monthly_usd: {{ .Values.repave.gates.infracost.maxMonthlyUsd }}
+        {{- end }}
+      {{- end }}
     {{- if .Values.repave.audit.enabled }}
     audit:
       enabled: true

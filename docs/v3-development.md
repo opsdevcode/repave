@@ -27,6 +27,20 @@ Sync weekly: `git merge origin/main` on `next/v3` (merge, never rebase).
 
 Extract with [`scripts/extract-repos/`](../scripts/extract-repos/README.md).
 
+## Foundation slice (default-off)
+
+Modules under `engine/src/repave_engine/`:
+
+| Module | Purpose |
+| --- | --- |
+| `deprecations.py` | `V3_DEPRECATIONS` registry + HTTP Sunset headers |
+| `risk_class.py` | `RiskClass` enum and `classify_change()` |
+| `waivers.py` | JSONL waiver load + expiry evaluation |
+| `v3_foundation.py` | `v3:` block in `repave.config.yaml` (off until flip) |
+
+Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
+`engine/tests/test_v3_foundation.py` and `make test-v3`.
+
 ## Testing
 
 ```bash

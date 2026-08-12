@@ -177,8 +177,8 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | Method | Path | Role | Notes |
 | --- | --- | --- | --- |
 | `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` |
-| `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities |
-| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + observability/cost/deployment enrichments |
+| `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on) |
+| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments |
 | `GET` | `/api/v2/audit` | viewer+ | Query audit history (same filters as v1) |
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows |
 | `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (fleet freshness + audit sparklines) |
@@ -188,6 +188,11 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption / DX outcome metrics (`?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
+| `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity distribution — see [`service-catalog.md`](service-catalog.md) |
+| `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress rollup (+ inactive list) |
+| `POST` | `/api/v2/platform/initiatives` | admin | Create initiative (`title` required) |
+| `PATCH` | `/api/v2/platform/initiatives/{id}` | admin | Partial update (title, targets, `active`, …) |
+| `DELETE` | `/api/v2/platform/initiatives/{id}` | admin | Soft-deactivate (`active: false`) |
 
 ## `/api/v1` deprecation
 

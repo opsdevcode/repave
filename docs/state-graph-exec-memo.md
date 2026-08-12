@@ -43,16 +43,20 @@ groundwork; they were a gap in the product.
 also the argument most likely to expire, and it should not become a reason to stop
 re-examining the decision.
 
-## Why we stopped
+## Why we stopped (and when we revisit)
 
 Parallel execution — Phase 4 — inverts every one of those reasons. It adds no governance
 capability, answers no question we owe, costs more than everything else combined, and its
 failure mode is destroyed production infrastructure when the partitioner splits two
 resources that were not actually independent. It is gated behind a
-[written go/no-go review](state-graph-phase4-review.md) whose default answer is no.
+[written go/no-go review](state-graph-phase4-review.md) whose default answer is no on
+v2/v3.
 
-If applies ever need to be faster, splitting configurations into smaller states gets most
-of the benefit using a mechanism Terraform already supports.
+Graph-scoped plan/apply and any Stategraph buy (or Phase 4 build) revisit are scheduled as
+the **v4.0.0** roadmap theme
+([beyond v3.0.0](roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)). Until
+then, splitting configurations into smaller states gets most of the speed benefit using a
+mechanism Terraform already supports.
 
 ## What we now own
 
@@ -64,6 +68,8 @@ sensitive attributes.
 
 ## Revisit if
 
+- The **v4.0.0** Stategraph theme is promoted into Planned after v3 GA and Phases 1–3
+  enablement.
 - A vendor ships blueprint-aware policy hooks that could enforce our gates inside their
   transaction. That removes the one reason that carries this decision.
 - Maintenance exceeds 1 FTE, or state custody causes a production incident. Either means

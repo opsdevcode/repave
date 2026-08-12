@@ -17,9 +17,13 @@ output:
   modules_root: ../repave-modules
   repo_name_template: "tf-{cloud_provider}-{module_name}"
 
-# Optional portal layout (Backstage-adjacent density without white-label theming).
+# Optional portal layout (Backstage-adjacent density + optional white-label).
 # portal:
 #   density: compact   # default | compact
+#   # White-label (optional): custom mark URL and brand accent hex.
+#   # logo_url: "/static/brand/custom-mark.svg"   # or https://cdn.example.com/mark.svg
+#   # accent_color: "#F59E0B"                     # #RGB or #RRGGBB; scarce brand CTAs only
+#   # Env overrides: REPAVE_PORTAL_LOGO_URL, REPAVE_PORTAL_ACCENT_COLOR
 #   # Template for per-entity dashboard links ({name}, {service}, {entity_id}).
 #   observability_dashboard_url: "https://grafana.example.com/d/svc?var-service={name}"
 #   # JSON SLO summary URL (same placeholders). Response: status, slo_target, slo_current, detail.
@@ -198,6 +202,17 @@ gates:
 #       # use_backend: true
 # Or: REPAVE_LIVE_PLAN=1
 
+# Optional service catalog overlay (ADR 006) — maturity, hub, sandboxes, initiatives.
+# service_catalog:
+#   enabled: true
+#   maturity_rubric: config/maturity-rubric.yaml
+#   workload_profiles: config/workload-profiles.yaml
+#   deployment_sets: config/deployment-sets.yaml
+#   initiatives: data/initiatives.jsonl
+#   default_team: platform
+# Or: REPAVE_SERVICE_CATALOG=1
+# See docs/service-catalog.md and examples/platform-dev/.
+
 # Optional governed environment vending (ADR 003 Phase 3).
 # environment_vending:
 #   enabled: true
@@ -221,6 +236,12 @@ gates:
 #   otlp_endpoint: http://127.0.0.1:4318
 #   service_name: repave-engine
 # Or: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME (see docs/tracing.md)
+
+# v3 foundation (next/v3 line only — default off on main until v3.0.0 merge-back).
+# v3:
+#   enabled: false
+#   waivers_file: data/waivers.jsonl
+#   waiver_warn_days: 7
 
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.

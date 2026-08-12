@@ -5,7 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/import">← Import repository</a></p>
 <header class="form-hero form-hero--compact">
   <div>
     <h1 class="page-title">Batch import</h1>
@@ -190,6 +189,12 @@
     <label class="field__label" for="batch-blueprint">Golden path (optional)</label>
     <select class="field__input" id="batch-blueprint" name="blueprint">
       <option value="">Detect per repository</option>
+      <option
+        value="{{ family_blueprint_map_sentinel }}"
+        {% if selected_blueprint == family_blueprint_map_sentinel %}selected{% endif %}
+      >
+        Map by artifact family
+      </option>
       {% for group in catalog_groups %}
         {% for blueprint in group.blueprints %}
         <option value="{{ blueprint.name }}" {% if selected_blueprint == blueprint.name %}selected{% endif %}>
@@ -198,7 +203,19 @@
         {% endfor %}
       {% endfor %}
     </select>
+    <p class="field__hint muted">
+      Choose <strong>Map by artifact family</strong> after an org scan, or leave detection per
+      repository. Org scan results can pre-fill per-repo golden paths when you add URLs from the
+      scan result page.
+    </p>
   </div>
+
+  <input
+    type="hidden"
+    id="target-blueprints-json"
+    name="target_blueprints_json"
+    value="{{ target_blueprints_json or '' }}"
+  />
 
   <div class="form-actions">
     <button class="btn btn--primary" type="submit">Preview batch</button>

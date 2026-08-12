@@ -5,7 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/platform/fleet">← Platform</a> · <a href="/platform/adoption">Adoption</a></p>
 {% include "partials/platform_subnav.html" %}
 <header class="form-hero">
   <div>
@@ -19,11 +18,8 @@
 </header>
 
 {% if not roadmap_page.metrics_enabled %}
-<div class="alert alert--info">
-  Enable <code>platform_metrics</code> in <code>repave.config.yaml</code>
-  (or set <code>REPAVE_PLATFORM_METRICS=1</code>) to build roadmap evidence.
-  See <code>docs/platform-metrics.md</code>.
-</div>
+{% set platform_metrics_purpose = "Enable it to build roadmap evidence." %}
+{% include "partials/platform_metrics_disabled.html" %}
 {% else %}
   {% set report = roadmap_page.report %}
 

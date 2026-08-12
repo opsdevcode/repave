@@ -29,10 +29,9 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
-from repave_engine.catalog_cost import enrich_catalog_entities_with_cost, enrich_entity_cost
+from repave_engine.catalog_cost import enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
-    enrich_catalog_entities_with_deployment,
 )
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.entity_catalog import (
@@ -65,8 +64,14 @@ from repave_engine.observability_slo import fetch_entity_slo_summary
 from repave_engine.org_import_scan import DEFAULT_SCAN_LIMIT, scan_github_org
 from repave_engine.portal_context import (
     audit_file_or_http404,
+    build_enriched_portal_catalog_entities,
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
+)
+from repave_engine.portal_generate import public_run_dict_with_preview_files
+from repave_engine.portal_platform import (
+    build_platform_initiatives_page,
+    build_platform_maturity_page,
 )
 from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
 from repave_engine.repo_add import (
@@ -82,19 +87,27 @@ from repave_engine.repo_import import (
     RepoImportError,
     import_repository,
     import_repository_batch,
+    parse_target_blueprints,
     plan_import,
     plan_import_batch,
     record_import,
+    resolve_batch_import_blueprint_options,
 )
 from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
 from repave_engine.run_submit import parse_run_target, submit_async_run
+from repave_engine.service_catalog_overlay import (
+    entity_initiative_statuses,
+    filter_entities_by_team,
+    filter_entities_for_user,
+)
 from repave_engine.settings import (
     OutputConfig,
     load_environment_vending_config,
     load_fleet_config,
     load_portal_config,
+    load_service_catalog_config,
 )
 from repave_engine.upgrade_api import (
     UpgradeTargetError,
@@ -139,6 +152,11 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/platform/compliance",
     "GET /api/v2/platform/value-stream",
     "GET /api/v2/platform/roadmap-evidence",
+    "GET /api/v2/platform/maturity",
+    "GET /api/v2/platform/initiatives",
+    "POST /api/v2/platform/initiatives",
+    "PATCH /api/v2/platform/initiatives/{initiative_id}",
+    "DELETE /api/v2/platform/initiatives/{initiative_id}",
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
     "GET /api/v2/platform/finops/export",
@@ -328,6 +346,40 @@ def build_api_v2_router(
         pushed_since = str(payload.get("pushed_since", "")).strip()
         exclude_archived = bool(payload.get("exclude_archived", True))
         exclude_forks = bool(payload.get("exclude_forks", True))
+        use_async = bool(payload.get("async", False))
+        queue = _run_queue(request)
+        if use_async:
+            if queue is None:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Async org scan requires durability.async_generation",
+                )
+            scan_inputs: dict[str, Any] = {
+                "org": org,
+                "families": families or [],
+                "skip_governed": skip_governed,
+                "min_confidence": min_confidence,
+                "limit": limit,
+                "topic": topic,
+                "language": language,
+                "pushed_since": pushed_since,
+                "exclude_archived": exclude_archived,
+                "exclude_forks": exclude_forks,
+            }
+            try:
+                record = submit_async_run(
+                    queue,
+                    payload={"kind": "org_scan", "inputs": scan_inputs},
+                    acting_user=_acting_user(request),
+                    repo_root=repo_root,
+                )
+            except RunQueueFullError as exc:
+                raise HTTPException(status_code=429, detail=str(exc)) from exc
+            except RunQueueShuttingDownError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            return JSONResponse(record.to_public_dict(), status_code=202)
         try:
             result = scan_github_org(
                 org,
@@ -426,7 +478,14 @@ def build_api_v2_router(
             )
         payload = await _parse_json_object(request)
         kind = str(payload.get("kind", "")).strip()
-        if kind != "live_plan" and kind != "environment_vend":
+        platform_kinds = (
+            "live_plan",
+            "environment_vend",
+            "environment_reclaim",
+            "fleet_drift_confirm",
+            "org_scan",
+        )
+        if kind not in platform_kinds:
             try:
                 parse_run_target(payload)
             except ValueError as exc:
@@ -491,7 +550,7 @@ def build_api_v2_router(
         record = queue.get(run_id)
         if record is None:
             raise HTTPException(status_code=404, detail="Run not found")
-        return JSONResponse(record.to_public_dict())
+        return JSONResponse(public_run_dict_with_preview_files(record, repo_root=repo_root))
 
     @router.post("/runs/{run_id}/replay")
     async def api_v2_runs_replay(run_id: str, request: Request) -> JSONResponse:
@@ -703,13 +762,23 @@ def build_api_v2_router(
         )
         org = str(payload.get("org", "")).strip()
         topic = str(payload.get("topic", "")).strip()
-        blueprint_name = str(payload.get("blueprint", "")).strip() or None
+        blueprint_raw = str(payload.get("blueprint", "")).strip() or None
+        use_family_blueprints = bool(payload.get("use_family_blueprints", False))
+        blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
+            repo_root,
+            blueprint=blueprint_raw,
+            family_blueprints_raw=payload.get("family_blueprints"),
+            use_family_blueprints=use_family_blueprints,
+        )
+        target_blueprints = parse_target_blueprints(payload.get("target_blueprints"))
         with_gates = bool(payload.get("with_gates", True))
         try:
             batch = plan_import_batch(
                 targets,
                 repo_root,
                 blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints or None,
                 values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
                 path_overrides=parse_path_overrides(payload.get("overrides")),
                 git_token=resolve_github_access_token(
@@ -739,11 +808,22 @@ def build_api_v2_router(
                 status_code=400, detail="a GitHub token is required for batch apply"
             )
         try:
+            blueprint_raw = str(payload.get("blueprint", "")).strip() or None
+            use_family_blueprints = bool(payload.get("use_family_blueprints", False))
+            blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
+                repo_root,
+                blueprint=blueprint_raw,
+                family_blueprints_raw=payload.get("family_blueprints"),
+                use_family_blueprints=use_family_blueprints,
+            )
+            target_blueprints = parse_target_blueprints(payload.get("target_blueprints"))
             batch_result = import_repository_batch(
                 targets,
                 repo_root,
                 github_token=token,
-                blueprint_name=str(payload.get("blueprint", "")).strip() or None,
+                blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints or None,
                 values=payload.get("inputs") if isinstance(payload.get("inputs"), dict) else None,
                 org=str(payload.get("org", "")).strip(),
                 topic=str(payload.get("topic", "")).strip(),
@@ -865,20 +945,32 @@ def build_api_v2_router(
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
         )
-        entities = list(
-            enrich_catalog_entities_with_deployment(
-                enrich_catalog_entities_with_cost(
-                    build_portal_catalog_entities(
-                        repo_root,
-                        output_config,
-                        cost_actuals_configured=cost_configured,
-                    ),
-                    portal_config,
-                ),
-                portal_config,
+        entities = build_enriched_portal_catalog_entities(
+            repo_root,
+            output_config,
+            portal_config,
+            cost_actuals_configured=cost_configured,
+        )
+        team = str(request.query_params.get("team", "")).strip()
+        owner = str(request.query_params.get("owner", "")).strip()
+        try:
+            catalog_cfg = load_service_catalog_config(repo_root)
+        except ValueError:
+            catalog_cfg = None
+        if team and catalog_cfg is not None:
+            entities = filter_entities_by_team(
+                entities,
+                team,
+                default_team=catalog_cfg.default_team,
             )
-        )
+        elif owner:
+            entities = filter_entities_for_user(
+                entities,
+                owner_filter=owner,
+                default_team=catalog_cfg.default_team if catalog_cfg else "platform",
+            )
         return JSONResponse(
             {
                 "count": len(entities),
@@ -892,10 +984,12 @@ def build_api_v2_router(
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
+            cost_focus_file=portal_config.cost_focus.file,
         )
-        entities = build_portal_catalog_entities(
+        entities = build_enriched_portal_catalog_entities(
             repo_root,
             output_config,
+            portal_config,
             cost_actuals_configured=cost_configured,
         )
         entity = find_catalog_entity(entities, entity_id)
@@ -904,6 +998,13 @@ def build_api_v2_router(
         entity, cost, cost_estimate = enrich_entity_cost(entity, portal_config)
         entity, deployment = deployment_scorecard_for_entity(entity, portal_config)
         body = entity.to_public_dict()
+        try:
+            catalog_cfg = load_service_catalog_config(repo_root)
+        except ValueError:
+            catalog_cfg = None
+        statuses = entity_initiative_statuses(entity, catalog_cfg)
+        if statuses:
+            body["initiatives"] = [item.to_public_dict() for item in statuses]
         obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
         if obs_url:
             body["observability_url"] = obs_url
@@ -1146,6 +1247,129 @@ def build_api_v2_router(
             persist=False,
         )
         return JSONResponse(page.to_public_dict())
+
+    @router.get("/platform/maturity")
+    async def api_v2_platform_maturity(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        if load_service_catalog_config(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "service_catalog is not configured "
+                    "(set service_catalog.enabled or REPAVE_SERVICE_CATALOG=1)"
+                ),
+            )
+        page = build_platform_maturity_page(repo_root, resolved_output=output_config)
+        return JSONResponse(page.to_public_dict())
+
+    def _initiatives_store_or_404() -> Path:
+        catalog_cfg = load_service_catalog_config(repo_root)
+        if catalog_cfg is None or catalog_cfg.initiatives is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "Initiatives store is not configured "
+                    "(set service_catalog.enabled and service_catalog.initiatives)"
+                ),
+            )
+        return catalog_cfg.initiatives
+
+    @router.get("/platform/initiatives")
+    async def api_v2_platform_initiatives(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        if load_service_catalog_config(repo_root) is None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    "service_catalog is not configured "
+                    "(set service_catalog.enabled or REPAVE_SERVICE_CATALOG=1)"
+                ),
+            )
+        page = build_platform_initiatives_page(repo_root, resolved_output=output_config)
+        return JSONResponse(page.to_public_dict())
+
+    @router.post("/platform/initiatives")
+    async def api_v2_platform_initiatives_create(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.initiatives import append_initiative, build_initiative_from_form
+
+        store_path = _initiatives_store_or_404()
+        try:
+            body = await request.json()
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="JSON body required") from exc
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="JSON object required")
+        try:
+            initiative = build_initiative_from_form(body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            append_initiative(store_path, initiative)
+        except OSError as exc:
+            logger.warning("Failed to persist initiative: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to persist initiative",
+            ) from exc
+        return JSONResponse(initiative.to_public_dict(), status_code=201)
+
+    @router.patch("/platform/initiatives/{initiative_id}")
+    async def api_v2_platform_initiatives_patch(
+        request: Request,
+        initiative_id: str,
+    ) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.initiatives import (
+            apply_initiative_patch,
+            get_initiative,
+            upsert_initiative,
+        )
+
+        store_path = _initiatives_store_or_404()
+        existing = get_initiative(store_path, initiative_id)
+        if existing is None:
+            raise HTTPException(status_code=404, detail=f"initiative not found: {initiative_id}")
+        try:
+            body = await request.json()
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=400, detail="JSON body required") from exc
+        if not isinstance(body, dict):
+            raise HTTPException(status_code=400, detail="JSON object required")
+        try:
+            updated = apply_initiative_patch(existing, body)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            upsert_initiative(store_path, updated)
+        except OSError as exc:
+            logger.warning("Failed to update initiative: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to update initiative",
+            ) from exc
+        return JSONResponse(updated.to_public_dict())
+
+    @router.delete("/platform/initiatives/{initiative_id}")
+    async def api_v2_platform_initiatives_delete(
+        request: Request,
+        initiative_id: str,
+    ) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.initiatives import deactivate_initiative
+
+        store_path = _initiatives_store_or_404()
+        try:
+            deactivated = deactivate_initiative(store_path, initiative_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except OSError as exc:
+            logger.warning("Failed to deactivate initiative: %s", exc)
+            raise HTTPException(
+                status_code=503,
+                detail="Failed to deactivate initiative",
+            ) from exc
+        return JSONResponse(deactivated.to_public_dict())
 
     @router.post("/platform/feedback")
     async def api_v2_platform_feedback_post(request: Request) -> JSONResponse:

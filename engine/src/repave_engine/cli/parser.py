@@ -460,6 +460,39 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="With --batch-file, filter the org query by topic",
     )
+    import_cmd.add_argument(
+        "--language",
+        default="",
+        help="With --batch-file or --org, filter repositories by GitHub language (for example HCL)",
+    )
+    import_cmd.add_argument(
+        "--pushed-since",
+        default="",
+        help="With --batch-file or --org, filter repos pushed after YYYY-MM-DD",
+    )
+    import_cmd.add_argument(
+        "--include-archived",
+        action="store_true",
+        help="With --batch-file or --org, include archived repositories in discovery",
+    )
+    import_cmd.add_argument(
+        "--include-forks",
+        action="store_true",
+        help="With --batch-file or --org, include fork repositories in discovery",
+    )
+    import_cmd.add_argument(
+        "--map-by-family",
+        action="store_true",
+        help=(
+            "With --batch-file, map each repository to the default golden path "
+            "for its artifact family"
+        ),
+    )
+    import_cmd.add_argument(
+        "--family-blueprints",
+        default=None,
+        help="JSON object mapping artifact family to blueprint for batch import",
+    )
     import_cmd.set_defaults(func=cmd_import)
 
     add_cmd = sub.add_parser(

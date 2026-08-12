@@ -14,9 +14,11 @@ from repave_engine.api import create_app
 from repave_engine.settings import (
     load_audit_config,
     load_durability_config,
+    load_environment_vending_config,
     load_fleet_config,
     load_platform_metrics_config,
     load_portal_config,
+    load_service_catalog_config,
 )
 
 
@@ -73,6 +75,17 @@ def test_platform_dev_config_loads(platform_dev_root: Path) -> None:
     assert audit is not None
     assert audit.enabled is True
 
+    catalog = load_service_catalog_config(platform_dev_root)
+    assert catalog is not None
+    assert catalog.enabled is True
+    assert catalog.maturity_rubric is not None
+    assert catalog.maturity_rubric.is_file()
+
+    vend = load_environment_vending_config(platform_dev_root)
+    assert vend is not None
+    assert vend.enabled is True
+    assert vend.file.is_file()
+
 
 def test_platform_dev_pages_render(
     platform_dev_repo: Path,
@@ -89,6 +102,10 @@ def test_platform_dev_pages_render(
         ("/platform/value-stream", "Value stream"),
         ("/platform/feedback", "Developer feedback"),
         ("/platform/campaigns", "Operator campaigns"),
+        ("/platform/maturity", "Service maturity"),
+        ("/platform/initiatives", "Initiatives"),
+        ("/home", "My services"),
+        ("/sandbox", "Request a sandbox"),
     ):
         response = client.get(path)
         assert response.status_code == 200, path
@@ -98,14 +115,27 @@ def test_platform_dev_pages_render(
     assert "platform-rollout" in campaigns
 
     home = client.get("/").text
+    primary = home.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert 'href="/platform/fleet"' in primary
+    assert ">Platform<" in primary
+    assert 'href="/home"' in primary
+    assert 'href="/sandbox"' in primary
     more_start = home.index("shell__nav-more")
     more_end = home.index("</details>", more_start)
     more_section = home[more_start:more_end]
-    assert 'href="/platform/finops"' in more_section
-    assert 'href="/platform/compliance"' in more_section
-    assert 'href="/platform/value-stream"' in more_section
-    assert 'href="/platform/feedback"' in more_section
-    assert 'href="/platform/roadmap"' in more_section
+    assert 'href="/platform/finops"' not in more_section
+    assert 'href="/import"' in more_section
+    # Deep platform routes live in the command palette and platform subnav.
+    assert '"/platform/finops"' in home
+    assert '"/platform/compliance"' in home
+    assert '"/platform/value-stream"' in home
+    assert '"/platform/feedback"' in home
+    assert '"/platform/roadmap"' in home
+    assert '"/platform/maturity"' in home
+    assert '"/platform/initiatives"' in home
+    footer = home[home.index("shell__footer") :]
+    assert "repave · engine" in footer
+    assert "shell__footer-link" not in footer
 
     roadmap = client.get("/platform/roadmap").text
     assert "Roadmap evidence" in roadmap
@@ -113,7 +143,5 @@ def test_platform_dev_pages_render(
 
     finops = client.get("/platform/finops").text
     assert "Cost anomalies" in finops
-    assert "shell__footer-link" in home
-    assert 'href="/platform/ops"' in home
-    assert 'href="/platform/fleet"' in home
+    assert 'href="/platform/fleet"' in primary
     assert 'class="platform-subnav shell__nav"' in client.get("/platform/fleet").text

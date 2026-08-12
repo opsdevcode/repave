@@ -5,16 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  {% if environment_vend_summary.entity_id %}
-  <a href="/services/{{ environment_vend_summary.entity_id }}">← {{ environment_vend_summary.entity_id }}</a>
-  {% else %}
-  <a href="/library">← Library</a>
-  {% endif %}
-  ·
-  <a href="/runs/{{ run_id }}">Run console</a>
-</p>
-
 <section
   class="result-hero result-hero--{% if environment_vend_summary.gates_outcome == 'passed' %}passed{% else %}failed{% endif %}"
   aria-labelledby="environment-vend-result-heading"

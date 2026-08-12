@@ -190,6 +190,22 @@ def test_platform_ops_page_renders(repo_root, output_config) -> None:
     assert "Gate toolchain" in body
 
 
+def test_platform_ops_queue_live_markers(
+    repo_root, output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/platform/ops").text
+    assert "data-platform-ops-queue" in body
+    assert 'data-async-queue="1"' in body
+    assert "data-ops-queue-summary" in body
+    assert "data-ops-queue-live-hint" in body
+    js = client.get("/static/repave.js").text
+    assert "initPlatformOpsQueue" in js
+    assert "fetchQueuedAndRunning" in js
+
+
 def test_platform_standards_page_renders(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
@@ -200,7 +216,14 @@ def test_platform_standards_page_renders(repo_root, output_config, registry: Pat
     assert page.summaries
 
 
-def test_platform_campaigns_page_without_snapshot(repo_root, output_config) -> None:
+def test_platform_campaigns_page_without_snapshot(
+    repo_root, output_config, tmp_path, monkeypatch
+) -> None:
+    # Ignore local platform-dev operator snapshot under repo root.
+    monkeypatch.setenv(
+        "REPAVE_FLEET_OPERATOR_STATUS_FILE",
+        str(tmp_path / "missing-operator-status.json"),
+    )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/platform/campaigns").text
     assert "Operator campaigns" in body
@@ -208,11 +231,14 @@ def test_platform_campaigns_page_without_snapshot(repo_root, output_config) -> N
 
 
 def test_platform_feedback_page_without_metrics(repo_root, output_config, monkeypatch) -> None:
-    monkeypatch.delenv("REPAVE_PLATFORM_METRICS", raising=False)
+    # Force-disable even when a local (gitignored) repave.config.yaml enables metrics.
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/platform/feedback").text
     assert "Developer feedback" in body
     assert "platform_metrics" in body
+    assert "make platform-dev-setup" in body
+    assert "repave.platformMetrics.enabled: false" in body
 
 
 def test_find_campaign_in_snapshot() -> None:
@@ -322,5 +348,16 @@ def test_platform_standards_confirm_drift_submits_run(
 def test_nav_shows_platform_link(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     body = client.get("/").text
-    assert 'href="/platform/fleet"' in body
-    assert "Platform" in body
+    primary = body.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert 'href="/platform/fleet"' in primary
+    assert ">Platform<" in primary
+    more = body[
+        body.index("shell__nav-more") : body.index("</details>", body.index("shell__nav-more"))
+    ]
+    assert 'href="/platform/fleet"' not in more
+    for path in ("/update", "/verify", "/library", "/import", "/platform/fleet"):
+        page = client.get(path).text
+        assert 'class="breadcrumb"' not in page
+        assert "← Catalog" not in page
+    fleet = client.get("/platform/fleet").text
+    assert "platform-subnav" in fleet

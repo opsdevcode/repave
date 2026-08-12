@@ -1,0 +1,56 @@
+# OpsLevel-style maturity levels over catalog scorecard dimensions.
+levels:
+  - level: 1
+    label: Registered
+    rules:
+      - key: provenance
+        require: pass
+  - level: 2
+    label: Governed
+    rules:
+      - key: provenance
+        require: pass
+      - key: pins
+        require: warn
+  - level: 3
+    label: Operable
+    rules:
+      - key: provenance
+        require: pass
+      - key: pins
+        require: pass
+      - key: has-runbook
+        require: pass
+  - level: 4
+    label: Reliable
+    rules:
+      - key: provenance
+        require: pass
+      - key: pins
+        require: pass
+      - key: has-runbook
+        require: pass
+      - key: has-slo
+        require: pass
+      - key: gates
+        require: pass
+  - level: 5
+    label: Production-ready
+    rules:
+      - key: provenance
+        require: pass
+      - key: pins
+        require: pass
+      - key: has-runbook
+        require: pass
+      - key: has-slo
+        require: pass
+      - key: gates
+        require: pass
+      - key: deployment
+        require: pass
+      - key: cost
+        require: warn
+      - key: oncall
+        kind: has_oncall
+        require: pass

@@ -9,7 +9,7 @@ from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, creat
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.gate_registry import GateResult
 from repave_engine.pipeline import GenerationResult
-from repave_engine.render import RenderResult
+from repave_engine.render import RenderedFile, RenderResult
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import ModuleRepository
 
@@ -45,15 +45,23 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'id="repave-toast"' in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
-    assert "home-hero" in response.text
-    assert "data-demo-pipeline" in response.text
+    assert "home-console" in response.text
+    assert 'rel="icon"' in response.text
+    assert "/static/brand/favicon.svg" in response.text
+    assert "/static/brand/svg/repave-mark.svg" in response.text
+    assert "shell__wordmark" in response.text
+    assert "Golden paths" in response.text
+    assert 'property="og:image"' in response.text
+    assert "static/brand/social/repave-social-card.png" in response.text
+    assert 'name="twitter:card"' in response.text
+    assert "data-home-quick" in response.text
     assert "catalog-inventory__item-icon" in response.text
     assert "catalog-inventory__category" in response.text
     assert "catalog-inventory__summary" in response.text
     assert "<details" in response.text
     assert "Golden paths" in response.text
     assert 'href="/library"' in response.text
-    assert "Browse library" in response.text
+    assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text
     assert "shell__bar-start" in response.text
     assert "shell__search" in response.text
@@ -93,9 +101,21 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "initCopyButtons" in response.text
     assert "initBusyForms" in response.text
     assert "initFormStepper" in response.text
-    assert "initCatalogSearch" in response.text
+    assert "refreshHomeResumeChip" in response.text
     assert "initGateDashboard" in response.text
     assert "initFormDraft" in response.text
+
+
+def test_static_repave_home_mjs_served(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/static/repave-home.mjs")
+
+    assert response.status_code == 200
+    assert "initCatalogSearch" in response.text
+    assert "repave-metric" in response.text
+    assert "repave:recentPaths" in response.text
+    assert "startViewTransition" in response.text
+    assert "data-catalog-peek" in response.text
 
 
 def test_activity_page(repo_root, output_config) -> None:
@@ -108,7 +128,23 @@ def test_activity_page(repo_root, output_config) -> None:
     assert "data-portal-view-toggle" in response.text or "audit.enabled" in response.text
 
 
-def test_home_recent_activity_uses_artifact_labels(
+def test_activity_inflight_strip_when_async_enabled(
+    repo_root, output_config, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    body = client.get("/activity").text
+    assert "data-activity-inflight" in body
+    assert "In-flight runs" in body
+    assert "data-activity-inflight-list" in body
+    assert "data-activity-inflight-hint" in body
+    js = client.get("/static/repave.js").text
+    assert "initActivityInflight" in js
+    assert "fetchQueuedAndRunning" in js
+
+
+def test_home_does_not_embed_activity_feed(
     repo_root, output_config, tmp_path: Path, monkeypatch
 ) -> None:
     audit_path = tmp_path / "audit.jsonl"
@@ -131,11 +167,17 @@ def test_home_recent_activity_uses_artifact_labels(
     )
     response = client.get("/")
     assert response.status_code == 200
-    assert "Recent activity" in response.text
-    assert 'activity-list__artifact-name">vpc-demo<' in response.text
-    assert 'badge--muted">v0.1.0<' in response.text
-    assert "via terraform-module-generic@0.12.0" in response.text
-    assert "terraform-module-generic @ 0.12.0" not in response.text
+    assert 'class="home-activity"' not in response.text
+    assert 'class="activity-story"' not in response.text
+    assert ">vpc-demo<" not in response.text
+    assert 'href="/activity"' in response.text
+
+
+def test_home_no_activity_link_when_audit_disabled(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert 'class="home-activity"' not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:
@@ -145,7 +187,12 @@ def test_index_catalog_search(repo_root, output_config) -> None:
     assert response.status_code == 200
     assert "data-catalog-search" in response.text
     assert "data-catalog-card" in response.text
-    assert "home-hero__mesh" in response.text
+    assert "home-console__title" in response.text
+    assert "/static/repave-home.mjs" in response.text
+    assert 'type="module"' in response.text
+    assert "data-home-quick" in response.text
+    assert "data-peek-name=" in response.text
+    assert "@view-transition" in response.text
 
 
 def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) -> None:
@@ -200,14 +247,45 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
 
     assert response.status_code == 200
     assert "--accent" in response.text
+    assert "--brand-primary" in response.text
+    assert "--teal-500" in response.text
+    assert "--dur-fast" in response.text
+    assert "--btn-primary-fg" in response.text
+    assert "@layer tokens, base, components, pages, utilities;" in response.text
+    assert '[data-theme="dark"]' in response.text
     assert ".shell__wordmark" in response.text
-    assert ".home-hero" in response.text
+    assert ".home-console" in response.text
     assert "color-scheme: dark" in response.text
     assert ".shell__atmosphere" in response.text
     assert ".alert--fail" in response.text
     assert ".gate-table-wrap" in response.text
     assert 'form[data-form-mode="guided"]' in response.text
     assert ".gate-list" not in response.text
+
+
+def test_brand_static_assets_served(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    mark = client.get("/static/brand/svg/repave-mark.svg")
+    favicon = client.get("/static/brand/favicon.svg")
+    social = client.get("/static/brand/social/repave-social-card.png")
+    assert mark.status_code == 200
+    assert "Converge" in mark.text or "viewBox" in mark.text
+    assert favicon.status_code == 200
+    assert favicon.headers["content-type"].startswith("image/")
+    assert social.status_code == 200
+
+
+def test_portal_white_label_logo_and_accent(
+    repo_root, output_config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_PORTAL_LOGO_URL", "/static/brand/svg/repave-mark-monochrome.svg")
+    monkeypatch.setenv("REPAVE_PORTAL_ACCENT_COLOR", "#0ea5e9")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/")
+    assert response.status_code == 200
+    assert '/static/brand/svg/repave-mark-monochrome.svg"' in response.text
+    assert "--brand-primary: #0ea5e9" in response.text
+    assert 'content="#0ea5e9"' in response.text
 
 
 def test_env_badge_rendered_when_set(repo_root, output_config, monkeypatch) -> None:
@@ -443,11 +521,15 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "governance-card__summary-meta" in response.text
     assert "form-layout--split" in response.text
     assert "form-panel--terraform" in response.text
-    assert "Plan (validate only)" in response.text
-    assert "Apply (publish to GitHub)" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Apply (publish to GitHub)" not in response.text
     assert "chip" in response.text
     assert "service-presets" in response.text
     assert "form-validation" in response.text
+    assert (
+        'providerSelect.addEventListener("change", () => renderServices(providerSelect.value))'
+        in response.text
+    )
     assert "scope-resource-filter" in response.text
     assert "policy-rules-list" in response.text
     assert 'id="policy-rules-advanced"' in response.text
@@ -466,8 +548,11 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "Plan preview" in response.text
     assert ">Apply<" in response.text or ">Apply</button>" in response.text
     assert "form-actions__preflight-details" in response.text
-    assert "form-actions__toolbar" in response.text
-    assert "form-actions__delivery" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert 'name="dry_run" value="true"' in response.text
+    assert 'name="dry_run" value="false"' in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "Stream gates" not in response.text
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
@@ -490,12 +575,18 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "data-run-publish-error" in body
     assert "publish_succeeded" in body
     assert "publish_progress" in body
-    assert "initDemoPipeline" in body
-    assert "initCatalogCardMotion" in body
+    assert "refreshHomeResumeChip" in body
     assert "initPortalViewToggle" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
+    assert 'streamBox.type === "checkbox"' in body
+    assert "hidden stream=1 always forces" in body
+
+    home = client.get("/static/repave-home.mjs")
+    assert home.status_code == 200
+    assert "syncHomeQuickVisibility" in home.text
+    assert "initCatalogCardMotion" in home.text
 
 
 def test_portal_generate_viewer_returns_json_insufficient_role(
@@ -684,9 +775,10 @@ def test_ansible_role_form_single_page(repo_root, output_config) -> None:
     assert "form-stepper" not in response.text
     assert "data-dry-run-run" in response.text
     assert "data-dry-run-force" in response.text
-    assert "Apply (publish to GitHub)" in response.text
-    assert "form-actions__delivery" in response.text
-    assert "form-actions__toolbar" in response.text
+    assert "Apply (publish to GitHub)" not in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert "Plan preview" in response.text
     assert "governance-card__gates-details" not in response.text
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
@@ -1056,7 +1148,8 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert "Backstage catalog" in response.text
     assert "governance-card__details" in response.text
     assert "data-form-stepper" not in response.text
-    assert "Plan (validate only)" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Plan preview" in response.text
     assert "data-dry-run-run" in response.text
     assert 'id="catalog_lifecycle"' in response.text
     assert 'id="runtime"' in response.text
@@ -1173,6 +1266,70 @@ def test_result_dashboard_failed_gate_excerpt(
     assert "gate-detail" in response.text
     assert "gate-excerpt-2" in response.text
     assert "fmt failed" in response.text
+
+
+def test_plan_preview_with_files_surfaces_copyable_explorer(
+    repo_root,
+    output_config,
+    sample_inputs,
+    monkeypatch,
+) -> None:
+    """Plan preview with rendered files must not look like a dead-end failure."""
+
+    def fake_generate(
+        blueprint,
+        values,
+        *,
+        output_config,
+        dry_run,
+        github_token,
+        repo_root=None,
+        require_run=None,
+    ):
+        return GenerationResult(
+            blueprint=blueprint,
+            render=RenderResult(output_dir=output_config.modules_root, values=values),
+            gates=[
+                GateResult("docs-drift", True, False, "README present"),
+                GateResult("terraform-fmt", False, False, "terraform not available"),
+            ],
+            module_repository=None,
+            pr_plan=None,
+            pr_message="",
+            dry_run=True,
+            rendered_files=(
+                RenderedFile(path="README.md", content="# demo module\n", truncated=False),
+                RenderedFile(
+                    path="main.tf",
+                    content='resource "null_resource" "x" {}\n',
+                    truncated=False,
+                ),
+            ),
+        )
+
+    monkeypatch.setattr("repave_engine.api.generate_from_blueprint", fake_generate)
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            **sample_inputs,
+        },
+    )
+
+    assert response.status_code == 200
+    assert "Plan preview ready" in response.text
+    assert "Browse and copy generated files below" in response.text
+    assert "result-hero--preview" in response.text
+    assert "Generation failed" not in response.text
+    assert "Generated files" in response.text
+    assert 'data-copy-target="#file-explorer-content-0"' in response.text
+    assert "# demo module" in response.text
+    files_idx = response.text.index("Generated files")
+    gates_idx = response.text.index('aria-labelledby="gates-heading"')
+    assert files_idx < gates_idx
 
 
 def test_result_dashboard_published_repo_card(
@@ -1484,6 +1641,8 @@ def test_run_console_page_when_async_enabled(
     assert "data-run-console" in page.text
     assert "data-run-progress" in page.text
     assert "command-palette" in page.text
+    assert "data-run-file-preview" in page.text
+    assert "Browse generated files" in page.text
 
 
 @pytest.mark.slow
@@ -1572,3 +1731,6 @@ def test_run_result_view_reuses_async_artifact_without_regenerating(
     assert page.status_code == 200
     assert regen_calls == 0
     assert "terraform-module-generic" in page.text
+    assert "Generated files" in page.text
+    assert "data-copy-target" in page.text
+    assert "Browse and copy generated files below" in page.text

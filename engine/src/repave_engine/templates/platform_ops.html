@@ -5,7 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/platform/fleet">← Platform</a></p>
 {% include "partials/platform_subnav.html" %}
 <header class="form-hero">
   <div>
@@ -81,12 +80,19 @@
 <section class="card" aria-labelledby="queue-heading">
   <div class="card__header">
     <h2 id="queue-heading">Async queue</h2>
-    <p class="muted card__subtitle">
-      {% if ops_page.queue_depth is not none %}
-      {{ ops_page.queued_runs }} queued · {{ ops_page.running_runs }} running · {{ ops_page.queue_depth }} in flight
-      {% else %}
-      Async generation is not enabled on this deployment.
-      {% endif %}
+    <p
+      class="muted card__subtitle"
+      data-platform-ops-queue
+      {% if ops_page.queue_depth is not none %}data-async-queue="1"{% endif %}
+    >
+      <span data-ops-queue-summary>
+        {% if ops_page.queue_depth is not none %}
+        {{ ops_page.queued_runs }} queued · {{ ops_page.running_runs }} running · {{ ops_page.queue_depth }} in flight
+        {% else %}
+        Async generation is not enabled on this deployment.
+        {% endif %}
+      </span>
+      <span class="runs-live-hint" data-ops-queue-live-hint hidden aria-live="polite"></span>
     </p>
   </div>
   <div class="card__body">

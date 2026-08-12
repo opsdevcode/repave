@@ -5,8 +5,10 @@ scaffold, frozen `/api/state/v1` contract); **Phase 1** shipped (authoritative s
 backend, reversible import/export); **Phase 2** shipped (normalization, graph, inventory,
 blast radius, drift, timeline, cost join); **Phase 3** shipped (transactions,
 commit-time conflict detection, gate-blocked commit, `repave-tf tf plan|apply`).
-**Phase 4** not started — **no-go** recorded in
-[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md) (2026-08-06).
+**Phase 4** not started — **no-go** on v2/v3 recorded in
+[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md) (2026-08-06);
+deferred to the **v4.0.0** roadmap theme
+([beyond v3.0.0](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)).
 **Date:** 2026-08-04
 **Scope:** `engine/src/repave_engine/statestore/`, `engine/src/repave_engine/api_state/`,
 new top-level `cli/` package (`repave-cli`), `repave.config.yaml`, Helm chart — v2.x line,
@@ -148,9 +150,12 @@ is the thing this architecture exists to avoid.
 
 ### Phase 4 — Graph-scoped parallel execution
 
-**Not started.** **No-go** recorded 2026-08-06 in
-[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md). Do not implement a
-partitioner or concurrent apply until a later **Go** supersedes that record.
+**Not started.** **No-go** on v2/v3 recorded 2026-08-06 in
+[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md). Scheduled as the
+**v4.0.0** theme
+([roadmap](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)); buy
+(Stategraph or equivalent) preferred over building. Do not implement a partitioner or
+concurrent apply until a later **Go** supersedes that record.
 
 ## Reconciling ADR 003
 
@@ -297,11 +302,13 @@ running `terraform apply` directly.
 - [x] A required gate that was never reported blocks commit; absent is not treated as passed.
 - [x] `repave-tf` ships in generated terraform CI, inert until `REPAVE_STATE_URL` is set.
 
-**Phase 4**
+**Phase 4** (v4.0.0 theme)
 
-- [x] Explicit go/no-go review convened — outcome **No-go** (2026-08-06); see
+- [x] Explicit go/no-go review convened — outcome **No-go** on v2/v3 (2026-08-06); see
       [`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
-- [ ] Go decision (supersedes no-go) — not met; entry conditions still open.
+- [ ] Go decision (supersedes no-go) — not met; deferred to
+      [v4.0.0](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution); entry
+      conditions still open.
 
 ## References
 

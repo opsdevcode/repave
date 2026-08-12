@@ -1,0 +1,10 @@
+<div class="alert alert--info">
+  No <code>platform_metrics</code> block in the
+  <code>repave.config.yaml</code> this portal process loaded
+  (or set <code>REPAVE_PLATFORM_METRICS=1</code>).
+  {% if platform_metrics_purpose %}{{ platform_metrics_purpose }}{% endif %}
+  Local: <code>make platform-dev-setup</code> then restart <code>make serve</code>.
+  In-cluster: chart default is on — confirm values did not set
+  <code>repave.platformMetrics.enabled: false</code>
+  (see <code>docs/platform-metrics.md</code>).
+</div>

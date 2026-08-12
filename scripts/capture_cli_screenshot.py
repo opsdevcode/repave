@@ -76,7 +76,7 @@ def _terminal_html(command: str, output: str) -> str:
     body {{
       margin: 0;
       padding: 24px;
-      background: #0d1117;
+      background: #0b1220;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }}
     .window {{
@@ -84,26 +84,26 @@ def _terminal_html(command: str, output: str) -> str:
       margin: 0 auto;
       border-radius: 10px;
       overflow: hidden;
-      border: 1px solid #30363d;
+      border: 1px solid #334155;
       box-shadow: 0 12px 40px rgba(0,0,0,0.45);
     }}
     .titlebar {{
-      background: #161b22;
+      background: #151c2c;
       padding: 10px 14px;
       display: flex;
       align-items: center;
       gap: 8px;
-      border-bottom: 1px solid #30363d;
+      border-bottom: 1px solid #334155;
     }}
     .dot {{ width: 12px; height: 12px; border-radius: 50%; }}
     .dot--r {{ background: #ff5f57; }}
-    .dot--y {{ background: #febc2e; }}
-    .dot--g {{ background: #28c840; }}
+    .dot--y {{ background: #f59e0b; }}
+    .dot--g {{ background: #3dce6e; }}
     .title {{
       flex: 1;
       text-align: center;
       font-size: 12px;
-      color: #8b949e;
+      color: #94a3b8;
       margin-right: 52px;
     }}
     pre {{
@@ -111,13 +111,14 @@ def _terminal_html(command: str, output: str) -> str:
       padding: 18px 20px 22px;
       font-size: 13px;
       line-height: 1.45;
-      color: #e6edf3;
+      color: #e2e8f0;
       white-space: pre-wrap;
       word-break: break-word;
-      background: #0d1117;
+      background: #0f172a;
     }}
-    .prompt {{ color: #7ee787; }}
-    .muted {{ color: #8b949e; }}
+    .prompt {{ color: #3dce6e; }}
+    .muted {{ color: #94a3b8; }}
+    .brand {{ color: #f59e0b; }}
   </style>
 </head>
 <body>

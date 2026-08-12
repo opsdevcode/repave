@@ -4,14 +4,27 @@ Planning document for repave evolution. The [README](../README.md) keeps a
 one-line summary per release; this file holds the detail we use when scoping
 work, writing ADRs, and opening issues.
 
-**Current release:** v2.47.0  
+**Current release:** v2.60.6  
 
-**In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
+**In progress:** fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); v3 work happens on the
 long-lived `next/v3` branch ([ADR 008](adr/008-v3-branching-release-and-testing.md),
 [ADR 007](adr/007-v3-multi-repo-decomposition.md), [`docs/v3-development.md`](v3-development.md))
-and does not affect the v2.x line on `main`.
-**Shipped on `main`:** **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
+and does not affect the v2.x line on `main`. Stategraph / graph-scoped execution under
+[beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
+**Shipped on `main`:** **Service catalog maturity** — OpsLevel-style rubrics, `/home` +
+`/teams/{slug}` hub, GitOps `/sandbox`, `/platform/maturity`, initiatives CRUD
+([ADR 006](adr/006-service-catalog-and-maturity.md), [`docs/service-catalog.md`](service-catalog.md));
+**Converge brand identity** — primary mark, favicons, navy night-ops
+tokens with scarce amber golden-path accents, portal shell/hero, brand kit under
+[`docs/brand/`](brand/README.md); **portal white-label** — optional `portal.logo_url` /
+`portal.accent_color` (Helm `logoUrl` / `accentColor`, env overrides); OG social card +
+CLI brand highlights (`NO_COLOR`-safe);
+**Mass GitHub org import** — classify org repos by artifact family,
+portal picker on `/import/batch`, `POST /api/v2/github/org-scan` (sync + async `kind: org_scan`
+queue runs), GitHub search filters and batch discovery, per-family and per-repo blueprint
+mapping on batch import ([#557](https://github.com/opsdevcode/repave/pull/557)–[#565](https://github.com/opsdevcode/repave/pull/565));
+[`docs/import.md`](import.md); **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
 `GET /api/v2/platform/roadmap-evidence`, adoption citations per theme + sunset candidates
 ([`docs/platform-metrics.md`](platform-metrics.md)); **Guided / Advanced forms (v1.88)** — progressive disclosure on
 `terraform-module-generic` and `ansible-role-generic` (`InputField.advanced`, form depth toggle;
@@ -42,8 +55,9 @@ template or selection create, org team grants, Platform catalog family, `repave 
 state store, queryable resource graph, and gate-blocked transactions
 ([ADR 004](adr/004-state-custody-and-the-resource-graph.md),
 [ADR 005](adr/005-state-graph-build-vs-buy.md),
-[`docs/state-graph.md`](state-graph.md)); off by default, Phase 4 **no-go** recorded
-([`state-graph-phase4-review.md`](state-graph-phase4-review.md));
+[`docs/state-graph.md`](state-graph.md)); off by default; Phase 4 / Stategraph deferred to
+**v4.0.0** ([`state-graph-phase4-review.md`](state-graph-phase4-review.md),
+[beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution));
 **Auth0 portal access** — engine/Helm hardening plus operator runbook
 ([`docs/operations/auth0-portal.md`](operations/auth0-portal.md), Action
 [`post-login-groups.js`](../deploy/k8s/auth0/post-login-groups.js),
@@ -77,8 +91,9 @@ hosted SQL requirement, **provenance required on publish**, [`docs/blueprint-ver
 **Postgres DR** ([`docs/operations/postgres-backup-restore.md`](operations/postgres-backup-restore.md),
 `make postgres-dr-drill`); **GitHub App authentication** for
 publish/remediation; **day-2 chart operability** (`values-day2.yaml`, ServiceMonitor,
-PrometheusRule, runbooks); **repo import to golden path** (Phase 1–3: overrides, trees-API
-preview, batch import, rate-limit backoff — `repave import`, `/import`, `/import/batch`,
+PrometheusRule, runbooks); **repo import to golden path** (Phase 1–4: overrides, trees-API
+preview, batch import, org scan classify + async runs, per-family blueprint map, rate-limit
+backoff — `repave import`, `/import`, `/import/batch`, `/api/v2/github/org-scan`,
 `/api/v2/imports/*`); **operator production Helm chart** (`deploy/k8s/operator-chart/`,
 `values-day2.yaml`, `kind-co-install` Helm path, `chart-validate` operator checks);
 **operator fleet campaigns** (`UpgradeCampaign` CRD, Blueprint controller, bounded
@@ -99,7 +114,8 @@ pause/resume**); **Helm fleet operator snapshot CronJob**
 (`fleetOperatorSnapshot.cronJob`, `values-fleet-shared.yaml` — keeps `/platform/campaigns` fresh;
 portal ServiceAccount **patch** on `upgradecampaigns` for campaign actions).
 **Planning horizon:** v1.19 → v2.0.0 (platform maturity — governed estate at scale)
-→ [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
+→ [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) (v3)
+→ [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution) (v4 Stategraph)
 
 Operator GA scope: [`operator-ga.md`](operator-ga.md).
 
@@ -130,9 +146,12 @@ locally after bumping `engine` `__version__`.
 - Use [Path to v2.0.0](#path-to-v200) for the big-picture sequence and what v2
   means; individual releases below expand each step.
 - [Beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) holds the
-  next **major** theme only — a boundary marker, not a backlog. Entries there stay
+  **v3** major theme — a boundary marker, not a backlog. Entries there stay
   directional until they are promoted into [Planned](#planned) with a real
   problem/approach/done-when, and nothing lands from that section before v2 GA.
+- [Beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution) holds the **v4**
+  Stategraph / graph-scoped execution theme the same way — directional until promoted;
+  nothing starts there before v3 GA and the Phase 1–3 enablement gates.
 - Keep **tech debt** in [Engine hardening and tech debt](#engine-hardening-and-tech-debt)
   with the same problem/approach/done-when shape as features, and cite the file that
   carries the debt so the entry stays checkable.
@@ -186,7 +205,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   ├─ supply chain    shipped — GitHub App auth, governed PR, digest-pinned CI/images/chart
   ├─ fleet scale     shipped — Blueprint controller; upgrade campaigns; drift SLO metrics
   ├─ portal surfaces shipped — catalog, rendered docs, scorecards, observability read
-  ├─ reach           shipped — repave verify; repo import; repave add; composite golden paths
+  ├─ reach           shipped — repave verify; repo import + mass org scan; repave add; composite golden paths
   ├─ usability       shipped — `repave doctor`; queryable audit history
   ├─ cost            shipped — Infracost + actuals readers; library cost badges
   ├─ v2 contract     /api/v2 freeze, v1 migration docs, config v1, provenance-on-publish, blueprint schema (shipped)
@@ -203,6 +222,8 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
   v1.90–v1.94        FinOps enablement tag governance → estimate policy → showback/budgets → thin FOCUS → chargeback export
   │
   v3.0.0             autonomous        low-risk auto-merge, mandatory policy, fleet SLOs, lifecycle control plane, governed conversational AI
+  │
+  v4.0.0             Stategraph        graph-scoped plan/apply (buy preferred); Phase 4 parallel apply only after go/no-go
 ```
 
 | Theme | Releases | Outcome |
@@ -218,7 +239,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **In-cluster operations (Day-2)** | shipped | Chart HPA/PDB/drain; `values-day2.yaml` monitoring overlay; runbooks in [`docs/operations/`](../docs/operations/) |
 | **Estate control plane** | v1.72–v1.73+ shipped | Remote observe/plan/remediate; fleet registry; operator continuous fleet sync + GPR prune |
 | **Reach and usability** | verify + import shipped | Adopt existing repos into a golden path via PR; composite paths; `repave doctor`; audit queries |
-| **Brownfield onboarding** | shipped (Phase 1–3) | `repave import` + batch portal/API; per-file overrides; trees-API preview; GitHub rate-limit backoff for fleet-scale REST |
+| **Brownfield onboarding** | shipped (Phase 1–4) | `repave import` + batch portal/API; org scan classify + async queue; GitHub search filters; per-family batch blueprint map; per-file overrides; trees-API preview; rate-limit backoff |
 | **Hardening** | shipped (groups A–B) | Group A: toolchain pins, subprocess timeouts, coverage gate, docs; group B: gate_runners package, API/CLI splits, Python 3.12 floor |
 | **Hosted durability** | shipped | Unified SQL store; async queue + DLQ/replay + list runs (v1/v2 API, portal `/runs`); external workers |
 | **Service decomposition** | shipped (Phase 0–4) | Split portal/worker/corpus images, Postgres queue, per-run Jobs, v1beta1 operator HTTP; portal/API Deployment split deferred |
@@ -233,8 +254,9 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Developer paved roads** | Shipped (v1.79–v1.84) | GitOps delivery, SLOs/runbooks, `repave add`, runtimes and layout archetypes, composite bundles ([developer paved roads](#developer-paved-roads-v2x)) |
 | **Platform as a product** | Shipped (v1.85–v1.89) | Treat the IDP as a product: adoption/DX metrics, feedback, stakeholder views, Guided/Advanced forms, and roadmap evidence ([platform as a product](#platform-as-a-product-v2x)) |
 | **FinOps enablement** | Shipped (v1.90–v1.94) | Hybrid FinOps: tags, estimate policy, showback/budgets, thin FOCUS ingest, and chargeback export/anomaly hooks — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
-| **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
+| **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); Phase 4 / Stategraph deferred ([beyond v3](#beyond-v300--stategraph-and-graph-scoped-execution), [phase4 review](state-graph-phase4-review.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, [multi-repo split](adr/007-v3-multi-repo-decomposition.md), [conversational governed AI](#conversational-and-governed-ai-generation) |
+| **v4.0.0** | — | Stategraph / graph-scoped plan/apply (buy preferred over building Phase 4); [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution) |
 
 ---
 
@@ -455,8 +477,8 @@ campaign deferral both track `X-RateLimit-*` and backoff on low quota / HTTP 429
 
 ### Repo import to golden path
 
-**Status:** Shipped on `main` (Phase 1–3 — `repave import`, portal `/import` and `/import/batch`,
-`/api/v2/imports/*`). Detail: [`docs/import.md`](import.md).
+**Status:** Shipped on `main` (Phase 1–4 — `repave import`, portal `/import` and `/import/batch`,
+`/api/v2/github/org-scan`, `/api/v2/imports/*`). Detail: [`docs/import.md`](import.md).
 
 Brownfield onboarding: adopt a repository repave did not generate by rearranging its files
 into a golden path layout, adding the governance scaffold it lacks, and opening a pull
@@ -486,10 +508,21 @@ request on the source repo.
   to `spec.import.overrides` in `repave.yaml` (portal, CLI `--overrides`, API `overrides`)
 - **Trees-API preview (Phase 2)** — remote `github.com` URLs plan without cloning; apply
   shallow-clones for scorecard and gates (`preview_limited`; `--force-clone` for full local preview)
-- **Batch import (Phase 3)** — plan or open PRs for many repos via `/import/batch`, CLI
+- **Batch import URLs (Phase 3)** — plan or open PRs for many repos via `/import/batch`, CLI
   `--batch-file`, or `/api/v2/imports/batch/*`; org/topic discovery on GitHub
-- **Rate-limit backoff** — per-installation `X-RateLimit-*` tracking for batch import and fleet
-  campaigns (429 retry with backoff)
+- **Org scan classify (Phase 1–2)** — `POST /api/v2/github/org-scan` scores each org repo by
+  artifact family; portal picker on `/import/batch`; GitHub search presets (`language`, `topic`,
+  `pushed_since`, archived/forks); list or search API discovery ([#557](https://github.com/opsdevcode/repave/pull/557),
+  [#559](https://github.com/opsdevcode/repave/pull/559))
+- **Async org scan (Phase 3)** — `kind: org_scan` on the durability queue; SSE progress on the
+  run console; result page with **Add all to batch import** handoff ([#562](https://github.com/opsdevcode/repave/pull/562))
+- **Batch import polish (Phase 3)** — CLI `--language` / `--pushed-since` on batch import;
+  scan result → batch URL + per-repo blueprint prefill via session storage ([#564](https://github.com/opsdevcode/repave/pull/564))
+- **Per-family blueprint map (Phase 4)** — one batch preview assigns golden paths by detected
+  family or org-scan `target_blueprints`; portal **Map by artifact family**; CLI
+  `--map-by-family` / `--family-blueprints` ([#565](https://github.com/opsdevcode/repave/pull/565))
+- **Rate-limit backoff** — per-installation `X-RateLimit-*` tracking for batch import, org scan,
+  and fleet campaigns (429 retry with backoff)
 
 ### `repave add` — multi-component brownfield (engine v1.82+)
 
@@ -2291,7 +2324,7 @@ effect is that every blueprint is available only to greenfield work.
 - Never overwrites a file that is not generator-owned without `--force`; every add records an
   audit entry and a governed PR
 
-**Dependencies:** Repo import Phase 1–3; `apply-upgrade`; v1.14 provenance;
+**Dependencies:** Repo import Phase 1–4; `apply-upgrade`; v1.14 provenance;
 [governed PR conventions](#governed-pr-conventions).
 
 **Done when:** Adding `helm-chart-generic` to an existing app-service repository produces a
@@ -2379,6 +2412,39 @@ promote without new discovery:
 - **Organization blueprint packs** — [forked and remote blueprint packs](#forked-and-remote-blueprint-packs)
   is the one item that lets adopters pave roads this cluster does not; pull it ahead of
   everything above if external demand appears, since nothing here substitutes for it.
+
+---
+
+## Service catalog maturity (v2.x)
+
+**Status:** **Shipped on `main`** — Phase 1 foundation + Phase 2 initiatives CRUD. See
+[ADR 006](adr/006-service-catalog-and-maturity.md) and [`docs/service-catalog.md`](service-catalog.md).
+
+**Problem:** The library and fixed scorecards answer pin/cost/deployment health, but not
+OpsLevel-style maturity rubrics, Cortex-style “my services” / team / initiative views, or
+Humanitec-style named sandbox profiles — without pulling conversational AI from v3.
+
+**Approach:**
+
+- Thin `service_catalog` config overlay on `CatalogEntity` (on-call, dependsOn, maturity,
+  initiative badges, workload profile)
+- Declarative maturity rubric over existing scorecard dimensions + `/platform/maturity`
+- Workload profiles + deployment sets parameterize ADR 003 environment vending; `/sandbox`
+  self-service (GitOps-only)
+- `/home` and `/teams/{slug}` with night-ops density patterns (not a vendor rebrand)
+- Initiatives JSONL + `/platform/initiatives` + `/api/v2/platform/initiatives` CRUD
+  (create / update / soft-deactivate)
+- platform-dev fixtures enable the full walkthrough without live GitOps
+
+**Non-goals:** runtime apply, Backstage UI replacement, AI suggestions (v3).
+
+**Done when (Phase 1):** `make platform-dev-setup && make serve` demos hub, maturity,
+sandbox request (dry-run), and initiatives; APIs expose maturity and filtered catalog
+entities; ADR 006 documents AI deferral.
+
+**Done when (Phase 2):** Admins can create, edit, and deactivate initiatives from the portal
+and `/api/v2/platform/initiatives` (POST/PATCH/DELETE); inactive programs drop from entity
+chips and active rollups.
 
 ---
 
@@ -2676,10 +2742,12 @@ FOCUS-friendly CSV/JSON; WoW/MoM snapshot anomalies → audit + `finops_anomaly`
 
 ## State custody and the resource graph (v2.x)
 
-**Status:** Phases 0–3 shipped on `main`. Phase 4 **no-go** recorded
-([`state-graph-phase4-review.md`](state-graph-phase4-review.md)). Shared-deploy Helm knobs
-and plan-JSON config edges on the transaction write path shipped; store defaults stay off.
-Next: security sign-off, treadmill owner, PITR drill — not Phase 4 code.
+**Status:** Phases 0–3 shipped on `main`. Phase 4 parallel execution remains **no-go** for
+v2/v3 ([`state-graph-phase4-review.md`](state-graph-phase4-review.md)); graph-scoped
+execution and any Stategraph buy/build revisit are scheduled as the **v4.0.0** theme
+([beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution)). Shared-deploy Helm
+knobs and plan-JSON config edges on the transaction write path shipped; store defaults stay
+off. Next on the v2 line: security sign-off, treadmill owner, PITR drill — not Phase 4 code.
 
 **Design:** [ADR 004](adr/004-state-custody-and-the-resource-graph.md) ·
 **Build vs buy:** [ADR 005](adr/005-state-graph-build-vs-buy.md) ·
@@ -2702,7 +2770,7 @@ does not trap an estate.
 | 1 — authoritative store | Shipped | Terraform `http` backend, byte-exact blobs, serial/lineage guards, whole-state locking, reversible import/export |
 | 2 — normalization and graph | Shipped | Resources, instances, edges; inventory, blast radius, drift, timeline, Infracost join |
 | 3 — transactions | Shipped | `repave-tf tf plan\|apply`, optimistic commit-time conflict detection with `409`, **gate-blocked commit** |
-| 4 — parallel execution | **Gated / no-go** | Decision recorded 2026-08-06 — [go/no-go review](state-graph-phase4-review.md); revisit when entry conditions 1–3 hold |
+| 4 — parallel execution | **Deferred to v4** | No-go on v2/v3 (2026-08-06); revisit under [v4.0.0](#beyond-v300--stategraph-and-graph-scoped-execution) when entry conditions hold — buy preferred ([ADR 005](adr/005-state-graph-build-vs-buy.md)) |
 
 Phase 3 is the differentiator: a commit is refused when repave's own gates do not pass,
 inside the transaction, before anything is applied. That needs the blueprint provenance and
@@ -2713,10 +2781,11 @@ The architecture is a credential boundary. The server holds state and never hold
 credentials; the client holds credentials and never holds a database connection. A boundary
 test fails the build if `repave_cli` imports database code.
 
-**Still open (Phases 1–3 enablement, not Phase 4):** a named owner for the Terraform/OpenTofu
+**Still open (Phases 1–3 enablement, not v4):** a named owner for the Terraform/OpenTofu
 compatibility treadmill and a platform security sign-off on the persistence posture
-reversal, both required before the store is enabled in any shared deployment. Transaction
-commits merge plan-JSON `reference` edges; direct backend/import writes stay state-derived.
+reversal, both required before the store is enabled in any shared deployment — and before
+the v4 Stategraph theme can start. Transaction commits merge plan-JSON `reference` edges;
+direct backend/import writes stay state-derived.
 
 ---
 
@@ -2774,8 +2843,9 @@ remediation themes.
   [environment lifecycle and deployment awareness](#environment-lifecycle-and-deployment-awareness)
   on the v2.x line ([ADR 003](adr/003-environment-lifecycle-and-live-state.md)); only the
   autonomous tier below stays v3
-- **Graph-scoped planning:** blast-radius view and graph-scoped plan/apply for large state,
-  surfaced as a registry tool rather than a repave-owned engine
+- **Graph-scoped planning / Stategraph** — **moved** to
+  [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution) (v4.0.0); not a v3
+  deliverable
 - **Cost showback:** **Promoted** to [FinOps enablement (v1.90–v1.94)](#finops-enablement-v2x).
   Remaining v3 only if org-wide invoicing or a full billing warehouse is required beyond the
   hybrid enablement path ([`docs/finops.md`](finops.md))
@@ -2840,10 +2910,58 @@ that passed every configured gate and policy, with full provenance and audit tra
 
 1. Low-risk auto-merge runs in a test organization with a demonstrated revert.
 2. The fleet SLO dashboard holds green for a sustained window in production.
-3. A graph-scoped plan is demonstrated for one large state boundary.
-4. `/api/v1` is removed and every known integrator has migrated.
-5. Conversational and form paths produce byte-identical gated output for the same blueprint
+3. `/api/v1` is removed and every known integrator has migrated.
+4. Conversational and form paths produce byte-identical gated output for the same blueprint
    and inputs — see [conversational governed AI](#conversational-and-governed-ai-generation).
+
+---
+
+## Beyond v3.0.0 — Stategraph and graph-scoped execution
+
+**Target (v4.0.0):** Phases 0–3 already give custody, inventory/blast radius, and
+gate-blocked transactions. v4 is where large-state **graph-scoped plan/apply** and any
+revisit of Phase 4 parallel execution live — preferably by buying Stategraph (or an
+equivalent) rather than building a partitioner inside repave ([ADR 005](adr/005-state-graph-build-vs-buy.md)).
+
+**Why this section exists here.** Same discipline as
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane): a boundary
+marker so v3 does not absorb Stategraph scope by accident. Nothing below is committed
+engineering until it is promoted into [Planned](#planned) with an owner after v3 GA.
+
+**Discipline for this section:**
+
+- Entries stay one paragraph or less until promoted into [Planned](#planned)
+- Nothing here starts before v3 GA, Phases 1–3 shared-deploy enablement gates
+  ([`state-store-enablement.md`](operations/state-store-enablement.md)), and a boring
+  production trust window for the store
+- Phase 4 build remains **no-go** until the
+  [go/no-go gate](state-graph-phase4-review.md) records a later **Go**; buy and
+  split-the-configuration must be priced first
+
+### Stategraph / graph-scoped planning
+
+- **Buy preferred:** integrate Stategraph (or equivalent) for graph-scoped plan/apply and
+  resource-level conflict detection on large states, keeping repave's gate-blocked commit
+  as the governance boundary ([ADR 005](adr/005-state-graph-build-vs-buy.md))
+- **Blast-radius and inventory** already ship in Phases 1–3; v4 surfaces graph-scoped
+  execution as a registry/platform tool, not a second state store
+- **Split-the-configuration** (smaller independent states) remains the boring alternative
+  that must be shown insufficient before building a partitioner
+- **Build Phase 4** (graph-scoped parallel apply inside repave) only after a **Go** that
+  supersedes the 2026-08-06 no-go — entry conditions, hard-problem answers, and named
+  treadmill owner required ([phase4 review](state-graph-phase4-review.md))
+
+**Dependencies:** Phases 1–3 enabled in shared deploy; security sign-off; PITR drill;
+named treadmill owner; preferably two quarters with zero unexplained state divergences.
+
+**Done when:**
+
+1. A graph-scoped plan/apply path is demonstrated for one large state boundary (buy or
+   split-config first).
+2. Fleet apply prefers `repave-tf` transactions so plan-JSON config edges stay on the
+   write path.
+3. If Phase 4 is ever built, a recorded **Go** supersedes the no-go and the partitioner
+   fails closed under plan-time indeterminacy.
 
 ---
 
@@ -2853,10 +2971,12 @@ Ideas not yet scheduled for pre-v2 work — promote into [Planned](#planned) whe
 there is an owner and a target release. Two of these (**multi-tenant repave** and the
 **private blueprint registry**) are named as optional promotions in
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); they stay here
-until someone owns them, since a v3 mention is not a commitment.
+until someone owns them, since a v3 mention is not a commitment. Stategraph /
+graph-scoped execution is scheduled under
+[beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution), not here.
 
-- **Portal white-label** — custom logo URL and accent color override via config
-  (deferred from v1.18 Phase 5; target v2 theming)
+- **Portal white-label** — **Shipped** — `portal.logo_url` + `portal.accent_color`
+  (see [`docs/brand/README.md`](brand/README.md); was deferred from v1.18 Phase 5)
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
 - **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
   an alternative to in-app OIDC
@@ -2891,6 +3011,9 @@ Platform GA** (contract freeze) → **`v2.0.0` tag** via `feat!:` / `BREAKING CH
 v2.x minors ship stabilization and lifecycle follow-ons (environment vending, platform
 console, fleet ops). **v3.0.0** → **`v3.0.0` tag** when breaking removals land and v3
 themes (autonomous remediation, mandatory policy, [conversational governed AI](#conversational-and-governed-ai-generation)) ship.
+**v4.0.0** → **`v4.0.0` tag** when the
+[Stategraph / graph-scoped execution](#beyond-v300--stategraph-and-graph-scoped-execution)
+theme ships (buy preferred; Phase 4 build only after go/no-go **Go**).
 
 Release automation updates **Current release** above and doc version pointers — feature
 PRs must not hand-edit them. Between milestones, `feat:` → minor and `fix:` → patch on

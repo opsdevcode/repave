@@ -21,10 +21,12 @@ reconciliation keeps the estate on the current road.
 
 | IDP capability | In repave |
 | --- | --- |
-| Software catalog / self-service | Portal home catalog, library, platform console |
+| Software catalog / self-service | Portal home catalog, library, [service catalog hub](service-catalog.md) |
 | Paved roads / scaffolding | Versioned **blueprints** (golden paths) |
 | Governance & policy | Mandatory **gates**, pinned standards and policy packs |
 | Service catalog integration | Optional Backstage `catalog-info.yaml` + `repave.dev/*` lineage |
+| Maturity / initiatives | Configurable rubric, team pages, `/platform/maturity` |
+| Ephemeral sandboxes | GitOps environment vending + workload profiles (ADR 003 / 006) |
 | Day-2 / estate control | Fleet registry, `repave update`, Kubernetes **operator** |
 | Cost awareness | Infracost gate, cost readers, [FinOps enablement](finops.md) |
 

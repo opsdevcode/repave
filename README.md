@@ -1,6 +1,24 @@
 # repave
 
+<p>
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="docs/brand/assets/svg/repave-logo-compact-dark.svg"
+    />
+    <img
+      src="docs/brand/assets/svg/repave-logo-compact.svg"
+      alt="repave — Converge mark and wordmark"
+      width="280"
+    />
+  </picture>
+</p>
+
 **Governed golden paths for everyone who builds platform automation.**
+
+From fragmented to governed — golden paths for many, not just the few.
+
+Brand kit: [docs/brand/README.md](docs/brand/README.md)
 
 ## Why "repave"?
 
@@ -21,7 +39,7 @@ GitHub** — standards enforced by construction, not review theater.
 Pick a golden path  →  Configure pins & scope  →  Generate  →  Gates  →  Publish
 ```
 
-> **Engine [v2.47.0](https://github.com/opsdevcode/repave/releases/tag/v2.47.0)** · Portal + CLI +
+> **Engine [v2.60.6](https://github.com/opsdevcode/repave/releases/tag/v2.60.6)** · Portal + CLI +
 > optional Kubernetes **operator (GA)**. Run locally with Docker Compose — no cluster required
 > for generation.
 

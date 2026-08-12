@@ -173,6 +173,18 @@ app.kubernetes.io/component: portal
 {{- end }}
 {{- end }}
 
+{{- define "repave.infracostApiKeyEnv" -}}
+{{- $secretName := include "repave.secretName" . }}
+{{- if $secretName }}
+- name: INFRACOST_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ $secretName }}
+      key: infracost-api-key
+      optional: true
+{{- end }}
+{{- end }}
+
 {{- define "repave.stateStoreEnv" -}}
 {{- if .Values.repave.stateStore.enabled }}
 {{- if not .Values.repave.stateStore.databaseUrl }}

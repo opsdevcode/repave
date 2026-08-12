@@ -23,7 +23,7 @@
         · <a href="{{ row.repository_url }}">repo</a>
         {% endif %}
       </p>
-      {% if row.activity_has_details() %}
+      {% if not story_omit_details and row.activity_has_details() %}
       <dl class="activity-story__details muted">
         {% for label, value in row.activity_details() %}
         <div class="activity-story__detail-row">

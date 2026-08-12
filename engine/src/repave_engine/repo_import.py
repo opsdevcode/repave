@@ -29,6 +29,7 @@ from repave_engine.blueprint import (
     artifact_family,
     blueprint_dir,
     blueprints_dir,
+    group_blueprints_by_artifact,
     list_blueprints,
     load_blueprint,
     validate_inputs,
@@ -74,6 +75,7 @@ from repave_engine.github_inventory import (
 from repave_engine.github_rate_limit import wait_before_github_request
 from repave_engine.import_detect import (
     BlueprintCandidate,
+    best_candidate,
     detect_blueprint_candidates,
     inventory_relative_paths,
 )
@@ -607,6 +609,146 @@ def resolve_import_blueprint(
     return load_blueprint(blueprint_dir(repo_root, top.blueprint_name), repo_root=repo_root), True
 
 
+FAMILY_BLUEPRINT_MAP_SENTINEL = "__family_map__"
+
+
+def parse_family_blueprints(raw: object) -> dict[str, str]:
+    if not isinstance(raw, dict):
+        return {}
+    result: dict[str, str] = {}
+    for key, value in raw.items():
+        family = str(key).strip()
+        blueprint = str(value).strip()
+        if family and blueprint:
+            result[family] = blueprint
+    return result
+
+
+def parse_target_blueprints(raw: object) -> dict[str, str]:
+    if not isinstance(raw, dict):
+        return {}
+    result: dict[str, str] = {}
+    for key, value in raw.items():
+        target = str(key).strip()
+        blueprint = str(value).strip()
+        if not target or not blueprint:
+            continue
+        if looks_like_remote_url(target):
+            result[normalize_repo_url(target)] = blueprint
+        else:
+            result[target] = blueprint
+    return result
+
+
+def target_blueprints_from_org_scan(summary: Mapping[str, Any]) -> dict[str, str]:
+    repos = summary.get("repos")
+    if not isinstance(repos, list):
+        return {}
+    result: dict[str, str] = {}
+    for item in repos:
+        if not isinstance(item, dict):
+            continue
+        url = str(item.get("url", "")).strip()
+        candidate = item.get("top_candidate")
+        if not url or not isinstance(candidate, dict):
+            continue
+        blueprint_name = str(candidate.get("blueprint_name", "")).strip()
+        if blueprint_name:
+            result[normalize_repo_url(url)] = blueprint_name
+    return result
+
+
+def build_default_family_blueprint_map(repo_root: Path) -> dict[str, str]:
+    groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+    return {group.family: group.blueprints[0].name for group in groups if group.blueprints}
+
+
+def _detect_candidates_for_target(
+    raw_target: str,
+    repo_root: Path,
+    *,
+    git_token: str | None = None,
+    ref: str | None = None,
+) -> tuple[BlueprintCandidate, ...]:
+    text = raw_target.strip()
+    catalog = list_blueprints(blueprints_dir(repo_root))
+    if looks_like_remote_url(text):
+        token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
+        if token and "github.com" in text.lower():
+            try:
+                owner, name = parse_github_repository(text)
+                if remote_has_provenance(owner, name, token, ref=ref):
+                    return ()
+                rel_paths = inventory_github_paths(owner, name, token, ref=ref)
+                return detect_blueprint_candidates(
+                    Path("."),
+                    catalog,
+                    rel_paths=rel_paths,
+                )
+            except (GitHubInventoryError, ValueError):
+                pass
+    try:
+        with materialize_import_target(text, git_token=git_token, ref=ref) as (
+            repo_dir,
+            _,
+            _,
+        ):
+            assert_not_governed(repo_dir)
+            return detect_blueprint_candidates(repo_dir, catalog)
+    except (AlreadyGovernedError, RepoImportError, CloneError):
+        return ()
+
+
+def resolve_batch_target_blueprint(
+    target: str,
+    candidates: tuple[BlueprintCandidate, ...],
+    *,
+    blueprint_name: str | None,
+    family_blueprints: Mapping[str, str] | None,
+    target_blueprints: Mapping[str, str] | None,
+) -> str | None:
+    if blueprint_name and blueprint_name != FAMILY_BLUEPRINT_MAP_SENTINEL:
+        return blueprint_name
+    normalized = normalize_repo_url(target) if looks_like_remote_url(target) else target.strip()
+    if target_blueprints:
+        direct = target_blueprints.get(normalized) or target_blueprints.get(target.strip())
+        if direct:
+            return direct
+    if family_blueprints:
+        top = best_candidate(candidates)
+        if top is not None:
+            mapped = family_blueprints.get(top.family)
+            if mapped:
+                return mapped
+    return None
+
+
+def resolve_batch_import_blueprint_options(
+    repo_root: Path,
+    *,
+    blueprint: str | None,
+    family_blueprints_raw: object = None,
+    use_family_blueprints: bool = False,
+) -> tuple[str | None, dict[str, str] | None]:
+    parsed_family_blueprints = parse_family_blueprints(family_blueprints_raw)
+    blueprint_name = blueprint
+    family_blueprints: dict[str, str] | None
+    if blueprint == FAMILY_BLUEPRINT_MAP_SENTINEL:
+        blueprint_name = FAMILY_BLUEPRINT_MAP_SENTINEL
+        defaults = build_default_family_blueprint_map(repo_root)
+        defaults.update(parsed_family_blueprints)
+        family_blueprints = defaults
+    elif use_family_blueprints:
+        defaults = build_default_family_blueprint_map(repo_root)
+        defaults.update(parsed_family_blueprints)
+        family_blueprints = defaults
+    elif parsed_family_blueprints:
+        family_blueprints = parsed_family_blueprints
+    else:
+        family_blueprints = None
+    return blueprint_name, family_blueprints
+
+
 def _reference_tree(
     blueprint: Blueprint,
     values: dict[str, Any],
@@ -1034,6 +1176,8 @@ def plan_import_batch(
     repo_root: Path,
     *,
     blueprint_name: str | None = None,
+    family_blueprints: Mapping[str, str] | None = None,
+    target_blueprints: Mapping[str, str] | None = None,
     values: Mapping[str, Any] | None = None,
     path_overrides: Mapping[str, str] | None = None,
     git_token: str | None = None,
@@ -1068,11 +1212,23 @@ def plan_import_batch(
     for target in resolved:
         wait_before_github_request()
         try:
+            candidates = _detect_candidates_for_target(
+                target,
+                repo_root,
+                git_token=token,
+            )
+            blueprint_for_target = resolve_batch_target_blueprint(
+                target,
+                candidates,
+                blueprint_name=blueprint_name,
+                family_blueprints=family_blueprints,
+                target_blueprints=target_blueprints,
+            )
             items.append(
                 plan_import(
                     target,
                     repo_root,
-                    blueprint_name=blueprint_name,
+                    blueprint_name=blueprint_for_target,
                     values=values,
                     path_overrides=path_overrides,
                     git_token=token,
@@ -1649,6 +1805,8 @@ def import_repository_batch(
     *,
     github_token: str,
     blueprint_name: str | None = None,
+    family_blueprints: Mapping[str, str] | None = None,
+    target_blueprints: Mapping[str, str] | None = None,
     values: Mapping[str, Any] | None = None,
     org: str = "",
     topic: str = "",
@@ -1664,6 +1822,8 @@ def import_repository_batch(
         targets,
         repo_root,
         blueprint_name=blueprint_name,
+        family_blueprints=family_blueprints,
+        target_blueprints=target_blueprints,
         values=values,
         git_token=github_token,
         org=org,

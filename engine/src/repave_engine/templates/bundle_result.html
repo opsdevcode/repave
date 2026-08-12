@@ -5,14 +5,14 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  <a href="/">← Catalog</a>
-  ·
-  <a href="/bundles/{{ bundle_result.bundle.name }}">← {{ bundle_result.bundle.name }}</a>
-</p>
-
+{% set bundle_files = namespace(count=0) %}
+{% for member in bundle_result.members %}
+{% if member.result.rendered_files %}
+{% set bundle_files.count = bundle_files.count + 1 %}
+{% endif %}
+{% endfor %}
 <section
-  class="result-hero result-hero--{{ gate_summary.outcome }}"
+  class="result-hero result-hero--{% if bundle_result.dry_run and bundle_files.count and gate_summary.outcome != 'passed' %}preview{% else %}{{ gate_summary.outcome }}{% endif %}"
   aria-labelledby="result-heading"
 >
   <div class="result-hero__main">
@@ -20,7 +20,13 @@
       Bundle {{ bundle_result.bundle.name }}@{{ bundle_result.bundle.version }}
     </p>
     <h1 id="result-heading" class="result-hero__title">
-      {% if gate_summary.outcome == "failed" %}
+      {% if bundle_result.dry_run and bundle_files.count %}
+      {% if gate_summary.outcome == "passed" %}
+      Plan complete
+      {% else %}
+      Plan preview ready
+      {% endif %}
+      {% elif gate_summary.outcome == "failed" %}
       Bundle generation failed
       {% elif gate_summary.outcome == "passed" %}
       {% if bundle_result.dry_run %}Plan complete{% else %}Applied locally{% endif %}
@@ -31,7 +37,14 @@
     <p class="result-hero__banner">
       {% if bundle_result.dry_run %}
       <span class="badge badge--skip">Plan only</span>
+      {% if bundle_files.count %}
+      Browse and copy generated files per member below. Nothing was published to GitHub.
+      {% if gate_summary.outcome != "passed" %}
+      Gate issues are listed under each member.
+      {% endif %}
+      {% else %}
       {{ bundle_result.members|length }} repositories validated; nothing written locally.
+      {% endif %}
       {% elif gates_ok %}
       <span class="badge badge--pass">Applied</span>
       All members written under the configured modules root.
@@ -187,6 +200,12 @@
         · repo <code>{{ member.result.module_repository.name }}</code>
         {% endif %}
       </p>
+      {% if member.result.rendered_files %}
+      {% with files=member.result.rendered_files, files_heading="Generated files — " ~ member.member_id, files_id_prefix="bundle-" ~ member.member_id %}
+      {% include "partials/generated_files.html" %}
+      {% endwith %}
+      {% endif %}
+
       {% if member.result.gates %}
       <table class="gate-table" aria-label="Gates for {{ member.member_id }}">
         <thead>
@@ -210,38 +229,6 @@
           {% endfor %}
         </tbody>
       </table>
-      {% endif %}
-
-      {% if member.result.rendered_files %}
-      <div class="file-explorer stack-gap" data-file-explorer>
-        <ul class="file-explorer__tree" role="tablist" aria-label="Generated files for {{ member.member_id }}">
-          {% for file in member.result.rendered_files %}
-          <li role="presentation">
-            <button
-              type="button"
-              class="file-explorer__tab{% if loop.first %} is-active{% endif %}"
-              role="tab"
-              aria-selected="{{ 'true' if loop.first else 'false' }}"
-              data-file-index="{{ loop.index0 }}"
-            >
-              {{ file.path }}
-            </button>
-          </li>
-          {% endfor %}
-        </ul>
-        <div class="file-explorer__preview">
-          {% for file in member.result.rendered_files %}
-          <div
-            class="file-explorer__pane{% if loop.first %} is-active{% endif %}"
-            role="tabpanel"
-            data-file-pane="{{ loop.index0 }}"
-            {% if not loop.first %}hidden{% endif %}
-          >
-            <pre class="panel-code">{{ file.content }}</pre>
-          </div>
-          {% endfor %}
-        </div>
-      </div>
       {% endif %}
     </div>
     {% endfor %}

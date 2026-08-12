@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Initiatives — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+{% include "partials/platform_subnav.html" %}
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">Initiatives</h1>
+    <p class="page-lead">
+      Improvement programs that target maturity levels or scorecard rules across the estate.
+    </p>
+  </div>
+</header>
+
+{% if not initiatives_page.catalog_enabled %}
+<section class="card">
+  <div class="card__body">
+    <p class="alert alert--info">
+      Enable <code>service_catalog</code> and set <code>service_catalog.initiatives</code>
+      to track improvement programs.
+    </p>
+  </div>
+</section>
+{% else %}
+
+{% if initiatives_page.rows %}
+<section class="card" aria-labelledby="initiatives-list-heading">
+  <div class="card__header">
+    <h2 id="initiatives-list-heading">Active programs</h2>
+  </div>
+  <div class="card__body">
+    <ul class="initiative-list">
+      {% for row in initiatives_page.rows %}
+      <li class="initiative-list__item">
+        <div class="initiative-list__primary">
+          <strong>{{ row.initiative.title }}</strong>
+          <code class="muted">{{ row.initiative.id }}</code>
+          {% if row.initiative.due_date %}
+          <span class="muted"> · due {{ row.initiative.due_date }}</span>
+          {% endif %}
+          {% if row.overdue %}<span class="badge badge--fail">overdue</span>{% endif %}
+          <p class="muted">{{ row.initiative.description }}</p>
+          <span class="muted">{{ row.passed }} / {{ row.total }} services passing</span>
+          <span class="maturity-bar" role="img" aria-label="{{ row.passed }} of {{ row.total }}">
+            <span
+              class="maturity-bar__fill"
+              style="--maturity-pct: {{ (row.ratio * 100)|round|int }}%"
+            ></span>
+          </span>
+        </div>
+        <details class="initiative-list__edit">
+          <summary class="btn btn--ghost btn--sm">Edit</summary>
+          <form
+            method="post"
+            action="/platform/initiatives/{{ row.initiative.id }}"
+            class="stack-gap initiative-list__edit-form"
+          >
+            <label class="field">
+              <span class="field__label">Title</span>
+              <input class="field__input" name="title" required value="{{ row.initiative.title }}" />
+            </label>
+            <label class="field">
+              <span class="field__label">Description</span>
+              <input class="field__input" name="description" value="{{ row.initiative.description }}" />
+            </label>
+            <label class="field">
+              <span class="field__label">Owning team</span>
+              <input class="field__input" name="owning_team" value="{{ row.initiative.owning_team }}" />
+            </label>
+            <label class="field">
+              <span class="field__label">Due date</span>
+              <input
+                class="field__input"
+                name="due_date"
+                type="date"
+                value="{{ row.initiative.due_date }}"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">Target maturity level</span>
+              <input
+                class="field__input"
+                name="target_level"
+                type="number"
+                min="0"
+                max="5"
+                value="{{ row.initiative.target_level }}"
+              />
+            </label>
+            <label class="field">
+              <span class="field__label">Target rule keys (comma-separated)</span>
+              <input
+                class="field__input"
+                name="target_rule_keys"
+                value="{{ row.initiative.target_rule_keys | join(',') }}"
+              />
+            </label>
+            <div class="form-actions">
+              <button class="btn btn--primary" type="submit">Save changes</button>
+            </div>
+          </form>
+        </details>
+        <form
+          method="post"
+          action="/platform/initiatives/{{ row.initiative.id }}/deactivate"
+          class="initiative-list__deactivate"
+        >
+          <button class="btn btn--ghost btn--sm" type="submit">Deactivate</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">No active initiatives. Create one below.</p>
+  </div>
+</section>
+{% endif %}
+
+{% if initiatives_page.inactive %}
+<section class="card" aria-labelledby="initiatives-inactive-heading">
+  <div class="card__header">
+    <h2 id="initiatives-inactive-heading">Inactive</h2>
+    <p class="muted card__subtitle">Soft-deactivated programs (hidden from entity chips).</p>
+  </div>
+  <div class="card__body">
+    <ul class="initiative-list initiative-list--inactive">
+      {% for item in initiatives_page.inactive %}
+      <li class="initiative-list__item">
+        <strong>{{ item.title }}</strong>
+        <code class="muted">{{ item.id }}</code>
+        {% if item.due_date %}<span class="muted"> · due {{ item.due_date }}</span>{% endif %}
+        <form
+          method="post"
+          action="/platform/initiatives/{{ item.id }}"
+          class="initiative-list__reactivate"
+        >
+          <input type="hidden" name="title" value="{{ item.title }}" />
+          <input type="hidden" name="description" value="{{ item.description }}" />
+          <input type="hidden" name="owning_team" value="{{ item.owning_team }}" />
+          <input type="hidden" name="due_date" value="{{ item.due_date }}" />
+          <input type="hidden" name="target_level" value="{{ item.target_level }}" />
+          <input
+            type="hidden"
+            name="target_rule_keys"
+            value="{{ item.target_rule_keys | join(',') }}"
+          />
+          <input type="hidden" name="active" value="true" />
+          <button class="btn btn--ghost btn--sm" type="submit">Reactivate</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+<section class="card" aria-labelledby="initiative-create-heading">
+  <div class="card__header">
+    <h2 id="initiative-create-heading">Create initiative</h2>
+    <p class="muted card__subtitle">Appends to <code>{{ initiatives_page.initiatives_path }}</code>.</p>
+  </div>
+  <div class="card__body">
+    <form method="post" action="/platform/initiatives" class="stack-gap">
+      <label class="field">
+        <span class="field__label" for="title">Title</span>
+        <input class="field__input" id="title" name="title" required />
+      </label>
+      <label class="field">
+        <span class="field__label" for="description">Description</span>
+        <input class="field__input" id="description" name="description" />
+      </label>
+      <label class="field">
+        <span class="field__label" for="owning_team">Owning team</span>
+        <input class="field__input" id="owning_team" name="owning_team" placeholder="platform" />
+      </label>
+      <label class="field">
+        <span class="field__label" for="due_date">Due date</span>
+        <input class="field__input" id="due_date" name="due_date" type="date" />
+      </label>
+      <label class="field">
+        <span class="field__label" for="target_level">Target maturity level</span>
+        <input class="field__input" id="target_level" name="target_level" type="number" min="0" max="5" value="3" />
+      </label>
+      <label class="field">
+        <span class="field__label" for="target_rule_keys">Target rule keys (comma-separated)</span>
+        <input class="field__input" id="target_rule_keys" name="target_rule_keys" placeholder="has-runbook,has-slo" />
+      </label>
+      <div class="form-actions">
+        <button class="btn btn--primary" type="submit">Create initiative</button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

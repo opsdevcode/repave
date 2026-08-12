@@ -7,6 +7,7 @@ from pathlib import Path
 import repave_engine.cli as _cli
 from repave_engine.blueprint import blueprints_dir, bundles_dir, list_blueprints
 from repave_engine.cli._common import _load_output_config_from_args, _parse_inputs
+from repave_engine.cli._style import brand, gate_status, heading
 from repave_engine.github_auth import resolve_github_access_token
 
 
@@ -41,16 +42,21 @@ def cmd_generate(args: argparse.Namespace) -> int:
             github_token=github_token,
             staging_root=staging_root,
         )
-        print(f"Bundle: {bundle_result.bundle.name}@{bundle_result.bundle.version}")
+        print(
+            f"{heading('Bundle:')} "
+            f"{brand(bundle_result.bundle.name)}@{bundle_result.bundle.version}"
+        )
         exit_code = 0
         for member in bundle_result.members:
-            print(f"\nMember: {member.member_id} ({member.result.blueprint.name})")
+            print(
+                f"\n{heading('Member:')} {member.member_id} ({brand(member.result.blueprint.name)})"
+            )
             if member.result.module_repository:
                 print(f"  Repository: {member.result.module_repository.web_url}")
-            print("  Gates:")
+            print(f"  {heading('Gates:')}")
             for gate in member.result.gates:
                 status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
-                print(f"    - [{status}] {gate.name}: {gate.message}")
+                print(f"    - [{gate_status(status)}] {gate.name}: {gate.message}")
             failed = [g for g in member.result.gates if not g.passed and not g.skipped]
             if failed:
                 exit_code = 1
@@ -70,18 +76,18 @@ def cmd_generate(args: argparse.Namespace) -> int:
         staging_root=staging_root,
     )
 
-    print(f"Blueprint: {result.blueprint.name}@{result.blueprint.version}")
+    print(f"{heading('Blueprint:')} {brand(result.blueprint.name)}@{result.blueprint.version}")
     if result.module_repository:
-        print(f"Module repository: {result.module_repository.web_url}")
-        print(f"Local path: {result.module_repository.local_path}")
+        print(f"{heading('Module repository:')} {result.module_repository.web_url}")
+        print(f"{heading('Local path:')} {result.module_repository.local_path}")
     else:
-        print(f"Staging output: {result.render.output_dir}")
-    print("Gates:")
+        print(f"{heading('Staging output:')} {result.render.output_dir}")
+    print(heading("Gates:"))
     for gate in result.gates:
         status = "SKIP" if gate.skipped else ("PASS" if gate.passed else "FAIL")
-        print(f"  - [{status}] {gate.name}: {gate.message}")
+        print(f"  - [{gate_status(status)}] {gate.name}: {gate.message}")
     if result.rendered_files:
-        print("Generated files:")
+        print(heading("Generated files:"))
         for rendered in result.rendered_files:
             suffix = " (truncated)" if rendered.truncated else ""
             print(f"  - {rendered.path}{suffix}")

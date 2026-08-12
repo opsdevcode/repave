@@ -35,6 +35,7 @@ Major **roadmap** themes align with **engine major** semver on `main`:
 | **v2.0.0 Platform GA** (contract freeze) | **`v2.0.0`** | `feat!:` or `BREAKING CHANGE:` when contract freeze ships |
 | v2.x follow-ons (environment lifecycle, platform console, fleet ops) | `v2.1.0`, `v2.2.0`, … | `feat:` on the v2 line |
 | **v3.0.0** (autonomous estate, governed conversational AI) | **`v3.0.0`** | Breaking removals (`/api/v1`, CRD promotions, etc.) and v3 themes |
+| **v4.0.0** (Stategraph / graph-scoped execution) | **`v4.0.0`** | Graph-scoped plan/apply theme ships (buy preferred; Phase 4 only after go/no-go **Go**) — see [`roadmap.md`](roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution) |
 
 Until v2.0.0 merges, releases stay on the v1 line (`v1.130.0`, …) even while v2
 **themes** land incrementally. After v2.0.0, `feat:` bumps the **minor** (`v2.1.0`),

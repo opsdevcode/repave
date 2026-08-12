@@ -5,13 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb">
-  <a href="/">← Catalog</a>
-  ·
-  <a href="/#golden-paths">Golden paths</a>
-  ·
-  <a href="/estate">Repo status</a>
-</p>
 <header class="form-hero form-hero--compact">
   <div>
     <h1 class="page-title">Library</h1>
@@ -127,6 +120,14 @@
               {% if entity.repo_url %} · repo{% elif entity.local_path %} · local{% endif %}
             </span>
             <span class="catalog-inventory__item-meta">
+              {% if entity.maturity_label %}
+              <span class="badge badge--maturity" title="{{ entity.maturity_passing }}/{{ entity.maturity_total }} rules">
+                L{{ entity.maturity_level }} {{ entity.maturity_label }}
+              </span>
+              {% endif %}
+              {% for badge in entity.initiative_badges[:2] %}
+              <span class="badge badge--initiative">{{ badge }}</span>
+              {% endfor %}
               {% if entity.standard_version %}
               <span class="badge badge--muted">std {{ entity.standard_version }}</span>
               {% endif %}

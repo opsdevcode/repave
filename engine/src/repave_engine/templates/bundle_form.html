@@ -5,7 +5,6 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
-<p class="breadcrumb"><a href="/">← Catalog</a></p>
 <header class="form-hero">
   <div>
     <h1 class="page-title">{{ bundle.name }}</h1>
@@ -121,7 +120,7 @@
     <div class="form-actions form-actions--sticky">
       {% include "partials/governance_preflight_collapsible.html" %}
       <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
-      <div class="form-actions__toolbar">
+      <div class="form-actions__toolbar form-actions__toolbar--solo">
       {% include "partials/delivery_mode_toggle.html" %}
       <div class="form-actions__buttons form-actions__buttons--stack">
         <button

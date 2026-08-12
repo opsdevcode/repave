@@ -153,6 +153,10 @@ def test_bundle_result_includes_topology(repo_root, output_config) -> None:
     )
     assert response.status_code == 200
     assert "bundle-topology" in response.text
+    # Dry-run with rendered member files should invite copy, not read as a dead-end failure.
+    if "data-copy-target" in response.text or "Generated files" in response.text:
+        assert "Plan preview ready" in response.text or "Plan complete" in response.text
+        assert "Bundle generation failed" not in response.text
 
 
 def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:
@@ -209,6 +213,9 @@ def test_run_console_contract(
     assert "no GitHub repository is created" in body
     assert f"/api/v1/runs/{run_id}/events" not in body
     assert 'data-run-id="' + run_id + '"' in body
+    js = client.get("/static/repave.js").text
+    assert "startStatusPolling" in js
+    assert "source.close()" not in js.split("source.onerror")[1].split("startStatusPolling")[0]
 
 
 def test_command_palette_contract(repo_root, output_config) -> None:
@@ -222,10 +229,15 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     assert "terraform-module-generic" in body
     assert '"/platform/finops"' in body
     assert '"/platform/feedback"' in body
-    assert "shell__footer-link" in body
-    assert body.index('href="/platform/finops"') < body.index("shell__footer")
+    footer = body[body.index("shell__footer") :]
+    assert "repave · engine" in footer
+    assert "shell__footer-link" not in footer
+    assert 'href="/platform/' not in footer
+    primary = body.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert 'href="/platform/fleet"' in primary
+    assert ">Platform<" in primary
     more_start = body.index("shell__nav-more")
     more_end = body.index("</details>", more_start)
     more_section = body[more_start:more_end]
-    assert 'href="/platform/finops"' in more_section
-    assert 'href="/platform/feedback"' in more_section
+    assert 'href="/platform/finops"' not in more_section
+    assert 'href="/platform/feedback"' not in more_section

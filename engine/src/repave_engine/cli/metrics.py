@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from repave_engine.cli._style import brand, heading, muted
 from repave_engine.dx_metrics_store import capture_dx_metrics, read_dx_metrics_snapshots
 from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.settings import load_platform_metrics_config
@@ -48,25 +49,30 @@ def cmd_metrics_adoption(args: argparse.Namespace) -> int:
         if snapshot.plan_apply_ratio is not None
         else "n/a"
     )
-    print(f"Adoption ratio: {ratio} ({snapshot.governed_count}/{snapshot.eligible_count})")
-    print(f"Plan → apply:   {plan_apply} ({snapshot.apply_count}/{snapshot.plan_count})")
+    print(
+        f"{heading('Adoption ratio:')} {ratio} "
+        f"({snapshot.governed_count}/{snapshot.eligible_count})"
+    )
+    print(
+        f"{heading('Plan → apply:')}   {plan_apply} ({snapshot.apply_count}/{snapshot.plan_count})"
+    )
     if snapshot.time_to_first_artifact_seconds_p50 is not None:
         print(
-            "Time to first artifact p50/p90: "
+            f"{heading('Time to first artifact p50/p90:')} "
             f"{snapshot.time_to_first_artifact_seconds_p50}s / "
             f"{snapshot.time_to_first_artifact_seconds_p90}s"
         )
     if snapshot.message:
-        print(f"Note: {snapshot.message}")
+        print(muted(f"Note: {snapshot.message}"))
     if snapshot.funnels:
-        print("Funnels:")
+        print(heading("Funnels:"))
         for row in snapshot.funnels[:15]:
             print(
-                f"  {row.blueprint_name}: plans={row.plans} applies={row.applies} "
+                f"  {brand(row.blueprint_name)}: plans={row.plans} applies={row.applies} "
                 f"conversion={row.conversion_ratio * 100:.0f}%"
             )
     if snapshot.bypass_repos:
-        print(f"Bypass repos ({len(snapshot.bypass_repos)}):")
+        print(heading(f"Bypass repos ({len(snapshot.bypass_repos)}):"))
         for url in snapshot.bypass_repos[:20]:
             print(f"  {url}")
     return 0

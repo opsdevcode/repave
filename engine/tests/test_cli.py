@@ -87,6 +87,32 @@ def test_build_parser_includes_create_repo() -> None:
     assert args.team == ["platform"]
 
 
+def test_build_parser_import_batch_search_flags() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "import",
+            "placeholder",
+            "--batch-file",
+            "repos.txt",
+            "--org",
+            "acme",
+            "--language",
+            "HCL",
+            "--pushed-since",
+            "2026-01-01",
+            "--include-archived",
+            "--include-forks",
+        ]
+    )
+    assert args.batch_file == "repos.txt"
+    assert args.org == "acme"
+    assert args.language == "HCL"
+    assert args.pushed_since == "2026-01-01"
+    assert args.include_archived is True
+    assert args.include_forks is True
+
+
 def test_parse_inputs_invalid() -> None:
     with pytest.raises(ValueError, match="Invalid --input value"):
         _parse_inputs(["not-valid"])

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from repave_engine.auth_context import current_acting_user
 from repave_engine.cli._common import _fleet_registry_path
+from repave_engine.cli._style import brand, muted
 from repave_engine.fleet import (
     FleetEntry,
     normalize_repo_url,
@@ -76,10 +77,10 @@ def cmd_fleet(args: argparse.Namespace) -> int:
         return 0
 
     if not entries:
-        print("No repositories registered.")
+        print(muted("No repositories registered."))
         return 0
     for entry in entries:
-        pin = f"{entry.blueprint_name}@{entry.blueprint_version or '?'}"
+        pin = f"{brand(entry.blueprint_name)}@{entry.blueprint_version or '?'}"
         owner = f" owner={entry.owner}" if entry.owner else ""
         print(f"{entry.repo_url}  {pin}{owner}")
     return 0
@@ -90,7 +91,7 @@ def cmd_fleet_manifests(args: argparse.Namespace) -> int:
     root = Path(args.repo_root).resolve()
     entries = read_fleet(registry, repo_root=root)
     if not entries:
-        print("No repositories registered; nothing to render.")
+        print(muted("No repositories registered; nothing to render."))
         return 0
 
     output_dir = Path(args.output).expanduser().resolve()

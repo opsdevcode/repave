@@ -57,14 +57,38 @@ def test_root_defines_semantic_alias_tokens() -> None:
     root_match = re.search(r":root\s*\{([^}]+)\}", css, re.DOTALL)
     assert root_match is not None
     root_names = set(_CSS_DEF.findall(root_match.group(1)))
+    # Layout / type primitives stay on :root (tier 1).
+    for token in ("--radius-lg", "--text-sm", "--dur-fast", "--teal-500"):
+        assert token in root_names
+
+    theme_match = re.search(r'\[data-theme="dark"\]\s*\{([^}]+)\}', css, re.DOTALL)
+    assert theme_match is not None
+    theme_names = set(_CSS_DEF.findall(theme_match.group(1)))
+    # Semantic aliases live on the theme seam (tier 2).
     for token in (
         "--border-subtle",
         "--status-pass",
         "--status-fail",
-        "--radius-lg",
-        "--text-sm",
+        "--accent",
+        "--brand-primary",
+        "--brand-primary-hover",
+        "--brand-primary-muted",
+        "--link",
+        "--warning",
+        "--success",
+        "--error",
     ):
-        assert token in root_names
+        assert token in theme_names
+
+
+def test_brand_and_warning_remain_distinct() -> None:
+    css = _read_css()
+    defined = _defined_tokens(css)
+    assert defined.get("--brand-amber-500") == "#f59e0b"
+    assert defined.get("--orange-500") == "#f97316"
+    # Theme maps brand accent to amber and warning to orange (not the same role).
+    assert "var(--brand-primary)" in defined.get("--accent", "")
+    assert "var(--orange-500)" in defined.get("--warning", "")
 
 
 def test_var_refs_without_fallback_resolve_in_stylesheet() -> None:
