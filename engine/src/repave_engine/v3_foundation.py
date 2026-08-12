@@ -7,6 +7,8 @@ from pathlib import Path
 
 import yaml
 
+from repave_engine.waivers import Clock, WaiverRecord, load_waivers
+
 _CONFIG_NAMES = ("repave.config.yaml", "repave.config.yml")
 
 
@@ -15,6 +17,42 @@ class V3FoundationConfig:
     enabled: bool
     waivers_file: Path | None
     waiver_warn_days: int
+
+
+@dataclass(frozen=True)
+class WaiverPolicy:
+    """Resolved waiver enforcement for a gate run."""
+
+    enabled: bool
+    waivers: tuple[WaiverRecord, ...] = ()
+    warn_days: int = 7
+    entity_id: str | None = None
+    clock: Clock | None = None
+
+    @classmethod
+    def disabled(cls) -> WaiverPolicy:
+        return cls(enabled=False)
+
+
+def load_waiver_policy(
+    repo_root: Path | None,
+    *,
+    entity_id: str | None = None,
+    clock: Clock | None = None,
+) -> WaiverPolicy:
+    """Load waiver records when v3 foundation is enabled; otherwise disabled."""
+    if repo_root is None:
+        return WaiverPolicy.disabled()
+    config = load_v3_foundation_config(repo_root)
+    if not config.enabled or config.waivers_file is None:
+        return WaiverPolicy.disabled()
+    return WaiverPolicy(
+        enabled=True,
+        waivers=load_waivers(config.waivers_file),
+        warn_days=config.waiver_warn_days,
+        entity_id=entity_id,
+        clock=clock,
+    )
 
 
 def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:

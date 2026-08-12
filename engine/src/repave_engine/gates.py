@@ -29,6 +29,8 @@ from repave_engine.gate_runners import (
 )
 from repave_engine.gate_toolchain import ensure_gate_path
 from repave_engine.settings import GateOverrides
+from repave_engine.v3_foundation import WaiverPolicy, load_waiver_policy
+from repave_engine.waivers import WaiverStatus, evaluate_waiver
 
 __all__ = [
     "GateResult",
@@ -124,6 +126,47 @@ def _apply_require_run_policy(context: GateContext, result: GateResult) -> GateR
     )
 
 
+def _apply_waiver_policy(
+    policy: WaiverPolicy,
+    gate_name: str,
+    result: GateResult,
+) -> GateResult:
+    """When v3 waivers are enabled, grant exceptions for failed policy gates."""
+    if not policy.enabled or result.passed or result.skipped:
+        return result
+
+    evaluation = evaluate_waiver(
+        gate_id=gate_name,
+        waivers=policy.waivers,
+        clock=policy.clock,
+        entity_id=policy.entity_id,
+        warn_days=policy.warn_days,
+    )
+    if evaluation.status is WaiverStatus.ACTIVE:
+        waiver_id = evaluation.record.waiver_id if evaluation.record else gate_name
+        return GateResult(
+            result.name,
+            True,
+            False,
+            f"{result.message} (waived by {waiver_id})",
+        )
+    if evaluation.status is WaiverStatus.EXPIRING:
+        return GateResult(
+            result.name,
+            True,
+            False,
+            f"{result.message} ({evaluation.message})",
+        )
+    if evaluation.status is WaiverStatus.EXPIRED:
+        return GateResult(
+            result.name,
+            False,
+            False,
+            evaluation.message or f"waiver expired for gate {gate_name}",
+        )
+    return result
+
+
 RunEventCallback = Callable[[str, dict[str, Any]], None]
 
 
@@ -135,9 +178,16 @@ def run_gates(
     gate_overrides: GateOverrides | None = None,
     require_run: bool = False,
     on_event: RunEventCallback | None = None,
+    repo_root: Path | None = None,
+    entity_id: str | None = None,
+    waiver_policy: WaiverPolicy | None = None,
 ) -> list[GateResult]:
     ensure_gate_path()
     ensure_gates_loaded()
+    resolved_waiver_policy = waiver_policy or load_waiver_policy(
+        repo_root,
+        entity_id=entity_id,
+    )
     context = GateContext(
         output_dir=output_dir,
         blueprint=blueprint,
@@ -153,6 +203,7 @@ def run_gates(
             gate_result = GateResult(gate_name, False, False, f"Unknown gate: {gate_name}")
         else:
             gate_result = _apply_require_run_policy(context, spec.runner(context))
+        gate_result = _apply_waiver_policy(resolved_waiver_policy, gate_name, gate_result)
         results.append(gate_result)
         if on_event is not None:
             on_event(
