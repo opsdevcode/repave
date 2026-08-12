@@ -2,8 +2,10 @@
 
 Turn on the authoritative Terraform/OpenTofu state store (ADR 004 Phases 1–3) in a
 shared cluster. Engine support is shipped and **off by default**; this runbook is the
-operator path. Phase 4 (graph-scoped parallel apply) remains **no-go** — see
-[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md).
+operator path. Phase 4 (graph-scoped parallel apply) remains **no-go** on v2/v3 and is
+deferred to **v4.0.0** — see
+[`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md) and
+[`roadmap.md` beyond v3](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution).
 
 | Doc | Role |
 | --- | --- |
@@ -118,7 +120,8 @@ Record completion in your change ticket (not this repo unless process requires i
 
 ## Explicit non-goals
 
-- Graph-scoped parallel apply (Phase 4) — gated **no-go**
+- Graph-scoped parallel apply (Phase 4) — gated **no-go** on v2/v3; **v4.0.0** theme
+  (buy preferred)
 - Separate `repave-statestore` Deployment (ADR 004 decision 6) — follow-on; routes mount
   on the portal today
 - Flipping chart defaults to `enabled: true`

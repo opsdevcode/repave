@@ -1,8 +1,11 @@
 # Phase 4 go/no-go review: graph-scoped parallel execution
 
-**Status:** gate is closed. **Decision recorded: No-go** (see [Decision record](#decision-record)).
-Phase 4 is not started and must not be started until every condition on this page is met
-and an owner signs a later **Go** decision that supersedes this record.
+**Status:** gate is closed. **Decision recorded: No-go** on the v2/v3 line (see
+[Decision record](#decision-record)). Phase 4 / Stategraph is scheduled as the
+**v4.0.0** roadmap theme
+([beyond v3.0.0](roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)). It is not
+started and must not be started until every condition on this page is met and an owner
+signs a later **Go** decision that supersedes this record.
 
 Phases 1 through 3 of [ADR 004](adr/004-state-custody-and-the-resource-graph.md) shipped
 custody, a queryable resource graph, and transactions with commit-time conflict detection.
@@ -112,8 +115,8 @@ Option 2 should be attempted and shown insufficient before Phase 4 is considered
 | Owner | platform (Eric Skaggs) |
 | Entry conditions met | **No** — 1–3, 5–6 unmet (store still off by default in shared deploys; no production trust window; PITR for state store not rehearsed; treadmill owner and hard-problem answers open). **Condition 4 partial:** transaction preview/commit persists plan-JSON config edges onto the graph; direct backend/import writes remain state-derived only. |
 | Alternative 2 attempted | **No** — split-the-configuration not shown insufficient; buy option not priced for this estate |
-| Decision | **No-go** |
-| Revisit | When entry conditions **1–3** hold; conditions **4–6** remain required before any Go (treat 4 as met for the transaction path once fleet applies use `repave-tf`). Prefer measuring split-config / buy before reopening. |
+| Decision | **No-go** (v2/v3); deferred to **v4.0.0** |
+| Revisit | Under the [v4.0.0 Stategraph theme](roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution) when entry conditions **1–3** hold; conditions **4–6** remain required before any Go (treat 4 as met for the transaction path once fleet applies use `repave-tf`). Prefer measuring split-config / buy before reopening or building. |
 
 ### Rationale
 
@@ -127,10 +130,11 @@ of truth, starting parallel execution fails the gate by design.
 build Phase 4 unless this gate is passed. The default remains no-go; absence of a later
 **Go** decision is still a no-go.
 
-### Next productive work (not Phase 4)
+### Next productive work (not Phase 4 / not v4 yet)
 
 1. Complete Phases 1–3 shared-deploy gates — named treadmill owner, platform security
    sign-off, rehearsed PITR (Helm/`REPAVE_STATE_*` / KEK knobs shipped).
 2. Prefer fleet apply via `repave-tf` transactions so config edges stay on the write path;
    optional follow-up: attach plan JSON on direct import if needed.
-3. Only after a future **Go**: read-only partition analyzer, then concurrent apply.
+3. On the **v4.0.0** theme: price Stategraph (or equivalent) buy and split-config first;
+   only after a future **Go**: read-only partition analyzer, then concurrent apply.

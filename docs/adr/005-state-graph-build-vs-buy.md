@@ -1,11 +1,14 @@
 # ADR 005: State graph — build vs buy
 
 **Status:** Accepted — build Phases 1 through 3, buy or skip Phase 4.
+  Phase 4 / Stategraph revisit is a **v4.0.0** roadmap theme
+  ([beyond v3.0.0](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)).
 **Date:** 2026-08-04
 **Scope:** the decision behind [ADR 004](004-state-custody-and-the-resource-graph.md);
 no code of its own.
 **Related:** [`docs/state-graph-phase4-review.md`](../state-graph-phase4-review.md),
-[`docs/state-graph-exec-memo.md`](../state-graph-exec-memo.md) (one-page summary)
+[`docs/state-graph-exec-memo.md`](../state-graph-exec-memo.md) (one-page summary),
+[`docs/roadmap.md`](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)
 
 ## Context
 
@@ -21,9 +24,11 @@ cost case for buying is strong and the honest answer is that it wins on most axe
 
 ## Decision
 
-**Build Phases 1 through 3. Do not build Phase 4.** Revisit Phase 4 only through the
-[go/no-go gate](../state-graph-phase4-review.md), whose default is no-go, and price buying
-against it at that point rather than now.
+**Build Phases 1 through 3. Do not build Phase 4 on the v2/v3 line.** Schedule any
+Stategraph buy or Phase 4 build revisit as the **v4.0.0** theme
+([roadmap](../roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution)). Revisit
+Phase 4 only through the [go/no-go gate](../state-graph-phase4-review.md), whose default
+is no-go, and price buying against it at that point rather than now.
 
 ## The case for buying, stated at full strength
 
@@ -125,7 +130,8 @@ that does not.
 
 ## Revisit when
 
-- The Phase 4 gate is convened for any reason.
+- The **v4.0.0** Stategraph theme is promoted into Planned (after v3 GA and Phases 1–3
+  enablement), or the Phase 4 gate is convened for any reason.
 - Stategraph or an equivalent ships blueprint-aware policy hooks that could enforce
   repave's gates inside their transaction. That would remove reason 1, which is the load
   bearing one.

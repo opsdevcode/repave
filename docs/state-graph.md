@@ -104,8 +104,10 @@ Blast radius walks dependency edges backwards: everything a change to that addre
 reach. Edges come from state `depends_on` plus, on a transaction preview/commit path,
 plan-JSON `configuration` expression references (`kind: reference`). That enrichment is
 entry-condition prep for partitioning; it is still **not** a go for Phase 4 parallel
-apply — see the recorded decision in the [Phase 4 gate](state-graph-phase4-review.md).
-Direct backend/import writes remain state-derived only.
+apply — Phase 4 / Stategraph is deferred to **v4.0.0**
+([roadmap](roadmap.md#beyond-v300--stategraph-and-graph-scoped-execution);
+[Phase 4 gate](state-graph-phase4-review.md)). Direct backend/import writes remain
+state-derived only.
 
 Pass `--cost infracost.json` to `blast-radius` to price the radius before approving it.
 
