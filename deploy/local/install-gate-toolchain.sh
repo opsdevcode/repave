@@ -21,8 +21,10 @@ GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 # (deploy/local/certs for the compose image) over turning verification off.
 REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE:-0}"
 
-# Retry GitHub/HashiCorp 5xx and connection flakes (chart-smoke image builds).
-CURL_GET=(curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 90)
+CURL_GET=(curl -fsSL)
+# curl --retry does not reliably retry HTTP 503 with -f; loop instead.
+DOWNLOAD_RETRY_ATTEMPTS="${DOWNLOAD_RETRY_ATTEMPTS:-8}"
+DOWNLOAD_RETRY_DELAY="${DOWNLOAD_RETRY_DELAY:-3}"
 GALAXY_INSTALL=(ansible-galaxy collection install)
 UV_PIP_INSTALL=(uv pip install --system --no-cache)
 PIP_INSTALL=(python -m pip install)
@@ -46,6 +48,28 @@ pip_install() {
   else
     "${PIP_INSTALL[@]}" "$@"
   fi
+}
+
+curl_download() {
+  local attempt=1
+  local delay="$DOWNLOAD_RETRY_DELAY"
+  local rc=0
+  while (( attempt <= DOWNLOAD_RETRY_ATTEMPTS )); do
+    "${CURL_GET[@]}" "$@" && return 0
+    rc=$?
+    if (( attempt == DOWNLOAD_RETRY_ATTEMPTS )); then
+      echo "download failed after ${attempt} attempts (curl exit ${rc})" >&2
+      return "$rc"
+    fi
+    echo "download attempt ${attempt}/${DOWNLOAD_RETRY_ATTEMPTS} failed (curl exit ${rc}); retrying in ${delay}s..." >&2
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+    if (( delay > 20 )); then
+      delay=20
+    fi
+  done
+  return "$rc"
 }
 
 arch="$(uname -m)"
@@ -90,19 +114,19 @@ extract_tgz() {
   shift 2
   local tgz
   tgz="$(mktemp "${TMPDIR:-/tmp}/repave-tgz.XXXXXX")"
-  "${CURL_GET[@]}" "$url" -o "$tgz"
+  curl_download "$url" -o "$tgz"
   tar xz -C "$dest_dir" -f "$tgz" "$@"
   rm -f "$tgz"
 }
 
 if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   tmp="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${tf_arch}.zip" \
     -o "$tmp/terraform.zip"
   unzip -q "$tmp/terraform.zip" -d "$tmp"
   install_bin "$tmp/terraform"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${tflint_arch}.zip" \
     -o "$tmp/tflint.zip"
   unzip -q "$tmp/tflint.zip" -d "$tmp"
@@ -114,7 +138,7 @@ if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   rm -rf "$tmp"
   pip_install "$CHECKOV_PIP_SPEC"
   tmp_ic="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://github.com/infracost/cli/releases/download/v${INFRACOST_VERSION}/infracost-linux-${tf_arch}.tar.gz" \
     -o "$tmp_ic/infracost.tgz"
   tar xzf "$tmp_ic/infracost.tgz" -C "$tmp_ic" infracost
@@ -155,7 +179,7 @@ fi
 
 if [[ "$INSTALL_KUBECTL" == "1" ]]; then
   tmp_kubectl="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${kubectl_arch}/kubectl" \
     -o "$tmp_kubectl/kubectl"
   install_bin "$tmp_kubectl/kubectl"
