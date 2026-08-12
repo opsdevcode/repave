@@ -1,14 +1,9 @@
 name: Release prerelease (next/v3)
 
 # v3.0.0-rc.N tags from next/v3 only. Does not sync doc versions or dispatch infra.
+# Manual trigger only: push runs duplicate PR CI and a cancelled/failed run marks the PR
+# UNSTABLE even though release-prerelease is not a required check.
 on:
-  push:
-    branches: [next/v3]
-    paths-ignore:
-      - "docs/**"
-      - ".cursor/**"
-      - "**/*.md"
-      - "LICENSE"
   workflow_dispatch:
 
 permissions:
