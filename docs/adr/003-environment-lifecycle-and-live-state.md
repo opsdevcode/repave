@@ -5,7 +5,7 @@ PR body attachment shipped). **Phase 3** shipped on `main` (vending, registry, T
 decommission review); environment cost badges and post-merge registry finalize shipped on `main`.  
 **Date:** 2026-08-01  
 **Scope:** engine catalog read models, portal, worker role, `repave.config.yaml`, blueprints
-(`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap.md#v200--platform-ga)
+(`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap-archive.md#v200--platform-ga)
 
 ## Context
 
@@ -160,7 +160,7 @@ a human on it.
 
 ## References
 
-- [Roadmap — environment lifecycle and deployment awareness](../roadmap.md#environment-lifecycle-and-deployment-awareness)
+- [Roadmap — environment lifecycle and deployment awareness](../roadmap-archive.md#environment-lifecycle-and-deployment-awareness)
 - [Roadmap — lifecycle control plane (v3 boundary)](../roadmap.md#lifecycle-control-plane)
 - [ADR 002 — v2 service decomposition](002-v2-service-decomposition.md) (worker role, per-run Jobs)
 - [ADR 001 — `GoldenPathRepo.spec.repoURL` remote inventory](001-goldenpathrepo-repo-url-inventory.md)

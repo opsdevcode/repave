@@ -38,7 +38,7 @@ static assets, CSS tokens, and a base layout template.
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | **Shipped** — audit sink, `/activity`, hosted `/runs`; browser last-run remains a local convenience |
 | Cost visibility (shipped) | Library cost badges, Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
-| FinOps enablement (v1.90–v1.94) | Tags + estimate policy shipped (v1.90–v1.91); planned: entity sparklines + `/platform/finops` rollup ([roadmap](roadmap.md#finops-enablement-v2x)) |
+| FinOps enablement (v1.90–v1.94) | **Shipped** — tags, estimate policy, showback/`/platform/finops`, FOCUS, chargeback ([archive](roadmap-archive.md#finops-enablement-v2x), [`finops.md`](finops.md)) |
 | Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |
 | v3.0 conversational generation | Second entry point in the same app shell (Phase 5) |
 
@@ -306,7 +306,7 @@ holds Search (⌘K), session, and environment badges.
 ## Phase 6 — Live governance surfaces
 
 **Status:** Tier 1 shipped (live run console, command palette). Tier 2 items 3–8 are in
-[roadmap — Portal live governance surfaces](roadmap.md#portal-live-governance-surfaces).
+[roadmap — Portal live governance surfaces](roadmap-archive.md#portal-live-governance-surfaces).
 
 **Goal:** Make governance visible while it runs — not only on the result page.
 
@@ -378,7 +378,7 @@ optional; snapshot HTML only if the team wants guardrails against template drift
 
 ## Related docs
 
-- [Roadmap — shipped portal UX](roadmap.md#v118--portal-ux-theme)
-- [FinOps enablement](roadmap.md#finops-enablement-v2x) — showback / budgets / FOCUS surfaces ([operator guide](finops.md))
+- [Roadmap — shipped portal UX](roadmap-archive.md#v118--portal-ux-theme)
+- [FinOps enablement](roadmap-archive.md#finops-enablement-v2x) — showback / budgets / FOCUS surfaces ([operator guide](finops.md))
 - [Concepts — golden path and governance](concepts.md)
 - [Engine README](../engine/README.md) — local portal URL

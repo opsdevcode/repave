@@ -1,6 +1,6 @@
 # `repave.config.yaml` — `repave.dev/v1`
 
-Published as part of the [v2.0.0 contract freeze](roadmap.md#v200--platform-ga). The
+Published as part of the [v2.0.0 contract freeze](roadmap-archive.md#v200--platform-ga). The
 config file gains an explicit **`apiVersion`** so repave can evolve schema lines without
 silent breaking changes.
 

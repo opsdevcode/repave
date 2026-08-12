@@ -30,7 +30,7 @@ target an empty database or one you intend to overwrite.
 | **RPO** (max acceptable data loss) | **≤ 1 hour** | Hourly logical backup or managed PITR; tighten for stricter compliance |
 | **RTO** (time to restore service) | **≤ 4 hours** | Restore DB, redeploy repave with same `databaseUrl`, verify APIs |
 
-These are **hours, not days** — see [roadmap — resilience](../roadmap.md#resilience-and-disaster-recovery).
+These are **hours, not days** — see [roadmap — resilience](../roadmap-archive.md#resilience-and-disaster-recovery).
 Multi-region active/passive failover is a follow-on; this runbook covers single-region backup/restore.
 
 **These targets do not apply when the state store is enabled.** Runs, audit records, and

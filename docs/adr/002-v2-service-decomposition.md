@@ -173,8 +173,8 @@ operator on the CLI path.
 
 ## References
 
-- [Roadmap — service decomposition for hosted scale](../roadmap.md#service-decomposition-for-hosted-scale)
-- [Roadmap — durability and concurrency](../roadmap.md#durability-and-concurrency-for-hosted-use)
+- [Roadmap — service decomposition for hosted scale](../roadmap-archive.md#service-decomposition-for-hosted-scale)
+- [Roadmap — durability and concurrency](../roadmap-archive.md#durability-and-concurrency-for-hosted-use)
 - [`docs/durability.md`](../durability.md)
 - [ADR 002 addendum — run artifact rehydrate](002-addendum-run-artifact-rehydrate.md)
 - [ADR 001](001-goldenpathrepo-repo-url-inventory.md)

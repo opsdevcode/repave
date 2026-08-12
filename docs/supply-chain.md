@@ -119,4 +119,4 @@ checklist.
 ## Related
 
 - [Durability — container images](durability.md) — decomposed portal/worker/corpus layout
-- [Engine hardening A1](roadmap.md#a1--one-source-of-truth-for-gate-toolchain-pins) — gate CLI version pins inside images
+- [Engine hardening A1](roadmap-archive.md#a1--one-source-of-truth-for-gate-toolchain-pins) — gate CLI version pins inside images

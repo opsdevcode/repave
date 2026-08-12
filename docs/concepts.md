@@ -175,7 +175,7 @@ results dashboard). Layout, components, and acceptance criteria are in
 [`docs/portal-design.md`](portal-design.md). Browser-local last-run summary uses
 `sessionStorage`; fleet-wide history is available via the JSONL audit sink, portal
 `/activity`, and hosted `/runs` when durability SQL is configured
-(`repave.config.yaml` `audit` — see [Roadmap v1.30](roadmap.md#v130--audit-log-metrics-and-traces)).
+(`repave.config.yaml` `audit` — see [Roadmap v1.30](roadmap-archive.md#v130--audit-log-metrics-and-traces)).
 
 ## Self-healing (operator)
 
@@ -187,6 +187,6 @@ Development and proof: [`docs/operator-standards.md`](operator-standards.md),
 [`docs/operator-local-dev.md`](operator-local-dev.md),
 [`docs/operator-ga.md`](operator-ga.md),
 [`docs/operator-overview.md`](operator-overview.md). See also
-[`docs/roadmap.md`](roadmap.md#v117--reconciliation-operator-alpha) and
+[`docs/roadmap.md`](roadmap-archive.md#v117--reconciliation-operator-alpha) and
 [`operator/README.md`](../operator/README.md).
 
