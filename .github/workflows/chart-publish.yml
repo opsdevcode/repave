@@ -47,7 +47,9 @@ jobs:
           ./deploy/k8s/hack/publish-charts.sh "${VERSION}"
 
       - name: Wait for GHCR image tags
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: >-
+          startsWith(github.ref, 'refs/tags/v') &&
+          !contains(github.ref_name, '-')
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
