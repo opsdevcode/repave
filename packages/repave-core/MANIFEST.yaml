@@ -10,6 +10,10 @@ modules:
   - repave_engine.provenance_inputs
   - repave_engine.provenance_readme
   - repave_engine.provenance_components
+  - repave_engine.deprecations
+  - repave_engine.risk_class
+  - repave_engine.waivers
+  - repave_engine.v3_foundation
 forbidden_import_roots:
   - fastapi
   - starlette
