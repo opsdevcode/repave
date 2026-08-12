@@ -129,6 +129,9 @@ def main(argv: list[str] | None = None) -> int:
 
     version = args.version or read_engine_version()
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        if args.check and re.fullmatch(r"\d+\.\d+\.\d+-.+", version):
+            print(f"Skipping doc version check for prerelease {version!r}")
+            return 0
         raise SystemExit(f"Invalid semver: {version!r}")
 
     changed = apply_sync(version, check=args.check)
