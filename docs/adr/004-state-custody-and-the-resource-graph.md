@@ -12,7 +12,7 @@ deferred to the **v4.0.0** roadmap theme
 **Date:** 2026-08-04
 **Scope:** `engine/src/repave_engine/statestore/`, `engine/src/repave_engine/api_state/`,
 new top-level `cli/` package (`repave-cli`), `repave.config.yaml`, Helm chart — v2.x line,
-post [contract freeze](../roadmap.md#v200--platform-ga)
+post [contract freeze](../roadmap-archive.md#v200--platform-ga)
 **Supersedes:** the "repave becomes a Terraform runner" rejection in
 [ADR 003](003-environment-lifecycle-and-live-state.md#alternatives-considered), on the
 narrow grounds set out under [Reconciling ADR 003](#reconciling-adr-003).

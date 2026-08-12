@@ -34,7 +34,7 @@ Write access uses `GITHUB_TOKEN` on the operator Deployment.
 [`docs/operator-standards.md`](../docs/operator-standards.md) and
 [`operator/CONTRIBUTING.md`](CONTRIBUTING.md).
 
-Release history: [`docs/roadmap.md`](../docs/roadmap.md#v117--reconciliation-operator-alpha).
+Release history: [`docs/roadmap.md`](../docs/roadmap-archive.md#v117--reconciliation-operator-alpha).
 
 ---
 

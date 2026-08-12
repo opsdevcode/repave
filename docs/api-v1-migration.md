@@ -1,6 +1,6 @@
 # Migrating from `/api/v1` to `/api/v2`
 
-Published as part of the [v2.0.0 contract freeze](roadmap.md#v200--platform-ga). New
+Published as part of the [v2.0.0 contract freeze](roadmap-archive.md#v200--platform-ga). New
 integrations must use `/api/v2` only.
 
 ## Timeline

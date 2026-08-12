@@ -5,7 +5,7 @@ stable integrator contracts. This document is the policy operators and blueprint
 authors follow when changing golden paths under `blueprints/`.
 
 Related: [concepts](concepts.md), [CONTRIBUTING.md](../CONTRIBUTING.md),
-[`schemas/`](../schemas/), [roadmap — Platform GA](roadmap.md#v200--platform-ga).
+[`schemas/`](../schemas/), [roadmap — Platform GA](roadmap-archive.md#v200--platform-ga).
 
 ## Frozen schemas (v2 line)
 

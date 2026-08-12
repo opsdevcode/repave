@@ -9,7 +9,7 @@
 
 [ADR 002 §4](002-v2-service-decomposition.md#4-no-shared-filesystem-between-roles) states that
 generated trees, dry-run previews, and run artifacts travel through the run record **or** an
-S3-compatible object store. [Phase 2](../roadmap.md#service-decomposition-for-hosted-scale)
+S3-compatible object store. [Phase 2](../roadmap-archive.md#service-decomposition-for-hosted-scale)
 ([PR #300](https://github.com/opsdevcode/repave/pull/300)) implemented the object-store path
 first: workers stage on local disk, upload to `s3://…`, and the portal materializes the tree
 for rehydrate.

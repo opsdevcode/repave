@@ -7,7 +7,7 @@ with tests and documented commands before it is considered done.
 **Standards:** API and controller code must follow
 [`operator-standards.md`](operator-standards.md) (Kubernetes / Kubebuilder norms).
 
-Related: [roadmap — v1.17 operator](roadmap.md#v117--reconciliation-operator-alpha),
+Related: [roadmap — v1.17 operator](roadmap-archive.md#v117--reconciliation-operator-alpha),
 [Operator GA scope](operator-ga.md),
 [`operator/README.md`](../operator/README.md), [`operator/CONTRIBUTING.md`](../operator/CONTRIBUTING.md).
 
