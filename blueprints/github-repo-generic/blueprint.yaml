@@ -22,6 +22,7 @@ spec:
       required: false
       default: ""
       description: Short repository description shown on GitHub.
+      guided_from: "{visibility} GitHub repository ({create_mode})."
     - name: create_mode
       type: string
       required: true

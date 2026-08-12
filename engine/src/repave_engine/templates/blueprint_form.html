@@ -331,9 +331,18 @@
         </label>
       </fieldset>
       <p class="hint">
-        Guided shows core fields with safe defaults. Advanced reveals policy, catalog, and
+        Guided names the repository from your selections and uses safe defaults.
+        Advanced lets you edit the name and description and reveals policy, catalog, and
         platform options already on this golden path — not freeform extras.
       </p>
+      {% if has_guided_identity %}
+      <div class="identity-preview" data-identity-preview hidden>
+        <p class="identity-preview__kicker">Generated from your selections</p>
+        <p class="identity-preview__name" data-identity-preview-name></p>
+        <p class="identity-preview__description" data-identity-preview-description></p>
+        <p class="hint">Switch to Advanced to edit the name and description.</p>
+      </div>
+      {% endif %}
       {% endif %}
 
       {% if form_stepper == 'standard' %}
@@ -1043,6 +1052,12 @@
         data-form-step="0"
         {% endif %}
         {% if field.advanced %}data-form-advanced{% endif %}
+        {% if field.guided_from %}
+        data-form-identity
+        data-guided-from="{{ field.guided_from }}"
+        data-guided-slug="{{ 'false' if field.name == 'description' else 'true' }}"
+        data-guided-separator="{{ '_' if field.name in ('role_name', 'collection_name', 'sample_role_name', 'namespace') else '-' }}"
+        {% endif %}
         {% if blueprint.artifact_type == 'github-repo' and field.name in ('template_owner', 'template_repo') %}
         data-github-repo-when="template"
         {% endif %}

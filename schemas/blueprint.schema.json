@@ -664,6 +664,10 @@
         "advanced": {
           "type": "boolean",
           "description": "When true, portal Guided mode hides this field until Advanced is selected (v1.88)."
+        },
+        "guided_from": {
+          "type": "string",
+          "description": "When set, portal Guided mode fills this field from other input placeholders (for example {cloud_provider}-{provider_services}). Advanced leaves the field editable."
         }
       }
     }

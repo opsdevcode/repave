@@ -14,6 +14,7 @@ spec:
       type: string
       required: true
       description: Service being deployed (repo gitops-{environment}-{service_name}).
+      guided_from: "{environment}-{chart_name}"
     - name: environment
       type: string
       required: true

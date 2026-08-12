@@ -45,6 +45,10 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert cost_center.advanced is True
     owner = next(field for field in terraform_blueprint.inputs if field.name == "owner")
     assert owner.advanced is False
+    module_name = next(field for field in terraform_blueprint.inputs if field.name == "module_name")
+    assert module_name.guided_from == "{provider_services}"
+    description = next(field for field in terraform_blueprint.inputs if field.name == "description")
+    assert "{provider_services}" in description.guided_from
     assert (
         terraform_blueprint.output_title_template
         == "Bootstrap {cloud_provider} module {module_name} ({provider_services})"

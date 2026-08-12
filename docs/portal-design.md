@@ -150,11 +150,18 @@ segmented scope mode, scope presets and inline validation, Ansible enum inputs).
 
 ### Guided / Advanced form depth (v1.88)
 
-`terraform-module-generic` and `ansible-role-generic` default to **Guided** mode: core
-identity and scope fields only. **Advanced** reveals the rest of the blueprint’s declared
-inputs (policy pack/profile/rules, Backstage catalog knobs, Ansible pattern / min version /
-Galaxy platforms, Terraform service-scope panel). Classification is data-driven via optional
-`advanced: true` on blueprint `inputs` (`InputField.advanced`).
+Golden paths that declare `advanced` or `guided_from` inputs default to **Guided**
+mode. **Advanced** reveals the rest of the blueprint’s declared inputs (policy
+pack/profile/rules, Backstage catalog knobs, Ansible pattern / min version /
+Galaxy platforms, Terraform service-scope panel). Classification is data-driven via
+optional `advanced: true` and `guided_from` on blueprint `inputs`.
+
+**Guided identity:** when an input declares `guided_from`, Guided hides that field and
+fills it from the other selections on that golden path (Terraform services → module name,
+runtime + layout → app service name, and so on). A live preview shows the generated name
+and description. Advanced makes those fields editable. The engine applies the same fill
+when name/description are omitted on POST, so Plan preview still works if the browser
+does not run the form script.
 
 Hidden Advanced controls stay in the DOM so blueprint defaults still submit (same idea as
 observability recommended vs custom). Escape hatch is the mode toggle — not a freeform box.
@@ -293,7 +300,7 @@ holds Search (⌘K), session, and environment badges.
 | **Command palette** | Cmd/Ctrl-K plus shell **Jump to…** button with platform shortcut hint |
 | **Async runs index** | Client-side column sort on `/runs`; relative `<time>` labels portal-wide |
 | **Live plan surfaces** | Entity preflight panel, busy overlay on submit, result hero with resource counts |
-| **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth on terraform + ansible-role generics (v1.88) |
+| **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth with `guided_from` identity fill |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
 | **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |

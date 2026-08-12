@@ -218,6 +218,9 @@ def test_terraform_form_guided_advanced_mode(repo_root, output_config) -> None:
     assert "Guided" in response.text
     assert "Advanced" in response.text
     assert "not freeform extras" in response.text
+    assert "Generated from your selections" in response.text
+    assert "data-form-identity" in response.text
+    assert 'data-guided-from="{provider_services}"' in response.text
     assert 'id="policy-customization"' in response.text
     assert "data-form-advanced" in response.text
     # Advanced field labels remain in HTML (CSS/JS hide them); controls keep defaults.
@@ -236,6 +239,8 @@ def test_ansible_form_guided_advanced_mode(repo_root, output_config) -> None:
     assert 'id="form-mode-toggle"' in response.text
     assert 'name="form_mode"' in response.text
     assert 'id="ansible-role-pattern-block"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{role_pattern_source}"' in response.text
     assert "data-form-advanced" in response.text
     assert 'name="min_ansible_version"' in response.text
     assert 'id="platform-advanced-panel"' in response.text
@@ -260,6 +265,8 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert ".alert--fail" in response.text
     assert ".gate-table-wrap" in response.text
     assert 'form[data-form-mode="guided"]' in response.text
+    assert "[data-form-identity]" in response.text
+    assert ".identity-preview" in response.text
     assert ".gate-list" not in response.text
 
 
@@ -750,6 +757,39 @@ def test_terraform_guided_only_generate_uses_defaults(
     assert "Generated files" in response.text
 
 
+def test_terraform_guided_generate_derives_name_and_description(
+    repo_root, output_config, sample_inputs
+) -> None:
+    """Guided POST omits module_name and description; selections fill them."""
+    guided = {
+        key: value
+        for key, value in sample_inputs.items()
+        if key
+        not in {
+            "module_name",
+            "description",
+            "cost_center",
+            "policy_pack_source",
+            "policy_profile",
+            "policy_rules",
+            "include_backstage_catalog",
+            "system",
+            "catalog_lifecycle",
+            "provider_service_scope",
+        }
+    }
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **guided},
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "ec2-s3" in response.text
+    assert "aws Terraform module covering" in response.text
+
+
 def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sample_inputs) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
@@ -820,6 +860,27 @@ def test_ansible_guided_only_generate_uses_defaults(repo_root, output_config) ->
     assert response.status_code == 200
     assert "Plan only" in response.text
     assert "Generated files" in response.text
+
+
+def test_ansible_guided_generate_derives_name_and_description(repo_root, output_config) -> None:
+    """Guided POST omits role_name and description; pattern and namespace fill them."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "ansible-role-generic",
+            "dry_run": "true",
+            "namespace": "acme",
+            "support_linux": "true",
+            "support_windows": "false",
+            "windows_server_generation": "2022",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "linux_service" in response.text
+    assert "acme Ansible role" in response.text
 
 
 def test_observability_form_single_page(repo_root, output_config) -> None:
@@ -1154,6 +1215,8 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert 'id="catalog_lifecycle"' in response.text
     assert 'id="runtime"' in response.text
     assert ">go</option>" in response.text
+    assert 'data-form-mode="guided"' in response.text
+    assert 'data-guided-from="{runtime}-{layout}"' in response.text
 
 
 def test_provider_service_detail_unknown_returns_empty(repo_root, output_config) -> None:

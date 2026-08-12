@@ -10,6 +10,7 @@ from typing import Any, cast
 import jsonschema
 import yaml
 
+from repave_engine.guided_identity import apply_guided_identity
 from repave_engine.import_rules import ImportRuleSet, parse_import_rules
 from repave_engine.provider_catalog import (
     get_service_definition,
@@ -29,6 +30,8 @@ class InputField:
     multi: bool = False
     # Guided form (v1.88): when True, field is hidden until Advanced mode.
     advanced: bool = False
+    # Guided form: when set, Guided mode fills this field from other selections.
+    guided_from: str = ""
 
 
 @dataclass(frozen=True)
@@ -202,6 +205,7 @@ def load_blueprint(blueprint_path: Path, *, repo_root: Path | None = None) -> Bl
             enum=tuple(item.get("enum", [])),
             multi=bool(item.get("multi", False)),
             advanced=bool(item.get("advanced", False)),
+            guided_from=str(item.get("guided_from", "") or ""),
         )
         for item in spec["inputs"]
     )
@@ -350,8 +354,6 @@ def validate_inputs(
             normalized[field.name] = merged_values[field.name]
         elif field.default is not None:
             normalized[field.name] = field.default
-        elif field.required:
-            raise ValueError(f"Missing required input: {field.name}")
 
     unknown = set(merged_values) - {f.name for f in blueprint.inputs}
     if unknown:
@@ -429,6 +431,17 @@ def validate_inputs(
     _validate_app_service_inputs(blueprint, normalized)
     _validate_gitops_deployment_inputs(blueprint, normalized)
     _validate_github_repo_inputs(blueprint, normalized)
+
+    apply_guided_identity(blueprint, normalized)
+    for field in blueprint.inputs:
+        current = normalized.get(field.name)
+        if current in (None, "") and field.required:
+            if field.guided_from:
+                raise ValueError(
+                    f"Missing required input: {field.name}. Complete the selections in "
+                    f"{field.guided_from} or switch to Advanced and enter {field.name}."
+                )
+            raise ValueError(f"Missing required input: {field.name}")
 
     return normalized
 
