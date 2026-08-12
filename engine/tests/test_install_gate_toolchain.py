@@ -66,6 +66,9 @@ def test_default_run_verifies_tls_for_every_downloader(tmp_path: Path) -> None:
         len(curl_calls) == 8
     )  # terraform, tflint, conftest, infracost, helm, kubectl, actionlint, buf
     assert all("-fsSL" in call for call in curl_calls)
+    assert all("--retry 5" in call for call in curl_calls)
+    assert all("--retry-all-errors" in call for call in curl_calls)
+    assert all(" -o " in call for call in curl_calls)
     assert not any("--insecure" in call for call in curl_calls)
     assert _lines(calls, "ansible-galaxy")
     assert not any("--ignore-certs" in call for call in _lines(calls, "ansible-galaxy"))

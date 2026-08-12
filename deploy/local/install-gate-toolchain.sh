@@ -21,7 +21,8 @@ GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 # (deploy/local/certs for the compose image) over turning verification off.
 REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE:-0}"
 
-CURL_GET=(curl -fsSL)
+# Retry GitHub/HashiCorp 5xx and connection flakes (chart-smoke image builds).
+CURL_GET=(curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 --retry-max-time 90)
 GALAXY_INSTALL=(ansible-galaxy collection install)
 UV_PIP_INSTALL=(uv pip install --system --no-cache)
 PIP_INSTALL=(python -m pip install)
@@ -82,6 +83,18 @@ install_bin() {
   fi
 }
 
+# Download then extract so curl retries cannot leave tar with a partial pipe.
+extract_tgz() {
+  local url="$1"
+  local dest_dir="$2"
+  shift 2
+  local tgz
+  tgz="$(mktemp "${TMPDIR:-/tmp}/repave-tgz.XXXXXX")"
+  "${CURL_GET[@]}" "$url" -o "$tgz"
+  tar xz -C "$dest_dir" -f "$tgz" "$@"
+  rm -f "$tgz"
+}
+
 if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   tmp="$(mktemp -d)"
   "${CURL_GET[@]}" \
@@ -94,9 +107,9 @@ if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
     -o "$tmp/tflint.zip"
   unzip -q "$tmp/tflint.zip" -d "$tmp"
   install_bin "$tmp/tflint"
-  "${CURL_GET[@]}" \
+  extract_tgz \
     "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_${conf_arch}.tar.gz" \
-    | tar xz -C "$tmp" conftest
+    "$tmp" conftest
   install_bin "$tmp/conftest"
   rm -rf "$tmp"
   pip_install "$CHECKOV_PIP_SPEC"
@@ -133,9 +146,9 @@ fi
 
 if [[ "$INSTALL_HELM" == "1" ]]; then
   tmp_helm="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  extract_tgz \
     "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${helm_arch}.tar.gz" \
-    | tar xz -C "$tmp_helm"
+    "$tmp_helm"
   install_bin "$tmp_helm/linux-${helm_arch}/helm"
   rm -rf "$tmp_helm"
 fi
@@ -160,9 +173,9 @@ if [[ "$INSTALL_ACTIONLINT" == "1" ]]; then
   esac
   if [[ -n "$al_os" ]]; then
     tmp_al="$(mktemp -d)"
-    "${CURL_GET[@]}" \
+    extract_tgz \
       "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${al_os}_${kubectl_arch}.tar.gz" \
-      | tar xz -C "$tmp_al" actionlint
+      "$tmp_al" actionlint
     install_bin "$tmp_al/actionlint"
     rm -rf "$tmp_al"
   fi
@@ -170,9 +183,9 @@ fi
 
 if [[ "$INSTALL_BUF" == "1" ]]; then
   tmp_buf="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  extract_tgz \
     "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${buf_arch}.tar.gz" \
-    | tar xz -C "$tmp_buf" buf/bin/buf
+    "$tmp_buf" buf/bin/buf
   install_bin "$tmp_buf/buf/bin/buf"
   rm -rf "$tmp_buf"
 fi
