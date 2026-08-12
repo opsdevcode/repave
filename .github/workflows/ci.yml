@@ -115,6 +115,32 @@ jobs:
       - name: Run slow shard
         run: make -C .. test-slow
 
+  # Ruleset on main still lists `test` until main-branch.json is applied on GitHub.
+  test:
+    name: test
+    needs: [paths, engine-unit, engine-portal, engine-slow]
+    runs-on: ubuntu-latest
+    if: ${{ always() && !cancelled() && needs.paths.result == 'success' }}
+    steps:
+      - name: Satisfy legacy required check
+        env:
+          CI_NEEDED: ${{ needs.paths.outputs.ci_needed }}
+          UNIT: ${{ needs.engine-unit.result }}
+          PORTAL: ${{ needs.engine-portal.result }}
+          SLOW: ${{ needs.engine-slow.result }}
+        run: |
+          set -euo pipefail
+          if [ "${CI_NEEDED}" != "true" ]; then
+            echo "docs-only: legacy test check satisfied"
+            exit 0
+          fi
+          if [ "${UNIT}" = "success" ] && [ "${PORTAL}" = "success" ] && [ "${SLOW}" = "success" ]; then
+            echo "engine shards passed"
+            exit 0
+          fi
+          echo "engine shard failure: unit=${UNIT} portal=${PORTAL} slow=${SLOW}"
+          exit 1
+
   cli:
     name: repave-cli
     needs: paths
