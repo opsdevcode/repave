@@ -31,7 +31,9 @@
       "parameters": {
         "strict_required_status_checks_policy": false,
         "required_status_checks": [
-          {"context": "test"},
+          {"context": "engine-unit"},
+          {"context": "engine-portal"},
+          {"context": "engine-slow"},
           {"context": "Python quality and security"},
           {"context": "commitlint"},
           {"context": "semantic-pull-request"},
