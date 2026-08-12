@@ -14,10 +14,12 @@ spec:
       type: string
       required: true
       description: Short project name (used in repo name and play labels).
+      guided_from: "{environment}-{playbook_pattern_source}"
     - name: description
       type: string
       required: true
       description: What this playbook project automates.
+      guided_from: "{environment} Ansible playbook ({playbook_pattern_source})."
     - name: playbook_pattern_source
       type: string
       required: false

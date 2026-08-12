@@ -14,14 +14,17 @@ spec:
       type: string
       required: true
       description: Helm chart name (Chart.yaml name; repo helm-{chart_name}).
+      guided_from: "{image_repository}"
     - name: app_name
       type: string
       required: true
       description: Application label and container name.
+      guided_from: "{image_repository}"
     - name: description
       type: string
       required: true
       description: Chart description (Chart.yaml and README).
+      guided_from: "Helm chart for {image_repository} ({service_type}, {environment})."
     - name: image_repository
       type: string
       required: true

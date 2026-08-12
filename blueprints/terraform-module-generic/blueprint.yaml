@@ -13,10 +13,12 @@ spec:
       type: string
       required: true
       description: Name of the Terraform module (e.g. networking-vnet).
+      guided_from: "{provider_services}"
     - name: description
       type: string
       required: true
       description: Short description of what the module does.
+      guided_from: "{cloud_provider} Terraform module covering {provider_services}."
     - name: cloud_provider
       type: string
       required: true

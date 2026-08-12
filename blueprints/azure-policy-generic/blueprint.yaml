@@ -14,6 +14,7 @@ spec:
       type: string
       required: true
       description: Short name for this policy set (used in repo name).
+      guided_from: "{policy_profile}"
     - name: organization
       type: string
       required: true
@@ -22,6 +23,7 @@ spec:
       type: string
       required: true
       description: What these Azure Policy definitions enforce.
+      guided_from: "{organization} Azure Policy pack ({policy_profile})."
     - name: policy_pack_source
       type: string
       required: false

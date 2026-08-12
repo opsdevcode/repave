@@ -14,10 +14,12 @@ spec:
       type: string
       required: true
       description: Service name (repository app-{service_name}, Backstage component id).
+      guided_from: "{runtime}-{layout}"
     - name: description
       type: string
       required: true
       description: Short description for README and catalog-info.yaml.
+      guided_from: "{runtime} {layout} application service."
     - name: owner
       type: string
       required: true

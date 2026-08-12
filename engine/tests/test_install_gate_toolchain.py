@@ -18,17 +18,25 @@ STUBBED_COMMANDS = ("curl", "unzip", "tar", "install", "uv", "ansible-galaxy")
 pytestmark = pytest.mark.skipif(shutil.which("bash") is None, reason="bash not available")
 
 
-def _run_installer(tmp_path: Path, **env_overrides: str) -> tuple[subprocess.CompletedProcess, str]:
+def _run_installer(
+    tmp_path: Path,
+    *,
+    curl_stub: str | None = None,
+    **env_overrides: str,
+) -> tuple[subprocess.CompletedProcess, str]:
     """Run the installer with stubbed downloaders; return the process and the argv log."""
     stub_dir = tmp_path / "bin"
     stub_dir.mkdir()
     log = tmp_path / "calls.log"
     for name in STUBBED_COMMANDS:
         stub = stub_dir / name
-        stub.write_text(
-            f'#!/bin/sh\nprintf "{name} %s\\n" "$*" >> "$STUB_LOG"\nexit 0\n',
-            encoding="utf-8",
-        )
+        if name == "curl" and curl_stub is not None:
+            stub.write_text(curl_stub, encoding="utf-8")
+        else:
+            stub.write_text(
+                f'#!/bin/sh\nprintf "{name} %s\\n" "$*" >> "$STUB_LOG"\nexit 0\n',
+                encoding="utf-8",
+            )
         stub.chmod(0o755)
     dest = tmp_path / "dest"
     dest.mkdir()
@@ -37,6 +45,7 @@ def _run_installer(tmp_path: Path, **env_overrides: str) -> tuple[subprocess.Com
         **os.environ,
         "PATH": f"{stub_dir}{os.pathsep}{os.environ['PATH']}",
         "STUB_LOG": str(log),
+        "STUB_DIR": str(stub_dir),
         "REPO_ROOT": str(REPO_ROOT),
         "USE_UV_PIP": "1",
         "DEST": str(dest),
@@ -66,6 +75,7 @@ def test_default_run_verifies_tls_for_every_downloader(tmp_path: Path) -> None:
         len(curl_calls) == 8
     )  # terraform, tflint, conftest, infracost, helm, kubectl, actionlint, buf
     assert all("-fsSL" in call for call in curl_calls)
+    assert all(" -o " in call for call in curl_calls)
     assert not any("--insecure" in call for call in curl_calls)
     assert _lines(calls, "ansible-galaxy")
     assert not any("--ignore-certs" in call for call in _lines(calls, "ansible-galaxy"))
@@ -130,6 +140,41 @@ def test_buf_install_can_be_skipped(tmp_path: Path) -> None:
     assert proc.returncode == 0, proc.stderr
     curl_blob = "\n".join(_lines(calls, "curl"))
     assert "bufbuild/buf" not in curl_blob
+
+
+def test_curl_download_retries_transient_http_errors(tmp_path: Path) -> None:
+    proc, calls = _run_installer(
+        tmp_path,
+        curl_stub=(
+            "#!/bin/sh\n"
+            'count_file="$STUB_DIR/curl-count"\n'
+            "n=0\n"
+            'if [ -f "$count_file" ]; then n=$(cat "$count_file"); fi\n'
+            "n=$((n + 1))\n"
+            'echo "$n" > "$count_file"\n'
+            'printf "curl %s\\n" "$*" >> "$STUB_LOG"\n'
+            'if [ "$n" -le 2 ]; then exit 22; fi\n'
+            "exit 0\n"
+        ),
+        DOWNLOAD_RETRY_DELAY="0",
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    assert len(_lines(calls, "curl")) == 10  # 2 failures + 8 successful downloads
+    assert "retrying in 0s" in proc.stderr
+
+
+def test_curl_download_gives_up_after_attempts(tmp_path: Path) -> None:
+    proc, calls = _run_installer(
+        tmp_path,
+        curl_stub=('#!/bin/sh\nprintf "curl %s\\n" "$*" >> "$STUB_LOG"\nexit 22\n'),
+        DOWNLOAD_RETRY_DELAY="0",
+        DOWNLOAD_RETRY_ATTEMPTS="3",
+    )
+
+    assert proc.returncode == 22
+    assert len(_lines(calls, "curl")) == 3
+    assert "download failed after 3 attempts" in proc.stderr
 
 
 def test_script_is_syntactically_valid() -> None:

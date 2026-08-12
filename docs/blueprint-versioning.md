@@ -24,6 +24,7 @@ CLI, operator, conformance harness) may rely on their shapes until **v3.0.0**:
 - Treat any incompatible change as **breaking** — open an issue or ADR first.
 - Prefer additive, backward-compatible JSON Schema updates (new optional properties
   only) when the v2 line must evolve; document the migration in the PR.
+  Example: optional `guided_from` on `inputs` (portal Guided identity fill).
 - Reserved breaking changes (new required fields, renames, enum removals) ship in
   **v3** with a published migration guide — see
   [breaking at v3.0.0](roadmap.md#breaking-at-v300).

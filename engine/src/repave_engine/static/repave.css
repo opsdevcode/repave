@@ -3301,6 +3301,36 @@
     display: none;
   }
 
+  form[data-form-mode="guided"] [data-form-identity] {
+    display: none;
+  }
+
+  .identity-preview {
+    margin: 0 0 var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+  }
+
+  .identity-preview__kicker {
+    margin: 0 0 var(--space-2);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .identity-preview__name {
+    margin: 0;
+    font-weight: 650;
+    font-size: 1.05rem;
+  }
+
+  .identity-preview__description {
+    margin: var(--space-2) 0 0;
+  }
+
   .scope-mode.segmented {
     display: flex;
     width: 100%;

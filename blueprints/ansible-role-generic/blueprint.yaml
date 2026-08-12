@@ -14,6 +14,7 @@ spec:
       type: string
       required: true
       description: Name of the Ansible role (e.g. webserver).
+      guided_from: "{role_pattern_source}"
     - name: namespace
       type: string
       required: true
@@ -22,6 +23,7 @@ spec:
       type: string
       required: true
       description: Short description of what the role does.
+      guided_from: "{namespace} Ansible role ({role_pattern_source})."
     - name: role_pattern_source
       type: string
       required: false

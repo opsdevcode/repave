@@ -16,10 +16,12 @@ spec:
       type: string
       required: true
       description: Name of the Terraform module (e.g. acme-bucket).
+      guided_from: "{provider_resource}"
     - name: description
       type: string
       required: true
       description: Short description of what the module manages.
+      guided_from: "{cloud_provider} {provider_service} module for {provider_resource}."
     - name: cloud_provider
       type: string
       required: true

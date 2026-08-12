@@ -14,6 +14,7 @@ spec:
       type: string
       required: true
       description: Short name for this Checkov policy set (used in repo name).
+      guided_from: "{policy_profile}"
     - name: organization
       type: string
       required: true
@@ -22,6 +23,7 @@ spec:
       type: string
       required: true
       description: What this Checkov policy pack enforces.
+      guided_from: "{organization} Checkov policy pack ({policy_profile})."
     - name: policy_pack_source
       type: string
       required: false

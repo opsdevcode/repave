@@ -307,6 +307,7 @@ def test_generate_applies_gate_overrides_from_config(
         gate_overrides=None,
         require_run=False,
         on_event=None,
+        **_kwargs,
     ):
         captured["gate_overrides"] = gate_overrides
         captured["gate_names"] = gate_names

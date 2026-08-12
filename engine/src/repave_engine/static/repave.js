@@ -1429,6 +1429,190 @@
     applyMode(checked ? checked.value : "guided");
   }
 
+  function slugifyIdentity(value, separator) {
+    var sep = separator || "-";
+    var text = String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\/+$/, "");
+    var slash = text.lastIndexOf("/");
+    if (slash >= 0) {
+      text = text.slice(slash + 1);
+    }
+    var slugs = [];
+    text.replace(/,/g, " ").split(/\s+/).forEach(function (part) {
+      if (!part) {
+        return;
+      }
+      var slug = part.replace(/[^a-z0-9]+/g, sep);
+      while (slug.charAt(0) === sep) {
+        slug = slug.slice(1);
+      }
+      while (slug.charAt(slug.length - 1) === sep) {
+        slug = slug.slice(0, -1);
+      }
+      var doubled = sep + sep;
+      while (slug.indexOf(doubled) !== -1) {
+        slug = slug.split(doubled).join(sep);
+      }
+      if (slug) {
+        slugs.push(slug);
+      }
+    });
+    return slugs.join(sep);
+  }
+
+  function humanizeIdentity(value) {
+    var text = String(value || "").trim();
+    if (!text) {
+      return "";
+    }
+    var parts = text.split(",").map(function (part) {
+      return part.trim();
+    }).filter(Boolean);
+    if (parts.length > 1) {
+      return parts.join(", ");
+    }
+    return text.replace(/[_-]/g, " ");
+  }
+
+  function renderGuidedFrom(template, values, slug, separator) {
+    var text = String(template || "").trim();
+    if (!text) {
+      return "";
+    }
+    var missing = false;
+    var rendered = text.replace(/\{([a-z][a-z0-9_]*)\}/g, function (_match, key) {
+      var raw = String(values[key] || "").trim();
+      if (!raw) {
+        missing = true;
+        return "";
+      }
+      return slug ? slugifyIdentity(raw, separator) : humanizeIdentity(raw);
+    });
+    if (missing) {
+      return "";
+    }
+    rendered = rendered.trim();
+    if (!rendered) {
+      return "";
+    }
+    if (slug) {
+      return slugifyIdentity(rendered, separator);
+    }
+    return rendered.replace(/\s+/g, " ");
+  }
+
+  function initGuidedIdentity() {
+    var form = document.querySelector("form[data-form-mode]");
+    if (!form) {
+      return;
+    }
+    var blocks = form.querySelectorAll("[data-form-identity][data-guided-from]");
+    if (!blocks.length) {
+      return;
+    }
+    var preview = form.querySelector("[data-identity-preview]");
+    var previewName = form.querySelector("[data-identity-preview-name]");
+    var previewDescription = form.querySelector("[data-identity-preview-description]");
+    var dirty = {};
+
+    function readValues() {
+      var values = {};
+      form.querySelectorAll("input[name], select[name], textarea[name]").forEach(function (field) {
+        if (!field.name || field.type === "file") {
+          return;
+        }
+        if (field.type === "checkbox") {
+          values[field.name] = field.checked ? field.value || "true" : "false";
+          return;
+        }
+        if (field.type === "radio") {
+          if (field.checked) {
+            values[field.name] = field.value;
+          }
+          return;
+        }
+        values[field.name] = field.value;
+      });
+      return values;
+    }
+
+    function identityInput(block) {
+      return block.querySelector("input, textarea, select");
+    }
+
+    function syncIdentity() {
+      var guided = form.getAttribute("data-form-mode") === "guided";
+      var values = readValues();
+      var nameText = "";
+      var descriptionText = "";
+      var hasNameField = false;
+      blocks.forEach(function (block) {
+        var input = identityInput(block);
+        if (!input || !input.name) {
+          return;
+        }
+        var template = block.getAttribute("data-guided-from") || "";
+        var slug = block.getAttribute("data-guided-slug") !== "false";
+        var separator = block.getAttribute("data-guided-separator") || "-";
+        var rendered = renderGuidedFrom(template, values, slug, separator);
+        if (guided) {
+          dirty[input.name] = false;
+          input.readOnly = true;
+          input.required = false;
+          if (rendered) {
+            input.value = rendered;
+            values[input.name] = rendered;
+          }
+        } else {
+          input.readOnly = false;
+          input.required = Boolean(input.getAttribute("data-identity-required"));
+          if (!dirty[input.name] && rendered && !String(input.value || "").trim()) {
+            input.value = rendered;
+            values[input.name] = rendered;
+          }
+        }
+        if (input.name === "description") {
+          descriptionText = String(input.value || rendered || "").trim();
+        } else {
+          hasNameField = true;
+          nameText = String(input.value || rendered || "").trim();
+        }
+      });
+      if (preview) {
+        preview.hidden = !guided;
+      }
+      if (previewName) {
+        previewName.hidden = !hasNameField;
+        previewName.textContent = nameText || "Name appears after you make a selection";
+      }
+      if (previewDescription) {
+        previewDescription.textContent = descriptionText;
+        previewDescription.hidden = !descriptionText;
+      }
+    }
+
+    blocks.forEach(function (block) {
+      var input = identityInput(block);
+      if (!input) {
+        return;
+      }
+      if (input.required) {
+        input.setAttribute("data-identity-required", "true");
+      }
+      input.addEventListener("input", function () {
+        if (form.getAttribute("data-form-mode") === "advanced") {
+          dirty[input.name] = true;
+        }
+      });
+    });
+
+    form.addEventListener("input", syncIdentity);
+    form.addEventListener("change", syncIdentity);
+    syncIdentity();
+  }
+
   function initFormDraft() {
     var form = document.querySelector("[data-repave-form-draft]");
     if (!form) {
@@ -3741,6 +3925,7 @@
     initBusyForms();
     initFormStepper();
     initFormModeToggle();
+    initGuidedIdentity();
     initFormDryRun();
     initPortalFetchSubmit();
     initGateDashboard();

@@ -18,10 +18,12 @@ spec:
       type: string
       required: true
       description: Collection name (galaxy.yml name field).
+      guided_from: "{sample_role_pattern_source}"
     - name: description
       type: string
       required: true
       description: Short description of what the collection provides.
+      guided_from: "{namespace} Ansible collection ({sample_role_pattern_source})."
     - name: sample_role_name
       type: string
       required: true

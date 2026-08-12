@@ -22,6 +22,9 @@ GATE_PIP_TARGET="${GATE_PIP_TARGET:-}"
 REPAVE_TLS_INSECURE="${REPAVE_TLS_INSECURE:-0}"
 
 CURL_GET=(curl -fsSL)
+# curl --retry does not reliably retry HTTP 503 with -f; loop instead.
+DOWNLOAD_RETRY_ATTEMPTS="${DOWNLOAD_RETRY_ATTEMPTS:-8}"
+DOWNLOAD_RETRY_DELAY="${DOWNLOAD_RETRY_DELAY:-3}"
 GALAXY_INSTALL=(ansible-galaxy collection install)
 UV_PIP_INSTALL=(uv pip install --system --no-cache)
 PIP_INSTALL=(python -m pip install)
@@ -45,6 +48,28 @@ pip_install() {
   else
     "${PIP_INSTALL[@]}" "$@"
   fi
+}
+
+curl_download() {
+  local attempt=1
+  local delay="$DOWNLOAD_RETRY_DELAY"
+  local rc=0
+  while (( attempt <= DOWNLOAD_RETRY_ATTEMPTS )); do
+    "${CURL_GET[@]}" "$@" && return 0
+    rc=$?
+    if (( attempt == DOWNLOAD_RETRY_ATTEMPTS )); then
+      echo "download failed after ${attempt} attempts (curl exit ${rc})" >&2
+      return "$rc"
+    fi
+    echo "download attempt ${attempt}/${DOWNLOAD_RETRY_ATTEMPTS} failed (curl exit ${rc}); retrying in ${delay}s..." >&2
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+    if (( delay > 20 )); then
+      delay=20
+    fi
+  done
+  return "$rc"
 }
 
 arch="$(uname -m)"
@@ -82,26 +107,38 @@ install_bin() {
   fi
 }
 
+# Download then extract so curl retries cannot leave tar with a partial pipe.
+extract_tgz() {
+  local url="$1"
+  local dest_dir="$2"
+  shift 2
+  local tgz
+  tgz="$(mktemp "${TMPDIR:-/tmp}/repave-tgz.XXXXXX")"
+  curl_download "$url" -o "$tgz"
+  tar xz -C "$dest_dir" -f "$tgz" "$@"
+  rm -f "$tgz"
+}
+
 if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   tmp="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${tf_arch}.zip" \
     -o "$tmp/terraform.zip"
   unzip -q "$tmp/terraform.zip" -d "$tmp"
   install_bin "$tmp/terraform"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${tflint_arch}.zip" \
     -o "$tmp/tflint.zip"
   unzip -q "$tmp/tflint.zip" -d "$tmp"
   install_bin "$tmp/tflint"
-  "${CURL_GET[@]}" \
+  extract_tgz \
     "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_${conf_arch}.tar.gz" \
-    | tar xz -C "$tmp" conftest
+    "$tmp" conftest
   install_bin "$tmp/conftest"
   rm -rf "$tmp"
   pip_install "$CHECKOV_PIP_SPEC"
   tmp_ic="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://github.com/infracost/cli/releases/download/v${INFRACOST_VERSION}/infracost-linux-${tf_arch}.tar.gz" \
     -o "$tmp_ic/infracost.tgz"
   tar xzf "$tmp_ic/infracost.tgz" -C "$tmp_ic" infracost
@@ -133,16 +170,16 @@ fi
 
 if [[ "$INSTALL_HELM" == "1" ]]; then
   tmp_helm="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  extract_tgz \
     "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${helm_arch}.tar.gz" \
-    | tar xz -C "$tmp_helm"
+    "$tmp_helm"
   install_bin "$tmp_helm/linux-${helm_arch}/helm"
   rm -rf "$tmp_helm"
 fi
 
 if [[ "$INSTALL_KUBECTL" == "1" ]]; then
   tmp_kubectl="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  curl_download \
     "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${kubectl_arch}/kubectl" \
     -o "$tmp_kubectl/kubectl"
   install_bin "$tmp_kubectl/kubectl"
@@ -160,9 +197,9 @@ if [[ "$INSTALL_ACTIONLINT" == "1" ]]; then
   esac
   if [[ -n "$al_os" ]]; then
     tmp_al="$(mktemp -d)"
-    "${CURL_GET[@]}" \
+    extract_tgz \
       "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${al_os}_${kubectl_arch}.tar.gz" \
-      | tar xz -C "$tmp_al" actionlint
+      "$tmp_al" actionlint
     install_bin "$tmp_al/actionlint"
     rm -rf "$tmp_al"
   fi
@@ -170,9 +207,9 @@ fi
 
 if [[ "$INSTALL_BUF" == "1" ]]; then
   tmp_buf="$(mktemp -d)"
-  "${CURL_GET[@]}" \
+  extract_tgz \
     "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${buf_arch}.tar.gz" \
-    | tar xz -C "$tmp_buf" buf/bin/buf
+    "$tmp_buf" buf/bin/buf
   install_bin "$tmp_buf/buf/bin/buf"
   rm -rf "$tmp_buf"
 fi

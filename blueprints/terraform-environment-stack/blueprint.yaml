@@ -14,10 +14,12 @@ spec:
       type: string
       required: true
       description: Short name for this stack (for example platform, networking).
+      guided_from: "{environment}-{cloud_provider}"
     - name: description
       type: string
       required: true
       description: What this environment stack deploys.
+      guided_from: "{environment} environment stack on {cloud_provider}."
     - name: cloud_provider
       type: string
       required: true
