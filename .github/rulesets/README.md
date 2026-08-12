@@ -37,6 +37,11 @@ squash/rebase, per repo settings) once required checks pass.
 use the Administrator ruleset bypass.
 
 Docs-only pull requests rely on workflows that **always run** but skip heavy steps
-via `.github/actions/ci-paths/` so required checks still report success (fast
-no-op jobs). Path list matches [CONTRIBUTING.md](../../CONTRIBUTING.md#python-quality-and-security-tooling).
-GitHub does not support path-based exceptions inside rulesets for status checks.
+via `.github/actions/ci-paths/`. CI runs `engine-unit`, `engine-portal`, and
+`engine-slow` in parallel when `ci_needed`. Blueprint-only PRs also trigger
+[`corpus-conformance.yml`](../../.github/workflows/corpus-conformance.yml).
+
+## next/v3 branch ruleset
+
+Apply [`next-v3-branch.json`](next-v3-branch.json) targeting `refs/heads/next/v3` with the
+same sharded engine checks as `main`.

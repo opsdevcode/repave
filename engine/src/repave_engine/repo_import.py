@@ -1018,6 +1018,7 @@ def build_import_plan(
                         blueprint=blueprint,
                         gate_overrides=gate_overrides,
                         require_run=False,
+                        repo_root=repo_root,
                     )
                 )
                 before_est = load_cost_estimate_file(repo_dir)

@@ -210,4 +210,4 @@ Tune with `max_run_attempts`, `run_stale_seconds`, and `run_retry_base_seconds` 
 `repave.config.yaml`, or `REPAVE_RUN_MAX_ATTEMPTS`, `REPAVE_RUN_STALE_SECONDS`, and
 `REPAVE_RUN_RETRY_BASE_SECONDS`.
 
-See [roadmap — durability](roadmap.md#durability-and-concurrency-for-hosted-use).
+See [roadmap — durability](roadmap-archive.md#durability-and-concurrency-for-hosted-use).

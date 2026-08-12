@@ -2,11 +2,7 @@
 
 from __future__ import annotations
 
-# Published sunset for `/api/v1` removal (target v3.0.0 line).
-V1_SUNSET_HTTP = "Sat, 01 Aug 2027 00:00:00 GMT"
+from repave_engine.deprecations import http_deprecation_headers
 
-V1_DEPRECATION_HEADERS: dict[str, str] = {
-    "Deprecation": "true",
-    "Sunset": V1_SUNSET_HTTP,
-    "Link": '</docs/api-v2>; rel="successor-version"',
-}
+V1_DEPRECATION_HEADERS: dict[str, str] = http_deprecation_headers("api_v1_removal")
+V1_SUNSET_HTTP: str = V1_DEPRECATION_HEADERS["Sunset"]

@@ -504,6 +504,7 @@ def _render_upgrade_staging(
                 blueprint=blueprint,
                 gate_overrides=gate_overrides,
                 require_run=False,
+                repo_root=repo_root,
             )
         )
         after_est = load_cost_estimate_file(staging_dir) or cost_estimate_from_gates(list(gates))

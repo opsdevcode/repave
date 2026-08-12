@@ -453,6 +453,8 @@ def generate_from_blueprint(
                 gate_overrides=run_gate_overrides,
                 require_run=gate_require_run,
                 on_event=on_event,
+                repo_root=repo_root,
+                entity_id=member_id,
             )
             _emit_stage(on_event, "gates", started=False)
         clean_gate_artifacts(render_result.output_dir, artifact_type=blueprint.artifact_type)

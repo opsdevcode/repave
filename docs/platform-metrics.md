@@ -4,7 +4,7 @@ Repave treats the IDP as a product. This surface measures **developer outcomes**
 teams choose golden paths, where plan→apply drops off, and how long first success takes —
 instead of only generation counts and queue depth.
 
-Roadmap theme: [v1.85 — Golden path adoption and DX metrics](roadmap.md#v185--golden-path-adoption-and-dx-metrics).
+Roadmap theme: [v1.85 — Golden path adoption and DX metrics](roadmap-archive.md#v185--golden-path-adoption-and-dx-metrics).
 
 Platform console enablement (fleet, auth, Prometheus optional):
 [`platform-console.md`](platform-console.md).

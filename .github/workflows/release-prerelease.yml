@@ -1,0 +1,87 @@
+name: Release prerelease (next/v3)
+
+# v3.0.0-rc.N tags from next/v3 only. Does not sync doc versions or dispatch infra.
+# Manual trigger only: push runs duplicate PR CI and a cancelled/failed run marks the PR
+# UNSTABLE even though release-prerelease is not a required check.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-prerelease-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          enable-cache: true
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version-file: operator/go.mod
+
+      - name: Install engine and semantic-release
+        working-directory: engine
+        run: |
+          uv sync --extra dev --frozen
+          uv pip install "python-semantic-release~=10.0"
+
+      - name: Install gate toolchain
+        uses: ./.github/actions/gate-toolchain
+
+      - name: Run engine test shards
+        run: |
+          make test-core COV=1
+          make test-portal
+          make test-slow
+
+      - name: Run operator tests
+        working-directory: operator
+        run: make test
+
+      - name: Run integration contract matrix
+        run: make integration-test
+
+      - name: Version and tag prerelease
+        env:
+          GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+          RELEASE_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${RELEASE_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          psr() {
+            env -u GITHUB_OUTPUT uv run semantic-release "$@"
+          }
+          cd engine
+          if ! psr version --no-push --no-tag 2>&1 | tee /tmp/psr-version.log; then
+            if grep -q "No release will be made" /tmp/psr-version.log; then
+              echo "No conventional commits warranting a prerelease bump."
+              exit 0
+            fi
+            exit 1
+          fi
+          VERSION="$(uv run python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          TAG="v${VERSION}"
+          git add pyproject.toml src/repave_engine/__init__.py CHANGELOG.md
+          git commit -m "chore(release): ${VERSION}" || true
+          git tag -f "${TAG}"
+          git push origin HEAD:next/v3 --force-with-lease
+          git push origin "${TAG}" --force

@@ -237,6 +237,12 @@ gates:
 #   service_name: repave-engine
 # Or: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME (see docs/tracing.md)
 
+# v3 foundation (next/v3 line only — default off on main until v3.0.0 merge-back).
+# v3:
+#   enabled: false
+#   waivers_file: data/waivers.jsonl
+#   waiver_warn_days: 7
+
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.
 # notifications:

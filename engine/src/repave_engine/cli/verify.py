@@ -67,6 +67,7 @@ def cmd_gates(args: argparse.Namespace) -> int:
         effective_gate_names(blueprint, gate_overrides),
         blueprint=blueprint,
         gate_overrides=gate_overrides,
+        repo_root=repo_path,
     )
     if getattr(args, "json", False):
         # Shape consumed by `repave-tf tf apply --gates` (ADR 004 Phase 3).

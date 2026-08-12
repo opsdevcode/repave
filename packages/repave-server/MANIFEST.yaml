@@ -1,0 +1,14 @@
+# Modules owned by repave-server (future opsdevcode/repave-server).
+modules:
+  - repave_engine.api
+  - repave_engine.api_v1
+  - repave_engine.api_v2
+  - repave_engine.api_ops
+  - repave_engine.api_state
+  - repave_engine.auth
+  - repave_engine.auth_context
+  - repave_engine.portal_context
+  - repave_engine.portal_errors
+  - repave_engine.portal_result
+forbidden_import_roots:
+  - repave_engine.gate_runners

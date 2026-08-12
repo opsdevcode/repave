@@ -1,9 +1,25 @@
-.PHONY: install lock test test-fast test-parallel lint format typecheck security quality js-lint changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
 GITHUB_ORG ?= opsdevcode
 REPAVE_ENV = REPAVE_GITHUB_ORG=$(GITHUB_ORG) REPAVE_MODULES_ROOT=$(MODULES_ROOT)
+ENGINE_PYTEST = PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest
+PORTAL_TEST_FILES = \
+	tests/test_api.py \
+	tests/test_api_read_models.py \
+	tests/test_api_token_auth.py \
+	tests/test_api_v2.py
+PORTAL_TEST_GLOBS = tests/test_portal_*.py tests/test_platform_*.py
+CORE_TEST_IGNORES = \
+	--ignore=tests/test_api.py \
+	--ignore=tests/test_api_read_models.py \
+	--ignore=tests/test_api_token_auth.py \
+	--ignore=tests/test_api_v2.py \
+	--ignore-glob=tests/test_portal_*.py \
+	--ignore-glob=tests/test_platform_*.py \
+	--ignore=tests/test_blueprint_conformance.py \
+	--ignore=tests/test_blueprint_conformance_helpers.py
 
 install:
 	cd engine && uv sync --extra dev
@@ -25,11 +41,28 @@ policy-standards-watch:
 
 
 test:
-	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest --cov=repave_engine --cov-report=term-missing
+	cd engine && $(ENGINE_PYTEST) --cov=repave_engine --cov-report=term-missing
 
 # Daily dev loop: skip slow integration/conformance tests and coverage (run `make test` before push).
 test-fast:
-	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest -m "not slow" --no-cov -q
+	cd engine && $(ENGINE_PYTEST) -m "not slow" --no-cov -q
+
+test-core:
+	cd engine && $(ENGINE_PYTEST) -m "not slow" $(CORE_TEST_IGNORES) \
+	  $(if $(COV),-n auto --cov=repave_engine --cov-report=term-missing,--no-cov -q)
+
+test-portal:
+	cd engine && $(ENGINE_PYTEST) $(PORTAL_TEST_FILES) $(PORTAL_TEST_GLOBS) --no-cov -q
+
+test-slow:
+	cd engine && $(ENGINE_PYTEST) -m slow \
+	  tests/test_blueprint_conformance.py tests/test_blueprint_conformance_helpers.py --no-cov -q
+
+test-v3:
+	cd engine && $(ENGINE_PYTEST) -m v3 --no-cov -q
+
+integration-test:
+	cd engine && uv run pytest ../integration/tests -q
 
 # After deploy/local/install-gate-toolchain.sh (same pins CI and Compose assert).
 gate-doctor:
@@ -39,7 +72,7 @@ gate-doctor:
 
 # Full suite with parallel workers (requires pytest-xdist; gate tools on PATH).
 test-parallel:
-	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest -n auto --cov=repave_engine --cov-report=term-missing
+	cd engine && $(ENGINE_PYTEST) -n auto --cov=repave_engine --cov-report=term-missing
 
 blueprint-conformance-update:
 	cd engine && uv run python -c "from pathlib import Path; from repave_engine.blueprint_conformance import update_all_manifests; root=Path('..').resolve(); staging=root/'.conformance-staging'; staging.mkdir(exist_ok=True); mods=root/'.conformance-modules'; mods.mkdir(exist_ok=True); names=update_all_manifests(root, modules_root=mods, staging_root=staging); print('Updated manifests:', ', '.join(names) or '(none with snapshot: true)')"

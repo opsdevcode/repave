@@ -5,8 +5,8 @@ operator campaigns, adoption/DX metrics, roadmap evidence, service maturity,
 initiatives, FinOps showback, compliance posture, value stream signals, and developer
 feedback.
 
-Roadmap: [Platform as a product](roadmap.md#platform-as-a-product-v2x) ·
-[Service catalog maturity](roadmap.md#service-catalog-maturity-v2x) ·
+Roadmap: [Platform as a product](roadmap-archive.md#platform-as-a-product-v2x) ·
+[Service catalog maturity](roadmap-archive.md#service-catalog-maturity-v2x) ·
 [`docs/service-catalog.md`](service-catalog.md).
 
 ## Quick start (local UI walkthrough)

@@ -39,6 +39,6 @@ generated repo's `docs/DEPLOY-OIDC.md`.
 
 ## Related
 
-- [GitOps delivery golden path](../roadmap.md#v179--gitops-delivery-golden-path) (v1.79)
+- [GitOps delivery golden path](../roadmap-archive.md#v179--gitops-delivery-golden-path) (v1.79)
 - [Module repository layout](module-repositories.md)
 - [Supply chain pinning](supply-chain.md)

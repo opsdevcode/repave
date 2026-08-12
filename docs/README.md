@@ -33,7 +33,8 @@ start with [Concepts](concepts.md) for the product model.
 | [API v2](api-v2.md) | Stable HTTP surface; v1 deprecation |
 | [API v1 migration](api-v1-migration.md) | Sunset timeline and v1 → v2 endpoint map |
 | [repave.config v1](repave-config-v1.md) | Config `apiVersion`, hosted SQL, JSONL export mirrors |
-| [Roadmap](roadmap.md) | Shipped releases, planned themes, parking lot |
+| [Roadmap](roadmap.md) | Open work, path overview, parking lot, v3/v4 boundaries |
+| [Roadmap archive](roadmap-archive.md) | Historical shipped theme writeups |
 
 ## Day-2 and estate
 

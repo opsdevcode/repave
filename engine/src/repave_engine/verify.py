@@ -225,6 +225,7 @@ def verify_repository(
             blueprint=gate_blueprint,
             gate_overrides=gate_overrides,
             require_run=require_run,
+            repo_root=repo_root,
         )
     )
 
@@ -247,6 +248,8 @@ def verify_repository(
                         blueprint=comp_catalog,
                         gate_overrides=gate_overrides,
                         require_run=require_run,
+                        repo_root=repo_root,
+                        entity_id=component.id,
                     )
                 )
                 component_results.append(
