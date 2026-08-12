@@ -8,8 +8,9 @@ work, writing ADRs, and opening issues.
 
 **In progress:** Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot). v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); v3 work happens on the
-long-lived `next/v3` branch ([ADR 006](adr/006-v3-branching-release-and-testing.md),
-[`docs/v3-development.md`](v3-development.md)) and does not affect the v2.x line on `main`.
+long-lived `next/v3` branch ([ADR 008](adr/008-v3-branching-release-and-testing.md),
+[ADR 007](adr/007-v3-multi-repo-decomposition.md), [`docs/v3-development.md`](v3-development.md))
+and does not affect the v2.x line on `main`.
 **Shipped on `main`:** **Roadmap evidence loop (v1.89)** — `/platform/roadmap`,
 `GET /api/v2/platform/roadmap-evidence`, adoption citations per theme + sunset candidates
 ([`docs/platform-metrics.md`](platform-metrics.md)); **Guided / Advanced forms (v1.88)** — progressive disclosure on
@@ -233,7 +234,7 @@ v1.64.0+ today     dry-run runs real gates; policy/PACKS.md; observability OPA p
 | **Platform as a product** | Shipped (v1.85–v1.89) | Treat the IDP as a product: adoption/DX metrics, feedback, stakeholder views, Guided/Advanced forms, and roadmap evidence ([platform as a product](#platform-as-a-product-v2x)) |
 | **FinOps enablement** | Shipped (v1.90–v1.94) | Hybrid FinOps: tags, estimate policy, showback/budgets, thin FOCUS ingest, and chargeback export/anomaly hooks — not a billing warehouse ([FinOps enablement](#finops-enablement-v2x), [`docs/finops.md`](finops.md)) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 **no-go** | Authoritative store + graph + gate-blocked tx ([ADR 004](adr/004-state-custody-and-the-resource-graph.md)); parallel apply gated ([phase4 review](state-graph-phase4-review.md)) |
-| **v3.0.0** | — | Autonomous low-risk remediation, mandatory policy, estate lifecycle control, [conversational governed AI](#conversational-and-governed-ai-generation) |
+| **v3.0.0** | — | Autonomous remediation, mandatory policy, [multi-repo split](adr/007-v3-multi-repo-decomposition.md), [conversational governed AI](#conversational-and-governed-ai-generation) |
 
 ---
 
@@ -2744,10 +2745,11 @@ that makes those v2 decisions checkable.
 
 **Where v3 work happens:** the long-lived `next/v3` branch, versioned as `3.0.0-rc.N` and
 merged back to `main` in one `feat!:` PR when the deprecation windows close — see
-[ADR 006](adr/006-v3-branching-release-and-testing.md) for the decision and
-[`docs/v3-development.md`](v3-development.md) for the working guide, testing obligations,
-and the foundation slice (risk classes, waiver expiry, deprecation registry) that is the
-first implementation. The branch existing does not commit any theme below to a release.
+[ADR 008](adr/008-v3-branching-release-and-testing.md) for branching,
+[ADR 007](adr/007-v3-multi-repo-decomposition.md) for the multi-repo split, and
+[`docs/v3-development.md`](v3-development.md) for the working guide. The foundation slice
+(risk classes, waiver expiry, deprecation registry) lands in `repave-core` before autonomous
+remediation themes.
 
 ### Autonomous governed remediation
 

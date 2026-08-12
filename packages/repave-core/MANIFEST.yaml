@@ -1,0 +1,18 @@
+# Modules owned by repave-core (future opsdevcode/repave-core).
+# Enforced by engine/tests/test_package_boundaries.py until physical extraction.
+modules:
+  - repave_engine.blueprint
+  - repave_engine.pipeline
+  - repave_engine.gates
+  - repave_engine.gate_runners
+  - repave_engine.gate_builtin
+  - repave_engine.gate_registry
+  - repave_engine.provenance_inputs
+  - repave_engine.provenance_readme
+  - repave_engine.provenance_components
+forbidden_import_roots:
+  - fastapi
+  - starlette
+  - uvicorn
+  - repave_engine.api
+  - repave_engine.api_v2

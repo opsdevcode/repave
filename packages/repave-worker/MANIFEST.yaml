@@ -1,0 +1,10 @@
+# Modules owned by repave-worker (future opsdevcode/repave-worker).
+modules:
+  - repave_engine.generate_api
+  - repave_engine.run_queue
+  - repave_engine.worker_mode
+  - repave_engine.run_job_dispatcher
+forbidden_import_roots:
+  - repave_engine.api
+  - repave_engine.portal_components
+  - repave_engine.portal_result

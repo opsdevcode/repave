@@ -87,6 +87,7 @@ testpaths = ["tests"]
 pythonpath = ["src", "tests"]
 markers = [
   "slow: full Copier render and real gate toolchain (excluded from make test-fast)",
+  "v3: behavior valid only after v3 breaking flip (ADR 008); run via make test-v3",
 ]
 
 [tool.coverage.run]
@@ -154,6 +155,15 @@ assets = ["CHANGELOG.md"]
 
 [tool.semantic_release.changelog]
 mode = "update"
+
+[tool.semantic_release.branches.main]
+match = "main"
+prerelease = false
+
+[tool.semantic_release.branches.v3]
+match = "next/v3"
+prerelease = true
+prerelease_token = "rc"
 
 [tool.semantic_release.changelog.default_templates]
 # Resolved from engine/ working directory (see Release workflow).

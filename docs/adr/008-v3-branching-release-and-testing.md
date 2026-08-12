@@ -1,4 +1,4 @@
-# ADR 006: v3 branching, release, and testing strategy
+# ADR 008: v3 branching, release, and testing strategy
 
 **Status:** Accepted — long-lived `next/v3` integration branch with `rc` prereleases.
 **Date:** 2026-08-09

@@ -6,14 +6,24 @@ outputs:
   ci_needed:
     description: Run full CI when true; docs-only changes are false
     value: ${{ steps.filter.outputs.ci_needed }}
+  blueprints:
+    description: Blueprint or corpus paths changed
+    value: ${{ steps.filter.outputs.blueprints }}
+  engine_portal:
+    description: Portal/API/static paths changed
+    value: ${{ steps.filter.outputs.engine_portal }}
+  engine_gates:
+    description: Gate runner or toolchain paths changed
+    value: ${{ steps.filter.outputs.engine_gates }}
+  operator:
+    description: Operator paths changed
+    value: ${{ steps.filter.outputs.operator }}
 runs:
   using: composite
   steps:
     - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590  # v3
       id: filter
       with:
-        # v3 defaults to predicate-quantifier "some", so "**" matches any file and
-        # negation rules never skip docs-only diffs. "every" applies exclusions.
         predicate-quantifier: every
         filters: |
           ci_needed:
@@ -27,3 +37,36 @@ runs:
             - '!scripts/capture_portal_screenshots.sh'
             - '!scripts/sync_doc_versions.py'
             - '!Makefile'
+            - '!versions.lock'
+            - '!repos/**'
+            - '!packages/**'
+            - '!integration/**'
+          blueprints:
+            - 'blueprints/**'
+            - 'standards/**'
+            - 'policy/**'
+            - 'schemas/**'
+            - 'ansible/**'
+            - 'observability/**'
+            - 'engine/**/blueprint_conformance*.py'
+            - 'scripts/check_blueprint_conformance_manifests.py'
+          engine_portal:
+            - 'engine/src/repave_engine/api*.py'
+            - 'engine/src/repave_engine/api_*/**'
+            - 'engine/src/repave_engine/auth*.py'
+            - 'engine/src/repave_engine/portal_*.py'
+            - 'engine/src/repave_engine/static/**'
+            - 'engine/src/repave_engine/templates/**'
+            - 'engine/tests/test_api*.py'
+            - 'engine/tests/test_portal_*.py'
+            - 'engine/tests/test_platform_*.py'
+          engine_gates:
+            - 'engine/src/repave_engine/gate_runners/**'
+            - 'engine/src/repave_engine/gates.py'
+            - 'engine/src/repave_engine/gate_*.py'
+            - 'deploy/local/gate-toolchain-pins.env'
+            - 'deploy/local/install-gate-toolchain.sh'
+          operator:
+            - 'operator/**'
+            - '.github/workflows/operator.yml'
+            - '.github/workflows/operator-e2e.yml'

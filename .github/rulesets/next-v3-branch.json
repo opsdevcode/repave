@@ -1,5 +1,5 @@
 {
-  "name": "main branch",
+  "name": "next/v3 branch",
   "target": "branch",
   "enforcement": "active",
   "bypass_actors": [
@@ -11,7 +11,7 @@
   ],
   "conditions": {
     "ref_name": {
-      "include": ["~DEFAULT_BRANCH"],
+      "include": ["refs/heads/next/v3"],
       "exclude": []
     }
   },
