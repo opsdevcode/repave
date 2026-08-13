@@ -57,10 +57,12 @@ jobs:
         if: needs.paths.outputs.ci_needed == 'true'
         run: make -C .. test-core COV=1
 
-      - name: Verify doc version pointers
+      - name: Verify doc and versions.lock pointers
         if: needs.paths.outputs.ci_needed == 'true'
         working-directory: ${{ github.workspace }}
-        run: python3 scripts/sync_doc_versions.py --check
+        run: |
+          python3 scripts/sync_doc_versions.py --check
+          python3 scripts/sync_versions_lock.py --check
 
   engine-portal:
     name: engine-portal

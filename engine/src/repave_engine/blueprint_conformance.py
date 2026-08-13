@@ -55,12 +55,14 @@ MANIFEST_SKIP_FILE_NAMES = frozenset({"package-lock.json", "npm-shrinkwrap.yaml"
 # Copier/Jinja leftovers vs Helm template syntax in rendered charts.
 _JINJA_BLOCK = re.compile(r"\{%")
 _Copier_VAR = re.compile(r"\{\{(?!\s*[\.\-$]|\s*include)")
-_ENGINE_PIP_PIN = re.compile(r"repave-engine==[\d.]+(?:\.\w+)?")
-_ENGINE_VERSION_YAML = re.compile(r"(?m)^(\s*engine_version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$")
-_README_ENGINE_LINE = re.compile(r"(?m)^(- \*\*Engine:\*\* `)[\d.]+(?:\.\w+)?(`)")
+# PSR / PEP 440 public versions: 2.61.0 and 2.61.0-rc.1 (hyphen prerelease).
+_SEMVER = r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?"
+_ENGINE_PIP_PIN = re.compile(rf"repave-engine=={_SEMVER}")
+_ENGINE_VERSION_YAML = re.compile(rf"(?m)^(\s*engine_version:\s*)(['\"]?){_SEMVER}\2\s*$")
+_README_ENGINE_LINE = re.compile(rf"(?m)^(- \*\*Engine:\*\* `){_SEMVER}(`)")
 # Backstage annotations written by backstage_catalog.py — live pins, hash-neutral.
 _CATALOG_REPAVE_VERSION_ANNOTATION = re.compile(
-    r"(?m)^(\s*repave\.dev/(?:engine|blueprint|standard)-version:\s*)(['\"]?)[\d.]+(?:\.\w+)?\2\s*$"
+    rf"(?m)^(\s*repave\.dev/(?:engine|blueprint|standard)-version:\s*)(['\"]?){_SEMVER}\2\s*$"
 )
 _MANIFEST_ENGINE_NEUTRAL = b"SNAPSHOT"
 

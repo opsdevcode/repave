@@ -63,6 +63,34 @@ def test_manifest_digest_neutralizes_blueprint_and_standard_version_in_catalog_i
     )
 
 
+def test_manifest_digest_neutralizes_prerelease_engine_version() -> None:
+    """Hyphen prereleases (PSR rc tags) must hash the same as the matching GA pin."""
+    cases: tuple[tuple[str, bytes, bytes], ...] = (
+        (
+            ".github/workflows/repave-gates.yml",
+            b'pip install "repave-engine==2.61.0-rc.1"\n',
+            b'pip install "repave-engine==2.61.0"\n',
+        ),
+        (
+            "repave.yaml",
+            b"generation:\n  engine_version: 2.61.0-rc.1\n",
+            b"generation:\n  engine_version: 2.61.0\n",
+        ),
+        (
+            "README.md",
+            b"- **Engine:** `2.61.0-rc.1` (generated `1970-01-01T00:00:00+00:00`)\n",
+            b"- **Engine:** `2.61.0` (generated `1970-01-01T00:00:00+00:00`)\n",
+        ),
+        (
+            "catalog-info.yaml",
+            b"    repave.dev/engine-version: 2.61.0-rc.1\n",
+            b"    repave.dev/engine-version: 2.61.0\n",
+        ),
+    )
+    for rel, before, after in cases:
+        assert _file_manifest_digest(rel, before) == _file_manifest_digest(rel, after), rel
+
+
 def test_manifest_digest_still_sees_non_version_catalog_changes() -> None:
     before = (
         b"metadata:\n"
