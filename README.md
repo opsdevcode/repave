@@ -136,6 +136,12 @@ mockups).
   <sub>Home — open family card grid and search</sub>
 </p>
 
+<p align="center">
+  <img src="docs/images/portal/library-catalog.png" alt="repave library — labeled family drawers" width="920" />
+  <br />
+  <sub>Library — open a drawer to browse governed repositories</sub>
+</p>
+
 <table>
   <tr>
     <td width="50%">
