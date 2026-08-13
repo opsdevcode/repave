@@ -5676,6 +5676,10 @@
     --drawer-accent: var(--family-observability);
   }
 
+  .library-drawer--other {
+    --drawer-accent: var(--accent);
+  }
+
   .library-drawer__label {
     display: flex;
     flex-direction: column;
@@ -5833,6 +5837,136 @@
   .library-shelf__line {
     font-size: 0.85rem;
     line-height: 1.35;
+  }
+
+  .fleet-shelf {
+    margin-bottom: var(--space-5);
+  }
+
+  .fleet-tile {
+    min-height: 11rem;
+    cursor: default;
+  }
+
+  .fleet-tile.motion-face {
+    --motion-accent: var(--drawer-accent);
+  }
+
+  .fleet-tile.motion-face::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 32%,
+      color-mix(in srgb, white 22%, transparent) 48%,
+      transparent 64%
+    );
+    transform: translateX(var(--glare-x, -40%));
+    mix-blend-mode: overlay;
+    transition: opacity 180ms ease;
+  }
+
+  .fleet-tile.motion-face.is-live::before {
+    opacity: 1;
+  }
+
+  .fleet-tile__lineage {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.35;
+    font-family: var(--font-mono);
+  }
+
+  .fleet-tile__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+  }
+
+  .fleet-tile__note {
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.35;
+  }
+
+  .fleet-tile__footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: auto;
+    font-size: 0.8rem;
+  }
+
+  .fleet-tile__repo {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+  }
+
+  .fleet-tile__footer form {
+    margin-left: auto;
+  }
+
+  .fleet-register,
+  .fleet-gitops {
+    margin-top: var(--space-4);
+    overflow: hidden;
+  }
+
+  .fleet-gitops__summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .fleet-gitops__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .fleet-gitops__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    padding-left: calc(0.85rem + var(--space-2));
+    position: relative;
+  }
+
+  .fleet-gitops__copy::before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    top: 0.15rem;
+    color: var(--accent);
+    font-size: 0.85rem;
+  }
+
+  .fleet-gitops[open] .fleet-gitops__copy::before {
+    content: "▾";
+  }
+
+  .fleet-gitops__title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 650;
+  }
+
+  .fleet-gitops[open] .fleet-gitops__summary {
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
   }
 
   .home-quick {
@@ -6950,6 +7084,10 @@
   .shell--compact .library-drawer {
     min-height: 7.5rem;
     padding: 0.9rem 1rem;
+  }
+
+  .shell--compact .fleet-tile {
+    min-height: 9.75rem;
   }
 
   .shell--compact .catalog-inventory--browse .catalog-inventory__list {
