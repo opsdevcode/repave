@@ -19,7 +19,7 @@ destination teams (creating them if needed), then grant repository permissions.
 | `template_owner` / `template_repo` | Required when `create_mode=template` |
 | `team_slugs` | Optional destination org team slugs (portal lists org teams to pick) |
 | `team_permission` | Applied to every selected team (`push` default) |
-| `membership_source_team` | Existing org team to copy members from (additive) |
+| `membership_source_team` | Existing org team to copy members from (additive; portal lists org teams) |
 | `sync_team_membership` | `true`/`false`; defaults on when source team is set |
 | `ruleset_profile` | `none` (default) or `default-pr` |
 
