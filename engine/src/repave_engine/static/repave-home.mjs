@@ -282,11 +282,11 @@ function registerMetricElement() {
 function boot() {
   registerMetricElement();
   initHomeResumeChip();
-  initCatalogCardMotion();
   initCatalogSearch({ scrollTargetId: "golden-paths" });
   initCatalogPeeks();
   initCatalogNavigation();
   initRecentRail();
+  initCatalogCardMotion();
 }
 
 window.repaveHome = {

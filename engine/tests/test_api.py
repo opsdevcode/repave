@@ -145,8 +145,12 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
     assert "initPointerFaces" in motion.text
     assert "prefersFinePointer" in motion.text
     assert "data-library-drawer" in motion.text
+    assert "home-catalog" in motion.text
+    assert "data-motion-face" in motion.text
     assert "btn--primary" in motion.text
     assert "ATMOSPHERE_RANGE" in motion.text
+    assert "motion-ripple" in motion.text
+    assert "NEIGHBOR_PUSH" in motion.text
 
 
 def test_activity_page(repo_root, output_config) -> None:
@@ -223,6 +227,8 @@ def test_index_catalog_search(repo_root, output_config) -> None:
     assert 'type="module"' in response.text
     assert "data-home-quick" in response.text
     assert "data-peek-name=" in response.text
+    assert "data-motion-face" in response.text
+    assert "data-motion-depth" in response.text
     assert "@view-transition" in response.text
 
 

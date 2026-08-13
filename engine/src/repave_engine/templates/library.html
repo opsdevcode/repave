@@ -114,6 +114,7 @@
         class="library-drawer library-drawer--{{ group.family }}"
         href="/library/{{ group.family }}{% if library_owner_filter %}?owner={{ library_owner_filter | urlencode }}{% endif %}"
         data-library-drawer
+        data-motion-face
       >
         <span class="library-drawer__label">
           <span class="library-drawer__title">{{ group.title }}</span>

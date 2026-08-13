@@ -289,9 +289,10 @@ Pick based on audience and hosting model (v1.25+).
 - Library: 2–3 column grid of labeled family drawers that lead to a quiet shelf
   (name + lineage)
 - Platform motion (same-origin `repave-motion.mjs`, no third-party scripts):
-  spring pointer faces on catalog tiles and library drawers, magnetic pull on
-  primary nav and primary buttons, atmosphere parallax; respects
-  `prefers-reduced-motion` and coarse pointers
+  spring pointer faces on **home catalog tiles** and library drawers (glare,
+  icon parallax, neighbor push, click ripple), magnetic pull on nav and
+  buttons, atmosphere parallax; respects `prefers-reduced-motion` and coarse
+  pointers
 - Cross-document view transitions on supported browsers
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 

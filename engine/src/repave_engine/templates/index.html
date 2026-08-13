@@ -86,6 +86,7 @@
             class="catalog-inventory__item catalog-inventory__item--bundle"
             href="/bundles/{{ bundle.name }}"
             data-catalog-card
+            data-motion-face
             data-peek-name="{{ bundle.name }}"
             data-peek-version="{{ bundle.version }}"
             data-peek-gates="{{ bundle.members|length }} members"
@@ -94,7 +95,7 @@
             data-search-text="{{ bundle.name }} {{ bundle.description or '' }} bundle composite"
           >
             <span class="catalog-inventory__item-head">
-              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--bundle" aria-hidden="true"></span>
+              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--bundle" data-motion-depth="0.55" aria-hidden="true"></span>
               <span class="catalog-inventory__item-name">{{ bundle.name }}</span>
             </span>
             {% if bundle.description %}
@@ -132,6 +133,7 @@
             class="catalog-inventory__item catalog-inventory__item--{{ bp.artifact_type }}"
             href="/blueprints/{{ bp.name }}"
             data-catalog-card
+            data-motion-face
             data-peek-name="{{ bp.name }}"
             data-peek-version="{{ bp.version }}"
             data-peek-gates="{{ bp.gates|join(', ') }}"
@@ -140,7 +142,7 @@
             data-search-text="{{ bp.name }} {{ bp.description or '' }} {{ bp.gates | join(' ') }} {{ bp.standard_source }}"
           >
             <span class="catalog-inventory__item-head">
-              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--{{ bp.artifact_type }}" aria-hidden="true"></span>
+              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--{{ bp.artifact_type }}" data-motion-depth="0.55" aria-hidden="true"></span>
               <span class="catalog-inventory__item-name">{{ bp.name }}</span>
             </span>
             {% if bp.description %}
