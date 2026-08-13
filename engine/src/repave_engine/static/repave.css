@@ -5345,68 +5345,158 @@
     padding: var(--space-3) var(--space-4);
   }
 
-  .library-scorecard {
-    margin-bottom: var(--space-4);
-  }
-
-  .library-toolbar {
-    display: grid;
-    gap: var(--space-3);
-    margin-bottom: var(--space-3);
-  }
-
-  .library-toolbar .catalog-search,
-  .library-toolbar .catalog-owner-filter {
-    margin-bottom: 0;
-  }
-
-  @media (min-width: 48rem) {
-    .library-toolbar {
-      grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
-      align-items: end;
-    }
-  }
-
-  .library-family-chips {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-1);
+  .library-crumb {
     margin: 0 0 var(--space-1);
+    font-size: 0.85rem;
   }
 
-  .library-family-chip {
+  .library-owner-note {
+    margin: 0 0 var(--space-3);
+  }
+
+  .library-drawers {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .library-drawer {
+    --drawer-accent: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: 1.05rem 1.25rem;
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--drawer-accent);
+    border-radius: calc(var(--radius) + 2px);
+    background: color-mix(in srgb, var(--surface-raised) 92%, transparent);
+    color: var(--text);
+    text-decoration: none;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      transform 160ms ease;
+  }
+
+  .library-drawer:hover {
+    background: color-mix(in srgb, var(--drawer-accent) 8%, var(--surface-raised));
+    border-color: color-mix(in srgb, var(--drawer-accent) 35%, var(--border));
+    text-decoration: none;
+    transform: translateY(-1px);
+  }
+
+  .library-drawer--terraform {
+    --drawer-accent: var(--family-terraform);
+  }
+
+  .library-drawer--ansible {
+    --drawer-accent: var(--family-ansible);
+  }
+
+  .library-drawer--helm {
+    --drawer-accent: var(--family-helm);
+  }
+
+  .library-drawer--gitops {
+    --drawer-accent: var(--family-gitops);
+  }
+
+  .library-drawer--app {
+    --drawer-accent: var(--family-app);
+  }
+
+  .library-drawer--policy {
+    --drawer-accent: var(--family-policy);
+  }
+
+  .library-drawer--observability {
+    --drawer-accent: var(--family-observability);
+  }
+
+  .library-drawer__label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .library-drawer__title {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  .library-drawer__subtitle {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .library-drawer__meta {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
+    gap: var(--space-3);
+    flex-shrink: 0;
   }
 
-  .library-family-chip--terraform {
-    --chip-accent: var(--family-terraform);
+  .library-drawer__count {
+    font-size: 0.85rem;
+    color: var(--text-muted);
   }
 
-  .library-family-chip--ansible {
-    --chip-accent: var(--family-ansible);
+  .library-drawer__go {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-right: 2px solid var(--drawer-accent);
+    border-top: 2px solid var(--drawer-accent);
+    transform: rotate(45deg);
+    opacity: 0.75;
   }
 
-  .library-family-chip--helm {
-    --chip-accent: var(--family-helm);
+  .library-shelf__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) + 2px);
+    background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
   }
 
-  .library-family-chip--gitops {
-    --chip-accent: var(--family-gitops);
+  .library-shelf__row + .library-shelf__row {
+    border-top: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   }
 
-  .library-family-chip--app {
-    --chip-accent: var(--family-app);
+  .library-shelf__row[hidden] {
+    display: none;
   }
 
-  .library-family-chip--policy {
-    --chip-accent: var(--family-policy);
+  .library-shelf__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.85rem 1.15rem;
+    color: var(--text);
+    text-decoration: none;
   }
 
-  .library-family-chip--observability {
-    --chip-accent: var(--family-observability);
+  .library-shelf__item:hover {
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
+    text-decoration: none;
+  }
+
+  .library-shelf__name {
+    font-family: var(--font-mono);
+    font-weight: 650;
+    font-size: 0.95rem;
+  }
+
+  .library-shelf__line {
+    font-size: 0.85rem;
+    line-height: 1.35;
   }
 
   .home-quick {

@@ -41,13 +41,20 @@ def test_services_page_lists_fleet_entity(repo_root, output_config, registry: Pa
 
     assert response.status_code == 200
     assert "Library" in body
-    assert "catalog-inventory__category" in body
-    assert "catalog-inventory--browse" in body
-    assert "catalog-inventory__heading" in body
+    assert "library-drawers" in body
+    assert 'href="/library/terraform"' in body
     assert "home-catalog-column" in body
-    assert "data-library-families" in body
-    assert "/static/repave-library.mjs" in body
+    assert "catalog-inventory--browse" not in body
     assert "catalog-inventory__summary" not in body
+    assert "/static/repave-library.mjs" not in body
+
+    family = client.get("/library/terraform")
+    assert family.status_code == 200
+    assert "library-shelf" in family.text
+    assert "/static/repave-library.mjs" in family.text
+    assert (
+        "tf-vpc" in family.text or "VPC" in family.text or "terraform-module-generic" in family.text
+    )
 
 
 def test_service_detail_renders_scorecard_and_readme(
@@ -118,9 +125,13 @@ def test_library_lists_successful_apply_from_audit_without_fleet(
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/library")
     assert response.status_code == 200
-    assert "tf-aws-eks" in response.text
+    assert "library-drawers" in response.text
+    assert 'href="/library/terraform"' in response.text
+    family = client.get("/library/terraform")
+    assert family.status_code == 200
+    assert "tf-aws-eks" in family.text
     entity_id = entity_id_for_repo_url("https://github.com/opsdevcode/tf-aws-eks")
-    assert f"/services/{entity_id}" in response.text
+    assert f"/services/{entity_id}" in family.text
 
 
 def test_catalog_entities_redirect(repo_root, output_config) -> None:
@@ -257,8 +268,9 @@ def test_library_shows_deployment_scorecard_in_rollup(
 
     body = client.get("/library").text
 
-    assert "Fleet scorecard" in body
-    assert ">Deployment<" in body or "Deployment" in body
+    assert "library-drawers" in body
+    assert 'href="/library/terraform"' in body
+    assert "Fleet scorecard" not in body
 
 
 def test_library_fleet_scorecard_rollup(repo_root, output_config, registry: Path) -> None:
@@ -270,8 +282,8 @@ def test_library_fleet_scorecard_rollup(repo_root, output_config, registry: Path
 
     body = client.get("/library").text
 
-    assert "Fleet scorecard" in body
-    assert "fleet-scorecard-rollup" in body
+    assert "library-drawers" in body
+    assert "fleet-scorecard-rollup" not in body
 
 
 def test_library_owner_filter(repo_root, output_config, registry: Path) -> None:
@@ -305,11 +317,13 @@ def test_library_shows_cost_badge_from_local_estimate(
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get("/library").text
+    index = client.get("/library").text
+    assert "library-drawers" in index
+    assert "Est USD 25.00/mo" not in index
 
+    body = client.get("/library/terraform").text
     assert "catalog-inventory__cost-badge" in body
     assert "Est USD 25.00/mo" in body
-    assert "Cloud spend" in body
 
 
 def test_service_detail_shows_cost_estimate_panel(repo_root, output_config, registry: Path) -> None:

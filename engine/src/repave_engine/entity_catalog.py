@@ -1037,6 +1037,17 @@ _LIBRARY_FAMILY_ORDER: tuple[str, ...] = (
 )
 
 
+def library_family_known(family: str) -> bool:
+    return family in _LIBRARY_FAMILY_META
+
+
+def library_family_copy(family: str) -> tuple[str, str]:
+    return _LIBRARY_FAMILY_META.get(
+        family,
+        (family.replace("-", " ").title(), "Governed repositories"),
+    )
+
+
 def infer_entity_family(
     entity: CatalogEntity,
     blueprint_artifact_types: Mapping[str, str],

@@ -19,6 +19,8 @@ from repave_engine.entity_catalog import (
     filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
+    library_family_copy,
+    library_family_known,
     merge_catalog_entities,
     observability_embed_url,
     read_entity_docs,
@@ -31,6 +33,14 @@ from repave_engine.fleet_operator_status import FleetOperatorStatus
 
 def test_entity_id_for_repo_url_stable() -> None:
     assert entity_id_for_repo_url("https://github.com/acme/tf-vpc.git") == "acme-tf-vpc"
+
+
+def test_library_family_known_and_copy() -> None:
+    assert library_family_known("terraform") is True
+    assert library_family_known("not-a-family") is False
+    title, subtitle = library_family_copy("terraform")
+    assert title == "Terraform"
+    assert "stack" in subtitle.lower() or "module" in subtitle.lower()
 
 
 def test_build_scorecard_passes_with_fleet_and_audit(tmp_path: Path) -> None:
