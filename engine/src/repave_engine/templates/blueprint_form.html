@@ -875,11 +875,14 @@
       </div>
       {% elif blueprint.artifact_type == "github-repo" and field.name == "membership_source_team" %}
       <div class="field-block" id="github-membership-source-block">
-        <label for="membership_source_team">Membership source team</label>
+        <label for="membership_source_team" id="github-source-team-label">Membership source team</label>
         <p class="hint">
           Existing org team whose members are copied into the destination teams
           (additive only). Required when sync is on and destination teams are set.
         </p>
+        <select class="select" id="github-source-team-select" hidden>
+          <option value="">None</option>
+        </select>
         <input
           class="input"
           id="membership_source_team"
@@ -3176,6 +3179,7 @@
   const teamFilter = document.getElementById("github-team-filter");
   const teamPicker = document.getElementById("github-team-picker");
   const sourceInput = document.getElementById("membership_source_team");
+  const sourceSelect = document.getElementById("github-source-team-select");
   const syncToggle = document.getElementById("sync_team_membership_toggle");
   const syncHidden = document.getElementById("sync_team_membership");
   const teamsHint = document.getElementById("github-teams-hint");
@@ -3234,6 +3238,56 @@
       seen.add(slug);
       return true;
     });
+  };
+
+  const writeSourceTeam = () => {
+    if (sourceInput && sourceSelect && !sourceSelect.hidden) {
+      sourceInput.value = sourceSelect.value;
+    }
+    syncMembershipDefaults();
+    loadSourceMembers();
+  };
+
+  const fillSourceSelect = (teams) => {
+    if (!sourceSelect) {
+      return;
+    }
+    const current = sourceInput ? sourceInput.value.trim() : "";
+    sourceSelect.replaceChildren();
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "None";
+    sourceSelect.appendChild(none);
+    teams.forEach((team) => {
+      const slug = team && team.slug ? String(team.slug) : "";
+      if (!slug) {
+        return;
+      }
+      const name = team.name ? String(team.name) : slug;
+      const option = document.createElement("option");
+      option.value = slug;
+      option.textContent = name === slug ? slug : `${name} (${slug})`;
+      sourceSelect.appendChild(option);
+    });
+    if (current && !listedTeamSlugs.includes(current)) {
+      const extra = document.createElement("option");
+      extra.value = current;
+      extra.textContent = current;
+      sourceSelect.appendChild(extra);
+    }
+    sourceSelect.value = current;
+    sourceSelect.hidden = false;
+    if (sourceInput) {
+      sourceInput.type = "hidden";
+      sourceInput.removeAttribute("list");
+    }
+    const sourceLabel = document.getElementById("github-source-team-label");
+    if (sourceLabel) {
+      sourceLabel.htmlFor = "github-source-team-select";
+    }
+    if (current) {
+      loadSourceMembers();
+    }
   };
 
   const fillTeamDatalist = (slugs) => {
@@ -3416,6 +3470,9 @@
     syncMembershipDefaults();
   }
 
+  if (sourceSelect) {
+    sourceSelect.addEventListener("change", writeSourceTeam);
+  }
   if (sourceInput) {
     sourceInput.addEventListener("input", () => {
       syncMembershipDefaults();
@@ -3468,9 +3525,6 @@
           .filter(Boolean);
         listedTeamSlugs = slugs;
         fillTeamDatalist(slugs);
-        if (sourceInput) {
-          sourceInput.setAttribute("list", "github-team-slugs");
-        }
         if (!teams.length) {
           showTeamSlugFallback(
             "No teams returned; enter team slugs as a comma-separated list."
@@ -3483,6 +3537,7 @@
           } you can add to this repository:`;
         }
         renderTeamPicker(teams);
+        fillSourceSelect(teams);
       })
       .catch(() => {
         showTeamSlugFallback(

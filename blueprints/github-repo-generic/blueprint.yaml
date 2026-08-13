@@ -90,6 +90,7 @@ spec:
       description: >-
         Existing org team slug whose members are copied additively into team_slugs
         (required when sync_team_membership is true and team_slugs is set).
+        Portal lists org teams; the source team must already exist.
     - name: ruleset_profile
       type: string
       required: false
