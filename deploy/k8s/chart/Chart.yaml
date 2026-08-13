@@ -2,5 +2,5 @@ apiVersion: v2
 name: repave
 description: repave engine portal and API
 type: application
-version: 2.64.0
-appVersion: "2.64.0"
+version: 2.65.0
+appVersion: "2.65.0"
