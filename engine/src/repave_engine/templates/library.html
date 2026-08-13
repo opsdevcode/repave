@@ -1,14 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Library — repave{% endblock %}
-
-{% block head %}
-<style>
-  @view-transition {
-    navigation: auto;
-  }
-</style>
-{% endblock %}
+{% block title %}{% if library_family %}{{ library_family.title }} — Library — repave{% else %}Library — repave{% endif %}{% endblock %}
 
 {% block main_modifiers %} shell__main--home{% endblock %}
 
@@ -17,12 +9,21 @@
 <section class="home-console" aria-labelledby="library-console-title">
   <header class="home-console__header">
     <div class="home-console__intro">
+      {% if library_family %}
+      <p class="library-crumb muted">
+        <a href="/library{% if library_owner_filter %}?owner={{ library_owner_filter | urlencode }}{% endif %}">Library</a>
+        <span aria-hidden="true"> / </span>
+        <span>{{ library_family.title }}</span>
+      </p>
+      <h1 id="library-console-title" class="home-console__title">{{ library_family.title }}</h1>
+      <p class="home-console__lead muted">{{ library_family.subtitle }}</p>
+      {% else %}
       <h1 id="library-console-title" class="home-console__title">Library</h1>
       <p class="home-console__lead muted">
-        Repositories and local checkouts already on the platform.
-        Filter a family, open a scorecard, or check
-        <a href="/estate">Repo status</a> for upgrades.
+        Open a drawer to browse repositories already on the platform.
+        Check <a href="/estate">Repo status</a> for upgrades.
       </p>
+      {% endif %}
     </div>
     <nav class="home-console__actions" aria-label="Library shortcuts">
       <a class="btn btn--primary btn--sm" href="/import">Import</a>
@@ -30,201 +31,103 @@
     </nav>
   </header>
 
-  {% if fleet_scorecard_rollup and fleet_scorecard_rollup.entity_count %}
-  <section class="card fleet-scorecard-rollup library-scorecard" aria-labelledby="fleet-scorecard-heading">
-    <div class="card__header">
-      <h2 id="fleet-scorecard-heading">Fleet scorecard</h2>
-      <p class="muted card__subtitle">
-        Roll-up across {{ fleet_scorecard_rollup.entity_count }} entit{{ 'y' if fleet_scorecard_rollup.entity_count == 1 else 'ies' }}
-        {% if library_owner_filter %} matching owner <code>{{ library_owner_filter }}</code>{% endif %}.
-      </p>
+  {% if library_owner_filter %}
+  <p class="muted library-owner-note">
+    matching owner <code>{{ library_owner_filter }}</code>
+    · <a href="{% if library_family %}/library/{{ library_family.family }}{% else %}/library{% endif %}">Clear</a>
+  </p>
+  {% endif %}
+</section>
+
+{% if library_family %}
+  {% if library_family.entities %}
+  <div class="catalog-search home-console__search" data-catalog-search>
+    <label class="visually-hidden" for="library-search-input">Search this drawer</label>
+    <input
+      class="catalog-search__input field__input"
+      type="search"
+      id="library-search-input"
+      placeholder="Search this drawer — name, blueprint, owner… (press /)"
+      autocomplete="off"
+      data-catalog-search-input
+    />
+    <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
+  </div>
+
+  <section
+    id="catalog-inventory"
+    class="library-shelf"
+    aria-labelledby="library-inventory-heading"
+    data-catalog-group="{{ library_family.family }}"
+  >
+    <h2 id="library-inventory-heading" class="visually-hidden">
+      {{ library_entity_count }} artifact{{ 's' if library_entity_count != 1 else '' }} in {{ library_family.title }}
+    </h2>
+    <ul class="library-shelf__list">
+      {% for entity in library_family.entities %}
+      <li class="library-shelf__row" data-catalog-item>
+        <a
+          class="library-shelf__item"
+          href="/services/{{ entity.entity_id }}"
+          data-catalog-card
+          data-peek-name="{{ entity.display_name }}"
+          data-search-text="{{ entity.display_name }} {{ entity.blueprint_name }} {{ entity.owner }} {{ entity.repo_url or '' }} {{ entity.source }} {{ entity.standard_version }}"
+        >
+          <span class="library-shelf__name">{{ entity.display_name }}</span>
+          <span class="library-shelf__line muted">
+            {% if entity.blueprint_name %}
+            {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
+            {% endif %}
+            {% if entity.owner %} · {{ entity.owner }}{% endif %}
+            {% if entity.operator_phase %} · operator {{ entity.operator_phase }}{% endif %}
+            {% if entity.cost_badge %}
+            · <span class="catalog-inventory__cost-badge" title="{{ entity.cost_badge_detail }}">{{ entity.cost_badge }}</span>
+            {% endif %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="alert alert--info catalog-search-empty" id="catalog-search-empty" role="status" hidden>
+      No artifacts match. Clear search to see this drawer.
     </div>
+  </section>
+  {% else %}
+  <section class="card">
     <div class="card__body">
-      <ul class="scorecard-strip">
-        {% for cell in fleet_scorecard_rollup.dimensions %}
-        <li>
-          <span class="badge badge--{% if cell.worst_level == 'unknown' %}muted{% else %}{{ cell.worst_level }}{% endif %}">{{ cell.label }}</span>
-          <span class="muted">{{ cell.pass_count }} pass · {{ cell.warn_count }} warn · {{ cell.fail_count }} fail</span>
-        </li>
-        {% endfor %}
-      </ul>
+      <p class="muted">
+        Nothing in this drawer yet.
+        <a href="/import">Import a repository</a> or
+        <a href="/#golden-paths">plan a golden path</a>.
+      </p>
     </div>
   </section>
   {% endif %}
-
-  {% if library_groups %}
-  <div class="library-toolbar">
-    <div class="catalog-search home-console__search" data-catalog-search>
-      <label class="visually-hidden" for="library-search-input">Search library</label>
-      <input
-        class="catalog-search__input field__input"
-        type="search"
-        id="library-search-input"
-        placeholder="Search library — name, blueprint, owner… (press /)"
-        autocomplete="off"
-        data-catalog-search-input
-      />
-      <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
-    </div>
-    <form class="catalog-owner-filter" method="get" action="/library">
-      <label class="catalog-search__label" for="library-owner-filter">Owner</label>
-      <div class="catalog-owner-filter__row">
-        <input
-          class="field__input"
-          type="search"
-          id="library-owner-filter"
-          name="owner"
-          value="{{ library_owner_filter or '' }}"
-          placeholder="team or group:platform"
-        />
-        <button class="btn btn--secondary btn--sm" type="submit">Apply</button>
-        {% if library_owner_filter %}
-        <a class="btn btn--ghost btn--sm" href="/library">Clear</a>
-        {% endif %}
-      </div>
-    </form>
-  </div>
-
-  <nav
-    class="library-family-chips"
-    data-library-families
-    aria-label="Filter by family"
-  >
-    <button
-      type="button"
-      class="btn btn--ghost btn--sm preset-chip library-family-chip is-active"
-      data-library-family=""
-      aria-pressed="true"
-    >All</button>
-    {% for group in library_groups %}
-    <button
-      type="button"
-      class="btn btn--ghost btn--sm preset-chip library-family-chip library-family-chip--{{ group.family }}"
-      data-library-family="{{ group.family }}"
-      aria-pressed="false"
-    >
-      {{ group.title }}
-      <span class="badge badge--{{ group.family }}">{{ group.entities | length }}</span>
-    </button>
-    {% endfor %}
-  </nav>
-  {% else %}
-  <form class="catalog-owner-filter" method="get" action="/library">
-    <label class="catalog-search__label" for="library-owner-filter">Owner</label>
-    <div class="catalog-owner-filter__row">
-      <input
-        class="field__input"
-        type="search"
-        id="library-owner-filter"
-        name="owner"
-        value="{{ library_owner_filter or '' }}"
-        placeholder="team or group:platform"
-      />
-      <button class="btn btn--secondary btn--sm" type="submit">Apply</button>
-      {% if library_owner_filter %}
-      <a class="btn btn--ghost btn--sm" href="/library">Clear</a>
-      {% endif %}
-    </div>
-  </form>
-  {% endif %}
-</section>
-
-{% if library_groups %}
-<section
-  id="catalog-inventory"
-  class="catalog-inventory catalog-inventory--browse home-catalog"
-  aria-labelledby="library-inventory-heading"
->
-  <h2 id="library-inventory-heading" class="visually-hidden">
+{% elif library_groups %}
+  <p class="visually-hidden">
     {{ library_entity_count }} artifact{{ 's' if library_entity_count != 1 else '' }} available
-  </h2>
-
-  <div class="catalog-inventory__list">
+  </p>
+  <ul class="library-drawers" aria-label="Library drawers">
     {% for group in library_groups %}
-    <section
-      class="catalog-inventory__category catalog-inventory__category--{{ group.family }}"
-      id="library-{{ group.family }}"
-      data-catalog-group="{{ group.family }}"
-      aria-labelledby="library-{{ group.family }}-heading"
-    >
-      <header class="catalog-inventory__heading">
-        <div class="catalog-inventory__heading-main">
-          <h3 id="library-{{ group.family }}-heading" class="catalog-inventory__category-title">{{ group.title }}</h3>
-          <p class="catalog-inventory__category-subtitle muted">{{ group.subtitle }}</p>
-        </div>
-        <span class="badge badge--{{ group.family }}">{{ group.entities | length }}</span>
-      </header>
-      <ul class="catalog-inventory__items">
-        {% for entity in group.entities %}
-        <li class="catalog-inventory__row" data-catalog-item>
-          <a
-            class="catalog-inventory__item catalog-inventory__item--{{ group.family }}"
-            href="/services/{{ entity.entity_id }}"
-            data-catalog-card
-            data-peek-name="{{ entity.display_name }}"
-            data-search-text="{{ entity.display_name }} {{ entity.blueprint_name }} {{ entity.owner }} {{ entity.repo_url or '' }} {{ entity.source }} {{ entity.standard_version }} {{ group.family }} {{ group.title }}"
-          >
-            <span class="catalog-inventory__item-head">
-              <span class="catalog-inventory__item-icon catalog-inventory__item-icon--{{ group.family }}" aria-hidden="true"></span>
-              <span class="catalog-inventory__item-name">{{ entity.display_name }}</span>
-            </span>
-            <span class="catalog-inventory__item-desc muted">
-              {% if entity.blueprint_name %}
-              {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
-              {% endif %}
-              {% if entity.owner %} · {{ entity.owner }}{% endif %}
-              {% if entity.repo_url %} · repo{% elif entity.local_path %} · local{% endif %}
-            </span>
-            <span class="catalog-inventory__item-meta">
-              {% if entity.maturity_label %}
-              <span class="badge badge--maturity" title="{{ entity.maturity_passing }}/{{ entity.maturity_total }} rules">
-                L{{ entity.maturity_level }} {{ entity.maturity_label }}
-              </span>
-              {% endif %}
-              {% for badge in entity.initiative_badges[:2] %}
-              <span class="badge badge--initiative">{{ badge }}</span>
-              {% endfor %}
-              {% if entity.operator_phase %}
-                {% if entity.operator_phase == 'Ready' %}
-              <span class="badge badge--pass">operator {{ entity.operator_phase }}</span>
-                {% elif entity.operator_phase == 'OutOfDate' %}
-              <span class="badge badge--fail">operator {{ entity.operator_phase }}</span>
-                {% else %}
-              <span class="badge badge--skip">operator {{ entity.operator_phase }}</span>
-                {% endif %}
-              {% endif %}
-              <span class="badge badge--muted">{{ entity.source }}</span>
-              {% if entity.cost_badge %}
-              <span
-                class="badge badge--pass catalog-inventory__cost-badge"
-                title="{{ entity.cost_badge_detail }}"
-              >{{ entity.cost_badge }}</span>
-              {% endif %}
-              {% if entity.cost_sparkline %}
-              <span
-                class="cost-sparkline"
-                role="img"
-                aria-label="{{ entity.cost_sparkline_detail or 'Cost trend' }}"
-                title="{{ entity.cost_sparkline_detail }}"
-              >
-                {% for height in entity.cost_sparkline %}
-                <span class="cost-spark" style="--cost-spark-height: {{ height }}%"></span>
-                {% endfor %}
-              </span>
-              {% endif %}
-            </span>
-          </a>
-        </li>
-        {% endfor %}
-      </ul>
-    </section>
+    <li>
+      <a
+        class="library-drawer library-drawer--{{ group.family }}"
+        href="/library/{{ group.family }}{% if library_owner_filter %}?owner={{ library_owner_filter | urlencode }}{% endif %}"
+      >
+        <span class="library-drawer__label">
+          <span class="library-drawer__title">{{ group.title }}</span>
+          <span class="library-drawer__subtitle muted">{{ group.subtitle }}</span>
+        </span>
+        <span class="library-drawer__meta">
+          <span class="library-drawer__count">
+            {{ group.entities | length }} artifact{{ 's' if group.entities | length != 1 else '' }}
+          </span>
+          <span class="library-drawer__go" aria-hidden="true"></span>
+        </span>
+      </a>
+    </li>
     {% endfor %}
-  </div>
-
-  <div class="alert alert--info catalog-search-empty" id="catalog-search-empty" role="status" hidden>
-    No artifacts match. Clear search or choose All families.
-  </div>
-</section>
+  </ul>
 {% else %}
 <section class="card">
   <div class="card__body">
@@ -242,5 +145,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% if library_family and library_family.entities %}
 <script type="module" src="/static/repave-library.mjs?v={{ app_version }}"></script>
+{% endif %}
 {% endblock %}

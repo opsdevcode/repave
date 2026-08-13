@@ -81,9 +81,13 @@ from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
+    CatalogEntity,
+    EntityLibraryGroup,
     filter_entities_by_owner,
     find_catalog_entity,
     group_catalog_entities,
+    library_family_copy,
+    library_family_known,
     observability_embed_url,
     rollup_fleet_scorecard,
 )
@@ -716,8 +720,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
-    @app.get("/library", response_class=HTMLResponse)
-    async def library_page(request: Request, owner: str = "") -> HTMLResponse:
+    def _library_catalog(owner: str) -> tuple[list[CatalogEntity], list[EntityLibraryGroup]]:
         cost_configured = cost_reader_configured(
             cost_reader=portal_config.cost_reader,
             cost_actuals_url=portal_config.cost_actuals_url,
@@ -735,11 +738,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             blueprint.name: blueprint.artifact_type
             for blueprint in list_blueprints(blueprints_dir(repo_root))
         }
-        library_groups = group_catalog_entities(
+        groups = group_catalog_entities(
             entities,
             blueprint_artifact_types=blueprint_types,
         )
-        fleet_rollup = rollup_fleet_scorecard(entities)
+        return entities, groups
+
+    @app.get("/library", response_class=HTMLResponse)
+    async def library_page(request: Request, owner: str = "") -> HTMLResponse:
+        entities, library_groups = _library_catalog(owner)
         return templates.TemplateResponse(
             request,
             "library.html",
@@ -747,8 +754,38 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="library",
                 library_groups=library_groups,
+                library_family=None,
                 library_entity_count=len(entities),
-                fleet_scorecard_rollup=fleet_rollup,
+                fleet_scorecard_rollup=rollup_fleet_scorecard(entities),
+                library_owner_filter=owner.strip(),
+                observability_configured=bool(portal_config.observability_dashboard_url),
+            ),
+        )
+
+    @app.get("/library/{family}", response_class=HTMLResponse)
+    async def library_family_page(request: Request, family: str, owner: str = "") -> HTMLResponse:
+        if not library_family_known(family):
+            raise HTTPException(status_code=404, detail="Library family not found")
+        _entities, library_groups = _library_catalog(owner)
+        group = next((item for item in library_groups if item.family == family), None)
+        if group is None:
+            title, subtitle = library_family_copy(family)
+            group = EntityLibraryGroup(
+                family=family,
+                title=title,
+                subtitle=subtitle,
+                entities=(),
+            )
+        return templates.TemplateResponse(
+            request,
+            "library.html",
+            page_context(
+                request,
+                nav_active="library",
+                library_groups=library_groups,
+                library_family=group,
+                library_entity_count=len(group.entities),
+                fleet_scorecard_rollup=rollup_fleet_scorecard(group.entities),
                 library_owner_filter=owner.strip(),
                 observability_configured=bool(portal_config.observability_dashboard_url),
             ),

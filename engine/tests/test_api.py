@@ -131,7 +131,7 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
 
     library = client.get("/static/repave-library.mjs")
     assert library.status_code == 200
-    assert "data-library-family" in library.text
+    assert "initCatalogSearch" in library.text
     assert "repave-catalog.mjs" in library.text
 
 

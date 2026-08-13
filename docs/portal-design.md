@@ -37,7 +37,7 @@ static assets, CSS tokens, and a base layout template.
 | v1.18 functional items | Catalog grouping, scope search/presets/validation, gate excerpts, Ansible platform/version dropdowns, **Plan preview** on all forms |
 | v1.22 Generation provenance and version visibility | Governance card on the blueprint form (Phase 3) |
 | v1.30 Operability and audit | **Shipped** — audit sink, `/activity`, hosted `/runs`; browser last-run remains a local convenience |
-| Cost visibility (shipped) | Library cost badges, Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
+| Cost visibility (shipped) | Library shelf cost line, entity Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
 | FinOps enablement (v1.90–v1.94) | **Shipped** — tags, estimate policy, showback/`/platform/finops`, FOCUS, chargeback ([archive](roadmap-archive.md#finops-enablement-v2x), [`finops.md`](finops.md)) |
 | Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |
 | v3.0 conversational generation | Second entry point in the same app shell (Phase 5) |
@@ -118,8 +118,8 @@ vocabulary; `/static/repave.css` is the single source of styling truth.
 
 - Group blueprints by **artifact type** (Terraform, Ansible; later Helm, app
   service, observability) — aligns with roadmap v1.18.
-- Section title + one-line subtitle per group; families stay **open** on `/`
-  and `/library` (library adds live family chips + search).
+- Section title + one-line subtitle per group; families stay **open** on `/`.
+  `/library` is a stack of labeled family drawers that open a quiet shelf.
 
 ### Blueprint cards
 
@@ -285,8 +285,7 @@ Pick based on audience and hosting model (v1.25+).
 
 - Home: compact **Golden paths** header, search as the focal control, open
   family sections as a 2–3 column path-card grid (no oversized wordmark)
-- Library: same open family card grid, plus live family chips and search
-  (no expand/collapse)
+- Library: labeled family drawers that lead to a quiet shelf (name + lineage)
 - Console-native catalog card hover (respects `prefers-reduced-motion`)
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 
