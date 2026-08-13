@@ -61,21 +61,25 @@ spec:
     - name: destination_server
       type: string
       required: false
+      advanced: true
       description: Argo CD destination cluster API URL (required when gitops_engine is argocd).
       default: https://kubernetes.default.svc
     - name: argocd_project
       type: string
       required: false
+      advanced: true
       description: Argo CD project; the implicit default project is rejected by policy.
       default: platform
     - name: flux_source_name
       type: string
       required: false
+      advanced: true
       description: Flux HelmRepository name (required when gitops_engine is flux).
       default: ""
     - name: flux_source_namespace
       type: string
       required: false
+      advanced: true
       description: Namespace holding the Flux HelmRepository.
       default: flux-system
   template:

@@ -27,16 +27,19 @@ spec:
     - name: policy_pack_source
       type: string
       required: false
+      advanced: true
       default: repave-checkov-pack
       description: Pack registry entry from policy/catalog.json pack_sources.
     - name: policy_profile
       type: string
       required: false
+      advanced: true
       default: checkov-full
       description: Profile from policy/catalog.json (use custom with policy_rules).
     - name: policy_rules
       type: string
       required: false
+      advanced: true
       multi: true
       default: ""
       description: Rule IDs from policy/catalog.json when policy_profile is custom.

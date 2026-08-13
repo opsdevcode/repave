@@ -153,8 +153,9 @@ segmented scope mode, scope presets and inline validation, Ansible enum inputs).
 
 Golden paths that declare `advanced` or `guided_from` inputs default to **Guided**
 mode. **Advanced** reveals the rest of the blueprint’s declared inputs (policy
-pack/profile/rules, Backstage catalog knobs, Ansible pattern / min version /
-Galaxy platforms, Terraform service-scope panel). Classification is data-driven via
+pack/profile/rules, Backstage catalog knobs, Helm GitOps deploy pipeline,
+GitOps cluster/project fields, Ansible pattern / min version / Galaxy platforms,
+Terraform service-scope panel). Classification is data-driven via
 optional `advanced: true` and `guided_from` on blueprint `inputs`.
 
 **Guided identity:** when an input declares `guided_from`, Guided hides that field and

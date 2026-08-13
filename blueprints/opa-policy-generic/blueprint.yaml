@@ -27,22 +27,26 @@ spec:
     - name: policy_pack_source
       type: string
       required: false
+      advanced: true
       default: repave-opa-pack
       description: Pack registry entry from policy/catalog.json pack_sources.
     - name: policy_profile
       type: string
       required: false
+      advanced: true
       default: opa-focused
       description: Profile from policy/catalog.json (use custom with policy_rules).
     - name: policy_rules
       type: string
       required: false
+      advanced: true
       multi: true
       default: ""
       description: Rule IDs from policy/catalog.json when policy_profile is custom.
     - name: plan_demo
       type: string
       required: false
+      advanced: true
       default: pass
       description: >-
         Conftest fixture plan for demos. Use destructive_delete to see plan-time
