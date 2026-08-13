@@ -57,8 +57,10 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "data-home-quick" in response.text
     assert "catalog-inventory__item-icon" in response.text
     assert "catalog-inventory__category" in response.text
-    assert "catalog-inventory__summary" in response.text
-    assert "<details" in response.text
+    assert "catalog-inventory--browse" in response.text
+    assert "catalog-inventory__heading" in response.text
+    assert "home-catalog-column" in response.text
+    assert "catalog-inventory__summary" not in response.text
     assert "Golden paths" in response.text
     assert 'href="/library"' in response.text
     assert 'href="/library"' in response.text
@@ -260,6 +262,8 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert '[data-theme="dark"]' in response.text
     assert ".shell__wordmark" in response.text
     assert ".home-console" in response.text
+    assert ".home-catalog-column" in response.text
+    assert ".catalog-inventory--browse" in response.text
     assert "color-scheme: dark" in response.text
     assert ".shell__atmosphere" in response.text
     assert ".alert--fail" in response.text

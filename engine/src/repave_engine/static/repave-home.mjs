@@ -265,9 +265,6 @@ function initCatalogSearch() {
         }
       });
       group.hidden = !anyVisible && terms.length > 0;
-      if (terms.length > 0 && anyVisible && group.tagName === "DETAILS") {
-        group.open = true;
-      }
     });
 
     if (meta) {
