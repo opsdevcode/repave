@@ -11,7 +11,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 
 | Route | Template | Highlights |
 | --- | --- | --- |
-| Home | `index.html` | Visual v2 hero, catalog grouped by artifact type, blueprint cards |
+| Home | `index.html` | Compact catalog header, families open as a 2–3 column path-card grid |
 | Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** / **Apply** (no mode radios); scope filter, presets, validation |
 | Generation result | `result.html` | Status hero, lineage + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
@@ -110,7 +110,7 @@ vocabulary; `/static/repave.css` is the single source of styling truth.
 
 ## Phase 2 — Catalog (home)
 
-**Status:** Shipped (including visual v2 home hero).
+**Status:** Shipped (open family card grid; compact header — no oversized hero).
 
 **Goal:** Golden paths read as a **catalog**, not a README list.
 
@@ -118,11 +118,12 @@ vocabulary; `/static/repave.css` is the single source of styling truth.
 
 - Group blueprints by **artifact type** (Terraform, Ansible; later Helm, app
   service, observability) — aligns with roadmap v1.18.
-- Section title + one-line subtitle per group.
+- Section title + one-line subtitle per group; families stay **open** on `/`
+  (library still uses expand/collapse).
 
 ### Blueprint cards
 
-Replace the flat `<ul>` with a responsive card grid. Each card includes:
+Responsive 2–3 column card grid on `/`. Each card includes:
 
 - Blueprint name + **version badge**
 - Description (one line, truncated with ellipsis if needed)
@@ -255,7 +256,7 @@ at most two interactions.
 
 ## Phase 5 — Polish and extensions
 
-**Status:** Partial — home hero, catalog hover, browser last-run snippet, copy
+**Status:** Partial — compact home header, catalog hover, browser last-run snippet, copy
 feedback, generate/update busy states, sticky generate bar, skip link, upgrade
 diff styling, Terraform stepper, scope/gate motion, audit-backed recent activity,
 standards drift diff, staged generate labels, catalog search, resume chip,
@@ -281,7 +282,8 @@ Pick based on audience and hosting model (v1.25+).
 
 ### Visual v2 (shipped)
 
-- Home hero: oversized **repave** wordmark, one line, CTAs; catalog below fold
+- Home: compact **Golden paths** header, search as the focal control, open
+  family sections as a 2–3 column path-card grid (no oversized wordmark)
 - Console-native catalog card hover (respects `prefers-reduced-motion`)
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 

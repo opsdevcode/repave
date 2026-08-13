@@ -13,6 +13,7 @@
 {% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
+<div class="home-catalog-column">
 <section class="home-console" aria-labelledby="home-console-title">
   <header class="home-console__header">
     <div class="home-console__intro">
@@ -23,7 +24,7 @@
       </p>
     </div>
     <nav class="home-console__actions" aria-label="Catalog shortcuts">
-      <a class="btn btn--ghost btn--sm" href="/import">Import</a>
+      <a class="btn btn--primary btn--sm" href="/import">Import</a>
       <a class="btn btn--ghost btn--sm" href="/update">Upgrade</a>
       {% if audit_enabled %}
       <a class="btn btn--ghost btn--sm" href="/activity">Activity</a>
@@ -57,7 +58,7 @@
   <div class="home-layout__main">
 <section
   id="golden-paths"
-  class="catalog-inventory home-catalog"
+  class="catalog-inventory catalog-inventory--browse home-catalog"
   aria-labelledby="golden-paths-heading"
 >
   <h2 id="golden-paths-heading" class="visually-hidden">Browse by family</h2>
@@ -65,16 +66,20 @@
   {% if catalog_bundles or catalog_groups %}
   <div class="catalog-inventory__list">
     {% if catalog_bundles %}
-    <details class="catalog-inventory__category catalog-inventory__category--app" data-catalog-group="bundles">
-      <summary class="catalog-inventory__summary">
-        <span class="catalog-inventory__summary-main">
-          <span class="catalog-inventory__category-title">Composite bundles</span>
-          <span class="catalog-inventory__category-subtitle muted">
+    <section
+      class="catalog-inventory__category catalog-inventory__category--app"
+      data-catalog-group="bundles"
+      aria-labelledby="catalog-bundles-heading"
+    >
+      <header class="catalog-inventory__heading">
+        <div class="catalog-inventory__heading-main">
+          <h3 id="catalog-bundles-heading" class="catalog-inventory__category-title">Composite bundles</h3>
+          <p class="catalog-inventory__category-subtitle muted">
             Linked repositories applied in one plan
-          </span>
-        </span>
+          </p>
+        </div>
         <span class="badge badge--app">{{ catalog_bundles|length }}</span>
-      </summary>
+      </header>
       <ul class="catalog-inventory__items">
         <li class="catalog-inventory__row catalog-inventory__row--presets" data-catalog-item>
           <div class="catalog-inventory__preset-chips">
@@ -111,23 +116,23 @@
         </li>
         {% endfor %}
       </ul>
-    </details>
+    </section>
     {% endif %}
 
     {% for group in catalog_groups %}
-    <details
+    <section
       class="catalog-inventory__category catalog-inventory__category--{{ group.family }}"
       id="catalog-{{ group.family }}"
       data-catalog-group="{{ group.family }}"
-      {% if loop.first %}open{% endif %}
+      aria-labelledby="catalog-{{ group.family }}-heading"
     >
-      <summary class="catalog-inventory__summary">
-        <span class="catalog-inventory__summary-main">
-          <span class="catalog-inventory__category-title">{{ group.title }}</span>
-          <span class="catalog-inventory__category-subtitle muted">{{ group.subtitle }}</span>
-        </span>
+      <header class="catalog-inventory__heading">
+        <div class="catalog-inventory__heading-main">
+          <h3 id="catalog-{{ group.family }}-heading" class="catalog-inventory__category-title">{{ group.title }}</h3>
+          <p class="catalog-inventory__category-subtitle muted">{{ group.subtitle }}</p>
+        </div>
         <span class="badge badge--{{ group.family }}">{{ group.blueprints|length }}</span>
-      </summary>
+      </header>
       <ul class="catalog-inventory__items">
         {% for bp in group.blueprints %}
         <li class="catalog-inventory__row" data-catalog-item>
@@ -161,7 +166,7 @@
         </li>
         {% endfor %}
       </ul>
-    </details>
+    </section>
     {% endfor %}
   </div>
   {% else %}
@@ -175,6 +180,7 @@
   </div>
 </section>
   </div>
+</div>
 </div>
 {% endblock %}
 
