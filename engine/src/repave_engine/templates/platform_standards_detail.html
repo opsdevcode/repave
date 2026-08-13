@@ -2,20 +2,23 @@
 
 {% block title %}{{ summary.blueprint_name }} — standards — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title"><code>{{ summary.blueprint_name }}</code></h1>
-    <p class="page-lead">
-      Catalog pins: <code>{{ summary.catalog_version }}</code> · standard
-      <code>{{ summary.catalog_standard_version }}</code> · estimate from registry.
-    </p>
-  </div>
-</header>
+{% set platform_console_crumb %}
+  <a href="/platform/standards">Standards</a>
+  <span aria-hidden="true"> / </span>
+  <span>{{ summary.blueprint_name }}</span>
+{% endset %}
+{% set platform_console_title = summary.blueprint_name %}
+{% set platform_console_heading_id = "standards-detail-title" %}
+{% set platform_console_lead %}
+  Catalog pins: <code>{{ summary.catalog_version }}</code> · standard
+  <code>{{ summary.catalog_standard_version }}</code> · estimate from registry.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
 
+<div class="platform-stack">
 <section class="card" aria-labelledby="behind-heading">
   <div class="card__header">
     <h2 id="behind-heading">{{ summary.behind_count }} repo(s) behind</h2>
@@ -56,4 +59,6 @@
     {% endif %}
   </div>
 </section>
+</div>
+</div>
 {% endblock %}

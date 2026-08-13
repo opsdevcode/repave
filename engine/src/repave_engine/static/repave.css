@@ -5969,6 +5969,45 @@
     background: color-mix(in srgb, var(--surface) 70%, transparent);
   }
 
+  .platform-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .platform-stat-grid {
+    margin: 0;
+  }
+
+  .platform-stat {
+    min-height: 6.75rem;
+    cursor: default;
+  }
+
+  .platform-stat--pass {
+    --drawer-accent: var(--status-pass);
+  }
+
+  .platform-stat--fail {
+    --drawer-accent: var(--status-fail);
+  }
+
+  .platform-summary-grid {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    margin: 0;
+  }
+
+  .platform-summary-grid dt {
+    margin: 0 0 var(--space-1);
+  }
+
+  .platform-summary-grid dd {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
   .home-quick {
     display: flex;
     flex-wrap: wrap;

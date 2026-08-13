@@ -2,19 +2,17 @@
 
 {% block title %}Estate health — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">Estate health</h1>
-    <p class="page-lead">
-      Toolchain readiness, async queue depth, environment TTL, and service probes in one view.
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "Estate health" %}
+{% set platform_console_heading_id = "ops-console-title" %}
+{% set platform_console_lead %}
+  Toolchain readiness, async queue depth, environment TTL, and service probes in one view.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
 
+<div class="platform-stack">
 <section class="card" aria-labelledby="readiness-heading">
   <div class="card__header">
     <h2 id="readiness-heading">Readiness</h2>
@@ -23,10 +21,22 @@
     </p>
   </div>
   <div class="card__body">
-    <ul class="activity-list">
+    <ul class="library-drawers platform-stat-grid" aria-label="Readiness checks">
       {% for name, ok in ops_page.readiness.checks.items() %}
-      <li class="activity-list__item">
-        <span class="badge badge--{% if ok %}pass{% else %}fail{% endif %}">{{ name }}</span>
+      <li>
+        <div
+          class="library-drawer platform-stat platform-stat--{{ 'pass' if ok else 'fail' }}"
+          data-motion-face
+          data-library-drawer
+        >
+          <header class="library-drawer__label">
+            <h3 class="library-drawer__title">{{ name }}</h3>
+            <p class="library-drawer__subtitle muted">{% if ok %}passing{% else %}failing{% endif %}</p>
+          </header>
+          <p class="fleet-tile__badges">
+            <span class="badge badge--{% if ok %}pass{% else %}fail{% endif %}">{% if ok %}pass{% else %}fail{% endif %}</span>
+          </p>
+        </div>
       </li>
       {% endfor %}
     </ul>
@@ -169,4 +179,6 @@
     {% endif %}
   </div>
 </section>
+</div>
+</div>
 {% endblock %}

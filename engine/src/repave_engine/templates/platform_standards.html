@@ -2,60 +2,53 @@
 
 {% block title %}Platform standards — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">Standards blast radius</h1>
-    <p class="page-lead">
-      Estimated drift from last recorded fleet pins vs catalog targets. Confirm on demand to
-      verify live <code>repave.yaml</code> pins.
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "Standards blast radius" %}
+{% set platform_console_heading_id = "standards-console-title" %}
+{% set platform_console_lead %}
+  Estimated drift from last recorded fleet pins vs catalog targets. Confirm on demand to
+  verify live <code>repave.yaml</code> pins.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
 
+<div class="platform-stack">
 {% if standards_page.fleet_enabled %}
   {% if standards_page.summaries %}
-<section class="card" aria-labelledby="standards-summary-heading">
-  <div class="card__header">
-    <h2 id="standards-summary-heading">By blueprint</h2>
-    <p class="muted card__subtitle">Estimate only — registry pins may be stale.</p>
-  </div>
-  <div class="card__body">
-    <table class="pin-diff-table" data-sortable>
-      <thead>
-        <tr>
-          <th scope="col">Blueprint</th>
-          <th scope="col">Catalog version</th>
-          <th scope="col">Governed</th>
-          <th scope="col">Current</th>
-          <th scope="col">Behind</th>
-          <th scope="col">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for summary in standards_page.summaries %}
-        <tr>
-          <td><code>{{ summary.blueprint_name }}</code></td>
-          <td>{{ summary.catalog_version }} / std {{ summary.catalog_standard_version }}</td>
-          <td>{{ summary.governed_count }}</td>
-          <td>{{ summary.current_count }}</td>
-          <td>
+  <section class="fleet-shelf" aria-labelledby="standards-summary-heading">
+    <h2 id="standards-summary-heading" class="visually-hidden">By blueprint</h2>
+    <p class="visually-hidden">Estimate only — registry pins may be stale.</p>
+    <ul class="library-drawers fleet-grid" aria-label="Blueprint blast radius">
+      {% for summary in standards_page.summaries %}
+      <li>
+        <article
+          class="library-drawer fleet-tile library-drawer--{{ 'policy' if summary.behind_count else 'app' }}"
+          data-motion-face
+          data-library-drawer
+        >
+          <header class="library-drawer__label">
+            <h3 class="library-drawer__title">{{ summary.blueprint_name }}</h3>
+            <p class="library-drawer__subtitle muted">
+              {{ summary.catalog_version }} / std {{ summary.catalog_standard_version }}
+            </p>
+          </header>
+          <p class="fleet-tile__lineage muted">
+            {{ summary.governed_count }} governed · {{ summary.current_count }} current
+          </p>
+          <p class="fleet-tile__badges">
             {% if summary.behind_count %}
-            <span class="badge badge--fail">{{ summary.behind_count }}</span>
+            <span class="badge badge--fail">{{ summary.behind_count }} behind</span>
             {% else %}
             <span class="badge badge--pass">0</span>
             {% endif %}
-          </td>
-          <td>
+          </p>
+          <footer class="fleet-tile__footer">
             <a href="/platform/standards/{{ summary.blueprint_name }}">View repos</a>
             {% if async_generation_enabled and summary.behind_repos %}
             <form
               method="post"
               action="/platform/standards/{{ summary.blueprint_name }}/confirm-drift"
-              class="form-actions"
               data-repave-native-submit
             >
               {% for row in summary.behind_repos %}
@@ -64,13 +57,12 @@
               <button type="submit" class="btn btn--secondary btn--sm">Confirm drift</button>
             </form>
             {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</section>
+          </footer>
+        </article>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
   {% else %}
 <div class="alert alert--info">No governed repositories match a catalog blueprint yet.</div>
   {% endif %}
@@ -79,4 +71,6 @@
   Enable the fleet registry in <code>repave.config.yaml</code> to compute blast radius.
 </div>
 {% endif %}
+</div>
+</div>
 {% endblock %}

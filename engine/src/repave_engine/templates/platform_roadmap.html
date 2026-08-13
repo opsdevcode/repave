@@ -2,20 +2,18 @@
 
 {% block title %}Roadmap evidence — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">Roadmap evidence</h1>
-    <p class="page-lead">
-      Tie shipped platform themes to adoption metrics from
-      <a href="/platform/adoption">/platform/adoption</a> and surface low-adoption golden
-      paths as sunset or simplification candidates.
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "Roadmap evidence" %}
+{% set platform_console_heading_id = "roadmap-console-title" %}
+{% set platform_console_lead %}
+  Tie shipped platform themes to adoption metrics from
+  <a href="/platform/adoption">golden path adoption</a> and surface low-adoption golden
+  paths as sunset or simplification candidates.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+<div class="platform-stack">
 
 {% if not roadmap_page.metrics_enabled %}
 {% set platform_metrics_purpose = "Enable it to build roadmap evidence." %}
@@ -117,4 +115,6 @@
 </section>
 {% endif %}
 {% endif %}
+</div>
+</div>
 {% endblock %}
