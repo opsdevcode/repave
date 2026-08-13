@@ -2,7 +2,7 @@ name: Sync branch rulesets
 
 on:
   push:
-    branches: [main, next/v3]
+    branches: [main]
     paths:
       - ".github/rulesets/**"
 

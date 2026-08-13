@@ -1,11 +1,7 @@
 # Repository rulesets
 
-Version-controlled definition of the **main** and **next/v3** branch rulesets
-applied to `opsdevcode/repave`.
-
-GitHub **default branch is `next/v3`** (product line). The **main branch** ruleset
-targets `refs/heads/main` explicitly — not `~DEFAULT_BRANCH` — so v2.x Release
-stays protected after the default moved.
+Version-controlled definition of the **main branch** ruleset applied to
+`opsdevcode/repave`.
 
 ## Apply
 

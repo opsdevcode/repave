@@ -17,8 +17,7 @@ Identity policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted: display
 **repave**, platform-layer mark, tagline *The intelligent platform layer*. Foundation,
 developer lab, and extract-repos use that shell.
 
-GitHub **default branch is `next/v3`**. New clones and PRs land there. `main` stays
-the v2.x Release line — do not retarget `release.yml`.
+GitHub **default branch stays `main`** (v2.x releases). Do not retarget Release.
 
 Sync weekly: `git merge origin/main` on `next/v3` (merge, never rebase).
 

@@ -24,10 +24,9 @@ operator design.
 
 ## Development
 
-**Product work targets `next/v3`** (`feat/v3-*` → `3.0.0-rc.N`). That is the GitHub
-default branch. `main` is the v2.x release line (`release.yml`). Working guide:
-[`docs/v3-development.md`](docs/v3-development.md). Identity:
-[ADR 009](docs/adr/009-v3-product-identity.md).
+**Product work targets `next/v3`** (`feat/v3-*` → `3.0.0-rc.N`). `main` is the v2.x
+release line. Working guide: [`docs/v3-development.md`](docs/v3-development.md).
+Identity: [ADR 009](docs/adr/009-v3-product-identity.md).
 
 Install [uv](https://docs.astral.sh/uv/), then from repo root:
 

@@ -8,8 +8,7 @@ major-boundary themes. Full shipped writeups live in
 **Current release:** v2.72.0  
 
 **In progress:** v3 developer lab on `next/v3` — explicit `v3.developer_lab.enabled`
-opt-in for `/home` and `/lab` (catalog fixtures only; no invented GitOps). GitHub
-**default branch is `next/v3`**; `main` stays the v2.x Release line. Identity
+opt-in for `/home` and `/lab` (catalog fixtures only; no invented GitOps). Identity
 ([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
 Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot) until ADR 010+. v3
 themes under [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
