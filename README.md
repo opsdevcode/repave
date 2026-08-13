@@ -131,9 +131,9 @@ preview for existing repos. Screenshots below are captured from a running portal
 mockups).
 
 <p align="center">
-  <img src="docs/images/portal/home-catalog.png" alt="repave home — golden path catalog with quick menu and search" width="920" />
+  <img src="docs/images/portal/home-catalog.png" alt="repave home — golden path catalog as an open family card grid" width="920" />
   <br />
-  <sub>Home — live portal catalog, quick menu, search</sub>
+  <sub>Home — open family card grid and search</sub>
 </p>
 
 <table>

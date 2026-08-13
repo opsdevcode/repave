@@ -7,7 +7,8 @@ major portal UI changes (see [Demo verification](../demo-verification.md)).
 
 | File | Route | Shows |
 | --- | --- | --- |
-| `home-catalog.png` | `/` | Catalog, quick menu, search, hero |
+| `home-catalog.png` | `/` | Open family card grid, search, compact header |
+| `library-catalog.png` | `/library` | Open family card grid, family chips, search (empty until a fleet is registered) |
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
 | `update-repo.png` | `/update` | Upgrade / re-render flow |
 | `import-repo.png` | `/import` | Adopt an existing repo into a golden path |
