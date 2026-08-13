@@ -9,6 +9,32 @@ from repave_engine.fleet_manifests import resource_name
 from repave_engine.fleet_operator_status import FleetOperatorStatus
 
 
+def fleet_repo_display_name(repo_url: str) -> str:
+    path = repo_url.rstrip("/").rsplit("/", 1)[-1]
+    if path.endswith(".git"):
+        path = path[: -len(".git")]
+    return path or repo_url
+
+
+def fleet_blueprint_family(blueprint_name: str) -> str:
+    name = (blueprint_name or "").lower()
+    if "terraform" in name or name.startswith("tf-"):
+        return "terraform"
+    if "ansible" in name:
+        return "ansible"
+    if "opa" in name or "checkov" in name or "policy" in name:
+        return "policy"
+    if "observ" in name or "monitor" in name or "dashboard" in name:
+        return "observability"
+    if "gitops" in name:
+        return "gitops"
+    if "helm" in name:
+        return "helm"
+    if "app-service" in name or name.startswith("app-"):
+        return "app"
+    return "other"
+
+
 def fleet_row(
     entry: FleetEntry,
     *,
@@ -20,6 +46,8 @@ def fleet_row(
         **entry.to_dict(),
         "manifest_name": manifest_name,
         "manifest_namespace": namespace,
+        "display_name": fleet_repo_display_name(entry.repo_url),
+        "family": fleet_blueprint_family(entry.blueprint_name),
     }
     if operator is None:
         row["operator_phase"] = ""

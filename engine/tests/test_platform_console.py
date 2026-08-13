@@ -151,6 +151,10 @@ def test_platform_fleet_page_renders(repo_root, output_config, registry: Path) -
     assert "Governed repositories" in body
     assert "Register repository" in body
     assert "terraform-module-generic@0.9.0" in body
+    assert "fleet-grid" in body
+    assert "data-motion-face" in body
+    assert "library-drawer--terraform" in body
+    assert ">tf-vpc<" in body
     assert "/platform/ops" in body
     assert "/platform/adoption" in body
     assert "/platform/feedback" in body

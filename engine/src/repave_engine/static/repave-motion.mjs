@@ -175,7 +175,7 @@ function resetNeighbors() {
 
 function pushNeighbors(liveEl) {
   resetNeighbors();
-  const pack = liveEl.closest(".catalog-inventory__items, .library-drawers");
+  const pack = liveEl.closest(".catalog-inventory__items, .library-drawers, .fleet-grid");
   if (!pack) {
     return;
   }
@@ -253,6 +253,13 @@ function bind(el, kind) {
   if (bound.has(el) || el.closest(SKIP_FACE)) {
     return;
   }
+  if (
+    kind === "magnetic" &&
+    el.closest("[data-motion-face], [data-library-drawer]") &&
+    !el.matches("[data-motion-face], [data-library-drawer]")
+  ) {
+    return;
+  }
   bound.add(el);
   const entry = ensure(el, kind);
   el.classList.add("motion-face");
@@ -281,6 +288,13 @@ function bind(el, kind) {
   });
   el.addEventListener("pointerdown", (event) => {
     if (kind !== "face") {
+      return;
+    }
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("a, button, input, select, textarea, label, summary")
+    ) {
       return;
     }
     spawnRipple(el, event.clientX, event.clientY);
