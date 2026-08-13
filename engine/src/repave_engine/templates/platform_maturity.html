@@ -2,19 +2,17 @@
 
 {% block title %}Service maturity — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">Service maturity</h1>
-    <p class="page-lead">
-      Fleet distribution across maturity levels computed from scorecard dimensions and
-      the configured rubric.
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "Service maturity" %}
+{% set platform_console_heading_id = "maturity-console-title" %}
+{% set platform_console_lead %}
+  Fleet distribution across maturity levels computed from scorecard dimensions and
+  the configured rubric.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+<div class="platform-stack">
 
 {% if not maturity_page.catalog_enabled %}
 <section class="card">
@@ -31,7 +29,7 @@
     <h2 id="maturity-summary-heading">Summary</h2>
   </div>
   <div class="card__body">
-    <dl class="pin-diff-table" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:1rem;">
+    <dl class="platform-summary-grid">
       <div>
         <dt class="muted">Entities</dt>
         <dd><strong>{{ maturity_page.entity_count }}</strong></dd>
@@ -117,4 +115,6 @@
 </section>
 {% endif %}
 {% endif %}
+</div>
+</div>
 {% endblock %}

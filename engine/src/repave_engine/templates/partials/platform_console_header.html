@@ -1,0 +1,20 @@
+<div class="home-catalog-column platform-console">
+{% include "partials/platform_subnav.html" %}
+<section class="home-console" aria-labelledby="{{ platform_console_heading_id | default('platform-console-title') }}">
+  <header class="home-console__header">
+    <div class="home-console__intro">
+      {% if platform_console_crumb is defined and platform_console_crumb %}
+      <p class="library-crumb muted">{{ platform_console_crumb }}</p>
+      {% endif %}
+      <h1 id="{{ platform_console_heading_id | default('platform-console-title') }}" class="home-console__title">{{ platform_console_title }}</h1>
+      {% if platform_console_lead is defined and platform_console_lead %}
+      <p class="home-console__lead muted">{{ platform_console_lead }}</p>
+      {% endif %}
+    </div>
+    {% if platform_console_actions is defined and platform_console_actions %}
+    <nav class="home-console__actions" aria-label="Platform shortcuts">
+      {{ platform_console_actions }}
+    </nav>
+    {% endif %}
+  </header>
+</section>

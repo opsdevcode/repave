@@ -2,18 +2,16 @@
 
 {% block title %}Initiatives — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">Initiatives</h1>
-    <p class="page-lead">
-      Improvement programs that target maturity levels or scorecard rules across the estate.
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "Initiatives" %}
+{% set platform_console_heading_id = "initiatives-console-title" %}
+{% set platform_console_lead %}
+  Improvement programs that target maturity levels or scorecard rules across the estate.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+<div class="platform-stack">
 
 {% if not initiatives_page.catalog_enabled %}
 <section class="card">
@@ -199,4 +197,6 @@
   </div>
 </section>
 {% endif %}
+</div>
+</div>
 {% endblock %}

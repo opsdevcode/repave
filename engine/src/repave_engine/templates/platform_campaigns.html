@@ -2,20 +2,17 @@
 
 {% block title %}Platform campaigns — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">Operator campaigns</h1>
-    <p class="page-lead">
-      Upgrade campaign status and remediation PR queue from the operator snapshot
-      (<code>fleet.operator_status_file</code>).
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "Operator campaigns" %}
+{% set platform_console_heading_id = "campaigns-console-title" %}
+{% set platform_console_lead %}
+  Upgrade campaign status and remediation PRs from the operator snapshot.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
 
+<div class="platform-stack">
 {% if campaigns_page.snapshot %}
 <p class="muted">
   Snapshot v{{ campaigns_page.snapshot.version }}
@@ -23,48 +20,58 @@
 </p>
 
 {% if campaigns_page.snapshot.campaigns %}
-<section class="card" aria-labelledby="campaigns-heading">
-  <div class="card__header">
-    <h2 id="campaigns-heading">{{ campaigns_page.snapshot.campaigns | length }} campaign(s)</h2>
-  </div>
-  <div class="card__body">
+<section class="fleet-shelf" aria-labelledby="campaigns-heading">
+  <h2 id="campaigns-heading" class="visually-hidden">
+    {{ campaigns_page.snapshot.campaigns | length }} campaign(s)
+  </h2>
+  <ul class="library-drawers fleet-grid" aria-label="Upgrade campaigns">
     {% for campaign in campaigns_page.snapshot.campaigns %}
-    <article class="activity-list__item">
-      <h3><code>{{ campaign.namespace }}/{{ campaign.name }}</code></h3>
-      <div class="activity-list__meta">
-        <span class="badge badge--{% if campaign.phase == 'Active' %}pass{% elif campaign.phase == 'Paused' %}skip{% else %}muted{% endif %}">
-          {{ campaign.phase or 'unknown' }}
-        </span>
-        {% if campaign.paused %}<span class="badge badge--skip">paused</span>{% endif %}
-        {% if campaign.blueprint_name %}<span class="muted">· {{ campaign.blueprint_name }}</span>{% endif %}
-      </div>
-      <ul class="muted">
-        <li>{{ campaign.out_of_date_count }} out of date · {{ campaign.open_pr_count }} open PRs</li>
-        <li>Oldest drift {{ campaign.oldest_drift_age_seconds }}s · MTTR {{ campaign.average_remediation_mttr_seconds }}s</li>
-        {% if campaign.consecutive_gate_failures %}
-        <li>{{ campaign.consecutive_gate_failures }} consecutive gate failures</li>
-        {% endif %}
-        {% if campaign.github_rate_limit_remaining is not none %}
-        <li>GitHub rate limit remaining: {{ campaign.github_rate_limit_remaining }}</li>
-        {% endif %}
-      </ul>
-      <div class="form-actions">
-        {% if campaign.paused %}
-        <form method="post" action="/platform/campaigns/{{ campaign.namespace or 'default' }}/{{ campaign.name }}/paused">
-          <input type="hidden" name="paused" value="0" />
-          <button type="submit" class="btn btn--secondary">Resume campaign</button>
-        </form>
-        {% else %}
-        <form method="post" action="/platform/campaigns/{{ campaign.namespace or 'default' }}/{{ campaign.name }}/paused">
-          <input type="hidden" name="paused" value="1" />
-          <button type="submit" class="btn btn--primary">Pause campaign</button>
-        </form>
-        {% endif %}
-      </div>
-      <p class="hint muted">Snapshot refreshes on the fleet operator snapshot schedule; re-run snapshot to see phase updates.</p>
-    </article>
+    <li>
+      <article
+        class="library-drawer fleet-tile library-drawer--{{ 'app' if campaign.phase == 'Active' else 'policy' }}"
+        data-motion-face
+        data-library-drawer
+      >
+        <header class="library-drawer__label">
+          <h3 class="library-drawer__title">{{ campaign.name }}</h3>
+          <p class="library-drawer__subtitle muted">{{ campaign.namespace }}/{{ campaign.name }}</p>
+        </header>
+        <p class="fleet-tile__badges">
+          <span class="badge badge--{% if campaign.phase == 'Active' %}pass{% elif campaign.phase == 'Paused' %}skip{% else %}muted{% endif %}">
+            {{ campaign.phase or 'unknown' }}
+          </span>
+          {% if campaign.paused %}<span class="badge badge--skip">paused</span>{% endif %}
+        </p>
+        <p class="fleet-tile__lineage muted">
+          {% if campaign.blueprint_name %}{{ campaign.blueprint_name }} · {% endif %}
+          {{ campaign.out_of_date_count }} out of date · {{ campaign.open_pr_count }} open PRs
+        </p>
+        <p class="fleet-tile__note muted">
+          Oldest drift {{ campaign.oldest_drift_age_seconds }}s · MTTR {{ campaign.average_remediation_mttr_seconds }}s
+          {% if campaign.consecutive_gate_failures %}
+          · {{ campaign.consecutive_gate_failures }} consecutive gate failures
+          {% endif %}
+          {% if campaign.github_rate_limit_remaining is not none %}
+          · GitHub rate {{ campaign.github_rate_limit_remaining }}
+          {% endif %}
+        </p>
+        <footer class="fleet-tile__footer">
+          {% if campaign.paused %}
+          <form method="post" action="/platform/campaigns/{{ campaign.namespace or 'default' }}/{{ campaign.name }}/paused">
+            <input type="hidden" name="paused" value="0" />
+            <button type="submit" class="btn btn--secondary btn--sm">Resume campaign</button>
+          </form>
+          {% else %}
+          <form method="post" action="/platform/campaigns/{{ campaign.namespace or 'default' }}/{{ campaign.name }}/paused">
+            <input type="hidden" name="paused" value="1" />
+            <button type="submit" class="btn btn--primary btn--sm">Pause campaign</button>
+          </form>
+          {% endif %}
+        </footer>
+      </article>
+    </li>
     {% endfor %}
-  </div>
+  </ul>
 </section>
 {% else %}
 <div class="alert alert--info">No upgrade campaigns in the snapshot.</div>
@@ -77,14 +84,16 @@
     <p class="muted card__subtitle">{{ campaigns_page.remediation_queue | length }} open remediation link(s)</p>
   </div>
   <div class="card__body">
-    <ul class="activity-list">
+    <ul class="library-shelf__list">
       {% for row in campaigns_page.remediation_queue %}
-      <li class="activity-list__item">
-        <div class="activity-list__primary">
-          <code>{{ row.repo_url }}</code>
-          <span class="badge badge--{% if row.phase == 'OutOfDate' %}fail{% else %}skip{% endif %}">{{ row.phase }}</span>
+      <li class="library-shelf__row">
+        <div class="library-shelf__item">
+          <span class="library-shelf__name">{{ row.repo_url }}</span>
+          <span class="library-shelf__line muted">
+            <span class="badge badge--{% if row.phase == 'OutOfDate' %}fail{% else %}skip{% endif %}">{{ row.phase }}</span>
+            <a href="{{ row.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">Remediation PR</a>
+          </span>
         </div>
-        <a href="{{ row.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">Remediation PR</a>
       </li>
       {% endfor %}
     </ul>
@@ -125,11 +134,22 @@
 
 {% else %}
 <div class="alert alert--info">
-  Set <code>fleet.operator_status_file</code> and refresh with
-  <code>repave fleet-operator-snapshot</code> to populate campaign data.
+  Refresh an operator snapshot to populate campaign data.
 </div>
-<pre class="panel-code"><code>repave fleet-operator-snapshot \
+<details class="card fleet-gitops">
+  <summary class="fleet-gitops__summary">
+    <span class="fleet-gitops__copy">
+      <span class="fleet-gitops__title">Snapshot CLI</span>
+      <span class="muted">Write a snapshot file, then point the portal at it.</span>
+    </span>
+  </summary>
+  <div class="card__body">
+    <pre class="panel-code"><code>repave fleet-operator-snapshot \
   --output ./operator-status.json \
   --namespace {{ campaigns_page.fleet_cfg.gitops_namespace if campaigns_page.fleet_cfg else 'default' }}</code></pre>
+  </div>
+</details>
 {% endif %}
+</div>
+</div>
 {% endblock %}

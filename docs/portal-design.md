@@ -290,11 +290,13 @@ Pick based on audience and hosting model (v1.25+).
   (name + lineage)
 - Platform fleet (`/platform/fleet`): same drawer tiles (short name, lineage,
   operator status); GitOps CLI collapsed
+- Platform console (`/platform/*`): home-console header and stacked cards;
+  campaigns, standards, and ops readiness use family-accent tiles
 - Platform motion (same-origin `repave-motion.mjs`, no third-party scripts):
-  spring pointer faces on **home catalog tiles**, library drawers, and fleet
-  tiles (glare, icon parallax, neighbor push, click ripple), magnetic pull on
-  nav and buttons, atmosphere parallax; respects `prefers-reduced-motion` and
-  coarse pointers
+  spring pointer faces on **home catalog tiles**, library drawers, fleet
+  tiles, and platform console tiles (glare, icon parallax, neighbor push, click
+  ripple), magnetic pull on nav and buttons, atmosphere parallax; respects
+  `prefers-reduced-motion` and coarse pointers
 - Cross-document view transitions on supported browsers
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 

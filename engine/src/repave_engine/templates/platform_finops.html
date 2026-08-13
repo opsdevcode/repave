@@ -2,22 +2,20 @@
 
 {% block title %}Platform FinOps — repave{% endblock %}
 
-{% block main_modifiers %} shell__main--golden-path{% endblock %}
+{% block main_modifiers %} shell__main--home{% endblock %}
 
 {% block content %}
-{% include "partials/platform_subnav.html" %}
-<header class="form-hero">
-  <div>
-    <h1 class="page-title">FinOps showback</h1>
-    <p class="page-lead">
-      Fleet cost vs budget rollup from catalog entities, L30D actuals, and snapshot trends.
-      Cardinality-safe gauges export to <code>/metrics</code>.
-      Chargeback export:
-      <a href="/api/v2/platform/finops/export?format=csv">CSV</a> ·
-      <a href="/api/v2/platform/finops/export?format=json">JSON</a>.
-    </p>
-  </div>
-</header>
+{% set platform_console_title = "FinOps showback" %}
+{% set platform_console_heading_id = "finops-console-title" %}
+{% set platform_console_lead %}
+  Fleet cost vs budget rollup from catalog entities, L30D actuals, and snapshot trends.
+  Cardinality-safe gauges export to <code>/metrics</code>.
+  Chargeback export:
+  <a href="/api/v2/platform/finops/export?format=csv">CSV</a> ·
+  <a href="/api/v2/platform/finops/export?format=json">JSON</a>.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+<div class="platform-stack">
 
 {% set rollup = finops_page.rollup %}
 {% if rollup.entity_count == 0 %}
@@ -191,4 +189,6 @@
   </div>
 </section>
 {% endif %}
+</div>
+</div>
 {% endblock %}

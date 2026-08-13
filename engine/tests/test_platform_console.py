@@ -192,6 +192,8 @@ def test_platform_ops_page_renders(repo_root, output_config) -> None:
     body = client.get("/platform/ops").text
     assert "Estate health" in body
     assert "Gate toolchain" in body
+    assert "home-console" in body
+    assert "platform-stat-grid" in body
 
 
 def test_platform_ops_queue_live_markers(
@@ -216,6 +218,8 @@ def test_platform_standards_page_renders(repo_root, output_config, registry: Pat
     body = client.get("/platform/standards").text
     assert "Standards blast radius" in body
     assert "terraform-module-generic" in body
+    assert "fleet-grid" in body
+    assert "data-motion-face" in body
     page = build_platform_standards_page(repo_root)
     assert page.summaries
 
@@ -232,6 +236,8 @@ def test_platform_campaigns_page_without_snapshot(
     body = client.get("/platform/campaigns").text
     assert "Operator campaigns" in body
     assert "fleet-operator-snapshot" in body
+    assert "home-console" in body
+    assert "fleet-gitops" in body
 
 
 def test_platform_feedback_page_without_metrics(repo_root, output_config, monkeypatch) -> None:
