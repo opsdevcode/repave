@@ -28,7 +28,7 @@ start with [Concepts](concepts.md) for the product model.
 | [Policy customization](../standards/policy/customization.md) | Profiles, catalog, portal, provenance, config floors |
 | [FinOps enablement](finops.md) | Tags, estimates, showback, FOCUS boundaries (v1.90–v1.94) |
 | [Portal design](portal-design.md) | Shell, catalog, forms, results |
-| [Brand](brand/README.md) | Converge identity, palette, assets, UI/CLI accent rules |
+| [Brand](brand/README.md) | v3 platform-layer identity, palette, assets, UI/CLI accent rules |
 | [Service catalog](service-catalog.md) | Maturity, teams, sandboxes, initiatives (ADR 006) |
 | [API v2](api-v2.md) | Stable HTTP surface; v1 deprecation |
 | [API v1 migration](api-v1-migration.md) | Sunset timeline and v1 → v2 endpoint map |

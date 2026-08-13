@@ -1050,7 +1050,7 @@ class PortalConfig:
     density: str
     observability_dashboard_url: str = ""
     observability_slo_url: str = ""
-    # Optional white-label (parking lot → shipped): empty keeps Converge defaults.
+    # Optional white-label: empty keeps v3 platform-layer defaults.
     logo_url: str = ""
     accent_color: str = ""
     cost_reader: str = ""
