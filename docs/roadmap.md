@@ -5,7 +5,7 @@ one-line summary per release; this file holds open work, the path overview, and
 major-boundary themes. Full shipped writeups live in
 [`docs/roadmap-archive.md`](roadmap-archive.md).
 
-**Current release:** v2.66.0  
+**Current release:** v2.67.0  
 
 **In progress:** fine-grained Auth0 FGA stays in the [parking lot](#parking-lot).
 v3 themes under
@@ -82,7 +82,7 @@ remediation — not just one-shot module creation. That milestone shipped; the l
 below is the sequence that got there and what comes next.
 
 ```text
-v2.66.0 today      platform GA line on main (contract freeze + DR shipped)
+v2.67.0 today      platform GA line on main (contract freeze + DR shipped)
   │
   ├─ (history)     golden paths, operator, portal, SSO, day-2, OPA, observability
   ├─ (history)     estate control, k8s deploy, durability, service split, supply chain
