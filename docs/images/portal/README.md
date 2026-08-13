@@ -8,7 +8,7 @@ major portal UI changes (see [Demo verification](../demo-verification.md)).
 | File | Route | Shows |
 | --- | --- | --- |
 | `home-catalog.png` | `/` | Open family card grid, search, compact header |
-| `library-catalog.png` | `/library` | Labeled family drawers that open a quiet shelf |
+| `library-catalog.png` | `/library` | Family drawers in a 2–3 column grid that open a quiet shelf |
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
 | `update-repo.png` | `/update` | Upgrade / re-render flow |
 | `import-repo.png` | `/import` | Adopt an existing repo into a golden path |
