@@ -21,7 +21,7 @@ Template mode requires `template_owner` and `template_repo`.
 
 | Surface | How |
 | --- | --- |
-| Portal | Catalog **Platform** family → `github-repo-generic` form (destination teams datalist, membership sync toggle, source-team member preview, ruleset profile) |
+| Portal | Catalog **Platform** family → `github-repo-generic` form (destination team checklist from org teams, membership sync toggle, source-team member preview, ruleset profile) |
 | CLI | `repave generate --blueprint blueprints/github-repo-generic --input ...` |
 | Alias | `repave create-repo --name my-service --team platform-admins` |
 | API | `POST /api/v2/generate` with `"blueprint": "github-repo-generic"` |

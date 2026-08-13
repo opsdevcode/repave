@@ -62,8 +62,9 @@ spec:
       required: false
       default: ""
       description: >-
-        Comma-separated destination org team slugs. Created if missing when membership
-        sync is enabled; then granted team_permission on the new repo.
+        Comma-separated destination org team slugs (portal lists org teams to pick).
+        Created if missing when membership sync is enabled; then granted
+        team_permission on the new repo.
     - name: team_permission
       type: string
       required: false
