@@ -839,22 +839,38 @@
       {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "support_windows" %}
       {% elif blueprint.artifact_type == "github-repo" and field.name == "team_slugs" %}
       <div class="field-block" id="github-team-slugs-block">
-        <label for="team_slugs">Destination teams</label>
+        <label id="github-team-picker-label">Destination teams</label>
         <p class="hint">
-          Comma-separated org team slugs. Each receives the team permission below.
-          When membership sync is on, missing teams are created first.
+          Choose org teams to grant the permission below. Check the teams that
+          should have access; add extra slugs only when you need a team that is
+          not in the list yet.
         </p>
+        <p class="hint" id="github-teams-hint">Loading org teams…</p>
         <input
           class="input"
-          id="team_slugs"
-          name="team_slugs"
-          type="text"
-          list="github-team-slugs"
-          value="{{ field.default or '' }}"
+          id="github-team-filter"
+          type="search"
+          hidden
           autocomplete="off"
-          placeholder="platform-admins, developers"
+          placeholder="Filter teams…"
+          aria-label="Filter organization teams"
         />
-        <p class="hint" id="github-teams-hint">Loading org teams…</p>
+        <div
+          id="github-team-picker"
+          class="github-team-picker"
+          hidden
+          role="group"
+          aria-labelledby="github-team-picker-label"
+        ></div>
+        <input type="hidden" id="team_slugs" name="team_slugs" value="{{ field.default or '' }}" />
+        <label class="hint" for="github-team-slugs-extra">Additional team slugs</label>
+        <input
+          class="input"
+          id="github-team-slugs-extra"
+          type="text"
+          autocomplete="off"
+          placeholder="new-team, other-slug"
+        />
         <datalist id="github-team-slugs"></datalist>
       </div>
       {% elif blueprint.artifact_type == "github-repo" and field.name == "membership_source_team" %}
@@ -3156,6 +3172,9 @@
   const modeSelect = document.getElementById("create_mode");
   const templateBlocks = document.querySelectorAll("[data-github-repo-when='template']");
   const teamInput = document.getElementById("team_slugs");
+  const teamExtra = document.getElementById("github-team-slugs-extra");
+  const teamFilter = document.getElementById("github-team-filter");
+  const teamPicker = document.getElementById("github-team-picker");
   const sourceInput = document.getElementById("membership_source_team");
   const syncToggle = document.getElementById("sync_team_membership_toggle");
   const syncHidden = document.getElementById("sync_team_membership");
@@ -3166,6 +3185,7 @@
   const membersList = document.getElementById("github-source-team-members-list");
   let syncTouched = false;
   let membersTimer = 0;
+  let listedTeamSlugs = [];
 
   const syncTemplateFields = () => {
     const isTemplate = modeSelect && modeSelect.value === "template";
@@ -3199,6 +3219,23 @@
     writeSyncHidden();
   };
 
+  const parseSlugs = (raw) =>
+    String(raw || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const uniqueSlugs = (slugs) => {
+    const seen = new Set();
+    return slugs.filter((slug) => {
+      if (seen.has(slug)) {
+        return false;
+      }
+      seen.add(slug);
+      return true;
+    });
+  };
+
   const fillTeamDatalist = (slugs) => {
     if (!dataList) {
       return;
@@ -3208,6 +3245,82 @@
       const option = document.createElement("option");
       option.value = slug;
       dataList.appendChild(option);
+    });
+  };
+
+  const writeTeamSlugs = () => {
+    if (!teamInput) {
+      return;
+    }
+    const selected = teamPicker
+      ? Array.from(teamPicker.querySelectorAll('input[type="checkbox"]:checked')).map(
+          (box) => box.value
+        )
+      : [];
+    const extra = parseSlugs(teamExtra ? teamExtra.value : "");
+    teamInput.value = uniqueSlugs([...selected, ...extra]).join(", ");
+  };
+
+  const selectedTeamSet = () => new Set(parseSlugs(teamInput ? teamInput.value : ""));
+
+  const renderTeamPicker = (teams) => {
+    if (!teamPicker) {
+      return;
+    }
+    const selected = selectedTeamSet();
+    teamPicker.replaceChildren();
+    teams.forEach((team) => {
+      const slug = team && team.slug ? String(team.slug) : "";
+      if (!slug) {
+        return;
+      }
+      const name = team.name ? String(team.name) : slug;
+      const description = team.description ? String(team.description) : "";
+      const row = document.createElement("label");
+      row.className = "checkbox-row github-team-picker__row";
+      row.dataset.teamSlug = slug;
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = slug;
+      box.checked = selected.has(slug);
+      box.addEventListener("change", writeTeamSlugs);
+      const text = document.createElement("span");
+      text.className = "github-team-picker__label";
+      const title = document.createElement("span");
+      title.className = "github-team-picker__name";
+      title.textContent = name === slug ? slug : `${name} (${slug})`;
+      text.appendChild(title);
+      if (description) {
+        const detail = document.createElement("span");
+        detail.className = "github-team-picker__description";
+        detail.textContent = description;
+        text.appendChild(detail);
+      }
+      row.appendChild(box);
+      row.appendChild(text);
+      teamPicker.appendChild(row);
+    });
+    teamPicker.hidden = !teamPicker.childElementCount;
+    if (teamFilter) {
+      teamFilter.hidden = teamPicker.childElementCount < 8;
+    }
+    if (teamExtra) {
+      teamExtra.value = parseSlugs(teamInput ? teamInput.value : "")
+        .filter((slug) => !listedTeamSlugs.includes(slug))
+        .join(", ");
+    }
+    writeTeamSlugs();
+  };
+
+  const filterTeamPicker = () => {
+    if (!teamPicker || !teamFilter) {
+      return;
+    }
+    const query = teamFilter.value.trim().toLowerCase();
+    teamPicker.querySelectorAll("[data-team-slug]").forEach((row) => {
+      const slug = String(row.dataset.teamSlug || "").toLowerCase();
+      const label = row.textContent ? row.textContent.toLowerCase() : "";
+      row.hidden = Boolean(query) && !slug.includes(query) && !label.includes(query);
     });
   };
 
@@ -3317,31 +3430,64 @@
     }
   }
 
-  if (teamsHint) {
+  if (teamExtra) {
+    teamExtra.addEventListener("input", writeTeamSlugs);
+    teamExtra.addEventListener("change", writeTeamSlugs);
+  }
+  if (teamFilter) {
+    teamFilter.addEventListener("input", filterTeamPicker);
+  }
+  const generateForm = document.getElementById("generate-form");
+  if (generateForm) {
+    generateForm.addEventListener("submit", writeTeamSlugs);
+    generateForm.addEventListener("repave:stepper-pre-submit", writeTeamSlugs);
+  }
+
+  const showTeamSlugFallback = (message) => {
+    if (teamsHint) {
+      teamsHint.textContent = message;
+    }
+    if (teamInput) {
+      teamInput.type = "text";
+      teamInput.classList.add("input");
+      teamInput.setAttribute("placeholder", "platform-admins, developers");
+      teamInput.setAttribute("list", "github-team-slugs");
+    }
+    if (teamExtra) {
+      teamExtra.hidden = true;
+    }
+  };
+
+  if (teamsHint || teamPicker) {
     fetch("/api/v2/github/teams")
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload) => {
         const teams = Array.isArray(payload.teams) ? payload.teams : [];
-        if (!teams.length) {
-          teamsHint.textContent =
-            "No teams returned; enter team slugs as a comma-separated list.";
-          return;
-        }
         const slugs = teams
           .map((team) => (team && team.slug ? String(team.slug) : ""))
           .filter(Boolean);
-        teamsHint.textContent = `Org teams: ${slugs.join(", ")}`;
+        listedTeamSlugs = slugs;
         fillTeamDatalist(slugs);
-        if (teamInput) {
-          teamInput.setAttribute("list", "github-team-slugs");
-        }
         if (sourceInput) {
           sourceInput.setAttribute("list", "github-team-slugs");
         }
+        if (!teams.length) {
+          showTeamSlugFallback(
+            "No teams returned; enter team slugs as a comma-separated list."
+          );
+          return;
+        }
+        if (teamsHint) {
+          teamsHint.textContent = `${teams.length} org team${
+            teams.length === 1 ? "" : "s"
+          } you can add to this repository:`;
+        }
+        renderTeamPicker(teams);
       })
       .catch(() => {
-        teamsHint.textContent =
-          "Could not list org teams (token/org). Enter team slugs as a comma-separated list.";
+        showTeamSlugFallback(
+          "Could not list org teams (token/org). Enter team slugs as a comma-separated list."
+        );
       });
   }
 })();

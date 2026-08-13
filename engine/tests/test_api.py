@@ -1182,6 +1182,9 @@ def test_github_repo_form_renders_phase2_controls(repo_root, output_config) -> N
     assert 'id="create_mode"' in response.text
     assert 'data-github-repo-when="template"' in response.text
     assert 'id="github-team-slugs-block"' in response.text
+    assert 'id="github-team-picker"' in response.text
+    assert 'id="github-team-filter"' in response.text
+    assert 'id="github-team-slugs-extra"' in response.text
     assert 'id="team_slugs"' in response.text
     assert 'id="github-teams-hint"' in response.text
     assert 'id="github-team-slugs"' in response.text
@@ -1195,6 +1198,8 @@ def test_github_repo_form_renders_phase2_controls(repo_root, output_config) -> N
     assert "default-pr — require PRs" in response.text
     assert "/api/v2/github/teams" in response.text
     assert "/api/v2/github/teams/${encodeURIComponent(slug)}/members" in response.text
+    assert "you can add to this repository" in response.text
+    assert "renderTeamPicker" in response.text
     sync_pos = response.text.index('id="sync_team_membership_toggle"')
     source_pos = response.text.index('id="membership_source_team"')
     assert sync_pos < source_pos
