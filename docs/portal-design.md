@@ -302,6 +302,18 @@ Pick based on audience and hosting model (v1.25+).
 
 Further craft (illustration, stepper) is optional.
 
+### Visual v3 (next/v3)
+
+**Status:** identity decided in [ADR 009](adr/009-v3-product-identity.md); marks and
+tokens follow on `next/v3` after the display name is recorded. Do not recapture v2
+README screenshots for Visual v2 chrome.
+
+- New public product name + mark (not Converge-as-product; wire names stay `repave`)
+- Night-ops shell tokens; semantic status colors unchanged
+- Family drawer accents stay independent of brand gold
+- One screenshot pass against the v3 shell, not against current v2 chrome
+- Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
+
 Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
 Import, Repo status, Activity, Runs, and Platform under **More**. The right side
 holds Search (⌘K), session, and environment badges.

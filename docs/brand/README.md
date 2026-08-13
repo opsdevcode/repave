@@ -1,5 +1,9 @@
 # Repave brand
 
+v2 identity on `main`. v3 identity (new display name, new mark, wire names stay
+`repave`) is [ADR 009](../adr/009-v3-product-identity.md) and [`v3.md`](v3.md) on
+`next/v3`.
+
 Repave turns fragmented platform approaches into governed, repeatable golden paths.
 
 The primary identity is **Converge**: fragmented inputs → standardized paths →

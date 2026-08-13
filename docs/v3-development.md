@@ -11,6 +11,9 @@ Multi-repo split: [ADR 007](adr/007-v3-multi-repo-decomposition.md).
 | v3 feature | `feat/v3-*` → `next/v3` | `3.0.0-rc.N` prerelease |
 | Breaking removal | `feat/v3-*` → `next/v3`, held to end | Part of merge-back |
 
+Identity ([ADR 009](adr/009-v3-product-identity.md)) lands on `next/v3` **before**
+developer-lab and extract-repos UI so those surfaces are not born in v2 Converge chrome.
+
 Sync weekly: `git merge origin/main` on `next/v3` (merge, never rebase).
 
 ## Multi-repo layout (ADR 007)
