@@ -1,26 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 48" role="img" aria-labelledby="title desc">
   <title id="title">Repave</title>
-  <desc id="desc">Converge symbol with repave wordmark for dark backgrounds (compact).</desc>
-  <svg x="0" y="0" width="96" height="40" viewBox="0 0 96 40">
-    <g fill="#E2E8F0">
-      <rect x="2" y="6" width="4" height="4" rx="0.5"/>
-      <rect x="8" y="4" width="3.5" height="3.5" rx="0.5"/>
-      <rect x="4" y="13" width="3.5" height="3.5" rx="0.5"/>
-      <rect x="10" y="12" width="4" height="4" rx="0.5"/>
-      <rect x="3" y="20" width="3" height="3" rx="0.5"/>
-      <rect x="8" y="19" width="3.5" height="3.5" rx="0.5"/>
-      <rect x="5" y="27" width="4" height="4" rx="0.5"/>
-      <rect x="11" y="26" width="3" height="3" rx="0.5"/>
-    </g>
-    <g fill="#94A3B8">
-      <rect x="14" y="7" width="3" height="3" rx="0.5"/>
-      <rect x="15" y="22" width="3" height="3" rx="0.5"/>
-      <rect x="12" y="31" width="3.5" height="3.5" rx="0.5"/>
-    </g>
-    <path d="M18 10 H42 L54 18 H62" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M18 20 H48 L54 20 H62" fill="none" stroke="#F59E0B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M18 30 H42 L54 22 H62" fill="none" stroke="#64748B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M64 12 L86 20 L64 28 Z" fill="#E2E8F0"/>
+  <desc id="desc">Platform-layer mark with repave v3 wordmark (compact).</desc>
+  <svg x="0" y="4" width="40" height="40" viewBox="0 0 80 80">
+  <polygon points="20.08,46.95 42.60,59.95 42.60,64.55 20.08,51.55" fill="#0F172A" opacity="1"/>
+  <polygon points="59.92,49.95 42.60,59.95 42.60,64.55 59.92,54.55" fill="#64748B" opacity="1"/>
+  <polygon points="37.40,36.95 59.92,49.95 42.60,59.95 20.08,46.95" fill="#334155" opacity="1"/>
+  <polygon points="20.08,38.95 42.60,51.95 42.60,56.55 20.08,43.55" fill="#020617" opacity="1"/>
+  <polygon points="59.92,41.95 42.60,51.95 42.60,56.55 59.92,46.55" fill="#475569" opacity="1"/>
+  <polygon points="37.40,28.95 59.92,41.95 42.60,51.95 20.08,38.95" fill="#1E293B" opacity="1"/>
+  <polygon points="20.08,30.95 42.60,43.95 42.60,48.55 20.08,35.55" fill="#020617" opacity="1"/>
+  <polygon points="59.92,33.95 42.60,43.95 42.60,48.55 59.92,38.55" fill="#334155" opacity="1"/>
+  <polygon points="37.40,20.95 59.92,33.95 42.60,43.95 20.08,30.95" fill="#0F172A" opacity="1"/>
+  <path d="M 36.97 24.70 C 40.43 28.20, 43.46 31.45, 37.83 32.70 C 34.37 33.20, 37.83 36.70, 42.60 40.45" fill="none" stroke="#F59E0B" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.28"/>
+  <path d="M 36.97 24.70 C 40.43 28.20, 43.46 31.45, 37.83 32.70 C 34.37 33.20, 37.83 36.70, 42.60 40.45" fill="none" stroke="#F59E0B" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="38.27" y1="26.45" x2="38.27" y2="20.95" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
+  <line x1="43.46" y1="28.45" x2="43.46" y2="19.45" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
+  <line x1="45.20" y1="32.45" x2="45.20" y2="25.95" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
+  <line x1="33.94" y1="30.95" x2="33.94" y2="26.95" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
+  <line x1="44.33" y1="35.95" x2="44.33" y2="24.95" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
+  <line x1="35.67" y1="34.95" x2="35.67" y2="27.45" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
+  <line x1="49.53" y1="35.95" x2="49.53" y2="30.95" stroke="#94A3B8" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="0.45 1.8"/>
   </svg>
-  <text x="104" y="28" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="600" fill="#E2E8F0" letter-spacing="-0.02em">repave</text>
+  <text x="48" y="30" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#0F172A" letter-spacing="-0.03em">repave</text>
+  <text x="132" y="30" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="16" font-weight="600" fill="#F59E0B">v3</text>
 </svg>

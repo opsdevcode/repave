@@ -13,10 +13,9 @@ Multi-repo split: [ADR 007](adr/007-v3-multi-repo-decomposition.md).
 | v2.x fix or backport | `feat/*` → `main` | v2.x patch or minor |
 | Breaking removal | `feat/v3-*` → `next/v3`, held to end | Part of merge-back |
 
-Identity policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted. The public
-display name is still TBD — **marks wait** on that string; foundation, developer lab,
-and extract-repos **do not**. Until marks land, those surfaces use interim Converge
-chrome.
+Identity policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted: display name
+**repave**, platform-layer mark, tagline *The intelligent platform layer*. Foundation,
+developer lab, and extract-repos use that shell.
 
 GitHub **default branch stays `main`** (v2.x releases). Do not retarget Release.
 

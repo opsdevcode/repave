@@ -15,7 +15,7 @@
     initial-value: 120deg;
   }
 
-  /* Tier 1 — primitives (Converge brand + night-ops surfaces) */
+  /* Tier 1 — primitives (v3 platform-layer brand + night-ops surfaces) */
   :root {
     /* Brand palette */
     --navy-950: #0f172a;
@@ -359,10 +359,19 @@
     color: var(--text-primary);
   }
 
+  .shell__edition {
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--accent);
+  }
+
   .shell__mark {
     display: block;
-    width: 2.15rem;
-    height: 0.9rem;
+    width: 2rem;
+    height: 2rem;
     flex-shrink: 0;
     object-fit: contain;
   }

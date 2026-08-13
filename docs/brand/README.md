@@ -1,16 +1,15 @@
 # Repave brand
 
-v2 identity on `main`. v3 identity (new display name TBD, new mark, wire names stay
-`repave`) is [ADR 009](../adr/009-v3-product-identity.md) and [`v3.md`](v3.md) on
-`next/v3`. Until the name lands, `next/v3` uses this Converge set as interim chrome.
+v3 identity on `next/v3` ([ADR 009](../adr/009-v3-product-identity.md)): **repave**
+wordmark, isometric **platform-layer** mark, tagline *The intelligent platform layer*.
+Wire names stay `repave`. v2 Converge remains canonical on `main` until merge-back.
 
-Repave turns fragmented platform approaches into governed, repeatable golden paths.
+Repave is the intelligent platform layer: self-service by design, AI-powered,
+governed by design. Gold (`#F59E0B`) marks the golden path and must stay scarce —
+it is brand, not a general status color.
 
-The primary identity is **Converge**: fragmented inputs → standardized paths →
-convergence → one governed forward path. Gold (`#F59E0B`) marks the golden path
-and must stay scarce — it is brand, not a general status color.
-
-Concept board: [reference/repave-brand-direction.png](reference/repave-brand-direction.png)
+Concept board: [reference/repave-v3-brand-direction.png](reference/repave-v3-brand-direction.png)
+(v2 Converge board: [reference/repave-brand-direction.png](reference/repave-brand-direction.png)).
 
 ## Canonical assets
 
@@ -27,27 +26,23 @@ the portal `static/brand/` copies. Do not embed the concept-board raster into SV
 
 ### Primary mark
 
-- `repave-mark.svg` — Converge on light surfaces (navy artwork)
-- `repave-mark-dark.svg` — Converge on dark surfaces (light artwork)
+- `repave-mark.svg` — platform-layer mark on light surfaces (navy slabs)
+- `repave-mark-dark.svg` — platform-layer mark on dark surfaces (slate slabs)
 - `repave-mark-light.svg` — alias of the light-surface mark
 - `repave-mark-monochrome.svg` — `currentColor` for flexible reuse
-- `repave-mark-favicon*.svg` — intentionally simplified for 16–32px
+- `repave-mark-favicon*.svg` — two-slab simplification for 16–32px
 
 ### Wordmark lockups
 
 - `repave-logo.svg` / `repave-logo-light.svg` / `repave-logo-dark.svg` — mark +
-  **repave** + amber rule + `FROM FRAGMENTED TO GOVERNED`
-- `repave-logo-compact.svg` / `repave-logo-compact-dark.svg` — mark + wordmark only
-  (product shell, README header). On GitHub, the README uses a `<picture>` element so
-  dark mode loads the `-dark` lockup (light wordmark) and light mode keeps the
-  navy wordmark.
+  **repave** + amber **v3** + amber rule + `THE INTELLIGENT PLATFORM LAYER`
+- `repave-logo-compact.svg` / `repave-logo-compact-dark.svg` — mark + **repave** +
+  **v3** (product shell, README header). On GitHub, the README uses a `<picture>`
+  element so dark mode loads the `-dark` lockup.
 
 ### Secondary mark
 
-- `repave-secondary-mark.svg` — Converge/Ascend hybrid (notched arrow)
-
-Use only when a secondary lockup is needed. Do not compete with the primary mark
-in the same view.
+- `repave-secondary-mark.svg` — v2 Converge/Ascend hybrid. Do not use on v3 chrome.
 
 ### Avatars
 
@@ -58,11 +53,11 @@ in the same view.
 
 | Token idea | Hex | Role |
 | --- | --- | --- |
-| Deep Navy | `#0F172A` | Dark surfaces, dark mark elements |
-| Slate | `#64748B` | Secondary structure |
-| Cool Gray | `#94A3B8` | Paths, muted text |
-| Light Gray | `#E2E8F0` | Light mark elements, primary text on dark |
-| Amber / Gold | `#F59E0B` | Golden path, brand CTAs, scarce accents |
+| Deep Navy | `#0F172A` | Primary background / foundation |
+| Slate | `#64748B` | Secondary surfaces / text |
+| Cool Gray | `#94A3B8` | Secondary UI |
+| Light Gray | `#E2E8F0` | Light surfaces / text |
+| Amber / Gold | `#F59E0B` | Repave / golden path / primary action |
 
 Also keep semantic UI colors distinct:
 
@@ -89,9 +84,9 @@ Also keep semantic UI colors distinct:
 
 ## Logo spacing and minimum size
 
-- Clear space around the mark ≈ height of the arrowhead on all sides.
-- Minimum mark width: **96px** digital for the full Converge mark; **24px** for the
-  simplified favicon mark.
+- Clear space around the mark ≈ the height of one slab on all sides.
+- Minimum mark size: **32px** digital for the full platform-layer mark; **16px**
+  for the simplified favicon mark.
 - Prefer the compact lockup (no tagline) under ~280px wide.
 - Never stretch, outline, recolor the golden path to green/red, or place the mark
   on busy photography without a solid scrim.
@@ -112,8 +107,8 @@ Portal serves dark-friendly favicons from `/static/brand/`:
 - `favicon-16x16.png`, `favicon-32x32.png`
 - `apple-touch-icon.png`
 
-At 16px the mark is **simplified** (three fragments, three strokes, arrow). Do not
-force the full-detail mark into a favicon.
+At 16px the mark is **simplified** (two slabs, golden path, three signal lines). Do
+not force the full-detail mark into a favicon.
 
 ## Social and GitHub avatar
 
@@ -131,7 +126,7 @@ page (`og:image`, `twitter:card`).
 ### Apply the GitHub organization avatar
 
 1. Open the org **Settings → Profile**.
-2. Upload `docs/brand/assets/social/github-avatar.png` (dark navy circle + Converge mark).
+2. Upload `docs/brand/assets/social/github-avatar.png` (dark navy circle + platform-layer mark).
 3. Optionally set the social preview / website image to `repave-social-card.png`.
 
 This cannot be automated from the monorepo without org-admin credentials; keep the
@@ -139,7 +134,7 @@ files in `docs/brand/assets/social/` as the source of truth.
 
 ## Portal white-label
 
-Optional overrides in `repave.config.yaml` (empty = Converge defaults):
+Optional overrides in `repave.config.yaml` (empty = v3 platform-layer defaults):
 
 ```yaml
 portal:
@@ -184,18 +179,18 @@ layout or IA.
 - Using amber for “Healthy” / success badges
 - Cropping pieces out of the concept-board PNG as production art
 - Adding construction, cloud, gear, or Kubernetes-like marks
-- Putting `FROM FRAGMENTED TO GOVERNED` in the product sidebar
+- Putting `THE INTELLIGENT PLATFORM LAYER` in the product sidebar
 - Glow-heavy / glassmorphic marketing chrome inside the operations console
 
 ## Messaging
 
 Preferred product line (marketing / README / brand surfaces):
 
-> Governed, repeatable platform engineering — golden paths for many, not just the few.
+> The intelligent platform layer — golden paths for many, not just the few.
 
 Supporting line for lockups:
 
-> FROM FRAGMENTED TO GOVERNED
+> THE INTELLIGENT PLATFORM LAYER
 
 Canonical product naming thesis remains in the root [README](../../README.md)
 (`## Why "repave"?`) and [concepts](../concepts.md) — do not replace that thesis

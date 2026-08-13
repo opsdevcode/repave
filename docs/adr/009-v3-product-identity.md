@@ -1,8 +1,7 @@
 # ADR 009: v3 product identity
 
-**Status:** Accepted — display vs wire split. Public display name is **TBD** (owner
-still deciding). Interim chrome stays **repave** + Converge. Asset PRs wait on the
-name; other v3 work does not.
+**Status:** Accepted — display name **repave**; new platform-layer mark and tagline
+on `next/v3`. Wire names stay `repave`.
 **Date:** 2026-08-13
 **Scope:** v3 public identity (display name, mark, portal/CLI chrome) on `next/v3`.
 Does not rename CLI, PyPI, Helm charts, GitHub repos, `repave.yaml`, or CRDs.
@@ -24,17 +23,16 @@ autonomous remediation, conversational generation. Converge still describes the 
 (fragmented inputs → one governed path). It no longer describes the *product* operators
 will live in for the next major.
 
-v3 is now the **primary product line**. Waiting on a display name must not freeze
-foundation, developer lab, or extract-repos. Marks and README lockups wait; everything
-else proceeds with interim Converge chrome.
+v3 is the **primary product line**. The owner filled the identity from the v3 brand
+board: keep the **repave** name, replace Converge with the isometric platform-layer
+mark, and use the tagline **The intelligent platform layer**.
 
 White-label stays for tenant overlays. It is not a product identity.
 
 ## Decision
 
-**v3 ships a new public identity on `next/v3`. Wire names stay `repave` until a later,
-explicit rename (not this ADR). The display name may land after other v3 work has
-started.**
+**v3 ships a new public identity on `next/v3`. The display name stays `repave`. Wire
+names stay `repave` until a later, explicit rename (not this ADR).**
 
 v2 `main` keeps Converge until v3 merge-back. `next/v3` is the integration line for
 new product work and is versioned as `3.0.0-rc.N`.
@@ -43,12 +41,26 @@ new product work and is versioned as `3.0.0-rc.N`.
 
 | Surface | v2 (`main`) | v3 (`next/v3`) |
 | --- | --- | --- |
-| Public product name + wordmark | repave + Converge | **TBD** — interim display remains **repave** + Converge until the owner fills this cell |
-| Mark / lockups / social / favicon | Converge set under `docs/brand/assets/` | New v3 set after the name is recorded; process in [`docs/brand/v3.md`](../brand/v3.md) |
-| Portal + CLI chrome | Converge tokens, scarce amber | Interim Converge tokens; new tokens after the name |
+| Public product name + wordmark | repave + Converge | **repave** + amber **v3**; tagline *The intelligent platform layer* |
+| Mark / lockups / social / favicon | Converge set | Isometric platform slabs + golden path; process in [`docs/brand/v3.md`](../brand/v3.md) |
+| Portal + CLI chrome | Converge tokens, scarce amber | Same five-color palette; platform-layer mark; amber stays scarce |
 | CLI binary, PyPI, Helm chart, GitHub repo | `repave` | **Keep `repave`** so ADR 007 extract and CI do not move with the mark |
 | `repave.yaml`, `repave.dev/*` annotations, CRDs | contracts | **Keep** — contracts, not brand |
-| White-label `portal.logo_url` / `accent_color` | Converge defaults | Still valid; defaults become the v3 identity when marks land |
+| White-label `portal.logo_url` / `accent_color` | Converge defaults | Still valid; empty defaults are the v3 mark + `#F59E0B` |
+
+### Palette (v3)
+
+| Token | Hex | Role |
+| --- | --- | --- |
+| Deep Navy | `#0F172A` | Primary background / foundation |
+| Slate | `#64748B` | Secondary surfaces / text |
+| Cool Gray | `#94A3B8` | Secondary UI |
+| Light Gray | `#E2E8F0` | Light surfaces / text |
+| Amber / Gold | `#F59E0B` | Repave / golden path / primary action |
+
+Semantic status stays distinct from brand amber (success green, warning **orange**,
+error rose, info blue). Do not use `#F59E0B` for warning/error even if a board
+swatch reused it.
 
 A CLI/package rename in the same major is a **second** decision (breaking: `cli/`, charts,
 `versions.lock`). Do not bury it in an asset or CSS PR.
@@ -59,9 +71,8 @@ Identity policy and other v3 features are `feat/v3-*` → `next/v3`
 ([ADR 008](008-v3-branching-release-and-testing.md)). Nothing identity-related merges to
 `main` except the final v3 merge-back.
 
-**Asset PRs** (SVG, PNG, favicon, social, token swap, screenshot recapture) start only
-after the display-name cell above has a string. Foundation, developer lab, and
-extract-repos **do not** wait on that cell.
+Marks land on this line. Foundation, developer lab, and extract-repos proceed with
+the v3 shell. Recapture README screenshots once against that shell.
 
 ## Why not the alternatives
 
@@ -79,10 +90,8 @@ is the default chrome, README lockup, and social card.
 **Rename GitHub / PyPI / CLI in the same commit as the mark.** Unreviewable; fights
 [ADR 007](007-v3-multi-repo-decomposition.md). Wire names stay `repave` in this ADR.
 
-**Promote Converge from mark to product name.** Rejected as the default: v3 is a new
-public identity, not a promotion of the v2 mark. If product later chooses “Converge” as
-the display string, write it into the table — that is still a display-name fill, not a
-wire rename.
+**Promote Converge from mark to product name.** Rejected. The display name stays
+**repave**; Converge does not become the product. The v2 mark is replaced, not renamed.
 
 **Change the GitHub default branch to `next/v3`.** Rejected. `main` remains the v2.x
 release line. “Primary product line” means where new work lands, not which git ref
@@ -90,26 +99,21 @@ GitHub labels default.
 
 ## Consequences
 
-- `docs/brand/` is dual-track: Converge remains canonical on `main` until merge-back
-  and is the **interim** default on `next/v3` until marks land.
-  [`docs/brand/v3.md`](../brand/v3.md) is source of truth for the v3 asset track.
+- `docs/brand/` is dual-track: Converge remains canonical on `main` until merge-back.
+  On `next/v3`, [`docs/brand/README.md`](../brand/README.md) and
+  [`docs/brand/v3.md`](../brand/v3.md) describe the platform-layer set.
 - Portal-design **Visual v2** stays shipped history. **Visual v3** points here.
-- No v2 screenshot refresh for current chrome. Recapture once against the v3 shell
-  after marks land.
-- Developer lab, extract-repos, and autonomous-estate UI proceed on `next/v3` with
-  interim Converge chrome. When the display name lands, those surfaces pick up the
-  new defaults in the asset PR — they are not born blocked.
+- No v2 screenshot refresh. Recapture README portal screenshots once against the v3
+  shell.
+- Developer lab, extract-repos, and autonomous-estate UI proceed on `next/v3` in the
+  v3 shell.
 - An uncommitted local draft that numbered fine-grained authorization as “ADR 009” must
   land as **ADR 010** (or later). This file owns 009.
 
 ## Follow-up PRs (same `next/v3` line)
 
-1. Fill the display-name cell in this ADR when the owner decides.
-2. SVG source under `docs/brand/assets/svg/`, regenerate PNG / favicon / social, copy into
-   `engine/src/repave_engine/static/brand/` — do not crop concept-board rasters.
-3. Night-ops tokens in `repave.css`: new accent; family drawer colors stay independent of
-   brand gold/amber; status colors stay semantic.
-4. README “Why repave?” / lockup on `next/v3` only; portal copy stays builder-facing.
-5. Recapture README portal screenshots **once** against the v3 shell.
-6. Dispatch **Release prerelease (next/v3)** after this ADR merges so the first tag is
-   `v3.0.0-rc.1` (this commit is `feat!:` for that bump).
+1. Recapture README portal screenshots **once** against the v3 shell.
+2. Dispatch **Release prerelease (next/v3)** after this ADR merges so the first tag is
+   `v3.0.0-rc.1` (opening commit is `feat!:` for that bump).
+3. Apply the GitHub org avatar from `docs/brand/assets/social/github-avatar.png`
+   (manual; org-admin).

@@ -49,8 +49,9 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "home-console" in response.text
     assert 'rel="icon"' in response.text
     assert "/static/brand/favicon.svg" in response.text
-    assert "/static/brand/svg/repave-mark.svg" in response.text
+    assert "/static/brand/svg/repave-mark-dark.svg" in response.text
     assert "shell__wordmark" in response.text
+    assert "shell__edition" in response.text
     assert "Golden paths" in response.text
     assert 'property="og:image"' in response.text
     assert "static/brand/social/repave-social-card.png" in response.text
@@ -549,6 +550,7 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
     assert "@layer tokens, base, components, pages, utilities;" in response.text
     assert '[data-theme="dark"]' in response.text
     assert ".shell__wordmark" in response.text
+    assert ".shell__edition" in response.text
     assert ".home-console" in response.text
     assert ".home-catalog-column" in response.text
     assert ".catalog-inventory--browse" in response.text
@@ -564,11 +566,11 @@ def test_static_repave_css_served(repo_root, output_config) -> None:
 
 def test_brand_static_assets_served(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    mark = client.get("/static/brand/svg/repave-mark.svg")
+    mark = client.get("/static/brand/svg/repave-mark-dark.svg")
     favicon = client.get("/static/brand/favicon.svg")
     social = client.get("/static/brand/social/repave-social-card.png")
     assert mark.status_code == 200
-    assert "Converge" in mark.text or "viewBox" in mark.text
+    assert "platform layer" in mark.text.lower() or 'viewBox="0 0 80 80"' in mark.text
     assert favicon.status_code == 200
     assert favicon.headers["content-type"].startswith("image/")
     assert social.status_code == 200

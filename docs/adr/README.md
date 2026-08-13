@@ -14,4 +14,4 @@ Lightweight ADRs for repave platform choices. Number files sequentially; link fr
 | [006](006-service-catalog-and-maturity.md) | Service catalog overlay, maturity, GitOps sandboxes |
 | [007](007-v3-multi-repo-decomposition.md) | v3 multi-repo decomposition and per-repo CI |
 | [008](008-v3-branching-release-and-testing.md) | v3 branching, release, and testing strategy |
-| [009](009-v3-product-identity.md) | v3 product identity (display name vs `repave` wire names) |
+| [009](009-v3-product-identity.md) | v3 product identity (**repave** + platform-layer mark; wire names stay `repave`) |
