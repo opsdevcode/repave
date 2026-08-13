@@ -245,6 +245,8 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    --atm-x: 0px;
+    --atm-y: 0px;
     background:
       radial-gradient(900px 420px at 12% -8%, color-mix(in srgb, var(--brand-primary) 8%, transparent), transparent 55%),
       radial-gradient(700px 380px at 92% 8%, color-mix(in srgb, var(--navy-700) 35%, transparent), transparent 50%),
@@ -273,6 +275,7 @@
       );
     opacity: 0.55;
     mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, var(--shadow-ink) 20%, transparent 75%);
+    transform: translate3d(var(--atm-x), var(--atm-y), 0);
   }
 
   .shell__bar,
@@ -501,6 +504,8 @@
     color: var(--text-muted);
     font-weight: 600;
     text-decoration: none;
+    position: relative;
+    isolation: isolate;
     transition:
       color 140ms ease,
       background 140ms ease;
@@ -785,6 +790,8 @@
     font-weight: 650;
     cursor: pointer;
     text-decoration: none;
+    position: relative;
+    isolation: isolate;
     transition:
       background 160ms ease,
       color 160ms ease,
@@ -805,6 +812,194 @@
     background: var(--accent-hover);
     color: var(--btn-primary-fg);
     transform: translateY(-1px);
+  }
+
+  .motion-face {
+    --spot-x: 50%;
+    --spot-y: 40%;
+    --face-rx: 0deg;
+    --face-ry: 0deg;
+    --face-tx: 0px;
+    --face-ty: 0px;
+    --face-tz: 0px;
+    --motion-accent: var(--accent);
+  }
+
+  .motion-face:not(.motion-face--magnetic) {
+    transform:
+      perspective(900px)
+      rotateX(var(--face-rx))
+      rotateY(var(--face-ry))
+      translate3d(var(--face-tx), var(--face-ty), var(--face-tz));
+  }
+
+  .motion-face--magnetic {
+    transform: translate3d(var(--face-tx), var(--face-ty), 0);
+  }
+
+  .motion-face.is-live {
+    z-index: 1;
+    will-change: transform;
+  }
+
+  .motion-face:not([data-library-drawer])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0;
+    background: radial-gradient(
+      180px circle at var(--spot-x) var(--spot-y),
+      color-mix(in srgb, var(--motion-accent) 32%, transparent),
+      transparent 70%
+    );
+    transition: opacity 180ms ease;
+  }
+
+  .motion-face.is-live:not([data-library-drawer])::after {
+    opacity: 1;
+  }
+
+  .btn--primary.motion-face::after,
+  .shell__nav--primary > a.motion-face::after {
+    mix-blend-mode: overlay;
+  }
+
+  .library-drawer.motion-face {
+    --motion-accent: var(--drawer-accent);
+  }
+
+  .catalog-inventory__item.motion-face {
+    --motion-accent: var(--group-accent, var(--accent));
+  }
+
+  .library-drawer.motion-face:hover,
+  .library-drawer.motion-face:focus-visible,
+  .catalog-inventory__item.motion-face:hover,
+  .btn--primary.motion-face:hover {
+    transform:
+      perspective(900px)
+      rotateX(var(--face-rx))
+      rotateY(var(--face-ry))
+      translate3d(var(--face-tx), var(--face-ty), var(--face-tz));
+  }
+
+  .btn--primary.motion-face--magnetic:hover,
+  .shell__nav--primary > a.motion-face--magnetic:hover {
+    transform: translate3d(var(--face-tx), var(--face-ty), 0);
+  }
+
+  .home-catalog .motion-face::before,
+  .catalog-inventory__item.motion-face::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 32%,
+      color-mix(in srgb, white 22%, transparent) 48%,
+      transparent 64%
+    );
+    transform: translateX(var(--glare-x, -40%));
+    mix-blend-mode: overlay;
+    transition: opacity 180ms ease;
+  }
+
+  .home-catalog .motion-face.is-live::before,
+  .catalog-inventory__item.motion-face.is-live::before {
+    opacity: 1;
+  }
+
+  .catalog-inventory__item.motion-face.is-live {
+    border-color: color-mix(in srgb, var(--group-accent, var(--accent)) 55%, var(--border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--group-accent, var(--accent)) 35%, transparent),
+      0 22px 48px color-mix(in srgb, var(--group-accent, var(--accent)) 18%, transparent),
+      0 8px 20px color-mix(in srgb, var(--shadow-ink) 28%, transparent);
+  }
+
+  [data-motion-depth] {
+    will-change: transform;
+  }
+
+  .motion-ripple {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 3;
+    background: color-mix(in srgb, var(--motion-accent, var(--accent)) 55%, white);
+    animation: motion-ripple 560ms ease-out forwards;
+  }
+
+  @keyframes motion-ripple {
+    from {
+      transform: scale(0.35);
+      opacity: 0.65;
+    }
+
+    to {
+      transform: scale(22);
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .catalog-inventory__items:has(.is-live) .catalog-inventory__item:not(.is-live) {
+      opacity: 0.5;
+      filter: saturate(0.7);
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row {
+      animation: page-enter 420ms ease-out both;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(1) {
+      animation-delay: 0ms;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(2) {
+      animation-delay: 45ms;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(3) {
+      animation-delay: 90ms;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(4) {
+      animation-delay: 135ms;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(5) {
+      animation-delay: 180ms;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(6) {
+      animation-delay: 225ms;
+    }
+
+    .catalog-inventory--browse .catalog-inventory__row:nth-child(n + 7) {
+      animation-delay: 260ms;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion-face,
+    .motion-face--magnetic,
+    .motion-face:hover,
+    .btn--primary.motion-face:hover,
+    .library-drawer.motion-face:hover {
+      transform: none;
+      will-change: auto;
+    }
   }
 
   .btn--glow {
@@ -6179,11 +6374,15 @@
     color: var(--text);
     text-decoration: none;
     border: 1px solid transparent;
+    position: relative;
+    isolation: isolate;
     transition:
       background 180ms ease,
       transform 180ms ease,
       border-color 180ms ease,
-      box-shadow 180ms ease;
+      box-shadow 180ms ease,
+      opacity 180ms ease,
+      filter 180ms ease;
   }
 
   .catalog-inventory__item-head {
@@ -6272,8 +6471,11 @@
     background: color-mix(in srgb, var(--group-accent, var(--accent)) 10%, transparent);
     border-color: color-mix(in srgb, var(--group-accent, var(--accent)) 22%, transparent);
     text-decoration: none;
-    transform: translateY(-2px);
     box-shadow: 0 10px 28px color-mix(in srgb, var(--group-accent, var(--accent)) 10%, transparent);
+  }
+
+  .catalog-inventory__item:hover:not(.motion-face) {
+    transform: translateY(-2px);
   }
 
   .catalog-inventory__item[data-catalog-card].is-tilted {

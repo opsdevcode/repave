@@ -35,6 +35,11 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/repave.css?v={{ app_version }}" />
+    <style>
+      @view-transition {
+        navigation: auto;
+      }
+    </style>
     {% if portal_accent_color %}
     <style>
       [data-theme="dark"] {
@@ -51,6 +56,7 @@
     {% endif %}
     <script id="command-palette-data" type="application/json">{{ command_palette_items | tojson }}</script>
     <script src="/static/repave.js?v={{ app_version }}" defer></script>
+    <script type="module" src="/static/repave-motion.mjs?v={{ app_version }}"></script>
     {% block head %}{% endblock %}
   </head>
   <body>
