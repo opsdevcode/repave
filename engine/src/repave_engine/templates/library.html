@@ -113,6 +113,7 @@
       <a
         class="library-drawer library-drawer--{{ group.family }}"
         href="/library/{{ group.family }}{% if library_owner_filter %}?owner={{ library_owner_filter | urlencode }}{% endif %}"
+        data-library-drawer
       >
         <span class="library-drawer__label">
           <span class="library-drawer__title">{{ group.title }}</span>
@@ -145,7 +146,7 @@
 {% endblock %}
 
 {% block scripts %}
-{% if library_family and library_family.entities %}
+{% if library_groups or (library_family and library_family.entities) %}
 <script type="module" src="/static/repave-library.mjs?v={{ app_version }}"></script>
 {% endif %}
 {% endblock %}

@@ -1,9 +1,10 @@
 /**
- * Library drawer search. Loaded only from a family shelf on library.html.
+ * Library index motion + family-shelf search. Loaded from library.html.
  */
-import { initCatalogSearch } from "./repave-catalog.mjs";
+import { initCatalogSearch, initLibraryDrawerMotion } from "./repave-catalog.mjs";
 
 function boot() {
+  initLibraryDrawerMotion();
   initCatalogSearch();
 }
 

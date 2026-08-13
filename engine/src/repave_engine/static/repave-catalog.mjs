@@ -6,6 +6,10 @@ export function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+export function prefersFinePointer() {
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 export function supportsViewTransitions() {
   return (
     typeof document.startViewTransition === "function" && !prefersReducedMotion()
@@ -82,6 +86,61 @@ export function initCatalogCardMotion() {
     card.addEventListener("mouseleave", () => {
       card.classList.remove("is-tilted");
       card.style.transform = "";
+    });
+  });
+}
+
+export function initLibraryDrawerMotion() {
+  const drawers = Array.from(document.querySelectorAll("[data-library-drawer]"));
+  if (!drawers.length || prefersReducedMotion() || !prefersFinePointer()) {
+    return;
+  }
+
+  drawers.forEach((drawer) => {
+    let frame = 0;
+    let pendingX = 0;
+    let pendingY = 0;
+
+    function applyPointerFace() {
+      frame = 0;
+      const rect = drawer.getBoundingClientRect();
+      const width = Math.max(rect.width, 1);
+      const height = Math.max(rect.height, 1);
+      const px = Math.min(1, Math.max(0, (pendingX - rect.left) / width));
+      const py = Math.min(1, Math.max(0, (pendingY - rect.top) / height));
+      drawer.style.setProperty("--spot-x", (px * 100).toFixed(1) + "%");
+      drawer.style.setProperty("--spot-y", (py * 100).toFixed(1) + "%");
+      drawer.style.transform =
+        "perspective(900px) rotateX(" +
+        ((0.5 - py) * 7).toFixed(2) +
+        "deg) rotateY(" +
+        ((px - 0.5) * 8).toFixed(2) +
+        "deg) translate3d(0, -5px, 12px)";
+    }
+
+    drawer.addEventListener("pointerenter", (event) => {
+      drawer.classList.add("is-live");
+      pendingX = event.clientX;
+      pendingY = event.clientY;
+      applyPointerFace();
+    });
+    drawer.addEventListener("pointermove", (event) => {
+      pendingX = event.clientX;
+      pendingY = event.clientY;
+      if (frame) {
+        return;
+      }
+      frame = window.requestAnimationFrame(applyPointerFace);
+    });
+    drawer.addEventListener("pointerleave", () => {
+      if (frame) {
+        window.cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      drawer.classList.remove("is-live");
+      drawer.style.transform = "";
+      drawer.style.removeProperty("--spot-x");
+      drawer.style.removeProperty("--spot-y");
     });
   });
 }
