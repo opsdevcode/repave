@@ -69,7 +69,12 @@ A CLI/package rename in the same major is a **second** decision (breaking: `cli/
 
 Identity policy and other v3 features are `feat/v3-*` → `next/v3`
 ([ADR 008](008-v3-branching-release-and-testing.md)). Nothing identity-related merges to
-`main` except the final v3 merge-back.
+`main` except the final v3 merge-back (breaking removals).
+
+**GitHub default branch is `next/v3`.** That is how clones, Compare, and new PRs
+work. `main` remains the v2.x **Release** line (`release.yml`, PyPI 2.x tags).
+The main-branch ruleset targets `refs/heads/main` explicitly so moving the GitHub
+default does not unprotect Release. Do not retarget `release.yml` to `next/v3`.
 
 Marks land on this line. Foundation, developer lab, and extract-repos proceed with
 the v3 shell. Recapture README screenshots once against that shell.
@@ -93,9 +98,14 @@ is the default chrome, README lockup, and social card.
 **Promote Converge from mark to product name.** Rejected. The display name stays
 **repave**; Converge does not become the product. The v2 mark is replaced, not renamed.
 
-**Change the GitHub default branch to `next/v3`.** Rejected. `main` remains the v2.x
-release line. “Primary product line” means where new work lands, not which git ref
-GitHub labels default.
+**Change the GitHub default branch to `next/v3`.** Accepted (reversed the same day
+as the first revision). Default branch is how the repo actually works. Dual-line
+Release still needs `main` as a named protected ref, not as GitHub's default.
+The ruleset file pins `refs/heads/main` so `~DEFAULT_BRANCH` does not follow the
+move.
+
+**Keep GitHub default branch on `main` while calling v3 the primary product line.**
+Rejected. That split made "primary" a docs convention instead of clone/PR reality.
 
 ## Consequences
 

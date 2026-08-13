@@ -112,6 +112,7 @@ def test_v3_foundation_disabled_by_default(tmp_path: Path) -> None:
     )
     config = load_v3_foundation_config(tmp_path)
     assert config.enabled is False
+    assert config.developer_lab_enabled is False
 
 
 def test_v3_foundation_loads_waivers_path(tmp_path: Path) -> None:
@@ -127,6 +128,7 @@ def test_v3_foundation_loads_waivers_path(tmp_path: Path) -> None:
     )
     config = load_v3_foundation_config(tmp_path)
     assert config.enabled is True
+    assert config.developer_lab_enabled is False
     assert config.waivers_file == tmp_path / "data" / "custom-waivers.jsonl"
 
 

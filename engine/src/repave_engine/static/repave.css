@@ -900,31 +900,6 @@
     transform: translate3d(var(--face-tx), var(--face-ty), 0);
   }
 
-  .home-catalog .motion-face::before,
-  .catalog-inventory__item.motion-face::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    background: linear-gradient(
-      115deg,
-      transparent 32%,
-      color-mix(in srgb, white 22%, transparent) 48%,
-      transparent 64%
-    );
-    transform: translateX(var(--glare-x, -40%));
-    mix-blend-mode: overlay;
-    transition: opacity 180ms ease;
-  }
-
-  .home-catalog .motion-face.is-live::before,
-  .catalog-inventory__item.motion-face.is-live::before {
-    opacity: 1;
-  }
-
   .catalog-inventory__item.motion-face.is-live {
     border-color: color-mix(in srgb, var(--group-accent, var(--accent)) 55%, var(--border));
     box-shadow:
@@ -5859,29 +5834,6 @@
 
   .fleet-tile.motion-face {
     --motion-accent: var(--drawer-accent);
-  }
-
-  .fleet-tile.motion-face::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    z-index: 2;
-    opacity: 0;
-    background: linear-gradient(
-      115deg,
-      transparent 32%,
-      color-mix(in srgb, white 22%, transparent) 48%,
-      transparent 64%
-    );
-    transform: translateX(var(--glare-x, -40%));
-    mix-blend-mode: overlay;
-    transition: opacity 180ms ease;
-  }
-
-  .fleet-tile.motion-face.is-live::before {
-    opacity: 1;
   }
 
   .fleet-tile__lineage {

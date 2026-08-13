@@ -133,6 +133,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- include "repave.environmentVendingEnv" . | nindent 12 }}
+            {{- include "repave.serviceCatalogEnv" . | nindent 12 }}
             {{- $secretName := include "repave.secretName" . }}
             {{- if $secretName }}
             {{- include "repave.githubAuthEnv" . | nindent 12 }}

@@ -17,7 +17,8 @@ Identity policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted: display
 **repave**, platform-layer mark, tagline *The intelligent platform layer*. Foundation,
 developer lab, and extract-repos use that shell.
 
-GitHub **default branch stays `main`** (v2.x releases). Do not retarget Release.
+GitHub **default branch is `next/v3`**. New clones and PRs land there. `main` stays
+the v2.x Release line — do not retarget `release.yml`.
 
 Sync weekly: `git merge origin/main` on `next/v3` (merge, never rebase).
 
@@ -47,7 +48,60 @@ Modules under `engine/src/repave_engine/`:
 | `v3_foundation.py` | `v3:` block in `repave.config.yaml` (off until flip) |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
-`engine/tests/test_v3_foundation.py` and `make test-v3`.
+`engine/tests/test_v3_foundation.py`, `engine/tests/test_developer_lab.py`, and `make test-v3`.
+
+## Developer lab (v3)
+
+**Opt-in** (`v3.developer_lab.enabled: true` **and** `v3.enabled: true`). `v3.enabled`
+alone does not expose `/home` or `/lab` (ADR 008: default-off). Lab without `v3.enabled`
+fails closed and names the fix.
+
+Lab wires **catalog** paths from bundled `examples/platform-dev` fixtures when no
+`service_catalog` block is set. It does **not** invent a GitOps repo or turn on
+environment vending. The published container image does **not** include `examples/`
+(see `.dockerignore`); hosted installs mount catalog YAML and set
+`repave.serviceCatalog.enabled`.
+
+| Surface | Route | Backing config |
+| --- | --- | --- |
+| My services | `/home` | Bundled maturity + initiatives paths |
+| Developer lab | `/lab` (alias `/sandbox`) | Workload profiles + deployment sets |
+| Sandbox vending | `POST /sandbox/request` | Explicit `environment_vending` (still required) |
+
+Missing fixtures fail closed with a path in the error. Explicit `service_catalog`
+blocks still override the bundled paths. `v3.developer_lab.enabled: false` keeps
+today's `/sandbox` label when catalog is configured some other way.
+
+**Async runs** (`durability.async_generation: true`) are required for live sandbox
+requests — the lab UI is plan-only without them. For the full platform console
+walkthrough, keep using `make platform-dev-setup`
+([`examples/platform-dev/README.md`](../examples/platform-dev/README.md)).
+
+Helm (flags only; catalog files are operator-provided):
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  --set repave.v3.enabled=true \
+  --set repave.v3.developerLab.enabled=true \
+  --set repave.serviceCatalog.enabled=true \
+  --set repave.output.githubOrg=your-org
+```
+
+Combine with
+[`values-environment-vending.yaml`](../deploy/k8s/chart/values-environment-vending.yaml)
+for live GitOps PRs.
+
+### FGA gate (hosted My services)
+
+**My services is a UX filter today, not enforcement.** `/home` matches your email against
+`entity.owner` substrings; `/library` and `/services/{id}` do not hide other teams' entities.
+Hosted portals default to login-only coarse RBAC (every user gets `admin` until
+`coarse_rbac_enabled: true`).
+
+Before advertising developer lab + My services on a **multi-team hosted** portal, ship
+fine-grained authorization (**ADR 010+**, parking lot): OpenFGA-compatible checks on entity
+read, team pages, sandbox vend, and generate. Local demos and single-team pilots can stay on
+FGA-off heuristics.
 
 ## Testing
 
