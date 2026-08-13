@@ -304,9 +304,10 @@ Further craft (illustration, stepper) is optional.
 
 ### Visual v3 (next/v3)
 
-**Status:** identity decided in [ADR 009](adr/009-v3-product-identity.md); marks and
-tokens follow on `next/v3` after the display name is recorded. Do not recapture v2
-README screenshots for Visual v2 chrome.
+**Status:** identity policy in [ADR 009](adr/009-v3-product-identity.md); public
+display name TBD. Marks and tokens follow on `next/v3` after that string is recorded.
+Other v3 UI proceeds with interim Converge chrome. Do not recapture v2 README
+screenshots for Visual v2 chrome.
 
 - New public product name + mark (not Converge-as-product; wire names stay `repave`)
 - Night-ops shell tokens; semantic status colors unchanged

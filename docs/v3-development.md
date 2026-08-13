@@ -5,14 +5,20 @@ Multi-repo split: [ADR 007](adr/007-v3-multi-repo-decomposition.md).
 
 ## Where work goes
 
+**v3 is the primary product line.** New product work targets `next/v3`, not `main`.
+
 | Change | Branch | Result |
 | --- | --- | --- |
-| v2.x feature or fix | `feat/*` → `main` | v2.x minor or patch |
-| v3 feature | `feat/v3-*` → `next/v3` | `3.0.0-rc.N` prerelease |
+| New product work (v3) | `feat/v3-*` → `next/v3` | `3.0.0-rc.N` prerelease |
+| v2.x fix or backport | `feat/*` → `main` | v2.x patch or minor |
 | Breaking removal | `feat/v3-*` → `next/v3`, held to end | Part of merge-back |
 
-Identity ([ADR 009](adr/009-v3-product-identity.md)) lands on `next/v3` **before**
-developer-lab and extract-repos UI so those surfaces are not born in v2 Converge chrome.
+Identity policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted. The public
+display name is still TBD — **marks wait** on that string; foundation, developer lab,
+and extract-repos **do not**. Until marks land, those surfaces use interim Converge
+chrome.
+
+GitHub **default branch stays `main`** (v2.x releases). Do not retarget Release.
 
 Sync weekly: `git merge origin/main` on `next/v3` (merge, never rebase).
 

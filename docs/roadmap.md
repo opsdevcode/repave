@@ -7,9 +7,10 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v2.72.0  
 
-**In progress:** v3 product identity ([ADR 009](adr/009-v3-product-identity.md)) on
-`next/v3` before other v3 UI. Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot)
-until it lands as ADR 010+. v3 themes under
+**In progress:** v3 is the primary product line on `next/v3` (`3.0.0-rc.N`). Identity
+policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted; public display name is
+TBD — marks wait, other v3 work does not. Fine-grained Auth0 FGA stays in the
+[parking lot](#parking-lot) until it lands as ADR 010+. v3 themes under
 [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) land on
 the long-lived `next/v3` branch ([ADR 008](adr/008-v3-branching-release-and-testing.md),
 [ADR 007](adr/007-v3-multi-repo-decomposition.md), [`docs/v3-development.md`](v3-development.md))
@@ -270,14 +271,15 @@ that makes those v2 decisions checkable.
 - The only content that must stay accurate is the
   [breaking-change list](#breaking-at-v300), because v2 deprecation notices point at it
 
-**Where v3 work happens:** the long-lived `next/v3` branch, versioned as `3.0.0-rc.N` and
-merged back to `main` in one `feat!:` PR when the deprecation windows close — see
-[ADR 008](adr/008-v3-branching-release-and-testing.md) for branching,
-[ADR 007](adr/007-v3-multi-repo-decomposition.md) for the multi-repo split, and
-[`docs/v3-development.md`](v3-development.md) for the working guide. **Identity first:**
-[ADR 009](adr/009-v3-product-identity.md) (new public name/mark on `next/v3`; CLI/package
-stay `repave`). The foundation slice (risk classes, waiver expiry, deprecation registry)
-lands in `repave-core` before autonomous remediation themes.
+**Where v3 work happens:** the long-lived `next/v3` branch is the **primary product
+line**, versioned as `3.0.0-rc.N` and merged back to `main` in one `feat!:` PR when
+the deprecation windows close — see [ADR 008](adr/008-v3-branching-release-and-testing.md)
+for branching, [ADR 007](adr/007-v3-multi-repo-decomposition.md) for the multi-repo
+split, and [`docs/v3-development.md`](v3-development.md) for the working guide.
+Identity policy ([ADR 009](adr/009-v3-product-identity.md)): new public name/mark on
+`next/v3` when the owner names it; CLI/package stay `repave`; other v3 work proceeds
+with interim Converge chrome. The foundation slice (risk classes, waiver expiry,
+deprecation registry) lands in `repave-core` before autonomous remediation themes.
 
 ### Autonomous governed remediation
 
