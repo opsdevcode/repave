@@ -233,6 +233,12 @@ def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:
     assert "helm-lint" in blueprint.gates
     assert "helm-template" in blueprint.gates
     assert "actionlint" in blueprint.gates
+    image = next(field for field in blueprint.inputs if field.name == "image_repository")
+    assert image.advanced is False
+    catalog = next(field for field in blueprint.inputs if field.name == "include_backstage_catalog")
+    assert catalog.advanced is True
+    deploy = next(field for field in blueprint.inputs if field.name == "enable_deploy_pipeline")
+    assert deploy.advanced is True
 
 
 def test_validate_helm_chart_requires_ingress_host_when_enabled(repo_root: Path) -> None:
@@ -288,6 +294,10 @@ def test_load_checkov_policy_generic_blueprint(repo_root: Path) -> None:
     assert "checkov" in blueprint.gates
     assert blueprint.checkov_policies is not None
     assert blueprint.checkov_gate.scan_dir == "tests/fixtures/pass"
+    organization = next(field for field in blueprint.inputs if field.name == "organization")
+    assert organization.advanced is False
+    pack = next(field for field in blueprint.inputs if field.name == "policy_pack_source")
+    assert pack.advanced is True
 
 
 def test_load_opa_policy_generic_blueprint(repo_root: Path) -> None:
@@ -299,6 +309,8 @@ def test_load_opa_policy_generic_blueprint(repo_root: Path) -> None:
     assert "opa" in blueprint.gates
     assert "secrets" in blueprint.gates
     assert blueprint.opa_gate.policies_dir == "policy"
+    plan_demo = next(field for field in blueprint.inputs if field.name == "plan_demo")
+    assert plan_demo.advanced is True
 
 
 def test_load_azure_policy_generic_blueprint(repo_root: Path) -> None:
@@ -309,6 +321,8 @@ def test_load_azure_policy_generic_blueprint(repo_root: Path) -> None:
     assert blueprint.artifact_type == "azure-policy"
     assert "azure-policy" in blueprint.gates
     assert blueprint.azure_policy_pack is not None
+    pack = next(field for field in blueprint.inputs if field.name == "policy_pack_source")
+    assert pack.advanced is True
 
 
 def test_load_ansible_collection_generic_blueprint(repo_root: Path) -> None:

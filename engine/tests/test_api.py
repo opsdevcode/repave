@@ -248,6 +248,124 @@ def test_ansible_form_guided_advanced_mode(repo_root, output_config) -> None:
     assert 'id="platform-advanced-panel"' in response.text
 
 
+def test_helm_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/helm-chart-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{image_repository}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="include_backstage_catalog"' in response.text
+    assert 'name="enable_deploy_pipeline"' in response.text
+    assert 'name="gitops_repo"' in response.text
+    assert 'name="image_repository"' in response.text
+
+
+def test_gitops_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/gitops-deployment-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{environment}-{chart_name}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="destination_server"' in response.text
+    assert 'name="argocd_project"' in response.text
+    assert 'name="flux_source_name"' in response.text
+    assert 'name="chart_repo_url"' in response.text
+
+
+@pytest.mark.parametrize(
+    ("blueprint_name", "guided_from"),
+    [
+        ("checkov-policy-generic", "{policy_profile}"),
+        ("opa-policy-generic", "{policy_profile}"),
+        ("azure-policy-generic", "{policy_profile}"),
+    ],
+)
+def test_policy_form_guided_advanced_mode(
+    repo_root, output_config, blueprint_name: str, guided_from: str
+) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get(f"/blueprints/{blueprint_name}")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert f'data-guided-from="{guided_from}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="policy-customization"' in response.text
+    assert 'name="policy_pack_source"' in response.text
+    assert 'name="policy_profile"' in response.text
+    if blueprint_name == "opa-policy-generic":
+        assert 'name="plan_demo"' in response.text
+
+
+def test_helm_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits catalog and GitOps deploy knobs; defaults still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "helm-chart-generic",
+            "dry_run": "true",
+            "image_repository": "ghcr.io/example/checkout-api",
+            "owner": "platform-engineering",
+            "environment": "dev",
+            "service_type": "ClusterIP",
+            "service_port": "8080",
+            "enable_ingress": "false",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_gitops_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits cluster/project fields; defaults still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "gitops-deployment-generic",
+            "dry_run": "true",
+            "environment": "dev",
+            "gitops_engine": "argocd",
+            "chart_repo_url": "https://charts.example.com",
+            "chart_name": "checkout-api",
+            "chart_version": "1.2.3",
+            "target_namespace": "checkout",
+            "sync_policy": "manual",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_checkov_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits pack/profile/rules; defaults and identity fill still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "checkov-policy-generic",
+            "dry_run": "true",
+            "organization": "acme",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
 def test_static_repave_css_served(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/static/repave.css")

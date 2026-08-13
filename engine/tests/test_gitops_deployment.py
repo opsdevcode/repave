@@ -46,6 +46,12 @@ def test_blueprint_declares_pin_and_policy_gates(gitops_blueprint) -> None:
     assert "opa" in gitops_blueprint.gates
     assert "yamllint" in gitops_blueprint.gates
     assert missing_governance_gates(gitops_blueprint) == []
+    chart = next(field for field in gitops_blueprint.inputs if field.name == "chart_name")
+    assert chart.advanced is False
+    destination = next(
+        field for field in gitops_blueprint.inputs if field.name == "destination_server"
+    )
+    assert destination.advanced is True
 
 
 def test_argocd_inputs_fall_back_to_in_cluster_defaults(gitops_blueprint) -> None:

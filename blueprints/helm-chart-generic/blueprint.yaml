@@ -73,11 +73,13 @@ spec:
     - name: cost_center
       type: string
       required: false
+      advanced: true
       default: ""
       description: Optional cost center for chargeback metadata.
     - name: include_backstage_catalog
       type: string
       required: false
+      advanced: true
       default: "false"
       enum:
         - "true"
@@ -91,11 +93,13 @@ spec:
     - name: system
       type: string
       required: false
+      advanced: true
       default: ""
       description: Backstage spec.system (optional platform system name).
     - name: catalog_lifecycle
       type: string
       required: false
+      advanced: true
       default: experimental
       enum:
         - experimental
@@ -105,6 +109,7 @@ spec:
     - name: enable_deploy_pipeline
       type: string
       required: false
+      advanced: true
       default: "false"
       enum:
         - "true"
@@ -113,6 +118,7 @@ spec:
     - name: deploy_environment
       type: string
       required: false
+      advanced: true
       default: dev
       enum:
         - dev
@@ -122,16 +128,19 @@ spec:
     - name: gitops_repo
       type: string
       required: false
+      advanced: true
       default: ""
       description: GitOps repository (org/name) receiving chart version bumps. Required when deploy pipeline is enabled.
     - name: gitops_manifest_path
       type: string
       required: false
+      advanced: true
       default: apps/release.yaml
       description: Path to the Argo CD Application or Flux HelmRelease manifest in the GitOps repo.
     - name: gitops_engine
       type: string
       required: false
+      advanced: true
       default: argocd
       enum:
         - argocd
