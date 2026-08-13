@@ -1192,6 +1192,8 @@ def test_github_repo_form_renders_phase2_controls(repo_root, output_config) -> N
     assert 'id="sync_team_membership"' in response.text
     assert 'name="sync_team_membership"' in response.text
     assert 'id="membership_source_team"' in response.text
+    assert 'id="github-source-team-select"' in response.text
+    assert "fillSourceSelect" in response.text
     assert 'id="github-source-team-members"' in response.text
     assert 'id="github-source-team-members-list"' in response.text
     assert 'id="ruleset_profile"' in response.text
