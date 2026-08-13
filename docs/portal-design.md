@@ -119,7 +119,8 @@ vocabulary; `/static/repave.css` is the single source of styling truth.
 - Group blueprints by **artifact type** (Terraform, Ansible; later Helm, app
   service, observability) — aligns with roadmap v1.18.
 - Section title + one-line subtitle per group; families stay **open** on `/`.
-  `/library` is a stack of labeled family drawers that open a quiet shelf.
+  `/library` is a 2–3 column grid of labeled family drawers that open a quiet
+  shelf.
 
 ### Blueprint cards
 
@@ -285,7 +286,8 @@ Pick based on audience and hosting model (v1.25+).
 
 - Home: compact **Golden paths** header, search as the focal control, open
   family sections as a 2–3 column path-card grid (no oversized wordmark)
-- Library: labeled family drawers that lead to a quiet shelf (name + lineage)
+- Library: 2–3 column grid of labeled family drawers that lead to a quiet shelf
+  (name + lineage)
 - Console-native catalog card hover (respects `prefers-reduced-motion`)
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 

@@ -137,7 +137,7 @@ mockups).
 </p>
 
 <p align="center">
-  <img src="docs/images/portal/library-catalog.png" alt="repave library — labeled family drawers" width="920" />
+  <img src="docs/images/portal/library-catalog.png" alt="repave library — family drawers in a 2–3 column grid" width="920" />
   <br />
   <sub>Library — open a drawer to browse governed repositories</sub>
 </p>
