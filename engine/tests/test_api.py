@@ -132,7 +132,12 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
     library = client.get("/static/repave-library.mjs")
     assert library.status_code == 200
     assert "initCatalogSearch" in library.text
+    assert "initLibraryDrawerMotion" in library.text
     assert "repave-catalog.mjs" in library.text
+
+    assert "initLibraryDrawerMotion" in catalog.text
+    assert "prefersFinePointer" in catalog.text
+    assert "data-library-drawer" in catalog.text
 
 
 def test_activity_page(repo_root, output_config) -> None:

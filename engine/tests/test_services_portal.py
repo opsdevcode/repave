@@ -46,7 +46,8 @@ def test_services_page_lists_fleet_entity(repo_root, output_config, registry: Pa
     assert "home-catalog-column" in body
     assert "catalog-inventory--browse" not in body
     assert "catalog-inventory__summary" not in body
-    assert "/static/repave-library.mjs" not in body
+    assert "data-library-drawer" in body
+    assert "/static/repave-library.mjs" in body
 
     family = client.get("/library/terraform")
     assert family.status_code == 200
