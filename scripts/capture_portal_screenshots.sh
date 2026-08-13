@@ -20,6 +20,7 @@ run_capture() {
 }
 
 run_capture "$BASE/" home-catalog.png
+run_capture "$BASE/library" library-catalog.png
 run_capture "$BASE/blueprints/terraform-module-generic" blueprint-form.png
 run_capture "$BASE/update" update-repo.png
 run_capture "$BASE/import" import-repo.png
