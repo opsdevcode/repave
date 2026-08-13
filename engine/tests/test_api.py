@@ -39,6 +39,7 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "terraform-module-generic" in response.text
     assert "/static/repave.css" in response.text
     assert "/static/repave.js" in response.text
+    assert "/static/repave-motion.mjs" in response.text
     assert 'id="last-run-snippet"' in response.text
     assert 'class="skip-link"' in response.text
     assert 'id="main-content"' in response.text
@@ -137,7 +138,15 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
 
     assert "initLibraryDrawerMotion" in catalog.text
     assert "prefersFinePointer" in catalog.text
-    assert "data-library-drawer" in catalog.text
+    assert "repave-motion.mjs" in catalog.text
+
+    motion = client.get("/static/repave-motion.mjs")
+    assert motion.status_code == 200
+    assert "initPointerFaces" in motion.text
+    assert "prefersFinePointer" in motion.text
+    assert "data-library-drawer" in motion.text
+    assert "btn--primary" in motion.text
+    assert "ATMOSPHERE_RANGE" in motion.text
 
 
 def test_activity_page(repo_root, output_config) -> None:

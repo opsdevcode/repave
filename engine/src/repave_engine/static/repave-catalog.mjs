@@ -1,14 +1,14 @@
 /**
  * Shared catalog browse helpers (home + library). No bundler; relative import only.
  */
+import { prefersReducedMotion } from "./repave-motion.mjs";
 
-export function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-export function prefersFinePointer() {
-  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-}
+export {
+  prefersReducedMotion,
+  prefersFinePointer,
+  initCatalogCardMotion,
+  initLibraryDrawerMotion,
+} from "./repave-motion.mjs";
 
 export function supportsViewTransitions() {
   return (
@@ -63,86 +63,6 @@ function syncSearchToUrl(query, extraSearchParams) {
   if (next !== current) {
     history.replaceState(null, "", next);
   }
-}
-
-export function initCatalogCardMotion() {
-  const cards = document.querySelectorAll("[data-catalog-card]");
-  if (!cards.length || prefersReducedMotion()) {
-    return;
-  }
-  cards.forEach((card) => {
-    card.addEventListener("mousemove", (event) => {
-      const rect = card.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
-      card.classList.add("is-tilted");
-      card.style.transform =
-        "perspective(700px) rotateX(" +
-        (-y * 4).toFixed(2) +
-        "deg) rotateY(" +
-        (x * 4).toFixed(2) +
-        "deg) translateY(-2px)";
-    });
-    card.addEventListener("mouseleave", () => {
-      card.classList.remove("is-tilted");
-      card.style.transform = "";
-    });
-  });
-}
-
-export function initLibraryDrawerMotion() {
-  const drawers = Array.from(document.querySelectorAll("[data-library-drawer]"));
-  if (!drawers.length || prefersReducedMotion() || !prefersFinePointer()) {
-    return;
-  }
-
-  drawers.forEach((drawer) => {
-    let frame = 0;
-    let pendingX = 0;
-    let pendingY = 0;
-
-    function applyPointerFace() {
-      frame = 0;
-      const rect = drawer.getBoundingClientRect();
-      const width = Math.max(rect.width, 1);
-      const height = Math.max(rect.height, 1);
-      const px = Math.min(1, Math.max(0, (pendingX - rect.left) / width));
-      const py = Math.min(1, Math.max(0, (pendingY - rect.top) / height));
-      drawer.style.setProperty("--spot-x", (px * 100).toFixed(1) + "%");
-      drawer.style.setProperty("--spot-y", (py * 100).toFixed(1) + "%");
-      drawer.style.transform =
-        "perspective(900px) rotateX(" +
-        ((0.5 - py) * 7).toFixed(2) +
-        "deg) rotateY(" +
-        ((px - 0.5) * 8).toFixed(2) +
-        "deg) translate3d(0, -5px, 12px)";
-    }
-
-    drawer.addEventListener("pointerenter", (event) => {
-      drawer.classList.add("is-live");
-      pendingX = event.clientX;
-      pendingY = event.clientY;
-      applyPointerFace();
-    });
-    drawer.addEventListener("pointermove", (event) => {
-      pendingX = event.clientX;
-      pendingY = event.clientY;
-      if (frame) {
-        return;
-      }
-      frame = window.requestAnimationFrame(applyPointerFace);
-    });
-    drawer.addEventListener("pointerleave", () => {
-      if (frame) {
-        window.cancelAnimationFrame(frame);
-        frame = 0;
-      }
-      drawer.classList.remove("is-live");
-      drawer.style.transform = "";
-      drawer.style.removeProperty("--spot-x");
-      drawer.style.removeProperty("--spot-y");
-    });
-  });
 }
 
 export function initCatalogSearch(options = {}) {
