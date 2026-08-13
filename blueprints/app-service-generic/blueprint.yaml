@@ -27,11 +27,13 @@ spec:
     - name: system
       type: string
       required: false
+      advanced: true
       default: ""
       description: Backstage `spec.system` (platform or product system name).
     - name: catalog_lifecycle
       type: string
       required: false
+      advanced: true
       default: experimental
       enum:
         - experimental
@@ -67,6 +69,7 @@ spec:
     - name: include_helm_reference
       type: string
       required: false
+      advanced: true
       default: "false"
       enum:
         - "true"
@@ -75,11 +78,13 @@ spec:
     - name: helm_chart_repo
       type: string
       required: false
+      advanced: true
       default: ""
       description: Optional Git URL for the Helm chart repo (required when include_helm_reference is true).
     - name: enable_deploy_pipeline
       type: string
       required: false
+      advanced: true
       default: "false"
       enum:
         - "true"
@@ -88,6 +93,7 @@ spec:
     - name: deploy_environment
       type: string
       required: false
+      advanced: true
       default: dev
       enum:
         - dev
@@ -97,6 +103,7 @@ spec:
     - name: container_registry
       type: string
       required: false
+      advanced: true
       default: ""
       description: Container registry host/path prefix (for example ghcr.io/acme). Required when deploy pipeline is enabled.
   template:

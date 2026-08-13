@@ -222,6 +222,12 @@ def test_load_app_service_generic_blueprint(repo_root: Path) -> None:
     assert "actionlint" in blueprint.gates
     assert "python-test" in blueprint.gates
     assert "buf-lint" in blueprint.gates
+    runtime = next(field for field in blueprint.inputs if field.name == "runtime")
+    assert runtime.advanced is False
+    system = next(field for field in blueprint.inputs if field.name == "system")
+    assert system.advanced is True
+    deploy = next(field for field in blueprint.inputs if field.name == "enable_deploy_pipeline")
+    assert deploy.advanced is True
 
 
 def test_load_helm_chart_generic_blueprint(repo_root: Path) -> None:
@@ -334,6 +340,14 @@ def test_load_ansible_collection_generic_blueprint(repo_root: Path) -> None:
     assert blueprint.artifact_type == "ansible-collection"
     assert blueprint.standard_source == "standards/ansible/collection-standard.md"
     assert blueprint.output_repo_name_template.startswith("ansible-collection-")
+    namespace = next(field for field in blueprint.inputs if field.name == "namespace")
+    assert namespace.advanced is False
+    pattern = next(
+        field for field in blueprint.inputs if field.name == "sample_role_pattern_source"
+    )
+    assert pattern.advanced is True
+    min_ansible = next(field for field in blueprint.inputs if field.name == "min_ansible_version")
+    assert min_ansible.advanced is True
 
 
 def test_build_provenance_document_ansible_collection(repo_root: Path) -> None:
@@ -365,6 +379,12 @@ def test_load_ansible_playbook_project_blueprint(repo_root: Path) -> None:
     assert blueprint.name == "ansible-playbook-project"
     assert blueprint.artifact_type == "ansible-playbook-project"
     assert blueprint.output_repo_name_template.startswith("ansible-playbook-")
+    environment = next(field for field in blueprint.inputs if field.name == "environment")
+    assert environment.advanced is False
+    pattern = next(field for field in blueprint.inputs if field.name == "playbook_pattern_source")
+    assert pattern.advanced is True
+    min_ansible = next(field for field in blueprint.inputs if field.name == "min_ansible_version")
+    assert min_ansible.advanced is True
 
 
 def test_build_provenance_document_ansible_playbook_project(repo_root: Path) -> None:
@@ -478,6 +498,12 @@ def test_load_terraform_environment_stack_blueprint(repo_root: Path) -> None:
     assert blueprint.name == "terraform-environment-stack"
     assert blueprint.artifact_type == "terraform-environment-stack"
     assert blueprint.output_repo_name_template.startswith("env-")
+    owner = next(field for field in blueprint.inputs if field.name == "owner")
+    assert owner.advanced is False
+    cost_center = next(field for field in blueprint.inputs if field.name == "cost_center")
+    assert cost_center.advanced is True
+    pack = next(field for field in blueprint.inputs if field.name == "policy_pack_source")
+    assert pack.advanced is True
 
 
 def test_build_provenance_document_environment_stack(repo_root: Path) -> None:

@@ -2,37 +2,16 @@
  * Home / catalog page interactions (native ES module, no bundler).
  * Loaded only from index.html. Shared chrome stays in repave.js.
  */
+import {
+  initCatalogCardMotion,
+  initCatalogSearch,
+  prefersReducedMotion,
+  supportsViewTransitions,
+} from "./repave-catalog.mjs";
+
 const RECENT_PATHS_KEY = "repave:recentPaths";
 /** Last N opened golden paths in the compact quick strip. */
 const RECENT_PATHS_MAX = 3;
-
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-function supportsViewTransitions() {
-  return (
-    typeof document.startViewTransition === "function" && !prefersReducedMotion()
-  );
-}
-
-function fuzzyMatchScore(query, label) {
-  const q = (query || "").toLowerCase().trim();
-  const text = (label || "").toLowerCase();
-  if (!q) {
-    return 1;
-  }
-  let qi = 0;
-  for (let ti = 0; ti < text.length && qi < q.length; ti += 1) {
-    if (text.charAt(ti) === q.charAt(qi)) {
-      qi += 1;
-    }
-  }
-  if (qi !== q.length) {
-    return 0;
-  }
-  return q.length / Math.max(text.length, 1);
-}
 
 function readLastRun() {
   try {
@@ -115,212 +94,6 @@ function syncHomeQuickVisibility(quick) {
   const hasResume = resume && !resume.hidden && resume.childElementCount > 0;
   const hasRecent = list && list.children.length > 0;
   quick.hidden = !(hasResume || hasRecent);
-}
-
-function initCatalogCardMotion() {
-  const cards = document.querySelectorAll("[data-catalog-card]");
-  if (!cards.length || prefersReducedMotion()) {
-    return;
-  }
-  cards.forEach((card) => {
-    card.addEventListener("mousemove", (event) => {
-      const rect = card.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / rect.width - 0.5;
-      const y = (event.clientY - rect.top) / rect.height - 0.5;
-      card.classList.add("is-tilted");
-      card.style.transform =
-        "perspective(700px) rotateX(" +
-        (-y * 4).toFixed(2) +
-        "deg) rotateY(" +
-        (x * 4).toFixed(2) +
-        "deg) translateY(-2px)";
-    });
-    card.addEventListener("mouseleave", () => {
-      card.classList.remove("is-tilted");
-      card.style.transform = "";
-    });
-  });
-}
-
-function runWithViewTransition(update) {
-  if (!supportsViewTransitions()) {
-    update();
-    return;
-  }
-  document.startViewTransition(update);
-}
-
-function syncSearchToUrl(query) {
-  const url = new URL(window.location.href);
-  if (query) {
-    url.searchParams.set("q", query);
-  } else {
-    url.searchParams.delete("q");
-  }
-  const next = url.pathname + url.search + url.hash;
-  const current = window.location.pathname + window.location.search + window.location.hash;
-  if (next !== current) {
-    history.replaceState(null, "", next);
-  }
-}
-
-function initCatalogSearch() {
-  const root = document.querySelector("[data-catalog-search]");
-  const input = document.querySelector("[data-catalog-search-input]");
-  if (!root || !input) {
-    return;
-  }
-  const meta = root.querySelector("[data-catalog-search-meta]");
-  const emptyState = document.getElementById("catalog-search-empty");
-  const cards = Array.from(document.querySelectorAll("[data-catalog-card]"));
-  const groups = document.querySelectorAll("[data-catalog-group]");
-  let activeIndex = -1;
-
-  if (window.location.hash === "#golden-paths") {
-    const goldenPaths = document.getElementById("golden-paths");
-    if (goldenPaths) {
-      goldenPaths.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  const initialQuery = params.get("q");
-  if (initialQuery) {
-    input.value = initialQuery;
-  }
-
-  function visibleRows() {
-    return cards
-      .map((card) => card.closest("[data-catalog-item]") || card)
-      .filter((row) => !row.hidden);
-  }
-
-  function setActiveRow(index) {
-    const rows = visibleRows();
-    rows.forEach((row) => {
-      row.classList.remove("is-keyboard-active");
-      const link = row.querySelector("[data-catalog-card]") || row;
-      link.setAttribute("tabindex", "-1");
-    });
-    if (!rows.length) {
-      activeIndex = -1;
-      return;
-    }
-    activeIndex = ((index % rows.length) + rows.length) % rows.length;
-    const active = rows[activeIndex];
-    active.classList.add("is-keyboard-active");
-    const link = active.querySelector("[data-catalog-card]") || active;
-    link.setAttribute("tabindex", "0");
-    link.focus({ preventScroll: false });
-    active.scrollIntoView({ block: "nearest" });
-  }
-
-  function applyFilter() {
-    const query = (input.value || "").toLowerCase().trim();
-    const terms = query ? query.split(/\s+/).filter(Boolean) : [];
-    let visibleCards = 0;
-    const scored = [];
-
-    cards.forEach((card) => {
-      const haystack = (card.getAttribute("data-search-text") || "").toLowerCase();
-      const name = (card.getAttribute("data-peek-name") || card.textContent || "").trim();
-      let match = terms.length === 0;
-      let score = 0;
-      if (terms.length > 0) {
-        const allPresent = terms.every((term) => haystack.includes(term));
-        const fuzzy = fuzzyMatchScore(query, name) + fuzzyMatchScore(query, haystack) * 0.5;
-        match = allPresent || fuzzy > 0;
-        score = (allPresent ? 1 : 0) + fuzzy;
-      }
-      const row = card.closest("[data-catalog-item]");
-      if (row) {
-        row.hidden = !match;
-        if (match) {
-          scored.push({ row, score });
-        }
-      } else {
-        card.hidden = !match;
-      }
-      if (match) {
-        visibleCards += 1;
-      }
-    });
-
-    if (terms.length > 0 && scored.length > 1) {
-      scored.sort((a, b) => b.score - a.score);
-      scored.forEach(({ row }) => {
-        const parent = row.parentElement;
-        if (parent) {
-          parent.append(row);
-        }
-      });
-    }
-
-    groups.forEach((group) => {
-      const items = group.querySelectorAll("[data-catalog-item]");
-      let anyVisible = false;
-      items.forEach((item) => {
-        if (!item.hidden) {
-          anyVisible = true;
-        }
-      });
-      group.hidden = !anyVisible && terms.length > 0;
-    });
-
-    if (meta) {
-      if (terms.length === 0) {
-        meta.hidden = true;
-      } else {
-        meta.hidden = false;
-        meta.textContent =
-          visibleCards === 1 ? "1 artifact matches" : visibleCards + " artifacts match";
-      }
-    }
-    if (emptyState) {
-      emptyState.hidden = !(terms.length > 0 && visibleCards === 0);
-    }
-    activeIndex = -1;
-    syncSearchToUrl(query);
-  }
-
-  function applyFilterWithTransition() {
-    runWithViewTransition(applyFilter);
-  }
-
-  input.addEventListener("input", applyFilterWithTransition);
-
-  document.addEventListener("keydown", (event) => {
-    const tag = (event.target && event.target.tagName) || "";
-    const typing =
-      tag === "INPUT" ||
-      tag === "TEXTAREA" ||
-      tag === "SELECT" ||
-      (event.target && event.target.isContentEditable);
-    if (event.key === "/" && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
-      event.preventDefault();
-      input.focus();
-      return;
-    }
-    if (event.target !== input && !event.target.closest?.("[data-catalog-item]")) {
-      return;
-    }
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setActiveRow(activeIndex + 1);
-    } else if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setActiveRow(activeIndex <= 0 ? visibleRows().length - 1 : activeIndex - 1);
-    } else if (event.key === "Enter" && activeIndex >= 0) {
-      const rows = visibleRows();
-      const link = rows[activeIndex]?.querySelector("a[href]");
-      if (link) {
-        event.preventDefault();
-        link.click();
-      }
-    }
-  });
-
-  applyFilter();
 }
 
 function initCatalogPeeks() {
@@ -510,7 +283,7 @@ function boot() {
   registerMetricElement();
   initHomeResumeChip();
   initCatalogCardMotion();
-  initCatalogSearch();
+  initCatalogSearch({ scrollTargetId: "golden-paths" });
   initCatalogPeeks();
   initCatalogNavigation();
   initRecentRail();

@@ -42,7 +42,12 @@ def test_services_page_lists_fleet_entity(repo_root, output_config, registry: Pa
     assert response.status_code == 200
     assert "Library" in body
     assert "catalog-inventory__category" in body
-    assert "catalog-inventory__summary" in body
+    assert "catalog-inventory--browse" in body
+    assert "catalog-inventory__heading" in body
+    assert "home-catalog-column" in body
+    assert "data-library-families" in body
+    assert "/static/repave-library.mjs" in body
+    assert "catalog-inventory__summary" not in body
 
 
 def test_service_detail_renders_scorecard_and_readme(
