@@ -1144,6 +1144,12 @@
     font-size: 0.8rem;
   }
 
+  .preset-chip.is-active {
+    border-color: color-mix(in srgb, var(--chip-accent, var(--accent)) 55%, var(--border));
+    background: color-mix(in srgb, var(--chip-accent, var(--accent)) 16%, var(--surface));
+    color: var(--text);
+  }
+
   .form-validation {
     margin: var(--space-3) 0 0;
     padding: var(--space-3) var(--space-4);
@@ -5339,6 +5345,70 @@
     padding: var(--space-3) var(--space-4);
   }
 
+  .library-scorecard {
+    margin-bottom: var(--space-4);
+  }
+
+  .library-toolbar {
+    display: grid;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .library-toolbar .catalog-search,
+  .library-toolbar .catalog-owner-filter {
+    margin-bottom: 0;
+  }
+
+  @media (min-width: 48rem) {
+    .library-toolbar {
+      grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+      align-items: end;
+    }
+  }
+
+  .library-family-chips {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+    margin: 0 0 var(--space-1);
+  }
+
+  .library-family-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+  }
+
+  .library-family-chip--terraform {
+    --chip-accent: var(--family-terraform);
+  }
+
+  .library-family-chip--ansible {
+    --chip-accent: var(--family-ansible);
+  }
+
+  .library-family-chip--helm {
+    --chip-accent: var(--family-helm);
+  }
+
+  .library-family-chip--gitops {
+    --chip-accent: var(--family-gitops);
+  }
+
+  .library-family-chip--app {
+    --chip-accent: var(--family-app);
+  }
+
+  .library-family-chip--policy {
+    --chip-accent: var(--family-policy);
+  }
+
+  .library-family-chip--observability {
+    --chip-accent: var(--family-observability);
+  }
+
   .home-quick {
     display: flex;
     flex-wrap: wrap;
@@ -5787,6 +5857,14 @@
     --group-accent: var(--family-app);
   }
 
+  .catalog-inventory__category--gitops {
+    --group-accent: var(--family-gitops);
+  }
+
+  .catalog-inventory__category--other {
+    --group-accent: var(--accent);
+  }
+
   .catalog-inventory__summary {
     cursor: pointer;
     list-style: none;
@@ -5906,6 +5984,7 @@
     opacity: 0.9;
   }
 
+  .catalog-inventory__item-icon--terraform::before,
   .catalog-inventory__item-icon--terraform-module::before,
   .catalog-inventory__item-icon--terraform-environment-stack::before {
     border-radius: 1px;
@@ -5914,15 +5993,38 @@
       0.44rem 0.44rem 0 0 color-mix(in srgb, var(--family-terraform) 28%, transparent);
   }
 
+  .catalog-inventory__item-icon--ansible::before,
   .catalog-inventory__item-icon--ansible-role::before,
   .catalog-inventory__item-icon--ansible-playbook-project::before,
   .catalog-inventory__item-icon--ansible-collection::before {
     border-radius: 999px;
   }
 
+  .catalog-inventory__item-icon--helm::before,
   .catalog-inventory__item-icon--helm-chart::before {
     clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
     border-radius: 0;
+  }
+
+  .catalog-inventory__item-icon--gitops::before {
+    clip-path: polygon(15% 0, 85% 0, 100% 50%, 85% 100%, 15% 100%, 0 50%);
+    border-radius: 0;
+  }
+
+  .catalog-inventory__item-icon--policy::before {
+    clip-path: polygon(50% 0%, 100% 18%, 100% 62%, 50% 100%, 0 62%, 0 18%);
+    border-radius: 0;
+  }
+
+  .catalog-inventory__item-icon--observability::before {
+    border-radius: 999px;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--family-observability) 45%, transparent);
+  }
+
+  .catalog-inventory__item-icon--app::before {
+    width: 0.5rem;
+    height: 0.82rem;
+    border-radius: 1px;
   }
 
   .catalog-inventory__item-icon--bundle::before {

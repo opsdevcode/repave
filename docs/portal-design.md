@@ -119,7 +119,7 @@ vocabulary; `/static/repave.css` is the single source of styling truth.
 - Group blueprints by **artifact type** (Terraform, Ansible; later Helm, app
   service, observability) — aligns with roadmap v1.18.
 - Section title + one-line subtitle per group; families stay **open** on `/`
-  (library still uses expand/collapse).
+  and `/library` (library adds live family chips + search).
 
 ### Blueprint cards
 
@@ -153,9 +153,9 @@ segmented scope mode, scope presets and inline validation, Ansible enum inputs).
 
 Golden paths that declare `advanced` or `guided_from` inputs default to **Guided**
 mode. **Advanced** reveals the rest of the blueprint’s declared inputs (policy
-pack/profile/rules, Backstage catalog knobs, Helm GitOps deploy pipeline,
+pack/profile/rules, Backstage catalog knobs, Helm/app-service deploy pipeline,
 GitOps cluster/project fields, Ansible pattern / min version / Galaxy platforms,
-Terraform service-scope panel). Classification is data-driven via
+Terraform service-scope panel and environment-stack policy). Classification is data-driven via
 optional `advanced: true` and `guided_from` on blueprint `inputs`.
 
 **Guided identity:** when an input declares `guided_from`, Guided hides that field and
@@ -285,6 +285,8 @@ Pick based on audience and hosting model (v1.25+).
 
 - Home: compact **Golden paths** header, search as the focal control, open
   family sections as a 2–3 column path-card grid (no oversized wordmark)
+- Library: same open family card grid, plus live family chips and search
+  (no expand/collapse)
 - Console-native catalog card hover (respects `prefers-reduced-motion`)
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 

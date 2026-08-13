@@ -114,10 +114,25 @@ def test_static_repave_home_mjs_served(repo_root, output_config) -> None:
 
     assert response.status_code == 200
     assert "initCatalogSearch" in response.text
+    assert "repave-catalog.mjs" in response.text
     assert "repave-metric" in response.text
     assert "repave:recentPaths" in response.text
-    assert "startViewTransition" in response.text
     assert "data-catalog-peek" in response.text
+
+
+def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    catalog = client.get("/static/repave-catalog.mjs")
+    assert catalog.status_code == 200
+    assert "initCatalogSearch" in catalog.text
+    assert "startViewTransition" in catalog.text
+    assert "extraConstraintActive" in catalog.text
+
+    library = client.get("/static/repave-library.mjs")
+    assert library.status_code == 200
+    assert "data-library-family" in library.text
+    assert "repave-catalog.mjs" in library.text
 
 
 def test_activity_page(repo_root, output_config) -> None:
@@ -359,6 +374,141 @@ def test_checkov_guided_only_generate_uses_defaults(repo_root, output_config) ->
             "blueprint_name": "checkov-policy-generic",
             "dry_run": "true",
             "organization": "acme",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_app_service_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/app-service-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{runtime}-{layout}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="app-service-catalog"' in response.text
+    assert 'name="enable_deploy_pipeline"' in response.text
+    assert 'name="runtime"' in response.text
+
+
+def test_ansible_collection_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-collection-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{sample_role_pattern_source}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="ansible-collection-sample-pattern-block"' in response.text
+    assert 'name="min_ansible_version"' in response.text
+    assert 'name="namespace"' in response.text
+
+
+def test_ansible_playbook_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-playbook-project")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{environment}-{playbook_pattern_source}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="ansible-playbook-pattern-block"' in response.text
+    assert 'name="min_ansible_version"' in response.text
+    assert 'name="pinned_roles"' in response.text
+
+
+def test_env_stack_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-environment-stack")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{environment}-{cloud_provider}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="cost_center"' in response.text
+    assert 'id="policy-customization"' in response.text
+    assert 'name="pinned_modules"' in response.text
+
+
+def test_app_service_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits catalog and deploy knobs; defaults still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "app-service-generic",
+            "dry_run": "true",
+            "owner": "group:platform",
+            "runtime": "python",
+            "layout": "http-api",
+            "port": "8080",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_ansible_collection_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits pattern and min version; defaults still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "ansible-collection-generic",
+            "dry_run": "true",
+            "namespace": "acme",
+            "collection_name": "platform",
+            "description": "Guided-only collection generate",
+            "sample_role_name": "sample",
+            "support_linux": "true",
+            "support_windows": "false",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_ansible_playbook_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits pattern and min version; defaults still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "ansible-playbook-project",
+            "dry_run": "true",
+            "project_name": "baseline",
+            "description": "Guided-only playbook generate",
+            "environment": "dev",
+            "support_linux": "true",
+            "support_windows": "false",
+        },
+    )
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_env_stack_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
+    """Guided POST omits cost center and policy; defaults still apply."""
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-environment-stack",
+            "dry_run": "true",
+            "cloud_provider": "aws",
+            "environment": "dev",
+            "owner": "platform-engineering",
         },
     )
     assert response.status_code == 200
@@ -1346,6 +1496,7 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert ">go</option>" in response.text
     assert 'data-form-mode="guided"' in response.text
     assert 'data-guided-from="{runtime}-{layout}"' in response.text
+    assert "data-form-advanced" in response.text
 
 
 def test_provider_service_detail_unknown_returns_empty(repo_root, output_config) -> None:

@@ -723,7 +723,11 @@
       {% endif %}
 
       {% if blueprint.name == "app-service-generic" %}
-      <div class="field-block app-service-catalog" id="app-service-catalog">
+      <div
+        class="field-block app-service-catalog"
+        id="app-service-catalog"
+        {% if supports_form_mode %}data-form-advanced{% endif %}
+      >
         <h3 class="form-section__subtitle">Backstage catalog</h3>
         <p class="hint">
           Generated repos include <code>catalog-info.yaml</code> (component kind). Set owner above;
@@ -805,7 +809,11 @@
       </div>
       {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name in ("module_name", "module_source", "module_version") %}
       {% elif blueprint.artifact_type == "ansible-playbook-project" and ansible_playbook_patterns and ansible_catalog and field.name == "playbook_pattern_source" %}
-      <div class="field-block" id="ansible-playbook-pattern-block">
+      <div
+        class="field-block"
+        id="ansible-playbook-pattern-block"
+        {% if field.advanced %}data-form-advanced{% endif %}
+      >
         <label for="playbook_pattern_source">Playbook pattern</label>
         <p class="hint">Community patterns from <code>ansible/catalog.json</code>; filtered by Linux/Windows below.</p>
         <select class="select" id="playbook_pattern_source" name="playbook_pattern_source">
@@ -931,7 +939,11 @@
         </select>
       </div>
       {% elif blueprint.artifact_type == "ansible-collection" and ansible_collection_sample_patterns and ansible_catalog and field.name == "sample_role_pattern_source" %}
-      <div class="field-block" id="ansible-collection-sample-pattern-block">
+      <div
+        class="field-block"
+        id="ansible-collection-sample-pattern-block"
+        {% if field.advanced %}data-form-advanced{% endif %}
+      >
         <label for="sample_role_pattern_source">Sample role pattern</label>
         <p class="hint">Same pattern catalog as standalone roles; materialized under <code>roles/&lt;sample_role_name&gt;/</code>.</p>
         <select class="select" id="sample_role_pattern_source" name="sample_role_pattern_source">
