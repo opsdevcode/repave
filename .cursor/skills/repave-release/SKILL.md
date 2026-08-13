@@ -56,6 +56,7 @@ gh run view <run-id> --repo opsdevcode/repave --log-failed
 5. After merge to `main`, watch the Release run until tag + release exist.
 6. Release also commits doc version pointers (`scripts/sync_doc_versions.py`) for
    every path in `DOC_TARGET_PATHS` (README, roadmap, portal-design,
-   demo-verification, operator-ga).
+   demo-verification, operator-ga), Helm charts (`sync_chart_versions.py`),
+   and `versions.lock` (`sync_versions_lock.py`).
 
 See also repo rule `.cursor/rules/repave-release.mdc` and root `CONTRIBUTING.md`.

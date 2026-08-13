@@ -178,6 +178,7 @@ jobs:
           VERSION="$(read_version)"
           python3 scripts/sync_doc_versions.py "${VERSION}"
           python3 scripts/sync_chart_versions.py "${VERSION}"
+          python3 scripts/sync_versions_lock.py "${VERSION}"
           # Paths must match DOC_TARGET_PATHS in scripts/sync_doc_versions.py
           SYNC_DOC_PATHS=(
             docs/roadmap.md
@@ -197,6 +198,10 @@ jobs:
           if ! git diff --quiet "${CHART_PATHS[@]}"; then
             git add "${CHART_PATHS[@]}"
             git commit -m "chore(release): sync chart version to ${VERSION}"
+          fi
+          if ! git diff --quiet versions.lock; then
+            git add versions.lock
+            git commit -m "chore(release): sync versions.lock to ${VERSION}"
           fi
 
           # Re-lock so the tracked uv.lock records the released version. This cannot be a

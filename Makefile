@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -35,6 +35,9 @@ sync-doc-versions:
 
 sync-chart-versions:
 	python3 scripts/sync_chart_versions.py
+
+sync-versions-lock:
+	python3 scripts/sync_versions_lock.py
 
 policy-standards-watch:
 	python3 scripts/sync_policy_standards.py --update
