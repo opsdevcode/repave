@@ -469,4 +469,68 @@ if grep -q 'repave environments reclaim' "${env_vending_http_rendered}"; then
   exit 1
 fi
 
+if grep -q 'developer_lab:' "${rendered}"; then
+  echo "default values must not enable v3.developer_lab (ADR 008)" >&2
+  exit 1
+fi
+
+if grep -q 'service_catalog:' "${rendered}"; then
+  echo "default values must not enable service_catalog" >&2
+  exit 1
+fi
+
+if grep -q 'environment_vending:' "${rendered}"; then
+  echo "default values must not enable environment_vending (empty include must be falsy)" >&2
+  exit 1
+fi
+
+lab_rendered="$(mktemp)"
+
+helm template repave-developer-lab "${CHART}" \
+  --namespace repave-lab \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set repave.v3.enabled=true \
+  --set repave.v3.developerLab.enabled=true \
+  >"${lab_rendered}"
+
+if ! grep -q 'developer_lab:' "${lab_rendered}"; then
+  echo "v3.developerLab.enabled must render v3.developer_lab in the ConfigMap" >&2
+  exit 1
+fi
+
+if grep -q 'environment_vending:' "${lab_rendered}"; then
+  echo "developer lab flags must not enable environment_vending" >&2
+  exit 1
+fi
+
+if grep -q 'service_catalog:' "${lab_rendered}"; then
+  echo "developer lab flags must not invent a service_catalog block; mount catalog YAML separately" >&2
+  exit 1
+fi
+
+catalog_rendered="$(mktemp)"
+
+helm template repave-service-catalog "${CHART}" \
+  --namespace repave-catalog \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set repave.serviceCatalog.enabled=true \
+  >"${catalog_rendered}"
+
+if ! grep -q 'service_catalog:' "${catalog_rendered}"; then
+  echo "serviceCatalog.enabled must render service_catalog in the ConfigMap" >&2
+  exit 1
+fi
+
+if helm template repave-lab-without-v3 "${CHART}" \
+  --namespace repave-lab \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set repave.v3.developerLab.enabled=true \
+  >/dev/null 2>&1; then
+  echo "developerLab.enabled without v3.enabled must fail (ADR 008)" >&2
+  exit 1
+fi
+
 echo "helm lint and template checks passed"

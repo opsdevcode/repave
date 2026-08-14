@@ -210,6 +210,24 @@ repave:
       - sandbox
     decommissionReviewClasses: []
 
+  # v3 foundation (default off, ADR 008). developerLab is a second opt-in for the
+  # /lab alias and lab copy; it does not invent GitOps or mount catalog YAML.
+  v3:
+    enabled: false
+    developerLab:
+      enabled: false
+
+  # Service catalog overlay (ADR 006). Required for /home and /sandbox UX.
+  # Hosted installs must provide the YAML at these paths; the image does not
+  # ship examples/platform-dev.
+  serviceCatalog:
+    enabled: false
+    maturityRubric: /config/maturity-rubric.yaml
+    workloadProfiles: /config/workload-profiles.yaml
+    deploymentSets: /config/deployment-sets.yaml
+    initiatives: /data/initiatives.jsonl
+    defaultTeam: platform
+
 # Scheduled TTL reclaim for vended environments (requires environmentVending.enabled).
 environmentReclaim:
   cronJob:

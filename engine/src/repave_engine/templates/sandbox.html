@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Sandbox — repave{% endblock %}
+{% block title %}{{ sandbox_nav_label }} — repave{% endblock %}
 
 {% block main_modifiers %} shell__main--catalog-hub{% endblock %}
 
 {% block content %}
 <header class="form-hero form-hero--compact">
   <div>
-    <h1 class="page-title">Request a sandbox</h1>
+    <h1 class="page-title">{{ sandbox_page_title }}</h1>
     <p class="page-lead">
       Pick a deployment set — a named workload profile plus environment stack.
       Repave opens a GitOps pull request; your CD toolchain applies it. Sandboxes expire
@@ -77,7 +77,7 @@
           type="submit"
           {% if not environment_vend_available %}disabled{% endif %}
         >
-          Request sandbox
+          {{ sandbox_request_label }}
         </button>
       </div>
     </form>

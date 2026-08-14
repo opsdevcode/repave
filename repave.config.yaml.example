@@ -240,8 +240,13 @@ gates:
 # v3 foundation (next/v3 line only — default off on main until v3.0.0 merge-back).
 # v3:
 #   enabled: false
+#   developer_lab:
+#     enabled: false  # opt in for /home and /lab; does not enable GitOps vending
 #   waivers_file: data/waivers.jsonl
 #   waiver_warn_days: 7
+# With v3.developer_lab.enabled: true, service_catalog defaults to examples/platform-dev
+# fixtures unless you set that block explicitly. environment_vending stays off until
+# you configure it. Async runs are still required for live sandbox requests.
 
 # Optional outbound notifications (Slack, Teams, or generic webhook).
 # Delivery is best-effort and never blocks generation.

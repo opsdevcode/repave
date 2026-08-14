@@ -9,14 +9,16 @@
   <div>
     <h1 class="page-title">My services</h1>
     <p class="page-lead">
-      Services you own on the platform — open a scorecard, request a sandbox, or jump to your team.
+      Services you own on the platform — open a scorecard,
+      {% if developer_lab_enabled %}request a developer lab{% else %}request a sandbox{% endif %},
+      or jump to your team.
       {% if not auth_enabled %}
       Showing the <code>{{ default_team }}</code> team (sign in to filter by your account).
       {% endif %}
     </p>
   </div>
   <div class="form-hero__actions">
-    <a class="btn btn--secondary" href="/sandbox">Request sandbox</a>
+    <a class="btn btn--secondary" href="{{ sandbox_href }}">{{ sandbox_request_label }}</a>
     <a class="btn btn--ghost" href="/library">Full library</a>
   </div>
 </header>
