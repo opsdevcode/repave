@@ -12,6 +12,8 @@ from repave_engine.auto_merge import (
     change_type_from_upgrade,
     decide_auto_merge,
     decide_auto_merge_for_plan,
+    merge_action_from_github,
+    skip_github_merge,
 )
 from repave_engine.gate_registry import GateResult
 from repave_engine.risk_class import ChangeClassification, RiskClass, classify_change
@@ -177,9 +179,38 @@ def test_decide_auto_merge_for_plan_kill_switch_demotes_fleet(tmp_path: Path) ->
     assert "kill_switch" in decision.reason
 
 
+def test_skip_github_merge_when_review_required() -> None:
+    action = skip_github_merge(_decide(kill_switch=True), pull_number=12)
+    assert action is not None
+    assert action.merged is False
+    assert "kill_switch" in action.reason
+    assert action.pull_request_number == 12
+
+
+def test_skip_github_merge_names_invalid_pull_number() -> None:
+    action = skip_github_merge(_decide(), pull_number=0)
+    assert action is not None
+    assert action.merged is False
+    assert "invalid pull request number" in action.reason
+
+
+def test_skip_github_merge_returns_none_when_caller_should_merge() -> None:
+    assert skip_github_merge(_decide(), pull_number=7) is None
+
+
+def test_merge_action_from_github_success_and_error() -> None:
+    merged = merge_action_from_github(pull_number=3, sha="abc123")
+    assert merged.merged is True
+    assert merged.merge_commit_sha == "abc123"
+    failed = merge_action_from_github(pull_number=3, sha="", error="GitHub merge failed (405)")
+    assert failed.merged is False
+    assert "405" in failed.reason
+
+
 def test_auto_merge_revert_runbook_names_kill_switch_and_git_revert() -> None:
     runbook = Path(__file__).resolve().parents[2] / "docs" / "operations" / "auto-merge-revert.md"
     text = runbook.read_text(encoding="utf-8")
     assert "v3.auto_merge.kill_switch" in text
     assert "git revert" in text
-    assert "does not merge a GitHub pull" in text
+    assert "merge_commit_sha" in text
+    assert "PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge" in text

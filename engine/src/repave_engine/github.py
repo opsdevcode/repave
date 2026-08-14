@@ -57,6 +57,31 @@ def push_git_branch(
     _run_git(["push", "-u", "origin", branch], cwd=repo_dir)
 
 
+def merge_github_pull_request(
+    owner: str,
+    repo: str,
+    pull_number: int,
+    token: str,
+    *,
+    merge_method: str = "squash",
+    commit_title: str = "",
+    client: GitHubRestClient | None = None,
+) -> dict[str, Any]:
+    """Squash-merge a pull request. Raises GitHubError on API failure."""
+    if pull_number <= 0:
+        raise ValueError(f"invalid pull request number {pull_number}; open the PR before merge")
+    body: dict[str, Any] = {"merge_method": merge_method}
+    if commit_title:
+        body["commit_title"] = commit_title
+    return _github_request(
+        "PUT",
+        f"/repos/{owner}/{repo}/pulls/{pull_number}/merge",
+        token,
+        body,
+        client=client,
+    )
+
+
 def create_github_pull_request(
     owner: str,
     repo: str,

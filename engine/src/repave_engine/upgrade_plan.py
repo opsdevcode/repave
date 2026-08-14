@@ -8,7 +8,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.auto_merge import AutoMergeDecision, decide_auto_merge_for_plan
+from repave_engine.auto_merge import (
+    AutoMergeAction,
+    AutoMergeDecision,
+    decide_auto_merge_for_plan,
+    merge_action_from_github,
+    skip_github_merge,
+)
 from repave_engine.blueprint import blueprint_dir, load_blueprint, validate_inputs
 from repave_engine.cost_estimate import (
     CostEstimateDelta,
@@ -19,8 +25,10 @@ from repave_engine.cost_estimate import (
 from repave_engine.gate_registry import GateResult
 from repave_engine.gates import run_gates
 from repave_engine.github import (
+    GitHubError,
     add_pull_request_labels,
     create_github_pull_request,
+    merge_github_pull_request,
     push_git_branch,
 )
 from repave_engine.policy_selection import diff_policy_provenance
@@ -154,11 +162,20 @@ class UpgradePublishResult:
     apply: ApplyUpgradeResult
     pull_request_url: str
     pull_request_number: int
+    merge: AutoMergeAction | None = None
 
     def to_json_dict(self) -> dict[str, Any]:
         payload = self.apply.to_json_dict()
         payload["pull_request_url"] = self.pull_request_url
         payload["pull_request_number"] = self.pull_request_number
+        auto = payload.get("auto_merge")
+        if isinstance(auto, dict) and self.merge is not None:
+            payload["auto_merge"] = {
+                **auto,
+                "merged": self.merge.merged,
+                "merge_commit_sha": self.merge.merge_commit_sha,
+                "merge_reason": self.merge.reason,
+            }
         return payload
 
     @property
@@ -264,10 +281,56 @@ def open_upgrade_pull_request(
             conventions.labels,
             github_token,
         )
+    merge = _maybe_merge_upgrade_pull_request(
+        apply_result.plan.auto_merge,
+        owner=repository.owner,
+        repo=repository.name,
+        pull_number=pr_number,
+        token=github_token,
+        title=title,
+    )
     return UpgradePublishResult(
         apply=apply_result,
         pull_request_url=str(pr.get("html_url", "")),
-        pull_request_number=int(pr.get("number", 0)),
+        pull_request_number=pr_number,
+        merge=merge,
+    )
+
+
+def _maybe_merge_upgrade_pull_request(
+    decision: AutoMergeDecision | None,
+    *,
+    owner: str,
+    repo: str,
+    pull_number: int,
+    token: str,
+    title: str,
+) -> AutoMergeAction | None:
+    if decision is None:
+        return None
+    skipped = skip_github_merge(decision, pull_number=pull_number)
+    if skipped is not None:
+        return skipped
+    try:
+        payload = merge_github_pull_request(
+            owner,
+            repo,
+            pull_number,
+            token,
+            commit_title=title,
+        )
+    except GitHubError as exc:
+        return merge_action_from_github(
+            pull_number=pull_number,
+            sha="",
+            error=(
+                f"GitHub merge failed ({exc.status}): {exc.message}; "
+                f"merge #{pull_number} manually or set v3.auto_merge.kill_switch"
+            ),
+        )
+    return merge_action_from_github(
+        pull_number=pull_number,
+        sha=str(payload.get("sha") or ""),
     )
 
 

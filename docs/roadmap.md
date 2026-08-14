@@ -7,8 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.6.0  
 
-**In progress:** Auto-merge still has no GitHub merge. Mandatory policy on
-regulated families is landing (waiver skip path).
+**In progress:** GitHub auto-merge for Allowed mechanical pin bumps
+(`apply-upgrade --open-pr` + operator remediation). Mandatory policy shipped.
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
 Public landing shipped in 3.1.0. Identity
 ([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
@@ -19,6 +19,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Mandatory policy** on regulated families
+([runbook](operations/mandatory-policy.md));
 **Service catalog maturity** ([ADR 006](adr/006-service-catalog-and-maturity.md),
 [`docs/service-catalog.md`](service-catalog.md));
 **mass GitHub org import** ([`docs/import.md`](import.md));
@@ -284,9 +286,10 @@ remediation themes.
 ### Autonomous governed remediation
 
 **Status:** Plan/upgrade and the portal upgrade preview show an auto-merge
-verdict. Kill switch and apply-commit revert:
+verdict. `apply-upgrade --open-pr` squash-merges when Allowed; the operator
+does the same after opening a remediation PR. Kill switch and revert:
 [`docs/operations/auto-merge-revert.md`](operations/auto-merge-revert.md).
-No GitHub merge. Live test-org demo still optional. Mandatory policy
+Live test-org demo still optional. Mandatory policy
 (`v3.mandatory_policy.enabled`) refuses `enable_policy: false` on regulated
 families; waivers use `gate_id: mandatory-policy`
 ([runbook](operations/mandatory-policy.md)).

@@ -9,15 +9,22 @@ import (
 	"strings"
 )
 
+// AutoMergeDecision is the optional auto_merge object from plan/apply-upgrade JSON.
+type AutoMergeDecision struct {
+	Allowed bool   `json:"allowed"`
+	Reason  string `json:"reason"`
+}
+
 // ApplyResult is the JSON payload from apply-upgrade (CLI or /api/v2/upgrades/apply).
 type ApplyResult struct {
-	BlueprintName    string `json:"blueprint_name"`
-	BlueprintVersion string `json:"blueprint_version"`
-	ChangedFileCount int    `json:"changed_file_count"`
-	GitBranch        string `json:"git_branch"`
-	CommitSHA        string `json:"commit_sha"`
-	Summary          string `json:"summary"`
-	Pushed           bool   `json:"pushed"`
+	BlueprintName    string             `json:"blueprint_name"`
+	BlueprintVersion string             `json:"blueprint_version"`
+	ChangedFileCount int                `json:"changed_file_count"`
+	GitBranch        string             `json:"git_branch"`
+	CommitSHA        string             `json:"commit_sha"`
+	Summary          string             `json:"summary"`
+	Pushed           bool               `json:"pushed"`
+	AutoMerge        *AutoMergeDecision `json:"auto_merge,omitempty"`
 }
 
 // ApplyUpgrader applies rendered upgrades onto a local git checkout.

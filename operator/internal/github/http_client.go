@@ -95,6 +95,58 @@ func (c *HTTPClient) CreatePullRequest(
 	}, nil
 }
 
+func (c *HTTPClient) MergePullRequest(
+	ctx context.Context,
+	req MergePullRequestRequest,
+) (MergeResult, error) {
+	token := strings.TrimSpace(c.Token)
+	if token == "" {
+		return MergeResult{}, fmt.Errorf("GitHub token is not configured")
+	}
+	if req.Number <= 0 {
+		return MergeResult{}, fmt.Errorf(
+			"invalid pull request number %d; open the PR before merge",
+			req.Number,
+		)
+	}
+
+	payload, err := json.Marshal(map[string]string{
+		"merge_method": "squash",
+		"commit_title": req.CommitTitle,
+	})
+	if err != nil {
+		return MergeResult{}, fmt.Errorf("marshal merge request: %w", err)
+	}
+
+	url := fmt.Sprintf(
+		"%s/repos/%s/%s/pulls/%d/merge",
+		c.baseURL(),
+		req.Repository.Owner,
+		req.Repository.Name,
+		req.Number,
+	)
+	resp, body, err := c.doGitHub(ctx, http.MethodPut, url, payload, token)
+	if err != nil {
+		return MergeResult{}, err
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return MergeResult{}, fmt.Errorf(
+			"GitHub merge API %d: %s",
+			resp.StatusCode,
+			strings.TrimSpace(string(body)),
+		)
+	}
+
+	var parsed struct {
+		SHA    string `json:"sha"`
+		Merged bool   `json:"merged"`
+	}
+	if err := json.Unmarshal(body, &parsed); err != nil {
+		return MergeResult{}, fmt.Errorf("decode merge response: %w", err)
+	}
+	return MergeResult{Merged: parsed.Merged, SHA: parsed.SHA}, nil
+}
+
 func (c *HTTPClient) addIssueLabels(
 	ctx context.Context,
 	repository Repository,

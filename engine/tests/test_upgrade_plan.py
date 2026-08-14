@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from repave_engine.auto_merge import AutoMergeDecision
 from repave_engine.provenance_inputs import inputs_from_provenance, load_provenance_document
 from repave_engine.upgrade_plan import (
     apply_upgrade,
@@ -247,6 +248,116 @@ def test_open_upgrade_pull_request(repo_root: Path, tmp_path: Path) -> None:
     assert result.pull_request_number == 42
     assert "pull/42" in result.pull_request_url
     assert result.apply.plan.changed_file_count > 0
+    assert result.merge is not None
+    assert result.merge.merged is False
+
+
+def test_open_upgrade_pull_request_merges_when_auto_merge_allowed(
+    repo_root: Path, tmp_path: Path
+) -> None:
+    import subprocess
+    from unittest.mock import patch
+
+    target = tmp_path / "module"
+    target.mkdir()
+    fixture_yaml = (
+        repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    )
+    (target / "repave.yaml").write_text(fixture_yaml.read_text(encoding="utf-8"), encoding="utf-8")
+    subprocess.run(["git", "init"], cwd=target, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=target, check=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", "https://github.com/example-org/tf-aws-demo.git"],
+        cwd=target,
+        check=True,
+    )
+    subprocess.run(["git", "add", "repave.yaml"], cwd=target, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=target, check=True, capture_output=True)
+
+    with (
+        patch("repave_engine.upgrade_plan.push_git_branch") as push,
+        patch("repave_engine.upgrade_plan.create_github_pull_request") as create_pr,
+        patch("repave_engine.upgrade_plan.add_pull_request_labels"),
+        patch("repave_engine.upgrade_plan.merge_github_pull_request") as merge_pr,
+        patch("repave_engine.upgrade_plan.decide_auto_merge_for_plan") as decide,
+    ):
+        create_pr.return_value = {
+            "html_url": "https://github.com/example-org/tf-aws-demo/pull/42",
+            "number": 42,
+        }
+        merge_pr.return_value = {"sha": "def456", "merged": True}
+        decide.return_value = AutoMergeDecision(
+            True, "mechanical change with green gates and a healthy error budget"
+        )
+        result = open_upgrade_pull_request(
+            target,
+            repo_root,
+            github_token="ghp_test",
+            staging_root=tmp_path / "staging",
+            git_branch="repave/upgrade-test",
+            commit_message="apply upgrade",
+        )
+
+    push.assert_called_once()
+    merge_pr.assert_called_once()
+    assert result.merge is not None
+    assert result.merge.merged is True
+    assert result.merge.merge_commit_sha == "def456"
+    payload = result.to_json_dict()
+    assert payload["auto_merge"]["merged"] is True
+    assert payload["auto_merge"]["merge_commit_sha"] == "def456"
+
+
+def test_open_upgrade_pull_request_records_merge_failure(repo_root: Path, tmp_path: Path) -> None:
+    import subprocess
+    from unittest.mock import patch
+
+    from repave_engine.github import GitHubError
+
+    target = tmp_path / "module"
+    target.mkdir()
+    fixture_yaml = (
+        repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    )
+    (target / "repave.yaml").write_text(fixture_yaml.read_text(encoding="utf-8"), encoding="utf-8")
+    subprocess.run(["git", "init"], cwd=target, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=target, check=True)
+    subprocess.run(
+        ["git", "remote", "add", "origin", "https://github.com/example-org/tf-aws-demo.git"],
+        cwd=target,
+        check=True,
+    )
+    subprocess.run(["git", "add", "repave.yaml"], cwd=target, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=target, check=True, capture_output=True)
+
+    with (
+        patch("repave_engine.upgrade_plan.push_git_branch"),
+        patch("repave_engine.upgrade_plan.create_github_pull_request") as create_pr,
+        patch("repave_engine.upgrade_plan.add_pull_request_labels"),
+        patch("repave_engine.upgrade_plan.merge_github_pull_request") as merge_pr,
+        patch("repave_engine.upgrade_plan.decide_auto_merge_for_plan") as decide,
+    ):
+        create_pr.return_value = {
+            "html_url": "https://github.com/example-org/tf-aws-demo/pull/42",
+            "number": 42,
+        }
+        merge_pr.side_effect = GitHubError(405, "Pull Request is not mergeable")
+        decide.return_value = AutoMergeDecision(True, "mechanical change with green gates")
+        result = open_upgrade_pull_request(
+            target,
+            repo_root,
+            github_token="ghp_test",
+            staging_root=tmp_path / "staging",
+            git_branch="repave/upgrade-test",
+            commit_message="apply upgrade",
+        )
+
+    assert result.merge is not None
+    assert result.merge.merged is False
+    assert "405" in result.merge.reason
+    assert result.pull_request_number == 42
 
 
 def test_apply_upgrade_preserve_local_skips_modified_overwrite(

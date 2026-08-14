@@ -70,6 +70,13 @@ def _cmd_open_upgrade_pull_request(args: argparse.Namespace) -> int:
         print(f"{heading('Branch:')} {result.apply.git_branch}")
         print(f"{heading('Commit:')} {result.apply.commit_sha}")
         print(success(f"Pull request: {result.pull_request_url}"))
+        if result.merge is not None:
+            if result.merge.merged:
+                print(success(f"Auto-merge: merged — {result.merge.reason}"))
+                if result.merge.merge_commit_sha:
+                    print(f"{heading('Merge commit:')} {result.merge.merge_commit_sha}")
+            else:
+                print(muted(f"Auto-merge: review required — {result.merge.reason}"))
 
     return 0
 

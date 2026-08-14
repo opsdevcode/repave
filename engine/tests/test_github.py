@@ -11,6 +11,7 @@ from repave_engine.github import (
     GitHubError,
     create_github_pull_request,
     ensure_github_repository,
+    merge_github_pull_request,
     push_git_branch,
     push_module_repository,
 )
@@ -197,3 +198,32 @@ def test_create_github_pull_request_posts_pulls_endpoint(tmp_path: Path) -> None
             "base": "main",
         },
     )
+
+
+def test_merge_github_pull_request_puts_merge_endpoint() -> None:
+    with patch("repave_engine.github._github_request") as request:
+        request.return_value = {"sha": "abc123", "merged": True}
+        payload = merge_github_pull_request(
+            "example-org",
+            "tf-aws-networking",
+            42,
+            "ghp_test",
+            commit_title="chore(repave): upgrade demo to 1.0.0",
+        )
+
+    assert payload["sha"] == "abc123"
+    request.assert_called_once_with(
+        "PUT",
+        "/repos/example-org/tf-aws-networking/pulls/42/merge",
+        "ghp_test",
+        {
+            "merge_method": "squash",
+            "commit_title": "chore(repave): upgrade demo to 1.0.0",
+        },
+        client=None,
+    )
+
+
+def test_merge_github_pull_request_rejects_invalid_number() -> None:
+    with pytest.raises(ValueError, match="invalid pull request number"):
+        merge_github_pull_request("example-org", "tf-aws-networking", 0, "ghp_test")

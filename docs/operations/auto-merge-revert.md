@@ -1,28 +1,33 @@
 # Auto-merge kill switch and revert
 
-Break-glass for the v3 auto-merge **verdict**. Plan/upgrade and the portal upgrade
-preview report `allowed` or `review required`. **Apply does not merge a GitHub pull
-request.** This runbook stops further `allowed` verdicts and undoes an applied
-mechanical pin bump.
+Break-glass for the v3 auto-merge path. Plan/upgrade and the portal upgrade
+preview report `allowed` or `review required`. When Allowed,
+`apply-upgrade --open-pr` and the operator remediation publisher squash-merge
+via `PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge`. This runbook stops
+further merges and undoes a landed pin bump.
 
-Autonomy safety: [ADR 008](../adr/008-v3-branching-release-and-testing.md). Decision
-function: `decide_auto_merge()` in `engine/src/repave_engine/auto_merge.py`.
+Autonomy safety: [ADR 008](../adr/008-v3-branching-release-and-testing.md).
+Decision function: `decide_auto_merge()` in
+`engine/src/repave_engine/auto_merge.py` (pure; no I/O). Merge is a separate
+step after the PR exists.
 
 ## When to use this
 
 | Situation | Action |
 | --- | --- |
 | Unexpected `allowed` verdicts, bad pin, or fleet SLO worry | Flip the [kill switch](#1-kill-switch) first |
-| `repave apply-upgrade` / `repave update --no-dry-run` already committed | [Revert the apply commit](#2-revert-an-apply-commit) |
-| Operator opened a remediation PR (`--open-pr`) that must not land | [Close or leave the PR](#3-open-pr-that-must-not-land) |
-| Prove the path in CI or a scratch checkout | [Local demonstration](#4-local-demonstration) |
+| Upgrade PR already squash-merged (`auto_merge.merged`) | [Revert the merge commit](#2-revert-a-merged-pull-request) |
+| `apply-upgrade` committed but the PR did not merge | [Revert the apply commit](#3-revert-an-apply-commit) |
+| Operator opened a remediation PR that must not land | [Close the open PR](#4-open-pr-that-must-not-land) |
+| Prove the path in CI or a scratch checkout | [Local demonstration](#5-local-demonstration) |
 
 Do not default-on `v3.enabled` or `v3.auto_merge.enabled` in hosted values.
 
 ## 1. Kill switch
 
 `v3.auto_merge.kill_switch: true` demotes the **whole fleet** to review-required in one
-config change. It wins over an otherwise eligible mechanical pin bump.
+config change. It wins over an otherwise eligible mechanical pin bump and prevents
+the next `--open-pr` from calling GitHub merge.
 
 ### Config file
 
@@ -63,9 +68,28 @@ helm upgrade repave ./deploy/k8s/chart \
 developer lab). Defaults are off. This is **not** a Helm rollback of the portal chart —
 see [upgrade-and-rollback.md](upgrade-and-rollback.md) for image/chart rollback.
 
-## 2. Revert an apply commit
+## 2. Revert a merged pull request
 
-`apply-upgrade` writes the rendered pin bump onto `--git-branch` and creates a commit.
+`--open-pr` JSON includes `auto_merge.merged` and `auto_merge.merge_commit_sha` when
+the squash merge succeeded. Revert that commit on the **base** branch (usually
+`main`), not the upgrade branch.
+
+```bash
+cd /path/to/target-module
+git fetch origin
+git switch main
+git pull --ff-only
+git revert --no-edit "$MERGE_COMMIT_SHA"
+git push origin main
+```
+
+`$MERGE_COMMIT_SHA` is `auto_merge.merge_commit_sha` from apply JSON, or the
+squash commit GitHub shows on the merged PR. Flip the [kill switch](#1-kill-switch)
+before you push so a later plan does not re-merge the same pin.
+
+## 3. Revert an apply commit
+
+`apply-upgrade` without a successful merge writes the pin bump onto `--git-branch`.
 The JSON payload includes `commit_sha` and `git_branch`.
 
 ```bash
@@ -74,8 +98,8 @@ git switch "$GIT_BRANCH"          # branch from apply-upgrade, e.g. repave/upgra
 git revert --no-edit "$COMMIT_SHA"
 ```
 
-If that branch was pushed, push the revert commit. Do **not** merge the original
-upgrade PR (repave does not auto-merge it today).
+If that branch was pushed, push the revert commit. Close the upgrade PR if it is
+still open.
 
 If the apply never left the local clone, you can instead reset the branch to the
 parent of `commit_sha` when you are sure nothing else landed on it:
@@ -89,16 +113,17 @@ Prefer `git revert` when the branch may be shared.
 
 Then re-plan. The working tree should match the pre-apply pins in `repave.yaml`.
 
-## 3. Open PR that must not land
+## 4. Open PR that must not land
 
-`--open-pr` / `open_upgrade_pull_request` pushes a branch and opens a GitHub PR. Close
-that PR (or leave it unmerged) and delete the remote branch if you do not want the
-pin bump. Flip the [kill switch](#1-kill-switch) so a later plan does not report
-`allowed` while you clean up.
+If merge did not run (`auto_merge.merged` false), close the PR and delete the
+remote branch. Flip the [kill switch](#1-kill-switch) so a later plan does not
+report `allowed` while you clean up.
 
-Repave does not merge that PR.
+```bash
+gh pr close "$PR_NUMBER" --delete-branch
+```
 
-## 4. Local demonstration
+## 5. Local demonstration
 
 Until a dedicated GitHub test organization exists, demonstrate revert on the operator
 fixture (same path CI uses). From a git checkout of this repo:
@@ -106,6 +131,7 @@ fixture (same path CI uses). From a git checkout of this repo:
 ```bash
 cd engine
 uv run pytest tests/test_upgrade_plan.py::test_apply_upgrade_commit_is_revertible -q --no-cov
+uv run pytest tests/test_upgrade_plan.py::test_open_upgrade_pull_request_merges_when_auto_merge_allowed -q --no-cov
 uv run pytest tests/test_auto_merge.py::test_kill_switch_wins_over_an_otherwise_eligible_change -q --no-cov
 ```
 

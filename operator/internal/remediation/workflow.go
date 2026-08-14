@@ -29,7 +29,8 @@ func WorkDir(
 	return "", fmt.Errorf("remediation requires spec.localPath or a materialized spec.repoURL clone")
 }
 
-// PROpen reports whether status already tracks an open or planned PR for desiredVersion.
+// PROpen reports whether status already tracks a PR for desiredVersion
+// (open, planned, or merged — do not re-apply).
 func PROpen(existing *repavev1beta1.RemediationPRStatus, desiredVersion string) bool {
 	if existing == nil {
 		return false
@@ -37,7 +38,9 @@ func PROpen(existing *repavev1beta1.RemediationPRStatus, desiredVersion string) 
 	if existing.DesiredBlueprintVersion != desiredVersion {
 		return false
 	}
-	return existing.State == PRStateOpen || existing.State == PRStatePlanned
+	return existing.State == PRStateOpen ||
+		existing.State == PRStatePlanned ||
+		existing.State == PRStateMerged
 }
 
 // PRMetadata holds branch, title, body, and commit message for a remediation PR.
@@ -115,12 +118,15 @@ type PublishInput struct {
 	PRClient       github.Client
 }
 
-// PublishedPR is the opened remediation pull request.
+// PublishedPR is the opened (and optionally merged) remediation pull request.
 type PublishedPR struct {
-	URL    string
-	Number int
-	Title  string
-	Branch string
+	URL            string
+	Number         int
+	Title          string
+	Branch         string
+	Merged         bool
+	MergeCommitSHA string
+	MergeError     string
 }
 
 // PublishPullRequest pushes the remediation branch when needed and opens a GitHub PR.
@@ -165,12 +171,28 @@ func PublishPullRequest(ctx context.Context, in PublishInput) (PublishedPR, erro
 		return PublishedPR{}, err
 	}
 
-	return PublishedPR{
+	published := PublishedPR{
 		URL:    pr.HTMLURL,
 		Number: pr.Number,
 		Title:  pr.Title,
 		Branch: in.ApplyResult.GitBranch,
-	}, nil
+	}
+	if in.ApplyResult.AutoMerge == nil || !in.ApplyResult.AutoMerge.Allowed {
+		return published, nil
+	}
+
+	merged, err := prClient.MergePullRequest(ctx, github.MergePullRequestRequest{
+		Repository:  repository,
+		Number:      pr.Number,
+		CommitTitle: in.Metadata.Title,
+	})
+	if err != nil {
+		published.MergeError = err.Error()
+		return published, nil
+	}
+	published.Merged = merged.Merged
+	published.MergeCommitSHA = merged.SHA
+	return published, nil
 }
 
 // ErrGitHubTokenRequired is returned when GitHub credentials are missing for PR publish.
