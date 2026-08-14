@@ -618,7 +618,16 @@
       </div>
       {% endif %}
 
-      {% if policy_customization_optional and policy_catalog %}
+      {% if policy_mandatory and policy_catalog %}
+      <div class="field-block policy-enable" id="policy-mandatory">
+        <input type="hidden" id="enable_policy" name="enable_policy" value="true" />
+        <p class="hint">
+          Policy is required on this regulated family. Set <code>enable_policy: true</code>,
+          or add a waiver in <code>data/waivers.jsonl</code> with
+          <code>gate_id: mandatory-policy</code> and an expiry.
+        </p>
+      </div>
+      {% elif policy_customization_optional and policy_catalog %}
       <div class="field-block policy-enable" id="policy-enable">
         <label class="checkbox-row" for="enable_policy_toggle">
           <input
@@ -635,11 +644,11 @@
         </p>
       </div>
       {% endif %}
-      {% if (policy_customization or policy_customization_optional) and policy_catalog %}
+      {% if (policy_customization or policy_customization_optional or policy_mandatory) and policy_catalog %}
       <details
         class="field-block policy-customization"
         id="policy-customization"
-        {% if policy_customization_optional %}hidden{% endif %}
+        {% if policy_customization_optional and not policy_mandatory %}hidden{% endif %}
         {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
         {% if supports_form_mode %}data-form-advanced{% endif %}
       >
@@ -2346,7 +2355,7 @@
 </script>
 {% endif %}
 {% endif %}
-{% if (policy_customization or policy_customization_optional) and policy_catalog %}
+{% if (policy_customization or policy_customization_optional or policy_mandatory) and policy_catalog %}
 <script id="policy-catalog-data" type="application/json">{{ policy_catalog | tojson }}</script>
 <script>
 (function () {

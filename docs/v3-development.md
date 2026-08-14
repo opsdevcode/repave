@@ -45,12 +45,16 @@ Modules under `engine/src/repave_engine/`:
 | `waivers.py` | JSONL waiver load + expiry evaluation |
 | `v3_foundation.py` | `v3:` block in `repave.config.yaml` (off until flip) |
 | `auto_merge.py` | Pure `decide_auto_merge()` plus plan/upgrade verdict (no GitHub merge) |
+| `mandatory_policy.py` | Pure `decide_policy_skip()` plus generate/OPA enforcement |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
 `engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,
-`engine/tests/test_developer_lab.py`, and `make test-v3`.
+`engine/tests/test_mandatory_policy.py`, `engine/tests/test_developer_lab.py`,
+and `make test-v3`.
 Kill switch and apply-commit revert:
 [`docs/operations/auto-merge-revert.md`](operations/auto-merge-revert.md).
+Mandatory policy on regulated families:
+[`docs/operations/mandatory-policy.md`](operations/mandatory-policy.md).
 
 ## Developer lab (v3)
 
@@ -85,6 +89,7 @@ Helm (flags only; catalog files are operator-provided):
 helm upgrade --install repave ./deploy/k8s/chart \
   --set repave.v3.enabled=true \
   --set repave.v3.developerLab.enabled=true \
+  --set repave.v3.mandatoryPolicy.enabled=true \
   --set repave.serviceCatalog.enabled=true \
   --set repave.output.githubOrg=your-org
 ```

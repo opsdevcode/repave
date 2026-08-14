@@ -72,6 +72,8 @@ class GateContext:
     gate_overrides: GateOverrides | None = None
     # Dry-run / plan preview: blueprint gates must execute (missing tools → fail, not skip).
     require_run: bool = False
+    # v3 mandatory policy: refuse the enable_policy skip on regulated families.
+    forbid_policy_skip: bool = False
 
     def config(self, gate_name: str) -> Mapping[str, Any]:
         base: dict[str, Any] = {}

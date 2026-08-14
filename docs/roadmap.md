@@ -7,8 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.5.0  
 
-**In progress:** mandatory policy on regulated blueprint families (waiver expiry
-already exists). Auto-merge still has no GitHub merge.
+**In progress:** Auto-merge still has no GitHub merge. Mandatory policy on
+regulated families is landing (waiver skip path).
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
 Public landing shipped in 3.1.0. Identity
 ([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
@@ -286,7 +286,10 @@ remediation themes.
 **Status:** Plan/upgrade and the portal upgrade preview show an auto-merge
 verdict. Kill switch and apply-commit revert:
 [`docs/operations/auto-merge-revert.md`](operations/auto-merge-revert.md).
-No GitHub merge. Live test-org demo still optional.
+No GitHub merge. Live test-org demo still optional. Mandatory policy
+(`v3.mandatory_policy.enabled`) refuses `enable_policy: false` on regulated
+families; waivers use `gate_id: mandatory-policy`
+([runbook](operations/mandatory-policy.md)).
 
 - **Auto-merge for low-risk remediation:** blueprints declare a risk class per change type;
   a pin bump with all gates green, no open waiver, and a healthy error budget can merge

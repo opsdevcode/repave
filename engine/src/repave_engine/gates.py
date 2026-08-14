@@ -188,11 +188,21 @@ def run_gates(
         repo_root,
         entity_id=entity_id,
     )
+    forbid_policy_skip = False
+    if blueprint is not None and repo_root is not None:
+        from repave_engine.mandatory_policy import evaluate_policy_skip
+
+        forbid_policy_skip = not evaluate_policy_skip(
+            blueprint,
+            repo_root,
+            entity_id=entity_id,
+        ).allowed
     context = GateContext(
         output_dir=output_dir,
         blueprint=blueprint,
         gate_overrides=gate_overrides,
         require_run=require_run,
+        forbid_policy_skip=forbid_policy_skip,
     )
     results: list[GateResult] = []
     for gate_name in gate_names:

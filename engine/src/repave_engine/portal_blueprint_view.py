@@ -16,6 +16,7 @@ from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import diff_view_models
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.governance_preflight import build_blueprint_preflight
+from repave_engine.mandatory_policy import evaluate_policy_skip
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
 from repave_engine.observability_catalog import catalog_has_field_options
@@ -68,6 +69,9 @@ def build_blueprint_form_extras(
             profile=profile,
             artifact_type=blueprint.artifact_type,
         )
+    policy_mandatory = not evaluate_policy_skip(blueprint, repo_root).allowed
+    if policy_mandatory:
+        policy_defaults = {**policy_defaults, "enable_policy": "true"}
     observability_catalog: dict[str, object] | None = None
     observability_defaults: dict[str, str] = {}
     observability_field_catalog = False
@@ -157,6 +161,7 @@ def build_blueprint_form_extras(
         "recent_activity": portal_recent_activity(repo_root),
         "policy_customization": blueprint_supports_policy_customization(blueprint),
         "policy_customization_optional": blueprint_supports_optional_policy(blueprint),
+        "policy_mandatory": policy_mandatory,
         "policy_defaults": policy_defaults,
         "policy_catalog": policy_catalog,
         "policy_enabled_rule_ids": policy_enabled_rule_ids,

@@ -131,6 +131,7 @@ def test_v3_foundation_loads_waivers_path(tmp_path: Path) -> None:
     assert config.developer_lab_enabled is False
     assert config.auto_merge_enabled is False
     assert config.auto_merge_kill_switch is False
+    assert config.mandatory_policy_enabled is False
     assert config.waivers_file == tmp_path / "data" / "custom-waivers.jsonl"
 
 

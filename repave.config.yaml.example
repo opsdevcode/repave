@@ -245,6 +245,15 @@ gates:
 #   auto_merge:
 #     enabled: false  # mechanical pin bumps only; no GitHub merge yet
 #     kill_switch: false  # true demotes the whole fleet to review-required
+#   mandatory_policy:
+#     enabled: false  # refuse enable_policy: false on regulated families
+#     regulated_families:
+#       - terraform
+#       - policy
+#       - gitops
+#       - helm
+#       - ansible
+#       - observability
 #   waivers_file: data/waivers.jsonl
 #   waiver_warn_days: 7
 # With v3.developer_lab.enabled: true, service_catalog defaults to examples/platform-dev

@@ -14,6 +14,7 @@ modules:
   - repave_engine.risk_class
   - repave_engine.waivers
   - repave_engine.v3_foundation
+  - repave_engine.mandatory_policy
 forbidden_import_roots:
   - fastapi
   - starlette

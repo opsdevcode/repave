@@ -20,6 +20,8 @@ class V3FoundationConfig:
     waiver_warn_days: int
     auto_merge_enabled: bool = False
     auto_merge_kill_switch: bool = False
+    mandatory_policy_enabled: bool = False
+    regulated_families: frozenset[str] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -68,6 +70,8 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         waiver_warn_days=7,
         auto_merge_enabled=False,
         auto_merge_kill_switch=False,
+        mandatory_policy_enabled=False,
+        regulated_families=frozenset(),
     )
     if path is None:
         return disabled
@@ -85,6 +89,7 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         raise ValueError("v3.enabled must be a boolean")
     developer_lab_enabled = _parse_developer_lab_enabled(block)
     auto_merge_enabled, auto_merge_kill_switch = _parse_auto_merge(block)
+    mandatory_policy_enabled, regulated_families = _parse_mandatory_policy(block)
     if not enabled_raw:
         if developer_lab_enabled:
             raise ValueError(
@@ -95,6 +100,11 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
             raise ValueError(
                 "v3.auto_merge.enabled is true but v3.enabled is false. "
                 "Set v3.enabled: true, or set v3.auto_merge.enabled: false."
+            )
+        if mandatory_policy_enabled:
+            raise ValueError(
+                "v3.mandatory_policy.enabled is true but v3.enabled is false. "
+                "Set v3.enabled: true, or set v3.mandatory_policy.enabled: false."
             )
         return disabled
 
@@ -118,6 +128,8 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         waiver_warn_days=warn_raw,
         auto_merge_enabled=auto_merge_enabled,
         auto_merge_kill_switch=auto_merge_kill_switch,
+        mandatory_policy_enabled=mandatory_policy_enabled,
+        regulated_families=regulated_families,
     )
 
 
@@ -137,6 +149,42 @@ def _parse_auto_merge(block: dict[str, object]) -> tuple[bool, bool]:
     if not isinstance(kill_raw, bool):
         raise ValueError("v3.auto_merge.kill_switch must be a boolean")
     return enabled_raw, kill_raw
+
+
+def _parse_mandatory_policy(block: dict[str, object]) -> tuple[bool, frozenset[str]]:
+    """Opt in with v3.mandatory_policy.enabled. Families default when the list is omitted."""
+    from repave_engine.mandatory_policy import (
+        DEFAULT_REGULATED_FAMILIES,
+        KNOWN_ARTIFACT_FAMILIES,
+    )
+
+    raw = block.get("mandatory_policy")
+    if raw is None:
+        return False, DEFAULT_REGULATED_FAMILIES
+    if isinstance(raw, bool):
+        return raw, DEFAULT_REGULATED_FAMILIES
+    if not isinstance(raw, dict):
+        raise ValueError("v3.mandatory_policy must be a boolean or mapping")
+    enabled_raw = raw.get("enabled", False)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("v3.mandatory_policy.enabled must be a boolean")
+    families_raw = raw.get("regulated_families")
+    if families_raw is None:
+        return enabled_raw, DEFAULT_REGULATED_FAMILIES
+    if not isinstance(families_raw, list) or not all(
+        isinstance(item, str) for item in families_raw
+    ):
+        allowed = ", ".join(sorted(KNOWN_ARTIFACT_FAMILIES))
+        raise ValueError(
+            "v3.mandatory_policy.regulated_families must be a list of family names; "
+            f"allowed: {allowed}"
+        )
+    families = frozenset(item.strip() for item in families_raw if item.strip())
+    unknown = families - KNOWN_ARTIFACT_FAMILIES
+    if unknown:
+        allowed = ", ".join(sorted(KNOWN_ARTIFACT_FAMILIES))
+        raise ValueError(f"unknown regulated family {sorted(unknown)[0]!r}; allowed: {allowed}")
+    return enabled_raw, families
 
 
 def _parse_developer_lab_enabled(block: dict[str, object]) -> bool:
