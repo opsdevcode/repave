@@ -1044,6 +1044,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="sandbox",
                 workload_profiles=profiles,
+                profiles_by_id={profile.id: profile for profile in profiles},
                 deployment_sets=sets,
                 environment_vend_available=bool(run_queue is not None and vend_cfg is not None),
                 environment_vend_cfg=vend_cfg,

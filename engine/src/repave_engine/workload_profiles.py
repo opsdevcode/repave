@@ -19,6 +19,12 @@ class WorkloadProfile:
     default_inputs: dict[str, Any] = field(default_factory=dict)
     bundle: str = ""
 
+    @property
+    def family(self) -> str:
+        from repave_engine.fleet_view import fleet_blueprint_family
+
+        return fleet_blueprint_family(self.blueprint)
+
     def to_public_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
