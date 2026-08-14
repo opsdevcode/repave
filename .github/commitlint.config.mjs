@@ -3,7 +3,7 @@ export default {
   rules: {
     'subject-case': [2, 'never', ['start-case', 'pascal-case', 'upper-case']],
     'header-max-length': [2, 'always', 100],
-    // Git merge commits on next/v3 use `merge:` until rebased to chore(merge).
+    // Allow `merge:` on leftover merge commits.
     'type-enum': [
       2,
       'always',

@@ -1,8 +1,8 @@
 # Repave brand
 
-v3 identity on `next/v3` ([ADR 009](../adr/009-v3-product-identity.md)): **repave**
+v3 identity on `main` ([ADR 009](../adr/009-v3-product-identity.md)): **repave**
 wordmark, isometric **platform-layer** mark, tagline *The intelligent platform layer*.
-Wire names stay `repave`. v2 Converge remains canonical on `main` until merge-back.
+Wire names stay `repave`.
 
 Repave is the intelligent platform layer: self-service by design, AI-powered,
 governed by design. Gold (`#F59E0B`) marks the golden path and must stay scarce —

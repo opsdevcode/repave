@@ -303,7 +303,7 @@ Pick based on audience and hosting model (v1.25+).
 
 Further craft (illustration, stepper) is optional.
 
-### Visual v3 (next/v3)
+### Visual v3
 
 **Status:** identity landed in [ADR 009](adr/009-v3-product-identity.md): **repave** +
 platform-layer mark + *The intelligent platform layer*. Recapture README screenshots

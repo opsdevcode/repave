@@ -160,11 +160,6 @@ mode = "update"
 match = "main"
 prerelease = false
 
-[tool.semantic_release.branches.v3]
-match = "next/v3"
-prerelease = true
-prerelease_token = "rc"
-
 [tool.semantic_release.changelog.default_templates]
 # Resolved from engine/ working directory (see Release workflow).
 changelog_file = "CHANGELOG.md"

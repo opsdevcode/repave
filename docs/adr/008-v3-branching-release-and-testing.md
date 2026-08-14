@@ -1,6 +1,7 @@
 # ADR 008: v3 branching, release, and testing strategy
 
-**Status:** Accepted — long-lived `next/v3` integration branch with `rc` prereleases.
+**Status:** Superseded — `v3.0.0` shipped on `main` (#645 / #646). New work
+targets `main`. Do not open PRs to `next/v3` or dispatch Release prerelease.
 **Date:** 2026-08-09
 **Scope:** how v3 work is branched, versioned, and tested. No product behavior of its own.
 **Related:** [beyond v2.0.0](../roadmap.md#beyond-v200--autonomous-estate-and-lifecycle-control-plane),
