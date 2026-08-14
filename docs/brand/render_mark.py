@@ -192,26 +192,39 @@ def _svg(view: str, title: str, desc: str, body: str) -> str:
 
 
 def _favicon_body(kind: str, *, mono: bool = False) -> str:
-    """Two-slab simplified mark for 16–32px."""
-    w, d, h, gap = 18.0, 14.0, 3.8, 2.8
+    """Framed two-slab mark — readable at 16px. No dashed posts (they read as noise)."""
+    w, d, h, gap = 15.5, 12.0, 4.4, 3.4
     slabs = [_box(0, 0, 0, w, d, h), _box(0, 0, h + gap, w, d, h)]
     z_top = h + gap + h
-    path_xy = ((2.5, 3.0), (7.0, 4.5), (9.5, 8.0), (14.5, 10.5))
+    path_xy = ((1.8, 2.4), (6.2, 4.0), (8.8, 7.2), (13.2, 9.0))
     path_pts = [iso(x, y, z_top) for x, y in path_xy]
-    posts = [(iso(x, y, z_top), iso(x, y, z_top + ht)) for x, y, ht in ((5, 4, 5), (11, 6, 7), (8, 10, 4))]
     pts: list[tuple[float, float]] = []
     for top, east, south in slabs:
         pts.extend(top + east + south)
     xs = [p[0] for p in pts]
     ys = [p[1] for p in pts]
     ox = 16.0 - (min(xs) + max(xs)) / 2
-    oy = 17.0 - (min(ys) + max(ys)) / 2
+    oy = 16.4 - (min(ys) + max(ys)) / 2
     pal = PALETTES["dark" if kind == "dark" else "light"]
-    parts: list[str] = []
+    if mono:
+        parts = [
+            '<rect x="1.4" y="1.4" width="29.2" height="29.2" rx="7" fill="none" '
+            'stroke="currentColor" stroke-width="1.8"/>'
+        ]
+    else:
+        field = "#0F172A" if kind == "dark" else "#E2E8F0"
+        parts = [
+            f'<rect x="1.4" y="1.4" width="29.2" height="29.2" rx="7" fill="{field}" '
+            f'stroke="{pal["path"]}" stroke-width="1.6"/>'
+        ]
     for index, (top, east, south) in enumerate(slabs):
         if mono:
-            parts.append(f'<polygon points="{_poly(south, ox, oy)}" fill="currentColor" opacity="0.45"/>')
-            parts.append(f'<polygon points="{_poly(east, ox, oy)}" fill="currentColor" opacity="0.7"/>')
+            parts.append(
+                f'<polygon points="{_poly(south, ox, oy)}" fill="currentColor" opacity="0.45"/>'
+            )
+            parts.append(
+                f'<polygon points="{_poly(east, ox, oy)}" fill="currentColor" opacity="0.7"/>'
+            )
             parts.append(f'<polygon points="{_poly(top, ox, oy)}" fill="currentColor"/>')
         else:
             parts.append(f'<polygon points="{_poly(south, ox, oy)}" fill="{pal["south"][index]}"/>')
@@ -220,16 +233,9 @@ def _favicon_body(kind: str, *, mono: bool = False) -> str:
     path_d = _path_d(path_pts, ox, oy)
     stroke = "currentColor" if mono else pal["path"]
     parts.append(
-        f'<path d="{path_d}" fill="none" stroke="{stroke}" stroke-width="2.2" '
+        f'<path d="{path_d}" fill="none" stroke="{stroke}" stroke-width="2.6" '
         'stroke-linecap="round" stroke-linejoin="round"/>'
     )
-    post_stroke = "currentColor" if mono else pal["post"]
-    for a, b in posts:
-        parts.append(
-            f'<line x1="{ox + a[0]:.2f}" y1="{oy + a[1]:.2f}" '
-            f'x2="{ox + b[0]:.2f}" y2="{oy + b[1]:.2f}" stroke="{post_stroke}" '
-            'stroke-width="1.3" stroke-linecap="round" stroke-dasharray="0.5 1.6"/>'
-        )
     return "\n  ".join(parts)
 
 
@@ -269,24 +275,29 @@ def main() -> None:
     fav_mono = _favicon_body("light", mono=True)
     _write(
         SVG / "repave-mark-favicon.svg",
-        _svg("0 0 32 32", "Repave favicon", "Simplified platform-layer mark for small sizes.", fav_light),
+        _svg("0 0 32 32", "Repave favicon", "Framed two-slab mark for small sizes.", fav_light),
     )
     _write(
         SVG / "repave-mark-favicon-dark.svg",
         _svg(
             "0 0 32 32",
             "Repave favicon (dark)",
-            "Simplified platform-layer mark for dark browser chrome.",
+            "Framed two-slab mark for dark browser chrome.",
             fav_dark,
         ),
     )
     _write(
         SVG / "repave-mark-favicon-mono.svg",
-        _svg("0 0 32 32", "Repave favicon (mono)", "Monochrome simplified platform-layer mark.", fav_mono),
+        _svg("0 0 32 32", "Repave favicon (mono)", "Monochrome framed two-slab mark.", fav_mono),
     )
     _write(
         FAV / "favicon.svg",
-        _svg("0 0 32 32", "Repave favicon (dark)", "Simplified platform-layer mark for dark browser chrome.", fav_dark),
+        _svg(
+            "0 0 32 32",
+            "Repave favicon (dark)",
+            "Framed two-slab mark for dark browser chrome.",
+            fav_dark,
+        ),
     )
 
     mark_nested_light = (

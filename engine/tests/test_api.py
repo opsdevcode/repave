@@ -592,6 +592,9 @@ def test_brand_static_assets_served(repo_root, output_config) -> None:
     assert "platform layer" in mark.text.lower() or 'viewBox="0 0 80 80"' in mark.text
     assert favicon.status_code == 200
     assert favicon.headers["content-type"].startswith("image/")
+    assert 'fill="#0F172A"' in favicon.text
+    assert 'stroke="#F59E0B"' in favicon.text
+    assert "stroke-dasharray" not in favicon.text
     assert social.status_code == 200
 
 
@@ -1867,6 +1870,10 @@ def test_update_plan_preview(repo_root, output_config) -> None:
     assert "upgrade-diff__item--" in response.text
     assert "diff-viewer" in response.text or "Unified diffs" in response.text
     assert "repave update --no-dry-run" in response.text
+    assert "Auto-merge" in response.text
+    assert "Review required" in response.text
+    assert "v3.enabled" in response.text
+    assert "Plan verdict only" in response.text
 
 
 def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config, tmp_path) -> None:

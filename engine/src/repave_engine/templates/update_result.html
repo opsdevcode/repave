@@ -41,6 +41,28 @@
   </div>
 </section>
 
+{% if plan.auto_merge %}
+<section class="card" aria-labelledby="auto-merge-heading">
+  <div class="card__header">
+    <h2 id="auto-merge-heading">Auto-merge</h2>
+  </div>
+  <div class="card__body">
+    <p class="hint muted">Plan verdict only. Apply does not merge a GitHub pull request.</p>
+    {% if plan.auto_merge.allowed %}
+    <p>
+      <span class="badge badge--pass">Allowed</span>
+      {{ plan.auto_merge.reason }}
+    </p>
+    {% else %}
+    <p>
+      <span class="badge badge--skip">Review required</span>
+      {{ plan.auto_merge.reason }}
+    </p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
 {% if plan.cost_delta %}
 <section class="card result-cost-estimate" aria-labelledby="upgrade-cost-heading">
   <div class="card__header">

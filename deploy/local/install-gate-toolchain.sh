@@ -25,7 +25,8 @@ CURL_GET=(curl -fsSL)
 # curl --retry does not reliably retry HTTP 503 with -f; loop instead.
 DOWNLOAD_RETRY_ATTEMPTS="${DOWNLOAD_RETRY_ATTEMPTS:-8}"
 DOWNLOAD_RETRY_DELAY="${DOWNLOAD_RETRY_DELAY:-3}"
-GALAXY_INSTALL=(ansible-galaxy collection install)
+# --no-cache avoids Galaxy API payloads that omit `results` (CI flake).
+GALAXY_INSTALL=(ansible-galaxy collection install --no-cache)
 UV_PIP_INSTALL=(uv pip install --system --no-cache)
 PIP_INSTALL=(python -m pip install)
 if [[ -n "$GATE_PIP_TARGET" ]]; then
@@ -62,6 +63,28 @@ curl_download() {
       return "$rc"
     fi
     echo "download attempt ${attempt}/${DOWNLOAD_RETRY_ATTEMPTS} failed (curl exit ${rc}); retrying in ${delay}s..." >&2
+    sleep "$delay"
+    attempt=$((attempt + 1))
+    delay=$((delay * 2))
+    if (( delay > 20 )); then
+      delay=20
+    fi
+  done
+  return "$rc"
+}
+
+galaxy_install() {
+  local attempt=1
+  local delay="$DOWNLOAD_RETRY_DELAY"
+  local rc=0
+  while (( attempt <= DOWNLOAD_RETRY_ATTEMPTS )); do
+    "${GALAXY_INSTALL[@]}" "$@" && return 0
+    rc=$?
+    if (( attempt == DOWNLOAD_RETRY_ATTEMPTS )); then
+      echo "ansible-galaxy failed after ${attempt} attempts (exit ${rc})" >&2
+      return "$rc"
+    fi
+    echo "ansible-galaxy attempt ${attempt}/${DOWNLOAD_RETRY_ATTEMPTS} failed (exit ${rc}); retrying in ${delay}s..." >&2
     sleep "$delay"
     attempt=$((attempt + 1))
     delay=$((delay * 2))
@@ -164,7 +187,7 @@ if [[ "$INSTALL_ANSIBLE" == "1" ]]; then
       echo "The requirements file '${GATE_COLLECTIONS}' does not exist." >&2
       exit 1
     fi
-    "${GALAXY_INSTALL[@]}" -r "$GATE_COLLECTIONS"
+    galaxy_install -r "$GATE_COLLECTIONS"
   fi
 fi
 

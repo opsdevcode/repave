@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.3.0  
 
-**In progress:** auto-merge verdict on plan/upgrade (still no GitHub merge).
+**In progress:** auto-merge revert runbook and test-org demo (still no GitHub merge).
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
 Public landing shipped in 3.1.0. Identity
 ([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
@@ -282,8 +282,8 @@ remediation themes.
 
 ### Autonomous governed remediation
 
-**Status:** Plan/upgrade emits an auto-merge verdict. No GitHub merge, revert
-runbook, or test-org demo yet.
+**Status:** Plan/upgrade and the portal upgrade preview show an auto-merge
+verdict. No GitHub merge, revert runbook, or test-org demo yet.
 
 - **Auto-merge for low-risk remediation:** blueprints declare a risk class per change type;
   a pin bump with all gates green, no open waiver, and a healthy error budget can merge
