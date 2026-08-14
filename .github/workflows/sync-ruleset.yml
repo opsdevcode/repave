@@ -28,17 +28,3 @@ jobs:
           fi
           gh api --method PUT "repos/${GITHUB_REPOSITORY}/rulesets/${RULESET_ID}" \
             --input .github/rulesets/main-branch.json
-
-      - name: Update next/v3 branch ruleset
-        env:
-          GH_TOKEN: ${{ secrets.REPAVE_RELEASE_TOKEN }}
-        run: |
-          set -euo pipefail
-          RULESET_ID="$(gh api "repos/${GITHUB_REPOSITORY}/rulesets" \
-            --jq '.[] | select(.name=="next/v3 branch") | .id')"
-          if [ -z "${RULESET_ID}" ]; then
-            echo "No ruleset named 'next/v3 branch'; create it manually on GitHub first." >&2
-            exit 0
-          fi
-          gh api --method PUT "repos/${GITHUB_REPOSITORY}/rulesets/${RULESET_ID}" \
-            --input .github/rulesets/next-v3-branch.json

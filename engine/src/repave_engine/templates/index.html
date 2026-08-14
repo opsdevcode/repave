@@ -7,21 +7,49 @@
 {% block content %}
 <div class="home-catalog-column">
 <section class="home-console" aria-labelledby="home-console-title">
-  <header class="home-console__header">
-    <div class="home-console__intro">
-      <h1 id="home-console-title" class="home-console__title">Golden paths</h1>
-      <p class="home-console__lead muted">
-        Search, pick a path, run the gates.
-        Created repos live in the <a href="/library">library</a>.
-      </p>
+  <header class="home-hero">
+    <div class="home-hero__mesh" aria-hidden="true"></div>
+    <div class="home-hero__path" aria-hidden="true"></div>
+    <div class="home-hero__layout">
+      <div class="home-hero__primary">
+        <div class="home-hero__brand">
+          <span class="home-identity__mark-frame">
+            <img
+              class="home-hero__mark"
+              src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark-dark.svg' }}"
+              width="80"
+              height="80"
+              alt=""
+              aria-hidden="true"
+            />
+          </span>
+          <p class="home-hero__wordmark">
+            repave <span class="shell__edition">v3</span>
+          </p>
+        </div>
+        <p class="home-hero__support">The intelligent platform layer</p>
+        <h1 id="home-console-title" class="home-console__title">
+          <span class="home-hero__gold">Golden</span> paths
+        </h1>
+        <p class="home-hero__tagline">
+          Search, pick a path, run the gates.
+          Created repos live in the <a href="/library">library</a>.
+        </p>
+        <ul class="home-identity__pillars">
+          <li>Self-service</li>
+          <li>AI-powered</li>
+          <li>Governed</li>
+          <li>Repeatable</li>
+        </ul>
+        <nav class="home-hero__actions" aria-label="Catalog shortcuts">
+          <a class="btn btn--primary" href="/import">Import</a>
+          <a class="btn btn--ghost" href="/update">Upgrade</a>
+          {% if audit_enabled %}
+          <a class="btn btn--ghost" href="/activity">Activity</a>
+          {% endif %}
+        </nav>
+      </div>
     </div>
-    <nav class="home-console__actions" aria-label="Catalog shortcuts">
-      <a class="btn btn--primary btn--sm" href="/import">Import</a>
-      <a class="btn btn--ghost btn--sm" href="/update">Upgrade</a>
-      {% if audit_enabled %}
-      <a class="btn btn--ghost btn--sm" href="/activity">Activity</a>
-      {% endif %}
-    </nav>
   </header>
 
   {% if catalog_groups or catalog_bundles %}

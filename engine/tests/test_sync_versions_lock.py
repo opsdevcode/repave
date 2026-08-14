@@ -87,8 +87,4 @@ def test_release_workflow_commits_versions_lock(repo_root: Path) -> None:
     workflow = (repo_root / ".github/workflows/release.yml").read_text(encoding="utf-8")
     assert "sync_versions_lock.py" in workflow
     assert sync.LOCK_REL_PATH in workflow
-    prerelease = (repo_root / ".github/workflows/release-prerelease.yml").read_text(
-        encoding="utf-8"
-    )
-    assert "sync_versions_lock.py" in prerelease
-    assert sync.LOCK_REL_PATH in prerelease
+    assert not (repo_root / ".github/workflows/release-prerelease.yml").is_file()

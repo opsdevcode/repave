@@ -7,15 +7,14 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.0.0  
 
-**In progress:** v3 developer lab on `next/v3` — explicit `v3.developer_lab.enabled`
-opt-in for `/home` and `/lab` (catalog fixtures only; no invented GitOps). Identity
+**In progress:** hosted public landing (Sign in + Create account) so
+`repave.opsdevco.de` is not an Auth0 wall. Identity
 ([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
-Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot) until ADR 010+. v3
-themes under [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
-land on `next/v3` ([ADR 008](adr/008-v3-branching-release-and-testing.md),
-[ADR 007](adr/007-v3-multi-repo-decomposition.md), [`docs/v3-development.md`](v3-development.md))
-and do not affect the v2.x line on `main`. Stategraph / graph-scoped execution under
-[beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
+Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot) until ADR 010+.
+v3 themes land on `main` ([ADR 008](adr/008-v3-branching-release-and-testing.md)
+superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
+[`docs/v3-development.md`](v3-development.md)). Stategraph / graph-scoped
+execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
 **Service catalog maturity** ([ADR 006](adr/006-service-catalog-and-maturity.md),
@@ -271,11 +270,10 @@ that makes those v2 decisions checkable.
 - The only content that must stay accurate is the
   [breaking-change list](#breaking-at-v300), because v2 deprecation notices point at it
 
-**Where v3 work happens:** the long-lived `next/v3` branch is the **primary product
-line**, versioned as `3.0.0-rc.N` and merged back to `main` in one `feat!:` PR when
-the deprecation windows close — see [ADR 008](adr/008-v3-branching-release-and-testing.md)
-for branching, [ADR 007](adr/007-v3-multi-repo-decomposition.md) for the multi-repo
-split, and [`docs/v3-development.md`](v3-development.md) for the working guide.
+**Where v3 work happens:** `main` is the product line (`v3.0.0+`). [ADR 008](adr/008-v3-branching-release-and-testing.md)
+`next/v3` branching is superseded. See [ADR 007](adr/007-v3-multi-repo-decomposition.md)
+for the multi-repo split and [`docs/v3-development.md`](v3-development.md) for the
+working guide.
 Identity policy ([ADR 009](adr/009-v3-product-identity.md)): display name **repave**,
 new platform-layer mark, CLI/package stay `repave`. The foundation slice (risk classes,
 waiver expiry, deprecation registry) lands in `repave-core` before autonomous

@@ -34,7 +34,7 @@ def test_api_paths_return_401_not_500(service_mode, repo_root, output_config) ->
     assert client.post("/api/v1/generate", json={}).status_code == 401
 
 
-def test_portal_paths_redirect_to_login(service_mode, repo_root, output_config) -> None:
+def test_portal_root_is_public_landing(service_mode, repo_root, output_config) -> None:
     client = TestClient(
         create_app(repo_root=repo_root, output_config=output_config),
         raise_server_exceptions=False,
@@ -43,8 +43,39 @@ def test_portal_paths_redirect_to_login(service_mode, repo_root, output_config) 
 
     response = client.get("/")
 
+    assert response.status_code == 200
+    assert "Create account" in response.text
+    assert "Sign in" in response.text
+    assert "The intelligent platform layer" in response.text
+    assert "shell__nav--primary" not in response.text
+
+
+def test_signup_page_is_public(service_mode, repo_root, output_config) -> None:
+    client = TestClient(
+        create_app(repo_root=repo_root, output_config=output_config),
+        raise_server_exceptions=False,
+        follow_redirects=False,
+    )
+
+    response = client.get("/signup")
+
+    assert response.status_code == 200
+    assert "Create an account" in response.text
+    assert 'href="/auth/signup"' in response.text
+    assert 'href="/auth/login"' in response.text
+
+
+def test_protected_portal_paths_redirect_to_login(service_mode, repo_root, output_config) -> None:
+    client = TestClient(
+        create_app(repo_root=repo_root, output_config=output_config),
+        raise_server_exceptions=False,
+        follow_redirects=False,
+    )
+
+    response = client.get("/library")
+
     assert response.status_code == 302
-    assert response.headers["location"] == "/auth/login?next=/"
+    assert response.headers["location"] == "/auth/login?next=/library"
 
 
 def test_public_paths_stay_open(service_mode, repo_root, output_config) -> None:

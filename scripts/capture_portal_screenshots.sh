@@ -19,11 +19,14 @@ run_capture() {
   npx --yes playwright screenshot "$url" "$OUT/$file" --viewport-size=1280,800
 }
 
-run_capture "$BASE/" home-catalog.png
 run_capture "$BASE/library" library-catalog.png
 run_capture "$BASE/blueprints/terraform-module-generic" blueprint-form.png
 run_capture "$BASE/update" update-repo.png
 run_capture "$BASE/import" import-repo.png
+
+echo "Capturing catalog hero and hosted landing (TestClient, no local-toolchain banner)…"
+cd "$ROOT/engine" && REPAVE_GITHUB_ORG="${REPAVE_GITHUB_ORG:-opsdevcode}" \
+  uv run --with playwright python ../scripts/capture_landing.py
 
 echo "Capturing generate result (requires REPAVE_GITHUB_ORG and REPAVE_MODULES_ROOT)…"
 cd "$ROOT/engine" && REPAVE_GITHUB_ORG="${REPAVE_GITHUB_ORG:-opsdevcode}" \

@@ -43,5 +43,6 @@ via `.github/actions/ci-paths/`. CI runs `engine-unit`, `engine-portal`, and
 
 ## next/v3 branch ruleset
 
-Apply [`next-v3-branch.json`](next-v3-branch.json) targeting `refs/heads/next/v3` with the
-same sharded engine checks as `main`.
+Retired with [ADR 008](../../docs/adr/008-v3-branching-release-and-testing.md).
+Delete the GitHub ruleset named `next/v3 branch` if it still exists; do not
+re-apply it.

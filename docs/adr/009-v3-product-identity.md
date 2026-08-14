@@ -1,9 +1,10 @@
 # ADR 009: v3 product identity
 
-**Status:** Accepted — display name **repave**; new platform-layer mark and tagline
-on `next/v3`. Wire names stay `repave`.
+**Status:** Accepted — display name **repave**; platform-layer mark and tagline
+on `main` (v3.0.0+). Wire names stay `repave`. Branching in [ADR 008](008-v3-branching-release-and-testing.md)
+is superseded.
 **Date:** 2026-08-13
-**Scope:** v3 public identity (display name, mark, portal/CLI chrome) on `next/v3`.
+**Scope:** v3 public identity (display name, mark, portal/CLI chrome).
 Does not rename CLI, PyPI, Helm charts, GitHub repos, `repave.yaml`, or CRDs.
 **Related:** [ADR 008](008-v3-branching-release-and-testing.md) (branching),
 [ADR 007](007-v3-multi-repo-decomposition.md) (extract-repos),

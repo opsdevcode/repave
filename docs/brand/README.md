@@ -1,8 +1,8 @@
 # Repave brand
 
-v3 identity on `next/v3` ([ADR 009](../adr/009-v3-product-identity.md)): **repave**
+v3 identity on `main` ([ADR 009](../adr/009-v3-product-identity.md)): **repave**
 wordmark, isometric **platform-layer** mark, tagline *The intelligent platform layer*.
-Wire names stay `repave`. v2 Converge remains canonical on `main` until merge-back.
+Wire names stay `repave`.
 
 Repave is the intelligent platform layer: self-service by design, AI-powered,
 governed by design. Gold (`#F59E0B`) marks the golden path and must stay scarce —
@@ -37,8 +37,10 @@ the portal `static/brand/` copies. Do not embed the concept-board raster into SV
 - `repave-logo.svg` / `repave-logo-light.svg` / `repave-logo-dark.svg` — mark +
   **repave** + amber **v3** + amber rule + `THE INTELLIGENT PLATFORM LAYER`
 - `repave-logo-compact.svg` / `repave-logo-compact-dark.svg` — mark + **repave** +
-  **v3** (product shell, README header). On GitHub, the README uses a `<picture>`
-  element so dark mode loads the `-dark` lockup.
+  **v3** (editable source). GitHub and many markdown previews sanitize SVG
+  `<text>`, so the wordmark can render as garbage. The root README uses the
+  raster lockups (`assets/png/repave-logo-compact.png` and `-dark.png`) via
+  `<picture>` so dark mode still swaps correctly.
 
 ### Secondary mark
 
@@ -77,9 +79,8 @@ Also keep semantic UI colors distinct:
 
 ## Typography
 
-- Product UI: existing portal stacks (Source Sans 3, IBM Plex Mono; Fraunces may
-  remain for limited display moments).
-- Brand wordmark: clean modern sans (system / open-source stacks — no new paid fonts).
+- Product UI: **Inter** (UI + wordmark) and IBM Plex Mono (CLI / code).
+- Brand wordmark: Inter; no new paid fonts.
 - Supporting line: small caps / tracked uppercase; omit below ~120px wide lockups.
 
 ## Logo spacing and minimum size

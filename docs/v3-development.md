@@ -1,25 +1,24 @@
 # Developing on the v3 line
 
-Working guide for the `next/v3` branch. Branching: [ADR 008](adr/008-v3-branching-release-and-testing.md).
-Multi-repo split: [ADR 007](adr/007-v3-multi-repo-decomposition.md).
+Working guide after `v3.0.0` on `main`. Branching in [ADR 008](adr/008-v3-branching-release-and-testing.md)
+is superseded. Multi-repo split: [ADR 007](adr/007-v3-multi-repo-decomposition.md).
 
 ## Where work goes
 
-**v3 is the primary product line.** New product work targets `next/v3`, not `main`.
+**v3 is the primary product line on `main`.** Do not open PRs to `next/v3`.
 
 | Change | Branch | Result |
 | --- | --- | --- |
-| New product work (v3) | `feat/v3-*` → `next/v3` | `3.0.0-rc.N` prerelease |
-| v2.x fix or backport | `feat/*` → `main` | v2.x patch or minor |
-| Breaking removal | `feat/v3-*` → `next/v3`, held to end | Part of merge-back |
+| New product work | `feat/*` → `main` | v3.x via Release |
+| Fix | `fix/*` → `main` | v3.x patch |
+| Breaking removal | `feat!:` → `main` when the deprecation window closes | Major bump |
 
-Identity policy ([ADR 009](adr/009-v3-product-identity.md)) is accepted: display name
+Identity policy ([ADR 009](adr/009-v3-product-identity.md)): display name
 **repave**, platform-layer mark, tagline *The intelligent platform layer*. Foundation,
 developer lab, and extract-repos use that shell.
 
-GitHub **default branch stays `main`** (v2.x releases). Do not retarget Release.
-
-Sync weekly: `git merge origin/main` on `next/v3` (merge, never rebase).
+GitHub **default branch stays `main`**. Release on `main` cuts tags that deploy hosted
+infra. Do not dispatch the retired `release-prerelease` workflow.
 
 ## Multi-repo layout (ADR 007)
 

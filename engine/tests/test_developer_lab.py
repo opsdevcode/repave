@@ -15,6 +15,7 @@ from repave_engine.settings import (
     load_service_catalog_config,
 )
 from repave_engine.v3_foundation import load_v3_foundation_config
+from repave_engine.workload_profiles import WorkloadProfile
 
 _LAB = "v3:\n  enabled: true\n  developer_lab:\n    enabled: true\n"
 
@@ -34,6 +35,15 @@ def v3_lab_root(repo_root: Path, tmp_path: Path) -> Path:
         root / "examples" / "platform-dev",
     )
     return root
+
+
+def test_workload_profile_family_follows_blueprint() -> None:
+    profile = WorkloadProfile(
+        id="api-sandbox",
+        label="API sandbox",
+        blueprint="terraform-environment-stack",
+    )
+    assert profile.family == "terraform"
 
 
 def test_developer_lab_disabled_without_v3(tmp_path: Path) -> None:
@@ -98,6 +108,13 @@ def test_developer_lab_portal_routes(v3_lab_root: Path, monkeypatch: pytest.Monk
     lab = client.get("/lab")
     assert lab.status_code == 200
     assert "Request developer lab" in lab.text
+    assert "fleet-tile" in lab.text
+    assert "fleet-tile--choice" in lab.text
+    assert "my-feature-lab" in lab.text
+    assert "Sandboxes expire" not in lab.text
+    assert "environment_vending" not in lab.text
+    assert "durability.async_generation" not in lab.text
+    assert "service_catalog.deployment_sets" not in lab.text
 
     assert client.get("/sandbox").status_code == 200
 

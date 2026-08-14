@@ -1,6 +1,6 @@
 # ADR 007: v3 multi-repo decomposition and per-repo CI
 
-**Status:** Accepted — extraction scaffolding on `next/v3`; physical repo split in phases.
+**Status:** Accepted — extraction scaffolding on `main`; physical repo split in phases.
 **Date:** 2026-08-12
 **Scope:** repository boundaries, CI sharding, release coordination for v3.0.0.
 **Related:** [ADR 002](002-v2-service-decomposition.md) (runtime roles shipped),
@@ -49,7 +49,7 @@ Until extraction completes, the umbrella repo carries:
 
 ### Extraction sequence
 
-1. **Phase 0 (umbrella, `main` + `next/v3`):** pytest shards + path filters — immediate CI relief
+1. **Phase 0 (umbrella, `main`):** pytest shards + path filters — immediate CI relief
 2. **Phase 1:** `repave-corpus` — lowest coupling; conformance-only CI
 3. **Phase 2:** `repave-operator`, `repave-cli` — already isolated modules
 4. **Phase 3:** `repave-core` / `repave-server` / `repave-worker` Python split with boundary tests
@@ -75,8 +75,7 @@ default for contributors who only clone the umbrella repo.
 
 - **Positive:** PR CI time drops to parallel ~90s shards; corpus/operator/cli PRs stop running
   the full 1,571-test engine job; independent release cadence per artifact
-- **Negative:** cross-repo coordination cost; `versions.lock` must stay current; weekly
-  `next/v3` sync merges remain load-bearing
+- **Negative:** cross-repo coordination cost; `versions.lock` must stay current
 - **Contract risk:** `/api/v2` is public and internal transport — contract tests in umbrella
   integration harness are mandatory before rc tags
 
@@ -86,4 +85,4 @@ default for contributors who only clone the umbrella repo.
 - `make test-core`, `make test-portal`, `make test-slow` mirror CI shards locally
 - Import boundary tests fail if `repave-server` imports `gate_runners` or `repave-cli` imports
   `fastapi`
-- `versions.lock` lists every published artifact version; integration workflow passes on `next/v3`
+- `versions.lock` lists every published artifact version; integration workflow passes on `main`

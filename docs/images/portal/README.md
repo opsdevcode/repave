@@ -7,7 +7,8 @@ major portal UI changes (see [Demo verification](../demo-verification.md)).
 
 | File | Route | Shows |
 | --- | --- | --- |
-| `home-catalog.png` | `/` | Open family card grid, search, compact header |
+| `landing.png` | `/` (service mode, no session) | Public product landing — Sign in + Create account |
+| `home-catalog.png` | `/` (auth off) | Catalog hero, golden-path heading, family card grid |
 | `library-catalog.png` | `/library` | Family drawers in a 2–3 column grid that open a quiet shelf |
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
 | `update-repo.png` | `/update` | Upgrade / re-render flow |
@@ -31,6 +32,8 @@ The script at repo root also writes [../cli/generate-dry-run.png](../cli/generat
 For CLI-only refresh, see [../cli/README.md](../cli/README.md).
 
 - Static routes use Playwright CLI (`npx playwright screenshot …`).
+- `home-catalog.png` and `landing.png` use `scripts/capture_landing.py` (TestClient,
+  no local-toolchain banner).
 - `generate-result.png` uses `scripts/capture_generate_result.py` (`cd engine &&
   uv run --with playwright python ../scripts/capture_generate_result.py`).
 

@@ -4,7 +4,7 @@ PNG captures for the [root README](../../README.md) and [sales demo](../sales-de
 
 | Path | What it shows |
 | --- | --- |
-| [portal/](portal/README.md) | Live portal UI (catalog, forms, plan result) |
+| [portal/](portal/README.md) | Live portal UI (landing, catalog, forms, plan result) |
 | [cli/](cli/README.md) | `repave generate --dry-run` terminal output |
 
 ## Update all captures

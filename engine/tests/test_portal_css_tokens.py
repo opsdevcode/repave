@@ -81,6 +81,19 @@ def test_root_defines_semantic_alias_tokens() -> None:
         assert token in theme_names
 
 
+def test_v3_board_palette_hexes() -> None:
+    css = _read_css()
+    defined = _defined_tokens(css)
+    assert defined.get("--navy-950") == "#0f172a"
+    assert defined.get("--slate-500") == "#64748b"
+    assert defined.get("--cool-gray-400") == "#94a3b8"
+    assert defined.get("--cool-gray-200") == "#e2e8f0"
+    assert defined.get("--brand-amber-500") == "#f59e0b"
+    assert defined.get("--green-500") == "#22c55e"
+    assert defined.get("--rose-500") == "#ef4444"
+    assert defined.get("--font-sans", "").startswith('"Inter"')
+
+
 def test_brand_and_warning_remain_distinct() -> None:
     css = _read_css()
     defined = _defined_tokens(css)
