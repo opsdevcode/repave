@@ -208,6 +208,37 @@ def test_load_service_catalog_config(platform_dev_root: Path) -> None:
     assert cfg.deployment_sets is not None
 
 
+def test_env_flag_defaults_maturity_and_initiatives(
+    repo_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_SERVICE_CATALOG", "1")
+    cfg = load_service_catalog_config(repo_root)
+    assert cfg is not None
+    assert cfg.maturity_rubric is not None
+    assert cfg.maturity_rubric.is_file()
+    assert cfg.initiatives is not None
+    assert cfg.initiatives.is_file()
+
+
+def test_enabled_block_without_paths_uses_doc_defaults(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "service_catalog:\n"
+        "  enabled: true\n"
+        "output:\n"
+        "  github_org: acme\n"
+        "  modules_root: ../mods\n",
+        encoding="utf-8",
+    )
+    cfg = load_service_catalog_config(tmp_path)
+    assert cfg is not None
+    assert cfg.maturity_rubric == (tmp_path / "config/maturity-rubric.yaml").resolve()
+    assert cfg.initiatives == (tmp_path / "data/initiatives.jsonl").resolve()
+
+
 def test_portal_service_catalog_pages(
     platform_dev_repo: Path,
     output_config,

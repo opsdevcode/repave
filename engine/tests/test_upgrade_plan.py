@@ -80,6 +80,9 @@ def test_plan_upgrade_against_operator_fixture(repo_root: Path, tmp_path: Path) 
     assert payload["file_diffs"]
     assert any(row["field"] == "Blueprint version" for row in payload["pin_changes"])
     assert "repave.yaml" in payload["added"] or "repave.yaml" in payload["modified"]
+    assert payload["auto_merge"] is not None
+    assert "allowed" in payload["auto_merge"]
+    assert payload["auto_merge"]["reason"]
 
 
 def test_cli_plan_upgrade_json(repo_root, tmp_path, capsys) -> None:

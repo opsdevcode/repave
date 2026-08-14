@@ -26,7 +26,11 @@ environment_vending:
   auto_reclaim_classes: [sandbox]
 ```
 
-Env override: `REPAVE_SERVICE_CATALOG=1`.
+Env override: `REPAVE_SERVICE_CATALOG=1`. That flag (or `service_catalog.enabled: true`
+without paths) fills `maturity_rubric`, `workload_profiles`, `deployment_sets`, and
+`initiatives` from `examples/platform-dev/` when those files exist, otherwise the
+documented `config/` and `data/` paths. `make serve` sets the env flag so Platform
+maturity and initiatives collect without a copied config.
 
 Local demo: `make platform-dev-setup && make serve` — see
 [`examples/platform-dev/README.md`](../examples/platform-dev/README.md).
