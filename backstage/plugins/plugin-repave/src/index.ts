@@ -7,3 +7,4 @@ export {
   rowsFromDeploymentSets,
   buildVendRequest,
 } from './components/SandboxPage';
+export { RunsPage, parseRunsPayload, rowsFromRuns } from './components/RunsPage';
