@@ -72,6 +72,17 @@ The run result includes `gates_outcome`, `gitops_path`, and when not dry-run
 `pull_request_url` / `pull_request_number`. repave does not run `terraform apply`. See
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
+Named deployment sets (HTML `/sandbox` and Backstage `/sandbox`) use the same payload
+builder:
+
+| Method | Path | Role | Notes |
+| --- | --- | --- | --- |
+| `GET` | `/api/v2/deployment-sets` | viewer+ | Lists sets + workload profiles; `vend_available` is true when async runs and `environment_vending` are on |
+| `POST` | `/api/v2/environments/vend` | generator, admin | `{ "deployment_set", "stack_name", "owner"?, "dry_run"? }` → 202 run (`kind: environment_vend`) |
+
+`stack_name` must be 3–63 lowercase letters, numbers, and hyphens. `dry_run` defaults
+to `true` (plan only, no GitOps PR).
+
 Portal: on a library entity detail page (`/services/{entity_id}`), **Request environment**
 submits the same payload via `POST /services/{entity_id}/request-environment` (preview gates
 or open GitOps PR). Run progress uses `/runs/{run_id}`; the result page is
@@ -186,6 +197,8 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/github/teams` | viewer+ | Org teams for `github-repo-generic` (requires GitHub credentials) |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
+| `GET` | `/api/v2/deployment-sets` | viewer+ | Named sandbox / lab deployment sets |
+| `POST` | `/api/v2/environments/vend` | generator, admin | Request a sandbox from a deployment set |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption / DX outcome metrics (`?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 | `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity distribution — see [`service-catalog.md`](service-catalog.md) |

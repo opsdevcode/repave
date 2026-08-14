@@ -34,6 +34,7 @@ from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
 )
 from repave_engine.cost_actuals import cost_reader_configured
+from repave_engine.developer_lab import is_developer_lab_enabled
 from repave_engine.entity_catalog import (
     find_catalog_entity,
     observability_embed_url,
@@ -116,6 +117,12 @@ from repave_engine.upgrade_api import (
     run_plan_upgrade,
 )
 from repave_engine.verify import VerifyError, verify_target
+from repave_engine.workload_profiles import (
+    SandboxVendError,
+    load_deployment_sets,
+    load_workload_profiles,
+    resolve_sandbox_vend_payload,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -147,6 +154,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/fleet",
     "POST /api/v2/fleet",
     "DELETE /api/v2/fleet",
+    "GET /api/v2/deployment-sets",
+    "POST /api/v2/environments/vend",
     "POST /api/v2/environments/reclaim",
     "GET /api/v2/platform/metrics",
     "GET /api/v2/platform/compliance",
@@ -1109,6 +1118,89 @@ def build_api_v2_router(
         if not removed:
             raise HTTPException(status_code=404, detail=f"{repo_url} is not registered")
         return JSONResponse({"unregistered": normalize_repo_url(repo_url)})
+
+    @router.get("/deployment-sets")
+    async def api_v2_deployment_sets(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        try:
+            catalog_cfg = load_service_catalog_config(repo_root)
+        except ValueError:
+            catalog_cfg = None
+        sets = load_deployment_sets(catalog_cfg.deployment_sets) if catalog_cfg else ()
+        profiles = load_workload_profiles(catalog_cfg.workload_profiles) if catalog_cfg else ()
+        vend_cfg = load_environment_vending_config(repo_root)
+        queue = _run_queue(request)
+        default_team = catalog_cfg.default_team if catalog_cfg is not None else "platform"
+        auth_user = session_user(request)
+        default_owner = (
+            auth_user.email
+            if auth_user is not None and auth_user.email
+            else f"group:{default_team}"
+        )
+        try:
+            developer_lab = is_developer_lab_enabled(repo_root)
+        except ValueError:
+            developer_lab = False
+        return JSONResponse(
+            {
+                "count": len(sets),
+                "vend_available": bool(queue is not None and vend_cfg is not None),
+                "developer_lab": developer_lab,
+                "default_owner": default_owner,
+                "deployment_sets": [item.to_public_dict() for item in sets],
+                "workload_profiles": [item.to_public_dict() for item in profiles],
+            }
+        )
+
+    @router.post("/environments/vend")
+    async def api_v2_environments_vend(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        queue = _run_queue(request)
+        if queue is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Async runs require durability.async_generation",
+            )
+        try:
+            catalog_cfg = load_service_catalog_config(repo_root)
+        except ValueError:
+            catalog_cfg = None
+        if catalog_cfg is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Service catalog is not enabled (set service_catalog.enabled)",
+            )
+        payload_in = await _parse_json_object(request)
+        sets = load_deployment_sets(catalog_cfg.deployment_sets)
+        profiles = load_workload_profiles(catalog_cfg.workload_profiles)
+        vend_cfg = load_environment_vending_config(repo_root)
+        gitops_repo = vend_cfg.gitops_repo if vend_cfg is not None else ""
+        try:
+            payload = resolve_sandbox_vend_payload(
+                sets=sets,
+                profiles=profiles,
+                deployment_set_id=str(payload_in.get("deployment_set", "")),
+                stack_name=str(payload_in.get("stack_name", "")),
+                owner=str(payload_in.get("owner", "")),
+                gitops_repo=gitops_repo,
+                dry_run=bool(payload_in.get("dry_run", True)),
+            )
+        except SandboxVendError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            record = submit_async_run(
+                queue,
+                payload=payload,
+                acting_user=_acting_user(request),
+                repo_root=repo_root,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(record.to_public_dict(), status_code=202)
 
     @router.post("/environments/reclaim")
     async def api_v2_environments_reclaim(request: Request) -> JSONResponse:

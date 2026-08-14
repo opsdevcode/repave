@@ -259,11 +259,10 @@ from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
 from repave_engine.workload_profiles import (
-    build_vend_payload_from_deployment_set,
-    find_deployment_set,
-    find_workload_profile,
+    SandboxVendError,
     load_deployment_sets,
     load_workload_profiles,
+    resolve_sandbox_vend_payload,
 )
 
 
@@ -1099,27 +1098,20 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         }
         sets = load_deployment_sets(service_catalog_config.deployment_sets)
         profiles = load_workload_profiles(service_catalog_config.workload_profiles)
-        deployment_set = find_deployment_set(sets, set_id)
-        if deployment_set is None:
-            raise HTTPException(status_code=400, detail=f"Unknown deployment set: {set_id}")
-        profile = find_workload_profile(profiles, deployment_set.workload_profile)
-        if profile is None:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unknown workload profile: {deployment_set.workload_profile}",
-            )
-        if not stack_name:
-            raise HTTPException(status_code=400, detail="stack_name is required")
         vend_cfg = load_environment_vending_config(repo_root)
         gitops_repo = vend_cfg.gitops_repo if vend_cfg is not None else ""
-        payload = build_vend_payload_from_deployment_set(
-            deployment_set,
-            profile,
-            stack_name=stack_name,
-            owner=owner,
-            gitops_repo=gitops_repo,
-            dry_run=dry_run,
-        )
+        try:
+            payload = resolve_sandbox_vend_payload(
+                sets=sets,
+                profiles=profiles,
+                deployment_set_id=set_id,
+                stack_name=stack_name,
+                owner=owner,
+                gitops_repo=gitops_repo,
+                dry_run=dry_run,
+            )
+        except SandboxVendError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
         acting = user.subject if user else current_acting_user()
         try:
             record = submit_async_run(

@@ -24,6 +24,7 @@ ops are not dropped silently.
 | Catalog | `catalog-info.yaml` file locations **and** `GET /api/v2/catalog/entities` |
 | Lineage card | Entity page shows `repave.dev/*` pins |
 | My services | `/my-services` — components with `repave.dev/blueprint` |
+| Sandbox | `/sandbox` — `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend` |
 | Helm | `repave.backstage.enabled` (**default off**) |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
@@ -105,6 +106,11 @@ steps:
 
 Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
 
+Sandbox (`/sandbox`) calls the engine through the Backstage proxy
+(`/api/proxy/repave/api/v2/...`) so the browser never holds `REPAVE_API_TOKEN`.
+Local `app-config.yaml` targets `http://127.0.0.1:8088`; the production image
+uses `REPAVE_API_BASE_URL`.
+
 When `auth.service_mode` is on, set `repave.apiToken` / `REPAVE_API_TOKEN` so
 the backend sends `Authorization: Bearer`. Return body uses `gates_outcome` and
 `rendered_files` from [`generate_api.py`](../engine/src/repave_engine/generate_api.py).
@@ -168,7 +174,7 @@ spec:
 
 | Phase | Outcome |
 | --- | --- |
-| 2 | My services (this slice); still open: sandbox vend, upgrade/auto-merge, run status |
+| 2 | My services + sandbox vend (this slice); still open: upgrade/auto-merge, run status |
 | 3 | Ingress flip; HTML routes send `Sunset` + `Link`; `repave.portal.html` defaults false |
 | 4 | Delete templates after 14 Feb 2027; FastAPI is API-only |
 
