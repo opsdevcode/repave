@@ -5946,9 +5946,45 @@
     margin-bottom: var(--space-5);
   }
 
+  .fleet-shelf__title {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
   .fleet-tile {
     min-height: 11rem;
     cursor: default;
+  }
+
+  .fleet-tile--choice {
+    cursor: pointer;
+  }
+
+  .fleet-tile--choice:has(:checked) {
+    background: color-mix(in srgb, var(--drawer-accent) 11%, var(--surface-raised));
+    border-color: color-mix(in srgb, var(--drawer-accent) 48%, var(--border));
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--drawer-accent) 30%, transparent),
+      0 20px 44px color-mix(in srgb, var(--drawer-accent) 16%, transparent),
+      0 8px 20px color-mix(in srgb, var(--shadow-ink) 32%, transparent);
+  }
+
+  .fleet-tile--choice:has(:focus-visible) {
+    outline: 2px solid var(--drawer-accent);
+    outline-offset: 2px;
+  }
+
+  .library-drawer__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .library-drawer__title a:hover,
+  .library-drawer__title a:focus-visible {
+    color: var(--link);
   }
 
   .fleet-tile.motion-face {
@@ -5993,8 +6029,13 @@
     font-family: var(--font-mono);
   }
 
-  .fleet-tile__footer form {
+  .fleet-tile__footer form,
+  .fleet-tile__footer .library-drawer__go {
     margin-left: auto;
+  }
+
+  .fleet-tile .maturity-bar {
+    margin-top: 0;
   }
 
   .fleet-register,
@@ -7491,60 +7532,6 @@
   grid-template-columns: auto 1fr auto;
   gap: 0.65rem;
   align-items: center;
-}
-
-.service-hub-grid {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-  gap: var(--space-3);
-}
-
-.service-hub-card {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-  padding: 0;
-  overflow: hidden;
-}
-
-.service-hub-card__link {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: var(--space-3);
-  color: inherit;
-  text-decoration: none;
-  flex: 1;
-}
-
-.service-hub-card__link:hover {
-  background: color-mix(in srgb, var(--accent-soft) 35%, transparent);
-}
-
-.service-hub-card__name {
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-
-.service-hub-card__badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.service-hub-card__team {
-  padding: 0.45rem var(--space-3);
-  border-top: 1px solid var(--border);
-  font-size: 0.85rem;
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.service-hub-card__team:hover {
-  background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
 }
 
 .entity-tabs {

@@ -317,6 +317,7 @@ once against this shell. Do not recapture v2 chrome.
 - Hosted service mode: unauthenticated `/` is a public product landing (Sign in +
   Create account); `/signup` is a separate create-account page. App routes still
   require a session.
+- Developer lab (`/lab`) and My services (`/home`) use the same fleet/library tiles
 - One screenshot pass against the v3 shell
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
 
