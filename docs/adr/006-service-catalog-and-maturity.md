@@ -84,6 +84,9 @@ Rule evaluation and rubric scoring stay deterministic forever.
 
 ## Non-goals
 
-- Backstage UI replacement
 - Runtime apply / direct Kubernetes namespace vending
 - AI-assisted scaffolding (v3)
+
+**Superseded:** “Backstage UI replacement” was a non-goal. Hosted Backstage is
+the developer UI — [ADR 011](011-hosted-backstage-idp.md). The catalog overlay
+and APIs in this ADR stay; HTML catalog/home/lab pages are deprecated.

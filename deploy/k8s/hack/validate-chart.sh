@@ -558,4 +558,24 @@ if ! grep -q 'kill_switch: true' "${kill_rendered}"; then
   exit 1
 fi
 
+bs_rendered="$(mktemp)"
+helm template repave-backstage "${CHART}" \
+  --namespace repave-backstage \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set repave.backstage.enabled=true \
+  >"${bs_rendered}"
+
+if ! grep -q 'app.kubernetes.io/component: backstage' "${bs_rendered}"; then
+  echo "repave.backstage.enabled must render a Backstage Deployment/Service" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
+if ! grep -q 'REPAVE_API_BASE_URL' "${bs_rendered}"; then
+  echo "Backstage Deployment must set REPAVE_API_BASE_URL" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
+rm -f "${bs_rendered}"
+
 echo "helm lint and template checks passed"

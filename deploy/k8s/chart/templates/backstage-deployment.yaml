@@ -1,0 +1,57 @@
+{{- if .Values.repave.backstage.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "repave.fullname" . }}-backstage
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backstage
+spec:
+  replicas: {{ .Values.repave.backstage.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "repave.backstageSelectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "repave.backstageSelectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "repave.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: backstage
+          image: {{ include "repave.backstageImage" . }}
+          imagePullPolicy: {{ .Values.repave.backstage.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 7007
+              protocol: TCP
+          env:
+            - name: REPAVE_API_BASE_URL
+              value: {{ default (printf "http://%s:%v" (include "repave.fullname" .) .Values.service.port) .Values.repave.backstage.apiBaseUrl | quote }}
+            {{- with .Values.repave.backstage.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /.backstage/health/v1/liveness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /.backstage/health/v1/readiness
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+{{- end }}

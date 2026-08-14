@@ -44,6 +44,21 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/component: portal
 {{- end }}
 
+{{- define "repave.backstageSelectorLabels" -}}
+{{- include "repave.selectorLabels" . }}
+app.kubernetes.io/component: backstage
+{{- end }}
+
+{{- define "repave.backstageImage" -}}
+{{- $repo := default "ghcr.io/opsdevcode/repave-backstage" .Values.repave.backstage.image.repository -}}
+{{- if .Values.repave.backstage.image.digest }}
+{{- printf "%s@%s" $repo .Values.repave.backstage.image.digest }}
+{{- else }}
+{{- $tag := default (default .Chart.AppVersion .Values.image.tag) .Values.repave.backstage.image.tag -}}
+{{- printf "%s:%s" $repo $tag }}
+{{- end }}
+{{- end }}
+
 {{- define "repave.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
 {{- default (include "repave.fullname" .) .Values.serviceAccount.name }}

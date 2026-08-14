@@ -1,0 +1,48 @@
+name: Backstage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backstage/**"
+      - ".github/workflows/backstage.yml"
+  pull_request:
+    paths:
+      - "backstage/**"
+      - ".github/workflows/backstage.yml"
+
+concurrency:
+  group: backstage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backstage:
+    name: lint and test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backstage
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+
+      - name: Enable corepack yarn
+        run: corepack enable
+
+      - name: Install
+        run: yarn install --immutable
+
+      - name: Typecheck
+        run: yarn tsc
+
+      - name: Lint
+        run: yarn lint:all
+
+      - name: Test
+        run: yarn test --watch=false

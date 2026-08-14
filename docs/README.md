@@ -58,7 +58,7 @@ start with [Concepts](concepts.md) for the product model.
 
 | Doc | Contents |
 | --- | --- |
-| [Backstage](backstage.md) | Catalog registration, HTTP generate API |
+| [Backstage](backstage.md) | Hosted IDP UI (ADR 011); catalog + Scaffolder generate |
 
 ## Contributing
 

@@ -128,7 +128,7 @@ Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md]
 - [`docs/auth-service-mode.md`](../auth-service-mode.md) — OIDC, Auth0 portal access, roles
 - [`auth0-portal.md`](auth0-portal.md) — Auth0 tenant + Helm deploy checklist
 - [`docs/github-app-auth.md`](../github-app-auth.md) — GitHub App vs PAT for publish
-- [`docs/backstage.md`](../backstage.md) — Scaffolder and `POST /api/v1/generate`
+- [`docs/backstage.md`](../backstage.md) — hosted IDP (ADR 011); Scaffolder `repave:generate` → `POST /api/v2/generate`
 - [`docs/durability.md`](../durability.md) — async runs and SQLite store
 - [`docs/platform-metrics.md`](../platform-metrics.md) — golden-path adoption / DX metrics
 - [`docs/finops.md`](../finops.md) — FinOps enablement: tags, estimates, showback, FOCUS boundaries

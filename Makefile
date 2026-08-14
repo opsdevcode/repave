@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -98,6 +98,15 @@ quality: lint typecheck
 js-lint:
 	npm ci
 	npm run lint:js
+
+# Bundled Yarn 4 (asdf has no yarn shim). CI uses corepack enable.
+BACKSTAGE_YARN = node .yarn/releases/yarn-4.13.0.cjs
+
+backstage-lint:
+	cd backstage && $(BACKSTAGE_YARN) install --immutable && $(BACKSTAGE_YARN) tsc && $(BACKSTAGE_YARN) lint:all
+
+backstage-test:
+	cd backstage && $(BACKSTAGE_YARN) test --watch=false
 
 # repave-cli (ADR 004). Installed with the engine's server extra so the import
 # boundary tests can prove the client does not reach for FastAPI or a database.

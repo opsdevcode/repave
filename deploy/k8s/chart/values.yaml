@@ -242,6 +242,33 @@ repave:
     initiatives: /data/initiatives.jsonl
     defaultTeam: platform
 
+  # Hosted Backstage IDP (ADR 011). Default off until chart-smoke boots the image.
+  # Not written into the engine ConfigMap — Deployment/Service only.
+  backstage:
+    enabled: false
+    replicaCount: 1
+    image:
+      repository: ghcr.io/opsdevcode/repave-backstage
+      tag: ""
+      digest: ""
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 7007
+    # Empty = in-cluster portal/API service (http://{{ release }}-repave:8088).
+    apiBaseUrl: ""
+    extraEnv: []
+    ingress:
+      enabled: false
+      className: ""
+      annotations: {}
+      hosts:
+        - host: backstage.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+      tls: []
+
 # Scheduled TTL reclaim for vended environments (requires environmentVending.enabled).
 environmentReclaim:
   cronJob:

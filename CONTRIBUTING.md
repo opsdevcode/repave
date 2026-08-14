@@ -140,6 +140,18 @@ ESLint runs in CI inside **Python quality and security** when the change is not
 docs-only. Portal behavior changes: run **`make test-fast`** (or **`make test`**) — see
 **`engine/tests/test_api.py`**.
 
+Hosted Backstage (`backstage/`) is a separate Yarn/TypeScript app
+([ADR 011](docs/adr/011-hosted-backstage-idp.md)). Portal no-bundler rules do
+not apply. After changing that tree:
+
+```bash
+make backstage-lint
+cd backstage && yarn test --watch=false
+```
+
+CI: [`.github/workflows/backstage.yml`](.github/workflows/backstage.yml).
+See [`.cursor/skills/repave-backstage/SKILL.md`](.cursor/skills/repave-backstage/SKILL.md).
+
 #### Coding standards and security (all Go)
 
 Every **`.go`** file follows the same conventions — the **`operator/`** module today,
