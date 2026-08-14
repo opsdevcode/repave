@@ -213,6 +213,7 @@ repave:
   # v3 foundation (default off, ADR 008). developerLab is a second opt-in for the
   # /lab alias and lab copy; it does not invent GitOps or mount catalog YAML.
   # autoMerge is a verdict only — Apply does not merge GitHub pull requests.
+  # mandatoryPolicy refuses enable_policy: false on regulated families (waiver to skip).
   v3:
     enabled: false
     developerLab:
@@ -220,6 +221,15 @@ repave:
     autoMerge:
       enabled: false
       killSwitch: false  # true demotes the fleet to review-required
+    mandatoryPolicy:
+      enabled: false  # refuse enable_policy: false on regulated families
+      regulatedFamilies:
+        - terraform
+        - policy
+        - gitops
+        - helm
+        - ansible
+        - observability
 
   # Service catalog overlay (ADR 006). Required for /home and /sandbox UX.
   # Hosted installs must provide the YAML at these paths; the image does not

@@ -96,6 +96,11 @@ def normalize_policy_inputs(
         return None
 
     if blueprint_policy_optional(blueprint) and not policy_pack_enabled(normalized):
+        from repave_engine.mandatory_policy import evaluate_policy_skip
+
+        decision = evaluate_policy_skip(blueprint, repo_root)
+        if not decision.allowed:
+            raise ValueError(decision.reason)
         normalized["enable_policy"] = "false"
         normalized.pop("_policy_selection", None)
         return None

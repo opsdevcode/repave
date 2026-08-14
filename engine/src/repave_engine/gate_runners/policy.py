@@ -209,6 +209,21 @@ def run_opa(ctx: GateContext) -> GateResult:
     from repave_engine.policy_selection import blueprint_policy_optional
 
     if selection is None and ctx.blueprint is not None and blueprint_policy_optional(ctx.blueprint):
+        if ctx.forbid_policy_skip:
+            from repave_engine.blueprint import artifact_family
+            from repave_engine.mandatory_policy import MANDATORY_POLICY_GATE_ID
+
+            family = artifact_family(ctx.blueprint.artifact_type)
+            return GateResult(
+                "opa",
+                False,
+                False,
+                (
+                    f"policy is mandatory on regulated family {family}; "
+                    f"set enable_policy: true or add a waiver in data/waivers.jsonl "
+                    f"(gate_id: {MANDATORY_POLICY_GATE_ID})"
+                ),
+            )
         return GateResult("opa", True, True, "policy pack not enabled; skipped")
     if selection is not None and not selection.opa_rego_files:
         return GateResult("opa", True, True, "no OPA policies selected; skipped")
