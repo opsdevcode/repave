@@ -237,11 +237,14 @@ gates:
 #   service_name: repave-engine
 # Or: OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME (see docs/tracing.md)
 
-# v3 foundation (next/v3 line only — default off on main until v3.0.0 merge-back).
+# v3 foundation (default off). Do not flip v3.enabled in hosted values without a plan.
 # v3:
 #   enabled: false
 #   developer_lab:
 #     enabled: false  # opt in for /home and /lab; does not enable GitOps vending
+#   auto_merge:
+#     enabled: false  # mechanical pin bumps only; no GitHub merge yet
+#     kill_switch: false  # true demotes the whole fleet to review-required
 #   waivers_file: data/waivers.jsonl
 #   waiver_warn_days: 7
 # With v3.developer_lab.enabled: true, service_catalog defaults to examples/platform-dev

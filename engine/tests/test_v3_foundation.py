@@ -129,7 +129,43 @@ def test_v3_foundation_loads_waivers_path(tmp_path: Path) -> None:
     config = load_v3_foundation_config(tmp_path)
     assert config.enabled is True
     assert config.developer_lab_enabled is False
+    assert config.auto_merge_enabled is False
+    assert config.auto_merge_kill_switch is False
     assert config.waivers_file == tmp_path / "data" / "custom-waivers.jsonl"
+
+
+def test_v3_auto_merge_opt_in_and_kill_switch(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "v3:\n"
+        "  enabled: true\n"
+        "  auto_merge:\n"
+        "    enabled: true\n"
+        "    kill_switch: true\n"
+        "output:\n"
+        "  github_org: acme\n"
+        "  modules_root: ../mods\n",
+        encoding="utf-8",
+    )
+    config = load_v3_foundation_config(tmp_path)
+    assert config.auto_merge_enabled is True
+    assert config.auto_merge_kill_switch is True
+
+
+def test_v3_auto_merge_requires_v3_enabled(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "v3:\n"
+        "  enabled: false\n"
+        "  auto_merge:\n"
+        "    enabled: true\n"
+        "output:\n"
+        "  github_org: acme\n"
+        "  modules_root: ../mods\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"v3\.auto_merge\.enabled"):
+        load_v3_foundation_config(tmp_path)
 
 
 @pytest.mark.v3

@@ -18,6 +18,8 @@ class V3FoundationConfig:
     developer_lab_enabled: bool
     waivers_file: Path | None
     waiver_warn_days: int
+    auto_merge_enabled: bool = False
+    auto_merge_kill_switch: bool = False
 
 
 @dataclass(frozen=True)
@@ -64,6 +66,8 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         developer_lab_enabled=False,
         waivers_file=None,
         waiver_warn_days=7,
+        auto_merge_enabled=False,
+        auto_merge_kill_switch=False,
     )
     if path is None:
         return disabled
@@ -80,11 +84,17 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
     if not isinstance(enabled_raw, bool):
         raise ValueError("v3.enabled must be a boolean")
     developer_lab_enabled = _parse_developer_lab_enabled(block)
+    auto_merge_enabled, auto_merge_kill_switch = _parse_auto_merge(block)
     if not enabled_raw:
         if developer_lab_enabled:
             raise ValueError(
                 "v3.developer_lab.enabled is true but v3.enabled is false. "
                 "Set v3.enabled: true, or set v3.developer_lab.enabled: false."
+            )
+        if auto_merge_enabled:
+            raise ValueError(
+                "v3.auto_merge.enabled is true but v3.enabled is false. "
+                "Set v3.enabled: true, or set v3.auto_merge.enabled: false."
             )
         return disabled
 
@@ -106,7 +116,27 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         developer_lab_enabled=developer_lab_enabled,
         waivers_file=waivers_file,
         waiver_warn_days=warn_raw,
+        auto_merge_enabled=auto_merge_enabled,
+        auto_merge_kill_switch=auto_merge_kill_switch,
     )
+
+
+def _parse_auto_merge(block: dict[str, object]) -> tuple[bool, bool]:
+    """Opt in with v3.auto_merge.enabled. Kill switch demotes the fleet (ADR 008)."""
+    raw = block.get("auto_merge")
+    if raw is None:
+        return False, False
+    if isinstance(raw, bool):
+        return raw, False
+    if not isinstance(raw, dict):
+        raise ValueError("v3.auto_merge must be a boolean or mapping")
+    enabled_raw = raw.get("enabled", False)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("v3.auto_merge.enabled must be a boolean")
+    kill_raw = raw.get("kill_switch", False)
+    if not isinstance(kill_raw, bool):
+        raise ValueError("v3.auto_merge.kill_switch must be a boolean")
+    return enabled_raw, kill_raw
 
 
 def _parse_developer_lab_enabled(block: dict[str, object]) -> bool:
