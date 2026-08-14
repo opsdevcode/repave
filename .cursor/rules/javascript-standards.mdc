@@ -6,12 +6,16 @@ alwaysApply: false
 
 # JavaScript standards (repave)
 
-**Scope:** every **`.js`**, **`.mjs`**, and **`.cjs`** file in this repository.
+**Scope:** every **`.js`**, **`.mjs`**, and **`.cjs`** file in this repository
+(portal static + Node configs). **`backstage/`** is a separate Yarn/TypeScript
+surface — use **`.cursor/skills/repave-backstage/SKILL.md`**. Do not apply the
+no-bundler portal rules there.
 
 Agent skill: **`.cursor/skills/repave-javascript/SKILL.md`**. Portal behavior contracts:
 **`.cursor/rules/portal-ui-behavior.mdc`**, **`.cursor/rules/portal-ux-copy.mdc`**.
 
 Lint config: root **`eslint.config.js`** — run **`make js-lint`** (or `npm run lint:js`).
+Backstage: **`make backstage-lint`**.
 
 ## Layout
 
@@ -20,6 +24,7 @@ Lint config: root **`eslint.config.js`** — run **`make js-lint`** (or `npm run
 | `engine/src/repave_engine/static/repave.js` | Shared portal UI (IIFE, no bundler, served as static asset) |
 | `engine/src/repave_engine/static/*.mjs` | Page-scoped native ES modules (no bundler; loaded only from the pages that need them) |
 | `.github/commitlint.config.mjs` | Commitlint config (ESM, Node) |
+| `backstage/**` | Hosted Backstage IDP (Yarn, TypeScript, official create-app). Not this ESLint config. |
 
 Do not add npm build steps or frontend frameworks to the portal static bundle without an explicit design decision.
 

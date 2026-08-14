@@ -1,46 +1,156 @@
-# Backstage integration
+# Hosted Backstage (IDP UI)
 
-Repave can emit a [Backstage Software Catalog](https://backstage.io/docs/features/software-catalog/)
-`catalog-info.yaml` in generated repositories so platform teams register golden-path
-artifacts alongside hand-written services.
+Repave hosts [Backstage](https://backstage.io/) as the developer-facing UI
+([ADR 011](adr/011-hosted-backstage-idp.md)). The engine CLI and `/api/v2` stay
+the control plane. Local generate does **not** require yarn or Backstage
+(`make serve` / `repave generate`).
 
-## When catalog-info is generated
+The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
+**deprecated** for hosted installs. It still ships in this release.
+
+**HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
+
+After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
+sunset. Platform-admin HTML becomes Backstage plugins or CLI/API-only — fleet
+ops are not dropped silently.
+
+## What you get in Phase 1
+
+| Piece | Path / contract |
+| --- | --- |
+| App we own | [`backstage/`](../backstage/) (`packages/app`, `packages/backend`) |
+| Generate | Scaffolder action `repave:generate` → `POST /api/v2/generate` |
+| Template | `terraform-module-generic` with `include_backstage_catalog: true` |
+| Catalog | `catalog-info.yaml` file locations **and** `GET /api/v2/catalog/entities` |
+| Lineage card | Entity page shows `repave.dev/*` pins |
+| Helm | `repave.backstage.enabled` (**default off**) |
+
+Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
+
+## Local (optional)
+
+The full golden-path loop stays CLI-first:
+
+```bash
+repave generate --blueprint terraform-module-generic --dry-run ...
+make serve   # FastAPI HTML + /api/v2; no yarn
+```
+
+To run the hosted UI against a local API:
+
+```bash
+# terminal 1
+make serve
+# terminal 2
+export REPAVE_API_BASE_URL=http://127.0.0.1:8088
+cd backstage && yarn install && yarn start
+```
+
+Guest auth is on for local-first. Hosted Auth0 uses the same tenant as
+[`docs/auth-service-mode.md`](auth-service-mode.md) (`AUTH0_DOMAIN`,
+`AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `AUTH0_AUDIENCE`).
+
+Quality:
+
+```bash
+make backstage-lint   # yarn tsc + lint:all
+cd backstage && yarn test --watch=false
+```
+
+CI: [`.github/workflows/backstage.yml`](../.github/workflows/backstage.yml).
+
+## Helm
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  -f deploy/k8s/chart/values-backstage.yaml \
+  --set repave.output.githubOrg=your-org \
+  --set secrets.existingSecret=repave-secrets
+```
+
+The Backstage container talks to the in-cluster portal Service
+(`REPAVE_API_BASE_URL=http://{{ release }}-repave:8088`) unless you set
+`repave.backstage.apiBaseUrl`. Pass Auth0 and `REPAVE_API_TOKEN` through
+`repave.backstage.extraEnv`. Optional Ingress: `repave.backstage.ingress.enabled`.
+
+Image: `ghcr.io/opsdevcode/repave-backstage` (build from
+[`backstage/packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile)
+with context `backstage/` after `yarn tsc && yarn build:backend`).
+
+Chart-smoke does **not** boot this image yet. The flag stays off until that
+path exists. `make chart-validate` renders the Deployment when the flag is on.
+
+Production config uses SQLite (`/tmp/backstage.sqlite`) so a chart install does
+not need Postgres. Swap in a `client: pg` overlay when you run a real database.
+
+## Scaffolder: `repave:generate`
+
+The in-repo action posts JSON to `/api/v2/generate` (not `run:shell`):
+
+```yaml
+steps:
+  - id: generate
+    name: repave generate
+    action: repave:generate
+    input:
+      blueprint: terraform-module-generic
+      dryRun: true
+      inputs:
+        module_name: ${{ parameters.moduleName }}
+        cloud_provider: ${{ parameters.cloudProvider }}
+        include_backstage_catalog: "true"
+        owner: ${{ parameters.owner }}
+```
+
+Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
+
+When `auth.service_mode` is on, set `repave.apiToken` / `REPAVE_API_TOKEN` so
+the backend sends `Authorization: Bearer`. Return body uses `gates_outcome` and
+`rendered_files` from [`generate_api.py`](../engine/src/repave_engine/generate_api.py).
+
+| Scaffolder parameter | `/api/v2` input |
+| --- | --- |
+| `moduleName` | `module_name` |
+| `cloudProvider` | `cloud_provider` |
+| `owner` | `owner` |
+| `dryRun` | `dry_run` (default true) |
+
+## Catalog and lineage
+
+The engine still writes `catalog-info.yaml` after Copier render
+([`backstage_catalog.py`](../engine/src/repave_engine/backstage_catalog.py)).
 
 | Golden path | Default | Inputs |
 | --- | --- | --- |
 | `app-service-generic` | Always | `owner` (required), `system`, `catalog_lifecycle`, `description` |
-| `helm-chart-generic` | Off | Set `include_backstage_catalog` to `true` and provide `owner` |
+| `helm-chart-generic` | Off | `include_backstage_catalog=true` and `owner` |
 | `terraform-module-generic` | Off | Same optional inputs as Helm |
-
-The engine writes the file **after** Copier render (see `backstage_catalog.py`) so
-Repave lineage annotations stay aligned with the blueprint pin, standard version, and
-engine release used at generate time.
-
-## Annotations (TechInsights / custom processors)
 
 Each component includes:
 
 | Annotation | Meaning |
 | --- | --- |
-| `repave.dev/blueprint` | Blueprint name (e.g. `terraform-module-generic`) |
-| `repave.dev/blueprint-version` | Blueprint semver from `blueprint.yaml` |
+| `repave.dev/blueprint` | Blueprint name |
+| `repave.dev/blueprint-version` | Blueprint semver |
 | `repave.dev/standard-source` | Pinned standards path |
 | `repave.dev/standard-version` | Pinned standards semver |
-| `repave.dev/engine-version` | `repave-engine` version that performed generate |
+| `repave.dev/engine-version` | Engine release that generated |
 | `repave.dev/artifact-type` | Golden-path artifact type |
 
-Standard shape and lifecycle values are documented in
-[`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
+Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
 
-## Import into Backstage
+**Ingest**
 
-1. Generate or publish the golden-path repository (portal dry-run or `repave generate`).
-2. In Backstage, register a **Location** pointing at the repo URL with target
-   `catalog-info.yaml`, or add the file path to an existing org-wide catalog location.
-3. Confirm the **Component** appears with the expected owner, system, and Repave
-   annotations.
+1. File / GitHub Location targeting `catalog-info.yaml` (org discovery or a
+   single repo URL).
+2. `RepaveEntityProvider` polls `GET /api/v2/catalog/entities` when
+   `repave.apiBaseUrl` is set. Idle (no error) when unset so `yarn start`
+   without an API still loads example entities.
 
-Example location snippet:
+The entity page **Repave lineage** card shows those annotations. Sample:
+`tf-aws-demo` in [`backstage/examples/entities.yaml`](../backstage/examples/entities.yaml).
+
+Example Location for a published repo:
 
 ```yaml
 apiVersion: backstage.io/v1alpha1
@@ -53,155 +163,18 @@ spec:
     - https://github.com/example/app-checkout-api/blob/main/catalog-info.yaml
 ```
 
-## Scaffolder custom action (repave golden paths)
+## Later phases (same theme)
 
-Backstage [custom actions](https://backstage.io/docs/features/software-templates/writing-custom-actions/)
-can call repave without the web portal. The stable contract today is the **repave CLI**
-(shipped in the engine package and `deploy/local` images):
+| Phase | Outcome |
+| --- | --- |
+| 2 | My services, sandbox vend, upgrade/auto-merge, run status as plugins |
+| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; `repave.portal.html` defaults false |
+| 4 | Delete templates after 14 Feb 2027; FastAPI is API-only |
 
-```yaml
-# Template excerpt — run repave generate from a Scaffolder workspace step
-steps:
-  - id: generate
-    name: Generate golden path
-    action: run:shell
-    input:
-      command: |
-        repave generate \
-          --blueprint blueprints/terraform-module-generic \
-          --input module_name=${{ parameters.moduleName }} \
-          --input description="${{ parameters.description }}" \
-          --input cloud_provider=${{ parameters.cloudProvider }} \
-          --input provider_services=${{ parameters.providerServices }} \
-          --input include_backstage_catalog=true \
-          --input owner=${{ parameters.owner }} \
-          --dry-run \
-          --staging-root ./generated
-```
+## Related
 
-For production Scaffolder flows:
-
-1. **Dry-run in CI or Scaffolder** — validate gates locally (`repave generate --dry-run`).
-2. **Publish** — re-run with `--no-dry-run` and `GITHUB_TOKEN` (same as portal publish),
-   or push the workspace output to a target repo your action creates.
-3. **Catalog** — commit includes `catalog-info.yaml` when enabled; register the new repo
-   in Backstage via Location API or an org catalog repo.
-
-A dedicated HTTP JSON API is available for headless generate:
-
-```http
-POST /api/v1/generate
-Content-Type: application/json
-
-{
-  "blueprint": "terraform-module-generic",
-  "dry_run": true,
-  "inputs": {
-    "module_name": "checkout-vpc",
-    "description": "Scaffolder bootstrap",
-    "cloud_provider": "aws",
-    "provider_services": "s3",
-    "owner": "group:platform",
-    "include_backstage_catalog": "true"
-  }
-}
-```
-
-When `auth.service_mode` is enabled, the caller must have a `generator` or `admin`
-session (browser cookie) or call from an authenticated proxy. See
-[`docs/auth-service-mode.md`](auth-service-mode.md).
-
-The portal `POST /generate` form endpoint remains the browser UX. Scaffolder can
-use either this JSON API or the CLI in a container action (reuse `deploy/local/Dockerfile`).
-
-### Suggested action inputs
-
-Mirror blueprint inputs (module name, cloud provider, owner, `include_backstage_catalog`,
-etc.) as Scaffolder `parameters`, then pass each as `repave generate --input key=value`.
-
-| Scaffolder parameter | repave input | Notes |
-| --- | --- | --- |
-| `moduleName` | `module_name` | Required for Terraform modules |
-| `cloudProvider` | `cloud_provider` | `aws` / `azure` / `gcp` |
-| `providerServices` | `provider_services` | Comma-separated catalog services |
-| `owner` | `owner` | Backstage entity ref, e.g. `group:platform` |
-| `includeBackstageCatalog` | `include_backstage_catalog` | `true` for Terraform/Helm catalog emission |
-| `serviceName` | `service_name` | App-service / Helm chart names |
-
-### Full Software Template sketch
-
-Use a **container** or **run:shell`** step with the repave image from `deploy/local/Dockerfile`
-(or a published `repave-engine` image). Mount `repave.config.yaml`, blueprint packs, and
-`REPAVE_MODULES_ROOT` the same way as local Compose.
-
-```yaml
-apiVersion: scaffolder.backstage.io/v1beta3
-kind: Template
-metadata:
-  name: repave-terraform-module
-  title: Terraform module (repave)
-spec:
-  owner: group:platform
-  type: service
-  parameters:
-    - title: Module
-      required:
-        - moduleName
-        - cloudProvider
-        - owner
-      properties:
-        moduleName:
-          type: string
-        cloudProvider:
-          type: string
-          enum: [aws, azure, gcp]
-        owner:
-          type: string
-          default: group:platform
-  steps:
-    - id: generate
-      name: repave generate
-      action: run:shell
-      input:
-        command: |
-          set -euo pipefail
-          repave generate \
-            --blueprint blueprints/terraform-module-generic \
-            --input "module_name=${{ parameters.moduleName }}" \
-            --input "description=Scaffolder bootstrap" \
-            --input "cloud_provider=${{ parameters.cloudProvider }}" \
-            --input "provider_services=s3" \
-            --input "owner=${{ parameters.owner }}" \
-            --input "include_backstage_catalog=true" \
-            --dry-run \
-            --staging-root ./generated
-    - id: publish
-      name: Publish module repository
-      action: run:shell
-      input:
-        command: |
-          repave generate \
-            --blueprint blueprints/terraform-module-generic \
-            ...same inputs... \
-            --no-dry-run
-      # Requires GITHUB_TOKEN and repave.config.yaml output.modules_root in the action environment.
-  output:
-    links:
-      - title: Generated tree
-        url: ./generated
-```
-
-After publish, register a **Location** targeting the new repository’s `catalog-info.yaml`
-(when enabled) or add the repo to your org catalog repo.
-
-### Verification checklist
-
-1. `catalog-info.yaml` validates against [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
-2. Repave annotations include blueprint and standard pins for TechInsights-style checks.
-3. Dry-run gates pass in CI before `--no-dry-run` publish (same gates as the portal).
-
-## Related docs
-
-- [`CONTRIBUTING.md`](../CONTRIBUTING.md) — merge queue and CI on `main`
-- [`concepts.md`](concepts.md) — golden paths and provenance
-- [`blueprints/_partials/catalog-inputs.yaml`](../blueprints/_partials/catalog-inputs.yaml) — input reference for authors
+- [ADR 011](adr/011-hosted-backstage-idp.md)
+- [ADR 006](adr/006-service-catalog-and-maturity.md) — catalog overlay (not a second store)
+- [portal-design.md](portal-design.md) — Visual v3 sunset note
+- [auth-service-mode.md](auth-service-mode.md)
+- [concepts.md](concepts.md)

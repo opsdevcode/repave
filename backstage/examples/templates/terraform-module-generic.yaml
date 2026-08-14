@@ -1,0 +1,54 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: repave-terraform-module
+  title: Terraform module (repave)
+  description: Generate a governed Terraform module via POST /api/v2/generate
+spec:
+  owner: group:default/platform
+  type: library
+  parameters:
+    - title: Module
+      required:
+        - moduleName
+        - cloudProvider
+        - owner
+      properties:
+        moduleName:
+          title: Module name
+          type: string
+        description:
+          title: Description
+          type: string
+          default: Scaffolder bootstrap
+        cloudProvider:
+          title: Cloud
+          type: string
+          enum: [aws, azure, gcp]
+          default: aws
+        owner:
+          title: Owner
+          type: string
+          default: group:platform
+        dryRun:
+          title: Plan only
+          type: boolean
+          default: true
+  steps:
+    - id: generate
+      name: repave generate
+      action: repave:generate
+      input:
+        blueprint: terraform-module-generic
+        dryRun: ${{ parameters.dryRun }}
+        inputs:
+          module_name: ${{ parameters.moduleName }}
+          description: ${{ parameters.description }}
+          cloud_provider: ${{ parameters.cloudProvider }}
+          provider_services: s3
+          owner: ${{ parameters.owner }}
+          include_backstage_catalog: "true"
+  output:
+    text:
+      - title: Summary
+        text: ${{ steps.generate.output.summary }}

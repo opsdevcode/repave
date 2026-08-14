@@ -217,7 +217,7 @@ repave generate --repo-root .. --blueprint blueprints/terraform-module-generic -
 The paved-road loop of the IDP — same contracts in portal, CLI, and API:
 
 - **Generate** Terraform, Ansible, policy, observability, Helm, and app-service golden paths ([`blueprints/`](blueprints/)).
-- **Portal + API** at `:8088` — forms, `/activity` audit view, [`POST /api/v1/generate`](docs/backstage.md).
+- **Portal + API** at `:8088` — HTML forms (deprecated; sunset 14 Feb 2027), `/activity`, [`POST /api/v2/generate`](docs/backstage.md). Hosted Backstage is the IDP UI ([ADR 011](docs/adr/011-hosted-backstage-idp.md)).
 - **Import** an existing repository into a golden path layout via a reviewable PR — files move
   byte-identically, scaffold fills the gaps ([`repave import`](docs/import.md)).
 - **CLI** — `repave generate`, `repave list`, `repave import` (adopt an existing repo),

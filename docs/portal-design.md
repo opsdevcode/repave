@@ -321,6 +321,9 @@ once against this shell. Do not recapture v2 chrome.
 - README screenshots: catalog hero + hosted landing recaptured after those pages
   landed; other portal/CLI shots remain the #648 v3-shell pass
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
+- **Hosted IDP:** Backstage is the developer UI ([ADR 011](adr/011-hosted-backstage-idp.md)).
+  HTML portal sunset **14 Feb 2027**. Recapture README shots against Backstage once
+  Phase 1 is default-on.
 
 Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
 Import, Repo status, Activity, Runs, and Platform under **More**. The right side
@@ -337,7 +340,7 @@ holds Search (⌘K), session, and environment badges.
 | **Live plan surfaces** | Entity preflight panel, busy overlay on submit, result hero with resource counts |
 | **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth with `guided_from` identity fill |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
-| **Backstage-adjacent density** | Neutral cards suitable beside developer portals (v1.32); do not clone Backstage |
+| **Hosted Backstage IDP** | **In progress** — Backstage is the hosted developer UI ([ADR 011](adr/011-hosted-backstage-idp.md)); HTML portal sunset 14 Feb 2027 |
 | **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |

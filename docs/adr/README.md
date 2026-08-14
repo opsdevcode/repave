@@ -15,3 +15,4 @@ Lightweight ADRs for repave platform choices. Number files sequentially; link fr
 | [007](007-v3-multi-repo-decomposition.md) | v3 multi-repo decomposition and per-repo CI |
 | [008](008-v3-branching-release-and-testing.md) | v3 branching, release, and testing strategy |
 | [009](009-v3-product-identity.md) | v3 product identity (**repave** + platform-layer mark; wire names stay `repave`) |
+| [011](011-hosted-backstage-idp.md) | Hosted Backstage is the IDP UI; HTML portal deprecated |

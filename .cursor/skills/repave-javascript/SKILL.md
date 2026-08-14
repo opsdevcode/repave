@@ -51,4 +51,5 @@ See **[reference.md](reference.md)** for DOM XSS checklist and ESLint rule mappi
 ## Related
 
 - Python in same repo: `.cursor/skills/repave-python/SKILL.md`
+- Hosted Backstage (`backstage/`): `.cursor/skills/repave-backstage/SKILL.md`
 - Monorepo: `~/.cursor/skills/repave/SKILL.md`

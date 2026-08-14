@@ -18,6 +18,9 @@ outputs:
   operator:
     description: Operator paths changed
     value: ${{ steps.filter.outputs.operator }}
+  backstage:
+    description: Hosted Backstage app or chart templates changed
+    value: ${{ steps.filter.outputs.backstage }}
 runs:
   using: composite
   steps:
@@ -70,3 +73,7 @@ runs:
             - 'operator/**'
             - '.github/workflows/operator.yml'
             - '.github/workflows/operator-e2e.yml'
+          backstage:
+            - 'backstage/**'
+            - '.github/workflows/backstage.yml'
+            - 'deploy/k8s/chart/templates/backstage-*.yaml'

@@ -8,6 +8,7 @@ export default [
       "engine/build/**",
       "engine/.venv/**",
       "**/.venv/**",
+      "backstage/**",
     ],
   },
   js.configs.recommended,
