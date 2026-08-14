@@ -302,10 +302,14 @@ helm upgrade --install repave ./deploy/k8s/chart \
   --set repave.output.githubOrg=your-org
 ```
 
-`developerLab.enabled` requires `v3.enabled`. It does not invent a GitOps repo or turn on
-environment vending. Catalog files still have to exist at the `serviceCatalog.*` paths
-(or, in a git checkout, `v3.developer_lab.enabled` can wire `examples/platform-dev`).
-See [`docs/v3-development.md`](../../../docs/v3-development.md).
+`developerLab.enabled` and `autoMerge.enabled` require `v3.enabled`. Lab does not invent
+a GitOps repo or turn on environment vending. Catalog files still have to exist at the
+`serviceCatalog.*` paths (or, in a git checkout, `v3.developer_lab.enabled` can wire
+`examples/platform-dev`). Auto-merge is a plan verdict only — Apply does not merge
+GitHub pull requests. Fleet demote:
+`--set repave.v3.autoMerge.killSwitch=true`. See
+[`docs/v3-development.md`](../../../docs/v3-development.md) and
+[`docs/operations/auto-merge-revert.md`](../../../docs/operations/auto-merge-revert.md).
 
 ```bash
 helm upgrade --install repave ./deploy/k8s/chart \

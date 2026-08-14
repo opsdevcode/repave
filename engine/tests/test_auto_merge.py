@@ -151,3 +151,35 @@ def test_decide_auto_merge_for_plan_allows_mechanical_when_enabled(tmp_path: Pat
         gates=(GateResult("checkov", True, False, "ok"),),
     )
     assert decision.allowed is True
+
+
+def test_decide_auto_merge_for_plan_kill_switch_demotes_fleet(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "v3:\n"
+        "  enabled: true\n"
+        "  auto_merge:\n"
+        "    enabled: true\n"
+        "    kill_switch: true\n"
+        "output:\n"
+        "  github_org: acme\n"
+        "  modules_root: ../mods\n",
+        encoding="utf-8",
+    )
+    decision = decide_auto_merge_for_plan(
+        repo_root=tmp_path,
+        blueprint_name="terraform-module-generic",
+        pin_changes=("pin",),
+        policy_changes=(),
+        gates=(GateResult("checkov", True, False, "ok"),),
+    )
+    assert decision.allowed is False
+    assert "kill_switch" in decision.reason
+
+
+def test_auto_merge_revert_runbook_names_kill_switch_and_git_revert() -> None:
+    runbook = Path(__file__).resolve().parents[2] / "docs" / "operations" / "auto-merge-revert.md"
+    text = runbook.read_text(encoding="utf-8")
+    assert "v3.auto_merge.kill_switch" in text
+    assert "git revert" in text
+    assert "does not merge a GitHub pull" in text

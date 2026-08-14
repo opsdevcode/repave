@@ -49,6 +49,8 @@ Modules under `engine/src/repave_engine/`:
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
 `engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,
 `engine/tests/test_developer_lab.py`, and `make test-v3`.
+Kill switch and apply-commit revert:
+[`docs/operations/auto-merge-revert.md`](operations/auto-merge-revert.md).
 
 ## Developer lab (v3)
 

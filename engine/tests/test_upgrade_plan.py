@@ -135,6 +135,54 @@ def test_apply_upgrade_git_commit(repo_root: Path, tmp_path: Path) -> None:
     assert result.plan.changed_file_count > 0
 
 
+def test_apply_upgrade_commit_is_revertible(repo_root: Path, tmp_path: Path) -> None:
+    import subprocess
+
+    target = tmp_path / "module"
+    target.mkdir()
+    fixture_yaml = (
+        repo_root / "operator" / "testdata" / "modules" / "terraform-minimal" / "repave.yaml"
+    )
+    (target / "repave.yaml").write_text(fixture_yaml.read_text(encoding="utf-8"), encoding="utf-8")
+    subprocess.run(["git", "init"], cwd=target, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=target, check=True)
+    subprocess.run(["git", "add", "repave.yaml"], cwd=target, check=True)
+    subprocess.run(["git", "commit", "-m", "init"], cwd=target, check=True, capture_output=True)
+    before_tree = subprocess.run(
+        ["git", "rev-parse", "HEAD^{tree}"],
+        cwd=target,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    result = apply_upgrade(
+        target,
+        repo_root,
+        staging_root=tmp_path / "staging",
+        git_branch="repave/upgrade-revert",
+        commit_message="apply upgrade",
+    )
+    assert result.commit_sha
+    revert = subprocess.run(
+        ["git", "revert", "--no-edit", result.commit_sha],
+        cwd=target,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert revert.returncode == 0
+    after_tree = subprocess.run(
+        ["git", "rev-parse", "HEAD^{tree}"],
+        cwd=target,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert after_tree == before_tree
+
+
 def test_build_upgrade_pull_request_title_and_body() -> None:
     from repave_engine.upgrade_plan import UpgradePlanResult
 

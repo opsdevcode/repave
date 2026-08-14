@@ -88,4 +88,5 @@ Re-run the port-forward smoke (`curl /health`, `/readyz`, catalog) after rollbac
 ## Related
 
 - [Service operations runbooks](README.md)
+- [Auto-merge kill switch and revert](auto-merge-revert.md) — module pin bumps, not this chart
 - [Helm chart README](../k8s/chart/README.md)
