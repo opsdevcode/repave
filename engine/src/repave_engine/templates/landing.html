@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}repave — the intelligent platform layer{% endblock %}
+
+{% block main_modifiers %} shell__main--marketing{% endblock %}
+
+{% block content %}
+<article class="marketing">
+  <header class="home-hero marketing__hero">
+    <div class="home-hero__mesh" aria-hidden="true"></div>
+    <div class="home-hero__path" aria-hidden="true"></div>
+    <div class="home-hero__layout">
+      <div class="home-hero__primary">
+        <div class="home-hero__brand">
+          <span class="home-identity__mark-frame">
+            <img
+              class="home-hero__mark"
+              src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark-dark.svg' }}"
+              width="80"
+              height="80"
+              alt=""
+              aria-hidden="true"
+            />
+          </span>
+          <p class="home-hero__wordmark">
+            repave <span class="shell__edition">v3</span>
+          </p>
+        </div>
+        <p class="home-hero__support">The intelligent platform layer</p>
+        <h1 class="home-console__title">
+          <span class="home-hero__gold">Golden</span> paths for many, not just the few
+        </h1>
+        <p class="home-hero__tagline">
+          Governed blueprints, mandatory gates, and a catalog your whole org can use.
+          Sign in if you already have access. Create an account if you are new.
+        </p>
+        <ul class="home-identity__pillars">
+          <li>Self-service</li>
+          <li>AI-powered</li>
+          <li>Governed</li>
+          <li>Repeatable</li>
+        </ul>
+        <nav class="home-hero__actions" aria-label="Account">
+          <a class="btn btn--primary" href="/signup">Create account</a>
+          <a class="btn btn--ghost" href="/auth/login">Sign in</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <section class="marketing__section" aria-labelledby="how-heading">
+    <h2 id="how-heading" class="marketing__heading">How it works</h2>
+    <ol class="marketing__steps">
+      <li>
+        <strong>Pick a path</strong>
+        <span>Choose a golden path from the catalog — module, service, policy, or bundle.</span>
+      </li>
+      <li>
+        <strong>Configure</strong>
+        <span>Answer a short form. Pins and scope stay versioned with the blueprint.</span>
+      </li>
+      <li>
+        <strong>Generate</strong>
+        <span>repave renders a deterministic artifact. You preview the plan before apply.</span>
+      </li>
+      <li>
+        <strong>Gates</strong>
+        <span>Policy and quality gates run on every apply. Failures block the write.</span>
+      </li>
+      <li>
+        <strong>Publish</strong>
+        <span>Created repos land in the library with lineage you can upgrade later.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section class="marketing__section" aria-labelledby="why-heading">
+    <h2 id="why-heading" class="marketing__heading">Why teams use it</h2>
+    <p class="marketing__copy">
+      Platform teams pave roads. Those roads crack when a standard moves.
+      repave re-renders artifacts from the versioned blueprint instead of
+      patching every repo by hand.
+    </p>
+  </section>
+
+  <section class="marketing__section" aria-labelledby="accounts-heading">
+    <h2 id="accounts-heading" class="marketing__heading">Sign in or create an account</h2>
+    <div class="marketing__split">
+      <article class="marketing__card">
+        <h3>Sign in</h3>
+        <p>You already have access. Continue to the catalog, library, and upgrades.</p>
+        <a class="btn btn--ghost" href="/auth/login">Sign in</a>
+      </article>
+      <article class="marketing__card marketing__card--accent">
+        <h3>Create account</h3>
+        <p>New here? Create an account with your work identity, then open the catalog.</p>
+        <a class="btn btn--primary" href="/signup">Create account</a>
+      </article>
+    </div>
+  </section>
+</article>
+{% endblock %}

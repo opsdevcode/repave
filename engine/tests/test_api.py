@@ -31,6 +31,14 @@ def test_metrics_exposes_prometheus(repo_root, output_config) -> None:
     assert "repave_jsonl_append_failures_total" in response.text
 
 
+def test_signup_redirects_when_auth_disabled(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/signup", follow_redirects=False)
+
+    assert response.status_code == 302
+    assert response.headers["location"] == "/"
+
+
 def test_index_lists_blueprints(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
@@ -52,7 +60,17 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "/static/brand/svg/repave-mark-dark.svg" in response.text
     assert "shell__wordmark" in response.text
     assert "shell__edition" in response.text
-    assert "Golden paths" in response.text
+    assert "shell__tagline" in response.text
+    assert "home-hero" in response.text
+    assert "home-hero__mark" in response.text
+    assert "home-hero__path" in response.text
+    assert "home-hero__gold" in response.text
+    assert "The intelligent platform layer" in response.text
+    assert "Self-service" in response.text
+    assert "Golden" in response.text
+    assert "paths" in response.text
+    assert "shell__mark-frame" in response.text
+    assert "repave v3 · The intelligent platform layer" in response.text
     assert 'property="og:image"' in response.text
     assert "static/brand/social/repave-social-card.png" in response.text
     assert 'name="twitter:card"' in response.text
@@ -63,7 +81,7 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "catalog-inventory__heading" in response.text
     assert "home-catalog-column" in response.text
     assert "catalog-inventory__summary" not in response.text
-    assert "Golden paths" in response.text
+    assert "home-hero__gold" in response.text
     assert 'href="/library"' in response.text
     assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text

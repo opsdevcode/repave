@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Create a repave account{% endblock %}
+
+{% block main_modifiers %} shell__main--marketing{% endblock %}
+
+{% block content %}
+<article class="marketing marketing--narrow">
+  <header class="home-hero marketing__hero">
+    <div class="home-hero__mesh" aria-hidden="true"></div>
+    <div class="home-hero__layout">
+      <div class="home-hero__primary">
+        <p class="home-hero__support">New to repave</p>
+        <h1 class="home-console__title">Create an account</h1>
+        <p class="home-hero__tagline">
+          Use your work identity provider. After you create an account you land
+          in the catalog — pick a golden path, run the gates, publish a repo.
+        </p>
+        <nav class="home-hero__actions" aria-label="Create account">
+          <a class="btn btn--primary" href="/auth/signup">Create account</a>
+          <a class="btn btn--ghost" href="/auth/login">Sign in instead</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <section class="marketing__section" aria-labelledby="signup-expect-heading">
+    <h2 id="signup-expect-heading" class="marketing__heading">What to expect</h2>
+    <ul class="marketing__list">
+      <li>You will leave this page to finish signup with the identity provider.</li>
+      <li>Use a work email your organization already trusts.</li>
+      <li>When you come back, the catalog is ready — no extra install on your laptop.</li>
+    </ul>
+    <p class="marketing__copy">
+      Already have access?
+      <a href="/auth/login">Sign in</a>
+      or return to the
+      <a href="/">product overview</a>.
+    </p>
+  </section>
+</article>
+{% endblock %}

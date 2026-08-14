@@ -80,7 +80,7 @@ Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with t
 - **Semantic:** `--success` (green), `--warning` (orange — distinct from brand gold),
   `--error` (rose), `--info`, `--skip`
 - **Atmosphere:** restrained vignette + fine grid (`.shell__atmosphere`); low amber wash
-- **Type:** Source Sans 3 (UI + wordmark), IBM Plex Mono
+- **Type:** Inter (UI + wordmark), IBM Plex Mono
 - **Layout:** `--radius`, `--space-1` … `--space-6`, `--content-max-width`
 - Optional light theme / toggle remains Phase 5 polish if needed
 
@@ -91,8 +91,8 @@ Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with t
   under Docker Compose). Favicons under `/static/brand/`.
 - Content area: consistent max width and horizontal padding; mobile single column.
 - Breadcrumb or back link styled consistently (not bare `<a>` above `<h1>`).
-- Tagline (`THE INTELLIGENT PLATFORM LAYER`) stays on marketing/docs surfaces — not the
-  product sidebar.
+- Tagline (*The intelligent platform layer*) appears in the shell lockup and catalog
+  home hero. It stays off the nav pills.
 
 ### Core components (CSS-first)
 
@@ -311,6 +311,11 @@ once against this shell. Do not recapture v2 chrome.
 - Display name stays **repave**; wire names stay `repave`; amber **v3** in the lockup
 - Night-ops shell tokens (same five-color palette); semantic status colors unchanged
 - Family drawer accents stay independent of brand gold
+- Catalog home shows the framed platform-layer mark, tagline, pillars, and a
+  display **Golden** paths heading (amber on *Golden*)
+- Hosted service mode: unauthenticated `/` is a public product landing (Sign in +
+  Create account); `/signup` is a separate create-account page. App routes still
+  require a session.
 - One screenshot pass against the v3 shell
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
 
