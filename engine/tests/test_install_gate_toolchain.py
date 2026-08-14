@@ -22,6 +22,7 @@ def _run_installer(
     tmp_path: Path,
     *,
     curl_stub: str | None = None,
+    galaxy_stub: str | None = None,
     **env_overrides: str,
 ) -> tuple[subprocess.CompletedProcess, str]:
     """Run the installer with stubbed downloaders; return the process and the argv log."""
@@ -32,6 +33,8 @@ def _run_installer(
         stub = stub_dir / name
         if name == "curl" and curl_stub is not None:
             stub.write_text(curl_stub, encoding="utf-8")
+        elif name == "ansible-galaxy" and galaxy_stub is not None:
+            stub.write_text(galaxy_stub, encoding="utf-8")
         else:
             stub.write_text(
                 f'#!/bin/sh\nprintf "{name} %s\\n" "$*" >> "$STUB_LOG"\nexit 0\n',
@@ -77,8 +80,10 @@ def test_default_run_verifies_tls_for_every_downloader(tmp_path: Path) -> None:
     assert all("-fsSL" in call for call in curl_calls)
     assert all(" -o " in call for call in curl_calls)
     assert not any("--insecure" in call for call in curl_calls)
-    assert _lines(calls, "ansible-galaxy")
-    assert not any("--ignore-certs" in call for call in _lines(calls, "ansible-galaxy"))
+    galaxy_calls = _lines(calls, "ansible-galaxy")
+    assert galaxy_calls
+    assert all("--no-cache" in call for call in galaxy_calls)
+    assert not any("--ignore-certs" in call for call in galaxy_calls)
     assert not any("--allow-insecure-host" in call for call in _lines(calls, "uv"))
     assert "WARNING" not in proc.stderr
 
@@ -162,6 +167,41 @@ def test_curl_download_retries_transient_http_errors(tmp_path: Path) -> None:
     assert proc.returncode == 0, proc.stderr
     assert len(_lines(calls, "curl")) == 10  # 2 failures + 8 successful downloads
     assert "retrying in 0s" in proc.stderr
+
+
+def test_galaxy_install_retries_transient_errors(tmp_path: Path) -> None:
+    proc, calls = _run_installer(
+        tmp_path,
+        galaxy_stub=(
+            "#!/bin/sh\n"
+            'count_file="$STUB_DIR/galaxy-count"\n'
+            "n=0\n"
+            'if [ -f "$count_file" ]; then n=$(cat "$count_file"); fi\n'
+            "n=$((n + 1))\n"
+            'echo "$n" > "$count_file"\n'
+            'printf "ansible-galaxy %s\\n" "$*" >> "$STUB_LOG"\n'
+            'if [ "$n" -le 2 ]; then exit 1; fi\n'
+            "exit 0\n"
+        ),
+        DOWNLOAD_RETRY_DELAY="0",
+    )
+
+    assert proc.returncode == 0, proc.stderr
+    assert len(_lines(calls, "ansible-galaxy")) == 3
+    assert "retrying in 0s" in proc.stderr
+
+
+def test_galaxy_install_gives_up_after_attempts(tmp_path: Path) -> None:
+    proc, calls = _run_installer(
+        tmp_path,
+        galaxy_stub=('#!/bin/sh\nprintf "ansible-galaxy %s\\n" "$*" >> "$STUB_LOG"\nexit 1\n'),
+        DOWNLOAD_RETRY_DELAY="0",
+        DOWNLOAD_RETRY_ATTEMPTS="3",
+    )
+
+    assert proc.returncode == 1
+    assert len(_lines(calls, "ansible-galaxy")) == 3
+    assert "ansible-galaxy failed after 3 attempts" in proc.stderr
 
 
 def test_curl_download_gives_up_after_attempts(tmp_path: Path) -> None:
