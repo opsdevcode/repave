@@ -1,6 +1,9 @@
 {{- if and .Values.repave.v3.developerLab.enabled (not .Values.repave.v3.enabled) }}
 {{- fail "repave.v3.developerLab.enabled requires repave.v3.enabled (ADR 008)" }}
 {{- end }}
+{{- if and .Values.repave.v3.autoMerge.enabled (not .Values.repave.v3.enabled) }}
+{{- fail "repave.v3.autoMerge.enabled requires repave.v3.enabled (ADR 008)" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -163,6 +166,9 @@ data:
       enabled: true
       developer_lab:
         enabled: {{ .Values.repave.v3.developerLab.enabled }}
+      auto_merge:
+        enabled: {{ .Values.repave.v3.autoMerge.enabled }}
+        kill_switch: {{ .Values.repave.v3.autoMerge.killSwitch }}
     {{- end }}
     {{- if .Values.repave.serviceCatalog.enabled }}
     service_catalog:

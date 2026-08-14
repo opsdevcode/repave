@@ -35,6 +35,7 @@ SLOs, alerts, and runbooks for a hosted repave engine (day-2 operability).
 | Golden-path adoption / DX metrics / stakeholder views | [platform-metrics.md](../platform-metrics.md) |
 | Platform console (`/platform/*`) enablement | [platform-console.md](../platform-console.md) |
 | Cost actuals / FinOps enablement | [../finops.md](../finops.md) |
+| Auto-merge kill switch / pin-bump revert | [auto-merge-revert.md](auto-merge-revert.md) |
 
 ## Runbooks
 
@@ -62,6 +63,9 @@ See [Upgrade and rollback](upgrade-and-rollback.md) for Helm steps.
 
 Follow [upgrade-and-rollback.md](upgrade-and-rollback.md): pre-upgrade `make chart-smoke`, pinned
 digest ([`docs/supply-chain.md`](../supply-chain.md)), `helm upgrade --wait`, and `helm rollback`.
+For an applied module pin bump or an `allowed` auto-merge verdict, use
+[auto-merge-revert.md](auto-merge-revert.md) (kill switch; `git revert` the apply commit).
+Repave does not merge GitHub pull requests.
 
 ### Readiness failures
 
@@ -132,3 +136,4 @@ Run `make postgres-dr-drill` locally; log production drills in [dr-drill-log.md]
 - [`dr-drill-log.md`](dr-drill-log.md) — recorded backup/restore drills
 - [`crd-conversion-recovery.md`](crd-conversion-recovery.md) — operator CRD conversion drill
 - [`github-repo-fleet-validation.md`](github-repo-fleet-validation.md) — github-repo → fleet → GPR
+- [`auto-merge-revert.md`](auto-merge-revert.md) — auto-merge kill switch and apply-commit revert

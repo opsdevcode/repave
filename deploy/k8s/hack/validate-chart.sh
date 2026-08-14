@@ -533,4 +533,29 @@ if helm template repave-lab-without-v3 "${CHART}" \
   exit 1
 fi
 
+if helm template repave-auto-merge-without-v3 "${CHART}" \
+  --namespace repave-lab \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set repave.v3.autoMerge.enabled=true \
+  >/dev/null 2>&1; then
+  echo "autoMerge.enabled without v3.enabled must fail (ADR 008)" >&2
+  exit 1
+fi
+
+kill_rendered="$(mktemp)"
+
+helm template repave-auto-merge-kill "${CHART}" \
+  --namespace repave-lab \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  --set repave.v3.enabled=true \
+  --set repave.v3.autoMerge.killSwitch=true \
+  >"${kill_rendered}"
+
+if ! grep -q 'kill_switch: true' "${kill_rendered}"; then
+  echo "v3.autoMerge.killSwitch must render v3.auto_merge.kill_switch in the ConfigMap" >&2
+  exit 1
+fi
+
 echo "helm lint and template checks passed"
