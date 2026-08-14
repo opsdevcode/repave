@@ -131,9 +131,15 @@ preview for existing repos. Screenshots below are captured from a running portal
 mockups).
 
 <p align="center">
+  <img src="docs/images/portal/landing.png" alt="repave public landing — The intelligent platform layer, Sign in and Create account" width="920" />
+  <br />
+  <sub>Hosted landing — product page before Sign in (service mode)</sub>
+</p>
+
+<p align="center">
   <img src="docs/images/portal/home-catalog.png" alt="repave home — golden path catalog as an open family card grid" width="920" />
   <br />
-  <sub>Home — open family card grid and search</sub>
+  <sub>Home — catalog hero, Golden paths, and family card grid</sub>
 </p>
 
 <p align="center">

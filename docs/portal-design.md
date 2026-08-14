@@ -318,7 +318,8 @@ against this shell. Do not recapture v2 chrome.
   Create account); `/signup` is a separate create-account page. App routes still
   require a session.
 - Developer lab (`/lab`) and My services (`/home`) use the same fleet/library tiles
-- README screenshot pass against the v3 shell is done; recapture after landing/hero
+- README screenshots: catalog hero + hosted landing recaptured after those pages
+  landed; other portal/CLI shots remain the #648 v3-shell pass
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
 
 Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
