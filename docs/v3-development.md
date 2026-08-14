@@ -44,9 +44,11 @@ Modules under `engine/src/repave_engine/`:
 | `risk_class.py` | `RiskClass` enum and `classify_change()` |
 | `waivers.py` | JSONL waiver load + expiry evaluation |
 | `v3_foundation.py` | `v3:` block in `repave.config.yaml` (off until flip) |
+| `auto_merge.py` | Pure `decide_auto_merge()` — mechanical + green gates + no open waiver |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
-`engine/tests/test_v3_foundation.py`, `engine/tests/test_developer_lab.py`, and `make test-v3`.
+`engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,
+`engine/tests/test_developer_lab.py`, and `make test-v3`.
 
 ## Developer lab (v3)
 
