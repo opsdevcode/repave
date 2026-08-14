@@ -8,15 +8,15 @@
     />
     <img
       src="docs/brand/assets/svg/repave-logo-compact.svg"
-      alt="repave — Converge mark and wordmark"
+      alt="repave v3 — platform-layer mark and wordmark"
       width="280"
     />
   </picture>
 </p>
 
-**Governed golden paths for everyone who builds platform automation.**
+**The intelligent platform layer.**
 
-From fragmented to governed — golden paths for many, not just the few.
+Governed golden paths for everyone who builds platform automation.
 
 Brand kit: [docs/brand/README.md](docs/brand/README.md)
 

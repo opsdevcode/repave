@@ -11,12 +11,12 @@
     <meta name="theme-color" content="{% if portal_accent_color %}{{ portal_accent_color }}{% else %}#0F172A{% endif %}" />
     <meta
       name="description"
-      content="Governed, repeatable platform engineering — golden paths for many, not just the few."
+      content="The intelligent platform layer — golden paths for many, not just the few."
     />
     <meta property="og:title" content="repave" />
     <meta
       property="og:description"
-      content="Governed, repeatable platform engineering — golden paths for many, not just the few."
+      content="The intelligent platform layer — golden paths for many, not just the few."
     />
     <meta property="og:type" content="website" />
     <meta
@@ -68,13 +68,14 @@
           <a class="shell__brand" href="/" aria-label="repave home">
             <img
               class="shell__mark"
-              src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark.svg' }}"
-              width="96"
+              src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark-dark.svg' }}"
+              width="40"
               height="40"
               alt=""
               aria-hidden="true"
             />
             <span class="shell__wordmark">repave</span>
+            <span class="shell__edition">v3</span>
           </a>
           <nav class="shell__nav shell__nav--primary" aria-label="Primary">
             <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>Catalog</a>

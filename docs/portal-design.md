@@ -71,7 +71,7 @@ v1.18-polish       home hero, scope presets, browser last-run snippet
 ### Design tokens (CSS custom properties)
 
 Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with the
-**Converge** brand (see [brand guidelines](brand/README.md)):
+**platform-layer** brand (see [brand guidelines](brand/README.md)):
 
 - **Surfaces:** deep navy `--bg` / `--surface` / `--surface-raised`
 - **Brand:** `--brand-primary` (`#F59E0B`) for golden-path CTAs, active nav accent,
@@ -86,12 +86,12 @@ Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with t
 
 ### App shell
 
-- Top bar: Converge mark + **repave** wordmark, primary nav (Catalog, Library, …),
-  optional environment badge (for example `local` when running under Docker Compose).
-  Favicons under `/static/brand/`.
+- Top bar: platform-layer mark + **repave** wordmark + amber **v3**, primary nav
+  (Catalog, Library, …), optional environment badge (for example `local` when running
+  under Docker Compose). Favicons under `/static/brand/`.
 - Content area: consistent max width and horizontal padding; mobile single column.
 - Breadcrumb or back link styled consistently (not bare `<a>` above `<h1>`).
-- Tagline (`FROM FRAGMENTED TO GOVERNED`) stays on marketing/docs surfaces — not the
+- Tagline (`THE INTELLIGENT PLATFORM LAYER`) stays on marketing/docs surfaces — not the
   product sidebar.
 
 ### Core components (CSS-first)
@@ -277,8 +277,8 @@ viewer, tables), `badge--warn`, live-plan result hero, entity live-plan prefligh
 busy overlay, command palette shell button, relative timestamps, sortable `/runs`
 table; `engine/tests/test_portal_css_tokens.py` guards undefined `var()` references.
 **Compact density** (`portal.density: compact`) ships for Backstage-adjacent layouts.
-**White-label** — optional `portal.logo_url` and `portal.accent_color` (Converge defaults
-when unset). Light theme remains optional.
+**White-label** — optional `portal.logo_url` and `portal.accent_color` (v3 platform-layer
+defaults when unset). Light theme remains optional.
 
 Pick based on audience and hosting model (v1.25+).
 
@@ -301,6 +301,18 @@ Pick based on audience and hosting model (v1.25+).
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 
 Further craft (illustration, stepper) is optional.
+
+### Visual v3 (next/v3)
+
+**Status:** identity landed in [ADR 009](adr/009-v3-product-identity.md): **repave** +
+platform-layer mark + *The intelligent platform layer*. Recapture README screenshots
+once against this shell. Do not recapture v2 chrome.
+
+- Display name stays **repave**; wire names stay `repave`; amber **v3** in the lockup
+- Night-ops shell tokens (same five-color palette); semantic status colors unchanged
+- Family drawer accents stay independent of brand gold
+- One screenshot pass against the v3 shell
+- Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
 
 Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
 Import, Repo status, Activity, Runs, and Platform under **More**. The right side
