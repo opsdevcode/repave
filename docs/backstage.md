@@ -14,7 +14,7 @@ After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
 sunset. Platform-admin HTML becomes Backstage plugins or CLI/API-only — fleet
 ops are not dropped silently.
 
-## What you get in Phase 1
+## What you get
 
 | Piece | Path / contract |
 | --- | --- |
@@ -23,6 +23,7 @@ ops are not dropped silently.
 | Template | `terraform-module-generic` with `include_backstage_catalog: true` |
 | Catalog | `catalog-info.yaml` file locations **and** `GET /api/v2/catalog/entities` |
 | Lineage card | Entity page shows `repave.dev/*` pins |
+| My services | `/my-services` — components with `repave.dev/blueprint` |
 | Helm | `repave.backstage.enabled` (**default off**) |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
@@ -167,7 +168,7 @@ spec:
 
 | Phase | Outcome |
 | --- | --- |
-| 2 | My services, sandbox vend, upgrade/auto-merge, run status as plugins |
+| 2 | My services (this slice); still open: sandbox vend, upgrade/auto-merge, run status |
 | 3 | Ingress flip; HTML routes send `Sunset` + `Link`; `repave.portal.html` defaults false |
 | 4 | Delete templates after 14 Feb 2027; FastAPI is API-only |
 

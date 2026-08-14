@@ -713,17 +713,11 @@
     animation: page-enter 280ms ease-out both;
   }
 
-  .shell__main--home {
+  .shell__main--home,
+  .shell__main--catalog-hub,
+  .shell__main--golden-path {
     --content-max-width: 92rem;
     --home-catalog-max-width: 80rem;
-  }
-
-  /* Blueprint generate + result: use horizontal margin on large viewports */
-  .shell__main--golden-path {
-    --content-max-width: 96rem;
-    width: min(100%, var(--content-max-width));
-    padding-left: max(var(--space-5), clamp(var(--space-4), 4vw, var(--space-6)));
-    padding-right: max(var(--space-5), clamp(var(--space-4), 4vw, var(--space-6)));
   }
 
   @media (prefers-reduced-motion: no-preference) {
@@ -802,17 +796,19 @@
 
   .page-title {
     font-family: var(--font-display);
-    font-size: clamp(2rem, 4vw, 2.75rem);
-    font-weight: 600;
-    letter-spacing: -0.03em;
-    margin: 0 0 var(--space-2);
-    line-height: 1.1;
+    font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--space-1);
+    line-height: 1.15;
   }
 
   .page-lead {
     color: var(--text-muted);
-    margin: 0 0 var(--space-5);
+    margin: 0;
     max-width: 40rem;
+    font-size: 0.92rem;
+    line-height: 1.45;
   }
 
   .muted {
@@ -2119,6 +2115,24 @@
   }
 
   /* —— Blueprint form (Phase 3) —— */
+
+  .form-hero {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .form-hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1);
+  }
 
   .form-hero .page-lead {
     display: flex;
@@ -6457,6 +6471,19 @@
   .marketing__steps span {
     color: var(--text-secondary);
     font-size: 0.92rem;
+  }
+
+  .marketing__grid {
+    list-style: none;
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--space-4);
+  }
+
+  .marketing__grid .marketing__card {
+    min-height: 100%;
   }
 
   .marketing__split {

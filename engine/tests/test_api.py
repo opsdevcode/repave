@@ -61,14 +61,10 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "shell__wordmark" in response.text
     assert "shell__edition" in response.text
     assert "shell__tagline" in response.text
-    assert "home-hero" in response.text
-    assert "home-hero__mark" in response.text
-    assert "home-hero__path" in response.text
-    assert "home-hero__gold" in response.text
+    assert "home-console__header" in response.text
+    assert "home-console__title" in response.text
     assert "The intelligent platform layer" in response.text
-    assert "Self-service" in response.text
-    assert "Golden" in response.text
-    assert "paths" in response.text
+    assert "Golden paths" in response.text
     assert "shell__mark-frame" in response.text
     assert "repave v3 · The intelligent platform layer" in response.text
     assert 'property="og:image"' in response.text
@@ -81,7 +77,6 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "catalog-inventory__heading" in response.text
     assert "home-catalog-column" in response.text
     assert "catalog-inventory__summary" not in response.text
-    assert "home-hero__gold" in response.text
     assert 'href="/library"' in response.text
     assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text

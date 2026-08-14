@@ -312,11 +312,12 @@ once against this shell. Do not recapture v2 chrome.
 - Display name stays **repave**; wire names stay `repave`; amber **v3** in the lockup
 - Night-ops shell tokens (same five-color palette); semantic status colors unchanged
 - Family drawer accents stay independent of brand gold
-- Catalog home shows the framed platform-layer mark, tagline, pillars, and a
-  display **Golden** paths heading (amber on *Golden*)
-- Hosted service mode: unauthenticated `/` is a public product landing (Sign in +
-  Create account); `/signup` is a separate create-account page. App routes still
-  require a session.
+- Catalog home (signed in) uses the same compact page chrome as Library and
+  My services — title, lead, small actions. The marketing splash (mark, pillars,
+  mesh) stays on the public landing only.
+- Hosted service mode: unauthenticated `/` is a public product landing (what the
+  platform does, how it works, builders vs platform, Sign in + Create account);
+  `/signup` is a separate create-account page. App routes still require a session.
 - Developer lab (`/lab`) and My services (`/home`) use the same fleet/library tiles
 - README screenshots: catalog hero + hosted landing recaptured after those pages
   landed; other portal/CLI shots remain the #648 v3-shell pass

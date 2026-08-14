@@ -33,7 +33,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card |
+| `backstage/plugins/plugin-repave` | Lineage card + `/my-services` |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality
