@@ -1,10 +1,10 @@
 # Cross-artifact version pins for umbrella integration tests (ADR 007 Phase 4).
 # Bump on each release; integration workflow asserts these resolve.
 
-engine_version: '3.0.0'
+engine_version: '3.1.0'
 cli_version: '2.24.0'
-operator_image: 'ghcr.io/opsdevcode/repave-operator:3.0.0'
-corpus_image: 'ghcr.io/opsdevcode/repave-corpus:3.0.0'
-portal_image: 'ghcr.io/opsdevcode/repave-engine-portal:3.0.0'
-worker_image: 'ghcr.io/opsdevcode/repave-engine:3.0.0'
-chart_version: '3.0.0'
+operator_image: 'ghcr.io/opsdevcode/repave-operator:3.1.0'
+corpus_image: 'ghcr.io/opsdevcode/repave-corpus:3.1.0'
+portal_image: 'ghcr.io/opsdevcode/repave-engine-portal:3.1.0'
+worker_image: 'ghcr.io/opsdevcode/repave-engine:3.1.0'
+chart_version: '3.1.0'
