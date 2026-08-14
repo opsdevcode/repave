@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <title>{% block title %}repave{% endblock %}</title>
-    <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/static/brand/favicon-32x32.png" type="image/png" sizes="32x32" />
-    <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png" sizes="180x180" />
+    <link rel="icon" href="/static/brand/favicon.svg?v={{ app_version }}" type="image/svg+xml" />
+    <link rel="icon" href="/static/brand/favicon-32x32.png?v={{ app_version }}" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/static/brand/favicon/favicon-16x16.png?v={{ app_version }}" type="image/png" sizes="16x16" />
+    <link rel="apple-touch-icon" href="/static/brand/apple-touch-icon.png?v={{ app_version }}" sizes="180x180" />
     <meta name="theme-color" content="{% if portal_accent_color %}{{ portal_accent_color }}{% else %}#0F172A{% endif %}" />
     <meta
       name="description"

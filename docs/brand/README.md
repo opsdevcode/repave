@@ -30,7 +30,7 @@ the portal `static/brand/` copies. Do not embed the concept-board raster into SV
 - `repave-mark-dark.svg` — platform-layer mark on dark surfaces (slate slabs)
 - `repave-mark-light.svg` — alias of the light-surface mark
 - `repave-mark-monochrome.svg` — `currentColor` for flexible reuse
-- `repave-mark-favicon*.svg` — two-slab simplification for 16–32px
+- `repave-mark-favicon*.svg` — framed two-slab tile for 16–32px (no dashed posts)
 
 ### Wordmark lockups
 
@@ -108,8 +108,9 @@ Portal serves dark-friendly favicons from `/static/brand/`:
 - `favicon-16x16.png`, `favicon-32x32.png`
 - `apple-touch-icon.png`
 
-At 16px the mark is **simplified** (two slabs, golden path, three signal lines). Do
-not force the full-detail mark into a favicon.
+At 16px the mark is a **framed** two-slab tile (navy field, amber rule, golden path).
+Do not add dashed signal lines — they read as noise in a tab. Do not force the
+full-detail mark into a favicon.
 
 ## Social and GitHub avatar
 
