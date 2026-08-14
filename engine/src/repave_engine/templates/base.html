@@ -31,7 +31,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/static/repave.css?v={{ app_version }}" />
@@ -66,17 +66,25 @@
       <header class="shell__bar">
         <div class="shell__bar-start">
           <a class="shell__brand" href="/" aria-label="repave home">
-            <img
-              class="shell__mark"
-              src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark-dark.svg' }}"
-              width="40"
-              height="40"
-              alt=""
-              aria-hidden="true"
-            />
-            <span class="shell__wordmark">repave</span>
-            <span class="shell__edition">v3</span>
+            <span class="shell__mark-frame">
+              <img
+                class="shell__mark"
+                src="{{ portal_logo_url if portal_logo_url else '/static/brand/svg/repave-mark-dark.svg' }}"
+                width="48"
+                height="48"
+                alt=""
+                aria-hidden="true"
+              />
+            </span>
+            <span class="shell__wordmark-stack">
+              <span class="shell__wordmark-row">
+                <span class="shell__wordmark">repave</span>
+                <span class="shell__edition">v3</span>
+              </span>
+              <span class="shell__tagline">The intelligent platform layer</span>
+            </span>
           </a>
+          {% if not landing_page %}
           <nav class="shell__nav shell__nav--primary" aria-label="Primary">
             <a href="/" {% if nav_active == "catalog" %}aria-current="page"{% endif %}>Catalog</a>
             <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>Library</a>
@@ -103,8 +111,10 @@
               </nav>
             </details>
           </nav>
+          {% endif %}
         </div>
         <div class="shell__meta">
+          {% if not landing_page %}
           <button
             type="button"
             class="shell__search"
@@ -114,6 +124,7 @@
             <span class="shell__search-label">Search</span>
             <kbd class="shell__kbd" data-command-palette-kbd>⌘K</kbd>
           </button>
+          {% endif %}
           {% if auth_enabled and auth_user %}
           <div class="shell__session">
             <span class="shell__user" title="{{ auth_user.email }}">{{ auth_user.email }}</span>
@@ -122,7 +133,8 @@
             </form>
           </div>
           {% elif auth_enabled %}
-          <a class="btn btn--secondary btn--sm" href="/auth/login">Sign in</a>
+          <a class="btn btn--ghost btn--sm" href="/auth/login">Sign in</a>
+          <a class="btn btn--primary btn--sm" href="/signup">Create account</a>
           {% endif %}
           <div class="shell__badges">
             {% if env_badge %}
@@ -143,7 +155,9 @@
       </p>
       {% endif %}
 
+      {% if not landing_page %}
       <div id="last-run-snippet" class="last-run-snippet shell__last-run" hidden></div>
+      {% endif %}
 
       <main id="main-content" class="shell__main{% block main_modifiers %}{% endblock %}">
         {% block content %}{% endblock %}
@@ -166,6 +180,7 @@
 
       <div id="repave-toast" class="toast" role="status" aria-live="polite" hidden></div>
 
+      {% if not landing_page %}
       <div
         id="command-palette"
         class="command-palette"
@@ -195,9 +210,10 @@
           ></ul>
         </div>
       </div>
+      {% endif %}
 
       <footer class="shell__footer">
-        repave · engine {{ app_version }}
+        repave v3 · The intelligent platform layer · engine {{ app_version }}
       </footer>
     </div>
     {% block scripts %}{% endblock %}

@@ -408,6 +408,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "presenter_mode": presenter,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
+            "landing_page": False,
             "platform_admin_visible": admin_visible,
             "platform_nav_links": platform_nav_links() if admin_visible else (),
             "service_catalog_enabled": service_catalog_config is not None,
@@ -649,6 +650,16 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request) -> HTMLResponse:
+        if (
+            auth_config is not None
+            and auth_config.service_enabled
+            and session_user(request) is None
+        ):
+            return templates.TemplateResponse(
+                request,
+                "landing.html",
+                page_context(request, nav_active="welcome", landing_page=True),
+            )
         blueprints = list_blueprints(blueprints_dir(repo_root))
         catalog_groups = group_blueprints_by_artifact(blueprints)
         catalog_bundles = list_bundles(repo_root)
@@ -663,6 +674,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 nav_active="catalog",
                 audit_enabled=audit_portal_enabled(repo_root),
             ),
+        )
+
+    @app.get("/signup", response_class=HTMLResponse, response_model=None)
+    async def signup_page(request: Request) -> Response:
+        if auth_config is None or not auth_config.service_enabled:
+            return RedirectResponse("/", status_code=302)
+        if session_user(request) is not None:
+            return RedirectResponse("/", status_code=302)
+        return templates.TemplateResponse(
+            request,
+            "signup.html",
+            page_context(request, nav_active="signup", landing_page=True),
         )
 
     @app.get("/activity", response_class=HTMLResponse)

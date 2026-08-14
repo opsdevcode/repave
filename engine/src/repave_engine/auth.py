@@ -21,6 +21,7 @@ ROLE_ADMIN = "admin"
 SERVICE_BEARER_SUBJECT = "repave:service-bearer"
 SERVICE_BEARER_EMAIL = "repave-service@internal.local"
 
+_PUBLIC_EXACT = frozenset({"/", "/signup"})
 _PUBLIC_PREFIXES = ("/static", "/health", "/readyz", "/metrics", "/auth/")
 
 
@@ -50,6 +51,8 @@ class AuthConfig:
 
 
 def is_public_path(path: str) -> bool:
+    if path in _PUBLIC_EXACT:
+        return True
     return any(path.startswith(prefix) for prefix in _PUBLIC_PREFIXES)
 
 
@@ -225,6 +228,8 @@ def build_login_redirect(
     request: Request,
     config: AuthConfig,
     discovery: dict[str, Any],
+    *,
+    screen_hint: str = "",
 ) -> RedirectResponse:
     state = secrets.token_urlsafe(24)
     request.session["oidc_state"] = state
@@ -237,6 +242,10 @@ def build_login_redirect(
         "redirect_uri": config.oidc_redirect_uri,
         "state": state,
     }
+    hint = screen_hint.strip()
+    if hint:
+        # Auth0 Universal Login; other IdPs ignore unknown authorize params.
+        params["screen_hint"] = hint
     authorize = str(discovery.get("authorization_endpoint", ""))
     if not authorize:
         raise HTTPException(status_code=500, detail="OIDC authorization_endpoint missing")
