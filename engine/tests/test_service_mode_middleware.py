@@ -47,6 +47,10 @@ def test_portal_root_is_public_landing(service_mode, repo_root, output_config) -
     assert "Create account" in response.text
     assert "Sign in" in response.text
     assert "The intelligent platform layer" in response.text
+    assert "What the platform does" in response.text
+    assert "Gates that block" in response.text
+    assert "Hosted catalog" in response.text
+    assert "Who it is for" in response.text
     assert "shell__nav--primary" not in response.text
 
 

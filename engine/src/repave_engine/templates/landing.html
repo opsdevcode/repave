@@ -31,8 +31,8 @@
           <span class="home-hero__gold">Golden</span> paths for many, not just the few
         </h1>
         <p class="home-hero__tagline">
-          Governed blueprints, mandatory gates, and a catalog your whole org can use.
-          Sign in if you already have access. Create an account if you are new.
+          Versioned blueprints, gates that block a bad apply, and a catalog you
+          upgrade when the standard moves — not a pile of one-off repos.
         </p>
         <ul class="home-identity__pillars">
           <li>Self-service</li>
@@ -45,8 +45,61 @@
           <a class="btn btn--ghost" href="/auth/login">Sign in</a>
         </nav>
       </div>
+      <ul class="home-hero__metrics" aria-label="What you get">
+        <li>
+          <span class="home-hero__metric-value">Gates</span>
+          <span class="home-hero__metric-label">on every apply</span>
+        </li>
+        <li>
+          <span class="home-hero__metric-value">Pins</span>
+          <span class="home-hero__metric-label">you can upgrade</span>
+        </li>
+        <li>
+          <span class="home-hero__metric-value">One catalog</span>
+          <span class="home-hero__metric-label">for the estate</span>
+        </li>
+        <li class="home-hero__metric-note">CLI and API stay the control plane.</li>
+      </ul>
     </div>
   </header>
+
+  <section class="marketing__section" aria-labelledby="offer-heading">
+    <h2 id="offer-heading" class="marketing__heading">What the platform does</h2>
+    <p class="marketing__copy">
+      Platform owns the roads. Builders consume them. When a standard moves,
+      you re-render from the blueprint instead of patching every repo by hand.
+    </p>
+    <ul class="marketing__grid">
+      <li class="marketing__card">
+        <h3>Golden paths</h3>
+        <p>
+          Terraform modules, Helm charts, Ansible, policy, and app services from
+          the same catalog. Short form, versioned pins, preview before apply.
+        </p>
+      </li>
+      <li class="marketing__card">
+        <h3>Gates that block</h3>
+        <p>
+          Policy and quality run on every apply. Failures stop the write.
+          Regulated families cannot turn that off without a waiver.
+        </p>
+      </li>
+      <li class="marketing__card">
+        <h3>Lineage you can upgrade</h3>
+        <p>
+          Each repo records its blueprint and standard pins. Plan an upgrade,
+          open a PR, and merge the mechanical pin bumps that are allowed.
+        </p>
+      </li>
+      <li class="marketing__card">
+        <h3>Hosted catalog</h3>
+        <p>
+          Ownership, scaffolding, and <code>catalog-info.yaml</code> live in
+          Backstage. The engine stays CLI and <code>/api/v2</code>.
+        </p>
+      </li>
+    </ul>
+  </section>
 
   <section class="marketing__section" aria-labelledby="how-heading">
     <h2 id="how-heading" class="marketing__heading">How it works</h2>
@@ -60,7 +113,7 @@
         <span>Answer a short form. Pins and scope stay versioned with the blueprint.</span>
       </li>
       <li>
-        <strong>Generate</strong>
+        <strong>Plan</strong>
         <span>repave renders a deterministic artifact. You preview the plan before apply.</span>
       </li>
       <li>
@@ -69,9 +122,29 @@
       </li>
       <li>
         <strong>Publish</strong>
-        <span>Created repos land in the library with lineage you can upgrade later.</span>
+        <span>Created repos land in the catalog with lineage you can upgrade later.</span>
       </li>
     </ol>
+  </section>
+
+  <section class="marketing__section" aria-labelledby="who-heading">
+    <h2 id="who-heading" class="marketing__heading">Who it is for</h2>
+    <div class="marketing__split">
+      <article class="marketing__card">
+        <h3>Builders</h3>
+        <p>
+          Pick a path, plan, apply. Your service shows up with an owner,
+          a blueprint pin, and a scorecard — not a ticket to platform.
+        </p>
+      </article>
+      <article class="marketing__card">
+        <h3>Platform teams</h3>
+        <p>
+          Own the blueprints, gates, and estate. When the standard moves,
+          upgrade the catalog instead of chasing one-off repos.
+        </p>
+      </article>
+    </div>
   </section>
 
   <section class="marketing__section" aria-labelledby="why-heading">
@@ -88,7 +161,7 @@
     <div class="marketing__split">
       <article class="marketing__card">
         <h3>Sign in</h3>
-        <p>You already have access. Continue to the catalog, library, and upgrades.</p>
+        <p>You already have access. Continue to the catalog, your services, and upgrades.</p>
         <a class="btn btn--ghost" href="/auth/login">Sign in</a>
       </article>
       <article class="marketing__card marketing__card--accent">
