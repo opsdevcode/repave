@@ -7,8 +7,9 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.2.0  
 
-**In progress:** low-risk auto-merge decision (mechanical pin bumps, kill switch;
-no GitHub merge yet). Public landing shipped in 3.1.0. Identity
+**In progress:** auto-merge verdict on plan/upgrade (still no GitHub merge).
+Service catalog env/`enabled: true` defaults maturity + initiatives paths.
+Public landing shipped in 3.1.0. Identity
 ([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
 Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot) until ADR 010+.
 v3 themes land on `main` ([ADR 008](adr/008-v3-branching-release-and-testing.md)
@@ -281,8 +282,8 @@ remediation themes.
 
 ### Autonomous governed remediation
 
-**Status:** Decision function in progress on `main` (`decide_auto_merge`, kill switch).
-No GitHub merge, revert runbook, or test-org demo yet.
+**Status:** Plan/upgrade emits an auto-merge verdict. No GitHub merge, revert
+runbook, or test-org demo yet.
 
 - **Auto-merge for low-risk remediation:** blueprints declare a risk class per change type;
   a pin bump with all gates green, no open waiver, and a healthy error budget can merge

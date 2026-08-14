@@ -2,9 +2,18 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from repave_engine.auto_merge import AutoMergeDecision, GateOutcome, decide_auto_merge
+from repave_engine.auto_merge import (
+    AutoMergeDecision,
+    GateOutcome,
+    change_type_from_upgrade,
+    decide_auto_merge,
+    decide_auto_merge_for_plan,
+)
+from repave_engine.gate_registry import GateResult
 from repave_engine.risk_class import ChangeClassification, RiskClass, classify_change
 from repave_engine.waivers import WaiverStatus
 
@@ -98,3 +107,47 @@ def test_kill_switch_wins_over_an_otherwise_eligible_change() -> None:
     decision = _decide(kill_switch=True)
     assert decision.allowed is False
     assert "kill_switch" in decision.reason
+
+
+def test_change_type_from_upgrade_prefers_policy_then_pins() -> None:
+    assert change_type_from_upgrade(pin_changes=("x",), policy_changes=("opa",)) == "policy_change"
+    assert change_type_from_upgrade(pin_changes=("x",), policy_changes=()) == "pin_bump"
+    assert change_type_from_upgrade(pin_changes=(), policy_changes=()) == "standard"
+
+
+def test_decide_auto_merge_for_plan_names_v3_when_off(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\noutput:\n  github_org: acme\n  modules_root: ../mods\n",
+        encoding="utf-8",
+    )
+    decision = decide_auto_merge_for_plan(
+        repo_root=tmp_path,
+        blueprint_name="terraform-module-generic",
+        pin_changes=("pin",),
+        policy_changes=(),
+        gates=(GateResult("checkov", True, False, "ok"),),
+    )
+    assert decision.allowed is False
+    assert "v3.enabled" in decision.reason
+
+
+def test_decide_auto_merge_for_plan_allows_mechanical_when_enabled(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "v3:\n"
+        "  enabled: true\n"
+        "  auto_merge:\n"
+        "    enabled: true\n"
+        "output:\n"
+        "  github_org: acme\n"
+        "  modules_root: ../mods\n",
+        encoding="utf-8",
+    )
+    decision = decide_auto_merge_for_plan(
+        repo_root=tmp_path,
+        blueprint_name="terraform-module-generic",
+        pin_changes=("pin",),
+        policy_changes=(),
+        gates=(GateResult("checkov", True, False, "ok"),),
+    )
+    assert decision.allowed is True

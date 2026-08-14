@@ -25,6 +25,9 @@ def cmd_plan_upgrade(args: argparse.Namespace) -> int:
         print(json.dumps(result.to_json_dict(), indent=2))
     else:
         print(result.summary)
+        if result.auto_merge is not None:
+            verdict = "allowed" if result.auto_merge.allowed else "review required"
+            print(muted(f"Auto-merge: {verdict} — {result.auto_merge.reason}"))
         if result.added:
             print(heading("Added:"))
             for path in result.added:

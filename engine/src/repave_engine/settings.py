@@ -662,8 +662,10 @@ def load_service_catalog_config(repo_root: Path) -> ServiceCatalogConfig | None:
         default_team = str(block.get("default_team", default_team)).strip() or default_team
     if not enabled:
         return None
-    if initiatives is None and env_enabled:
-        initiatives = _resolve("data/initiatives.jsonl")
+    maturity_rubric = maturity_rubric or _default_catalog_path(repo_root, "maturity_rubric")
+    workload_profiles = workload_profiles or _default_catalog_path(repo_root, "workload_profiles")
+    deployment_sets = deployment_sets or _default_catalog_path(repo_root, "deployment_sets")
+    initiatives = initiatives or _default_catalog_path(repo_root, "initiatives")
     return ServiceCatalogConfig(
         enabled=True,
         maturity_rubric=maturity_rubric,
@@ -672,6 +674,28 @@ def load_service_catalog_config(repo_root: Path) -> ServiceCatalogConfig | None:
         initiatives=initiatives,
         default_team=default_team,
     )
+
+
+_CATALOG_EXAMPLE_PATHS = {
+    "maturity_rubric": "examples/platform-dev/config/maturity-rubric.yaml",
+    "workload_profiles": "examples/platform-dev/config/workload-profiles.yaml",
+    "deployment_sets": "examples/platform-dev/config/deployment-sets.yaml",
+    "initiatives": "examples/platform-dev/fixtures/platform-metrics/initiatives.jsonl",
+}
+_CATALOG_DOC_PATHS = {
+    "maturity_rubric": "config/maturity-rubric.yaml",
+    "workload_profiles": "config/workload-profiles.yaml",
+    "deployment_sets": "config/deployment-sets.yaml",
+    "initiatives": "data/initiatives.jsonl",
+}
+
+
+def _default_catalog_path(repo_root: Path, key: str) -> Path:
+    """Prefer bundled platform-dev fixtures when present; else documented paths."""
+    example = repo_root / _CATALOG_EXAMPLE_PATHS[key]
+    if example.is_file():
+        return example.resolve()
+    return (repo_root / _CATALOG_DOC_PATHS[key]).resolve()
 
 
 @dataclass(frozen=True)

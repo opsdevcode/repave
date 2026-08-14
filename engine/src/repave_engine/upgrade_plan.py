@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from repave_engine.auto_merge import AutoMergeDecision, decide_auto_merge_for_plan
 from repave_engine.blueprint import blueprint_dir, load_blueprint, validate_inputs
 from repave_engine.cost_estimate import (
     CostEstimateDelta,
@@ -80,6 +81,7 @@ class UpgradePlanResult:
     file_diffs: tuple[StandardsDiffFile, ...] = ()
     cost_delta: CostEstimateDelta | None = None
     gates: tuple[GateResult, ...] = ()
+    auto_merge: AutoMergeDecision | None = None
 
     @property
     def changed_file_count(self) -> int:
@@ -118,6 +120,11 @@ class UpgradePlanResult:
                 }
                 for gate in self.gates
             ],
+            "auto_merge": (
+                None
+                if self.auto_merge is None
+                else {"allowed": self.auto_merge.allowed, "reason": self.auto_merge.reason}
+            ),
             "summary": self.summary,
         }
 
@@ -520,6 +527,13 @@ def _render_upgrade_staging(
         file_diffs=file_diffs,
         cost_delta=cost_delta,
         gates=gates,
+        auto_merge=decide_auto_merge_for_plan(
+            repo_root=repo_root,
+            blueprint_name=blueprint.name,
+            pin_changes=pin_changes,
+            policy_changes=policy_changes,
+            gates=gates,
+        ),
     )
     return result, staging_dir, temp_dir, owns_staging
 
