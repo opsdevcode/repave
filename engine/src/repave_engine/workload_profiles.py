@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from repave_engine.yaml_util import load_yaml_mapping_soft
+
+# Same constraint as the HTML sandbox form (`pattern` on stack_name).
+STACK_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$")
+
+
+class SandboxVendError(ValueError):
+    """Invalid sandbox vend request; the message names the field to change."""
 
 
 @dataclass(frozen=True)
@@ -197,3 +205,38 @@ def build_vend_payload_from_deployment_set(
     if gitops_repo.strip():
         payload["gitops_repo"] = gitops_repo.strip()
     return payload
+
+
+def resolve_sandbox_vend_payload(
+    *,
+    sets: tuple[DeploymentSet, ...],
+    profiles: tuple[WorkloadProfile, ...],
+    deployment_set_id: str,
+    stack_name: str,
+    owner: str,
+    gitops_repo: str = "",
+    dry_run: bool = True,
+) -> dict[str, Any]:
+    """Validate a sandbox request and build the environment_vend run payload."""
+    set_id = deployment_set_id.strip()
+    name = stack_name.strip()
+    if not set_id:
+        raise SandboxVendError("deployment_set is required")
+    if not name:
+        raise SandboxVendError("stack_name is required")
+    if STACK_NAME_RE.fullmatch(name) is None:
+        raise SandboxVendError("stack_name must be 3-63 lowercase letters, numbers, and hyphens")
+    deployment_set = find_deployment_set(sets, set_id)
+    if deployment_set is None:
+        raise SandboxVendError(f"Unknown deployment set: {set_id}")
+    profile = find_workload_profile(profiles, deployment_set.workload_profile)
+    if profile is None:
+        raise SandboxVendError(f"Unknown workload profile: {deployment_set.workload_profile}")
+    return build_vend_payload_from_deployment_set(
+        deployment_set,
+        profile,
+        stack_name=name,
+        owner=owner,
+        gitops_repo=gitops_repo,
+        dry_run=dry_run,
+    )

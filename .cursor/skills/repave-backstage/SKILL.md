@@ -22,6 +22,8 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Generate: `repave:generate` → `POST /api/v2/generate` (`dry_run`, `inputs`).
 - Catalog: generated `catalog-info.yaml` + `GET /api/v2/catalog/entities`.
   Do not fork a second entity store.
+- Sandbox: `/sandbox` → `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend`
+  via the Backstage proxy (never scrape HTML `/sandbox`).
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **off**.
 
@@ -33,7 +35,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card + `/my-services` |
+| `backstage/plugins/plugin-repave` | Lineage card + `/my-services` + `/sandbox` |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality

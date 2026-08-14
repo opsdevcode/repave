@@ -27,11 +27,13 @@ from repave_engine.service_catalog_overlay import (
 )
 from repave_engine.settings import ServiceCatalogConfig, load_service_catalog_config
 from repave_engine.workload_profiles import (
+    SandboxVendError,
     build_vend_payload_from_deployment_set,
     find_deployment_set,
     find_workload_profile,
     load_deployment_sets,
     load_workload_profiles,
+    resolve_sandbox_vend_payload,
 )
 
 
@@ -107,6 +109,32 @@ def test_workload_profiles_and_vend_payload(repo_root: Path) -> None:
     assert payload["blueprint"] == "terraform-environment-stack"
     assert payload["inputs"]["stack_name"] == "my-sandbox"
     assert payload["inputs"]["workload_profile"] == "api-sandbox"
+    resolved = resolve_sandbox_vend_payload(
+        sets=sets,
+        profiles=profiles,
+        deployment_set_id="api-sandbox-7d",
+        stack_name="my-sandbox",
+        owner="group:platform",
+        dry_run=True,
+    )
+    assert resolved["kind"] == "environment_vend"
+    assert resolved["inputs"]["stack_name"] == "my-sandbox"
+    with pytest.raises(SandboxVendError, match="stack_name"):
+        resolve_sandbox_vend_payload(
+            sets=sets,
+            profiles=profiles,
+            deployment_set_id="api-sandbox-7d",
+            stack_name="Bad_Name",
+            owner="group:platform",
+        )
+    with pytest.raises(SandboxVendError, match="Unknown deployment set"):
+        resolve_sandbox_vend_payload(
+            sets=sets,
+            profiles=profiles,
+            deployment_set_id="missing",
+            stack_name="my-sandbox",
+            owner="group:platform",
+        )
 
 
 def test_initiatives_roundtrip(tmp_path: Path) -> None:

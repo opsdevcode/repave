@@ -53,6 +53,8 @@ Local demo: `make platform-dev-setup && make serve` — see
 | --- | --- | --- |
 | `GET` | `/api/v2/catalog/entities?team=&owner=` | viewer+ |
 | `GET` | `/api/v2/catalog/entities/{id}` | viewer+ (includes `maturity`, `initiatives`) |
+| `GET` | `/api/v2/deployment-sets` | viewer+ |
+| `POST` | `/api/v2/environments/vend` | generator, admin |
 | `GET` | `/api/v2/platform/maturity` | admin |
 | `GET` | `/api/v2/platform/initiatives` | admin |
 | `POST` | `/api/v2/platform/initiatives` | admin |
@@ -69,7 +71,9 @@ The entity receives the **highest** level whose rules all pass.
 
 Profiles name a blueprint + default inputs. Deployment sets bind a profile to
 `class`, TTL, and stack inputs. `/sandbox` builds an ADR 003 `environment_vend`
-payload — GitOps PR only; no apply credentials in repave.
+payload — GitOps PR only; no apply credentials in repave. JSON clients use
+`GET /api/v2/deployment-sets` and `POST /api/v2/environments/vend` (Backstage
+`/sandbox` included).
 
 ## Initiatives
 

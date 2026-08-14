@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import time
 import uuid
 from unittest.mock import patch
@@ -37,6 +38,8 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/platform/feedback" in payload["endpoints"]
     assert "GET /api/v2/platform/finops/export" in payload["endpoints"]
     assert "POST /api/v2/platform/feedback" in payload["endpoints"]
+    assert "GET /api/v2/deployment-sets" in payload["endpoints"]
+    assert "POST /api/v2/environments/vend" in payload["endpoints"]
 
 
 def test_api_v2_upgrades_plan(repo_root, output_config, tmp_path) -> None:
@@ -260,3 +263,125 @@ def test_api_v2_github_team_members(repo_root, output_config, monkeypatch) -> No
     listed.assert_called_once()
     assert listed.call_args.args[0] == output_config.github_org
     assert listed.call_args.args[1] == "platform"
+
+
+def test_api_v2_deployment_sets_empty_without_catalog(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/api/v2/deployment-sets")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["count"] == 0
+    assert body["deployment_sets"] == []
+    assert body["vend_available"] is False
+
+
+def test_api_v2_deployment_sets_lists_lab_catalog(
+    repo_root, output_config, tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "workspace"
+    shutil.copytree(repo_root / "examples" / "platform-dev", root / "examples" / "platform-dev")
+    (root / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "output:\n  github_org: acme\n  modules_root: ../mods\n"
+        "v3:\n  enabled: true\n  developer_lab:\n    enabled: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(root)
+    client = TestClient(create_app(repo_root=root, output_config=output_config))
+    response = client.get("/api/v2/deployment-sets")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["developer_lab"] is True
+    assert body["count"] >= 1
+    ids = {item["id"] for item in body["deployment_sets"]}
+    assert "api-sandbox-7d" in ids
+    assert body["vend_available"] is False
+
+
+def test_api_v2_environments_vend_queues_run(
+    repo_root, output_config, tmp_path, monkeypatch
+) -> None:
+    from repave_engine.environment_vend import EnvironmentVendResult
+
+    root = tmp_path / "workspace"
+    shutil.copytree(repo_root / "examples" / "platform-dev", root / "examples" / "platform-dev")
+    (root / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "output:\n  github_org: acme\n  modules_root: ../mods\n"
+        "v3:\n  enabled: true\n  developer_lab:\n    enabled: true\n"
+        "durability:\n  async_generation: true\n"
+        "environment_vending:\n  enabled: true\n"
+        "  gitops_repo: https://github.com/acme/gitops\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "vend-runs.sqlite"))
+    monkeypatch.chdir(root)
+    fake = EnvironmentVendResult(
+        kind="environment_vend",
+        blueprint="terraform-environment-stack",
+        blueprint_version="0.4.0",
+        gates_outcome="passed",
+        gates_passed=True,
+        gitops_repo="https://github.com/acme/gitops",
+        gitops_path="environments/my-feature-sandbox",
+        git_branch="repave/environment/my-feature-sandbox-dev",
+        owner="group:platform",
+        env_class="sandbox",
+        pull_request_url="",
+        pull_request_number=0,
+        draft=False,
+        detail="Plan only",
+    )
+    client = TestClient(create_app(repo_root=root, output_config=output_config))
+    try:
+        with patch("repave_engine.run_queue.run_environment_vend", return_value=fake):
+            response = client.post(
+                "/api/v2/environments/vend",
+                json={
+                    "deployment_set": "api-sandbox-7d",
+                    "stack_name": "my-feature-sandbox",
+                    "owner": "group:platform",
+                    "dry_run": True,
+                },
+            )
+        assert response.status_code == 202
+        body = response.json()
+        assert body["kind"] == "environment_vend"
+        assert "run_id" in body
+    finally:
+        queue = client.app.state.run_queue
+        if queue is not None:
+            queue.close(wait=False)
+
+
+def test_api_v2_environments_vend_rejects_unknown_set(
+    repo_root, output_config, tmp_path, monkeypatch
+) -> None:
+    root = tmp_path / "workspace"
+    shutil.copytree(repo_root / "examples" / "platform-dev", root / "examples" / "platform-dev")
+    (root / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\n"
+        "output:\n  github_org: acme\n  modules_root: ../mods\n"
+        "v3:\n  enabled: true\n  developer_lab:\n    enabled: true\n"
+        "durability:\n  async_generation: true\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "1")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "vend-bad.sqlite"))
+    monkeypatch.chdir(root)
+    client = TestClient(create_app(repo_root=root, output_config=output_config))
+    try:
+        response = client.post(
+            "/api/v2/environments/vend",
+            json={
+                "deployment_set": "missing",
+                "stack_name": "my-feature-sandbox",
+            },
+        )
+        assert response.status_code == 400
+        assert "Unknown deployment set" in response.json()["detail"]
+    finally:
+        queue = client.app.state.run_queue
+        if queue is not None:
+            queue.close(wait=False)

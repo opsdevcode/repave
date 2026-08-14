@@ -5168,6 +5168,7 @@ __metadata:
     "@backstage/catalog-model": "npm:^1.7.6"
     "@backstage/cli": "npm:^0.36.4"
     "@backstage/core-components": "npm:^0.18.12"
+    "@backstage/core-plugin-api": "npm:^1.12.8"
     "@backstage/frontend-plugin-api": "npm:^0.17.3"
     "@backstage/plugin-catalog-react": "npm:^3.2.0"
     "@material-ui/core": "npm:^4.12.2"
