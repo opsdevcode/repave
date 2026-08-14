@@ -44,14 +44,14 @@ Modules under `engine/src/repave_engine/`:
 | `risk_class.py` | `RiskClass` enum and `classify_change()` |
 | `waivers.py` | JSONL waiver load + expiry evaluation |
 | `v3_foundation.py` | `v3:` block in `repave.config.yaml` (off until flip) |
-| `auto_merge.py` | Pure `decide_auto_merge()` plus plan/upgrade verdict (no GitHub merge) |
+| `auto_merge.py` | Pure `decide_auto_merge()`; `--open-pr` squash-merges when Allowed |
 | `mandatory_policy.py` | Pure `decide_policy_skip()` plus generate/OPA enforcement |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
 `engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,
 `engine/tests/test_mandatory_policy.py`, `engine/tests/test_developer_lab.py`,
 and `make test-v3`.
-Kill switch and apply-commit revert:
+Kill switch and merge/apply revert:
 [`docs/operations/auto-merge-revert.md`](operations/auto-merge-revert.md).
 Mandatory policy on regulated families:
 [`docs/operations/mandatory-policy.md`](operations/mandatory-policy.md).

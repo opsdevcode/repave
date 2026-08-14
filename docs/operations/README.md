@@ -63,9 +63,9 @@ See [Upgrade and rollback](upgrade-and-rollback.md) for Helm steps.
 
 Follow [upgrade-and-rollback.md](upgrade-and-rollback.md): pre-upgrade `make chart-smoke`, pinned
 digest ([`docs/supply-chain.md`](../supply-chain.md)), `helm upgrade --wait`, and `helm rollback`.
-For an applied module pin bump or an `allowed` auto-merge verdict, use
-[auto-merge-revert.md](auto-merge-revert.md) (kill switch; `git revert` the apply commit).
-Repave does not merge GitHub pull requests.
+For an applied module pin bump or a merged auto-merge PR, use
+[auto-merge-revert.md](auto-merge-revert.md) (kill switch; revert
+`merge_commit_sha` on the base branch, or `git revert` the apply commit).
 
 ### Readiness failures
 

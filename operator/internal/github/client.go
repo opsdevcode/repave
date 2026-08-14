@@ -23,17 +23,35 @@ type PullRequest struct {
 	State   string
 }
 
-// Client opens pull requests on GitHub.
+// MergePullRequestRequest is the input for squash-merging a remediation PR.
+type MergePullRequestRequest struct {
+	Repository  Repository
+	Number      int
+	CommitTitle string
+}
+
+// MergeResult is the GitHub merge API outcome.
+type MergeResult struct {
+	Merged bool
+	SHA    string
+}
+
+// Client opens and optionally merges pull requests on GitHub.
 type Client interface {
 	CreatePullRequest(ctx context.Context, req CreatePullRequestRequest) (PullRequest, error)
+	MergePullRequest(ctx context.Context, req MergePullRequestRequest) (MergeResult, error)
 }
 
 // RecordingClient stores the last request for tests.
 type RecordingClient struct {
 	LastRequest CreatePullRequestRequest
+	LastMerge   MergePullRequestRequest
 	Response    PullRequest
+	MergeResult MergeResult
 	Err         error
+	MergeErr    error
 	Calls       int
+	MergeCalls  int
 }
 
 func (r *RecordingClient) CreatePullRequest(
@@ -54,4 +72,19 @@ func (r *RecordingClient) CreatePullRequest(
 		}, nil
 	}
 	return r.Response, nil
+}
+
+func (r *RecordingClient) MergePullRequest(
+	_ context.Context,
+	req MergePullRequestRequest,
+) (MergeResult, error) {
+	r.MergeCalls++
+	r.LastMerge = req
+	if r.MergeErr != nil {
+		return MergeResult{}, r.MergeErr
+	}
+	if r.MergeResult.SHA == "" && !r.MergeResult.Merged {
+		return MergeResult{Merged: true, SHA: "merge-sha"}, nil
+	}
+	return r.MergeResult, nil
 }

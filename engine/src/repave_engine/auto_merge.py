@@ -26,6 +26,61 @@ class AutoMergeDecision:
     reason: str
 
 
+@dataclass(frozen=True)
+class AutoMergeAction:
+    """Outcome of a merge attempt. Built without I/O; callers invoke GitHub separately."""
+
+    merged: bool
+    reason: str
+    merge_commit_sha: str = ""
+    pull_request_number: int = 0
+
+
+def skip_github_merge(
+    decision: AutoMergeDecision,
+    *,
+    pull_number: int,
+) -> AutoMergeAction | None:
+    """Return a skip result, or None when the caller should invoke the GitHub merge API."""
+    if not decision.allowed:
+        return AutoMergeAction(
+            False,
+            decision.reason,
+            pull_request_number=pull_number,
+        )
+    if pull_number <= 0:
+        return AutoMergeAction(
+            False,
+            (
+                f"cannot merge: invalid pull request number {pull_number}; "
+                "open the upgrade PR before auto-merge"
+            ),
+            pull_request_number=pull_number,
+        )
+    return None
+
+
+def merge_action_from_github(
+    *,
+    pull_number: int,
+    sha: str,
+    error: str = "",
+) -> AutoMergeAction:
+    """Map a GitHub merge response or error string to an action (no I/O)."""
+    if error:
+        return AutoMergeAction(
+            False,
+            error,
+            pull_request_number=pull_number,
+        )
+    return AutoMergeAction(
+        True,
+        "merged mechanical pin bump with green gates",
+        merge_commit_sha=sha,
+        pull_request_number=pull_number,
+    )
+
+
 def decide_auto_merge(
     *,
     classification: ChangeClassification,

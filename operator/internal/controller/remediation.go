@@ -160,6 +160,19 @@ func applyRemediationPRStatus(
 		}
 	}
 
+	prState := remediation.PRStateOpen
+	reason := status.ReasonRemediationPROpen
+	message := published.URL
+	if published.Merged {
+		prState = remediation.PRStateMerged
+		message = published.URL
+		if published.MergeCommitSHA != "" {
+			message = fmt.Sprintf("%s merged %s", published.URL, published.MergeCommitSHA)
+		}
+	} else if published.MergeError != "" {
+		message = fmt.Sprintf("%s; auto-merge failed: %s", published.URL, published.MergeError)
+	}
+
 	if err := patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
 		openedAt := metav1.Now()
 		latest.Status.RemediationPR = &repavev1beta1.RemediationPRStatus{
@@ -167,18 +180,22 @@ func applyRemediationPRStatus(
 			Number:                  published.Number,
 			Branch:                  published.Branch,
 			Title:                   published.Title,
-			State:                   remediation.PRStateOpen,
+			State:                   prState,
 			OpenedAt:                &openedAt,
 			DesiredBlueprintVersion: desiredVersion,
 		}
 		status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
 			Type:    status.ConditionRemediationPR,
 			Status:  metav1.ConditionTrue,
-			Reason:  status.ReasonRemediationPROpen,
-			Message: published.URL,
+			Reason:  reason,
+			Message: message,
 		})
 	}); err != nil {
 		return err
+	}
+	eventMsg := fmt.Sprintf("Remediation PR opened: %s", published.Title)
+	if published.Merged {
+		eventMsg = fmt.Sprintf("Remediation PR merged: %s", published.Title)
 	}
 	notify.SendGoldenPathRepoEvent(
 		notify.EventRemediationPROpened,
@@ -186,7 +203,7 @@ func applyRemediationPRStatus(
 		repo.Spec,
 		published.Branch,
 		published.URL,
-		fmt.Sprintf("Remediation PR opened: %s", published.Title),
+		eventMsg,
 	)
 	return nil
 }

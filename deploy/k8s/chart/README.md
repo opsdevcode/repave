@@ -306,7 +306,8 @@ helm upgrade --install repave ./deploy/k8s/chart \
 `v3.enabled`. Lab does not invent a GitOps repo or turn on environment vending.
 Catalog files still have to exist at the `serviceCatalog.*` paths (or, in a git
 checkout, `v3.developer_lab.enabled` can wire `examples/platform-dev`). Auto-merge
-is a plan verdict only — Apply does not merge GitHub pull requests. Fleet demote:
+is a plan verdict; `apply-upgrade --open-pr` squash-merges Allowed mechanical pin
+bumps. Fleet demote:
 `--set repave.v3.autoMerge.killSwitch=true`. Mandatory policy refuses
 `enable_policy: false` on `regulatedFamilies` unless a `mandatory-policy` waiver
 is on file. See [`docs/v3-development.md`](../../../docs/v3-development.md),

@@ -8,6 +8,7 @@ import (
 const (
 	PRStateOpen    = "Open"
 	PRStatePlanned = "Planned"
+	PRStateMerged  = "Merged"
 )
 
 // UpgradeBranchName builds a deterministic branch name for a desired blueprint pin.

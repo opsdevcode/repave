@@ -243,7 +243,7 @@ gates:
 #   developer_lab:
 #     enabled: false  # opt in for /home and /lab; does not enable GitOps vending
 #   auto_merge:
-#     enabled: false  # mechanical pin bumps only; no GitHub merge yet
+#     enabled: false  # Allowed pin bumps squash-merge on --open-pr
 #     kill_switch: false  # true demotes the whole fleet to review-required
 #   mandatory_policy:
 #     enabled: false  # refuse enable_policy: false on regulated families

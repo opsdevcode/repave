@@ -52,3 +52,37 @@ func TestHTTPClientRetriesOn429(t *testing.T) {
 		t.Fatalf("expected retry after 429, got %d calls", calls.Load())
 	}
 }
+
+func TestHTTPClientMergePullRequest(t *testing.T) {
+	github.ResetRateLimitTracker()
+	var method string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method = r.Method
+		if r.URL.Path != "/repos/acme/mod/pulls/9/merge" {
+			t.Fatalf("path = %q", r.URL.Path)
+		}
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"sha":"abc123","merged":true}`))
+	}))
+	defer srv.Close()
+
+	client := &github.HTTPClient{
+		Token:      "token",
+		HTTPClient: srv.Client(),
+		BaseURL:    srv.URL,
+	}
+	result, err := client.MergePullRequest(context.Background(), github.MergePullRequestRequest{
+		Repository:  github.Repository{Owner: "acme", Name: "mod"},
+		Number:      9,
+		CommitTitle: "chore(repave): upgrade",
+	})
+	if err != nil {
+		t.Fatalf("MergePullRequest: %v", err)
+	}
+	if method != http.MethodPut {
+		t.Fatalf("method = %q, want PUT", method)
+	}
+	if !result.Merged || result.SHA != "abc123" {
+		t.Fatalf("result = %+v", result)
+	}
+}

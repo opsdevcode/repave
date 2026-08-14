@@ -1873,7 +1873,7 @@ def test_update_plan_preview(repo_root, output_config) -> None:
     assert "Auto-merge" in response.text
     assert "Review required" in response.text
     assert "v3.enabled" in response.text
-    assert "Plan verdict only" in response.text
+    assert "Opening the upgrade pull request merges Allowed" in response.text
 
 
 def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config, tmp_path) -> None:
