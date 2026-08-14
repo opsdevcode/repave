@@ -9,14 +9,16 @@
   <div>
     <h1 class="page-title">My services</h1>
     <p class="page-lead">
-      Services you own on the platform — open a scorecard, request a sandbox, or jump to your team.
+      Services you own on the platform — open a scorecard,
+      {% if developer_lab_enabled %}request a developer lab{% else %}request a sandbox{% endif %},
+      or jump to your team.
       {% if not auth_enabled %}
-      Showing the <code>{{ default_team }}</code> team (sign in to filter by your account).
+      Showing the {{ default_team }} team (sign in to filter by your account).
       {% endif %}
     </p>
   </div>
   <div class="form-hero__actions">
-    <a class="btn btn--secondary" href="/sandbox">Request sandbox</a>
+    <a class="btn btn--secondary" href="{{ sandbox_href }}">{{ sandbox_request_label }}</a>
     <a class="btn btn--ghost" href="/library">Full library</a>
   </div>
 </header>
@@ -40,16 +42,26 @@
 </form>
 
 {% if my_services %}
-<ul class="service-hub-grid">
+<ul class="library-drawers fleet-grid" aria-label="My services">
   {% for entity in my_services %}
-  <li class="service-hub-card card">
-    <a class="service-hub-card__link" href="/services/{{ entity.entity_id }}">
-      <span class="service-hub-card__name">{{ entity.display_name }}</span>
-      <span class="muted service-hub-card__meta">
-        {% if entity.owner %}{{ entity.owner }}{% endif %}
-        {% if entity.blueprint_name %} · {{ entity.blueprint_name }}{% endif %}
-      </span>
-      <span class="service-hub-card__badges">
+  <li>
+    <article
+      class="library-drawer fleet-tile library-drawer--{{ entity.family }}"
+      data-library-drawer
+      data-motion-face
+    >
+      <header class="library-drawer__label">
+        <h3 class="library-drawer__title" data-motion-depth="0.45">
+          <a href="/services/{{ entity.entity_id }}">{{ entity.display_name }}</a>
+        </h3>
+        {% if entity.owner %}
+        <p class="library-drawer__subtitle muted">{{ entity.owner }}</p>
+        {% endif %}
+      </header>
+      <p class="fleet-tile__lineage muted">
+        {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
+      </p>
+      <p class="fleet-tile__badges">
         {% if entity.maturity_label %}
         <span class="badge badge--maturity" title="{{ entity.maturity_passing }}/{{ entity.maturity_total }} rules">
           L{{ entity.maturity_level }} {{ entity.maturity_label }}
@@ -61,7 +73,7 @@
         {% for badge in entity.initiative_badges[:2] %}
         <span class="badge badge--initiative">{{ badge }}</span>
         {% endfor %}
-      </span>
+      </p>
       {% if entity.maturity_total %}
       <span
         class="maturity-bar"
@@ -74,10 +86,14 @@
         ></span>
       </span>
       {% endif %}
-    </a>
-    {% if entity.team_slug %}
-    <a class="service-hub-card__team" href="/teams/{{ entity.team_slug }}">Team {{ entity.team_slug }}</a>
-    {% endif %}
+      <footer class="fleet-tile__footer">
+        <a href="/services/{{ entity.entity_id }}">Open scorecard</a>
+        {% if entity.team_slug %}
+        <a href="/teams/{{ entity.team_slug }}">Team {{ entity.team_slug }}</a>
+        {% endif %}
+        <span class="library-drawer__go" aria-hidden="true"></span>
+      </footer>
+    </article>
   </li>
   {% endfor %}
 </ul>

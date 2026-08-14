@@ -11,6 +11,7 @@ from typing import Any
 import yaml
 
 from repave_engine.auth import AuthConfig
+from repave_engine.developer_lab import load_developer_lab_paths
 
 logger = logging.getLogger(__name__)
 
@@ -615,7 +616,17 @@ def load_service_catalog_config(repo_root: Path) -> ServiceCatalogConfig | None:
     block = file_data.get("service_catalog")
     env_enabled = env_flag in {"1", "true", "yes", "on"}
     if block is None and not env_enabled:
-        return None
+        lab_paths = load_developer_lab_paths(repo_root)
+        if lab_paths is None:
+            return None
+        return ServiceCatalogConfig(
+            enabled=True,
+            maturity_rubric=lab_paths.maturity_rubric,
+            workload_profiles=lab_paths.workload_profiles,
+            deployment_sets=lab_paths.deployment_sets,
+            initiatives=lab_paths.initiatives,
+            default_team=lab_paths.default_team,
+        )
     if block is not None and not isinstance(block, dict):
         raise ValueError("service_catalog must be a mapping in repave.config.yaml")
 

@@ -82,7 +82,7 @@
             <a href="/library" {% if nav_active == "library" %}aria-current="page"{% endif %}>Library</a>
             {% if service_catalog_enabled %}
             <a href="/home" {% if nav_active == "home" %}aria-current="page"{% endif %}>My services</a>
-            <a href="/sandbox" {% if nav_active == "sandbox" %}aria-current="page"{% endif %}>Sandbox</a>
+            <a href="{{ sandbox_href }}" {% if nav_active == "sandbox" %}aria-current="page"{% endif %}>{{ sandbox_nav_label }}</a>
             {% endif %}
             <a href="/update" {% if nav_active == "update" %}aria-current="page"{% endif %}>Upgrade</a>
             <a href="/verify" {% if nav_active == "verify" %}aria-current="page"{% endif %}>Verify</a>

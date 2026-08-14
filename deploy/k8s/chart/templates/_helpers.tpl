@@ -250,7 +250,16 @@ app.kubernetes.io/component: portal
 {{- end }}
 
 {{- define "repave.environmentVendingEnabled" -}}
-{{- and .Values.repave.environmentVending.enabled .Values.repave.environmentVending.gitopsRepo }}
+{{- if and .Values.repave.environmentVending.enabled .Values.repave.environmentVending.gitopsRepo -}}
+true
+{{- end -}}
+{{- end }}
+
+{{- define "repave.serviceCatalogEnv" -}}
+{{- if .Values.repave.serviceCatalog.enabled }}
+- name: REPAVE_SERVICE_CATALOG
+  value: "1"
+{{- end }}
 {{- end }}
 
 {{- define "repave.environmentRegistryMountPath" -}}

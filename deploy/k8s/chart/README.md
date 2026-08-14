@@ -291,6 +291,22 @@ Phase 3) use `repave.environmentVending` in the ConfigMap and a shared
 
 Example overlay: [`values-environment-vending.yaml`](values-environment-vending.yaml).
 
+v3 developer lab (`/lab` alias, My services copy) is a second opt-in on top of catalog
+YAML you already mount. Default-off (ADR 008):
+
+```bash
+helm upgrade --install repave ./deploy/k8s/chart \
+  --set repave.v3.enabled=true \
+  --set repave.v3.developerLab.enabled=true \
+  --set repave.serviceCatalog.enabled=true \
+  --set repave.output.githubOrg=your-org
+```
+
+`developerLab.enabled` requires `v3.enabled`. It does not invent a GitOps repo or turn on
+environment vending. Catalog files still have to exist at the `serviceCatalog.*` paths
+(or, in a git checkout, `v3.developer_lab.enabled` can wire `examples/platform-dev`).
+See [`docs/v3-development.md`](../../../docs/v3-development.md).
+
 ```bash
 helm upgrade --install repave ./deploy/k8s/chart \
   -f deploy/k8s/chart/values-environment-vending.yaml \

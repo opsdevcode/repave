@@ -1,6 +1,6 @@
 /**
  * Platform motion (native ES module, no bundler, no third-party scripts).
- * Spring pointer faces, magnetic CTAs, atmosphere parallax, catalog glare.
+ * Spring pointer faces, magnetic CTAs, atmosphere parallax, follow-spot glow.
  * Loaded from base.html on every page. Respects reduced motion and coarse pointers.
  */
 
@@ -37,7 +37,7 @@ export function prefersFinePointer() {
 }
 
 function restState() {
-  return { rx: 0, ry: 0, tx: 0, ty: 0, tz: 0, sx: 50, sy: 40, glare: -40 };
+  return { rx: 0, ry: 0, tx: 0, ty: 0, tz: 0, sx: 50, sy: 40 };
 }
 
 function lerp(current, target, amount) {
@@ -58,7 +58,6 @@ function applyFace(entry) {
   const { el, kind, current } = entry;
   el.style.setProperty("--spot-x", current.sx.toFixed(1) + "%");
   el.style.setProperty("--spot-y", current.sy.toFixed(1) + "%");
-  el.style.setProperty("--glare-x", current.glare.toFixed(1) + "%");
   if (kind === "magnetic") {
     el.style.transform =
       "translate3d(" + current.tx.toFixed(2) + "px, " + current.ty.toFixed(2) + "px, 0)";
@@ -87,7 +86,7 @@ function applyFace(entry) {
 
 function clearFace(el) {
   el.style.transform = "";
-  ["--spot-x", "--spot-y", "--glare-x"].forEach((name) => {
+  ["--spot-x", "--spot-y"].forEach((name) => {
     el.style.removeProperty(name);
   });
   el.querySelectorAll("[data-motion-depth]").forEach((layer) => {
@@ -150,7 +149,6 @@ function aimFace(entry, clientX, clientY) {
       tz: 0,
       sx: px * 100,
       sy: py * 100,
-      glare: px * 80 - 40,
     };
     return;
   }
@@ -162,7 +160,6 @@ function aimFace(entry, clientX, clientY) {
     tz: FACE_LIFT,
     sx: px * 100,
     sy: py * 100,
-    glare: px * 90 - 45,
   };
 }
 
@@ -229,7 +226,6 @@ function tick() {
     current.tz = lerp(current.tz, target.tz, SPRING);
     current.sx = lerp(current.sx, target.sx, SPRING);
     current.sy = lerp(current.sy, target.sy, SPRING);
-    current.glare = lerp(current.glare, target.glare, SPRING);
     applyFace(entry);
     if (entry.live || !nearRest(current)) {
       busy = true;

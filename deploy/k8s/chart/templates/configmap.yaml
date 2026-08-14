@@ -1,3 +1,6 @@
+{{- if and .Values.repave.v3.developerLab.enabled (not .Values.repave.v3.enabled) }}
+{{- fail "repave.v3.developerLab.enabled requires repave.v3.enabled (ADR 008)" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -154,4 +157,19 @@ data:
       decommission_review_classes:
 {{ toYaml .Values.repave.environmentVending.decommissionReviewClasses | indent 8 }}
       {{- end }}
+    {{- end }}
+    {{- if .Values.repave.v3.enabled }}
+    v3:
+      enabled: true
+      developer_lab:
+        enabled: {{ .Values.repave.v3.developerLab.enabled }}
+    {{- end }}
+    {{- if .Values.repave.serviceCatalog.enabled }}
+    service_catalog:
+      enabled: true
+      maturity_rubric: {{ .Values.repave.serviceCatalog.maturityRubric | quote }}
+      workload_profiles: {{ .Values.repave.serviceCatalog.workloadProfiles | quote }}
+      deployment_sets: {{ .Values.repave.serviceCatalog.deploymentSets | quote }}
+      initiatives: {{ .Values.repave.serviceCatalog.initiatives | quote }}
+      default_team: {{ .Values.repave.serviceCatalog.defaultTeam | quote }}
     {{- end }}
