@@ -7,11 +7,12 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v2.72.0  
 
-**In progress:** v3 is the primary product line on `next/v3` (`3.0.0-rc.N`). Identity
-([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark. Fine-grained
-Auth0 FGA stays in the [parking lot](#parking-lot) until it lands as ADR 010+. v3 themes
-under [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) land on
-the long-lived `next/v3` branch ([ADR 008](adr/008-v3-branching-release-and-testing.md),
+**In progress:** v3 developer lab on `next/v3` — explicit `v3.developer_lab.enabled`
+opt-in for `/home` and `/lab` (catalog fixtures only; no invented GitOps). Identity
+([ADR 009](adr/009-v3-product-identity.md)): **repave** + platform-layer mark.
+Fine-grained Auth0 FGA stays in the [parking lot](#parking-lot) until ADR 010+. v3
+themes under [beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane)
+land on `next/v3` ([ADR 008](adr/008-v3-branching-release-and-testing.md),
 [ADR 007](adr/007-v3-multi-repo-decomposition.md), [`docs/v3-development.md`](v3-development.md))
 and do not affect the v2.x line on `main`. Stategraph / graph-scoped execution under
 [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
@@ -447,7 +448,8 @@ until someone owns them. Stategraph / graph-scoped execution is under
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
 - **Auth0 FGA / fine-grained authorization** — relationship checks on catalog,
   generate, and environment actions (Auth0 FGA or OpenFGA), wrapping today's
-  `require_role` coarse RBAC; does **not** block day-1 Auth0 portal login
+  `require_role` coarse RBAC. Lands as **ADR 010+**. Required for multi-team hosted
+  My services; does **not** block local developer lab or day-1 Auth0 login
 - **Catalog automation** — regenerate `provider-catalog.json` on provider release
   webhook or scheduled workflow
 - **Real resource scaffolds** — optional blueprint mode that emits provider resources

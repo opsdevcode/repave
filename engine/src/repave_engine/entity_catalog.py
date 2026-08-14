@@ -174,6 +174,12 @@ class CatalogEntity:
     workload_profile: str = ""
     initiative_badges: tuple[str, ...] = ()
 
+    @property
+    def family(self) -> str:
+        from repave_engine.fleet_view import fleet_blueprint_family
+
+        return fleet_blueprint_family(self.blueprint_name)
+
     def to_public_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "entity_id": self.entity_id,

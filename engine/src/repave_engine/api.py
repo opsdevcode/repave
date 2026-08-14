@@ -78,6 +78,7 @@ from repave_engine.catalog_deployment import (
 )
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
+from repave_engine.developer_lab import is_developer_lab_enabled
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
@@ -287,6 +288,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         service_catalog_config = load_service_catalog_config(repo_root)
     except ValueError as exc:
         raise RuntimeError(str(exc)) from exc
+    developer_lab_enabled = is_developer_lab_enabled(repo_root)
+    sandbox_nav_label = "Developer lab" if developer_lab_enabled else "Sandbox"
+    sandbox_href = "/lab" if developer_lab_enabled else "/sandbox"
+    sandbox_request_label = "Request developer lab" if developer_lab_enabled else "Request sandbox"
+    sandbox_page_title = "Request developer lab" if developer_lab_enabled else "Request a sandbox"
     try:
         auth_config = load_auth_config(repo_root)
     except ValueError as exc:
@@ -405,6 +411,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "platform_admin_visible": admin_visible,
             "platform_nav_links": platform_nav_links() if admin_visible else (),
             "service_catalog_enabled": service_catalog_config is not None,
+            "developer_lab_enabled": developer_lab_enabled,
+            "sandbox_nav_label": sandbox_nav_label,
+            "sandbox_href": sandbox_href,
+            "sandbox_request_label": sandbox_request_label,
+            "sandbox_page_title": sandbox_page_title,
             "async_generation_enabled": run_queue is not None,
             "async_generation_required": worker_execution_mode and run_queue is not None,
             "worker_execution_mode": worker_execution_mode,
@@ -453,8 +464,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     },
                     {
                         "kind": "nav",
-                        "label": "Sandbox",
-                        "href": "/sandbox",
+                        "label": sandbox_nav_label,
+                        "href": sandbox_href,
                         "subtitle": "Request an ephemeral environment",
                     },
                 )
@@ -1003,6 +1014,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/sandbox", response_class=HTMLResponse)
     async def sandbox_page(request: Request) -> HTMLResponse:
+        return _render_sandbox_page(request)
+
+    @app.get("/lab", response_class=HTMLResponse)
+    async def developer_lab_page(request: Request) -> HTMLResponse:
+        if not developer_lab_enabled:
+            raise HTTPException(status_code=404, detail="Developer lab is not enabled")
+        return _render_sandbox_page(request)
+
+    def _render_sandbox_page(request: Request) -> HTMLResponse:
         if service_catalog_config is None:
             raise HTTPException(
                 status_code=404,
@@ -1024,6 +1044,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 request,
                 nav_active="sandbox",
                 workload_profiles=profiles,
+                profiles_by_id={profile.id: profile for profile in profiles},
                 deployment_sets=sets,
                 environment_vend_available=bool(run_queue is not None and vend_cfg is not None),
                 environment_vend_cfg=vend_cfg,
