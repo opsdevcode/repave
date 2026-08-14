@@ -170,6 +170,7 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
     assert "ATMOSPHERE_RANGE" in motion.text
     assert "motion-ripple" in motion.text
     assert "NEIGHBOR_PUSH" in motion.text
+    assert "glare" not in motion.text
 
 
 def test_activity_page(repo_root, output_config) -> None:

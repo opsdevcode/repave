@@ -294,9 +294,10 @@ Pick based on audience and hosting model (v1.25+).
   campaigns, standards, and ops readiness use family-accent tiles
 - Platform motion (same-origin `repave-motion.mjs`, no third-party scripts):
   spring pointer faces on **home catalog tiles**, library drawers, fleet
-  tiles, and platform console tiles (glare, icon parallax, neighbor push, click
-  ripple), magnetic pull on nav and buttons, atmosphere parallax; respects
-  `prefers-reduced-motion` and coarse pointers
+  tiles, and platform console tiles (follow-spot glow, icon parallax, neighbor
+  push, click ripple), magnetic pull on nav and buttons, atmosphere parallax;
+  respects `prefers-reduced-motion` and coarse pointers. Catalog glare/shine
+  sweep was removed.
 - Cross-document view transitions on supported browsers
 - Form/results use Phase 3–4 markup (governance rail, status hero)
 
@@ -316,6 +317,7 @@ once against this shell. Do not recapture v2 chrome.
 - Hosted service mode: unauthenticated `/` is a public product landing (Sign in +
   Create account); `/signup` is a separate create-account page. App routes still
   require a session.
+- Developer lab (`/lab`) and My services (`/home`) use the same fleet/library tiles
 - One screenshot pass against the v3 shell
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
 

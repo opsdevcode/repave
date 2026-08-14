@@ -15,6 +15,7 @@ _CONFIG_NAMES = ("repave.config.yaml", "repave.config.yml")
 @dataclass(frozen=True)
 class V3FoundationConfig:
     enabled: bool
+    developer_lab_enabled: bool
     waivers_file: Path | None
     waiver_warn_days: int
 
@@ -58,22 +59,34 @@ def load_waiver_policy(
 def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
     """Load v3 foundation knobs. Disabled when the block is absent or enabled: false."""
     path = _find_config(repo_root)
+    disabled = V3FoundationConfig(
+        enabled=False,
+        developer_lab_enabled=False,
+        waivers_file=None,
+        waiver_warn_days=7,
+    )
     if path is None:
-        return V3FoundationConfig(enabled=False, waivers_file=None, waiver_warn_days=7)
+        return disabled
 
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
-        return V3FoundationConfig(enabled=False, waivers_file=None, waiver_warn_days=7)
+        return disabled
 
     block = data.get("v3")
     if not isinstance(block, dict):
-        return V3FoundationConfig(enabled=False, waivers_file=None, waiver_warn_days=7)
+        return disabled
 
     enabled_raw = block.get("enabled", False)
     if not isinstance(enabled_raw, bool):
         raise ValueError("v3.enabled must be a boolean")
+    developer_lab_enabled = _parse_developer_lab_enabled(block)
     if not enabled_raw:
-        return V3FoundationConfig(enabled=False, waivers_file=None, waiver_warn_days=7)
+        if developer_lab_enabled:
+            raise ValueError(
+                "v3.developer_lab.enabled is true but v3.enabled is false. "
+                "Set v3.enabled: true, or set v3.developer_lab.enabled: false."
+            )
+        return disabled
 
     waivers_raw = block.get("waivers_file")
     waivers_file: Path | None
@@ -90,9 +103,25 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
 
     return V3FoundationConfig(
         enabled=True,
+        developer_lab_enabled=developer_lab_enabled,
         waivers_file=waivers_file,
         waiver_warn_days=warn_raw,
     )
+
+
+def _parse_developer_lab_enabled(block: dict[str, object]) -> bool:
+    """Opt in with v3.developer_lab.enabled: true. Off when the key is absent (ADR 008)."""
+    raw = block.get("developer_lab")
+    if raw is None:
+        return False
+    if isinstance(raw, bool):
+        return raw
+    if not isinstance(raw, dict):
+        raise ValueError("v3.developer_lab must be a boolean or mapping")
+    enabled_raw = raw.get("enabled", False)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("v3.developer_lab.enabled must be a boolean")
+    return enabled_raw
 
 
 def _find_config(repo_root: Path) -> Path | None:
