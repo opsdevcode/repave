@@ -305,13 +305,13 @@ Further craft (illustration, stepper) is optional.
 ### Visual v3 (next/v3)
 
 **Status:** identity landed in [ADR 009](adr/009-v3-product-identity.md): **repave** +
-platform-layer mark + *The intelligent platform layer*. Recapture README screenshots
-once against this shell. Do not recapture v2 chrome.
+platform-layer mark + *The intelligent platform layer*. README screenshots recaptured
+against this shell. Do not recapture v2 chrome.
 
 - Display name stays **repave**; wire names stay `repave`; amber **v3** in the lockup
 - Night-ops shell tokens (same five-color palette); semantic status colors unchanged
 - Family drawer accents stay independent of brand gold
-- One screenshot pass against the v3 shell
+- README screenshot pass against the v3 shell is done
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
 
 Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
