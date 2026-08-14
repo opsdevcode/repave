@@ -26,7 +26,7 @@ EKS, RDS, ingress, and Helm desired state.
 | Item | Value |
 | --- | --- |
 | Portal | https://repave.opsdevco.de |
-| Login | Auth0 → redirect to `/auth/login` when unauthenticated |
+| Login | Public landing at `/`; Sign in → `/auth/login`; Create account → `/signup` |
 | GitHub org | `opsdevcode` (publish creates repos under this org) |
 | Async runs | Enabled — worker Deployment runs gates; enable **Live run console** on the form |
 
@@ -39,7 +39,8 @@ Unauthenticated API calls return **401** (`REPAVE_SERVICE_MODE=1`).
 Same narrative as [seven-minute-demo.md](seven-minute-demo.md); only the **start URL** and
 **login** differ.
 
-1. **Act 1 — Catalog:** open https://repave.opsdevco.de → **terraform-module-generic**.
+1. **Act 1 — Catalog:** open https://repave.opsdevco.de (product landing) → **Sign in** →
+   **terraform-module-generic**.
 2. **Acts 2–3 — Generate:** module `demo`, AWS, **ec2 + s3** → **Dry run preview** → confirm gates
    and **Generated files**. Optional: enable **Live run console** and watch `/runs/{id}` stream.
 3. **Act 4 — Update repo:** **Update repo** → **Use terraform-minimal** (or a published demo repo) →

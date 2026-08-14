@@ -24,6 +24,8 @@ Post-Login Action source: [`deploy/k8s/auth0/post-login-groups.js`](../../deploy
    - **Allowed Web Origins:** `https://<portal-host>`
 3. Copy **Domain**, **Client ID**, **Client Secret**.
 4. Issuer (trailing slash): `https://<tenant>.<region>.auth0.com/`
+5. Enable **Sign Up** on Universal Login so `/auth/signup` (`screen_hint=signup`)
+   can create accounts. Disable it only if the tenant is invite-only.
 
 ## 2. Roles and Action
 
@@ -76,7 +78,8 @@ helm upgrade --install repave ./deploy/k8s/chart \
 | Check | Expect |
 | --- | --- |
 | `curl -sI https://<portal-host>/library` | `302` → `/auth/login` (no cookie) |
-| Browser open `/` | Auth0 login, then portal |
+| Browser open `/` | Product landing with Sign in and Create account |
+| Browser open `/signup` | Create-account page, then Auth0 signup |
 | User without roles | Full access when `coarse_rbac_enabled` is false (default); otherwise `viewer` |
 | User with `repave-generators` | Full access (default); generate when coarse RBAC enabled |
 | Sign out | Clears portal session **and** Auth0 SSO for the app |

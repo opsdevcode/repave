@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -11,7 +12,9 @@ from repave_engine.auth import (
     ROLE_VIEWER,
     AuthConfig,
     build_idp_logout_url,
+    build_login_redirect,
     groups_from_claims,
+    is_public_path,
     logout_return_to,
     role_for_groups,
 )
@@ -272,6 +275,30 @@ def test_build_idp_logout_url_auth0_v2_fallback() -> None:
     query = parse_qs(parsed.query)
     assert query["client_id"] == ["client"]
     assert query["returnTo"] == ["https://repave.example.com/"]
+
+
+def test_public_paths_include_marketing_pages() -> None:
+    assert is_public_path("/")
+    assert is_public_path("/signup")
+    assert is_public_path("/auth/login")
+    assert is_public_path("/auth/signup")
+    assert is_public_path("/static/repave.css")
+    assert not is_public_path("/library")
+    assert not is_public_path("/home")
+
+
+def test_build_login_redirect_includes_signup_hint() -> None:
+    request = SimpleNamespace(session={}, query_params={"next": "/"})
+    response = build_login_redirect(
+        request,  # type: ignore[arg-type]
+        _auth_config(),
+        {"authorization_endpoint": "https://idp.example.com/authorize"},
+        screen_hint="signup",
+    )
+    parsed = urlparse(response.headers["location"])
+    query = parse_qs(parsed.query)
+    assert query["screen_hint"] == ["signup"]
+    assert request.session["oidc_next"] == "/"
 
 
 def test_build_idp_logout_url_non_auth0_without_end_session() -> None:

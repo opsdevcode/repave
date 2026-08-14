@@ -134,7 +134,7 @@ def test_platform_dev_pages_render(
     assert '"/platform/maturity"' in home
     assert '"/platform/initiatives"' in home
     footer = home[home.index("shell__footer") :]
-    assert "repave · engine" in footer
+    assert "repave v3 · The intelligent platform layer" in footer
     assert "shell__footer-link" not in footer
 
     roadmap = client.get("/platform/roadmap").text

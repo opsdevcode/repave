@@ -4,10 +4,10 @@
   <picture>
     <source
       media="(prefers-color-scheme: dark)"
-      srcset="docs/brand/assets/svg/repave-logo-compact-dark.svg"
+      srcset="docs/brand/assets/png/repave-logo-compact-dark.png"
     />
     <img
-      src="docs/brand/assets/svg/repave-logo-compact.svg"
+      src="docs/brand/assets/png/repave-logo-compact.png"
       alt="repave v3 — platform-layer mark and wordmark"
       width="280"
     />

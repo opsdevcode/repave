@@ -51,12 +51,15 @@ Authenticated identity is stored in the audit log (`acting_user`) via the sessio
 
 ## Routes
 
-- `GET /auth/login` — redirect to IdP
+- `GET /auth/login` — redirect to IdP (login screen)
+- `GET /auth/signup` — redirect to IdP with Auth0 `screen_hint=signup`
 - `GET /auth/callback` — OAuth code exchange
 - `POST /auth/logout` — clear session, then redirect to IdP logout when discovery
   exposes `end_session_endpoint` (Auth0 falls back to `/v2/logout`)
 
-Public without auth: `/health`, `/readyz`, `/metrics`, `/static/*`, `/auth/*`.
+Public without auth: `/` (product landing), `/signup` (create-account page),
+`/health`, `/readyz`, `/metrics`, `/static/*`, `/auth/*`. Catalog, library, and
+other app routes still require a session.
 
 ## Hosted mode requirements
 
@@ -68,19 +71,19 @@ store. Config shape and migration: [`repave-config-v1.md`](repave-config-v1.md).
 
 Use Auth0 so the **hosted portal** (HTML UI) and mutating APIs require login before
 you expose the service on a shared cluster (EKS or otherwise). Unauthenticated
-browsers hitting `/`, `/library`, `/services/*`, etc. are redirected to
-`/auth/login` → Auth0. Coarse RBAC (`viewer` / `generator` / `admin`) is enforced
-today. **Auth0 FGA** (resource-level relationship checks) is deferred — see the
-roadmap parking lot.
+browsers hitting `/` see the product landing (Sign in + Create account). App
+routes such as `/library` and `/services/*` redirect to `/auth/login` → Auth0.
+Coarse RBAC (`viewer` / `generator` / `admin`) is enforced today. **Auth0 FGA**
+(resource-level relationship checks) is deferred — see the roadmap parking lot.
 
 ### What is protected
 
 | Surface | Behavior with `auth.service_mode: true` |
 | --- | --- |
-| Portal HTML | Redirect to Auth0 login when no session |
+| Portal HTML | `/` and `/signup` stay public; other HTML routes redirect to login |
 | Mutating JSON APIs | `401` without session or `REPAVE_API_TOKEN` |
 | Sign out | Clears portal session, then Auth0 logout |
-| Probes / metrics | Public: `/health`, `/readyz`, `/metrics`, `/static/*`, `/auth/*` |
+| Probes / metrics | Public: `/`, `/signup`, `/health`, `/readyz`, `/metrics`, `/static/*`, `/auth/*` |
 
 ### 1. Auth0 application
 

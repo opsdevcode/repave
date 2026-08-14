@@ -25,6 +25,13 @@ def build_auth_router(*, auth_config: AuthConfig | None) -> APIRouter:
         discovery = await fetch_oidc_discovery(auth_config.oidc_issuer)
         return build_login_redirect(request, auth_config, discovery)
 
+    @router.get("/signup")
+    async def auth_signup(request: Request) -> RedirectResponse:
+        if auth_config is None or not auth_config.service_enabled:
+            return RedirectResponse("/", status_code=302)
+        discovery = await fetch_oidc_discovery(auth_config.oidc_issuer)
+        return build_login_redirect(request, auth_config, discovery, screen_hint="signup")
+
     @router.get("/callback")
     async def auth_callback(
         request: Request,

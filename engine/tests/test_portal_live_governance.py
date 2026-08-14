@@ -230,7 +230,7 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     assert '"/platform/finops"' in body
     assert '"/platform/feedback"' in body
     footer = body[body.index("shell__footer") :]
-    assert "repave · engine" in footer
+    assert "repave v3 · The intelligent platform layer" in footer
     assert "shell__footer-link" not in footer
     assert 'href="/platform/' not in footer
     primary = body.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
