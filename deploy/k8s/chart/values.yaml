@@ -235,16 +235,18 @@ repave:
 
   # Service catalog overlay (ADR 006). Required for /home and /sandbox UX.
   # Hosted installs must provide the YAML at these paths; the image does not
-  # ship examples/platform-dev.
+  # ship examples/platform-dev. Set bundleExamples to mount chart copies of
+  # examples/platform-dev (values-backstage.yaml does this).
   serviceCatalog:
     enabled: false
+    bundleExamples: false
     maturityRubric: /config/maturity-rubric.yaml
     workloadProfiles: /config/workload-profiles.yaml
     deploymentSets: /config/deployment-sets.yaml
     initiatives: /data/initiatives.jsonl
     defaultTeam: platform
 
-  # Hosted Backstage IDP (ADR 011). Default off until chart-smoke boots the image.
+  # Hosted Backstage IDP (ADR 011). Default off; make chart-smoke-backstage boots the image.
   # Not written into the engine ConfigMap — Deployment/Service only.
   backstage:
     enabled: false
@@ -260,6 +262,16 @@ repave:
     # Empty = in-cluster portal/API service (http://{{ release }}-repave:8088).
     apiBaseUrl: ""
     extraEnv: []
+    # Kind / first boot can take a minute; keep liveness from killing the pod.
+    probes:
+      liveness:
+        initialDelaySeconds: 60
+        periodSeconds: 20
+        failureThreshold: 6
+      readiness:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        failureThreshold: 12
     ingress:
       enabled: false
       className: ""

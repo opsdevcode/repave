@@ -1,5 +1,5 @@
 # Overlay: enable hosted Backstage (ADR 011). Image must exist locally or in GHCR.
-# Chart-smoke stays default-off until that image is in the smoke path.
+# CI: make chart-smoke-backstage. Flag stays default off in values.yaml.
 #
 # Same-host path split (enable both ingresses when you cut over):
 #   /     → Backstage
@@ -15,6 +15,11 @@ ingress:
 repave:
   portal:
     html: false
+  # Sandbox / My services call /api/v2/environments/vend, which 404s unless
+  # the catalog overlay is on. Bundle the platform-dev fixtures (image has none).
+  serviceCatalog:
+    enabled: true
+    bundleExamples: true
   backstage:
     enabled: true
     ingress:

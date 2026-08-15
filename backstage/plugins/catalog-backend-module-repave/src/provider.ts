@@ -94,24 +94,34 @@ export class RepaveEntityProvider implements EntityProvider {
     if (this.options.token) {
       headers.Authorization = `Bearer ${this.options.token}`;
     }
-    const response = await fetch(url, {
-      headers,
-      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
-    });
-    if (!response.ok) {
-      throw new Error(
-        `GET /api/v2/catalog/entities returned ${response.status}; check REPAVE_API_BASE_URL`,
+    try {
+      const response = await fetch(url, {
+        headers,
+        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        this.options.logger.warn(
+          `GET /api/v2/catalog/entities returned ${response.status}; retry on the next refresh`,
+        );
+        return;
+      }
+      const payload = (await response.json()) as { entities?: unknown[] };
+      const items = Array.isArray(payload.entities) ? payload.entities : [];
+      const entities = items
+        .filter(item => item && typeof item === 'object')
+        .map(item => ({
+          entity: catalogItemToEntity(item as Record<string, unknown>),
+          locationKey: `repave-api:${entityNameFromId(
+            String((item as { entity_id?: string }).entity_id ?? ''),
+          )}`,
+        }));
+      await this.connection.applyMutation({ type: 'full', entities });
+      this.options.logger.info(`ingested ${entities.length} entities from ${url}`);
+    } catch (err) {
+      // Engine may still be starting (chart-smoke). Keep last mutation; retry later.
+      this.options.logger.warn(
+        `catalog refresh skipped: ${err instanceof Error ? err.message : String(err)}`,
       );
     }
-    const payload = (await response.json()) as { entities?: unknown[] };
-    const items = Array.isArray(payload.entities) ? payload.entities : [];
-    const entities = items
-      .filter(item => item && typeof item === 'object')
-      .map(item => ({
-        entity: catalogItemToEntity(item as Record<string, unknown>),
-        locationKey: `repave-api:${entityNameFromId(String((item as { entity_id?: string }).entity_id ?? ''))}`,
-      }));
-    await this.connection.applyMutation({ type: 'full', entities });
-    this.options.logger.info(`ingested ${entities.length} entities from ${url}`);
   }
 }

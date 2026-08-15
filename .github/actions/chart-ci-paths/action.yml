@@ -6,6 +6,9 @@ outputs:
   chart_needed:
     description: Run chart validate/smoke when true
     value: ${{ steps.filter.outputs.chart_needed }}
+  backstage_smoke_needed:
+    description: Run Backstage kind smoke when true (yarn + image build)
+    value: ${{ steps.filter.outputs.backstage_smoke_needed }}
 runs:
   using: composite
   steps:
@@ -30,5 +33,13 @@ runs:
             - 'standards/**'
             - 'policy/**'
             - 'ansible/requirements-gate-collections.yml'
+            - '.github/workflows/chart.yml'
+            - '.github/actions/chart-ci-paths/**'
+          backstage_smoke_needed:
+            - 'backstage/**'
+            - 'deploy/k8s/chart/templates/backstage-*.yaml'
+            - 'deploy/k8s/chart/templates/_helpers.tpl'
+            - 'deploy/k8s/chart/values-backstage.yaml'
+            - 'deploy/k8s/hack/chart-smoke-backstage.sh'
             - '.github/workflows/chart.yml'
             - '.github/actions/chart-ci-paths/**'

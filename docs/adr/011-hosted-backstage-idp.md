@@ -40,9 +40,9 @@ deprecated on a published window. CLI and `/api/v2` stay the control plane.**
   `app-config` branding.
 - Fine-grained Auth0 FGA stays parking-lot (ADR 010+). The Sign-In Resolver maps
   groups the same way `auth.oidc.roles` does today.
-- Chart flag `repave.backstage.enabled` ships **default off** until chart-smoke
-  boots the image. Ingress may split `/` → Backstage and `/api` → engine, or use a
-  second host.
+- Chart flag `repave.backstage.enabled` ships **default off** until
+  `make chart-smoke-backstage` boots the image. Ingress may split `/` → Backstage
+  and `/api` → engine, or use a second host.
 - Named owner required before hosted values default the flag on (Backstage release
   treadmill — same class of cost as ADR 004).
 

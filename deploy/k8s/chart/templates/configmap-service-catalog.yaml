@@ -1,0 +1,18 @@
+{{- if include "repave.serviceCatalogBundleEnabled" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "repave.fullname" . }}-service-catalog
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: service-catalog
+data:
+  maturity-rubric.yaml: |
+{{ .Files.Get "files/service-catalog/maturity-rubric.yaml" | indent 4 }}
+  workload-profiles.yaml: |
+{{ .Files.Get "files/service-catalog/workload-profiles.yaml" | indent 4 }}
+  deployment-sets.yaml: |
+{{ .Files.Get "files/service-catalog/deployment-sets.yaml" | indent 4 }}
+  initiatives.jsonl: |
+{{ .Files.Get "files/service-catalog/initiatives.jsonl" | indent 4 }}
+{{- end }}

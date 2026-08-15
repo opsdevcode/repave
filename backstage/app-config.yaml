@@ -15,8 +15,8 @@ organization:
   name: repave
 
 repave:
-  apiBaseUrl: ${REPAVE_API_BASE_URL}
-  apiToken: ${REPAVE_API_TOKEN}
+  apiBaseUrl: ${REPAVE_API_BASE_URL:-}
+  apiToken: ${REPAVE_API_TOKEN:-}
 
 backend:
   # Used for enabling authentication, secret is shared by all backend plugins
@@ -56,7 +56,7 @@ integrations:
     - host: github.com
       # This is a Personal Access Token or PAT from GitHub. You can find out how to generate this token, and more information
       # about setting up the GitHub integration here: https://backstage.io/docs/integrations/github/locations#configuration
-      token: ${GITHUB_TOKEN}
+      token: ${GITHUB_TOKEN:-}
     ### Example for how to add your GitHub Enterprise instance using the API:
     # - host: ghe.example.net
     #   apiBaseUrl: https://ghe.example.net/api/v3
@@ -65,11 +65,11 @@ integrations:
 proxy:
   endpoints:
     '/repave':
-      # Local default matches `make serve`. Hosted image uses app-config.production.yaml.
-      target: http://127.0.0.1:8088
+      # Local default matches `make serve` (:8089, catalog on). Compose is :8088.
+      target: ${REPAVE_API_BASE_URL:-http://127.0.0.1:8089}
       changeOrigin: true
       headers:
-        Authorization: Bearer ${REPAVE_API_TOKEN}
+        Authorization: Bearer ${REPAVE_API_TOKEN:-}
 
 # Reference documentation http://backstage.io/docs/features/techdocs/configuration
 # Note: After experimenting with basic setup, use CI/CD to generate docs
@@ -83,15 +83,10 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
 auth:
-  # Guest for local-first. Hosted: set AUTH0_* (same tenant as docs/auth-service-mode.md).
+  # Guest only. Auth0 is app-config.auth0.yaml when AUTH0_CLIENT_ID is set
+  # (docker-entrypoint.sh). An empty auth0.* block still fails provider init.
   providers:
     guest: {}
-    auth0:
-      development:
-        clientId: ${AUTH0_CLIENT_ID}
-        clientSecret: ${AUTH0_CLIENT_SECRET}
-        domain: ${AUTH0_DOMAIN}
-        audience: ${AUTH0_AUDIENCE}
   # see https://backstage.io/docs/ai/mcp-actions#client-id-metadata-documents
   # to learn more about client id metadata documents
   clientIdMetadataDocuments:

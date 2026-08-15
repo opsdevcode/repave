@@ -7,9 +7,9 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.13.0  
 
-**In progress:** Hosted Backstage Phase 3 — HTML `Sunset`/`Link`, `portal.html`,
-same-host `/` vs `/api` ingress ([ADR 011](adr/011-hosted-backstage-idp.md));
-HTML portal sunset 14 Feb 2027.
+**In progress:** Hosted Backstage chart-smoke (kind boots the Backstage image);
+flag stays default off ([ADR 011](adr/011-hosted-backstage-idp.md)).
+HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
 Public landing shipped in 3.1.0. Identity
@@ -21,6 +21,7 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Hosted Backstage Phases 1–3** (app, parity plugins, HTML sunset + ingress split);
 **Hosted Backstage Phase 2** (My services, sandbox, runs, upgrade preview);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
@@ -130,7 +131,7 @@ v3.13.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Phase 3 | HTML sunset headers + ingress split; Phase 2 parity shipped ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Chart-smoke | Phases 1–3 shipped; kind smoke for the Backstage image ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -142,11 +143,9 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Phase 3 — HTML `Sunset`/`Link`, `portal.html=false` on the Backstage
-overlay, same-host `/` vs `/api` ingress
+**Status:** Chart-smoke — kind boots the Backstage image
 ([ADR 011](adr/011-hosted-backstage-idp.md)).
-Phase 1 (hosted app, generate action, lineage card, default-off chart) is on `main`.
-Phase 2 parity (`/my-services`, `/sandbox`, `/runs`, `/upgrade`) is on `main`.
+Phases 1–3 are on `main` (hosted app, parity plugins, HTML sunset + ingress split).
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -158,9 +157,9 @@ Catalog ingest uses `catalog-info.yaml`. `/my-services` lists components with
 and the hosted catalog. HTML portal stays until the published sunset
 (14 Feb 2027); CLI remains the local-first path.
 
-**Done when:** Hosted Backstage overlay serves `/` and `/api` on the same host,
-HTML routes send `Sunset`/`Link` and return 410 when `portal.html` is false,
-and `make serve` still renders HTML locally. Apply/auto-merge write path stays
+**Done when:** `make chart-smoke-backstage` (and CI) starts Backstage on kind,
+engine `/api/v2` still answers, HTML `/` is 410 on the overlay, and
+`repave.backstage.enabled` stays default off until a named owner. Apply stays
 CLI and operator (`POST /api/v2/upgrades/apply`).
 
 ---

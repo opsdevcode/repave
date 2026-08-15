@@ -8,12 +8,13 @@ Install the repave **portal and API** on Kubernetes. Images build from
 | **Gate toolchain** (default) | `docker build -f deploy/local/Dockerfile -t repave-engine:TAG .` | `image.gateToolchain: true` (default) |
 | **Portal-only** | `docker build -f deploy/local/Dockerfile --build-arg INSTALL_GATE_TOOLCHAIN=0 --build-arg INCLUDE_CORPUS=0 -t repave-engine-portal:TAG .` | `-f values-portal.yaml` or `image.gateToolchain: false` |
 | **Corpus** | `docker build -f deploy/local/Dockerfile.corpus -t repave-corpus:TAG .` | `corpus.enabled: true` (see `values-decomposed.yaml`) |
-| **Backstage** (ADR 011) | `docker build -f backstage/packages/backend/Dockerfile -t ghcr.io/opsdevcode/repave-backstage:TAG backstage/` | `repave.backstage.enabled` (**default off**); overlay [`values-backstage.yaml`](values-backstage.yaml) sets `portal.html: false` and same-host `/` vs `/api` |
+| **Backstage** (ADR 011) | `docker build -f backstage/packages/backend/Dockerfile -t ghcr.io/opsdevcode/repave-backstage:TAG backstage/` | `repave.backstage.enabled` (**default off**); overlay [`values-backstage.yaml`](values-backstage.yaml) sets `portal.html: false`, enables the service catalog with bundled fixtures, and same-host `/` vs `/api` |
 
 The gate-toolchain image includes pinned CLIs for Plan/dry-run. The portal-only image
 is smaller and suits catalog/auth-only deployments; dry-run gates report missing tools.
-Hosted Backstage is a second Deployment (`:7007`). Chart-smoke does not boot that
-image yet — leave the flag off until it does. See [`docs/backstage.md`](../../../docs/backstage.md).
+Hosted Backstage is a second Deployment (`:7007`). `make chart-smoke-backstage`
+boots that image on kind. The flag stays default off. See
+[`docs/backstage.md`](../../../docs/backstage.md).
 
 ## Prerequisites
 
@@ -308,7 +309,10 @@ helm upgrade --install repave ./deploy/k8s/chart \
 `developerLab.enabled`, `autoMerge.enabled`, and `mandatoryPolicy.enabled` require
 `v3.enabled`. Lab does not invent a GitOps repo or turn on environment vending.
 Catalog files still have to exist at the `serviceCatalog.*` paths (or, in a git
-checkout, `v3.developer_lab.enabled` can wire `examples/platform-dev`). Auto-merge
+checkout, `v3.developer_lab.enabled` can wire `examples/platform-dev`).
+`values-backstage.yaml` sets `serviceCatalog.bundleExamples: true` so the
+chart mounts copies of those fixtures (the engine image does not ship them).
+Auto-merge
 is a plan verdict; `apply-upgrade --open-pr` squash-merges Allowed mechanical pin
 bumps. Fleet demote:
 `--set repave.v3.autoMerge.killSwitch=true`. Mandatory policy refuses

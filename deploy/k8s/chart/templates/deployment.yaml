@@ -213,6 +213,7 @@ spec:
               mountPath: /data/runs
             {{- end }}
             {{- include "repave.environmentDataVolumeMount" . | nindent 12 }}
+            {{- include "repave.serviceCatalogVolumeMounts" . | nindent 12 }}
       volumes:
         - name: config
           configMap:
@@ -269,6 +270,7 @@ spec:
           {{- end }}
         {{- end }}
         {{- include "repave.environmentDataVolume" . | nindent 8 }}
+        {{- include "repave.serviceCatalogVolume" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

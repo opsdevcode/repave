@@ -277,6 +277,37 @@ true
 {{- end }}
 {{- end }}
 
+{{- define "repave.serviceCatalogBundleEnabled" -}}
+{{- if and .Values.repave.serviceCatalog.enabled .Values.repave.serviceCatalog.bundleExamples -}}
+true
+{{- end -}}
+{{- end }}
+
+{{- define "repave.serviceCatalogVolumeMounts" -}}
+{{- if include "repave.serviceCatalogBundleEnabled" . }}
+- name: service-catalog
+  mountPath: /config/maturity-rubric.yaml
+  subPath: maturity-rubric.yaml
+- name: service-catalog
+  mountPath: /config/workload-profiles.yaml
+  subPath: workload-profiles.yaml
+- name: service-catalog
+  mountPath: /config/deployment-sets.yaml
+  subPath: deployment-sets.yaml
+- name: service-catalog
+  mountPath: /data/initiatives.jsonl
+  subPath: initiatives.jsonl
+{{- end }}
+{{- end }}
+
+{{- define "repave.serviceCatalogVolume" -}}
+{{- if include "repave.serviceCatalogBundleEnabled" . }}
+- name: service-catalog
+  configMap:
+    name: {{ include "repave.fullname" . }}-service-catalog
+{{- end }}
+{{- end }}
+
 {{- define "repave.environmentRegistryMountPath" -}}
 {{- $file := .Values.repave.environmentVending.file | default "/data/environments/registry.jsonl" -}}
 {{- dir $file -}}

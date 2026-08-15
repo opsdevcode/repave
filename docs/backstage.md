@@ -43,14 +43,27 @@ make serve   # FastAPI HTML + /api/v2; no yarn
 To run the hosted UI against a local API:
 
 ```bash
-# terminal 1
+# terminal 1 — :8089, sets REPAVE_SERVICE_CATALOG=1
 make serve
-# terminal 2
-export REPAVE_API_BASE_URL=http://127.0.0.1:8088
+# terminal 2 — proxy defaults to :8089
 cd backstage && yarn install && yarn start
 ```
 
-Guest auth is on for local-first. Hosted Auth0 uses the same tenant as
+Sandbox vend 404s with `Service catalog is not enabled` if the engine
+does not have the catalog overlay. `make serve` turns it on. Compose on
+`:8088` sets `REPAVE_SERVICE_CATALOG=1` (restart the stack after pull).
+To point Backstage at Compose instead:
+
+```bash
+export REPAVE_API_BASE_URL=http://127.0.0.1:8088
+```
+
+Guest auth is on for local-first (`app-config.yaml` has no Auth0 block).
+The hosted image stays guest-only unless `AUTH0_CLIENT_ID` is set (then
+`docker-entrypoint.sh` loads `app-config.auth0.yaml`). Empty
+`${AUTH0_*:-}` still fails provider init — do not set blank Auth0 env in
+chart-smoke. Local Auth0: `yarn start --config app-config.yaml --config app-config.auth0.yaml`.
+Hosted Auth0 uses the same tenant as
 [`docs/auth-service-mode.md`](auth-service-mode.md) (`AUTH0_DOMAIN`,
 `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `AUTH0_AUDIENCE`).
 
@@ -74,21 +87,29 @@ helm upgrade --install repave ./deploy/k8s/chart \
 
 The Backstage container talks to the in-cluster portal Service
 (`REPAVE_API_BASE_URL=http://{{ release }}-repave:8088`) unless you set
-`repave.backstage.apiBaseUrl`. Pass Auth0 and `REPAVE_API_TOKEN` through
-`repave.backstage.extraEnv`. The overlay sets `portal.html: false` so HTML
-routes return **410** with `Sunset` / `Link` (14 Feb 2027). CLI and `/api/v2`
-stay. Same-host Ingress (opt-in): `/` → Backstage, `/api` → engine
-(`ingress.enabled` + `repave.backstage.ingress.enabled`).
+`repave.backstage.apiBaseUrl`. Pass `AUTH0_CLIENT_ID` (and the other Auth0
+keys) plus `REPAVE_API_TOKEN` through `repave.backstage.extraEnv` when you
+want Auth0; omit them for guest-only / chart-smoke. The overlay sets `portal.html: false` so HTML
+routes return **410** with `Sunset` / `Link` (14 Feb 2027). It also sets
+`repave.serviceCatalog.enabled` and mounts bundled
+`examples/platform-dev` catalog YAML so `/sandbox` vend does not 404.
+CLI and `/api/v2` stay. Same-host Ingress (opt-in): `/` → Backstage,
+`/api` → engine (`ingress.enabled` + `repave.backstage.ingress.enabled`).
 
 Image: `ghcr.io/opsdevcode/repave-backstage` (build from
 [`backstage/packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile)
 with context `backstage/` after `yarn tsc && yarn build:backend`).
 
-Chart-smoke does **not** boot this image yet. The flag stays off until that
-path exists. `make chart-validate` renders the Deployment when the flag is on.
+`make chart-smoke-backstage` builds the engine + Backstage images, installs
+`values-kind.yaml` + `values-backstage.yaml` on kind, and probes engine
+`/health` + `/api/v2`, HTML **410**, and Backstage liveness/readiness.
+CI runs that job when Backstage or overlay paths change. The flag stays
+**default off** until a named owner takes the Backstage release treadmill.
+`make chart-validate` renders the Deployment when the flag is on.
 
-Production config uses SQLite (`/tmp/backstage.sqlite`) so a chart install does
-not need Postgres. Swap in a `client: pg` overlay when you run a real database.
+Production config uses SQLite (`connection.directory: /tmp/backstage-db`) so a
+chart install does not need Postgres. Swap in a `client: pg` overlay when you
+run a real database.
 
 ## Scaffolder: `repave:generate`
 
@@ -180,8 +201,9 @@ spec:
 | Phase | Outcome |
 | --- | --- |
 | 2 | My services + sandbox + runs + upgrade preview — **shipped** |
-| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; overlay `portal.html: false` (this slice) |
-| 4 | Delete templates after 14 Feb 2027; FastAPI is API-only |
+| 3 | Ingress flip; HTML `Sunset`/`Link`; overlay `portal.html: false` — **shipped** |
+| 4 | Delete HTML templates; FastAPI is API-only (no calendar gate) |
+| — | Chart-smoke boots Backstage (this slice); flag stays default off |
 
 ## Related
 

@@ -523,6 +523,26 @@ if ! grep -q 'service_catalog:' "${catalog_rendered}"; then
   exit 1
 fi
 
+if grep -q 'app.kubernetes.io/component: service-catalog' "${catalog_rendered}"; then
+  echo "serviceCatalog.enabled alone must not mount bundled catalog fixtures" >&2
+  exit 1
+fi
+
+for catalog_file in maturity-rubric.yaml workload-profiles.yaml deployment-sets.yaml; do
+  if ! cmp -s \
+    "${CHART}/files/service-catalog/${catalog_file}" \
+    "${ROOT}/examples/platform-dev/config/${catalog_file}"; then
+    echo "chart files/service-catalog/${catalog_file} must match examples/platform-dev/config/${catalog_file}" >&2
+    exit 1
+  fi
+done
+if ! cmp -s \
+  "${CHART}/files/service-catalog/initiatives.jsonl" \
+  "${ROOT}/examples/platform-dev/fixtures/platform-metrics/initiatives.jsonl"; then
+  echo "chart files/service-catalog/initiatives.jsonl must match examples/platform-dev fixtures" >&2
+  exit 1
+fi
+
 if helm template repave-lab-without-v3 "${CHART}" \
   --namespace repave-lab \
   --set repave.output.githubOrg=example-org \
@@ -576,6 +596,16 @@ if ! grep -q 'REPAVE_API_BASE_URL' "${bs_rendered}"; then
   rm -f "${bs_rendered}"
   exit 1
 fi
+if ! grep -q 'REPAVE_API_TOKEN' "${bs_rendered}"; then
+  echo "Backstage Deployment must set REPAVE_API_TOKEN (empty is fine)" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
+if ! grep -q 'initialDelaySeconds: 60' "${bs_rendered}"; then
+  echo "Backstage liveness initialDelaySeconds must be 60 for first boot" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
 rm -f "${bs_rendered}"
 
 bs_overlay="$(mktemp)"
@@ -600,6 +630,16 @@ if ! grep -q 'path: /api' "${bs_overlay}"; then
 fi
 if ! grep -q 'app.kubernetes.io/component: backstage' "${bs_overlay}"; then
   echo "values-backstage.yaml must render a Backstage Ingress/Deployment" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'service_catalog:' "${bs_overlay}"; then
+  echo "values-backstage.yaml must enable service_catalog (sandbox vend 404s otherwise)" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'api-sandbox-7d' "${bs_overlay}"; then
+  echo "values-backstage.yaml must mount bundled deployment-sets fixtures" >&2
   rm -f "${bs_overlay}"
   exit 1
 fi

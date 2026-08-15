@@ -1,0 +1,16 @@
+# Loaded only when AUTH0_CLIENT_ID is set (see docker-entrypoint.sh).
+# Same tenant as docs/auth-service-mode.md. Both envs so yarn start and
+# NODE_ENV=production can use the same file.
+auth:
+  providers:
+    auth0:
+      development:
+        clientId: ${AUTH0_CLIENT_ID}
+        clientSecret: ${AUTH0_CLIENT_SECRET}
+        domain: ${AUTH0_DOMAIN}
+        audience: ${AUTH0_AUDIENCE}
+      production:
+        clientId: ${AUTH0_CLIENT_ID}
+        clientSecret: ${AUTH0_CLIENT_SECRET}
+        domain: ${AUTH0_DOMAIN}
+        audience: ${AUTH0_AUDIENCE}
