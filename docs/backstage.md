@@ -91,8 +91,9 @@ CI runs that job when Backstage or overlay paths change. The flag stays
 **default off** until a named owner takes the Backstage release treadmill.
 `make chart-validate` renders the Deployment when the flag is on.
 
-Production config uses SQLite (`/tmp/backstage.sqlite`) so a chart install does
-not need Postgres. Swap in a `client: pg` overlay when you run a real database.
+Production config uses SQLite (`connection.directory: /tmp/backstage-db`) so a
+chart install does not need Postgres. Swap in a `client: pg` overlay when you
+run a real database.
 
 ## Scaffolder: `repave:generate`
 

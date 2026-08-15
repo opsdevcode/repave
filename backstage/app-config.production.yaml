@@ -14,10 +14,12 @@ backend:
   listen: ':7007'
 
   # SQLite so chart-smoke / default-off hosted installs do not need Postgres.
+  # Backstage 1.53+ rejects a single connection.filename for the base client.
   # Override with a third --config file (client: pg) when you run a real DB.
   database:
     client: better-sqlite3
-    connection: /tmp/backstage.sqlite
+    connection:
+      directory: /tmp/backstage-db
 
 auth:
   providers:
