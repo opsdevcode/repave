@@ -244,7 +244,7 @@ repave:
     initiatives: /data/initiatives.jsonl
     defaultTeam: platform
 
-  # Hosted Backstage IDP (ADR 011). Default off until chart-smoke boots the image.
+  # Hosted Backstage IDP (ADR 011). Default off; make chart-smoke-backstage boots the image.
   # Not written into the engine ConfigMap — Deployment/Service only.
   backstage:
     enabled: false
