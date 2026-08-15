@@ -26,6 +26,7 @@ IMAGES=(
   "opsdevcode/repave-engine-portal"
   "opsdevcode/repave-corpus"
   "opsdevcode/repave-operator"
+  "opsdevcode/repave-backstage"
 )
 
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-60}"

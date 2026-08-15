@@ -146,6 +146,7 @@ See [ADR 002](adr/002-v2-service-decomposition.md).
 - `ghcr.io/opsdevcode/repave-engine` — gate toolchain (`INSTALL_GATE_TOOLCHAIN=1`, no embedded corpus)
 - `ghcr.io/opsdevcode/repave-engine-portal` — portal/API without gate CLIs or embedded corpus
 - `ghcr.io/opsdevcode/repave-corpus` — generation corpus (`blueprints/`, `standards/`, `policy/`, `schemas/`)
+- `ghcr.io/opsdevcode/repave-backstage` — hosted Backstage IDP (yarn bundle, then Docker)
 
 **Phase 2 decomposition:** mount the corpus image read-only via chart `corpus.enabled`. Async run
 previews rehydrate from **bounded `rendered_files` snapshots in `result_json`** (Postgres/SQLite)

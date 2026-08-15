@@ -15,6 +15,7 @@ on:
           - portal
           - corpus
           - operator
+          - backstage
         default: all
 
 permissions:
@@ -41,10 +42,11 @@ jobs:
         run: |
           set -euo pipefail
           full='[
-            {"key":"engine","name":"repave-engine","ghcr_image":"opsdevcode/repave-engine","image":"ghcr.io/opsdevcode/repave-engine","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=1\nINCLUDE_CORPUS=0","description":"Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app)."},
-            {"key":"portal","name":"repave-engine-portal","ghcr_image":"opsdevcode/repave-engine-portal","image":"ghcr.io/opsdevcode/repave-engine-portal","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=0\nINCLUDE_CORPUS=0","description":"Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app)."},
-            {"key":"corpus","name":"repave-corpus","ghcr_image":"opsdevcode/repave-corpus","image":"ghcr.io/opsdevcode/repave-corpus","context":".","file":"deploy/local/Dockerfile.corpus","build_args":"","description":"Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts."},
-            {"key":"operator","name":"repave-operator","ghcr_image":"opsdevcode/repave-operator","image":"ghcr.io/opsdevcode/repave-operator","context":"operator","file":"operator/Dockerfile","build_args":"","description":"Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests."}
+            {"key":"engine","name":"repave-engine","ghcr_image":"opsdevcode/repave-engine","image":"ghcr.io/opsdevcode/repave-engine","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=1\nINCLUDE_CORPUS=0","pre_build":"","description":"Gate-toolchain worker for repave async runs, live_plan, and bundle generation (mount repave-corpus at /app)."},
+            {"key":"portal","name":"repave-engine-portal","ghcr_image":"opsdevcode/repave-engine-portal","image":"ghcr.io/opsdevcode/repave-engine-portal","context":".","file":"deploy/local/Dockerfile","build_args":"INSTALL_GATE_TOOLCHAIN=0\nINCLUDE_CORPUS=0","pre_build":"","description":"Portal and API image without gate CLIs; enqueue runs for repave-engine workers (mount repave-corpus at /app)."},
+            {"key":"corpus","name":"repave-corpus","ghcr_image":"opsdevcode/repave-corpus","image":"ghcr.io/opsdevcode/repave-corpus","context":".","file":"deploy/local/Dockerfile.corpus","build_args":"","pre_build":"","description":"Versioned repave generation corpus (blueprints, standards, policy, schemas) for initContainer mounts."},
+            {"key":"operator","name":"repave-operator","ghcr_image":"opsdevcode/repave-operator","image":"ghcr.io/opsdevcode/repave-operator","context":"operator","file":"operator/Dockerfile","build_args":"","pre_build":"","description":"Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests."},
+            {"key":"backstage","name":"repave-backstage","ghcr_image":"opsdevcode/repave-backstage","image":"ghcr.io/opsdevcode/repave-backstage","context":"backstage","file":"backstage/packages/backend/Dockerfile","build_args":"","pre_build":"deploy/k8s/hack/build-backstage-bundle.sh","description":"Hosted Backstage IDP UI; Scaffolder and catalog talk to the engine over /api/v2 only (ADR 011)."}
           ]'
           if [[ "$EVENT" == "workflow_dispatch" ]]; then
             target="${TARGET:-all}"
@@ -76,6 +78,17 @@ jobs:
         include: ${{ fromJson(needs.matrix.outputs.include) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        if: matrix.pre_build != ''
+        with:
+          node-version: "22"
+
+      - name: Pre-build image context
+        if: matrix.pre_build != ''
+        run: |
+          chmod +x "${{ matrix.pre_build }}"
+          "${{ matrix.pre_build }}"
 
       - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
 

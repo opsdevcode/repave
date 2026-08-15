@@ -87,8 +87,9 @@ then **UpgradePlanned** and a remediation PR when remediation is enabled.
 
 ## Weekend hotfix loop (pre-CTO demo)
 
-Merge fixes to `main` → **Container images** workflow publishes four GHCR images in **parallel**
-(`repave-engine-portal` is what the portal Deployment pulls).
+Merge fixes to `main` → **Container images** workflow publishes five GHCR images in **parallel**
+(`repave-engine-portal` is what the portal Deployment pulls;
+`repave-backstage` is the hosted IDP overlay).
 
 1. **After merge**, watch publish: `gh run list --workflow=container.yml --limit 1`
 2. **If push flakes** (403 on GHCR): `gh run rerun <run-id> --failed` — the workflow retries pushes and verifies manifests.

@@ -96,9 +96,11 @@ routes return **410** with `Sunset` / `Link` (14 Feb 2027). It also sets
 CLI and `/api/v2` stay. Same-host Ingress (opt-in): `/` → Backstage,
 `/api` → engine (`ingress.enabled` + `repave.backstage.ingress.enabled`).
 
-Image: `ghcr.io/opsdevcode/repave-backstage` (build from
-[`backstage/packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile)
-with context `backstage/` after `yarn tsc && yarn build:backend`).
+Image: `ghcr.io/opsdevcode/repave-backstage`, published by
+[`.github/workflows/container.yml`](../.github/workflows/container.yml) on `main`
+and semver tags (yarn bundle, then Docker context `backstage/`). Local build:
+[`deploy/k8s/hack/build-backstage-bundle.sh`](../deploy/k8s/hack/build-backstage-bundle.sh)
+then `docker build -f backstage/packages/backend/Dockerfile`.
 
 `make chart-smoke-backstage` builds the engine + Backstage images, installs
 `values-kind.yaml` + `values-backstage.yaml` on kind, and probes engine

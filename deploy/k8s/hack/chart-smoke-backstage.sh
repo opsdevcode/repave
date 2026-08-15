@@ -18,7 +18,6 @@ INSTALL_GATE_TOOLCHAIN="${CHART_SMOKE_INSTALL_GATE_TOOLCHAIN:-0}"
 TIMEOUT="${CHART_SMOKE_BACKSTAGE_TIMEOUT:-600}"
 ENGINE_PORT="${CHART_SMOKE_BACKSTAGE_ENGINE_PORT:-18088}"
 BS_PORT="${CHART_SMOKE_BACKSTAGE_PORT:-17007}"
-YARN=(node "${BACKSTAGE_DIR}/.yarn/releases/yarn-4.13.0.cjs")
 
 require() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -52,12 +51,8 @@ docker build -f "${ROOT}/deploy/local/Dockerfile" \
   -t "${IMG_REPO}:${IMG_TAG}" "${ROOT}"
 
 echo "==> yarn build Backstage backend"
-(
-  cd "${BACKSTAGE_DIR}"
-  "${YARN[@]}" install --immutable
-  "${YARN[@]}" tsc
-  "${YARN[@]}" build:backend
-)
+chmod +x "${ROOT}/deploy/k8s/hack/build-backstage-bundle.sh"
+"${ROOT}/deploy/k8s/hack/build-backstage-bundle.sh"
 
 echo "==> docker build ${BS_IMG_REPO}:${BS_IMG_TAG}"
 docker build -f "${BACKSTAGE_DIR}/packages/backend/Dockerfile" \
