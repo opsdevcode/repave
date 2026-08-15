@@ -58,10 +58,12 @@ To point Backstage at Compose instead:
 export REPAVE_API_BASE_URL=http://127.0.0.1:8088
 ```
 
-Guest auth is on for local-first. The hosted image stays guest-only unless
-`AUTH0_CLIENT_ID` is set (then it loads `app-config.auth0.yaml`). Empty
+Guest auth is on for local-first (`app-config.yaml` has no Auth0 block).
+The hosted image stays guest-only unless `AUTH0_CLIENT_ID` is set (then
+`docker-entrypoint.sh` loads `app-config.auth0.yaml`). Empty
 `${AUTH0_*:-}` still fails provider init — do not set blank Auth0 env in
-chart-smoke. Hosted Auth0 uses the same tenant as
+chart-smoke. Local Auth0: `yarn start --config app-config.yaml --config app-config.auth0.yaml`.
+Hosted Auth0 uses the same tenant as
 [`docs/auth-service-mode.md`](auth-service-mode.md) (`AUTH0_DOMAIN`,
 `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `AUTH0_AUDIENCE`).
 

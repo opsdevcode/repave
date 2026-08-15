@@ -83,15 +83,10 @@ techdocs:
     type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
 
 auth:
-  # Guest for local-first. Hosted: set AUTH0_* (same tenant as docs/auth-service-mode.md).
+  # Guest only. Auth0 is app-config.auth0.yaml when AUTH0_CLIENT_ID is set
+  # (docker-entrypoint.sh). An empty auth0.* block still fails provider init.
   providers:
     guest: {}
-    auth0:
-      development:
-        clientId: ${AUTH0_CLIENT_ID:-}
-        clientSecret: ${AUTH0_CLIENT_SECRET:-}
-        domain: ${AUTH0_DOMAIN:-}
-        audience: ${AUTH0_AUDIENCE:-}
   # see https://backstage.io/docs/ai/mcp-actions#client-id-metadata-documents
   # to learn more about client id metadata documents
   clientIdMetadataDocuments:
