@@ -1,11 +1,13 @@
 import { createFrontendPlugin, PageBlueprint } from '@backstage/frontend-plugin-api';
 import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
 import AppsIcon from '@material-ui/icons/Apps';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import HistoryIcon from '@material-ui/icons/History';
 import StorageIcon from '@material-ui/icons/Storage';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import { FleetPage } from './components/FleetPage';
+import { ImportPage } from './components/ImportPage';
 import { MyServicesPage } from './components/MyServicesPage';
 import { RepaveLineageCard } from './components/RepaveLineageCard';
 import { RunsPage } from './components/RunsPage';
@@ -62,6 +64,16 @@ const fleetPage = PageBlueprint.make({
   },
 });
 
+const importPage = PageBlueprint.make({
+  name: 'import',
+  params: {
+    path: '/import',
+    title: 'Import',
+    icon: <CloudDownloadIcon />,
+    loader: async () => <ImportPage />,
+  },
+});
+
 const repaveLineageCard = EntityCardBlueprint.make({
   name: 'lineage',
   params: {
@@ -78,6 +90,7 @@ export const repavePlugin = createFrontendPlugin({
     runsPage,
     upgradePage,
     fleetPage,
+    importPage,
     repaveLineageCard,
   ],
 });
