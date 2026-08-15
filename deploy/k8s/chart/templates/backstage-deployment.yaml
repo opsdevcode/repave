@@ -32,6 +32,10 @@ spec:
           env:
             - name: REPAVE_API_BASE_URL
               value: {{ default (printf "http://%s:%v" (include "repave.fullname" .) .Values.service.port) .Values.repave.backstage.apiBaseUrl | quote }}
+            - name: REPAVE_API_TOKEN
+              value: ""
+            - name: GITHUB_TOKEN
+              value: ""
             {{- with .Values.repave.backstage.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
@@ -39,14 +43,16 @@ spec:
             httpGet:
               path: /.backstage/health/v1/liveness
               port: http
-            initialDelaySeconds: 20
-            periodSeconds: 20
+            initialDelaySeconds: {{ .Values.repave.backstage.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.repave.backstage.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.repave.backstage.probes.liveness.failureThreshold }}
           readinessProbe:
             httpGet:
               path: /.backstage/health/v1/readiness
               port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
+            initialDelaySeconds: {{ .Values.repave.backstage.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.repave.backstage.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.repave.backstage.probes.readiness.failureThreshold }}
           resources:
             requests:
               cpu: 250m

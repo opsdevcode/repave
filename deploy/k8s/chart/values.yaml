@@ -260,6 +260,16 @@ repave:
     # Empty = in-cluster portal/API service (http://{{ release }}-repave:8088).
     apiBaseUrl: ""
     extraEnv: []
+    # Kind / first boot can take a minute; keep liveness from killing the pod.
+    probes:
+      liveness:
+        initialDelaySeconds: 60
+        periodSeconds: 20
+        failureThreshold: 6
+      readiness:
+        initialDelaySeconds: 15
+        periodSeconds: 10
+        failureThreshold: 12
     ingress:
       enabled: false
       className: ""

@@ -24,22 +24,22 @@ auth:
     guest: {}
     auth0:
       production:
-        clientId: ${AUTH0_CLIENT_ID}
-        clientSecret: ${AUTH0_CLIENT_SECRET}
-        domain: ${AUTH0_DOMAIN}
-        audience: ${AUTH0_AUDIENCE}
+        clientId: ${AUTH0_CLIENT_ID:-}
+        clientSecret: ${AUTH0_CLIENT_SECRET:-}
+        domain: ${AUTH0_DOMAIN:-}
+        audience: ${AUTH0_AUDIENCE:-}
 
 repave:
-  apiBaseUrl: ${REPAVE_API_BASE_URL}
-  apiToken: ${REPAVE_API_TOKEN}
+  apiBaseUrl: ${REPAVE_API_BASE_URL:-}
+  apiToken: ${REPAVE_API_TOKEN:-}
 
 proxy:
   endpoints:
     '/repave':
-      target: ${REPAVE_API_BASE_URL}
+      target: ${REPAVE_API_BASE_URL:-http://127.0.0.1:8088}
       changeOrigin: true
       headers:
-        Authorization: Bearer ${REPAVE_API_TOKEN}
+        Authorization: Bearer ${REPAVE_API_TOKEN:-}
 
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.

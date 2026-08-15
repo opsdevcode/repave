@@ -576,6 +576,16 @@ if ! grep -q 'REPAVE_API_BASE_URL' "${bs_rendered}"; then
   rm -f "${bs_rendered}"
   exit 1
 fi
+if ! grep -q 'REPAVE_API_TOKEN' "${bs_rendered}"; then
+  echo "Backstage Deployment must set REPAVE_API_TOKEN (empty is fine)" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
+if ! grep -q 'initialDelaySeconds: 60' "${bs_rendered}"; then
+  echo "Backstage liveness initialDelaySeconds must be 60 for first boot" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
 rm -f "${bs_rendered}"
 
 bs_overlay="$(mktemp)"

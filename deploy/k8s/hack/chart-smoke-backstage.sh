@@ -15,7 +15,7 @@ IMG_TAG="${CHART_SMOKE_IMAGE_TAG:-chart-smoke}"
 BS_IMG_REPO="${CHART_SMOKE_BACKSTAGE_IMAGE_REPO:-repave-backstage}"
 BS_IMG_TAG="${CHART_SMOKE_BACKSTAGE_IMAGE_TAG:-chart-smoke}"
 INSTALL_GATE_TOOLCHAIN="${CHART_SMOKE_INSTALL_GATE_TOOLCHAIN:-0}"
-TIMEOUT="${CHART_SMOKE_BACKSTAGE_TIMEOUT:-420}"
+TIMEOUT="${CHART_SMOKE_BACKSTAGE_TIMEOUT:-600}"
 ENGINE_PORT="${CHART_SMOKE_BACKSTAGE_ENGINE_PORT:-18088}"
 BS_PORT="${CHART_SMOKE_BACKSTAGE_PORT:-17007}"
 YARN=(node "${BACKSTAGE_DIR}/.yarn/releases/yarn-4.13.0.cjs")
@@ -67,28 +67,21 @@ echo "==> kind load images"
 kind load docker-image "${IMG_REPO}:${IMG_TAG}" --name "${CLUSTER_NAME}"
 kind load docker-image "${BS_IMG_REPO}:${BS_IMG_TAG}" --name "${CLUSTER_NAME}"
 
-SMOKE_VALUES="$(mktemp)"
-cat >"${SMOKE_VALUES}" <<'EOF'
-repave:
-  backstage:
-    extraEnv:
-      - name: AUTH0_CLIENT_ID
-        value: chart-smoke
-      - name: AUTH0_CLIENT_SECRET
-        value: chart-smoke
-      - name: AUTH0_DOMAIN
-        value: example.auth0.com
-      - name: AUTH0_AUDIENCE
-        value: chart-smoke
-EOF
+dump_smoke() {
+  echo "==> smoke diagnostics" >&2
+  kubectl -n "${NS}" get pods -o wide >&2 || true
+  kubectl -n "${NS}" describe deploy/repave-backstage >&2 || true
+  kubectl -n "${NS}" logs deploy/repave-backstage --tail=120 >&2 || true
+  kubectl -n "${NS}" logs deploy/repave --tail=40 >&2 || true
+}
 
 echo "==> helm install (kind + Backstage overlay)"
 # Portal-only engine image: gateToolchain=false so /readyz does not wait on CLIs.
-helm upgrade --install repave "${CHART}" \
+# Guest-only: do not set AUTH0_* (a fake domain can hang OIDC discovery).
+if ! helm upgrade --install repave "${CHART}" \
   --namespace "${NS}" --create-namespace \
   -f "${CHART}/values-kind.yaml" \
   -f "${CHART}/values-backstage.yaml" \
-  -f "${SMOKE_VALUES}" \
   --set image.repository="${IMG_REPO}" \
   --set image.tag="${IMG_TAG}" \
   --set image.pullPolicy=Never \
@@ -99,7 +92,10 @@ helm upgrade --install repave "${CHART}" \
   --set repave.backstage.image.repository="${BS_IMG_REPO}" \
   --set repave.backstage.image.tag="${BS_IMG_TAG}" \
   --set repave.backstage.image.pullPolicy=Never \
-  --wait --timeout "${TIMEOUT}s"
+  --wait --timeout "${TIMEOUT}s"; then
+  dump_smoke
+  exit 1
+fi
 
 echo "==> wait for rollouts"
 kubectl -n "${NS}" rollout status deployment/repave --timeout="${TIMEOUT}s"
