@@ -15,6 +15,11 @@ ingress:
 repave:
   portal:
     html: false
+  # Sandbox / My services call /api/v2/environments/vend, which 404s unless
+  # the catalog overlay is on. Bundle the platform-dev fixtures (image has none).
+  serviceCatalog:
+    enabled: true
+    bundleExamples: true
   backstage:
     enabled: true
     ingress:

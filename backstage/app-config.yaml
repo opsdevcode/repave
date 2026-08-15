@@ -65,8 +65,8 @@ integrations:
 proxy:
   endpoints:
     '/repave':
-      # Local default matches `make serve`. Hosted image uses app-config.production.yaml.
-      target: http://127.0.0.1:8088
+      # Local default matches `make serve` (:8089, catalog on). Compose is :8088.
+      target: ${REPAVE_API_BASE_URL:-http://127.0.0.1:8089}
       changeOrigin: true
       headers:
         Authorization: Bearer ${REPAVE_API_TOKEN:-}

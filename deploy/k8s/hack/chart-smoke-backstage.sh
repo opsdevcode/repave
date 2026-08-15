@@ -77,7 +77,8 @@ dump_smoke() {
 
 echo "==> helm install (kind + Backstage overlay)"
 # Portal-only engine image: gateToolchain=false so /readyz does not wait on CLIs.
-# Guest-only: do not set AUTH0_* (a fake domain can hang OIDC discovery).
+# Guest-only: do not set AUTH0_* (empty clientId fails provider init;
+# a fake domain can hang OIDC discovery).
 if ! helm upgrade --install repave "${CHART}" \
   --namespace "${NS}" --create-namespace \
   -f "${CHART}/values-kind.yaml" \
@@ -130,6 +131,7 @@ for attempt in 1 2 3 4 5 6 7 8; do
   if probe_match "http://127.0.0.1:${ENGINE_PORT}/health" '"status":"ok"' \
     && probe_match "http://127.0.0.1:${ENGINE_PORT}/readyz" '"status":"ready"' \
     && probe_match "http://127.0.0.1:${ENGINE_PORT}/api/v2/catalog/entities" '"entities"' \
+    && probe_match "http://127.0.0.1:${ENGINE_PORT}/api/v2/deployment-sets" 'api-sandbox-7d' \
     && probe_html_gone \
     && curl -sf "http://127.0.0.1:${BS_PORT}/.backstage/health/v1/liveness" >/dev/null \
     && curl -sf "http://127.0.0.1:${BS_PORT}/.backstage/health/v1/readiness" >/dev/null; then

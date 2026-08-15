@@ -13,6 +13,7 @@ services:
       - "8088:8088"
     environment:
       REPAVE_ENV: local
+      REPAVE_SERVICE_CATALOG: "1"
       REPAVE_GITHUB_ORG: opsdevcode
       REPAVE_MODULES_ROOT: /modules
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}

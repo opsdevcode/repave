@@ -43,14 +43,25 @@ make serve   # FastAPI HTML + /api/v2; no yarn
 To run the hosted UI against a local API:
 
 ```bash
-# terminal 1
+# terminal 1 — :8089, sets REPAVE_SERVICE_CATALOG=1
 make serve
-# terminal 2
-export REPAVE_API_BASE_URL=http://127.0.0.1:8088
+# terminal 2 — proxy defaults to :8089
 cd backstage && yarn install && yarn start
 ```
 
-Guest auth is on for local-first. Hosted Auth0 uses the same tenant as
+Sandbox vend 404s with `Service catalog is not enabled` if the engine
+does not have the catalog overlay. `make serve` turns it on. Compose on
+`:8088` sets `REPAVE_SERVICE_CATALOG=1` (restart the stack after pull).
+To point Backstage at Compose instead:
+
+```bash
+export REPAVE_API_BASE_URL=http://127.0.0.1:8088
+```
+
+Guest auth is on for local-first. The hosted image stays guest-only unless
+`AUTH0_CLIENT_ID` is set (then it loads `app-config.auth0.yaml`). Empty
+`${AUTH0_*:-}` still fails provider init — do not set blank Auth0 env in
+chart-smoke. Hosted Auth0 uses the same tenant as
 [`docs/auth-service-mode.md`](auth-service-mode.md) (`AUTH0_DOMAIN`,
 `AUTH0_CLIENT_ID`, `AUTH0_CLIENT_SECRET`, `AUTH0_AUDIENCE`).
 
@@ -74,11 +85,14 @@ helm upgrade --install repave ./deploy/k8s/chart \
 
 The Backstage container talks to the in-cluster portal Service
 (`REPAVE_API_BASE_URL=http://{{ release }}-repave:8088`) unless you set
-`repave.backstage.apiBaseUrl`. Pass Auth0 and `REPAVE_API_TOKEN` through
-`repave.backstage.extraEnv`. The overlay sets `portal.html: false` so HTML
-routes return **410** with `Sunset` / `Link` (14 Feb 2027). CLI and `/api/v2`
-stay. Same-host Ingress (opt-in): `/` → Backstage, `/api` → engine
-(`ingress.enabled` + `repave.backstage.ingress.enabled`).
+`repave.backstage.apiBaseUrl`. Pass `AUTH0_CLIENT_ID` (and the other Auth0
+keys) plus `REPAVE_API_TOKEN` through `repave.backstage.extraEnv` when you
+want Auth0; omit them for guest-only / chart-smoke. The overlay sets `portal.html: false` so HTML
+routes return **410** with `Sunset` / `Link` (14 Feb 2027). It also sets
+`repave.serviceCatalog.enabled` and mounts bundled
+`examples/platform-dev` catalog YAML so `/sandbox` vend does not 404.
+CLI and `/api/v2` stay. Same-host Ingress (opt-in): `/` → Backstage,
+`/api` → engine (`ingress.enabled` + `repave.backstage.ingress.enabled`).
 
 Image: `ghcr.io/opsdevcode/repave-backstage` (build from
 [`backstage/packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile)

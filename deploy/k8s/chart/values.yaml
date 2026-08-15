@@ -235,9 +235,11 @@ repave:
 
   # Service catalog overlay (ADR 006). Required for /home and /sandbox UX.
   # Hosted installs must provide the YAML at these paths; the image does not
-  # ship examples/platform-dev.
+  # ship examples/platform-dev. Set bundleExamples to mount chart copies of
+  # examples/platform-dev (values-backstage.yaml does this).
   serviceCatalog:
     enabled: false
+    bundleExamples: false
     maturityRubric: /config/maturity-rubric.yaml
     workloadProfiles: /config/workload-profiles.yaml
     deploymentSets: /config/deployment-sets.yaml

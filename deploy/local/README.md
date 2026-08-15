@@ -13,6 +13,10 @@ docker compose up --build
 
 Open **http://localhost:8088**
 
+Compose sets `REPAVE_SERVICE_CATALOG=1` so `/home` and Backstage sandbox vend
+work (the engine 404s with `Service catalog is not enabled` without it). Restart
+the stack after pull (`docker compose up --build`).
+
 Gate CLIs (Terraform, tflint, Checkov, Conftest, Helm, Ansible lint) are **installed in
 this image** during `docker compose build` via [`install-gate-toolchain.sh`](install-gate-toolchain.sh).
 You do **not** install them on macOS, Linux, or **Windows** — only [Docker Desktop](https://docs.docker.com/desktop/) (or another Docker engine) on the host.

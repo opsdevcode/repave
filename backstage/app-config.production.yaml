@@ -21,15 +21,11 @@ backend:
     connection:
       directory: /tmp/backstage-db
 
+# Guest only. Auth0 is a third --config (app-config.auth0.yaml) when
+# AUTH0_CLIENT_ID is set — empty ${AUTH0_*:-} still fails provider init.
 auth:
   providers:
     guest: {}
-    auth0:
-      production:
-        clientId: ${AUTH0_CLIENT_ID:-}
-        clientSecret: ${AUTH0_CLIENT_SECRET:-}
-        domain: ${AUTH0_DOMAIN:-}
-        audience: ${AUTH0_AUDIENCE:-}
 
 repave:
   apiBaseUrl: ${REPAVE_API_BASE_URL:-}

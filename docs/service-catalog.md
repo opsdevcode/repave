@@ -30,7 +30,10 @@ Env override: `REPAVE_SERVICE_CATALOG=1`. That flag (or `service_catalog.enabled
 without paths) fills `maturity_rubric`, `workload_profiles`, `deployment_sets`, and
 `initiatives` from `examples/platform-dev/` when those files exist, otherwise the
 documented `config/` and `data/` paths. `make serve` sets the env flag so Platform
-maturity and initiatives collect without a copied config.
+maturity and initiatives collect without a copied config. Compose sets the
+same env. The Backstage Helm overlay (`values-backstage.yaml`) sets
+`serviceCatalog.enabled` and mounts bundled fixtures — sandbox vend 404s
+without that overlay.
 
 Local demo: `make platform-dev-setup && make serve` — see
 [`examples/platform-dev/README.md`](../examples/platform-dev/README.md).

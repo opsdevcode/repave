@@ -1,0 +1,10 @@
+# Loaded only when AUTH0_CLIENT_ID is set (see docker-entrypoint.sh).
+# Same tenant as docs/auth-service-mode.md.
+auth:
+  providers:
+    auth0:
+      production:
+        clientId: ${AUTH0_CLIENT_ID}
+        clientSecret: ${AUTH0_CLIENT_SECRET}
+        domain: ${AUTH0_DOMAIN}
+        audience: ${AUTH0_AUDIENCE}
