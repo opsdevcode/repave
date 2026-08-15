@@ -8,8 +8,8 @@ major-boundary themes. Full shipped writeups live in
 **Current release:** v3.15.0  
 
 **In progress:** Hosted Backstage flag stays default off until a named owner
-([ADR 011](adr/011-hosted-backstage-idp.md)); platform-admin plugins (fleet /
-import / verify) before Phase 4 HTML removal.
+([ADR 011](adr/011-hosted-backstage-idp.md)); platform-admin plugins (import /
+verify remaining after fleet) before Phase 4 HTML removal.
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
@@ -26,6 +26,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Hosted Backstage chart-smoke** (kind boots the image; flag stays default off);
 **Hosted Backstage Phases 1–3** (app, parity plugins, HTML sunset + ingress split);
 **Hosted Backstage Phase 2** (My services, sandbox, runs, upgrade preview);
+**Hosted Backstage fleet page** (`/fleet` → `/api/v2/fleet`);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -134,7 +135,7 @@ v3.15.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Named owner / admin plugins | Chart-smoke + GHCR image shipped; flag stays default off ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Named owner / import + verify | Fleet page shipped; chart-smoke + GHCR image shipped; flag stays default off ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -146,11 +147,11 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Chart-smoke and GHCR image shipped
+**Status:** Chart-smoke, GHCR image, and the `/fleet` admin page shipped
 ([ADR 011](adr/011-hosted-backstage-idp.md)).
 Remaining: named owner before `repave.backstage.enabled` default-on;
-platform-admin plugins (fleet / import / verify) so Phase 4 does not drop
-those HTML surfaces silently.
+import / verify Backstage plugins so Phase 4 does not drop those HTML
+surfaces silently.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -163,9 +164,10 @@ and the hosted catalog. HTML portal stays until the published sunset
 (14 Feb 2027); CLI remains the local-first path.
 
 **Done when:** a named owner takes the Backstage release treadmill and the
-chart flag can default on; fleet / import / verify exist as Backstage plugins
-or an explicit CLI/API-only decision. Apply stays CLI and operator
-(`POST /api/v2/upgrades/apply`). Chart-smoke and GHCR publish already shipped.
+chart flag can default on; import / verify exist as Backstage plugins
+or an explicit CLI/API-only decision. Fleet already has `/fleet`. Apply stays
+CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke and GHCR
+publish already shipped.
 
 ---
 

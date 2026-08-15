@@ -3,7 +3,9 @@ import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
 import AppsIcon from '@material-ui/icons/Apps';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import HistoryIcon from '@material-ui/icons/History';
+import StorageIcon from '@material-ui/icons/Storage';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
+import { FleetPage } from './components/FleetPage';
 import { MyServicesPage } from './components/MyServicesPage';
 import { RepaveLineageCard } from './components/RepaveLineageCard';
 import { RunsPage } from './components/RunsPage';
@@ -50,6 +52,16 @@ const upgradePage = PageBlueprint.make({
   },
 });
 
+const fleetPage = PageBlueprint.make({
+  name: 'fleet',
+  params: {
+    path: '/fleet',
+    title: 'Fleet',
+    icon: <StorageIcon />,
+    loader: async () => <FleetPage />,
+  },
+});
+
 const repaveLineageCard = EntityCardBlueprint.make({
   name: 'lineage',
   params: {
@@ -60,5 +72,12 @@ const repaveLineageCard = EntityCardBlueprint.make({
 
 export const repavePlugin = createFrontendPlugin({
   pluginId: 'repave',
-  extensions: [myServicesPage, sandboxPage, runsPage, upgradePage, repaveLineageCard],
+  extensions: [
+    myServicesPage,
+    sandboxPage,
+    runsPage,
+    upgradePage,
+    fleetPage,
+    repaveLineageCard,
+  ],
 });

@@ -27,6 +27,7 @@ ops are not dropped silently.
 | Sandbox | `/sandbox` — `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend` |
 | Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` |
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
+| Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |
 | Helm | `repave.backstage.enabled` (**default off**); overlay sets `portal.html: false` |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
@@ -134,10 +135,10 @@ steps:
 
 Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
 
-Sandbox (`/sandbox`), Runs (`/runs`), and Upgrade (`/upgrade`) call the engine
-through the Backstage proxy (`/api/proxy/repave/api/v2/...`) so the browser
-never holds `REPAVE_API_TOKEN`. Local `app-config.yaml` targets
-`http://127.0.0.1:8088`; the production image uses `REPAVE_API_BASE_URL`.
+Sandbox (`/sandbox`), Runs (`/runs`), Upgrade (`/upgrade`), and Fleet (`/fleet`)
+call the engine through the Backstage proxy (`/api/proxy/repave/api/v2/...`) so
+the browser never holds `REPAVE_API_TOKEN`. Local `app-config.yaml` targets
+`http://127.0.0.1:8089`; the production image uses `REPAVE_API_BASE_URL`.
 
 When `auth.service_mode` is on, set `repave.apiToken` / `REPAVE_API_TOKEN` so
 the backend sends `Authorization: Bearer`. Return body uses `gates_outcome` and

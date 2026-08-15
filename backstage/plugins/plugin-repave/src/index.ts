@@ -13,3 +13,9 @@ export {
   buildPlanRequest,
   parseUpgradePlan,
 } from './components/UpgradePage';
+export {
+  FleetPage,
+  buildRegisterRequest,
+  parseFleetPayload,
+  rowsFromRepos,
+} from './components/FleetPage';
