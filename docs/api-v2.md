@@ -187,12 +187,12 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 
 | Method | Path | Role | Notes |
 | --- | --- | --- | --- |
-| `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` |
+| `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` (Backstage `/verify`; 422 = failed verify) |
 | `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on) |
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments |
 | `GET` | `/api/v2/audit` | viewer+ | Query audit history (same filters as v1) |
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows (Backstage `/fleet`) |
-| `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (fleet freshness + audit sparklines) |
+| `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (Backstage `/estate`; fleet freshness + audit sparklines) |
 | `GET` | `/api/v2/governance/annotations/{blueprint_name}` | viewer+ | Governance preflight annotation previews |
 | `GET` | `/api/v2/github/teams` | viewer+ | Org teams for `github-repo-generic` (requires GitHub credentials) |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |

@@ -52,15 +52,16 @@ component to pass gates and align pins.
 
 ## Portal
 
-**Verify repo** in the top navigation accepts a local path or git remote URL (optional
-blueprint override and **require-run** checkbox). Results show gate outcomes and pin drift
-vs the catalog. The portal resolves GitHub credentials the same way as publish (PAT or
-GitHub App — see [`github-app-auth.md`](github-app-auth.md)).
+**Verify repo** in the HTML portal and Backstage `/verify` accept a local path or git
+remote URL (optional blueprint override and **require-run** checkbox). Results show
+gate outcomes and pin drift vs the catalog. The engine resolves GitHub credentials
+the same way as publish (PAT or GitHub App — see [`github-app-auth.md`](github-app-auth.md)).
 
 ## API
 
 | Method | Path | Role (service mode) |
 | --- | --- | --- |
+| `POST` | `/api/v2/verify` | `viewer` and up |
 | `POST` | `/api/v1/verify` | `viewer` and up |
 
 ```bash

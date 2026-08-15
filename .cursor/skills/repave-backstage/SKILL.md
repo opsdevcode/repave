@@ -30,6 +30,8 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   (register/unregister need admin; 404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
 - Import: `/import` → `POST /api/v2/imports/plan` + `/apply` via the same proxy
   (single repo; batch / org-scan stay CLI).
+- Verify: `/verify` → `POST /api/v2/verify` (422 is a failed verify, not transport).
+- Estate: `/estate` → `GET /api/v2/estate` (404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **off**. Overlay
   `values-backstage.yaml` sets `portal.html: false` (HTML routes 410),
@@ -50,7 +52,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card + `/my-services` + `/sandbox` + `/runs` + `/upgrade` + `/fleet` + `/import` |
+| `backstage/plugins/plugin-repave` | Lineage card + `/my-services` + `/sandbox` + `/runs` + `/upgrade` + `/fleet` + `/import` + `/verify` + `/estate` |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality
