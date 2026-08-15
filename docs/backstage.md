@@ -84,8 +84,12 @@ Image: `ghcr.io/opsdevcode/repave-backstage` (build from
 [`backstage/packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile)
 with context `backstage/` after `yarn tsc && yarn build:backend`).
 
-Chart-smoke does **not** boot this image yet. The flag stays off until that
-path exists. `make chart-validate` renders the Deployment when the flag is on.
+`make chart-smoke-backstage` builds the engine + Backstage images, installs
+`values-kind.yaml` + `values-backstage.yaml` on kind, and probes engine
+`/health` + `/api/v2`, HTML **410**, and Backstage liveness/readiness.
+CI runs that job when Backstage or overlay paths change. The flag stays
+**default off** until a named owner takes the Backstage release treadmill.
+`make chart-validate` renders the Deployment when the flag is on.
 
 Production config uses SQLite (`/tmp/backstage.sqlite`) so a chart install does
 not need Postgres. Swap in a `client: pg` overlay when you run a real database.
@@ -180,8 +184,9 @@ spec:
 | Phase | Outcome |
 | --- | --- |
 | 2 | My services + sandbox + runs + upgrade preview — **shipped** |
-| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; overlay `portal.html: false` (this slice) |
-| 4 | Delete templates after 14 Feb 2027; FastAPI is API-only |
+| 3 | Ingress flip; HTML `Sunset`/`Link`; overlay `portal.html: false` — **shipped** |
+| 4 | Delete HTML templates; FastAPI is API-only (no calendar gate) |
+| — | Chart-smoke boots Backstage (this slice); flag stays default off |
 
 ## Related
 

@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot chart-smoke-backstage validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -199,6 +199,10 @@ chart-smoke-environment-vending:
 chart-smoke-fleet-snapshot:
 	chmod +x deploy/k8s/hack/chart-smoke-fleet-snapshot.sh
 	./deploy/k8s/hack/chart-smoke-fleet-snapshot.sh
+
+chart-smoke-backstage:
+	chmod +x deploy/k8s/hack/chart-smoke-backstage.sh
+	./deploy/k8s/hack/chart-smoke-backstage.sh
 
 # Tier A ops smoke: simulate github-repo fleet register → fleet-manifests (no live GitHub).
 # Docs: docs/operations/github-repo-fleet-validation.md

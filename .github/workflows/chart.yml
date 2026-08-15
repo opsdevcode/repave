@@ -297,3 +297,51 @@ jobs:
         run: |
           chmod +x deploy/k8s/hack/chart-smoke-fleet-snapshot.sh
           ./deploy/k8s/hack/chart-smoke-fleet-snapshot.sh
+
+  chart-smoke-backstage:
+    name: chart-smoke-backstage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: ./.github/actions/chart-ci-paths
+        id: paths
+
+      - name: Unrelated change (skip Backstage chart smoke)
+        if: steps.paths.outputs.backstage_smoke_needed != 'true'
+        run: echo "No Backstage or overlay paths; skipping Backstage kind smoke."
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        with:
+          node-version: "22"
+
+      - name: Enable corepack yarn
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        run: corepack enable
+
+      - name: Install Helm
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        with:
+          version: v3.16.4
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        with:
+          go-version-file: operator/go.mod
+          cache: false
+
+      - name: Install kind
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        run: go install sigs.k8s.io/kind@v0.27.0
+
+      - name: Add Go bin to PATH
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        run: echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Run Backstage chart smoke (kind)
+        if: steps.paths.outputs.backstage_smoke_needed == 'true'
+        run: |
+          chmod +x deploy/k8s/hack/chart-smoke-backstage.sh
+          ./deploy/k8s/hack/chart-smoke-backstage.sh

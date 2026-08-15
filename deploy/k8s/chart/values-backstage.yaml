@@ -1,5 +1,5 @@
 # Overlay: enable hosted Backstage (ADR 011). Image must exist locally or in GHCR.
-# Chart-smoke stays default-off until that image is in the smoke path.
+# CI: make chart-smoke-backstage. Flag stays default off in values.yaml.
 #
 # Same-host path split (enable both ingresses when you cut over):
 #   /     → Backstage

@@ -31,6 +31,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   `values-backstage.yaml` sets `portal.html: false` (HTML routes 410) and
   documents same-host `/` → Backstage, `/api` → engine.
 - HTML portal: `Sunset` / `Link` on HTML routes; sunset 14 Feb 2027.
+- Smoke: `make chart-smoke-backstage` (CI job `chart-smoke-backstage`, path-gated).
 
 ## Layout
 

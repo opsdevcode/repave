@@ -12,8 +12,9 @@ Install the repave **portal and API** on Kubernetes. Images build from
 
 The gate-toolchain image includes pinned CLIs for Plan/dry-run. The portal-only image
 is smaller and suits catalog/auth-only deployments; dry-run gates report missing tools.
-Hosted Backstage is a second Deployment (`:7007`). Chart-smoke does not boot that
-image yet — leave the flag off until it does. See [`docs/backstage.md`](../../../docs/backstage.md).
+Hosted Backstage is a second Deployment (`:7007`). `make chart-smoke-backstage`
+boots that image on kind. The flag stays default off. See
+[`docs/backstage.md`](../../../docs/backstage.md).
 
 ## Prerequisites
 
