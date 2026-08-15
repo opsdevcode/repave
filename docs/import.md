@@ -147,6 +147,8 @@ and links to [`/update`](../README.md#update-an-existing-repository).
 
 ## API
 
+Backstage `/import` calls the same plan and apply endpoints (single repo; batch stays CLI).
+
 | Method | Path | Role (service mode) |
 | --- | --- | --- |
 | `POST` | `/api/v2/imports/plan` | `generator` and up |

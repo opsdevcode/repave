@@ -39,6 +39,7 @@ export const SidebarContent = NavContentBlueprint.make({
             {nav.take('page:repave/runs')}
             {nav.take('page:repave/upgrade')}
             {nav.take('page:repave/fleet')}
+            {nav.take('page:repave/import')}
             {nav.take('page:scaffolder')}
             <SidebarDivider />
             <SidebarScrollWrapper>
