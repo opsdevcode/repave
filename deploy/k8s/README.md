@@ -17,7 +17,7 @@ values or standalone manifests. Semver tags also notify `opsdevcode/repave-aws-i
 | [`chart/values-decomposed.yaml`](chart/values-decomposed.yaml) | Decomposed portal + worker + corpus (Phase 2) |
 | [`chart/values-decomposed-day2.yaml`](chart/values-decomposed-day2.yaml) | Recommended hosted production: decomposed + day-2 operability |
 | [`chart/values-auth0.yaml`](chart/values-auth0.yaml) | Auth0 OIDC overlay — portal login + mutating API gate |
-| [`chart/values-backstage.yaml`](chart/values-backstage.yaml) | Hosted Backstage IDP (ADR 011; `repave.backstage.enabled`, default off) |
+| [`chart/values-backstage.yaml`](chart/values-backstage.yaml) | Hosted Backstage IDP (ADR 011; `portal.html: false`; same-host `/` vs `/api`) |
 | [`auth0/post-login-groups.js`](auth0/post-login-groups.js) | Auth0 Post-Login Action (Roles → `groups` claim) |
 | [`hack/bootstrap-auth0-secrets.sh`](hack/bootstrap-auth0-secrets.sh) | Create `repave-secrets` for session + OIDC client secret |
 | [`chart/values-environment-vending.yaml`](chart/values-environment-vending.yaml) | Environment vending registry PVC + TTL reclaim CronJob |

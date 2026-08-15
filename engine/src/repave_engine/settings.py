@@ -1103,6 +1103,25 @@ class PortalConfig:
     deployment_status_url: str = ""
     deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
     deployment_flux: DeploymentFluxConfig = field(default_factory=DeploymentFluxConfig)
+    # Local-first default: make serve still renders HTML. Hosted Backstage
+    # overlay (values-backstage.yaml) sets false so HTML routes return 410.
+    html: bool = True
+
+
+def _load_portal_html(block: dict[str, Any]) -> bool:
+    """portal.html from file, then REPAVE_PORTAL_HTML (1/true/yes / 0/false/no)."""
+    html = True
+    if "html" in block:
+        raw = block["html"]
+        if not isinstance(raw, bool):
+            raise ValueError("portal.html must be a boolean")
+        html = raw
+    env_flag = os.environ.get("REPAVE_PORTAL_HTML", "").strip().lower()
+    if env_flag in {"0", "false", "no", "off"}:
+        return False
+    if env_flag in {"1", "true", "yes", "on"}:
+        return True
+    return html
 
 
 def load_portal_config(repo_root: Path) -> PortalConfig:
@@ -1113,6 +1132,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     density = str(block.get("density", "default")).strip().lower()
     if density not in ("default", "compact"):
         raise ValueError("portal.density must be 'default' or 'compact'")
+    html = _load_portal_html(block)
     logo_url = normalize_portal_logo_url(str(block.get("logo_url", "")))
     accent_color = normalize_portal_accent_color(str(block.get("accent_color", "")))
     env_logo = os.environ.get("REPAVE_PORTAL_LOGO_URL", "").strip()
@@ -1325,6 +1345,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
             cost_snapshots_file = default_snapshots
     return PortalConfig(
         density=density,
+        html=html,
         observability_dashboard_url=obs_url,
         observability_slo_url=slo_url,
         logo_url=logo_url,

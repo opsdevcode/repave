@@ -578,4 +578,31 @@ if ! grep -q 'REPAVE_API_BASE_URL' "${bs_rendered}"; then
 fi
 rm -f "${bs_rendered}"
 
+bs_overlay="$(mktemp)"
+helm template repave-backstage-overlay "${CHART}" \
+  --namespace repave-backstage \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  -f "${CHART}/values-backstage.yaml" \
+  --set ingress.enabled=true \
+  --set repave.backstage.ingress.enabled=true \
+  >"${bs_overlay}"
+
+if ! grep -q 'html: false' "${bs_overlay}"; then
+  echo "values-backstage.yaml must set portal.html=false in the ConfigMap" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'path: /api' "${bs_overlay}"; then
+  echo "values-backstage.yaml must send /api to the engine Ingress" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'app.kubernetes.io/component: backstage' "${bs_overlay}"; then
+  echo "values-backstage.yaml must render a Backstage Ingress/Deployment" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+rm -f "${bs_overlay}"
+
 echo "helm lint and template checks passed"

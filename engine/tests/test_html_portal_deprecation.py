@@ -1,0 +1,101 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from repave_engine.api import create_app
+from repave_engine.api_deprecation import (
+    HTML_PORTAL_DEPRECATION_HEADERS,
+    HTML_PORTAL_DISABLED_DETAIL,
+    V1_DEPRECATION_HEADERS,
+    is_html_portal_path,
+)
+from repave_engine.settings import load_portal_config
+
+
+def test_is_html_portal_path_excludes_api_and_probes() -> None:
+    assert is_html_portal_path("/")
+    assert is_html_portal_path("/home")
+    assert is_html_portal_path("/sandbox")
+    assert not is_html_portal_path("/api")
+    assert not is_html_portal_path("/api/v2/runs")
+    assert not is_html_portal_path("/health")
+    assert not is_html_portal_path("/readyz")
+    assert not is_html_portal_path("/metrics")
+    assert not is_html_portal_path("/static/repave.css")
+    assert not is_html_portal_path("/docs")
+    assert not is_html_portal_path("/openapi.json")
+
+
+def test_html_routes_include_sunset_headers(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    landing = client.get("/")
+    assert landing.status_code == 200
+    for key, value in HTML_PORTAL_DEPRECATION_HEADERS.items():
+        assert landing.headers.get(key) == value
+
+    health = client.get("/health")
+    assert health.status_code == 200
+    for key in HTML_PORTAL_DEPRECATION_HEADERS:
+        assert key not in health.headers
+
+    v2 = client.get("/api/v2/catalog/entities")
+    assert v2.status_code == 200
+    for key in HTML_PORTAL_DEPRECATION_HEADERS:
+        assert key not in v2.headers
+
+    v1 = client.get("/api/v1/catalog/entities")
+    assert v1.status_code == 200
+    for key, value in V1_DEPRECATION_HEADERS.items():
+        assert v1.headers.get(key) == value
+    assert v1.headers.get("Sunset") != HTML_PORTAL_DEPRECATION_HEADERS["Sunset"]
+
+
+def test_html_disabled_returns_410(
+    repo_root, output_config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_PORTAL_HTML", "0")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+
+    landing = client.get("/")
+    assert landing.status_code == 410
+    assert landing.json()["detail"] == HTML_PORTAL_DISABLED_DETAIL
+    for key, value in HTML_PORTAL_DEPRECATION_HEADERS.items():
+        assert landing.headers.get(key) == value
+
+    home = client.get("/home")
+    assert home.status_code == 410
+
+    health = client.get("/health")
+    assert health.status_code == 200
+    v2 = client.get("/api/v2/catalog/entities")
+    assert v2.status_code == 200
+
+
+def test_load_portal_config_html_default(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text("portal:\n  density: default\n", encoding="utf-8")
+    cfg = load_portal_config(tmp_path)
+    assert cfg.html is True
+
+
+def test_load_portal_config_html_file(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text("portal:\n  html: false\n", encoding="utf-8")
+    cfg = load_portal_config(tmp_path)
+    assert cfg.html is False
+
+
+def test_load_portal_config_html_env_overrides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "repave.config.yaml").write_text("portal:\n  html: true\n", encoding="utf-8")
+    monkeypatch.setenv("REPAVE_PORTAL_HTML", "false")
+    cfg = load_portal_config(tmp_path)
+    assert cfg.html is False
+
+
+def test_load_portal_config_html_rejects_non_bool(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text("portal:\n  html: maybe\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=r"portal\.html must be a boolean"):
+        load_portal_config(tmp_path)

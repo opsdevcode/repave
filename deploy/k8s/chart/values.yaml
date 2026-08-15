@@ -103,6 +103,8 @@ repave:
   github:
     preferApp: false
   portal:
+    # Local-first / HTML-only installs. values-backstage.yaml sets false (410).
+    html: true
     density: default
     # Optional white-label (empty = Converge defaults). See docs/brand/README.md.
     logoUrl: ""
