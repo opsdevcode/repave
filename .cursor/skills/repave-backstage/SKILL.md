@@ -35,6 +35,8 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Smoke: `make chart-smoke-backstage` (CI job `chart-smoke-backstage`, path-gated).
   Guest-only: do not set blank `AUTH0_*`. Catalog provider must not fail
   connect() if the engine is still starting.
+- Publish: `container.yml` matrix key `backstage` → `ghcr.io/opsdevcode/repave-backstage`
+  after `deploy/k8s/hack/build-backstage-bundle.sh`. Flag stays default off.
 
 ## Layout
 

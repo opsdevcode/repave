@@ -42,7 +42,8 @@
           {"context": "chart-validate"},
           {"context": "chart-smoke"},
           {"context": "chart-smoke-decomposed"},
-          {"context": "chart-smoke-multi-replica"}
+          {"context": "chart-smoke-multi-replica"},
+          {"context": "chart-smoke-backstage"}
         ]
       }
     },

@@ -14,6 +14,7 @@ only (`oci://ghcr.io/opsdevcode/charts`).
 | **repave-engine-portal** | `ghcr.io/opsdevcode/repave-engine-portal` | [repave-engine-portal/README.md](repave-engine-portal/README.md) |
 | **repave-corpus** | `ghcr.io/opsdevcode/repave-corpus` | [repave-corpus/README.md](repave-corpus/README.md) |
 | **repave-operator** | `ghcr.io/opsdevcode/repave-operator` | [repave-operator/README.md](repave-operator/README.md) |
+| **repave-backstage** | `ghcr.io/opsdevcode/repave-backstage` | [repave-backstage/README.md](repave-backstage/README.md) |
 | **repave** (Helm) | `oci://ghcr.io/opsdevcode/charts/repave` | [deploy/k8s/chart/README.md](../k8s/chart/README.md) |
 | **repave-operator** (Helm) | `oci://ghcr.io/opsdevcode/charts/repave-operator` | [deploy/k8s/operator-chart/README.md](../k8s/operator-chart/README.md) |
 

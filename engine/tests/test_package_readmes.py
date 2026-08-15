@@ -7,6 +7,7 @@ PACKAGE_NAMES = (
     "repave-engine-portal",
     "repave-corpus",
     "repave-operator",
+    "repave-backstage",
 )
 
 
@@ -31,9 +32,19 @@ def test_container_workflow_sets_package_descriptions(repo_root: Path) -> None:
     assert "verify-ghcr-tag.sh" in workflow
     assert "ghcr-build-push.sh" in workflow
     assert "github.repository_owner" in workflow
+    assert "build-backstage-bundle.sh" in workflow
+    assert "pre_build" in workflow
 
 
 def test_ghcr_publish_hack_scripts_exist(repo_root: Path) -> None:
-    for name in ("ghcr-login.sh", "ghcr-build-push.sh", "verify-ghcr-tag.sh"):
+    for name in (
+        "ghcr-login.sh",
+        "ghcr-build-push.sh",
+        "verify-ghcr-tag.sh",
+        "build-backstage-bundle.sh",
+        "wait-ghcr-tags.sh",
+    ):
         path = repo_root / "deploy" / "k8s" / "hack" / name
         assert path.is_file(), f"missing GHCR publish helper: {path}"
+    wait = (repo_root / "deploy" / "k8s" / "hack" / "wait-ghcr-tags.sh").read_text(encoding="utf-8")
+    assert "opsdevcode/repave-backstage" in wait

@@ -41,5 +41,6 @@ runs:
             - 'deploy/k8s/chart/templates/_helpers.tpl'
             - 'deploy/k8s/chart/values-backstage.yaml'
             - 'deploy/k8s/hack/chart-smoke-backstage.sh'
+            - 'deploy/k8s/hack/build-backstage-bundle.sh'
             - '.github/workflows/chart.yml'
             - '.github/actions/chart-ci-paths/**'

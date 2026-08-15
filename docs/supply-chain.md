@@ -62,6 +62,7 @@ digest-pinned images to GHCR on `main` and semver tags:
 | `ghcr.io/opsdevcode/repave-engine-portal` | Portal/API (no gate CLIs) |
 | `ghcr.io/opsdevcode/repave-corpus` | Generation corpus OCI artifact |
 | `ghcr.io/opsdevcode/repave-operator` | Kubernetes reconciliation operator |
+| `ghcr.io/opsdevcode/repave-backstage` | Hosted Backstage IDP (guest-only unless Auth0 env is set) |
 
 Per-image documentation: [`deploy/packages/`](../deploy/packages/README.md).
 
