@@ -35,7 +35,12 @@ from repave_engine.ansible_role_inventory import (
     inventory_roles_json,
 )
 from repave_engine.api_auth import build_auth_router
-from repave_engine.api_deprecation import V1_DEPRECATION_HEADERS
+from repave_engine.api_deprecation import (
+    HTML_PORTAL_DEPRECATION_HEADERS,
+    HTML_PORTAL_DISABLED_DETAIL,
+    V1_DEPRECATION_HEADERS,
+    is_html_portal_path,
+)
 from repave_engine.api_ops import build_ops_router
 from repave_engine.api_v1 import build_api_v1_router
 from repave_engine.api_v2 import build_api_v2_router
@@ -359,10 +364,20 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     app.state.shutting_down = False
 
     @app.middleware("http")
-    async def v1_deprecation_headers(request: Request, call_next):  # type: ignore[no-untyped-def]
-        response = await call_next(request)
-        if request.url.path.startswith("/api/v1"):
+    async def deprecation_headers(request: Request, call_next):  # type: ignore[no-untyped-def]
+        path = request.url.path
+        if not portal_config.html and is_html_portal_path(path):
+            response: Response = JSONResponse(
+                {"detail": HTML_PORTAL_DISABLED_DETAIL},
+                status_code=410,
+            )
+        else:
+            response = await call_next(request)
+        if path.startswith("/api/v1"):
             for key, value in V1_DEPRECATION_HEADERS.items():
+                response.headers[key] = value
+        elif is_html_portal_path(path):
+            for key, value in HTML_PORTAL_DEPRECATION_HEADERS.items():
                 response.headers[key] = value
         return response
 

@@ -20,6 +20,7 @@ data:
       modules_root: {{ .Values.repave.output.modulesRoot | quote }}
       repo_name_template: {{ .Values.repave.output.repoNameTemplate | quote }}
     portal:
+      html: {{ .Values.repave.portal.html }}
       density: {{ .Values.repave.portal.density | quote }}
       {{- if .Values.repave.portal.logoUrl }}
       logo_url: {{ .Values.repave.portal.logoUrl | quote }}

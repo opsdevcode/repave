@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from repave_engine.api_deprecation import V1_DEPRECATION_HEADERS
+from repave_engine.api_deprecation import HTML_PORTAL_DEPRECATION_HEADERS, V1_DEPRECATION_HEADERS
 from repave_engine.deprecations import V3_DEPRECATIONS, deprecation_by_id, sunset_http_date
 from repave_engine.risk_class import RiskClass, classify_change
 from repave_engine.v3_foundation import load_v3_foundation_config
@@ -24,6 +24,7 @@ from repave_engine.waivers import (
 def test_v3_deprecation_registry_lists_breaking_changes() -> None:
     ids = {entry.deprecation_id for entry in V3_DEPRECATIONS}
     assert ids == {
+        "html_portal_removal",
         "api_v1_removal",
         "crd_v1alpha1_removal",
         "mandatory_policy_tier",
@@ -36,6 +37,15 @@ def test_api_v1_headers_use_deprecation_registry() -> None:
     assert entry is not None
     assert V1_DEPRECATION_HEADERS["Sunset"] == sunset_http_date(entry)
     assert V1_DEPRECATION_HEADERS["Deprecation"] == "true"
+
+
+def test_html_portal_headers_use_deprecation_registry() -> None:
+    entry = deprecation_by_id("html_portal_removal")
+    assert entry is not None
+    assert entry.sunset == date(2027, 2, 14)
+    assert HTML_PORTAL_DEPRECATION_HEADERS["Sunset"] == sunset_http_date(entry)
+    assert HTML_PORTAL_DEPRECATION_HEADERS["Deprecation"] == "true"
+    assert HTML_PORTAL_DEPRECATION_HEADERS["Link"] == '</docs/backstage>; rel="successor-version"'
 
 
 def test_classify_change_defaults_to_standard() -> None:

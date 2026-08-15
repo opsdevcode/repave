@@ -1,5 +1,25 @@
 # Overlay: enable hosted Backstage (ADR 011). Image must exist locally or in GHCR.
 # Chart-smoke stays default-off until that image is in the smoke path.
+#
+# Same-host path split (enable both ingresses when you cut over):
+#   /     → Backstage
+#   /api  → engine
+# HTML portal returns 410 (portal.html=false). CLI and /api/v2 stay.
+# Ingress stays opt-in so chart-smoke is unchanged.
+ingress:
+  hosts:
+    - host: repave.example.com
+      paths:
+        - path: /api
+          pathType: Prefix
 repave:
+  portal:
+    html: false
   backstage:
     enabled: true
+    ingress:
+      hosts:
+        - host: repave.example.com
+          paths:
+            - path: /
+              pathType: Prefix

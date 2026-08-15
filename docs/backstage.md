@@ -27,7 +27,7 @@ ops are not dropped silently.
 | Sandbox | `/sandbox` — `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend` |
 | Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` |
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
-| Helm | `repave.backstage.enabled` (**default off**) |
+| Helm | `repave.backstage.enabled` (**default off**); overlay sets `portal.html: false` |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
 
@@ -75,7 +75,10 @@ helm upgrade --install repave ./deploy/k8s/chart \
 The Backstage container talks to the in-cluster portal Service
 (`REPAVE_API_BASE_URL=http://{{ release }}-repave:8088`) unless you set
 `repave.backstage.apiBaseUrl`. Pass Auth0 and `REPAVE_API_TOKEN` through
-`repave.backstage.extraEnv`. Optional Ingress: `repave.backstage.ingress.enabled`.
+`repave.backstage.extraEnv`. The overlay sets `portal.html: false` so HTML
+routes return **410** with `Sunset` / `Link` (14 Feb 2027). CLI and `/api/v2`
+stay. Same-host Ingress (opt-in): `/` → Backstage, `/api` → engine
+(`ingress.enabled` + `repave.backstage.ingress.enabled`).
 
 Image: `ghcr.io/opsdevcode/repave-backstage` (build from
 [`backstage/packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile)
@@ -176,8 +179,8 @@ spec:
 
 | Phase | Outcome |
 | --- | --- |
-| 2 | My services + sandbox + runs + upgrade preview (this slice) |
-| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; `repave.portal.html` defaults false |
+| 2 | My services + sandbox + runs + upgrade preview — **shipped** |
+| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; overlay `portal.html: false` (this slice) |
 | 4 | Delete templates after 14 Feb 2027; FastAPI is API-only |
 
 ## Related

@@ -52,7 +52,7 @@ deprecated on a published window. CLI and `/api/v2` stay the control plane.**
 | --- | --- |
 | 1 — this ADR | In-repo `backstage/` app, `repave:generate` action, lineage card, default-off chart |
 | 2 | Parity plugins: My services, sandbox vend, upgrade/auto-merge, runs |
-| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; `repave.portal.html` defaults false |
+| 3 | Ingress flip; HTML routes send `Sunset` + `Link`; hosted overlay sets `portal.html: false` (engine/`make serve` stays true) |
 | 4 | Remove HTML templates after the published window; FastAPI is API-only |
 
 HTML portal sunset for hosted installs: **Sat, 14 Feb 2027 00:00:00 GMT**.

@@ -27,7 +27,10 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Runs: `/runs` → `GET /api/v2/runs` + `GET /api/v2/runs/{id}` via the same proxy.
 - Upgrade: `/upgrade` → `POST /api/v2/upgrades/plan` (preview only; apply stays CLI/operator).
 - Local-first: `make serve` / `repave generate` must not require yarn.
-- Chart: `repave.backstage.enabled` default **off**.
+- Chart: `repave.backstage.enabled` default **off**. Overlay
+  `values-backstage.yaml` sets `portal.html: false` (HTML routes 410) and
+  documents same-host `/` → Backstage, `/api` → engine.
+- HTML portal: `Sunset` / `Link` on HTML routes; sunset 14 Feb 2027.
 
 ## Layout
 
