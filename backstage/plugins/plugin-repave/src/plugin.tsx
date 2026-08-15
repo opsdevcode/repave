@@ -1,11 +1,14 @@
 import { createFrontendPlugin, PageBlueprint } from '@backstage/frontend-plugin-api';
 import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
 import AppsIcon from '@material-ui/icons/Apps';
+import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import HistoryIcon from '@material-ui/icons/History';
+import MapIcon from '@material-ui/icons/Map';
 import StorageIcon from '@material-ui/icons/Storage';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
+import { EstatePage } from './components/EstatePage';
 import { FleetPage } from './components/FleetPage';
 import { ImportPage } from './components/ImportPage';
 import { MyServicesPage } from './components/MyServicesPage';
@@ -13,6 +16,7 @@ import { RepaveLineageCard } from './components/RepaveLineageCard';
 import { RunsPage } from './components/RunsPage';
 import { SandboxPage } from './components/SandboxPage';
 import { UpgradePage } from './components/UpgradePage';
+import { VerifyPage } from './components/VerifyPage';
 
 const myServicesPage = PageBlueprint.make({
   name: 'my-services',
@@ -74,6 +78,26 @@ const importPage = PageBlueprint.make({
   },
 });
 
+const verifyPage = PageBlueprint.make({
+  name: 'verify',
+  params: {
+    path: '/verify',
+    title: 'Verify',
+    icon: <AssignmentTurnedInIcon />,
+    loader: async () => <VerifyPage />,
+  },
+});
+
+const estatePage = PageBlueprint.make({
+  name: 'estate',
+  params: {
+    path: '/estate',
+    title: 'Estate',
+    icon: <MapIcon />,
+    loader: async () => <EstatePage />,
+  },
+});
+
 const repaveLineageCard = EntityCardBlueprint.make({
   name: 'lineage',
   params: {
@@ -91,6 +115,8 @@ export const repavePlugin = createFrontendPlugin({
     upgradePage,
     fleetPage,
     importPage,
+    verifyPage,
+    estatePage,
     repaveLineageCard,
   ],
 });
