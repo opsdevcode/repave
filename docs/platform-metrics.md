@@ -26,6 +26,8 @@ otherwise the fleet itself (ratio then reads as 100% of known governed repos).
 **Audit off:** adoption still works from the fleet; funnel and time-to-first-artifact degrade
 with an explicit message (same pattern as `/activity` and `/estate`).
 
+Backstage `/adoption` calls `GET /api/v2/platform/metrics` through the proxy.
+
 ## Configuration
 
 ```yaml

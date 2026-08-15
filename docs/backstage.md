@@ -11,9 +11,9 @@ The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
 **HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
 
 After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
-sunset. Fleet, import, verify, and estate already have Backstage pages.
-Leftover `/platform/*` HTML is CLI/API-only or a later plugin — do not drop
-those ops silently.
+sunset. Fleet, import, verify, estate, adoption, activity, and maturity already
+have Backstage pages. Leftover `/platform/*` (FinOps, compliance, value-stream,
+feedback) is CLI/API-only or a later plugin — do not drop those ops silently.
 
 ## What you get
 
@@ -32,6 +32,9 @@ those ops silently.
 | Import | `/import` — `POST /api/v2/imports/plan` + `/apply` (batch stays CLI) |
 | Verify | `/verify` — `POST /api/v2/verify` (422 is a failed verify) |
 | Estate | `/estate` — `GET /api/v2/estate` (404 if fleet is unset) |
+| Adoption | `/adoption` — `GET /api/v2/platform/metrics` (admin; 404 if unset) |
+| Activity | `/activity` — `GET /api/v2/audit` (404 if audit is unset) |
+| Maturity | `/maturity` — `GET /api/v2/platform/maturity` + `/initiatives` (read-only) |
 | Helm | `repave.backstage.enabled` (**default off**); overlay sets `portal.html: false` |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
@@ -140,9 +143,10 @@ steps:
 Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
 
 Sandbox (`/sandbox`), Runs (`/runs`), Upgrade (`/upgrade`), Fleet (`/fleet`),
-Import (`/import`), Verify (`/verify`), and Estate (`/estate`) call the engine
-through the Backstage proxy (`/api/proxy/repave/api/v2/...`) so the browser
-never holds `REPAVE_API_TOKEN`. Local `app-config.yaml` targets
+Import (`/import`), Verify (`/verify`), Estate (`/estate`), Adoption
+(`/adoption`), Activity (`/activity`), and Maturity (`/maturity`) call the
+engine through the Backstage proxy (`/api/proxy/repave/api/v2/...`) so the
+browser never holds `REPAVE_API_TOKEN`. Local `app-config.yaml` targets
 `http://127.0.0.1:8089`; the production image uses `REPAVE_API_BASE_URL`.
 
 When `auth.service_mode` is on, set `repave.apiToken` / `REPAVE_API_TOKEN` so
