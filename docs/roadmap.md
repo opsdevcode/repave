@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.11.0  
 
-**In progress:** Hosted Backstage Phase 2 — run status + remaining parity
+**In progress:** Hosted Backstage Phase 2 — upgrade preview closes remaining parity
 ([ADR 011](adr/011-hosted-backstage-idp.md)); HTML portal sunset 14 Feb 2027.
 Mandatory policy on regulated families shipped.
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
@@ -128,7 +128,7 @@ v3.11.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Phase 2 | My services + sandbox + runs; HTML portal deprecated ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Phase 2 | My services + sandbox + runs + upgrade preview; HTML portal deprecated ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -140,9 +140,10 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Phase 2 — My services + sandbox + runs ([ADR 011](adr/011-hosted-backstage-idp.md)).
+**Status:** Phase 2 — My services + sandbox + runs + upgrade preview
+([ADR 011](adr/011-hosted-backstage-idp.md)).
 Phase 1 (hosted app, generate action, lineage card, default-off chart) is on `main`.
-Public landing, `/my-services`, and `/sandbox` are on `main`.
+Public landing, `/my-services`, `/sandbox`, and `/runs` are on `main`.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -156,7 +157,8 @@ and the hosted catalog. HTML portal stays until the published sunset
 
 **Done when:** My services, sandbox vend, upgrade preview, and run status work in
 Backstage without scraping HTML. Public landing states the product without a
-session. HTML portal still works. Still open in this phase: upgrade/auto-merge.
+session. HTML portal still works. Apply/auto-merge write path stays CLI and
+operator (`POST /api/v2/upgrades/apply`).
 
 ---
 

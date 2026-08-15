@@ -8,3 +8,8 @@ export {
   buildVendRequest,
 } from './components/SandboxPage';
 export { RunsPage, parseRunsPayload, rowsFromRuns } from './components/RunsPage';
+export {
+  UpgradePage,
+  buildPlanRequest,
+  parseUpgradePlan,
+} from './components/UpgradePage';
