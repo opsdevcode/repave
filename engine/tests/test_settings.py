@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from repave_engine.settings import (
+    load_blueprint_pack_config,
     load_blueprint_sources,
     load_gate_overrides,
     load_notifications_config,
@@ -270,3 +271,128 @@ def test_load_blueprint_sources_dedupes_and_rejects_bad_types(
     )
     with pytest.raises(ValueError, match="blueprint_sources must be a list"):
         load_blueprint_sources(tmp_path)
+
+
+def test_load_blueprint_pack_config_parses_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("REPAVE_BLUEPRINT_PACK_CACHE", raising=False)
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  cache_dir: cache/packs",
+                "  sources:",
+                "    - url: https://github.com/acme/org-blueprints.git",
+                "      ref: v1.2.0",
+                "      subdir: blueprints",
+                "      dest: acme-blueprints",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_blueprint_pack_config(tmp_path)
+
+    assert config is not None
+    assert config.cache_dir == (tmp_path / "cache" / "packs").resolve()
+    assert len(config.sources) == 1
+    assert config.sources[0].url == "https://github.com/acme/org-blueprints.git"
+    assert config.sources[0].ref == "v1.2.0"
+    assert config.sources[0].subdir == "blueprints"
+    assert config.sources[0].dest == "acme-blueprints"
+
+
+def test_load_blueprint_pack_config_env_cache_and_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_BLUEPRINT_PACK_CACHE", "env-cache")
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  sources:",
+                "    - url: file:///tmp/pack.git",
+                "      ref: main",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_blueprint_pack_config(tmp_path)
+
+    assert config is not None
+    assert config.cache_dir == (tmp_path / "env-cache").resolve()
+    assert config.sources[0].subdir == "."
+    assert config.sources[0].dest is None
+    assert load_blueprint_pack_config(tmp_path / "missing") is None
+
+
+def test_load_blueprint_pack_config_rejects_bad_fields(tmp_path: Path) -> None:
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\nblueprint_packs: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="blueprint_packs must be a mapping"):
+        load_blueprint_pack_config(tmp_path)
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  sources:",
+                "    - url: https://github.com/acme/org-blueprints.git",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"sources\[\]\.ref is required"):
+        load_blueprint_pack_config(tmp_path)
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  sources:",
+                "    - url: git@github.com:acme/org-blueprints.git",
+                "      ref: main",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"http\(s\) or file://"):
+        load_blueprint_pack_config(tmp_path)
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  sources:",
+                "    - url: https://github.com/acme/org-blueprints.git",
+                "      ref: main",
+                "      subdir: ../escape",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"without '\.\.'"):
+        load_blueprint_pack_config(tmp_path)
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  cache_dir: []",
+                "  sources: []",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="cache_dir must be a local path"):
+        load_blueprint_pack_config(tmp_path)

@@ -109,8 +109,24 @@ root (`blueprints/terraform-module-generic`), or a `file://` URI to that
 directory. Paths outside configured roots are rejected. When two roots ship the
 same `metadata.name`, the earlier root wins.
 
-Git/OCI remote fetch is not implemented — copy or submodule a pack onto disk and
-point a source at it. Fork workflow: [blueprint versioning](blueprint-versioning.md#fork-workflow).
+Git URL packs clone on first catalog load and reuse the cache until you delete
+the folder (no auto-fetch). HTTPS token comes from `GITHUB_TOKEN` or a GitHub
+App installation token (`sources[].token` is optional). OCI artifact pull is
+not implemented.
+
+```yaml
+apiVersion: repave.dev/v1
+blueprint_packs:
+  cache_dir: data/blueprint-packs   # optional; REPAVE_BLUEPRINT_PACK_CACHE
+  sources:
+    - url: https://github.com/acme/org-blueprints.git
+      ref: v1.2.0
+      subdir: blueprints             # optional; catalog root inside the clone
+      dest: acme-blueprints          # optional; stable cache folder name
+```
+
+Stock `./blueprints` still wins on `metadata.name`. Fork workflow:
+[blueprint versioning](blueprint-versioning.md#fork-workflow).
 
 ## Helm
 

@@ -92,7 +92,8 @@ update with no bundle manifest change).
 
 The engine always loads `./blueprints`. Forks and vendor packs add more local
 roots via `blueprints_root` / `blueprint_sources` (or
-`REPAVE_BLUEPRINTS_ROOT` / `REPAVE_BLUEPRINT_SOURCES`). See
+`REPAVE_BLUEPRINTS_ROOT` / `REPAVE_BLUEPRINT_SOURCES`), or git URL packs via
+`blueprint_packs`. See
 [`repave-config-v1.md`](repave-config-v1.md#extra-blueprint-catalog-roots).
 
 ## Fork workflow
@@ -104,8 +105,9 @@ roots via `blueprints_root` / `blueprint_sources` (or
    can resolve from the engine repo root).
 4. `repave list` and `repave generate --blueprint my-org-vpc` should see the extra
    pack with no engine code changes.
-5. Remote git/OCI registry fetch stays in the
-   [parking lot](roadmap.md#parking-lot) — clone or submodule the pack locally.
+5. Point `blueprint_packs.sources[]` at a git URL + ref (shallow clone into
+   `data/blueprint-packs`). Copy or submodule still works. OCI artifact pull
+   stays in the [parking lot](roadmap.md#parking-lot).
 
 ## v3 and beyond
 

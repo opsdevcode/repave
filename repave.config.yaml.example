@@ -14,6 +14,16 @@ apiVersion: repave.dev/v1
 # blueprint_sources:
 #   - /opt/repave/vendor-packs
 #
+# Git URL packs (optional). Cloned into cache_dir on first catalog load;
+# delete the cache folder to refresh. Env: REPAVE_BLUEPRINT_PACK_CACHE.
+# blueprint_packs:
+#   cache_dir: data/blueprint-packs
+#   sources:
+#     - url: https://github.com/acme/org-blueprints.git
+#       ref: v1.2.0
+#       subdir: blueprints
+#       dest: acme-blueprints
+#
 # Generated Terraform modules are written to their own git repositories under
 # modules_root — never inside the repave platform repository.
 # The portal also scans this root for observability-* / dashboards-* repos to

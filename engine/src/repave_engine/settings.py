@@ -84,6 +84,25 @@ class BlueprintSources:
 
 
 @dataclass(frozen=True)
+class BlueprintPackSource:
+    """One git-backed blueprint pack (url + ref)."""
+
+    url: str
+    ref: str
+    subdir: str = "."
+    dest: str | None = None
+    token: str | None = None
+
+
+@dataclass(frozen=True)
+class BlueprintPackConfig:
+    """Git URL catalog packs. Cloned into cache_dir; first-root-wins still applies."""
+
+    cache_dir: Path
+    sources: tuple[BlueprintPackSource, ...]
+
+
+@dataclass(frozen=True)
 class NotificationsConfig:
     enabled: bool
     slack_webhook_url: str | None
@@ -183,6 +202,115 @@ def load_blueprint_sources(repo_root: Path) -> BlueprintSources:
         seen.add(resolved)
         roots.append(resolved)
     return BlueprintSources(roots=tuple(roots))
+
+
+_PACK_DEST_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
+_DEFAULT_PACK_CACHE = Path("data/blueprint-packs")
+
+
+def _normalize_pack_url(raw: object) -> str:
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(
+            "blueprint_packs.sources[].url is required "
+            "(http(s) or file:// git URL; set url and ref)"
+        )
+    value = raw.strip()
+    lowered = value.lower()
+    if lowered.startswith(("https://", "http://", "file://")):
+        return value
+    raise ValueError(
+        "blueprint_packs.sources[].url must be an http(s) or file:// git URL "
+        "(SSH remotes are not supported yet)"
+    )
+
+
+def _normalize_pack_ref(raw: object) -> str:
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(
+            "blueprint_packs.sources[].ref is required "
+            "(branch, tag, or commit passed to git --branch)"
+        )
+    return raw.strip()
+
+
+def _normalize_pack_subdir(raw: object) -> str:
+    if raw is None:
+        return "."
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError(
+            "blueprint_packs.sources[].subdir must be a relative path "
+            "(omit it or use '.' for the clone root)"
+        )
+    value = raw.strip()
+    path = Path(value)
+    if path.is_absolute() or any(part == ".." for part in path.parts):
+        raise ValueError("blueprint_packs.sources[].subdir must be a relative path without '..'")
+    return value
+
+
+def _normalize_pack_dest(raw: object) -> str | None:
+    if raw is None or raw == "":
+        return None
+    if not isinstance(raw, str) or not _PACK_DEST_RE.fullmatch(raw.strip()):
+        raise ValueError(
+            "blueprint_packs.sources[].dest must be a single folder name "
+            "(letters, digits, '.', '_', '-')"
+        )
+    return raw.strip()
+
+
+def _normalize_pack_token(raw: object) -> str | None:
+    if raw is None or raw == "":
+        return None
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError("blueprint_packs.sources[].token must be a non-empty string when set")
+    return raw.strip()
+
+
+def load_blueprint_pack_config(repo_root: Path) -> BlueprintPackConfig | None:
+    """Return git pack sources, or None when blueprint_packs is unset."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("blueprint_packs")
+    if block is None:
+        return None
+    if not isinstance(block, dict):
+        raise ValueError(
+            "blueprint_packs must be a mapping with sources[] "
+            "(see docs/repave-config-v1.md#extra-blueprint-catalog-roots)"
+        )
+    cache_raw = block.get("cache_dir")
+    env_cache = os.environ.get("REPAVE_BLUEPRINT_PACK_CACHE", "").strip()
+    if env_cache:
+        cache_dir = _resolve_repo_path(repo_root, env_cache)
+    elif cache_raw is None or cache_raw == "":
+        cache_dir = (repo_root / _DEFAULT_PACK_CACHE).resolve()
+    elif not isinstance(cache_raw, str) or not cache_raw.strip():
+        raise ValueError(
+            "blueprint_packs.cache_dir must be a local path "
+            "(set cache_dir or REPAVE_BLUEPRINT_PACK_CACHE)"
+        )
+    else:
+        cache_dir = _resolve_repo_path(repo_root, cache_raw)
+
+    sources_raw = block.get("sources")
+    if sources_raw is None:
+        sources_raw = []
+    if not isinstance(sources_raw, list):
+        raise ValueError("blueprint_packs.sources must be a list of {url, ref} mappings")
+    sources: list[BlueprintPackSource] = []
+    for item in sources_raw:
+        if not isinstance(item, dict):
+            raise ValueError("blueprint_packs.sources[] must be a mapping with url and ref")
+        sources.append(
+            BlueprintPackSource(
+                url=_normalize_pack_url(item.get("url")),
+                ref=_normalize_pack_ref(item.get("ref")),
+                subdir=_normalize_pack_subdir(item.get("subdir")),
+                dest=_normalize_pack_dest(item.get("dest")),
+                token=_normalize_pack_token(item.get("token")),
+            )
+        )
+    return BlueprintPackConfig(cache_dir=cache_dir, sources=tuple(sources))
 
 
 _DEFAULT_NOTIFY_EVENTS = frozenset({"publish_complete", "generation_failed"})

@@ -7,9 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.33.0  
 
-**In progress:** Git URL blueprint pack fetch (parking-lot first slice).
-Phase 4 HTML removal is a product call (ops/standards/campaigns still
-HTML-only).
+**In progress:** Phase 4 HTML removal is a product call (ops/standards/campaigns
+still HTML-only). OCI blueprint pack pull stays parking-lot.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -49,6 +48,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Component TTL reclaim** (`POST /api/v2/components/reclaim`, [ADR 013](adr/013-component-self-service-vending.md));
 **Hosted Backstage component reclaim** (`/reclaim` → `/api/v2/components/reclaim`);
 **Kind-specific component blueprints** (`terraform-component-database` / `-bucket` / `-queue`);
+**Git URL blueprint pack fetch** (`blueprint_packs` url + ref);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -158,7 +158,7 @@ v3.33.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
 | **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
-| **Forked blueprint packs** | Shipped | Extra local catalog roots; git/OCI fetch stays parking-lot |
+| **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
 | **Component self-service vending** | Shipped | Vend, reclaim, Backstage UI, kind-specific stub blueprints ([ADR 013](adr/013-component-self-service-vending.md)); real cloud resources stay follow-up |
@@ -206,17 +206,19 @@ want to fork repave and add paths, or pull read-only blueprint packs from git.
 **Approach:**
 
 - `repave.config.yaml` `blueprints_root` or `blueprint_sources[]` (local paths)
+- `blueprint_packs.sources[]` with `url` + `ref` (shallow clone into
+  `data/blueprint-packs`; reuse cache until the folder is deleted)
 - CLI/API `--blueprint` accepts absolute path or `file://` under configured roots
 - Document fork workflow: copy repave, add `blueprints/my-org-*`, pin org standards
-- Defer git/OCI remote fetch to parking lot unless needed for v2
+- Defer OCI artifact pull to the parking lot
 
 **Dependencies:** Blueprint loader and schema validation (stable since v1.0).
 
 **Done when:** A forked repave repo loads an additional blueprint from its own
 tree without patching engine code.
 
-**Status:** Shipped on `main` — local extra catalog roots. Git/OCI remote fetch
-stays in the [parking lot](#parking-lot).
+**Status:** Partial — local extra catalog roots and git URL + ref fetch shipped.
+OCI artifact pull stays in the [parking lot](#parking-lot).
 
 ---
 
@@ -279,7 +281,7 @@ ticket; the write never becomes gated GitOps lineage.
 - Registry + catalog entity; Backstage `/vend` for the request
 - TTL reclaim via `POST /api/v2/components/reclaim` / `repave components reclaim`
   and Backstage `/reclaim`
-- Follow-up: real cloud resources in those stubs; git URL pack fetch
+- Follow-up: real cloud resources in those stubs
 
 **Done when:** a builder can request a managed component and get a reviewable
 GitOps PR, same shape as environment vending — **met** for the request path.
@@ -291,8 +293,8 @@ GitOps PR, same shape as environment vending — **met** for the request path.
 Scoped enough to promote without new discovery (was deferred from the developer paved-roads
 cluster — detail for shipped paved roads is in the [archive](roadmap-archive.md#developer-paved-roads-v2x)):
 
-- **Organization blueprint packs** — local extra roots are
-  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs); git/OCI
+- **Organization blueprint packs** — local extra roots and git URL fetch are
+  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs); OCI
   registry fetch remains parking-lot.
 
 
@@ -572,8 +574,8 @@ until someone owns them. Stategraph / graph-scoped execution is under
 - **Standards diff in portal** — side-by-side standard/policy changes between
   blueprint versions before generate (see [`portal-design.md`](portal-design.md)
   Phase 5)
-- **Private blueprint registry** — pull blueprint packs from git tag or OCI artifact
-  (beyond local fork paths)
+- **Private blueprint registry** — pull blueprint packs from an OCI artifact
+  (git URL + ref shipped)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
 - **Auth0 FGA / fine-grained authorization** — relationship checks on catalog,
   generate, and environment actions (Auth0 FGA or OpenFGA), wrapping today's
