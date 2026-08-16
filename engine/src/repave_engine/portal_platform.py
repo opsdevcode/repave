@@ -172,6 +172,22 @@ class PlatformOpsPage:
     readiness: ReadinessReport
     readiness_payload: dict[str, Any]
 
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "queue_depth": self.queue_depth,
+            "queued_runs": self.queued_runs,
+            "running_runs": self.running_runs,
+            "async_generation_enabled": self.queue_depth is not None,
+            "environment_vending_enabled": self.environment_vending_enabled,
+            "environment_count": self.environment_count,
+            "readiness": self.readiness_payload,
+            "doctor_results": [item.to_public_dict() for item in self.doctor_results],
+            "dead_letter_runs": [item.to_public_dict() for item in self.dead_letter_runs],
+            "reclaim_preview": (
+                self.reclaim_preview.to_public_dict() if self.reclaim_preview is not None else None
+            ),
+        }
+
 
 def build_platform_ops_page(
     repo_root: Path,
@@ -239,6 +255,12 @@ class PlatformStandardsPage:
     summaries: tuple[BlueprintDriftSummary, ...]
     fleet_enabled: bool
 
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "fleet_enabled": self.fleet_enabled,
+            "summaries": [item.to_dict() for item in self.summaries],
+        }
+
 
 def build_platform_standards_page(repo_root: Path) -> PlatformStandardsPage:
     enabled, _, _ = portal_fleet_context(repo_root)
@@ -274,6 +296,16 @@ class PlatformCampaignsPage:
     snapshot: OperatorStatusSnapshot | None
     fleet_cfg: FleetConfig | None
     remediation_queue: tuple[dict[str, str], ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "operator_status_enabled": self.snapshot is not None,
+            "gitops_namespace": (
+                self.fleet_cfg.gitops_namespace if self.fleet_cfg is not None else ""
+            ),
+            "snapshot": self.snapshot.to_dict() if self.snapshot is not None else None,
+            "remediation_queue": [dict(row) for row in self.remediation_queue],
+        }
 
 
 def build_platform_campaigns_page(repo_root: Path) -> PlatformCampaignsPage:

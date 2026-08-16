@@ -5,6 +5,7 @@ import AppsIcon from '@material-ui/icons/Apps';
 import AssessmentIcon from '@material-ui/icons/Assessment';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import BarChartIcon from '@material-ui/icons/BarChart';
+import BuildIcon from '@material-ui/icons/Build';
 import CategoryIcon from '@material-ui/icons/Category';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
@@ -13,6 +14,8 @@ import FlagIcon from '@material-ui/icons/Flag';
 import HistoryIcon from '@material-ui/icons/History';
 import LibraryAddIcon from '@material-ui/icons/LibraryAdd';
 import MapIcon from '@material-ui/icons/Map';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
+import NewReleasesIcon from '@material-ui/icons/NewReleases';
 import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
 import RestoreIcon from '@material-ui/icons/Restore';
 import SecurityIcon from '@material-ui/icons/Security';
@@ -22,6 +25,7 @@ import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import TimelineIcon from '@material-ui/icons/Timeline';
 import { ActivityPage } from './components/ActivityPage';
 import { AddComponentPage } from './components/AddComponentPage';
+import { CampaignsPage } from './components/CampaignsPage';
 import { CompliancePage } from './components/CompliancePage';
 import { EstatePage } from './components/EstatePage';
 import { FeedbackPage } from './components/FeedbackPage';
@@ -32,11 +36,13 @@ import { ImportPage } from './components/ImportPage';
 import { MaturityPage } from './components/MaturityPage';
 import { MetricsPage } from './components/MetricsPage';
 import { MyServicesPage } from './components/MyServicesPage';
+import { OpsPage } from './components/OpsPage';
 import { ReclaimPage } from './components/ReclaimPage';
 import { RepaveLineageCard } from './components/RepaveLineageCard';
 import { RoadmapPage } from './components/RoadmapPage';
 import { RunsPage } from './components/RunsPage';
 import { SandboxPage } from './components/SandboxPage';
+import { StandardsPage } from './components/StandardsPage';
 import { UpgradePage } from './components/UpgradePage';
 import { ValueStreamPage } from './components/ValueStreamPage';
 import { VendComponentPage } from './components/VendComponentPage';
@@ -119,6 +125,36 @@ const fleetPage = PageBlueprint.make({
     title: 'Fleet',
     icon: <StorageIcon />,
     loader: async () => <FleetPage />,
+  },
+});
+
+const opsPage = PageBlueprint.make({
+  name: 'ops',
+  params: {
+    path: '/ops',
+    title: 'Ops',
+    icon: <BuildIcon />,
+    loader: async () => <OpsPage />,
+  },
+});
+
+const standardsPage = PageBlueprint.make({
+  name: 'standards',
+  params: {
+    path: '/standards',
+    title: 'Standards',
+    icon: <MenuBookIcon />,
+    loader: async () => <StandardsPage />,
+  },
+});
+
+const campaignsPage = PageBlueprint.make({
+  name: 'campaigns',
+  params: {
+    path: '/campaigns',
+    title: 'Campaigns',
+    icon: <NewReleasesIcon />,
+    loader: async () => <CampaignsPage />,
   },
 });
 
@@ -261,6 +297,9 @@ export const repavePlugin = createFrontendPlugin({
     upgradePage,
     addComponentPage,
     fleetPage,
+    opsPage,
+    standardsPage,
+    campaignsPage,
     importPage,
     importBatchPage,
     verifyPage,

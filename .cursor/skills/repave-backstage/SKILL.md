@@ -34,6 +34,11 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Add: `/add` → `POST /api/v2/components/plan` + `/apply` (local checkout; no remote PR).
 - Fleet: `/fleet` → `GET` / `POST` / `DELETE /api/v2/fleet` via the same proxy
   (register/unregister need admin; 404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
+- Ops: `/ops` → `GET /api/v2/platform/ops` (admin; reclaim/replay use existing v2).
+- Standards: `/standards` → `GET /api/v2/platform/standards` +
+  `POST /api/v2/runs` `fleet_drift_confirm`.
+- Campaigns: `/campaigns` → `GET /api/v2/platform/campaigns` +
+  `POST /api/v2/platform/campaigns/{namespace}/{name}/paused`.
 - Import: `/import` → `POST /api/v2/imports/plan` + `/apply` via the same proxy.
 - Batch import: `/import/batch` → `POST /api/v2/imports/batch/plan` + `/apply`
   and `POST /api/v2/github/org-scan` (sync classify; async org-scan job stays CLI).

@@ -260,6 +260,10 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/platform/feedback` | admin | CSAT rollup (Backstage `/feedback`) |
 | `POST` | `/api/v2/platform/feedback` | generator, admin | CSAT event (`surface=backstage` from Backstage `/feedback`) |
 | `GET` | `/api/v2/platform/finops/export` | admin | Chargeback JSON/CSV (Backstage `/finops`) |
+| `GET` | `/api/v2/platform/ops` | admin | Readiness, doctor, queue, dead-letter (Backstage `/ops`) |
+| `GET` | `/api/v2/platform/standards` | admin | Fleet pin drift (Backstage `/standards`) |
+| `GET` | `/api/v2/platform/campaigns` | admin | Operator campaigns (Backstage `/campaigns`) |
+| `POST` | `/api/v2/platform/campaigns/{ns}/{name}/paused` | admin | Pause or resume a campaign |
 
 ## `/api/v1` deprecation
 

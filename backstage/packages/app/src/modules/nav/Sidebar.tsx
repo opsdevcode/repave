@@ -42,6 +42,9 @@ export const SidebarContent = NavContentBlueprint.make({
             {nav.take('page:repave/upgrade')}
             {nav.take('page:repave/add')}
             {nav.take('page:repave/fleet')}
+            {nav.take('page:repave/ops')}
+            {nav.take('page:repave/standards')}
+            {nav.take('page:repave/campaigns')}
             {nav.take('page:repave/import')}
             {nav.take('page:repave/import-batch')}
             {nav.take('page:repave/verify')}
