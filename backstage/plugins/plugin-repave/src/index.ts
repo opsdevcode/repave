@@ -13,7 +13,13 @@ export {
   rowsFromComponentKinds,
   buildComponentVendRequest,
 } from './components/VendComponentPage';
-export { ReclaimPage, buildReclaimRequest, parseReclaimSummary } from './components/ReclaimPage';
+export {
+  ReclaimPage,
+  buildReclaimRequest,
+  buildComponentReclaimRequest,
+  parseReclaimSummary,
+  parseComponentReclaimSummary,
+} from './components/ReclaimPage';
 export { RunsPage, parseRunsPayload, rowsFromRuns, canReplayRun } from './components/RunsPage';
 export {
   UpgradePage,

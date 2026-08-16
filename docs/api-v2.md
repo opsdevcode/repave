@@ -144,7 +144,7 @@ Default path: `{path_prefix}/{kind}/{name}` (`path_prefix` defaults to `componen
 | --- | --- | --- | --- |
 | `GET` | `/api/v2/component-kinds` | viewer+ | Built-in kinds plus optional `component_vending.kinds` YAML; `vend_available` when async runs and vending are on (Backstage `/vend`) |
 | `POST` | `/api/v2/components/vend` | generator, admin | `{ "kind": "database"\|"bucket"\|"queue", "name", "owner"?, "dry_run"? }` → 202 run (`kind: component_vend`; Backstage `/vend`) |
-| `POST` | `/api/v2/components/reclaim` | admin | `{ "name"?, "kind"?, "dry_run"? }` — expire managed components via GitOps decommission PRs |
+| `POST` | `/api/v2/components/reclaim` | admin | `{ "name"?, "kind"?, "dry_run"? }` — expire managed components via GitOps decommission PRs (Backstage `/reclaim`) |
 
 `name` on vend must be 3–63 lowercase letters, numbers, and hyphens. Vend
 `dry_run` defaults to `true`. A successful non–dry-run vend appends
@@ -243,7 +243,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/environments/vend` | generator, admin | Request a sandbox from a deployment set |
 | `GET` | `/api/v2/component-kinds` | viewer+ | Built-in kinds (Backstage `/vend`) |
 | `POST` | `/api/v2/components/vend` | generator, admin | Request a managed component (Backstage `/vend`) |
-| `POST` | `/api/v2/components/reclaim` | admin | Reclaim expired managed components |
+| `POST` | `/api/v2/components/reclaim` | admin | Reclaim expired managed components (Backstage `/reclaim`) |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandboxes (Backstage `/reclaim`) |
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption (Backstage `/adoption`; `?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 | `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity (Backstage `/maturity`) — see [`service-catalog.md`](service-catalog.md) |

@@ -26,7 +26,8 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   via the Backstage proxy (never scrape HTML `/sandbox`).
 - Vend: `/vend` → `GET /api/v2/component-kinds` + `POST /api/v2/components/vend`
   (GitOps component request; not `POST /api/v2/components/plan`).
-- Reclaim: `/reclaim` → `POST /api/v2/environments/reclaim` (admin; dry-run default).
+- Reclaim: `/reclaim` → `POST /api/v2/environments/reclaim` and
+  `POST /api/v2/components/reclaim` (admin; dry-run default).
 - Runs: `/runs` → `GET /api/v2/runs` + `GET /api/v2/runs/{id}` +
   `POST /api/v2/runs/{id}/replay` (admin; failed/dead-letter only).
 - Upgrade: `/upgrade` → `POST /api/v2/upgrades/plan` (preview only; apply stays CLI/operator).
