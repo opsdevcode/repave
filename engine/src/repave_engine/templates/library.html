@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}{% if library_family %}{{ library_family.title }} — Library — repave{% else %}Library — repave{% endif %}{% endblock %}
+
+{% block main_modifiers %} shell__main--home{% endblock %}
+
+{% block content %}
+<div class="home-catalog-column">
+<section class="home-console" aria-labelledby="library-console-title">
+  <header class="home-console__header">
+    <div class="home-console__intro">
+      {% if library_family %}
+      <p class="library-crumb muted">
+        <a href="/library{% if library_owner_filter %}?owner={{ library_owner_filter | urlencode }}{% endif %}">Library</a>
+        <span aria-hidden="true"> / </span>
+        <span>{{ library_family.title }}</span>
+      </p>
+      <h1 id="library-console-title" class="home-console__title">{{ library_family.title }}</h1>
+      <p class="home-console__lead muted">{{ library_family.subtitle }}</p>
+      {% else %}
+      <h1 id="library-console-title" class="home-console__title">Library</h1>
+      <p class="home-console__lead muted">
+        Open a drawer to browse repositories already on the platform.
+        Check <a href="/estate">Repo status</a> for upgrades.
+      </p>
+      {% endif %}
+    </div>
+    <nav class="home-console__actions" aria-label="Library shortcuts">
+      <a class="btn btn--primary btn--sm" href="/import">Import</a>
+      <a class="btn btn--ghost btn--sm" href="/#golden-paths">Golden paths</a>
+    </nav>
+  </header>
+
+  {% if library_owner_filter %}
+  <p class="muted library-owner-note">
+    matching owner <code>{{ library_owner_filter }}</code>
+    · <a href="{% if library_family %}/library/{{ library_family.family }}{% else %}/library{% endif %}">Clear</a>
+  </p>
+  {% endif %}
+</section>
+
+{% if library_family %}
+  {% if library_family.entities %}
+  <div class="catalog-search home-console__search" data-catalog-search>
+    <label class="visually-hidden" for="library-search-input">Search this drawer</label>
+    <input
+      class="catalog-search__input field__input"
+      type="search"
+      id="library-search-input"
+      placeholder="Search this drawer — name, blueprint, owner… (press /)"
+      autocomplete="off"
+      data-catalog-search-input
+    />
+    <p class="catalog-search__meta muted" data-catalog-search-meta hidden></p>
+  </div>
+
+  <section
+    id="catalog-inventory"
+    class="library-shelf"
+    aria-labelledby="library-inventory-heading"
+    data-catalog-group="{{ library_family.family }}"
+  >
+    <h2 id="library-inventory-heading" class="visually-hidden">
+      {{ library_entity_count }} artifact{{ 's' if library_entity_count != 1 else '' }} in {{ library_family.title }}
+    </h2>
+    <ul class="library-shelf__list">
+      {% for entity in library_family.entities %}
+      <li class="library-shelf__row" data-catalog-item>
+        <a
+          class="library-shelf__item"
+          href="/services/{{ entity.entity_id }}"
+          data-catalog-card
+          data-peek-name="{{ entity.display_name }}"
+          data-search-text="{{ entity.display_name }} {{ entity.blueprint_name }} {{ entity.owner }} {{ entity.repo_url or '' }} {{ entity.source }} {{ entity.standard_version }}"
+        >
+          <span class="library-shelf__name">{{ entity.display_name }}</span>
+          <span class="library-shelf__line muted">
+            {% if entity.blueprint_name %}
+            {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
+            {% endif %}
+            {% if entity.owner %} · {{ entity.owner }}{% endif %}
+            {% if entity.operator_phase %} · operator {{ entity.operator_phase }}{% endif %}
+            {% if entity.cost_badge %}
+            · <span class="catalog-inventory__cost-badge" title="{{ entity.cost_badge_detail }}">{{ entity.cost_badge }}</span>
+            {% endif %}
+          </span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    <div class="alert alert--info catalog-search-empty" id="catalog-search-empty" role="status" hidden>
+      No artifacts match. Clear search to see this drawer.
+    </div>
+  </section>
+  {% else %}
+  <section class="card">
+    <div class="card__body">
+      <p class="muted">
+        Nothing in this drawer yet.
+        <a href="/import">Import a repository</a> or
+        <a href="/#golden-paths">plan a golden path</a>.
+      </p>
+    </div>
+  </section>
+  {% endif %}
+{% elif library_groups %}
+  <p class="visually-hidden">
+    {{ library_entity_count }} artifact{{ 's' if library_entity_count != 1 else '' }} available
+  </p>
+  <ul class="library-drawers" aria-label="Library drawers">
+    {% for group in library_groups %}
+    <li>
+      <a
+        class="library-drawer library-drawer--{{ group.family }}"
+        href="/library/{{ group.family }}{% if library_owner_filter %}?owner={{ library_owner_filter | urlencode }}{% endif %}"
+        data-library-drawer
+        data-motion-face
+      >
+        <span class="library-drawer__label">
+          <span class="library-drawer__title">{{ group.title }}</span>
+          <span class="library-drawer__subtitle muted">{{ group.subtitle }}</span>
+        </span>
+        <span class="library-drawer__meta">
+          <span class="library-drawer__count">
+            {{ group.entities | length }} artifact{{ 's' if group.entities | length != 1 else '' }}
+          </span>
+          <span class="library-drawer__go" aria-hidden="true"></span>
+        </span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+{% else %}
+<section class="card">
+  <div class="card__body">
+    <p class="muted">
+      No artifacts in the library yet.
+      <a href="/import">Import an existing repository</a>, register repositories with
+      <code>repave register</code>, generate modules under
+      <code>modules_root</code>, or
+      <a href="/#golden-paths">plan or apply a golden path</a>.
+    </p>
+  </div>
+</section>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if library_groups or (library_family and library_family.entities) %}
+<script type="module" src="/static/repave-library.mjs?v={{ app_version }}"></script>
+{% endif %}
+{% endblock %}

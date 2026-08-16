@@ -55,7 +55,8 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
 
-    assert_surface_moved(response, "catalog")
+    assert response.status_code == 200
+    assert "terraform-module-generic" in response.text
     assert "/static/repave.css" in response.text
     assert "/static/repave.js" in response.text
     assert "/static/repave-motion.mjs" in response.text
@@ -65,22 +66,58 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'id="repave-toast"' in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
+    assert "home-console" in response.text
     assert 'rel="icon"' in response.text
     assert "/static/brand/favicon.svg" in response.text
     assert "/static/brand/svg/repave-mark-dark.svg" in response.text
     assert "shell__wordmark" in response.text
     assert "shell__edition" in response.text
     assert "shell__tagline" in response.text
+    assert "home-console__header" in response.text
+    assert "home-console__title" in response.text
     assert "The intelligent platform layer" in response.text
+    assert "Golden paths" in response.text
+    assert "Hosted generate is in Backstage" in response.text
     assert "shell__mark-frame" in response.text
     assert "repave v3 · The intelligent platform layer" in response.text
     assert 'property="og:image"' in response.text
     assert "static/brand/social/repave-social-card.png" in response.text
     assert 'name="twitter:card"' in response.text
+    assert "data-home-quick" in response.text
+    assert "catalog-inventory__item-icon" in response.text
+    assert "catalog-inventory__category" in response.text
+    assert "catalog-inventory--browse" in response.text
+    assert "catalog-inventory__heading" in response.text
+    assert "home-catalog-column" in response.text
+    assert "catalog-inventory__summary" not in response.text
     assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text
     assert "shell__bar-start" in response.text
     assert "shell__search" in response.text
+    assert response.text.index("Library") < response.text.index("shell__nav-more")
+    assert "Terraform" in response.text
+    assert "Ansible" in response.text
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--terraform"'
+        in response.text
+    )
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--ansible"' in response.text
+    )
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--policy"' in response.text
+    )
+    assert (
+        'class="catalog-inventory__category catalog-inventory__category--observability"'
+        in response.text
+    )
+    assert 'id="catalog-observability"' in response.text
+    assert "Observability" in response.text
+    assert "dashboards-as-code-generic" in response.text
+    assert "monitors-as-code-generic" in response.text
+    assert 'id="catalog-policy"' in response.text
+    assert "opa-policy-generic" in response.text
+    assert "azure-policy-generic" in response.text
 
 
 def test_static_repave_js_served(repo_root, output_config) -> None:
@@ -184,7 +221,7 @@ def test_home_does_not_embed_activity_feed(
         repo_root=repo_root,
     )
     response = client.get("/")
-    assert_surface_moved(response, "catalog")
+    assert response.status_code == 200
     assert 'class="home-activity"' not in response.text
     assert 'class="activity-story"' not in response.text
     assert ">vpc-demo<" not in response.text
@@ -193,14 +230,24 @@ def test_home_does_not_embed_activity_feed(
 def test_home_no_activity_link_when_audit_disabled(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert_surface_moved(response, "catalog")
+    assert response.status_code == 200
     assert 'class="home-activity"' not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert_surface_moved(response, "catalog")
+
+    assert response.status_code == 200
+    assert "data-catalog-search" in response.text
+    assert "data-catalog-card" in response.text
+    assert "home-console__title" in response.text
+    assert "/static/repave-home.mjs" in response.text
+    assert 'type="module"' in response.text
+    assert "data-home-quick" in response.text
+    assert "data-peek-name=" in response.text
+    assert "data-motion-face" in response.text
+    assert "data-motion-depth" in response.text
     assert "@view-transition" in response.text
 
 
@@ -1399,7 +1446,12 @@ def test_api_v1_generate_dry_run(repo_root, output_config, monkeypatch) -> None:
 def test_index_lists_service_stack_bundle(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert_surface_moved(response, "catalog")
+    assert response.status_code == 200
+    assert "service-stack" in response.text
+    assert "microservice-full" in response.text
+    assert "/bundles/service-stack" in response.text
+    assert "/bundles/microservice-full" in response.text
+    assert "preset-chip" in response.text
 
 
 def test_bundle_form_renders_shared_inputs(repo_root, output_config) -> None:

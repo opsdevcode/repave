@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.fleet import FleetEntry, register_repo
 from repave_engine.fleet_operator_status import (
@@ -54,8 +53,14 @@ def test_library_page_shows_operator_phase(
     monkeypatch.chdir(tmp_path)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
-    assert_surface_moved(client.get("/library"), "library")
-    assert_surface_moved(client.get("/library/terraform"), "library")
+    index = client.get("/library").text
+    assert "library-drawers" in index
+    assert 'href="/library/terraform"' in index
+    assert "operator OutOfDate" not in index
+
+    body = client.get("/library/terraform").text
+    assert "operator OutOfDate" in body
+    assert "terraform-module-generic@0.9.0" in body
 
 
 def test_library_page_lists_registered_repos(repo_root, output_config, registry: Path) -> None:
@@ -64,10 +69,16 @@ def test_library_page_lists_registered_repos(repo_root, output_config, registry:
 
     response = client.get("/library")
 
-    assert_surface_moved(response, "library")
+    assert response.status_code == 200
+    body = response.text
+    assert "library-drawers" in body
+    assert "1 artifact" in body
+    assert "terraform-module-generic@0.9.0" not in body
 
     family = client.get("/library/terraform")
-    assert_surface_moved(family, "library")
+    assert family.status_code == 200
+    assert "terraform-module-generic@0.9.0" in family.text
+    assert "platform" in family.text
 
 
 def test_library_page_pluralizes_count(repo_root, output_config, registry: Path) -> None:
@@ -82,7 +93,7 @@ def test_library_page_pluralizes_count(repo_root, output_config, registry: Path)
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert_surface_moved(client.get("/library"), "library")
+    assert "2 artifacts" in client.get("/library").text
 
 
 def test_library_unknown_family_is_not_found(repo_root, output_config) -> None:
@@ -100,7 +111,9 @@ def test_library_page_empty_state_points_at_register(
 
     response = client.get("/library")
 
-    assert_surface_moved(response, "library")
+    assert response.status_code == 200
+    assert "No artifacts in the library yet" in response.text
+    assert "repave register" in response.text
 
 
 def test_fleet_redirects_to_library(repo_root, output_config) -> None:
@@ -115,10 +128,19 @@ def test_fleet_redirects_to_library(repo_root, output_config) -> None:
 def test_nav_exposes_library_link(repo_root, output_config, registry: Path) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert_surface_moved(client.get("/"), "catalog")
+    body = client.get("/").text
+
+    assert 'href="/library"' in body
+    assert "Library" in body
+    more_idx = body.index("shell__nav-more")
+    primary = body[:more_idx]
+    assert ">Fleet</a>" not in primary
+    assert body.index("Library") < more_idx
 
 
 def test_library_page_marks_nav_current(repo_root, output_config, registry: Path) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert_surface_moved(client.get("/library"), "library")
+    body = client.get("/library").text
+
+    assert 'href="/library" aria-current="page"' in body

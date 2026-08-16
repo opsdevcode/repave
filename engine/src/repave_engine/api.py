@@ -58,6 +58,7 @@ from repave_engine.blueprint import (
     artifact_family,
     blueprint_dir,
     bundles_dir,
+    group_blueprints_by_artifact,
     list_catalog_blueprints,
     load_blueprint,
     policy_kind_label,
@@ -101,6 +102,8 @@ from repave_engine.portal_components import (
     component_add_redirect_url,
 )
 from repave_engine.portal_context import (
+    audit_portal_enabled,
+    build_library_page_context,
     build_portal_catalog_entities,
 )
 from repave_engine.portal_errors import (
@@ -134,12 +137,10 @@ from repave_engine.portal_surface_moved import (
     ACTIVITY_MOVED,
     BUNDLE_MOVED,
     BUNDLE_RESULT_MOVED,
-    CATALOG_MOVED,
     ESTATE_MOVED,
     HOME_MOVED,
     IMPORT_BATCH_MOVED,
     IMPORT_MOVED,
-    LIBRARY_MOVED,
     RESULT_MOVED,
     RUN_CONSOLE_MOVED,
     RUNS_MOVED,
@@ -612,7 +613,21 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "landing.html",
                 page_context(request, nav_active="welcome", landing_page=True),
             )
-        return render_moved(request, CATALOG_MOVED)
+        blueprints = list_catalog_blueprints(repo_root)
+        catalog_groups = group_blueprints_by_artifact(blueprints)
+        catalog_bundles = list_bundles(repo_root)
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            page_context(
+                request,
+                blueprints=blueprints,
+                catalog_groups=catalog_groups,
+                catalog_bundles=catalog_bundles,
+                nav_active="catalog",
+                audit_enabled=audit_portal_enabled(repo_root),
+            ),
+        )
 
     @app.get("/signup", response_class=HTMLResponse, response_model=None)
     async def signup_page(request: Request) -> Response:
@@ -640,13 +655,38 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/library", response_class=HTMLResponse)
     async def library_page(request: Request, owner: str = "") -> HTMLResponse:
-        return render_moved(request, LIBRARY_MOVED)
+        return templates.TemplateResponse(
+            request,
+            "library.html",
+            page_context(
+                request,
+                **build_library_page_context(
+                    repo_root,
+                    resolved_output,
+                    portal_config,
+                    owner=owner,
+                ),
+            ),
+        )
 
     @app.get("/library/{family}", response_class=HTMLResponse)
     async def library_family_page(request: Request, family: str, owner: str = "") -> HTMLResponse:
         if not library_family_known(family):
             raise HTTPException(status_code=404, detail="Library family not found")
-        return render_moved(request, LIBRARY_MOVED)
+        return templates.TemplateResponse(
+            request,
+            "library.html",
+            page_context(
+                request,
+                **build_library_page_context(
+                    repo_root,
+                    resolved_output,
+                    portal_config,
+                    owner=owner,
+                    family=family,
+                ),
+            ),
+        )
 
     @app.get("/services", response_class=RedirectResponse)
     async def services_redirect() -> RedirectResponse:
