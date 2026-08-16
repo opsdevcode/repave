@@ -44,6 +44,7 @@ export {
   rowsFromTiles,
 } from './components/EstatePage';
 export { MetricsPage, parseMetricsSnapshot } from './components/MetricsPage';
+export { RoadmapPage, parseRoadmapEvidence } from './components/RoadmapPage';
 export { ActivityPage, parseAuditPayload, rowsFromEntries } from './components/ActivityPage';
 export {
   MaturityPage,

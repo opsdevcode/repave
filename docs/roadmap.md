@@ -9,7 +9,7 @@ major-boundary themes. Full shipped writeups live in
 
 **In progress:** Hosted Backstage flag stays default off until a named owner
 ([ADR 011](adr/011-hosted-backstage-idp.md)); admin plugins shipped through
-FinOps, batch import, and org scan — Phase 4 is a product call.
+FinOps, batch import, org scan, and roadmap evidence — Phase 4 is a product call.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -34,6 +34,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Hosted Backstage platform ops** (`/compliance`, `/value-stream`, `/feedback`, `/finops`);
 **Hosted Backstage batch import** (`/import/batch`);
 **Hosted Backstage org scan** (`/import/batch` → `/api/v2/github/org-scan`);
+**Hosted Backstage roadmap evidence** (`/roadmap` → `/api/v2/platform/roadmap-evidence`);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -142,7 +143,7 @@ v3.21.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Named owner | Admin pages + batch import + org scan shipped; chart-smoke + GHCR image shipped; flag stays default off ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Named owner | Admin pages + batch import + org scan + roadmap evidence shipped; chart-smoke + GHCR image shipped; flag stays default off ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -155,7 +156,7 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 ### Hosted Backstage IDP
 
 **Status:** Chart-smoke, GHCR image, admin pages through FinOps, batch
-import, and org scan shipped ([ADR 011](adr/011-hosted-backstage-idp.md)).
+import, org scan, and roadmap evidence shipped ([ADR 011](adr/011-hosted-backstage-idp.md)).
 Remaining: named owner before `repave.backstage.enabled` default-on
 (duties listed in [`docs/backstage.md`](backstage.md#ownership)).
 Phase 4 HTML removal is a product call.

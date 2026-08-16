@@ -33,6 +33,7 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Verify | `/verify` — `POST /api/v2/verify` (422 is a failed verify) |
 | Estate | `/estate` — `GET /api/v2/estate` (404 if fleet is unset) |
 | Adoption | `/adoption` — `GET /api/v2/platform/metrics` (admin; 404 if unset) |
+| Roadmap evidence | `/roadmap` — `GET /api/v2/platform/roadmap-evidence` (admin; 404 if unset) |
 | Activity | `/activity` — `GET /api/v2/audit` (404 if audit is unset) |
 | Maturity | `/maturity` — `GET /api/v2/platform/maturity` + `/initiatives` (read-only) |
 | Compliance | `/compliance` — `GET /api/v2/platform/compliance` |
