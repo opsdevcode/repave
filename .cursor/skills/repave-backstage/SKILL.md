@@ -34,6 +34,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Verify: `/verify` → `POST /api/v2/verify` (422 is a failed verify, not transport).
 - Estate: `/estate` → `GET /api/v2/estate` (404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
 - Adoption: `/adoption` → `GET /api/v2/platform/metrics` (admin; 404 if unset).
+- Roadmap: `/roadmap` → `GET /api/v2/platform/roadmap-evidence` (admin; 404 if unset).
 - Activity: `/activity` → `GET /api/v2/audit` (404 if audit is unset).
 - Maturity: `/maturity` → `GET /api/v2/platform/maturity` + `/initiatives` (read-only).
 - Compliance: `/compliance` → `GET /api/v2/platform/compliance`.

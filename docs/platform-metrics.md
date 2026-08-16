@@ -155,6 +155,7 @@ for sunset or simplification review.
 | Surface | Path / command |
 | --- | --- |
 | Portal (admin) | `/platform/roadmap` |
+| Backstage | `/roadmap` |
 | API | `GET /api/v2/platform/roadmap-evidence` |
 | Evidence source | `/platform/adoption` snapshot (fleet adoption, funnel, baselines) |
 

@@ -8,6 +8,7 @@ import BarChartIcon from '@material-ui/icons/BarChart';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import FeedbackIcon from '@material-ui/icons/Feedback';
+import FlagIcon from '@material-ui/icons/Flag';
 import HistoryIcon from '@material-ui/icons/History';
 import MapIcon from '@material-ui/icons/Map';
 import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
@@ -28,6 +29,7 @@ import { MaturityPage } from './components/MaturityPage';
 import { MetricsPage } from './components/MetricsPage';
 import { MyServicesPage } from './components/MyServicesPage';
 import { RepaveLineageCard } from './components/RepaveLineageCard';
+import { RoadmapPage } from './components/RoadmapPage';
 import { RunsPage } from './components/RunsPage';
 import { SandboxPage } from './components/SandboxPage';
 import { UpgradePage } from './components/UpgradePage';
@@ -134,6 +136,16 @@ const metricsPage = PageBlueprint.make({
   },
 });
 
+const roadmapPage = PageBlueprint.make({
+  name: 'roadmap',
+  params: {
+    path: '/roadmap',
+    title: 'Roadmap evidence',
+    icon: <FlagIcon />,
+    loader: async () => <RoadmapPage />,
+  },
+});
+
 const activityPage = PageBlueprint.make({
   name: 'activity',
   params: {
@@ -215,6 +227,7 @@ export const repavePlugin = createFrontendPlugin({
     verifyPage,
     estatePage,
     metricsPage,
+    roadmapPage,
     activityPage,
     maturityPage,
     compliancePage,
