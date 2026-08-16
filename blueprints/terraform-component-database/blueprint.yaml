@@ -3,7 +3,7 @@ kind: Blueprint
 metadata:
   name: terraform-component-database
   version: 0.1.0
-  description: GitOps stack for a managed database component (RDS-shaped stub).
+  description: GitOps stack for a managed database component (aws_db_instance).
 spec:
   artifactType: terraform-environment-stack
   standard:

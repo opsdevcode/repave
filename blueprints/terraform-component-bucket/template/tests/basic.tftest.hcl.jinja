@@ -1,3 +1,7 @@
+{% if cloud_provider == "aws" %}
+mock_provider "aws" {}
+{% endif %}
+
 run "plan_default" {
   command = plan
 

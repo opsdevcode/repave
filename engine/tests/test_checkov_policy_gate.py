@@ -1,12 +1,29 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from repave_engine.blueprint import CheckovGateConfig, load_blueprint
 from repave_engine.gate_registry import GateContext
 from repave_engine.gate_runners import build_checkov_command, run_checkov
+from repave_engine.gate_runners.policy import _checkov_fail_message
 from repave_engine.pipeline import generate_from_blueprint
 from repave_engine.settings import OutputConfig
+
+
+def test_checkov_fail_message_lists_failed_check_ids() -> None:
+    result = subprocess.CompletedProcess(
+        args=["checkov"],
+        returncode=1,
+        stdout=(
+            "Check: CKV_AWS_161: Ensure RDS has IAM authentication\n"
+            "\tFAILED for resource: aws_db_instance.this\n"
+            "Check: CKV2_AWS_11: Ensure VPC flow logging is enabled\n"
+            "\tFAILED for resource: aws_vpc.this\n"
+        ),
+        stderr="",
+    )
+    assert _checkov_fail_message(result) == "checkov failed: CKV_AWS_161, CKV2_AWS_11"
 
 
 def test_checkov_scan_dir_in_command(tmp_path: Path) -> None:

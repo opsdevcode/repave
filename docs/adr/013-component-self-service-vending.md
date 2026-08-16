@@ -52,9 +52,11 @@ Credentials stay GitHub-shaped. CD applies after merge.
 
 ### Out of scope (later slices)
 
-- Real `aws_db_instance` / `aws_s3_bucket` / `aws_sqs_queue` resources
-  (stubs keep gates green; pin estate `tf-*` modules before apply)
+- Azure/GCP equivalents of the AWS component modules (placeholders remain)
 - Operator JSON contract changes
+
+**Amendment (2026-08-16):** AWS stubs emit `aws_db_instance` / `aws_s3_bucket` /
+`aws_sqs_queue`. Pin estate `tf-*` modules before shared apply.
 
 Backstage `/vend` calls `GET /api/v2/component-kinds` and
 `POST /api/v2/components/vend`. Backstage `/reclaim` also calls

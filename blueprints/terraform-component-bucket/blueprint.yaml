@@ -3,7 +3,7 @@ kind: Blueprint
 metadata:
   name: terraform-component-bucket
   version: 0.1.0
-  description: GitOps stack for a managed object-bucket component (S3-shaped stub).
+  description: GitOps stack for a managed object-bucket component (aws_s3_bucket).
 spec:
   artifactType: terraform-environment-stack
   standard:

@@ -237,7 +237,10 @@ def test_clean_gate_artifacts_preserves_policy_selection(tmp_path: Path) -> None
 
 
 def test_build_checkov_command_uses_config_and_external_checks(tmp_path: Path) -> None:
-    (tmp_path / ".checkov.yml").write_text("framework:\n  - terraform\n", encoding="utf-8")
+    (tmp_path / ".checkov.yml").write_text(
+        "framework:\n  - terraform\nskip-check:\n  - CKV_AWS_18\n",
+        encoding="utf-8",
+    )
     policies = tmp_path / "policy/checkov"
     policies.mkdir(parents=True)
     (policies / "custom.yaml").write_text("metadata:\n  id: CKV2_TEST\n", encoding="utf-8")
@@ -253,9 +256,10 @@ def test_build_checkov_command_uses_config_and_external_checks(tmp_path: Path) -
     assert str(tmp_path / ".checkov.yml") in cmd
     assert "--external-checks-dir" in cmd
     assert str(policies) in cmd
-    assert cmd.count("--skip-check") == 2
+    assert cmd.count("--skip-check") == 3
     assert "CKV_AWS_1" in cmd
     assert "CKV_AWS_2" in cmd
+    assert "CKV_AWS_18" in cmd
 
 
 def test_build_checkov_command_adds_soft_fail(tmp_path: Path) -> None:
