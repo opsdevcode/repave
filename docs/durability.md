@@ -195,7 +195,8 @@ point-in-time recovery, and rehearse the restore — see
 | `POST` | `/api/v1/generate` | Pass `"async": true` when durability is enabled |
 
 Portal: **`/runs`** lists recent async jobs with status filter and admin replay for
-dead-letter rows; **`/runs/{id}`** is the live run console.
+dead-letter rows; **`/runs/{id}`** is the live run console. Backstage `/runs` calls
+the same `POST /api/v2/runs/{id}/replay` for failed and dead-letter rows.
 
 **Idempotency:** `client_request_id` or `Idempotency-Key` header dedupes run enqueue.
 Publish idempotency extends through GitHub publish: when a worker retries the same gated

@@ -16,7 +16,7 @@ Stable JSON HTTP surface introduced for [service decomposition Phase 3](adr/002-
 | `GET` | `/api/v2/runs` | viewer+ | List recent runs (`status`, `limit` query params) |
 | `GET` | `/api/v2/runs/{run_id}` | viewer+ | Poll run status |
 | `GET` | `/api/v2/runs/{run_id}/events` | viewer+ | SSE progress stream |
-| `POST` | `/api/v2/runs/{run_id}/replay` | admin | Requeue failed/dead-letter runs |
+| `POST` | `/api/v2/runs/{run_id}/replay` | admin | Requeue failed/dead-letter runs (Backstage `/runs`) |
 
 Async runs require `durability.async_generation` (or `REPAVE_ASYNC_GENERATION=1`).
 

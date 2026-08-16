@@ -1,7 +1,10 @@
 import {
+  canReplayRun,
   isActiveRunStatus,
+  parseApiDetail,
   parseRunDetail,
   parseRunsPayload,
+  replayPath,
   rowsFromRuns,
 } from './RunsPage';
 
@@ -53,5 +56,16 @@ describe('runs helpers', () => {
     expect(row?.runId).toBe('run-3');
     expect(row?.error).toBe('gates failed');
     expect(isActiveRunStatus('failed')).toBe(false);
+  });
+
+  it('allows replay only for failed and dead-letter runs', () => {
+    expect(canReplayRun('failed')).toBe(true);
+    expect(canReplayRun('dead_letter')).toBe(true);
+    expect(canReplayRun('succeeded')).toBe(false);
+    expect(canReplayRun('queued')).toBe(false);
+    expect(replayPath('run-3')).toBe('/runs/run-3/replay');
+    expect(parseApiDetail({ detail: 'only failed or dead_letter runs can be replayed' }, 'fallback')).toBe(
+      'only failed or dead_letter runs can be replayed',
+    );
   });
 });

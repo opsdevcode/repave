@@ -13,8 +13,10 @@ import {
   type TableColumn,
 } from '@backstage/core-components';
 import { discoveryApiRef, fetchApiRef, useApi } from '@backstage/core-plugin-api';
+import Button from '@material-ui/core/Button';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
+const REPLAY_STATUSES = new Set(['failed', 'dead_letter']);
 const POLL_MS = 5_000;
 
 export type RunRow = {
@@ -31,6 +33,32 @@ export type RunRow = {
 
 export function isActiveRunStatus(status: string): boolean {
   return ACTIVE_STATUSES.has(status);
+}
+
+export function canReplayRun(status: string): boolean {
+  return REPLAY_STATUSES.has(status);
+}
+
+export function replayPath(runId: string): string {
+  return `/runs/${encodeURIComponent(runId)}/replay`;
+}
+
+export function parseApiDetail(body: unknown, fallback: string): string {
+  if (body && typeof body === 'object' && 'detail' in body) {
+    const detail = String((body as { detail: unknown }).detail).trim();
+    if (detail) {
+      return detail;
+    }
+  }
+  return fallback;
+}
+
+function parseJsonBody(text: string): unknown {
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch {
+    return { detail: text };
+  }
 }
 
 export function rowsFromRuns(items: unknown[]): RunRow[] {
@@ -101,23 +129,18 @@ export function RunsPage() {
   const [error, setError] = useState('');
   const [selected, setSelected] = useState<RunRow | undefined>();
   const [detailError, setDetailError] = useState('');
+  const [replayError, setReplayError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const loadRuns = useCallback(async () => {
     const base = await discoveryApi.getBaseUrl('proxy');
     const response = await fetchApi.fetch(`${base}/repave/api/v2/runs?limit=50`);
     const text = await response.text();
-    let body: unknown = {};
-    try {
-      body = text ? JSON.parse(text) : {};
-    } catch {
-      body = { detail: text };
-    }
+    const body = parseJsonBody(text);
     if (!response.ok) {
-      const detail =
-        body && typeof body === 'object' && 'detail' in body
-          ? String((body as { detail: unknown }).detail)
-          : text;
-      throw new Error(`GET /api/v2/runs returned ${response.status}: ${detail}`);
+      throw new Error(
+        parseApiDetail(body, `GET /api/v2/runs returned ${response.status}`),
+      );
     }
     return parseRunsPayload(body);
   }, [discoveryApi, fetchApi]);
@@ -152,22 +175,16 @@ export function RunsPage() {
     }
     setSelected(row);
     setDetailError('');
+    setReplayError('');
     try {
       const base = await discoveryApi.getBaseUrl('proxy');
       const response = await fetchApi.fetch(`${base}/repave/api/v2/runs/${row.runId}`);
       const text = await response.text();
-      let body: unknown = {};
-      try {
-        body = text ? JSON.parse(text) : {};
-      } catch {
-        body = { detail: text };
-      }
+      const body = parseJsonBody(text);
       if (!response.ok) {
-        const detail =
-          body && typeof body === 'object' && 'detail' in body
-            ? String((body as { detail: unknown }).detail)
-            : text;
-        throw new Error(detail || `GET /api/v2/runs/${row.runId} returned ${response.status}`);
+        throw new Error(
+          parseApiDetail(body, `GET /api/v2/runs/${row.runId} returned ${response.status}`),
+        );
       }
       const parsed = parseRunDetail(body);
       if (parsed) {
@@ -178,11 +195,42 @@ export function RunsPage() {
     }
   }
 
+  async function onReplay() {
+    if (!selected || !canReplayRun(selected.status)) {
+      return;
+    }
+    setBusy(true);
+    setReplayError('');
+    try {
+      const base = await discoveryApi.getBaseUrl('proxy');
+      const response = await fetchApi.fetch(`${base}/repave/api/v2${replayPath(selected.runId)}`, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      });
+      const text = await response.text();
+      const body = parseJsonBody(text);
+      if (!response.ok) {
+        throw new Error(
+          parseApiDetail(body, `POST /api/v2${replayPath(selected.runId)} returned ${response.status}`),
+        );
+      }
+      const parsed = parseRunDetail(body);
+      if (parsed) {
+        setSelected(parsed);
+      }
+      setRows(await loadRuns());
+    } catch (err) {
+      setReplayError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <Page themeId="tool">
       <Header
         title="Runs"
-        subtitle="Recent jobs from the durability queue. This list refreshes while the page is open."
+        subtitle="Recent jobs from the durability queue. Replay requeues failed or dead-letter runs."
       />
       <Content>
         {error ? <p>{error}</p> : null}
@@ -207,6 +255,19 @@ export function RunsPage() {
             {selected.gatesOutcome ? <p>Gates: {selected.gatesOutcome}</p> : null}
             {selected.error ? <p>{selected.error}</p> : null}
             {detailError ? <p>{detailError}</p> : null}
+            {replayError ? <p>{replayError}</p> : null}
+            {canReplayRun(selected.status) ? (
+              <Button
+                color="primary"
+                variant="contained"
+                disabled={busy}
+                onClick={() => {
+                  void onReplay();
+                }}
+              >
+                Replay run
+              </Button>
+            ) : null}
           </InfoCard>
         ) : null}
       </Content>
