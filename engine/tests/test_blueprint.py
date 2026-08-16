@@ -28,6 +28,12 @@ def test_load_terraform_module_blueprint(terraform_blueprint) -> None:
     assert terraform_blueprint.checkov_policies.policies_source == "policy/checkov/policies"
     assert terraform_blueprint.checkov_policies.policy_version == "1.2.0"
     assert terraform_blueprint.checkov_gate.external_checks_dir == "policy/checkov"
+    catalog = terraform_blueprint.to_catalog_dict()
+    input_names = [field["name"] for field in catalog["inputs"]]
+    assert "cloud_provider" in input_names
+    cloud = next(field for field in catalog["inputs"] if field["name"] == "cloud_provider")
+    assert cloud["enum"] == ["aws", "azure", "gcp"]
+    assert cloud["default"] == "aws"
     assert terraform_blueprint.checkov_gate.config_file == ".checkov.yml"
     assert "terraform-fmt" in terraform_blueprint.gates
     assert "secrets" in terraform_blueprint.gates

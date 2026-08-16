@@ -8,9 +8,10 @@ chart) lands with this decision. HTML portal is deprecated, not deleted.
 has Backstage pages (`/ops`, `/standards`, `/campaigns`) over `/api/v2`. Phase 4
 template deletion is still a product call.
 **Amendment (2026-08-16):** Builder HTML for generate catalog, bundles, library,
-teams, services, and the run console has Backstage pages over `/api/v2`. Guided
-generate forms and rich result templates remain HTML. Phase 4 template deletion
-is still a product call.
+teams, services, and the run console has Backstage pages over `/api/v2`.
+**Amendment (2026-08-16):** Backstage `/generate` posts `POST /api/v2/generate`
+with catalog `inputs` (dry-run default). Phase 4 Jinja deletion is the approved
+product call; do not drop leftover HTML generate forms until that page ships.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

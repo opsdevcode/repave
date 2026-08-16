@@ -410,6 +410,15 @@ def test_api_v2_catalog_blueprints_groups_families(repo_root, output_config) -> 
     terraform = next(group for group in payload["groups"] if group["family"] == "terraform")
     assert terraform["title"]
     assert terraform["blueprints"][0]["artifact_type"]
+    generic = next(
+        item for item in terraform["blueprints"] if item["name"] == "terraform-module-generic"
+    )
+    input_names = [field["name"] for field in generic["inputs"]]
+    assert "cloud_provider" in input_names
+    assert "module_name" in input_names
+    cloud = next(field for field in generic["inputs"] if field["name"] == "cloud_provider")
+    assert cloud["required"] is True
+    assert "aws" in cloud["enum"]
 
 
 def test_api_v2_bundles_list_and_detail(repo_root, output_config) -> None:

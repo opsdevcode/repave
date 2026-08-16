@@ -7,8 +7,10 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.36.0  
 
-**In progress:** Phase 4 HTML removal is a product call (guided generate forms
-and rich result templates still HTML-only). OCI blueprint pack pull stays parking-lot.
+**In progress:** Backstage `/generate` form (pick blueprint, fill inputs,
+dry-run). Service catalog Helm default-on. Phase 4 HTML removal is approved
+once that form ships — rich result templates can follow. OCI blueprint pack
+pull stays parking-lot.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -159,11 +161,11 @@ v3.36.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; `/generate` dry-run form; Phase 4 Jinja deletion approved after that form ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
-| **Component self-service vending** | Shipped | Vend, reclaim, Backstage UI, kind-specific stub blueprints ([ADR 013](adr/013-component-self-service-vending.md)); real cloud resources stay follow-up |
+| **Component self-service vending** | Shipped | Vend, reclaim, Backstage UI, kind-specific AWS RDS/S3/SQS modules ([ADR 013](adr/013-component-self-service-vending.md)); Azure/GCP stay placeholders |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -179,8 +181,9 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 `repave.backstage.enabled` default-on shipped (owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md)).
 Kind/smoke overlays keep the flag off. Ops, standards, campaigns, and builder
-browse pages have Backstage pages. Guided generate forms remain HTML. Phase 4
-HTML removal is a product call.
+browse pages have Backstage pages. `/generate` posts `POST /api/v2/generate`
+(dry-run default). Phase 4 HTML removal is the approved product call after
+that form ships.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -196,10 +199,11 @@ and the hosted catalog. HTML portal stays until the published sunset
 chart flag defaults on — **met** (Eric Skaggs). Platform-admin HTML already
 has Backstage pages, including `/ops`, `/standards`, `/campaigns`, and builder
 browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
-`/run-console`). Guided generate forms and rich result templates remain HTML.
-Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke and
-GHCR publish already shipped. Phase 4 (delete Jinja templates) remains a
-product call.
+`/run-console`). `/generate` picks a blueprint, fills inputs, and dry-runs
+`POST /api/v2/generate`. Apply stays CLI and operator
+(`POST /api/v2/upgrades/apply`). Chart-smoke and GHCR publish already shipped.
+Phase 4 (delete Jinja templates) is the approved product call — start after
+this form ships; rich result templates can follow.
 
 ---
 
@@ -273,8 +277,9 @@ unwaived destructive DDL and on a missing rollback.
 
 **Status:** Shipped — vend, reclaim, Backstage `/vend` + `/reclaim`, and
 kind-specific blueprints (`terraform-component-database` / `-bucket` / `-queue`)
-([ADR 013](adr/013-component-self-service-vending.md)). Real RDS/S3/SQS
-resources remain a follow-up (stubs today).
+([ADR 013](adr/013-component-self-service-vending.md)). AWS stubs emit
+`aws_db_instance` / `aws_s3_bucket` / `aws_sqs_queue`; Azure/GCP stay
+placeholders.
 
 **Problem:** Builders request a managed database, bucket, or queue by hand or
 ticket; the write never becomes gated GitOps lineage.
@@ -284,11 +289,11 @@ ticket; the write never becomes gated GitOps lineage.
 - Same GitOps PR flow as `environment_vend` (no `terraform apply`)
 - Built-in kinds `database` / `bucket` / `queue` (override via
   `component_vending.kinds`)
-- Kind-specific blueprints with RDS/S3/SQS-shaped stub modules
+- Kind-specific blueprints with real AWS RDS/S3/SQS modules
 - Registry + catalog entity; Backstage `/vend` for the request
 - TTL reclaim via `POST /api/v2/components/reclaim` / `repave components reclaim`
   and Backstage `/reclaim`
-- Follow-up: real cloud resources in those stubs
+- Follow-up: Azure/GCP equivalents of those modules
 
 **Done when:** a builder can request a managed component and get a reviewable
 GitOps PR, same shape as environment vending — **met** for the request path.
