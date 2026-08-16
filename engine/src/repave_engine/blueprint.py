@@ -143,6 +143,16 @@ class Blueprint:
     def template_dir(self) -> Path:
         return self.path / self.template_path
 
+    def to_catalog_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "artifact_type": self.artifact_type,
+            "standard_source": self.standard_source,
+            "standard_version": self.standard_version,
+        }
+
     def gate_config_for(self, gate_name: str) -> Mapping[str, Any]:
         base: dict[str, Any] = {}
         if gate_name == "checkov":
@@ -867,6 +877,14 @@ class BlueprintCatalogGroup:
     title: str
     subtitle: str
     blueprints: tuple[Blueprint, ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "family": self.family,
+            "title": self.title,
+            "subtitle": self.subtitle,
+            "blueprints": [item.to_catalog_dict() for item in self.blueprints],
+        }
 
 
 _OBSERVABILITY_BLUEPRINT_ORDER: tuple[str, ...] = (

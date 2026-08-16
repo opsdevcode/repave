@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from fastapi import HTTPException
 
@@ -232,6 +233,72 @@ def build_enriched_portal_catalog_entities(
     except ValueError:
         catalog_cfg = None
     return enrich_catalog_entities_with_overlay(entities, catalog_cfg)
+
+
+def build_library_catalog_payload(
+    repo_root: Path,
+    output_config: OutputConfig,
+    portal_config: PortalConfig,
+    *,
+    owner: str = "",
+    family: str = "",
+) -> dict[str, Any]:
+    """Grouped library catalog for GET /api/v2/library (HTML /library uses the same groups)."""
+    from repave_engine.blueprint import list_catalog_blueprints
+    from repave_engine.cost_actuals import cost_reader_configured
+    from repave_engine.entity_catalog import (
+        EntityLibraryGroup,
+        filter_entities_by_owner,
+        group_catalog_entities,
+        library_family_copy,
+        library_family_known,
+        rollup_fleet_scorecard,
+    )
+
+    owner = owner.strip()
+    family = family.strip()
+    cost_configured = cost_reader_configured(
+        cost_reader=portal_config.cost_reader,
+        cost_actuals_url=portal_config.cost_actuals_url,
+        cost_focus_file=portal_config.cost_focus.file,
+    )
+    entities = build_enriched_portal_catalog_entities(
+        repo_root,
+        output_config,
+        portal_config,
+        cost_actuals_configured=cost_configured,
+    )
+    if owner:
+        entities = filter_entities_by_owner(entities, owner)
+    blueprint_types = {
+        blueprint.name: blueprint.artifact_type for blueprint in list_catalog_blueprints(repo_root)
+    }
+    groups = group_catalog_entities(entities, blueprint_artifact_types=blueprint_types)
+    if family:
+        if not library_family_known(family):
+            raise ValueError(
+                f"unknown library family {family!r}; omit family or use a known family"
+            )
+        match = next((item for item in groups if item.family == family), None)
+        if match is None:
+            title, subtitle = library_family_copy(family)
+            match = EntityLibraryGroup(
+                family=family,
+                title=title,
+                subtitle=subtitle,
+                entities=(),
+            )
+        scoped = list(match.entities)
+        groups = [match]
+    else:
+        scoped = list(entities)
+    return {
+        "entity_count": len(scoped),
+        "owner": owner,
+        "family": family or None,
+        "groups": [item.to_public_dict() for item in groups],
+        "scorecard": rollup_fleet_scorecard(scoped).to_public_dict(),
+    }
 
 
 def resolve_entity_docs(entity: CatalogEntity, *, github_token: str | None) -> dict[str, str]:

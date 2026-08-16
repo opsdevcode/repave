@@ -47,6 +47,10 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "GET /api/v2/component-kinds" in payload["endpoints"]
     assert "POST /api/v2/components/vend" in payload["endpoints"]
     assert "POST /api/v2/components/reclaim" in payload["endpoints"]
+    assert "GET /api/v2/catalog/blueprints" in payload["endpoints"]
+    assert "GET /api/v2/bundles" in payload["endpoints"]
+    assert "GET /api/v2/bundles/{name}" in payload["endpoints"]
+    assert "GET /api/v2/library" in payload["endpoints"]
 
 
 def test_api_v2_upgrades_plan(repo_root, output_config, tmp_path) -> None:
@@ -392,3 +396,54 @@ def test_api_v2_environments_vend_rejects_unknown_set(
         queue = client.app.state.run_queue
         if queue is not None:
             queue.close(wait=False)
+
+
+def test_api_v2_catalog_blueprints_groups_families(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/api/v2/catalog/blueprints")
+
+    assert response.status_code == 200
+    payload = response.json()
+    names = [blueprint["name"] for group in payload["groups"] for blueprint in group["blueprints"]]
+    assert payload["count"] == len(names)
+    assert "terraform-module-generic" in names
+    terraform = next(group for group in payload["groups"] if group["family"] == "terraform")
+    assert terraform["title"]
+    assert terraform["blueprints"][0]["artifact_type"]
+
+
+def test_api_v2_bundles_list_and_detail(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    listed = client.get("/api/v2/bundles")
+
+    assert listed.status_code == 200
+    names = [item["name"] for item in listed.json()["bundles"]]
+    assert "service-stack" in names
+    assert listed.json()["count"] == len(names)
+
+    detail = client.get("/api/v2/bundles/service-stack")
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body["name"] == "service-stack"
+    assert body["members"]
+    assert body["topology"]["nodes"]
+    assert client.get("/api/v2/bundles/missing-bundle").status_code == 404
+
+
+def test_api_v2_library_groups_and_unknown_family(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/api/v2/library")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["entity_count"] == sum(group["count"] for group in payload["groups"])
+    assert "scorecard" in payload
+    assert payload["family"] is None
+
+    terraform = client.get("/api/v2/library?family=terraform")
+    assert terraform.status_code == 200
+    assert terraform.json()["family"] == "terraform"
+
+    unknown = client.get("/api/v2/library?family=not-a-family")
+    assert unknown.status_code == 404
+    assert "unknown library family" in unknown.json()["detail"]

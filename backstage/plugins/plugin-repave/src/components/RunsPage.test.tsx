@@ -34,6 +34,7 @@ describe('runs helpers', () => {
         updatedAt: '2026-08-14T23:00:00Z',
         error: '',
         gatesOutcome: 'passed',
+        previewFiles: [],
       },
     ]);
   });
@@ -52,9 +53,11 @@ describe('runs helpers', () => {
       status: 'failed',
       error: 'gates failed',
       dry_run: true,
+      result: { rendered_files: [{ path: 'main.tf', content: 'resource "aws_s3_bucket" "x" {}' }] },
     });
     expect(row?.runId).toBe('run-3');
     expect(row?.error).toBe('gates failed');
+    expect(row?.previewFiles[0]?.path).toBe('main.tf');
     expect(isActiveRunStatus('failed')).toBe(false);
   });
 

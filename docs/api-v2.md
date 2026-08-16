@@ -14,9 +14,9 @@ Stable JSON HTTP surface introduced for [service decomposition Phase 3](adr/002-
 | `POST` | `/api/v2/generate` | generator, admin | Sync by default; pass `"async": true` to enqueue |
 | `POST` | `/api/v2/runs` | generator, admin | Async generation or `kind: live_plan` (202 + run record) |
 | `GET` | `/api/v2/runs` | viewer+ | List recent runs (`status`, `limit` query params) |
-| `GET` | `/api/v2/runs/{run_id}` | viewer+ | Poll run status |
+| `GET` | `/api/v2/runs/{run_id}` | viewer+ | Poll run status (Backstage `/run-console`) |
 | `GET` | `/api/v2/runs/{run_id}/events` | viewer+ | SSE progress stream |
-| `POST` | `/api/v2/runs/{run_id}/replay` | admin | Requeue failed/dead-letter runs (Backstage `/runs`) |
+| `POST` | `/api/v2/runs/{run_id}/replay` | admin | Requeue failed/dead-letter runs (Backstage `/runs` and `/run-console`) |
 
 Async runs require `durability.async_generation` (or `REPAVE_ASYNC_GENERATION=1`).
 
@@ -40,7 +40,9 @@ request body, include either `pull_request_url` or a `pull_request` object
 The run result includes resource add/change/destroy counts and the OPA verdict
 (`gates_outcome`); when a PR was requested, `pr_attachment` reports whether the body
 was updated. Plan JSON is never retained. Portal:
-`POST /services/{entity_id}/live-plan` redirects to the run console. See
+`POST /services/{entity_id}/live-plan` redirects to the run console. Backstage
+`/services` posts the same `{ kind: "live_plan", entity_id }` body to
+`POST /api/v2/runs`. See
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
 ### Environment vending (`kind: environment_vend`)
@@ -228,8 +230,12 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | Method | Path | Role | Notes |
 | --- | --- | --- | --- |
 | `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` (Backstage `/verify`; 422 = failed verify) |
-| `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on) |
-| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments |
+| `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on; Backstage `/teams`) |
+| `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments (Backstage `/services`) |
+| `GET` | `/api/v2/catalog/blueprints` | viewer+ | Family-grouped blueprint catalog (Backstage `/generate`) |
+| `GET` | `/api/v2/bundles` | viewer+ | Golden-path bundle list (Backstage `/bundles`) |
+| `GET` | `/api/v2/bundles/{name}` | viewer+ | Bundle members + topology (Backstage `/bundles`) |
+| `GET` | `/api/v2/library` | viewer+ | Grouped artifact library (`?family=`, `?owner=`; Backstage `/library`) |
 | `GET` | `/api/v2/audit` | viewer+ | Query audit history (Backstage `/activity`) |
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows (Backstage `/fleet`) |
 | `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (Backstage `/estate`; fleet freshness + audit sparklines) |

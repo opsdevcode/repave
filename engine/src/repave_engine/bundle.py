@@ -38,6 +38,26 @@ class Bundle:
     inputs: tuple[InputField, ...]
     members: tuple[BundleMember, ...]
 
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "members": [
+                {"id": member.member_id, "blueprint": member.blueprint_name}
+                for member in self.members
+            ],
+            "inputs": [
+                {
+                    "name": field.name,
+                    "type": field.type,
+                    "required": field.required,
+                    "description": field.description,
+                }
+                for field in self.inputs
+            ],
+        }
+
 
 def _bundles_dir(repo_root: Path) -> Path:
     return bundles_dir(repo_root)

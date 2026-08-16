@@ -29,6 +29,13 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user
+from repave_engine.blueprint import (
+    bundles_dir,
+    group_blueprints_by_artifact,
+    list_catalog_blueprints,
+)
+from repave_engine.bundle import list_bundles, load_bundle
+from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.catalog_cost import enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
@@ -69,6 +76,7 @@ from repave_engine.org_import_scan import DEFAULT_SCAN_LIMIT, scan_github_org
 from repave_engine.portal_context import (
     audit_file_or_http404,
     build_enriched_portal_catalog_entities,
+    build_library_catalog_payload,
     build_portal_catalog_entities,
     fleet_registry_path_or_http404,
 )
@@ -152,6 +160,10 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/verify",
     "GET /api/v2/catalog/entities",
     "GET /api/v2/catalog/entities/{entity_id}",
+    "GET /api/v2/catalog/blueprints",
+    "GET /api/v2/bundles",
+    "GET /api/v2/bundles/{name}",
+    "GET /api/v2/library",
     "GET /api/v2/audit",
     "GET /api/v2/estate",
     "GET /api/v2/governance/annotations/{blueprint_name}",
@@ -1038,6 +1050,61 @@ def build_api_v2_router(
         if deployment is not None:
             body["deployment_status"] = deployment.to_public_dict()
         return JSONResponse(body)
+
+    @router.get("/catalog/blueprints")
+    async def api_v2_catalog_blueprints(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        blueprints = list_catalog_blueprints(repo_root)
+        groups = group_blueprints_by_artifact(blueprints)
+        return JSONResponse(
+            {
+                "count": len(blueprints),
+                "groups": [item.to_public_dict() for item in groups],
+            }
+        )
+
+    @router.get("/bundles")
+    async def api_v2_bundles(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        bundles = list_bundles(repo_root)
+        return JSONResponse(
+            {
+                "count": len(bundles),
+                "bundles": [item.to_public_dict() for item in bundles],
+            }
+        )
+
+    @router.get("/bundles/{name}")
+    async def api_v2_bundle(request: Request, name: str) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        bundle_file = bundles_dir(repo_root) / name / "bundle.yaml"
+        if not bundle_file.is_file():
+            raise HTTPException(status_code=404, detail=f"bundle not found: {name}")
+        try:
+            bundle = load_bundle(bundle_file.parent, repo_root=repo_root)
+        except (FileNotFoundError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        nodes, edges = build_bundle_topology(bundle, ())
+        body = bundle.to_public_dict()
+        body["topology"] = topology_public(nodes, edges)
+        return JSONResponse(body)
+
+    @router.get("/library")
+    async def api_v2_library(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        owner = str(request.query_params.get("owner", "")).strip()
+        family = str(request.query_params.get("family", "")).strip()
+        try:
+            payload = build_library_catalog_payload(
+                repo_root,
+                output_config,
+                portal_config,
+                owner=owner,
+                family=family,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        return JSONResponse(payload)
 
     @router.get("/audit")
     async def api_v2_audit_query(request: Request) -> JSONResponse:

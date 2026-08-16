@@ -69,6 +69,17 @@ class ScorecardRollupCell:
             return "pass"
         return "unknown"
 
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "key": self.key,
+            "label": self.label,
+            "pass": self.pass_count,
+            "warn": self.warn_count,
+            "fail": self.fail_count,
+            "unknown": self.unknown_count,
+            "worst": self.worst_level,
+        }
+
 
 _LEVEL_RANK: tuple[ScoreLevel, ...] = ("fail", "warn", "unknown", "pass")
 
@@ -86,6 +97,13 @@ class FleetScorecardRollup:
             self.dimensions,
             key=lambda cell: _LEVEL_RANK.index(cell.worst_level),
         ).worst_level
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "entity_count": self.entity_count,
+            "overall": self.overall_level,
+            "dimensions": [cell.to_public_dict() for cell in self.dimensions],
+        }
 
 
 def rollup_fleet_scorecard(entities: Sequence[CatalogEntity]) -> FleetScorecardRollup:
@@ -1085,6 +1103,15 @@ class EntityLibraryGroup:
     title: str
     subtitle: str
     entities: tuple[CatalogEntity, ...]
+
+    def to_public_dict(self) -> dict[str, Any]:
+        return {
+            "family": self.family,
+            "title": self.title,
+            "subtitle": self.subtitle,
+            "count": len(self.entities),
+            "entities": [item.to_public_dict() for item in self.entities],
+        }
 
 
 _LIBRARY_FAMILY_META: dict[str, tuple[str, str]] = {
