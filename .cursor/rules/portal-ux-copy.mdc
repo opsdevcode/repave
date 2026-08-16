@@ -42,7 +42,7 @@ source. Labels, hints, and governance rails should explain **what they get**, no
 
 ## When adding governance or result panels
 
-- Match wording across Backstage `/generate` and leftover `bundle_result.html`
+- Match wording across Backstage `/generate` and `/bundles`
   (lineage block): same terms for standard, policy, and `repave.yaml`.
 - If copy would only make sense to someone who read `engine/src/repave_engine/`,
   rewrite it or move it to `docs/` / code comments.
@@ -54,6 +54,6 @@ source. Labels, hints, and governance rails should explain **what they get**, no
 - [ ] Hints explain user action or outcome, not internal sync/render steps.
 - [ ] New strings are consistent with `docs/portal-design.md` (Copy and voice).
 - [ ] **Behavior unchanged:** Plan (`dry_run=true`) still reaches `/generate`
-  (moved page for single blueprints; `bundle_result.html` for bundles) —
+  (moved page for single blueprints and bundles) —
   see `portal-ui-behavior.mdc`.
 - [ ] Copy/label renames update tests in `engine/tests/test_api.py` in the same PR.

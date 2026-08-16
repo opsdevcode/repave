@@ -111,9 +111,7 @@ def test_blueprint_page_explains_generate_move(repo_root, output_config) -> None
 def test_bundle_topology_section(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get("/bundles/service-stack").text
-
-    assert "bundle-topology" in body
+    assert_surface_moved(client.get("/bundles/service-stack"), "bundle")
 
 
 def test_bundle_result_includes_topology(repo_root, output_config) -> None:
@@ -135,12 +133,9 @@ def test_bundle_result_includes_topology(repo_root, output_config) -> None:
             "provider_services": "ec2,s3",
         },
     )
-    assert response.status_code == 200
-    assert "bundle-topology" in response.text
-    # Dry-run with rendered member files should invite copy, not read as a dead-end failure.
-    if "data-copy-target" in response.text or "Generated files" in response.text:
-        assert "Plan preview ready" in response.text or "Plan complete" in response.text
-        assert "Bundle generation failed" not in response.text
+    assert_surface_moved(response, "bundle-result")
+    assert "bundle-topology" not in response.text
+    assert "Generated files" not in response.text
 
 
 def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:

@@ -1427,15 +1427,9 @@ def test_index_lists_service_stack_bundle(repo_root, output_config) -> None:
 def test_bundle_form_renders_shared_inputs(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/bundles/service-stack")
-    assert response.status_code == 200
-    assert 'name="bundle_name"' in response.text
-    assert 'name="service_name"' in response.text
-    assert "app-service-generic" in response.text
-    assert "data-form-stepper" not in response.text
-    assert "form-stepper" not in response.text
-    assert "data-dry-run-run" in response.text
-    assert "data-bundle-preview" in response.text
-    assert "Repository preview" in response.text
+    assert_surface_moved(response, "bundle")
+    assert "Generated files" not in response.text
+    assert "data-bundle-preview" not in response.text
 
 
 def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) -> None:
@@ -1457,14 +1451,10 @@ def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) ->
             "provider_services": "ec2,s3",
         },
     )
-    assert response.status_code == 200
-    assert "Bundle service-stack" in response.text
-    assert "Generated files" in response.text or "file-explorer" in response.text
-    assert "app-service-generic" in response.text
-    assert "Lineage" in response.text
-    assert "data-bundle-member-tabs" in response.text
-    assert "Repositories" in response.text
-    assert "bundle-topology" in response.text
+    assert_surface_moved(response, "bundle-result")
+    assert "Generated files" not in response.text
+    assert "data-bundle-member-tabs" not in response.text
+    assert "bundle-topology" not in response.text
 
 
 def test_generate_stream_redirects_when_async_enabled(
