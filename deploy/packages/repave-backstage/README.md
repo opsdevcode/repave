@@ -19,7 +19,7 @@ only.
 - Sandbox, runs, and upgrade preview pages via the Backstage proxy
 
 Does **not** scrape HTML forms or call `/api/v1`. CLI and `/api/v2` stay the
-control plane. Chart flag `repave.backstage.enabled` stays **default off**.
+control plane. Chart flag `repave.backstage.enabled` defaults **on**.
 
 ## Deploy
 

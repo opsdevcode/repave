@@ -2,6 +2,9 @@
 # Used with deploy/k8s/hack/chart-smoke-decomposed.sh and postgres-kind.yaml.
 
 repave:
+  # Engine-only kind smoke — do not pull the Backstage image.
+  backstage:
+    enabled: false
   durability:
     enabled: true
     databaseUrl: postgresql://repave:repave@postgres:5432/repave

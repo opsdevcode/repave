@@ -27,7 +27,8 @@ multi_replica_rendered="$(mktemp)"
 worker_hpa_rendered="$(mktemp)"
 fleet_shared_rendered="$(mktemp)"
 env_vending_rendered="$(mktemp)"
-trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${auth0_rendered}" "${state_store_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}"' EXIT
+kind_rendered="$(mktemp)"
+trap 'rm -f "${rendered}" "${portal_rendered}" "${hpa_rendered}" "${decomposed_rendered}" "${job_rendered}" "${decomposed_smoke_rendered}" "${day2_rendered}" "${decomposed_day2_rendered}" "${auth0_rendered}" "${state_store_rendered}" "${digest_rendered}" "${multi_replica_rendered}" "${worker_hpa_rendered}" "${fleet_shared_rendered}" "${env_vending_rendered}" "${kind_rendered}"' EXIT
 
 helm template repave-test "${CHART}" \
   --namespace repave-test \
@@ -46,6 +47,22 @@ done
 
 if ! grep -q 'path: /health' "${rendered}" || ! grep -q 'path: /readyz' "${rendered}"; then
   echo "probes must reference /health and /readyz" >&2
+  exit 1
+fi
+
+if ! grep -q 'app.kubernetes.io/component: backstage' "${rendered}"; then
+  echo "default values must render Backstage (repave.backstage.enabled default on)" >&2
+  exit 1
+fi
+
+helm template repave-kind "${CHART}" \
+  --namespace repave-kind \
+  --set repave.output.githubOrg=example-org \
+  --set persistence.modules.enabled=false \
+  -f "${CHART}/values-kind.yaml" \
+  >"${kind_rendered}"
+if grep -q 'app.kubernetes.io/component: backstage' "${kind_rendered}"; then
+  echo "values-kind.yaml must keep Backstage off (engine-only smoke)" >&2
   exit 1
 fi
 
@@ -83,8 +100,8 @@ if ! grep -q 'kind: HorizontalPodAutoscaler' "${hpa_rendered}"; then
   exit 1
 fi
 
-if grep -q '^  replicas:' "${hpa_rendered}"; then
-  echo "HPA mode must omit Deployment.spec.replicas" >&2
+if grep -A20 'name: repave-hpa$' "${hpa_rendered}" | grep -q '^  replicas:'; then
+  echo "HPA mode must omit portal Deployment.spec.replicas" >&2
   exit 1
 fi
 
@@ -165,6 +182,11 @@ fi
 
 if ! grep -q 'repave.dev/gate-toolchain: "false"' "${decomposed_smoke_rendered}"; then
   echo "values-decomposed-smoke.yaml must render portal without gate toolchain" >&2
+  exit 1
+fi
+
+if grep -q 'app.kubernetes.io/component: backstage' "${decomposed_smoke_rendered}"; then
+  echo "values-decomposed-smoke.yaml must keep Backstage off (engine-only smoke)" >&2
   exit 1
 fi
 

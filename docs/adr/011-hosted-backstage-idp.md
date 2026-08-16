@@ -2,6 +2,8 @@
 
 **Status:** Accepted — Phase 1 (hosted app, generate action, catalog card, default-off
 chart) lands with this decision. HTML portal is deprecated, not deleted.
+**Amendment (2026-08-16):** Owner **Eric Skaggs**. `repave.backstage.enabled` defaults
+**on**. Kind/smoke overlays keep it off. Phase 4 HTML removal is unchanged.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

@@ -8,12 +8,12 @@ Install the repave **portal and API** on Kubernetes. Images build from
 | **Gate toolchain** (default) | `docker build -f deploy/local/Dockerfile -t repave-engine:TAG .` | `image.gateToolchain: true` (default) |
 | **Portal-only** | `docker build -f deploy/local/Dockerfile --build-arg INSTALL_GATE_TOOLCHAIN=0 --build-arg INCLUDE_CORPUS=0 -t repave-engine-portal:TAG .` | `-f values-portal.yaml` or `image.gateToolchain: false` |
 | **Corpus** | `docker build -f deploy/local/Dockerfile.corpus -t repave-corpus:TAG .` | `corpus.enabled: true` (see `values-decomposed.yaml`) |
-| **Backstage** (ADR 011) | `deploy/k8s/hack/build-backstage-bundle.sh` then `docker build -f backstage/packages/backend/Dockerfile -t ghcr.io/opsdevcode/repave-backstage:TAG backstage/` (CI: `container.yml`) | `repave.backstage.enabled` (**default off**); overlay [`values-backstage.yaml`](values-backstage.yaml) sets `portal.html: false`, enables the service catalog with bundled fixtures, and same-host `/` vs `/api` |
+| **Backstage** (ADR 011) | `deploy/k8s/hack/build-backstage-bundle.sh` then `docker build -f backstage/packages/backend/Dockerfile -t ghcr.io/opsdevcode/repave-backstage:TAG backstage/` (CI: `container.yml`) | `repave.backstage.enabled` (**default on**); overlay [`values-backstage.yaml`](values-backstage.yaml) sets `portal.html: false`, enables the service catalog with bundled fixtures, and same-host `/` vs `/api`. Kind/smoke overlays keep the flag off. |
 
 The gate-toolchain image includes pinned CLIs for Plan/dry-run. The portal-only image
 is smaller and suits catalog/auth-only deployments; dry-run gates report missing tools.
 Hosted Backstage is a second Deployment (`:7007`). `make chart-smoke-backstage`
-boots that image on kind. The flag stays default off. See
+boots that image on kind. The flag defaults on (owner: Eric Skaggs). See
 [`docs/backstage.md`](../../../docs/backstage.md).
 
 ## Prerequisites

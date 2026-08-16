@@ -5,6 +5,9 @@
 #     --set image.repository=repave-engine --set image.tag=local --set image.pullPolicy=Never
 
 repave:
+  # Engine-only kind smoke — do not pull the Backstage image.
+  backstage:
+    enabled: false
   output:
     # kind node mounts operator test fixtures at /modules (see kind-co-install).
     modulesRoot: /modules

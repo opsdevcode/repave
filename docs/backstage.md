@@ -42,7 +42,7 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Value stream | `/value-stream` — `GET /api/v2/platform/value-stream` |
 | Feedback | `/feedback` — `GET` + `POST /api/v2/platform/feedback` (`surface=backstage`) |
 | FinOps | `/finops` — `GET /api/v2/platform/finops/export` |
-| Helm | `repave.backstage.enabled` (**default off**); overlay sets `portal.html: false` |
+| Helm | `repave.backstage.enabled` (**default on**); overlay sets `portal.html: false` |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
 
@@ -120,10 +120,9 @@ then `docker build -f backstage/packages/backend/Dockerfile`.
 `make chart-smoke-backstage` builds the engine + Backstage images, installs
 `values-kind.yaml` + `values-backstage.yaml` on kind, and probes engine
 `/health` + `/api/v2`, HTML **410**, and Backstage liveness/readiness.
-CI runs that job when Backstage or overlay paths change. The flag stays
-**default off** until a named owner takes the Backstage release treadmill
-(see [Ownership](#ownership) below).
-`make chart-validate` renders the Deployment when the flag is on.
+CI runs that job when Backstage or overlay paths change. The flag defaults
+**on** (owner: [Eric Skaggs](#ownership)). Kind/smoke overlays keep it off.
+`make chart-validate` renders the Deployment from default values.
 
 Production config uses SQLite (`connection.directory: /tmp/backstage-db`) so a
 chart install does not need Postgres. Swap in a `client: pg` overlay when you
@@ -216,11 +215,12 @@ spec:
 
 ## Ownership
 
-`repave.backstage.enabled` stays **default off**. A named owner is required
-before hosted values flip it on ([ADR 011](adr/011-hosted-backstage-idp.md)).
-Record the owner here when someone takes the treadmill — do not invent a name.
+`repave.backstage.enabled` defaults **on** ([ADR 011](adr/011-hosted-backstage-idp.md)).
+Kind and chart-smoke overlays set it false so engine-only installs do not pull
+the Backstage image. Use `values-backstage.yaml` for the HTML 410 cutover
+(`portal.html: false`) and catalog fixtures.
 
-**Owner:** unassigned.
+**Owner:** Eric Skaggs.
 
 The owner is on the hook for:
 
@@ -228,9 +228,7 @@ The owner is on the hook for:
 - `ghcr.io/opsdevcode/repave-backstage` publish via `container.yml`
 - `chart-smoke-backstage` staying green when plugin or overlay paths change
 - Auth0 / guest boot (never ship blank `AUTH0_*`)
-- The default-on decision for `repave.backstage.enabled`
-
-Until that line is filled, operators opt in with `values-backstage.yaml`.
+- Keeping the default-on flag honest (opt out in kind/smoke overlays only)
 
 ## Later phases (same theme)
 
@@ -239,7 +237,7 @@ Until that line is filled, operators opt in with `values-backstage.yaml`.
 | 2 | My services + sandbox + runs + upgrade preview — **shipped** |
 | 3 | Ingress flip; HTML `Sunset`/`Link`; overlay `portal.html: false` — **shipped** |
 | 4 | Delete HTML templates; FastAPI is API-only (no calendar gate) |
-| — | Chart-smoke boots Backstage (this slice); flag stays default off |
+| — | Chart-smoke boots Backstage; flag defaults **on** (owner: Eric Skaggs) |
 
 ## Related
 
