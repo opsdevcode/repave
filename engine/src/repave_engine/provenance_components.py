@@ -24,6 +24,7 @@ _TYPED_BLOCKS_BY_ARTIFACT: dict[str, str] = {
     "opa-policy": "opaPolicy",
     "azure-policy": "azurePolicy",
     "checkov-policy": "checkovPolicy",
+    "api-contract": "apiContract",
 }
 
 

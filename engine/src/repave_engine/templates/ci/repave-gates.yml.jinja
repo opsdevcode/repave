@@ -116,6 +116,19 @@ jobs:
         run: |
           BUF_URL="https://github.com/bufbuild/buf/releases/download/v{{ buf_version }}/buf-Linux-x86_64.tar.gz"
           curl -sSL "$BUF_URL" | tar xz -C /usr/local/bin --strip-components=2 buf/bin/buf
+{% endif %}{% if needs_spectral %}
+      - name: Set up Node
+        uses: {{ actions['actions/setup-node'].ref }}  # {{ actions['actions/setup-node'].tag }}
+        with:
+          node-version: "{{ node_version }}"
+      - name: Install Spectral
+        run: npm install -g "@stoplight/spectral-cli@{{ spectral_version }}"
+{% endif %}{% if needs_oasdiff %}
+      - name: Install oasdiff
+        run: |
+          curl -sSL \
+            "https://github.com/oasdiff/oasdiff/releases/download/v{{ oasdiff_version }}/oasdiff_{{ oasdiff_version }}_linux_amd64.tar.gz" \
+            | tar xz -C /usr/local/bin oasdiff
 {% endif %}{% if needs_python %}
       - name: Install service dev dependencies
         run: pip install -e ".[dev]"

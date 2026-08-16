@@ -311,4 +311,18 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
         }
         return github_values
 
+    if artifact_type == "api-contract":
+        contract = spec.get("apiContract")
+        if not isinstance(contract, dict):
+            raise ValueError("api-contract provenance missing spec.apiContract")
+        spec_name = str(contract.get("spec_name", artifact_name)).strip()
+        return {
+            "spec_name": spec_name,
+            "organization": str(contract.get("organization", "")).strip(),
+            "description": f"Repave upgrade plan for {spec_name}",
+            "spec_kind": str(contract.get("spec_kind", "openapi")).strip() or "openapi",
+            "api_title": str(contract.get("api_title", spec_name)).strip(),
+            "api_version": str(contract.get("api_version", "0.1.0")).strip(),
+        }
+
     raise ValueError(f"unsupported artifactType {artifact_type!r}")

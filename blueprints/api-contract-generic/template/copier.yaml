@@ -1,0 +1,28 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+  - "{% if spec_kind != 'openapi' %}openapi.yaml{% endif %}"
+  - "{% if spec_kind != 'openapi' %}baseline/openapi.yaml{% endif %}"
+  - "{% if spec_kind != 'asyncapi' %}asyncapi.yaml{% endif %}"
+  - "{% if spec_kind != 'asyncapi' %}baseline/asyncapi.yaml{% endif %}"
+
+spec_name:
+  type: str
+
+organization:
+  type: str
+
+description:
+  type: str
+
+spec_kind:
+  type: str
+  default: openapi
+
+api_title:
+  type: str
+
+api_version:
+  type: str
+  default: "0.1.0"

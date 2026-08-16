@@ -786,6 +786,7 @@ _ARTIFACT_FAMILY_META: dict[str, tuple[str, str]] = {
     "app": ("Application services", "Service repos with Dockerfile, CI, and catalog metadata"),
     "gitops": ("GitOps delivery", "Argo CD and Flux manifests pinned to a chart version"),
     "platform": ("Platform", "GitHub repository provisioning, templates, and team grants"),
+    "api": ("API contracts", "OpenAPI and AsyncAPI specs with Spectral lint and oasdiff"),
 }
 _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
     "platform",
@@ -796,6 +797,7 @@ _ARTIFACT_FAMILY_ORDER: tuple[str, ...] = (
     "app",
     "policy",
     "observability",
+    "api",
 )
 _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "platform": ("github-repo",),
@@ -806,6 +808,7 @@ _FAMILY_ARTIFACT_ORDER: dict[str, tuple[str, ...]] = {
     "app": ("app-service",),
     "policy": ("checkov-policy", "opa-policy", "azure-policy"),
     "observability": ("observability",),
+    "api": ("api-contract",),
 }
 
 
@@ -826,6 +829,8 @@ def artifact_family(artifact_type: str) -> str:
         return "app"
     if artifact_type == "github-repo":
         return "platform"
+    if artifact_type == "api-contract":
+        return "api"
     return artifact_type
 
 

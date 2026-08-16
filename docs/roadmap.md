@@ -7,8 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.27.0  
 
-**In progress:** Forked blueprint packs (local `blueprint_sources`); git/OCI
-fetch stays in the parking lot. Phase 4 HTML removal is a product call.
+**In progress:** API contract golden path (Spectral + oasdiff). Phase 4 HTML
+removal is a product call.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -40,6 +40,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Hosted Backstage feedback submit** (`/feedback` → `POST /api/v2/platform/feedback`);
 **Hosted Backstage run replay** (`/runs` → `POST /api/v2/runs/{id}/replay`);
 **Hosted Backstage default-on** (owner: Eric Skaggs; kind/smoke stay off);
+**Forked blueprint packs** (local extra catalog roots);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -149,7 +150,8 @@ v3.27.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
 | **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
-| **Forked blueprint packs** | In progress | Extra local catalog roots; git/OCI fetch stays parking-lot |
+| **Forked blueprint packs** | Shipped | Extra local catalog roots; git/OCI fetch stays parking-lot |
+| **API contract path** | In progress | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -203,9 +205,28 @@ want to fork repave and add paths, or pull read-only blueprint packs from git.
 **Done when:** A forked repave repo loads an additional blueprint from its own
 tree without patching engine code.
 
-**Status:** In progress — local `blueprints_root` / `blueprint_sources[]` and
-`--blueprint` path/`file://` resolution on this PR. Git/OCI remote fetch stays
-in the [parking lot](#parking-lot).
+**Status:** Shipped on `main` — local extra catalog roots. Git/OCI remote fetch
+stays in the [parking lot](#parking-lot).
+
+---
+
+### API contract path
+
+**Status:** In progress — `api-contract-generic` plus `spectral` / `oasdiff`
+gates on this PR.
+
+**Problem:** Teams keep OpenAPI and AsyncAPI documents in ad-hoc repos with no
+shared lint or breaking-change gate.
+
+**Approach:**
+
+- New `api-contract` artifact type and `blueprints/api-contract-generic/`
+- `spectral` lint (`--fail-severity=error`) and `oasdiff breaking` versus
+  `baseline/` (OpenAPI only; AsyncAPI skips oasdiff)
+- Generated CI installs pinned Spectral and oasdiff, then `repave gates`
+
+**Done when:** `repave generate` produces a spec repo that fails on Spectral
+errors and on oasdiff breaking changes versus the baseline.
 
 ---
 
@@ -215,9 +236,6 @@ in the [parking lot](#parking-lot).
 Scoped enough to promote without new discovery (was deferred from the developer paved-roads
 cluster — detail for shipped paved roads is in the [archive](roadmap-archive.md#developer-paved-roads-v2x)):
 
-- **API contract path** — OpenAPI/AsyncAPI specification repository with `spectral` lint and
-  `oasdiff` breaking-change detection. Valuable and fully standalone, but needs two new gate
-  runners and unblocks nothing else in the cluster.
 - **Database migration path** — Alembic/Flyway/Atlas layout with a destructive-DDL policy and
   a rollback plan. Needs its own policy design before scoping.
 - **Component-level self-service vending** — request a managed database, bucket, or queue

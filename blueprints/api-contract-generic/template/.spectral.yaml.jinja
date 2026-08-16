@@ -1,0 +1,6 @@
+extends:
+{% if spec_kind == "asyncapi" %}
+  - spectral:asyncapi
+{% else %}
+  - spectral:oas
+{% endif %}

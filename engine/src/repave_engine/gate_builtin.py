@@ -25,12 +25,14 @@ from repave_engine.gate_runners import (
     run_molecule,
     run_node_lint,
     run_node_test,
+    run_oasdiff,
     run_opa,
     run_promtool,
     run_provenance_drift,
     run_python_lint,
     run_python_test,
     run_secrets,
+    run_spectral,
     run_terraform_fmt,
     run_terraform_test,
     run_terraform_validate,
@@ -66,8 +68,10 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "opa-policy",
         "azure-policy",
         "checkov-policy",
+        "api-contract",
     }
 )
+_API_CONTRACT_ARTIFACT_TYPES = frozenset({"api-contract"})
 _OPA_GATE_ARTIFACT_TYPES = frozenset(
     {
         "terraform-module",
@@ -302,6 +306,20 @@ register_gate(
         name="datadog-api-validate",
         runner=run_datadog_api_validate,
         artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="spectral",
+        runner=run_spectral,
+        artifact_types=_API_CONTRACT_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="oasdiff",
+        runner=run_oasdiff,
+        artifact_types=_API_CONTRACT_ARTIFACT_TYPES,
     )
 )
 register_gate(

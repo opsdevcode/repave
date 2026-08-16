@@ -58,6 +58,10 @@ def test_artifact_family_observability() -> None:
     assert artifact_family("observability") == "observability"
 
 
+def test_artifact_family_api_contract() -> None:
+    assert artifact_family("api-contract") == "api"
+
+
 def test_group_blueprints_includes_observability_family() -> None:
     groups = group_blueprints_by_artifact(
         [

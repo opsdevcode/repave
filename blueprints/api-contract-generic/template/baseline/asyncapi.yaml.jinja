@@ -1,0 +1,22 @@
+asyncapi: 3.0.0
+info:
+  title: {{ api_title }}
+  version: "{{ api_version }}"
+  description: {{ description }}
+channels:
+  health.ping:
+    address: health.ping
+    messages:
+      ping:
+        $ref: "#/components/messages/Ping"
+operations:
+  receivePing:
+    action: receive
+    channel:
+      $ref: "#/channels/health.ping"
+components:
+  messages:
+    Ping:
+      payload:
+        type: object
+        additionalProperties: false

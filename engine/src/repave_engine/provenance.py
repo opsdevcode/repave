@@ -459,6 +459,24 @@ def _build_github_repo_spec(
     return {"artifactType": "github-repo", "githubRepository": repo}, repo_name
 
 
+def _build_api_contract_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    spec_name = str(values.get("spec_name", blueprint.name))
+    spec_kind = str(values.get("spec_kind", "openapi")).strip() or "openapi"
+    return {
+        "artifactType": "api-contract",
+        "apiContract": {
+            "spec_name": spec_name,
+            "organization": str(values.get("organization", "")).strip(),
+            "spec_kind": spec_kind,
+            "api_title": str(values.get("api_title", spec_name)).strip(),
+            "api_version": str(values.get("api_version", "0.1.0")).strip(),
+        },
+    }, spec_name
+
+
 def _provenance_generated_at() -> str:
     fixed = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT", "").strip()
     if fixed:
@@ -491,6 +509,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_gitops_deployment_spec(blueprint, values)
     elif blueprint.artifact_type == "github-repo":
         artifact_spec, metadata_name = _build_github_repo_spec(blueprint, values)
+    elif blueprint.artifact_type == "api-contract":
+        artifact_spec, metadata_name = _build_api_contract_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

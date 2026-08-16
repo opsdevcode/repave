@@ -77,6 +77,11 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         *_BASELINE_GATES,
     ),
     "github-repo": (*_BASELINE_GATES,),
+    "api-contract": (
+        "spectral",
+        "oasdiff",
+        *_BASELINE_GATES,
+    ),
 }
 
 

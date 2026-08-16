@@ -26,6 +26,21 @@ def test_ci_workflow_path_for_terraform(terraform_blueprint) -> None:
     assert ci_workflow_relpath(terraform_blueprint) == ".github/workflows/terraform-gates.yml"
 
 
+def test_render_ci_workflow_installs_api_contract_tools(repo_root) -> None:
+    from repave_engine.blueprint import load_blueprint
+    from repave_engine.ci_toolchain import OASDIFF_VERSION, SPECTRAL_VERSION
+
+    blueprint = load_blueprint(
+        repo_root / "blueprints" / "api-contract-generic", repo_root=repo_root
+    )
+    text = render_ci_workflow(blueprint)
+    assert "Install Spectral" in text
+    assert SPECTRAL_VERSION in text
+    assert "Install oasdiff" in text
+    assert OASDIFF_VERSION in text
+    assert "repave gates --path ." in text
+
+
 def test_ci_workflow_path_for_helm(repo_root) -> None:
     from repave_engine.blueprint import load_blueprint
 
