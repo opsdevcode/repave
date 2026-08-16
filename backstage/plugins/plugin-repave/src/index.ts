@@ -8,7 +8,7 @@ export {
   buildVendRequest,
 } from './components/SandboxPage';
 export { ReclaimPage, buildReclaimRequest, parseReclaimSummary } from './components/ReclaimPage';
-export { RunsPage, parseRunsPayload, rowsFromRuns } from './components/RunsPage';
+export { RunsPage, parseRunsPayload, rowsFromRuns, canReplayRun } from './components/RunsPage';
 export {
   UpgradePage,
   buildPlanRequest,
