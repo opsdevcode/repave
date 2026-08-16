@@ -195,6 +195,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (Backstage `/estate`; fleet freshness + audit sparklines) |
 | `GET` | `/api/v2/governance/annotations/{blueprint_name}` | viewer+ | Governance preflight annotation previews |
 | `GET` | `/api/v2/github/teams` | viewer+ | Org teams for `github-repo-generic` (requires GitHub credentials) |
+| `POST` | `/api/v2/github/org-scan` | generator, admin | Classify org repos (Backstage `/import/batch`; engine GitHub token) |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
 | `POST` | `/api/v2/imports/plan` | generator, admin | Single-repo import preview (Backstage `/import`) |

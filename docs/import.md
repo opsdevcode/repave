@@ -255,6 +255,9 @@ Classify repositories in a GitHub organization by artifact family before batch i
 Portal: on [`/import/batch`](/import/batch), use **Scan organization** to enqueue an async
 job (when `durability.async_generation` is enabled). Progress appears on the run console;
 results open on a dedicated result page with an **Add all to batch import** action.
+Backstage `/import/batch` runs the same classify call synchronously
+(`POST /api/v2/github/org-scan`) and adds matches to the URL list. Async enqueue
+stays CLI / HTML.
 
 API:
 

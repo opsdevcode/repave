@@ -30,7 +30,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   (register/unregister need admin; 404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
 - Import: `/import` → `POST /api/v2/imports/plan` + `/apply` via the same proxy.
 - Batch import: `/import/batch` → `POST /api/v2/imports/batch/plan` + `/apply`
-  (URL list or org/topic; org-scan job stays CLI).
+  and `POST /api/v2/github/org-scan` (sync classify; async org-scan job stays CLI).
 - Verify: `/verify` → `POST /api/v2/verify` (422 is a failed verify, not transport).
 - Estate: `/estate` → `GET /api/v2/estate` (404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
 - Adoption: `/adoption` → `GET /api/v2/platform/metrics` (admin; 404 if unset).

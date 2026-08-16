@@ -28,8 +28,10 @@ export {
 export {
   ImportBatchPage,
   buildBatchRequest,
+  buildOrgScanRequest,
   parseBatchPlan,
   parseBatchApply,
+  parseOrgScanResult,
 } from './components/ImportBatchPage';
 export {
   VerifyPage,
