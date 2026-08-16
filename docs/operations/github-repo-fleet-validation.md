@@ -82,7 +82,8 @@ CHART_SMOKE_FLEET_SNAPSHOT_KEEP_CLUSTER=1 make chart-smoke-fleet-snapshot
 - ≥2 GPRs with `repave.dev/managed-by=repave-fleet` after registry seed
 - After portal/API unregister of one URL, that GPR is pruned; the other remains
 - Operator status snapshot `version==2` matches remaining fleet repos
-- `/platform/fleet` shows the snapshot overlay
+- `GET /api/v2/fleet` shows the remaining repos plus operator snapshot overlay
+  (`GET /platform/fleet` is a Backstage pointer)
 
 Inspect:
 
@@ -150,7 +151,7 @@ portal unregister) so fleetsync prunes the GPR.
 There is no dedicated Prometheus alert for “register without GPR” today. Watch:
 
 - Operator logs for fleetsync errors (`REPAVE_FLEET_SYNC_ENABLED`)
-- Portal `/platform/fleet` for missing or drift-behind rows after snapshot refresh
+- `GET /api/v2/fleet` (or Backstage Fleet) for missing or drift-behind rows after snapshot refresh
 - Apply/audit messages for `Fleet register failed`
 
 After Helm upgrades that touch fleet shared PVC overlays, run
