@@ -4,6 +4,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import yaml
+
 from repave_engine.blueprint import CheckovGateConfig, TflintGateConfig
 from repave_engine.gate_registry import GateContext, GateResult
 from repave_engine.gate_toolchain import (
@@ -128,6 +130,18 @@ def tflint_config_args(output_dir: Path, config: TflintGateConfig) -> list[str]:
     return []
 
 
+def _skip_checks_from_config_file(config_path: Path) -> tuple[str, ...]:
+    if not config_path.is_file():
+        return ()
+    loaded = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        return ()
+    raw = loaded.get("skip-check", [])
+    if not isinstance(raw, list):
+        return ()
+    return tuple(str(item) for item in raw if item)
+
+
 def build_checkov_command(
     output_dir: Path,
     config: CheckovGateConfig,
@@ -144,7 +158,12 @@ def build_checkov_command(
     if checks_dir.is_dir():
         cmd.extend(["--external-checks-dir", str(checks_dir)])
 
-    skip_checks = {*config.skip_checks, *extra_skip_checks}
+    # Checkov CLI --skip-check replaces skip-check in --config-file. Pass the union.
+    skip_checks = {
+        *config.skip_checks,
+        *_skip_checks_from_config_file(config_path),
+        *extra_skip_checks,
+    }
     for check_id in sorted(skip_checks):
         cmd.extend(["--skip-check", check_id])
 
