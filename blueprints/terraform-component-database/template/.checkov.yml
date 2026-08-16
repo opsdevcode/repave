@@ -1,0 +1,4 @@
+external-checks-dir:
+  - policy/checkov
+framework:
+  - terraform

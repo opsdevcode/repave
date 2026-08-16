@@ -1,0 +1,27 @@
+# Copier template metadata for terraform-component-bucket
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+
+stack_name:
+  type: str
+  help: Stack name
+
+description:
+  type: str
+  help: Stack description
+
+cloud_provider:
+  type: str
+  help: Cloud provider (aws, azure, gcp)
+
+environment:
+  type: str
+  help: Environment tier (dev, staging, prod)
+
+pinned_modules:
+  type: yaml
+  default:
+    - name: bucket
+      source: ./modules/_s3-stub

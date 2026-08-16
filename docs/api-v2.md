@@ -139,6 +139,9 @@ vending. repave does not run `terraform apply`. See
 
 `gitops_repo` falls back to `environment_vending.gitops_repo` when omitted.
 Default path: `{path_prefix}/{kind}/{name}` (`path_prefix` defaults to `components`).
+Built-in kinds render `terraform-component-database`, `terraform-component-bucket`,
+and `terraform-component-queue` (same GitOps composition as
+`terraform-environment-stack`, with an RDS/S3/SQS-shaped stub module).
 
 | Method | Path | Role | Notes |
 | --- | --- | --- | --- |

@@ -68,7 +68,7 @@ Recommended **`policy_pack_source`** / **`policy_profile`** pairs (see also
 
 | Blueprint | Pack source | Profile |
 | --------- | ----------- | ------- |
-| `terraform-module-generic`, `terraform-module-resource`, `terraform-environment-stack` | `repave-default` | `estate-default` |
+| `terraform-module-generic`, `terraform-module-resource`, `terraform-environment-stack`, `terraform-component-database`, `terraform-component-bucket`, `terraform-component-queue` | `repave-default` | `estate-default` |
 | `checkov-policy-generic` | `repave-checkov-pack` | `checkov-full` |
 | `opa-policy-generic` | `repave-opa-pack` | `opa-focused` |
 | `azure-policy-generic` | `repave-azure-samples` | `azure-community` |

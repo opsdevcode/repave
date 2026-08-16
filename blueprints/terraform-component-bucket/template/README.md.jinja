@@ -1,0 +1,50 @@
+# {{ stack_name }} ({{ environment }})
+
+{{ description }}
+
+## Overview
+
+This repository is a **managed object bucket** GitOps stack for `{{ cloud_provider }}` /
+`{{ environment }}`. It composes pinned Terraform modules; provenance is recorded
+in `repave.yaml`.
+
+{% if pinned_modules %}
+Pinned modules:
+
+{% for mod in pinned_modules %}
+- `{{ mod.name }}` → `{{ mod.source }}`{% if mod.version %} @ `{{ mod.version }}`{% endif %}
+
+{% endfor %}
+{% endif %}
+
+## Layout
+
+- `main.tf` — module composition
+- `modules/_s3-stub` — replace with your pinned object-storage module
+- `repave.yaml` — repave golden path provenance
+
+## Standard
+
+This stack was generated against repave standard `{{ _repave_standard_source }}`
+v{{ _repave_standard_version }}.
+
+## Usage
+
+```hcl
+# From a parent root module or after cloning this repository:
+terraform init
+terraform plan -var="environment=dev"
+```
+
+Replace pinned module sources in `main.tf` with your estate
+`tf-*` / `tfm-*` module coordinates before deploying to shared environments.
+
+## Local development
+
+```bash
+terraform init
+terraform validate
+terraform test
+```
+
+The `provenance-drift` gate validates `repave.yaml` on every generate/publish.

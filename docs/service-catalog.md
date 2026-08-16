@@ -90,7 +90,8 @@ payload — GitOps PR only; no apply credentials in repave. JSON clients use
 `GET /api/v2/deployment-sets` and `POST /api/v2/environments/vend` (Backstage
 `/sandbox` included). Managed components use `GET /api/v2/component-kinds` and
 `POST /api/v2/components/vend` (Backstage `/vend`) — GitOps PR only; not
-`POST /api/v2/components/plan`.
+`POST /api/v2/components/plan`. Built-in kinds render
+`terraform-component-database` / `-bucket` / `-queue`.
 
 ## Initiatives
 

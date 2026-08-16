@@ -1,0 +1,11 @@
+inputs:
+  stack_name: conformance
+  description: Conformance fixture managed database
+  cloud_provider: aws
+  environment: dev
+  pinned_modules: '[{"name":"database","source":"./modules/_rds-stub","repo_name":"_rds-stub"}]'
+required_files:
+  - repave.yaml
+  - README.md
+  - main.tf
+snapshot: false

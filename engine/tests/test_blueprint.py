@@ -190,6 +190,9 @@ def test_list_blueprints(repo_root: Path) -> None:
     assert "terraform-module-generic" in names
     assert "terraform-module-resource" in names
     assert "terraform-environment-stack" in names
+    assert "terraform-component-database" in names
+    assert "terraform-component-bucket" in names
+    assert "terraform-component-queue" in names
     assert "ansible-role-generic" in names
     assert "ansible-playbook-project" in names
     assert "ansible-collection-generic" in names

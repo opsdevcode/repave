@@ -1,0 +1,109 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: terraform-component-bucket
+  version: 0.1.0
+  description: GitOps stack for a managed object-bucket component (S3-shaped stub).
+spec:
+  artifactType: terraform-environment-stack
+  standard:
+    source: standards/terraform-environment-stack-standard.md
+    version: 0.1.0
+  inputs:
+    - name: stack_name
+      type: string
+      required: true
+      description: Short name for this stack (for example platform, networking).
+      guided_from: "{environment}-{cloud_provider}"
+    - name: description
+      type: string
+      required: true
+      description: What this environment stack deploys.
+      guided_from: "{environment} environment stack on {cloud_provider}."
+    - name: cloud_provider
+      type: string
+      required: true
+      description: Cloud provider for this stack.
+      enum:
+        - aws
+        - azure
+        - gcp
+      default: aws
+    - name: environment
+      type: string
+      required: true
+      description: Deployment environment tier.
+      enum:
+        - dev
+        - staging
+        - prod
+      default: dev
+    - name: owner
+      type: string
+      required: true
+      default: platform-engineering
+      description: Owning team for cost allocation (Owner tag).
+    - name: cost_center
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Optional cost center for chargeback (CostCenter tag).
+    - name: pinned_modules
+      type: string
+      required: false
+      description: JSON array of pinned Terraform modules (portal module inventory picker).
+      default: '[{"name":"bucket","source":"./modules/_s3-stub","repo_name":"_s3-stub"}]'
+    - name: policy_pack_source
+      type: string
+      required: false
+      advanced: true
+      default: repave-default
+      description: Pack registry entry from policy/catalog.json pack_sources.
+    - name: policy_profile
+      type: string
+      required: false
+      advanced: true
+      default: estate-default
+      description: Profile from policy/catalog.json (use custom with policy_rules).
+    - name: policy_rules
+      type: string
+      required: false
+      advanced: true
+      multi: true
+      default: ""
+      description: Rule IDs from policy/catalog.json when policy_profile is custom.
+  template:
+    engine: copier
+    path: template
+  gates:
+    - terraform-fmt
+    - terraform-validate
+    - terraform-test
+    - tflint
+    - checkov
+    - infracost
+    - secrets
+    - opa
+    - docs-drift
+    - provenance-drift
+  checkov:
+    policies_source: policy/checkov/policies
+    policy_version: 1.2.0
+  opa:
+    policies_source: policy/opa/policies
+    policy_version: 1.0.0
+  gate_config:
+    checkov:
+      external_checks_dir: policy/checkov
+      config_file: .checkov.yml
+    opa:
+      policies_dir: policy/opa/policies
+      fixtures_dir: policy/opa/fixtures
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "env-{cloud_provider}-{stack_name}"
+      title_template: "Bootstrap {environment} stack {stack_name} on {cloud_provider}"

@@ -1,0 +1,11 @@
+inputs:
+  stack_name: conformance
+  description: Conformance fixture managed bucket
+  cloud_provider: aws
+  environment: dev
+  pinned_modules: '[{"name":"bucket","source":"./modules/_s3-stub","repo_name":"_s3-stub"}]'
+required_files:
+  - repave.yaml
+  - README.md
+  - main.tf
+snapshot: false
