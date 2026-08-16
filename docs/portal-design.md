@@ -341,7 +341,7 @@ holds Search (⌘K), session, and environment badges.
 | **Live plan surfaces** | Entity preflight panel, busy overlay on submit, result hero with resource counts |
 | **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth with `guided_from` identity fill |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
-| **Hosted Backstage IDP** | **In progress** — chart-smoke for the Backstage image ([ADR 011](adr/011-hosted-backstage-idp.md)); Phases 1–3 shipped |
+| **Hosted Backstage IDP** | **In progress** — named owner before default-on ([ADR 011](adr/011-hosted-backstage-idp.md)); admin pages through add-component shipped |
 | **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
