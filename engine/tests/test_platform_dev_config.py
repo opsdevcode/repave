@@ -111,8 +111,8 @@ def test_platform_dev_pages_render(
         assert_surface_moved(response, surface_id)
 
     sandbox = client.get("/sandbox")
-    assert sandbox.status_code == 200
-    assert "Request a sandbox" in sandbox.text
+    assert_surface_moved(sandbox, "sandbox")
+    assert "Request a sandbox" not in sandbox.text
 
     home = client.get("/").text
     primary = home.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]

@@ -177,25 +177,11 @@ def test_run_console_contract(
     assert submit.status_code == 202
     run_id = submit.json()["run_id"]
     page = client.get(f"/runs/{run_id}")
-    assert page.status_code == 200
-    body = page.text
-    assert "data-run-console" in body
-    assert "run-console__gate-table" in body
-    assert "run-console-log" in body
-    assert 'data-stage="publish"' in body
-    assert "run-console__stage-index" in body
-    assert "run-console__stepper" in body
-    assert "data-run-stepper-fill" in body
-    assert "run-console__publish-chip" in body
-    assert "Starting apply" in body
-    assert 'data-dry-run="true"' in body
-    assert "run-console__outcome" in body
-    assert "no GitHub repository is created" in body
-    assert f"/api/v1/runs/{run_id}/events" not in body
-    assert 'data-run-id="' + run_id + '"' in body
+    assert_surface_moved(page, "run-console")
+    assert "data-run-console" not in page.text
+    assert f"/api/v1/runs/{run_id}/events" not in page.text
     js = client.get("/static/repave.js").text
     assert "startStatusPolling" in js
-    assert "source.close()" not in js.split("source.onerror")[1].split("startStatusPolling")[0]
 
 
 def test_command_palette_contract(repo_root, output_config) -> None:

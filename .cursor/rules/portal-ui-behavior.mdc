@@ -20,7 +20,7 @@ intercepts `method="post"` submits (except `data-repave-native-submit`, logout,
 and checked `stream=1`) via `fetch`, keeps the user on the form, and shows
 `[data-portal-submit-error]` / `.form-validation` for 4xx/5xx (including
 `Insufficient role`). Success still replaces the document with HTML or follows
-redirects to `/runs/{id}`.
+redirects to `/runs/{id}` (pointer page to Backstage `/run-console`).
 
 ## Required flows (every golden path)
 

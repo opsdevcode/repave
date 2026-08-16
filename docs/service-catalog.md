@@ -52,7 +52,7 @@ Local demo: `make platform-dev-setup && make serve` — see
 | --- | --- | --- |
 | `/home` | Builders | My services (owner / default team filter) |
 | `/teams/{slug}` | Builders | Team maturity + initiatives |
-| `/sandbox` | Builders | Request environment from a deployment set |
+| `/sandbox` | Builders | Pointer to Backstage `/sandbox` (`POST /api/v2/environments/vend`) |
 | Backstage `/vend` | Builders | Request a managed database, bucket, or queue |
 | `/library` | Builders | Maturity pills + initiative chips on entities |
 | Backstage `/library` | Builders | Family-grouped catalog via `GET /api/v2/library` |

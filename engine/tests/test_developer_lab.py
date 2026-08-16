@@ -105,17 +105,9 @@ def test_developer_lab_portal_routes(v3_lab_root: Path, monkeypatch: pytest.Monk
     assert_surface_moved(home, "home")
 
     lab = client.get("/lab")
-    assert lab.status_code == 200
-    assert "Request developer lab" in lab.text
-    assert "fleet-tile" in lab.text
-    assert "fleet-tile--choice" in lab.text
-    assert "my-feature-lab" in lab.text
-    assert "Sandboxes expire" not in lab.text
-    assert "environment_vending" not in lab.text
-    assert "durability.async_generation" not in lab.text
-    assert "service_catalog.deployment_sets" not in lab.text
-
-    assert client.get("/sandbox").status_code == 200
+    assert_surface_moved(lab, "sandbox")
+    assert "Request developer lab" not in lab.text
+    assert_surface_moved(client.get("/sandbox"), "sandbox")
 
 
 def test_lab_route_404_when_developer_lab_disabled(

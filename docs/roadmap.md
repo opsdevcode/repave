@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.40.0  
 
-**In progress:** Phase 4 leftover HTML (run console, sandbox, landing).
+**In progress:** Phase 4 leftover HTML (landing).
 OCI blueprint pack pull stays parking-lot.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
@@ -22,6 +22,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**HTML run console and sandbox retired**
+(pointer pages → Backstage `/runs`, `/run-console`, `/sandbox` + `/api/v2`);
 **HTML upgrade form and results retired**
 (pointer pages → Backstage `/upgrade` + CLI/`/api/v2`);
 **HTML bundle form and results retired**
@@ -169,7 +171,7 @@ v3.40.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; catalog/platform/import/verify/result/bundle/upgrade HTML retired; leftover runs/sandbox/landing until 14 Feb 2027 ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; catalog/platform/import/verify/result/bundle/upgrade/runs/sandbox HTML retired; leftover landing until 14 Feb 2027 ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
@@ -192,8 +194,8 @@ Kind/smoke overlays keep the flag off. Ops, standards, campaigns, and builder
 browse pages have Backstage pages. `/generate` posts `POST /api/v2/generate`
 (dry-run default). HTML generate form, results, catalog, platform, import, and
 verify pages are pointer pages. Bundle form and results are pointer pages.
-Phase 4 leftover templates (run console, sandbox, landing) stay until
-14 Feb 2027.
+Run console and sandbox HTML are pointer pages. Phase 4 leftover templates
+(landing) stay until 14 Feb 2027.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -211,10 +213,10 @@ has Backstage pages, including `/ops`, `/standards`, `/campaigns`, and builder
 browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
 `/run-console`). `/generate` picks a blueprint, fills inputs, and dry-runs
 `POST /api/v2/generate`. HTML generate form, results, catalog, platform, import,
-and verify are gone. Bundle and upgrade HTML are pointer pages. Apply stays CLI
-and operator (`POST /api/v2/upgrades/apply`). Chart-smoke and GHCR publish
-already shipped. Remaining Phase 4 work is leftover Jinja (runs, sandbox,
-landing).
+and verify are gone. Bundle, upgrade, run console, and sandbox HTML are pointer
+pages. Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke
+and GHCR publish already shipped. Remaining Phase 4 work is leftover Jinja
+(landing).
 
 ---
 
