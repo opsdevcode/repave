@@ -35,6 +35,10 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Adoption: `/adoption` → `GET /api/v2/platform/metrics` (admin; 404 if unset).
 - Activity: `/activity` → `GET /api/v2/audit` (404 if audit is unset).
 - Maturity: `/maturity` → `GET /api/v2/platform/maturity` + `/initiatives` (read-only).
+- Compliance: `/compliance` → `GET /api/v2/platform/compliance`.
+- Value stream: `/value-stream` → `GET /api/v2/platform/value-stream`.
+- Feedback: `/feedback` → `GET /api/v2/platform/feedback` (submit stays HTML).
+- FinOps: `/finops` → `GET /api/v2/platform/finops/export`.
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **off**. Overlay
   `values-backstage.yaml` sets `portal.html: false` (HTML routes 410),
@@ -55,7 +59,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card + `/my-services` + `/sandbox` + `/runs` + `/upgrade` + `/fleet` + `/import` + `/verify` + `/estate` + `/adoption` + `/activity` + `/maturity` |
+| `backstage/plugins/plugin-repave` | Lineage card + admin pages (`/fleet` … `/finops`) |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality

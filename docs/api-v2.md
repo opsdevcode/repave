@@ -206,6 +206,10 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/platform/initiatives` | admin | Create initiative (`title` required) |
 | `PATCH` | `/api/v2/platform/initiatives/{id}` | admin | Partial update (title, targets, `active`, …) |
 | `DELETE` | `/api/v2/platform/initiatives/{id}` | admin | Soft-deactivate (`active: false`) |
+| `GET` | `/api/v2/platform/compliance` | admin | Gate pass rate + bypasses (Backstage `/compliance`) |
+| `GET` | `/api/v2/platform/value-stream` | admin | Adoption history (Backstage `/value-stream`) |
+| `GET` | `/api/v2/platform/feedback` | admin | CSAT rollup (Backstage `/feedback`) |
+| `GET` | `/api/v2/platform/finops/export` | admin | Chargeback JSON/CSV (Backstage `/finops`) |
 
 ## `/api/v1` deprecation
 
