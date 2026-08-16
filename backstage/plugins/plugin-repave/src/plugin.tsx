@@ -1,16 +1,22 @@
 import { createFrontendPlugin, PageBlueprint } from '@backstage/frontend-plugin-api';
 import { EntityCardBlueprint } from '@backstage/plugin-catalog-react/alpha';
 import AppsIcon from '@material-ui/icons/Apps';
+import AssessmentIcon from '@material-ui/icons/Assessment';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
+import BarChartIcon from '@material-ui/icons/BarChart';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import HistoryIcon from '@material-ui/icons/History';
 import MapIcon from '@material-ui/icons/Map';
 import StorageIcon from '@material-ui/icons/Storage';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
+import TimelineIcon from '@material-ui/icons/Timeline';
+import { ActivityPage } from './components/ActivityPage';
 import { EstatePage } from './components/EstatePage';
 import { FleetPage } from './components/FleetPage';
 import { ImportPage } from './components/ImportPage';
+import { MaturityPage } from './components/MaturityPage';
+import { MetricsPage } from './components/MetricsPage';
 import { MyServicesPage } from './components/MyServicesPage';
 import { RepaveLineageCard } from './components/RepaveLineageCard';
 import { RunsPage } from './components/RunsPage';
@@ -98,6 +104,36 @@ const estatePage = PageBlueprint.make({
   },
 });
 
+const metricsPage = PageBlueprint.make({
+  name: 'adoption',
+  params: {
+    path: '/adoption',
+    title: 'Adoption',
+    icon: <AssessmentIcon />,
+    loader: async () => <MetricsPage />,
+  },
+});
+
+const activityPage = PageBlueprint.make({
+  name: 'activity',
+  params: {
+    path: '/activity',
+    title: 'Activity',
+    icon: <TimelineIcon />,
+    loader: async () => <ActivityPage />,
+  },
+});
+
+const maturityPage = PageBlueprint.make({
+  name: 'maturity',
+  params: {
+    path: '/maturity',
+    title: 'Maturity',
+    icon: <BarChartIcon />,
+    loader: async () => <MaturityPage />,
+  },
+});
+
 const repaveLineageCard = EntityCardBlueprint.make({
   name: 'lineage',
   params: {
@@ -117,6 +153,9 @@ export const repavePlugin = createFrontendPlugin({
     importPage,
     verifyPage,
     estatePage,
+    metricsPage,
+    activityPage,
+    maturityPage,
     repaveLineageCard,
   ],
 });

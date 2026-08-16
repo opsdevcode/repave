@@ -35,3 +35,10 @@ export {
   parseEstatePayload,
   rowsFromTiles,
 } from './components/EstatePage';
+export { MetricsPage, parseMetricsSnapshot } from './components/MetricsPage';
+export { ActivityPage, parseAuditPayload, rowsFromEntries } from './components/ActivityPage';
+export {
+  MaturityPage,
+  parseMaturityPayload,
+  parseInitiativesPayload,
+} from './components/MaturityPage';

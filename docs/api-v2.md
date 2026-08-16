@@ -190,7 +190,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` (Backstage `/verify`; 422 = failed verify) |
 | `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on) |
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments |
-| `GET` | `/api/v2/audit` | viewer+ | Query audit history (same filters as v1) |
+| `GET` | `/api/v2/audit` | viewer+ | Query audit history (Backstage `/activity`) |
 | `GET` | `/api/v2/fleet` | viewer+ | Fleet registry rows (Backstage `/fleet`) |
 | `GET` | `/api/v2/estate` | viewer+ | Estate map tiles (Backstage `/estate`; fleet freshness + audit sparklines) |
 | `GET` | `/api/v2/governance/annotations/{blueprint_name}` | viewer+ | Governance preflight annotation previews |
@@ -200,9 +200,9 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/deployment-sets` | viewer+ | Named sandbox / lab deployment sets |
 | `POST` | `/api/v2/environments/vend` | generator, admin | Request a sandbox from a deployment set |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
-| `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption / DX outcome metrics (`?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
-| `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity distribution — see [`service-catalog.md`](service-catalog.md) |
-| `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress rollup (+ inactive list) |
+| `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption (Backstage `/adoption`; `?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
+| `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity (Backstage `/maturity`) — see [`service-catalog.md`](service-catalog.md) |
+| `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress (Backstage `/maturity`; + inactive list) |
 | `POST` | `/api/v2/platform/initiatives` | admin | Create initiative (`title` required) |
 | `PATCH` | `/api/v2/platform/initiatives/{id}` | admin | Partial update (title, targets, `active`, …) |
 | `DELETE` | `/api/v2/platform/initiatives/{id}` | admin | Soft-deactivate (`active: false`) |
