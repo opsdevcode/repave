@@ -204,7 +204,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/imports/batch/apply` | generator, admin | Open batch import PRs (engine GitHub token) |
 | `GET` | `/api/v2/deployment-sets` | viewer+ | Named sandbox / lab deployment sets |
 | `POST` | `/api/v2/environments/vend` | generator, admin | Request a sandbox from a deployment set |
-| `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
+| `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandboxes (Backstage `/reclaim`) |
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption (Backstage `/adoption`; `?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 | `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity (Backstage `/maturity`) — see [`service-catalog.md`](service-catalog.md) |
 | `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress (Backstage `/maturity`; + inactive list) |
