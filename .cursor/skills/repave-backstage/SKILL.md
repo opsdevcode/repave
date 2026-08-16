@@ -42,7 +42,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   (create/edit/deactivate via POST/PATCH/DELETE).
 - Compliance: `/compliance` → `GET /api/v2/platform/compliance`.
 - Value stream: `/value-stream` → `GET /api/v2/platform/value-stream`.
-- Feedback: `/feedback` → `GET /api/v2/platform/feedback` (submit stays HTML).
+- Feedback: `/feedback` → `GET` + `POST /api/v2/platform/feedback` (`surface=backstage`).
 - FinOps: `/finops` → `GET /api/v2/platform/finops/export`.
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **off**. Overlay

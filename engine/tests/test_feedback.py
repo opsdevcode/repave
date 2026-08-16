@@ -11,6 +11,7 @@ from repave_engine.feedback import (
     build_feedback_event,
     build_feedback_rollup,
     normalize_friction_tags,
+    normalize_surface,
     validate_csat,
 )
 from repave_engine.feedback_store import (
@@ -37,6 +38,16 @@ def test_validate_csat_range() -> None:
 def test_normalize_friction_tags_dedupes() -> None:
     tags = normalize_friction_tags(["slow", "slow", "other"])
     assert tags == ("slow", "other")
+
+
+def test_normalize_surface_accepts_backstage() -> None:
+    assert normalize_surface("backstage") == "backstage"
+    try:
+        normalize_surface("portal")
+        raise AssertionError("expected ValueError")
+    except ValueError as exc:
+        assert "backstage" in str(exc)
+        assert "result" in str(exc)
 
 
 def test_build_feedback_rollup_aggregates() -> None:
@@ -189,3 +200,24 @@ def test_platform_feedback_post_validates_csat(
         },
     )
     assert response.status_code == 400
+
+
+def test_platform_feedback_post_accepts_backstage_surface(
+    repo_root: Path,
+    output_config,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "1")
+    monkeypatch.setenv("REPAVE_PLATFORM_FEEDBACK_FILE", str(tmp_path / "feedback.jsonl"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/api/v2/platform/feedback",
+        json={
+            "csat": 4,
+            "blueprint_name": "helm-chart-generic",
+            "surface": "backstage",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["surface"] == "backstage"
