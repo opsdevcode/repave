@@ -51,25 +51,52 @@ resource "aws_security_group" "this" {
   tags        = var.tags
 }
 
+resource "aws_default_security_group" "this" {
+  vpc_id = aws_vpc.this.id
+  tags   = var.tags
+}
+
+resource "aws_db_parameter_group" "this" {
+  name   = "${replace(var.name_prefix, "_", "-")}-pg"
+  family = "postgres16"
+
+  parameter {
+    name  = "log_statement"
+    value = "ddl"
+  }
+
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"
+  }
+
+  parameter {
+    name  = "rds.force_ssl"
+    value = "1"
+  }
+}
+
 resource "aws_db_instance" "this" {
-  identifier                      = replace(var.name_prefix, "_", "-")
-  engine                          = "postgres"
-  engine_version                  = "16"
-  instance_class                  = "db.t3.micro"
-  allocated_storage               = 20
-  username                        = "app"
-  manage_master_user_password     = true
-  storage_encrypted               = true
-  publicly_accessible             = false
-  backup_retention_period         = 7
-  copy_tags_to_snapshot           = true
-  auto_minor_version_upgrade      = true
-  deletion_protection             = false
-  skip_final_snapshot             = true
-  vpc_security_group_ids          = [aws_security_group.this.id]
-  db_subnet_group_name            = aws_db_subnet_group.this.name
-  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
-  tags                            = var.tags
+  identifier                          = replace(var.name_prefix, "_", "-")
+  engine                              = "postgres"
+  engine_version                      = "16"
+  instance_class                      = "db.t3.micro"
+  allocated_storage                   = 20
+  username                            = "app"
+  manage_master_user_password         = true
+  storage_encrypted                   = true
+  publicly_accessible                 = false
+  iam_database_authentication_enabled = true
+  backup_retention_period             = 7
+  copy_tags_to_snapshot               = true
+  auto_minor_version_upgrade          = true
+  deletion_protection                 = false
+  skip_final_snapshot                 = true
+  vpc_security_group_ids              = [aws_security_group.this.id]
+  db_subnet_group_name                = aws_db_subnet_group.this.name
+  parameter_group_name                = aws_db_parameter_group.this.name
+  enabled_cloudwatch_logs_exports     = ["postgresql", "upgrade"]
+  tags                                = var.tags
 }
 
 output "resource_ids" {

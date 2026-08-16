@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import repave_engine.gate_runners as _gr
@@ -14,6 +15,27 @@ from repave_engine.gate_runners._core import (
 )
 from repave_engine.gate_runners.helm import _helm_chart_dir
 from repave_engine.policy_selection import load_policy_selection_file
+
+
+def _checkov_fail_message(result: subprocess.CompletedProcess[str]) -> str:
+    stderr = (result.stderr or "").strip()
+    if stderr:
+        return stderr
+    failed: list[str] = []
+    lines = (result.stdout or "").splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped.startswith("Check:"):
+            continue
+        nxt = lines[index + 1].strip() if index + 1 < len(lines) else ""
+        if "FAILED" not in nxt:
+            continue
+        check_id = stripped.removeprefix("Check:").strip().split(":", 1)[0].strip()
+        if check_id:
+            failed.append(check_id)
+    if failed:
+        return "checkov failed: " + ", ".join(failed)
+    return "checkov failed"
 
 
 def run_secrets(ctx: GateContext) -> GateResult:
@@ -49,7 +71,7 @@ def run_checkov(ctx: GateContext) -> GateResult:
     )
     if result.returncode == 0:
         return GateResult("checkov", True, False, "checkov passed")
-    return GateResult("checkov", False, False, result.stderr.strip() or "checkov failed")
+    return GateResult("checkov", False, False, _checkov_fail_message(result))
 
 
 def _write_helm_rendered_manifest(output_dir: Path, ctx: GateContext) -> tuple[Path | None, str]:
