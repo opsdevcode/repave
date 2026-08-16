@@ -12,6 +12,13 @@ from typing import Any
 
 from repave_engine.artifact_store import ArtifactStore, resolve_artifact_store
 from repave_engine.auth_context import reset_acting_user, set_acting_user
+from repave_engine.component_registry import ComponentRegistryError, register_component_from_vend
+from repave_engine.component_vend import (
+    is_component_vend_run as is_component_vend_payload,
+)
+from repave_engine.component_vend import (
+    run_component_vend,
+)
 from repave_engine.durability_store import (
     load_durability_runtime,
     load_durability_store_settings,
@@ -57,7 +64,11 @@ from repave_engine.run_audit import record_async_run_audit
 from repave_engine.run_events import TERMINAL_EVENT_KINDS, RunEventStore, build_run_event_store
 from repave_engine.run_job_dispatcher import RunJobDispatcher, build_run_job_dispatcher
 from repave_engine.run_store import RunRecord, RunStatus, RunStore
-from repave_engine.settings import OutputConfig, load_environment_vending_config
+from repave_engine.settings import (
+    OutputConfig,
+    load_component_vending_config,
+    load_environment_vending_config,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +151,7 @@ class RunQueue:
         if kind in (
             "live_plan",
             "environment_vend",
+            "component_vend",
             "environment_reclaim",
             "fleet_drift_confirm",
             "org_scan",
@@ -278,6 +290,7 @@ class RunQueue:
         live_plan_secret_name: str | None = None,
         pull_request: dict[str, Any] | None = None,
         environment_vend: dict[str, Any] | None = None,
+        component_vend: dict[str, Any] | None = None,
     ) -> RunRecord:
         if not self._accepting:
             raise RunQueueShuttingDownError("async generation queue is shutting down")
@@ -289,6 +302,9 @@ class RunQueue:
         elif run_kind == "environment_vend":
             if not blueprint_name:
                 raise ValueError("environment_vend runs require blueprint_name sentinel")
+        elif run_kind == "component_vend":
+            if not blueprint_name:
+                raise ValueError("component_vend runs require blueprint_name sentinel")
         elif run_kind in ("environment_reclaim", "fleet_drift_confirm", "org_scan"):
             if not blueprint_name:
                 raise ValueError(f"{run_kind} runs require blueprint_name sentinel")
@@ -326,6 +342,14 @@ class RunQueue:
             }
             if environment_vend:
                 payload.update(environment_vend)
+        elif run_kind == "component_vend":
+            payload = {
+                "kind": "component_vend",
+                "inputs": inputs,
+                "dry_run": dry_run,
+            }
+            if component_vend:
+                payload.update(component_vend)
         elif run_kind == "environment_reclaim":
             payload = {
                 "kind": "environment_reclaim",
@@ -535,6 +559,7 @@ class RunQueue:
                 resolve_github_access_token()
                 if (
                     (is_environment_vend_payload(record.payload) and not record.dry_run)
+                    or (is_component_vend_payload(record.payload) and not record.dry_run)
                     or (is_environment_reclaim_run(record.payload) and not record.dry_run)
                     or is_org_scan_payload(record.payload)
                 )
@@ -641,6 +666,63 @@ class RunQueue:
                                 )
                     on_event(
                         "environment_vend_finished",
+                        {
+                            "gates_outcome": result.get("gates_outcome"),
+                            "pull_request_url": result.get("pull_request_url"),
+                        },
+                    )
+                elif is_component_vend_payload(record.payload):
+                    vend_blueprint = (
+                        str(record.payload.get("blueprint", "")).strip()
+                        or "terraform-environment-stack"
+                    )
+                    component_kind = str(record.payload.get("component_kind", "")).strip()
+                    component_name = str(record.payload.get("name", "")).strip()
+                    on_event(
+                        "component_vend_started",
+                        {
+                            "blueprint": vend_blueprint,
+                            "kind": component_kind,
+                            "gitops_path": str(record.payload.get("gitops_path", "")),
+                        },
+                    )
+                    cmp_result = run_component_vend(
+                        repo_root=self._repo_root,
+                        output_config=self._output_config,
+                        blueprint_name=vend_blueprint,
+                        inputs=inputs_raw,
+                        gitops_repo=str(record.payload.get("gitops_repo", "")),
+                        gitops_path=str(record.payload.get("gitops_path", "")),
+                        owner=str(record.payload.get("owner", "")),
+                        component_kind=component_kind,
+                        name=component_name,
+                        base_branch=str(record.payload.get("base_branch", "main")),
+                        git_branch=str(record.payload.get("git_branch", "")),
+                        dry_run=bool(record.payload.get("dry_run", record.dry_run)),
+                        github_token=github_token,
+                        on_event=on_event,
+                    )
+                    result = cmp_result.to_public_dict()
+                    if not record.dry_run:
+                        cmp_cfg = load_component_vending_config(self._repo_root)
+                        if cmp_cfg is not None:
+                            try:
+                                cmp_record = register_component_from_vend(
+                                    cmp_cfg.file,
+                                    vend_result=cmp_result,
+                                    payload=record.payload,
+                                    run_id=record.run_id,
+                                    acting_user=record.acting_user,
+                                )
+                                result["catalog_entity_id"] = cmp_record.entity_id
+                            except ComponentRegistryError as exc:
+                                logger.warning(
+                                    "component registry write failed for run %s: %s",
+                                    record.run_id,
+                                    exc,
+                                )
+                    on_event(
+                        "component_vend_finished",
                         {
                             "gates_outcome": result.get("gates_outcome"),
                             "pull_request_url": result.get("pull_request_url"),

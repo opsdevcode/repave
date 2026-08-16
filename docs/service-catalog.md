@@ -24,6 +24,11 @@ environment_vending:
   ttl_hours_by_class:
     sandbox: 168
   auto_reclaim_classes: [sandbox]
+
+component_vending:
+  enabled: true
+  # gitops_repo falls back to environment_vending.gitops_repo
+  file: data/components/registry.jsonl
 ```
 
 Env override: `REPAVE_SERVICE_CATALOG=1`. That flag (or `service_catalog.enabled: true`

@@ -130,6 +130,27 @@ omitted, every expired class **not** listed in `auto_reclaim_classes` uses the r
 [`deploy/k8s/chart/values-environment-vending.yaml`](../../deploy/k8s/chart/values-environment-vending.yaml)
 and [`deploy/k8s/chart/README.md`](../../deploy/k8s/chart/README.md#environment-vending-and-ttl-reclaim).
 
+### Component vending (`kind: component_vend`)
+
+When `component_vending.enabled` (or `REPAVE_COMPONENT_VENDING=1`), request a managed
+`database`, `bucket`, or `queue` through the same GitOps PR flow as environment
+vending. repave does not run `terraform apply`. See
+[ADR 013](adr/013-component-self-service-vending.md).
+
+`gitops_repo` falls back to `environment_vending.gitops_repo` when omitted.
+Default path: `{path_prefix}/{kind}/{name}` (`path_prefix` defaults to `components`).
+
+| Method | Path | Role | Notes |
+| --- | --- | --- | --- |
+| `GET` | `/api/v2/component-kinds` | viewer+ | Built-in kinds plus optional `component_vending.kinds` YAML; `vend_available` when async runs and vending are on |
+| `POST` | `/api/v2/components/vend` | generator, admin | `{ "kind": "database"\|"bucket"\|"queue", "name", "owner"?, "dry_run"? }` → 202 run (`kind: component_vend`) |
+
+`name` must be 3–63 lowercase letters, numbers, and hyphens. `dry_run` defaults
+to `true`. A successful non–dry-run appends `data/components/registry.jsonl`
+and the catalog entity uses `"source": "component"`.
+
+This is not `POST /api/v2/components/plan` (`repave add` onto an existing repo).
+
 ## Operator upgrades
 
 These endpoints mirror `repave plan-upgrade` / `apply-upgrade --format json` so the

@@ -12,10 +12,12 @@ from repave_engine.audit_history import (
     query_audit_entries,
     read_recent_audit_entries,
 )
+from repave_engine.component_registry import read_components
 from repave_engine.entity_catalog import (
     CatalogEntity,
     build_catalog_entities,
     build_catalog_from_audit_applies,
+    build_catalog_from_components,
     build_catalog_from_environments,
     build_catalog_from_fleet,
     fetch_remote_entity_docs,
@@ -30,6 +32,7 @@ from repave_engine.settings import (
     OutputConfig,
     PortalConfig,
     load_audit_config,
+    load_component_vending_config,
     load_environment_vending_config,
     load_fleet_config,
     load_service_catalog_config,
@@ -194,6 +197,14 @@ def build_portal_catalog_entities(
                 cost_actuals_configured=cost_actuals_configured,
             )
             entities = merge_catalog_entities(entities, env_entities)
+    try:
+        cmp_cfg = load_component_vending_config(repo_root)
+    except ValueError:
+        cmp_cfg = None
+    if cmp_cfg is not None:
+        cmp_records = read_components(cmp_cfg.file)
+        if cmp_records:
+            entities = merge_catalog_entities(entities, build_catalog_from_components(cmp_records))
     return sorted(entities, key=lambda item: item.display_name.lower())
 
 

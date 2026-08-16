@@ -170,6 +170,8 @@ def run_environment_vend(
     dry_run: bool,
     github_token: str | None,
     on_event: RunEventCallback | None = None,
+    pr_title: str = "",
+    pr_body: str = "",
 ) -> EnvironmentVendResult:
     blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
     gate_overrides = load_gate_overrides(repo_root)
@@ -287,12 +289,12 @@ def run_environment_vend(
             branch=branch,
         )
 
-        title = build_environment_vend_pull_request_title(
+        title = pr_title.strip() or build_environment_vend_pull_request_title(
             stack_name=stack_name,
             environment=environment,
             cloud_provider=cloud_provider,
         )
-        body = build_environment_vend_pull_request_body(
+        body = pr_body.strip() or build_environment_vend_pull_request_body(
             stack_name=stack_name,
             environment=environment,
             cloud_provider=cloud_provider,

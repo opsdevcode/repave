@@ -33,6 +33,8 @@ from repave_engine.catalog_cost import enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
 )
+from repave_engine.component_kinds import ComponentVendError, load_component_kinds
+from repave_engine.component_vend import resolve_component_vend_fields
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.developer_lab import is_developer_lab_enabled
 from repave_engine.entity_catalog import (
@@ -105,6 +107,7 @@ from repave_engine.service_catalog_overlay import (
 )
 from repave_engine.settings import (
     OutputConfig,
+    load_component_vending_config,
     load_environment_vending_config,
     load_fleet_config,
     load_portal_config,
@@ -142,6 +145,8 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/imports/batch/apply",
     "POST /api/v2/components/plan",
     "POST /api/v2/components/apply",
+    "GET /api/v2/component-kinds",
+    "POST /api/v2/components/vend",
     "POST /api/v2/verify",
     "GET /api/v2/catalog/entities",
     "GET /api/v2/catalog/entities/{entity_id}",
@@ -1187,6 +1192,65 @@ def build_api_v2_router(
             )
         except SandboxVendError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try:
+            record = submit_async_run(
+                queue,
+                payload=payload,
+                acting_user=_acting_user(request),
+                repo_root=repo_root,
+            )
+        except RunQueueFullError as exc:
+            raise HTTPException(status_code=429, detail=str(exc)) from exc
+        except RunQueueShuttingDownError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(record.to_public_dict(), status_code=202)
+
+    @router.get("/component-kinds")
+    async def api_v2_component_kinds(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
+        vend_cfg = load_component_vending_config(repo_root)
+        kinds = load_component_kinds(vend_cfg.kinds_file if vend_cfg is not None else None)
+        queue = _run_queue(request)
+        return JSONResponse(
+            {
+                "count": len(kinds),
+                "vend_available": bool(queue is not None and vend_cfg is not None),
+                "kinds": [item.to_public_dict() for item in kinds],
+            }
+        )
+
+    @router.post("/components/vend")
+    async def api_v2_components_vend(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        queue = _run_queue(request)
+        if queue is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Async runs require durability.async_generation",
+            )
+        vend_cfg = load_component_vending_config(repo_root)
+        if vend_cfg is None:
+            raise HTTPException(
+                status_code=503,
+                detail="component_vending is not enabled; set component_vending.enabled "
+                "in repave.config.yaml or REPAVE_COMPONENT_VENDING=1",
+            )
+        payload_in = await _parse_json_object(request)
+        kinds = load_component_kinds(vend_cfg.kinds_file)
+        try:
+            resolve_component_vend_fields(payload_in, vend_cfg, kinds)
+        except ComponentVendError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        payload = dict(payload_in)
+        payload["kind"] = "component_vend"
+        if "component_kind" not in payload and payload_in.get("kind") not in (
+            None,
+            "",
+            "component_vend",
+        ):
+            payload["component_kind"] = str(payload_in.get("kind", "")).strip()
         try:
             record = submit_async_run(
                 queue,
