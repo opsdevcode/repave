@@ -302,16 +302,15 @@ YAML you already mount. Default-off (ADR 008):
 helm upgrade --install repave ./deploy/k8s/chart \
   --set repave.v3.enabled=true \
   --set repave.v3.developerLab.enabled=true \
-  --set repave.serviceCatalog.enabled=true \
   --set repave.output.githubOrg=your-org
 ```
 
 `developerLab.enabled`, `autoMerge.enabled`, and `mandatoryPolicy.enabled` require
 `v3.enabled`. Lab does not invent a GitOps repo or turn on environment vending.
-Catalog files still have to exist at the `serviceCatalog.*` paths (or, in a git
-checkout, `v3.developer_lab.enabled` can wire `examples/platform-dev`).
-`values-backstage.yaml` sets `serviceCatalog.bundleExamples: true` so the
-chart mounts copies of those fixtures (the engine image does not ship them).
+The chart defaults `serviceCatalog.enabled` and `bundleExamples` on so hosted
+Backstage sandbox/maturity pages have fixtures (the engine image does not ship
+`examples/`). Set `repave.serviceCatalog.enabled=false` to opt out. In a git
+checkout, `v3.developer_lab.enabled` can also wire `examples/platform-dev`.
 Auto-merge
 is a plan verdict; `apply-upgrade --open-pr` squash-merges Allowed mechanical pin
 bumps. Fleet demote:

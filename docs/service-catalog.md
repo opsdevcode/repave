@@ -38,9 +38,10 @@ without paths) fills `maturity_rubric`, `workload_profiles`, `deployment_sets`, 
 `initiatives` from `examples/platform-dev/` when those files exist, otherwise the
 documented `config/` and `data/` paths. `make serve` sets the env flag so Platform
 maturity and initiatives collect without a copied config. Compose sets the
-same env. The Backstage Helm overlay (`values-backstage.yaml`) sets
-`serviceCatalog.enabled` and mounts bundled fixtures — sandbox vend 404s
-without that overlay.
+same env. The Helm chart defaults `repave.serviceCatalog.enabled` and
+`bundleExamples` on so hosted Backstage `/sandbox` does not 404. The
+Backstage overlay (`values-backstage.yaml`) keeps the same settings
+explicit. Set `serviceCatalog.enabled=false` to opt out.
 
 Local demo: `make platform-dev-setup && make serve` — see
 [`examples/platform-dev/README.md`](../examples/platform-dev/README.md).

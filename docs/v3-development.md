@@ -65,8 +65,8 @@ fails closed and names the fix.
 Lab wires **catalog** paths from bundled `examples/platform-dev` fixtures when no
 `service_catalog` block is set. It does **not** invent a GitOps repo or turn on
 environment vending. The published container image does **not** include `examples/`
-(see `.dockerignore`); hosted installs mount catalog YAML and set
-`repave.serviceCatalog.enabled`.
+(see `.dockerignore`); the Helm chart defaults `repave.serviceCatalog.enabled`
+and mounts bundled catalog YAML.
 
 | Surface | Route | Backing config |
 | --- | --- | --- |
@@ -83,14 +83,13 @@ requests — the lab UI is plan-only without them. For the full platform console
 walkthrough, keep using `make platform-dev-setup`
 ([`examples/platform-dev/README.md`](../examples/platform-dev/README.md)).
 
-Helm (flags only; catalog files are operator-provided):
+Helm (catalog fixtures default-on; lab flags still opt-in):
 
 ```bash
 helm upgrade --install repave ./deploy/k8s/chart \
   --set repave.v3.enabled=true \
   --set repave.v3.developerLab.enabled=true \
   --set repave.v3.mandatoryPolicy.enabled=true \
-  --set repave.serviceCatalog.enabled=true \
   --set repave.output.githubOrg=your-org
 ```
 
