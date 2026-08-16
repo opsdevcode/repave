@@ -477,6 +477,21 @@ def _build_api_contract_spec(
     }, spec_name
 
 
+def _build_db_migration_spec(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+) -> tuple[dict[str, Any], str]:
+    service_name = str(values.get("service_name", blueprint.name))
+    return {
+        "artifactType": "db-migration",
+        "dbMigration": {
+            "service_name": service_name,
+            "organization": str(values.get("organization", "")).strip(),
+            "tool": str(values.get("tool", "alembic")).strip() or "alembic",
+        },
+    }, service_name
+
+
 def _provenance_generated_at() -> str:
     fixed = os.environ.get("REPAVE_PROVENANCE_GENERATED_AT", "").strip()
     if fixed:
@@ -511,6 +526,8 @@ def build_provenance_document(blueprint: Blueprint, values: dict[str, Any]) -> d
         artifact_spec, metadata_name = _build_github_repo_spec(blueprint, values)
     elif blueprint.artifact_type == "api-contract":
         artifact_spec, metadata_name = _build_api_contract_spec(blueprint, values)
+    elif blueprint.artifact_type == "db-migration":
+        artifact_spec, metadata_name = _build_db_migration_spec(blueprint, values)
     else:
         artifact_spec, metadata_name = _build_terraform_spec(blueprint, values)
 

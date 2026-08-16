@@ -29,6 +29,10 @@ from repave_engine.gate_runners.app import (
     run_python_test,
 )
 from repave_engine.gate_runners.ci import run_actionlint
+from repave_engine.gate_runners.db_migration import (
+    run_migration_policy,
+    run_migration_rollback,
+)
 from repave_engine.gate_runners.drift import (
     run_docs_drift,
     run_provenance_drift,
@@ -90,6 +94,8 @@ __all__ = [
     "run_helm_template",
     "run_infracost",
     "run_java_build",
+    "run_migration_policy",
+    "run_migration_rollback",
     "run_molecule",
     "run_node_lint",
     "run_node_test",

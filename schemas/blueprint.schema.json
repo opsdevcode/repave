@@ -115,7 +115,9 @@
               "buf-lint",
               "actionlint",
               "spectral",
-              "oasdiff"
+              "oasdiff",
+              "migration-policy",
+              "migration-rollback"
             ]
           }
         },
@@ -135,7 +137,8 @@
             "app-service",
             "gitops-deployment",
             "github-repo",
-            "api-contract"
+            "api-contract",
+            "db-migration"
           ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
@@ -582,6 +585,32 @@
                 "baseline": {
                   "type": "string",
                   "description": "Published baseline spec for breaking-change detection."
+                }
+              }
+            },
+            "migration-policy": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tool": {
+                  "type": "string",
+                  "enum": ["alembic", "flyway", "atlas"],
+                  "description": "Migration tool layout to scan (auto-detected when omitted)."
+                },
+                "waivers_file": {
+                  "type": "string",
+                  "description": "Destructive DDL waiver file (default waivers/destructive.yaml)."
+                }
+              }
+            },
+            "migration-rollback": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "tool": {
+                  "type": "string",
+                  "enum": ["alembic", "flyway", "atlas"],
+                  "description": "Migration tool layout for rollback pairing."
                 }
               }
             }

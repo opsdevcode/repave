@@ -109,7 +109,8 @@ output contract.
 Declarative pack under `blueprints/<name>/` (plus optional extra catalog roots).
 The engine reads `blueprint.yaml`, validates inputs, renders the Copier template,
 runs gates, and produces output. Artifact types include Terraform, Ansible,
-policy, Helm, app-service, and API contracts (`spectral` + `oasdiff`).
+policy, Helm, app-service, API contracts (`spectral` + `oasdiff`), and
+database migrations (`migration-policy` + `migration-rollback`).
 See [`blueprint-versioning.md`](blueprint-versioning.md)
 for v2 schema freeze, `metadata.version` bump rules, and the
 [fork workflow](blueprint-versioning.md#fork-workflow).

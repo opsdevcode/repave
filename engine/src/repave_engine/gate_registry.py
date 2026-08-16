@@ -47,6 +47,7 @@ _ARTIFACT_TYPE_PATHS: dict[str, tuple[str, ...]] = {
     "gitops-deployment": (".repave",),
     "github-repo": (),
     "api-contract": (),
+    "db-migration": (),
     "app-service": (
         "node_modules",
         "package-lock.json",

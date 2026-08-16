@@ -1,0 +1,11 @@
+inputs:
+  service_name: conformance
+  organization: platform
+  description: Conformance fixture database migrations
+  tool: alembic
+required_files:
+  - repave.yaml
+  - README.md
+  - alembic/versions/0001_init.py
+  - waivers/destructive.yaml
+snapshot: false

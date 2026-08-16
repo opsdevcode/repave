@@ -1,0 +1,23 @@
+_min_copier_version: "9.0.0"
+_templates_suffix: .jinja
+_exclude:
+  - copier.yaml
+  - "{% if tool != 'alembic' %}alembic.ini{% endif %}"
+  - "{% if tool != 'alembic' %}alembic{% endif %}"
+  - "{% if tool != 'flyway' %}flyway.conf{% endif %}"
+  - "{% if tool != 'flyway' %}sql{% endif %}"
+  - "{% if tool != 'atlas' %}atlas.hcl{% endif %}"
+  - "{% if tool != 'atlas' %}migrations{% endif %}"
+
+service_name:
+  type: str
+
+organization:
+  type: str
+
+description:
+  type: str
+
+tool:
+  type: str
+  default: alembic

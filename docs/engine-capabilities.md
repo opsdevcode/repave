@@ -10,7 +10,9 @@ projects, policy packs, observability bundles, Helm charts, and app-service
 scaffolds under [`blueprints/`](../blueprints/), plus extra local roots from
 `blueprints_root` / `blueprint_sources`. API contracts
 (`api-contract-generic`) lint with Spectral and detect OpenAPI breaking
-changes with oasdiff. Rendering uses Copier; contracts
+changes with oasdiff. Database migrations (`db-migration-generic`) enforce
+destructive-DDL waivers and rollback pairing ([ADR 012](adr/012-destructive-ddl-policy.md)).
+Rendering uses Copier; contracts
 live in [`schemas/`](../schemas/) with versioning policy in
 [`docs/blueprint-versioning.md`](blueprint-versioning.md).
 
@@ -44,6 +46,10 @@ collections. CI installs gate collections from
 
 **Policy:** OPA and Azure Policy gates where blueprints declare them — see
 [`policy/`](../policy/) and [`standards/policy/`](../standards/policy/).
+
+**Database migrations:** in-process `migration-policy` (destructive DDL + dated
+waiver) and `migration-rollback` (Alembic `downgrade` / Flyway `U*` / Atlas
+`*.down.sql`). See [ADR 012](adr/012-destructive-ddl-policy.md).
 
 ## CI on `main`
 

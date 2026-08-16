@@ -47,7 +47,8 @@
             "app-service",
             "gitops-deployment",
             "github-repo",
-            "api-contract"
+            "api-contract",
+            "db-migration"
           ]
         },
         "blueprint": {
@@ -148,7 +149,8 @@
                   "app-service",
                   "gitops-deployment",
                   "github-repo",
-                  "api-contract"
+                  "api-contract",
+                  "db-migration"
                 ]
               },
               "blueprint": {
@@ -229,6 +231,16 @@
                   "spec_kind": { "type": "string", "enum": ["openapi", "asyncapi"] },
                   "api_title": { "type": "string", "minLength": 1 },
                   "api_version": { "type": "string", "minLength": 1 }
+                }
+              },
+              "dbMigration": {
+                "type": "object",
+                "required": ["service_name", "organization", "tool"],
+                "additionalProperties": false,
+                "properties": {
+                  "service_name": { "type": "string", "minLength": 1 },
+                  "organization": { "type": "string" },
+                  "tool": { "type": "string", "enum": ["alembic", "flyway", "atlas"] }
                 }
               },
               "appService": {
@@ -547,6 +559,16 @@
             "api_version": { "type": "string", "minLength": 1 }
           }
         },
+        "dbMigration": {
+          "type": "object",
+          "required": ["service_name", "organization", "tool"],
+          "additionalProperties": false,
+          "properties": {
+            "service_name": { "type": "string", "minLength": 1 },
+            "organization": { "type": "string" },
+            "tool": { "type": "string", "enum": ["alembic", "flyway", "atlas"] }
+          }
+        },
         "gitopsDeployment": {
           "type": "object",
           "required": [
@@ -838,6 +860,17 @@
           },
           "then": {
             "required": ["apiContract"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "artifactType": { "const": "db-migration" }
+            },
+            "required": ["artifactType"]
+          },
+          "then": {
+            "required": ["dbMigration"]
           }
         }
       ]

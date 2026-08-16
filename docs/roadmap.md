@@ -7,8 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.28.0  
 
-**In progress:** API contract golden path (Spectral + oasdiff). Phase 4 HTML
-removal is a product call.
+**In progress:** Database migration goldpath (destructive DDL policy). Phase 4
+HTML removal is a product call.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -41,6 +41,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Hosted Backstage run replay** (`/runs` → `POST /api/v2/runs/{id}/replay`);
 **Hosted Backstage default-on** (owner: Eric Skaggs; kind/smoke stay off);
 **Forked blueprint packs** (local extra catalog roots);
+**API contract path** (Spectral + oasdiff);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -151,7 +152,8 @@ v3.28.0 today      platform GA line on main (contract freeze + DR shipped)
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
 | **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **Forked blueprint packs** | Shipped | Extra local catalog roots; git/OCI fetch stays parking-lot |
-| **API contract path** | In progress | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
+| **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
+| **Database migration path** | In progress | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -212,8 +214,8 @@ stays in the [parking lot](#parking-lot).
 
 ### API contract path
 
-**Status:** In progress — `api-contract-generic` plus `spectral` / `oasdiff`
-gates on this PR.
+**Status:** Shipped on `main` — `api-contract-generic` plus `spectral` /
+`oasdiff` gates. Git/OCI remote fetch stays parking-lot.
 
 **Problem:** Teams keep OpenAPI and AsyncAPI documents in ad-hoc repos with no
 shared lint or breaking-change gate.
@@ -230,14 +232,31 @@ errors and on oasdiff breaking changes versus the baseline.
 
 ---
 
+### Database migration path
+
+**Status:** In progress — `db-migration-generic` plus `migration-policy` /
+`migration-rollback` on this PR ([ADR 012](adr/012-destructive-ddl-policy.md)).
+
+**Problem:** Schema migrations live in ad-hoc repos; destructive DDL reaches
+production without a recorded reason, expiry, or paired rollback.
+
+**Approach:**
+
+- Alembic, Flyway, or Atlas layout from one blueprint
+- In-process scan of **forward** files for DROP/TRUNCATE/rename; waiver file
+  with `expires_at` (fail closed)
+- Rollback pairing: Alembic `downgrade`, Flyway `U*`, Atlas `*.down.sql`
+
+**Done when:** `repave generate` produces a migration repo that fails on
+unwaived destructive DDL and on a missing rollback.
+
+---
 
 ### Paved-road follow-ons
 
 Scoped enough to promote without new discovery (was deferred from the developer paved-roads
 cluster — detail for shipped paved roads is in the [archive](roadmap-archive.md#developer-paved-roads-v2x)):
 
-- **Database migration path** — Alembic/Flyway/Atlas layout with a destructive-DDL policy and
-  a rollback plan. Needs its own policy design before scoping.
 - **Component-level self-service vending** — request a managed database, bucket, or queue
   through the same GitOps PR flow as `environment_vend`. This is Phase 4 of
   [environment lifecycle](roadmap-archive.md#environment-lifecycle-and-deployment-awareness)

@@ -22,6 +22,8 @@ from repave_engine.gate_runners import (
     run_helm_template,
     run_infracost,
     run_java_build,
+    run_migration_policy,
+    run_migration_rollback,
     run_molecule,
     run_node_lint,
     run_node_test,
@@ -69,9 +71,11 @@ _SHARED_ARTIFACT_TYPES = frozenset(
         "azure-policy",
         "checkov-policy",
         "api-contract",
+        "db-migration",
     }
 )
 _API_CONTRACT_ARTIFACT_TYPES = frozenset({"api-contract"})
+_DB_MIGRATION_ARTIFACT_TYPES = frozenset({"db-migration"})
 _OPA_GATE_ARTIFACT_TYPES = frozenset(
     {
         "terraform-module",
@@ -306,6 +310,20 @@ register_gate(
         name="datadog-api-validate",
         runner=run_datadog_api_validate,
         artifact_types=_OBSERVABILITY_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="migration-policy",
+        runner=run_migration_policy,
+        artifact_types=_DB_MIGRATION_ARTIFACT_TYPES,
+    )
+)
+register_gate(
+    GateSpec(
+        name="migration-rollback",
+        runner=run_migration_rollback,
+        artifact_types=_DB_MIGRATION_ARTIFACT_TYPES,
     )
 )
 register_gate(
