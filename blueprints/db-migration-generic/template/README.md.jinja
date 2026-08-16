@@ -14,7 +14,8 @@ Apply `migrations/*.sql` with Atlas. Each forward file needs a matching
 `*.down.sql`.
 {% else %}
 Apply with Alembic (`alembic upgrade head`). Every revision must define
-`downgrade`.
+`downgrade`. Point `sqlalchemy.url` in `alembic.ini` at the real database
+(do not commit credentials).
 {% endif %}
 
 Destructive DDL in **forward** files requires an entry in

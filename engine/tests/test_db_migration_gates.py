@@ -141,6 +141,9 @@ def test_rendered_alembic_layout_passes_migration_gates(
     )
     assert (outcome.output_dir / "alembic" / "versions" / "0001_init.py").is_file()
     assert not (outcome.output_dir / "sql" / "V1__init.sql").is_file()
+    ini = (outcome.output_dir / "alembic.ini").read_text(encoding="utf-8")
+    assert "user:pass" not in ini
+    assert "sqlite:///" in ini
 
     results = run_gates(outcome.output_dir, ("migration-policy", "migration-rollback"))
 
