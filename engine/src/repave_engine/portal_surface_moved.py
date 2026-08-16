@@ -174,6 +174,28 @@ RESULT_MOVED = _surface(
     nav_active="catalog",
 )
 
+BUNDLE_MOVED = _surface(
+    "bundle",
+    title="Bundle form moved",
+    lead="Bundle generate now lives in Backstage Bundles. This HTML form is gone.",
+    backstage_label="Bundles",
+    backstage_path="/bundles",
+    api_hint="GET /api/v2/bundles/{name}",
+    cli_hint="repave generate --bundle <name>",
+    nav_active="catalog",
+)
+
+BUNDLE_RESULT_MOVED = _surface(
+    "bundle-result",
+    title="Bundle results moved",
+    lead="Bundle generate results now live in Backstage Bundles.",
+    backstage_label="Bundles",
+    backstage_path="/bundles",
+    api_hint="POST /api/v2/generate",
+    cli_hint="repave generate --bundle <name>",
+    nav_active="catalog",
+)
+
 _PLATFORM_PAGES: dict[str, tuple[str, str, str, str]] = {
     "fleet": ("Fleet", "/fleet", "GET /api/v2/fleet", "GET /api/v2/fleet"),
     "ops": ("Ops", "/ops", "GET /api/v2/platform/ops", "GET /api/v2/platform/ops"),

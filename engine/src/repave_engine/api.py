@@ -63,11 +63,6 @@ from repave_engine.blueprint import (
     policy_kind_label,
 )
 from repave_engine.bundle import list_bundles, load_bundle
-from repave_engine.bundle_portal import (
-    build_bundle_result_portal_context,
-    bundle_member_previews,
-)
-from repave_engine.bundle_topology import build_bundle_topology, topology_public
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.developer_lab import is_developer_lab_enabled
 from repave_engine.diff_view import diff_view_models_from_files
@@ -81,12 +76,8 @@ from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.fleet import FleetError
 from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
-from repave_engine.gates import GateResult, gate_summary
-from repave_engine.generate_api import (
-    bundle_result_from_stored_run,
-)
+from repave_engine.gates import GateResult
 from repave_engine.github_auth import resolve_github_access_token
-from repave_engine.governance_preflight import build_bundle_preflight
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
@@ -145,6 +136,8 @@ from repave_engine.portal_platform import (
 )
 from repave_engine.portal_surface_moved import (
     ACTIVITY_MOVED,
+    BUNDLE_MOVED,
+    BUNDLE_RESULT_MOVED,
     CATALOG_MOVED,
     ESTATE_MOVED,
     HOME_MOVED,
@@ -990,53 +983,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/bundles/{bundle_name}", response_class=HTMLResponse)
     async def bundle_form(request: Request, bundle_name: str) -> HTMLResponse:
-        bundle_dir = bundles_dir(repo_root) / bundle_name
-        bundle = load_bundle(bundle_dir, repo_root=repo_root)
-        preview_inputs: dict[str, str] = {
-            "service_name": "example-service",
-            "description": "Example service for repository preview",
-            "owner": "group:platform",
-            "organization": "platform",
-            "team": "payments",
-            "port": "8080",
-            "runtime": "python",
-            "catalog_lifecycle": "experimental",
-        }
-        for field in bundle.inputs:
-            if field.default not in (None, "") and field.name not in preview_inputs:
-                preview_inputs[field.name] = str(field.default)
-        previews = bundle_member_previews(
-            bundle,
-            preview_inputs,
-            repo_root=repo_root,
-            output_config=resolved_output,
-        )
-        member_gates: list[str] = []
-        for member in bundle.members:
-            member_blueprint = load_blueprint(
-                blueprint_dir(repo_root, member.blueprint_name),
-                repo_root=repo_root,
-            )
-            member_gates.extend(member_blueprint.gates)
-        unique_gates = tuple(dict.fromkeys(member_gates))
-        topology_nodes, topology_edges = build_bundle_topology(bundle, previews)
-        return templates.TemplateResponse(
-            request,
-            "bundle_form.html",
-            page_context(
-                request,
-                bundle=bundle,
-                member_previews=previews,
-                github_org=resolved_output.github_org,
-                governance_preflight=build_bundle_preflight(
-                    bundle,
-                    gate_names=unique_gates,
-                    total_gate_runs=len(member_gates),
-                ),
-                bundle_topology=topology_public(topology_nodes, topology_edges),
-                nav_active="catalog",
-            ),
-        )
+        load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+        return render_moved(request, BUNDLE_MOVED)
 
     @app.get("/blueprints/{blueprint_name}/ansible-catalog")
     async def ansible_catalog_endpoint(
@@ -1515,57 +1463,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 ),
             )
         if is_bundle_run(record):
-            bundle_name = str(record.payload.get("bundle", "")).strip()
-            bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
-            bundle_result = bundle_result_from_stored_run(
-                record=record,
-                repo_root=repo_root,
-                output_config=resolved_output,
-            )
-            if bundle_result is None:
-                inputs_raw = record.payload.get("inputs", {})
-                if not isinstance(inputs_raw, dict):
-                    inputs_raw = {}
-                bundle_values = {str(k): str(v) for k, v in inputs_raw.items()}
-                require_run = record.dry_run
-                github_token = None if record.dry_run else resolve_github_access_token()
-                bundle_result = generate_from_bundle(
-                    bundle,
-                    bundle_values,
-                    repo_root=repo_root,
-                    output_config=resolved_output,
-                    dry_run=record.dry_run,
-                    require_run=require_run,
-                    github_token=github_token,
-                )
-            combined = bundle_result.combined_gates()
-            previews = bundle_member_previews(
-                bundle,
-                bundle_result.shared_inputs,
-                repo_root=repo_root,
-                output_config=resolved_output,
-            )
-            topology_nodes, topology_edges = build_bundle_topology(bundle, previews)
-            return templates.TemplateResponse(
-                request,
-                "bundle_result.html",
-                page_context(
-                    request,
-                    bundle_result=bundle_result,
-                    nav_active="catalog",
-                    gate_summary=gate_summary(combined),
-                    gates_ok=bundle_result.all_members_passed(),
-                    gate_toolchain_callout=gate_toolchain_callout(
-                        combined,
-                        dry_run=bundle_result.dry_run,
-                    ),
-                    result_portal=build_bundle_result_portal_context(
-                        bundle_result,
-                        shared_inputs=bundle_result.shared_inputs,
-                    ),
-                    bundle_topology=topology_public(topology_nodes, topology_edges),
-                ),
-            )
+            return render_moved(request, BUNDLE_RESULT_MOVED)
         return render_moved(request, RESULT_MOVED)
 
     @app.get("/update", response_class=HTMLResponse)

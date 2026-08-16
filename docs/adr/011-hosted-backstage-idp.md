@@ -19,6 +19,10 @@ and other portal templates remain until the 14 Feb 2027 sunset.
 activity, estate, platform console, import, verify, and generate-result pages
 are pointer pages (`surface_moved.html`). Bundles, upgrade, run console,
 sandbox, and landing remain until the 14 Feb 2027 sunset.
+**Amendment (2026-08-16):** HTML `bundle_form.html` and `bundle_result.html`
+are removed. GET `/bundles/{name}` and bundle POST `/generate` point at
+Backstage `/bundles`. Upgrade, run console, sandbox, and landing remain
+until the 14 Feb 2027 sunset.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

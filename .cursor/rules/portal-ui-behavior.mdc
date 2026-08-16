@@ -27,7 +27,9 @@ redirects to `/runs/{id}`.
 1. **Plan** — POST `/generate` with `dry_run=true` still runs generate and
    returns **200** with `data-surface-moved="result"` (Backstage `/generate`).
    GET `/blueprints/{name}` no longer hosts the generate form (Backstage `/generate`).
-   Bundle POST `/generate` still returns `bundle_result.html` with **Generated files**.
+   Bundle POST `/generate` still runs generate and returns
+   `data-surface-moved="bundle-result"` (Backstage `/bundles`).
+   GET `/bundles/{name}` no longer hosts the bundle form.
 2. **Stepper forms** — When `data-form-stepper` is present:
    - **Plan preview** (`data-dry-run-run`) must work from early steps without
      requiring the user to reach Delivery first.
@@ -58,7 +60,7 @@ redirects to `/runs/{id}`.
 ## Review checklist
 
 - [ ] Plan POST (`dry_run=true`) for a single blueprint returns the result moved page.
-- [ ] Bundle Plan POST still returns rendered files in `bundle_result.html`.
+- [ ] Bundle Plan POST returns the bundle-result moved page.
 - [ ] Stepper: **Plan preview** present where submit is step-gated; `novalidate` + validation wired.
 - [ ] Tests updated for new strings or form attributes.
 - [ ] No orphaned `terraform_stepper` / dead selectors in JS.
