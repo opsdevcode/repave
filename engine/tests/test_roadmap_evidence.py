@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from portal_moved import assert_surface_moved
 from repave_engine.dx_metrics import BlueprintFriction, BlueprintFunnel, DxMetricsSnapshot
 from repave_engine.roadmap_evidence import (
     DEFAULT_ROADMAP_THEMES,
@@ -180,10 +181,7 @@ def test_platform_roadmap_page_and_api(
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
     page = client.get("/platform/roadmap")
-    assert page.status_code == 200
-    assert "Roadmap evidence" in page.text
-    assert "Theme adoption evidence" in page.text
-    assert 'href="/platform/roadmap"' in page.text
+    assert_surface_moved(page, "platform-roadmap")
 
     api = client.get("/api/v2/platform/roadmap-evidence")
     assert api.status_code == 200

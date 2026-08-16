@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.blueprint import load_blueprint, validate_inputs
 from repave_engine.entity_catalog import entity_id_for_repo_url
@@ -82,12 +83,7 @@ def test_service_detail_shows_add_component_form(
     entity_id = entity_id_for_repo_url(entry.repo_url)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get(f"/services/{entity_id}").text
-
-    assert "Add component" in body
-    assert "helm-chart-generic" in body
-    assert "Primary" in body
-    assert "app-service-generic" in body
+    assert_surface_moved(client.get(f"/services/{entity_id}"), "services")
 
 
 def test_service_add_component_plan_redirect(
@@ -122,5 +118,4 @@ def test_service_add_component_plan_redirect(
 
     assert response.status_code == 303
     assert "add_status=ok" in response.headers["location"]
-    follow = client.get(response.headers["location"])
-    assert "Chart.yaml" in follow.text or "file(s) to add" in follow.text
+    assert_surface_moved(client.get(response.headers["location"]), "services")

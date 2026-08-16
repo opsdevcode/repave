@@ -15,6 +15,10 @@ product call; do not drop leftover HTML generate forms until that page ships.
 **Amendment (2026-08-16):** HTML `blueprint_form.html` is removed. GET
 `/blueprints/{name}` points at Backstage `/generate` and the CLI. `result.html`
 and other portal templates remain until the 14 Feb 2027 sunset.
+**Amendment (2026-08-16):** HTML catalog, library, home, services, teams,
+activity, estate, platform console, import, verify, and generate-result pages
+are pointer pages (`surface_moved.html`). Bundles, upgrade, run console,
+sandbox, and landing remain until the 14 Feb 2027 sunset.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

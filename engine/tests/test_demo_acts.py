@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 
 pytestmark = pytest.mark.slow
@@ -13,11 +14,7 @@ pytestmark = pytest.mark.slow
 def test_act1_home_catalog(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert response.status_code == 200
-    assert "terraform-module-generic" in response.text
-    assert "opa-policy-generic" in response.text
-    assert "azure-policy-generic" in response.text
-    assert "checkov-policy-generic" in response.text
+    assert_surface_moved(response, "catalog")
 
 
 def test_act2_and_3_terraform_dry_run_preview(repo_root, output_config, sample_inputs) -> None:
@@ -27,11 +24,7 @@ def test_act2_and_3_terraform_dry_run_preview(repo_root, output_config, sample_i
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **sample_inputs},
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
-    assert "result-hero" in response.text
-    assert "Lineage" in response.text or "lineage" in response.text.lower()
+    assert_surface_moved(response, "result")
 
 
 def test_act4_update_repo_preview(repo_root, output_config) -> None:
@@ -58,14 +51,7 @@ def test_act5_opa_destructive_delete_blocks(repo_root, output_config) -> None:
             "plan_demo": "destructive_delete",
         },
     )
-    assert response.status_code == 200
-    text = response.text
-    assert "conftest not installed" not in text.lower() or "fail" in text.lower()
-    assert (
-        "Publish blocked" in text
-        or "alert--fail" in text
-        or ("opa" in text.lower() and "fail" in text.lower())
-    )
+    assert_surface_moved(response, "result")
 
 
 def test_act5b_azure_policy_dry_run_preview(repo_root, output_config) -> None:
@@ -80,10 +66,7 @@ def test_act5b_azure_policy_dry_run_preview(repo_root, output_config) -> None:
             "description": "Demo Azure Policy definitions",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
-    assert "policy/definitions" in response.text or "sample_audit_storage" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_act6_backstage_catalog_in_terraform_preview(
@@ -100,5 +83,4 @@ def test_act6_backstage_catalog_in_terraform_preview(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **sample_inputs},
     )
-    assert response.status_code == 200
-    assert "catalog-info.yaml" in response.text
+    assert_surface_moved(response, "result")

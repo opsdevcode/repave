@@ -15,7 +15,9 @@ are not sunset. Platform-admin HTML already has Backstage pages (fleet through
 FinOps, plus ops / standards / campaigns, plus builder browse pages).
 `/generate` posts `POST /api/v2/generate` from Backstage. The HTML generate form
 (`blueprint_form.html`) is removed; `GET /blueprints/{name}` points at Backstage
-and the CLI. Do not drop leftover HTML silently.
+and the CLI. Catalog, platform, import, verify, and generate-result HTML are
+pointer pages. Bundles, upgrade, run console, sandbox, and landing remain.
+Do not drop leftover HTML silently.
 
 ## What you get
 

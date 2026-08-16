@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.entity_catalog import entity_id_for_repo_url
@@ -37,25 +38,11 @@ def test_services_page_lists_fleet_entity(repo_root, output_config, registry: Pa
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     response = client.get("/library")
-    body = response.text
 
-    assert response.status_code == 200
-    assert "Library" in body
-    assert "library-drawers" in body
-    assert 'href="/library/terraform"' in body
-    assert "home-catalog-column" in body
-    assert "catalog-inventory--browse" not in body
-    assert "catalog-inventory__summary" not in body
-    assert "data-library-drawer" in body
-    assert "/static/repave-library.mjs" in body
+    assert_surface_moved(response, "library")
 
     family = client.get("/library/terraform")
-    assert family.status_code == 200
-    assert "library-shelf" in family.text
-    assert "/static/repave-library.mjs" in family.text
-    assert (
-        "tf-vpc" in family.text or "VPC" in family.text or "terraform-module-generic" in family.text
-    )
+    assert_surface_moved(family, "library")
 
 
 def test_service_detail_renders_scorecard_and_readme(
@@ -71,10 +58,7 @@ def test_service_detail_renders_scorecard_and_readme(
 
     response = client.get(f"/services/{entity_id}")
 
-    assert response.status_code == 200
-    body = response.text
-    assert "Scorecard" in body
-    assert "VPC module" in body or "Hello catalog" in body
+    assert_surface_moved(response, "services")
 
 
 def test_api_catalog_entities_json(repo_root, output_config, registry: Path) -> None:
@@ -125,14 +109,9 @@ def test_library_lists_successful_apply_from_audit_without_fleet(
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/library")
-    assert response.status_code == 200
-    assert "library-drawers" in response.text
-    assert 'href="/library/terraform"' in response.text
+    assert_surface_moved(response, "library")
     family = client.get("/library/terraform")
-    assert family.status_code == 200
-    assert "tf-aws-eks" in family.text
-    entity_id = entity_id_for_repo_url("https://github.com/opsdevcode/tf-aws-eks")
-    assert f"/services/{entity_id}" in family.text
+    assert_surface_moved(family, "library")
 
 
 def test_catalog_entities_redirect(repo_root, output_config) -> None:
@@ -147,7 +126,7 @@ def test_catalog_entities_redirect(repo_root, output_config) -> None:
 def test_nav_exposes_library_link(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert 'href="/library"' in client.get("/").text
+    assert_surface_moved(client.get("/"), "catalog")
 
 
 def test_observability_url_on_detail(
@@ -187,14 +166,9 @@ def test_observability_url_on_detail(
     entity_id = entity_id_for_repo_url(PROVENANCE_ENTRY.repo_url)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
-    body = client.get(f"/services/{entity_id}").text
+    response = client.get(f"/services/{entity_id}")
 
-    assert "grafana.example" in body
-    assert "Observability" in body
-    assert "Health summary" in body
-    assert "Upgrade notes" in body
-    assert "Lineage" in body
-    assert "repave.yaml" in body
+    assert_surface_moved(response, "services")
 
 
 def test_api_v2_entity_detail_includes_deployment_status(
@@ -267,11 +241,7 @@ def test_library_shows_deployment_scorecard_in_rollup(
     )
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
-    body = client.get("/library").text
-
-    assert "library-drawers" in body
-    assert 'href="/library/terraform"' in body
-    assert "Fleet scorecard" not in body
+    assert_surface_moved(client.get("/library"), "library")
 
 
 def test_library_fleet_scorecard_rollup(repo_root, output_config, registry: Path) -> None:
@@ -281,20 +251,14 @@ def test_library_fleet_scorecard_rollup(repo_root, output_config, registry: Path
     (entity_dir / "repave.yaml").write_text("spec:\n  blueprint: x\n", encoding="utf-8")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get("/library").text
-
-    assert "library-drawers" in body
-    assert "fleet-scorecard-rollup" not in body
+    assert_surface_moved(client.get("/library"), "library")
 
 
 def test_library_owner_filter(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get("/library", params={"owner": "platform"}).text
-
-    assert "matching owner" in body
-    assert "platform" in body
+    assert_surface_moved(client.get("/library", params={"owner": "platform"}), "library")
 
 
 def test_library_shows_cost_badge_from_local_estimate(
@@ -318,13 +282,8 @@ def test_library_shows_cost_badge_from_local_estimate(
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    index = client.get("/library").text
-    assert "library-drawers" in index
-    assert "Est USD 25.00/mo" not in index
-
-    body = client.get("/library/terraform").text
-    assert "catalog-inventory__cost-badge" in body
-    assert "Est USD 25.00/mo" in body
+    assert_surface_moved(client.get("/library"), "library")
+    assert_surface_moved(client.get("/library/terraform"), "library")
 
 
 def test_service_detail_shows_cost_estimate_panel(repo_root, output_config, registry: Path) -> None:
@@ -346,8 +305,4 @@ def test_service_detail_shows_cost_estimate_panel(repo_root, output_config, regi
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    body = client.get("/services/acme-tf-vpc").text
-
-    assert "Cost estimate" in body
-    assert "USD 25.00/month" in body
-    assert "Cloud spend" in body
+    assert_surface_moved(client.get("/services/acme-tf-vpc"), "services")

@@ -62,8 +62,9 @@ repave unregister https://github.com/acme/tf-vpc
 `unregister` exits non-zero when the repository was not registered, so scripts can tell
 "removed" from "was never there".
 
-In hosted deployments, admins can also register and unregister from the portal at
-`/platform/fleet` (same registry; requires `ROLE_ADMIN` when service mode is on).
+In hosted deployments, admins register and unregister through `POST`/`DELETE`
+`/api/v2/fleet` (Backstage Fleet; requires `ROLE_ADMIN` when service mode is on).
+`GET /platform/fleet` is a pointer page.
 
 URL spellings collapse to one entry: `https://github.com/acme/tf-vpc.git`, the same URL
 with a trailing slash, and the bare form are one repository. Register and unregister
@@ -129,7 +130,7 @@ Validate locally:
 
 - `make validate-github-repo-fleet` — simulate github-repo register → `fleet-manifests` (no cluster)
 - `make chart-smoke-fleet-snapshot` — kind: portal + operator fleetsync + snapshot Job +
-  platform campaign pause/resume via `/platform/campaigns`
+  platform campaign pause/resume via `POST /platform/campaigns/{ns}/{name}/paused`
 
 Full checklist: [github-repo fleet validation](operations/github-repo-fleet-validation.md).
 
@@ -140,7 +141,7 @@ portal without shell `kubectl` hints:
 
 | Surface | Action | Mechanism |
 | --- | --- | --- |
-| `/platform/campaigns` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`; validated by `make chart-smoke-fleet-snapshot`) |
+| `POST /platform/campaigns/{ns}/{name}/paused` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`; validated by `make chart-smoke-fleet-snapshot`). `GET /platform/campaigns` is a pointer. |
 | `/platform/standards` | Confirm drift for behind repos | Submits a `fleet_drift_confirm` async run (`verify` fan-out); requires `durability.async_generation` |
 
 Campaign phase updates still follow the fleet operator snapshot schedule — re-run snapshot or
@@ -219,6 +220,7 @@ the same namespace unless you accept duplicate reconcile sources.
 
 CI validates fleet sync create/prune and platform campaign pause/resume with
 `make chart-smoke-fleet-snapshot` (shared PVC, portal API unregister, operator GPR prune,
-UpgradeCampaign patch via `/platform/campaigns`, snapshot CronJob). Local full stack:
+UpgradeCampaign patch via `POST /platform/campaigns/{ns}/{name}/paused`, snapshot CronJob).
+Local full stack:
 `make kind-co-install` seeds [`deploy/k8s/testdata/fleet-registry.jsonl`](../deploy/k8s/testdata/fleet-registry.jsonl)
 via fleetSync — see [`deploy/k8s/chart/README.md`](../deploy/k8s/chart/README.md).

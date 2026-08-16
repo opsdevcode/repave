@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.fleet import FleetEntry, register_repo
 
@@ -63,13 +64,7 @@ def test_platform_finops_page_renders(
     monkeypatch.chdir(tmp_path)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
     response = client.get("/platform/finops")
-    assert response.status_code == 200
-    assert "FinOps showback" in response.text
-    assert "Fleet rollup" in response.text
-    assert "tf-vpc" in response.text
-    assert "Cost anomalies" in response.text
-    assert "Month over month" in response.text
-    assert "+66.7%" in response.text
+    assert_surface_moved(response, "platform-finops")
 
 
 def test_estate_map_page_lists_tiles(
@@ -84,17 +79,7 @@ def test_estate_map_page_lists_tiles(
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
     response = client.get("/estate")
-
-    assert response.status_code == 200
-    assert "Repo status" in response.text
-    assert "Which governed repositories are current" in response.text
-    assert "tf-vpc" in response.text
-    assert "estate-tile" in response.text
-    assert "estate-summary" in response.text
-    assert "data-estate-map" in response.text
-    assert 'data-view-mode="table"' in response.text
-    assert "/blueprints/terraform-module-generic" in response.text
-    assert "/update?target_repo=" in response.text
+    assert_surface_moved(response, "estate")
 
 
 def test_presenter_mode_shell(repo_root, output_config) -> None:
