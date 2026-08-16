@@ -24,6 +24,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   Do not fork a second entity store.
 - Sandbox: `/sandbox` → `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend`
   via the Backstage proxy (never scrape HTML `/sandbox`).
+- Reclaim: `/reclaim` → `POST /api/v2/environments/reclaim` (admin; dry-run default).
 - Runs: `/runs` → `GET /api/v2/runs` + `GET /api/v2/runs/{id}` via the same proxy.
 - Upgrade: `/upgrade` → `POST /api/v2/upgrades/plan` (preview only; apply stays CLI/operator).
 - Fleet: `/fleet` → `GET` / `POST` / `DELETE /api/v2/fleet` via the same proxy

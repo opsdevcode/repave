@@ -12,6 +12,7 @@ import FlagIcon from '@material-ui/icons/Flag';
 import HistoryIcon from '@material-ui/icons/History';
 import MapIcon from '@material-ui/icons/Map';
 import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
+import RestoreIcon from '@material-ui/icons/Restore';
 import SecurityIcon from '@material-ui/icons/Security';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 import StorageIcon from '@material-ui/icons/Storage';
@@ -28,6 +29,7 @@ import { ImportPage } from './components/ImportPage';
 import { MaturityPage } from './components/MaturityPage';
 import { MetricsPage } from './components/MetricsPage';
 import { MyServicesPage } from './components/MyServicesPage';
+import { ReclaimPage } from './components/ReclaimPage';
 import { RepaveLineageCard } from './components/RepaveLineageCard';
 import { RoadmapPage } from './components/RoadmapPage';
 import { RunsPage } from './components/RunsPage';
@@ -53,6 +55,16 @@ const sandboxPage = PageBlueprint.make({
     title: 'Sandbox',
     icon: <DeveloperBoardIcon />,
     loader: async () => <SandboxPage />,
+  },
+});
+
+const reclaimPage = PageBlueprint.make({
+  name: 'reclaim',
+  params: {
+    path: '/reclaim',
+    title: 'Reclaim',
+    icon: <RestoreIcon />,
+    loader: async () => <ReclaimPage />,
   },
 });
 
@@ -219,6 +231,7 @@ export const repavePlugin = createFrontendPlugin({
   extensions: [
     myServicesPage,
     sandboxPage,
+    reclaimPage,
     runsPage,
     upgradePage,
     fleetPage,
