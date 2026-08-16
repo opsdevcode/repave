@@ -26,6 +26,7 @@ redirects to `/runs/{id}`.
 
 1. **Plan** — POST `/generate` with `dry_run=true` returns **200** and
    the result page shows gate summary and **Generated files** (file tree / preview).
+   GET `/blueprints/{name}` no longer hosts the generate form (Backstage `/generate`).
 2. **Stepper forms** — When `data-form-stepper` is present:
    - **Plan preview** (`data-dry-run-run`) must work from early steps without
      requiring the user to reach Delivery first.

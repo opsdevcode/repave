@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Generate {{ blueprint.name }} — repave{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Generate moved</h1>
+    <p class="page-lead">
+      Guided generate for <code>{{ blueprint.name }}</code> now lives in Backstage.
+      This HTML form is gone. CLI and <code>/api/v2</code> are unchanged.
+    </p>
+  </div>
+</header>
+
+<section class="card" data-generate-moved>
+  <div class="card__body stack-gap">
+    <p>
+      In the hosted IDP, open
+      <strong>Generate</strong>
+      and pick this blueprint. That page posts
+      <code>POST /api/v2/generate</code>
+      (dry-run default). Scaffolder
+      <code>/create</code>
+      stays as an alternate.
+    </p>
+    <p class="muted">
+      Local-first path (no Backstage):
+      <code>repave generate {{ blueprint.name }}</code>
+      or <code>POST /api/v2/generate</code>.
+    </p>
+    <p class="form-actions">
+      <a class="btn btn--secondary" href="/">← Catalog</a>
+    </p>
+  </div>
+</section>
+{% endblock %}

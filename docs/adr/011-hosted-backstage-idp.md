@@ -12,6 +12,9 @@ teams, services, and the run console has Backstage pages over `/api/v2`.
 **Amendment (2026-08-16):** Backstage `/generate` posts `POST /api/v2/generate`
 with catalog `inputs` (dry-run default). Phase 4 Jinja deletion is the approved
 product call; do not drop leftover HTML generate forms until that page ships.
+**Amendment (2026-08-16):** HTML `blueprint_form.html` is removed. GET
+`/blueprints/{name}` points at Backstage `/generate` and the CLI. `result.html`
+and other portal templates remain until the 14 Feb 2027 sunset.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

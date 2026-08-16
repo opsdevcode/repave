@@ -12,7 +12,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Route | Template | Highlights |
 | --- | --- | --- |
 | Home | `index.html` | Compact catalog header, families open as a 2–3 column path-card grid |
-| Blueprint form | `blueprint_form.html` | Governance card; Terraform/Ansible stepper where applicable; sticky **Plan preview** / **Apply** (no mode radios); scope filter, presets, validation |
+| Blueprint page | `generate_moved.html` | HTML generate form retired; points to Backstage `/generate` and `repave generate` |
 | Generation result | `result.html` | Status hero, lineage + policy rules, gate table, repo card, file tree + preview, Backstage callout when present |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
@@ -65,7 +65,7 @@ v1.18-polish       home hero, scope presets, browser last-run snippet
 - Add `engine/src/repave_engine/static/repave.css` (and minimal `repave.js` if
   needed for copy buttons or theme toggle).
 - Introduce `base.html` with blocks for title, content, and optional scripts;
-  extend from `index.html`, `blueprint_form.html`, and `result.html`.
+  extend from `index.html`, `generate_moved.html`, and `result.html`.
 - Wire static files in the FastAPI app (existing pattern or `StaticFiles` mount).
 
 ### Design tokens (CSS custom properties)
@@ -413,7 +413,7 @@ the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
 | --- | --- |
 | Templates | `engine/src/repave_engine/templates/` |
 | Static assets | `engine/src/repave_engine/static/repave.css`, `repave.js` |
-| Form logic | Inline script in `blueprint_form.html` (provider catalog) |
+| Form logic | Backstage `/generate` posts `POST /api/v2/generate`; HTML POST `/generate` still renders `result.html` |
 | API routes | Engine FastAPI app (serves HTML responses) |
 
 When implementing Phase 1, add tests only where behavior changes (for example route
