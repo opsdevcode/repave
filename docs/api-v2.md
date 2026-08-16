@@ -232,7 +232,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/verify` | viewer+ | Same body/response as `/api/v1/verify` (Backstage `/verify`; 422 = failed verify) |
 | `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on; Backstage `/teams`) |
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments (Backstage `/services`) |
-| `GET` | `/api/v2/catalog/blueprints` | viewer+ | Family-grouped blueprint catalog (Backstage `/generate`) |
+| `GET` | `/api/v2/catalog/blueprints` | viewer+ | Family-grouped blueprint catalog plus input schemas (Backstage `/generate`) |
 | `GET` | `/api/v2/bundles` | viewer+ | Golden-path bundle list (Backstage `/bundles`) |
 | `GET` | `/api/v2/bundles/{name}` | viewer+ | Bundle members + topology (Backstage `/bundles`) |
 | `GET` | `/api/v2/library` | viewer+ | Grouped artifact library (`?family=`, `?owner=`; Backstage `/library`) |

@@ -19,8 +19,9 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 ## Contracts
 
 - HTTP: **`/api/v2` only**. Never scrape HTML forms or call `/api/v1`.
-- Generate: `/generate` lists `GET /api/v2/catalog/blueprints`; submit stays
-  `repave:generate` → `POST /api/v2/generate` (`dry_run`, `inputs`).
+- Generate: `/generate` lists `GET /api/v2/catalog/blueprints` (includes
+  `inputs`); form posts `POST /api/v2/generate` (`dry_run`, `inputs`).
+  Scaffolder `repave:generate` remains an alternate submit path.
 - Bundles: `/bundles` → `GET /api/v2/bundles` + `GET /api/v2/bundles/{name}`.
 - Library: `/library` → `GET /api/v2/library` (`?family=`, `?owner=`).
 - Teams: `/teams` → `GET /api/v2/catalog/entities?team=`.
@@ -63,9 +64,9 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **on** (owner: Eric Skaggs).
   Kind/smoke overlays set it off. Overlay `values-backstage.yaml` sets
-  `portal.html: false` (HTML routes 410), enables `serviceCatalog` with
-  bundled platform-dev fixtures (sandbox vend 404s without it), and
-  documents same-host `/` → Backstage, `/api` → engine.
+  `portal.html: false` (HTML routes 410). Chart defaults enable
+  `serviceCatalog` with bundled platform-dev fixtures (sandbox vend 404s
+  without it). Overlay documents same-host `/` → Backstage, `/api` → engine.
 - HTML portal: `Sunset` / `Link` on HTML routes; sunset 14 Feb 2027.
 - Smoke: `make chart-smoke-backstage` (CI job `chart-smoke-backstage`, path-gated).
   Guest-only: do not set blank `AUTH0_*`. Catalog provider must not fail

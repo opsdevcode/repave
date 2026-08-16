@@ -33,6 +33,23 @@ class InputField:
     # Guided form: when set, Guided mode fills this field from other selections.
     guided_from: str = ""
 
+    def to_public_dict(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "name": self.name,
+            "type": self.type,
+            "required": self.required,
+            "description": self.description,
+            "multi": self.multi,
+            "advanced": self.advanced,
+        }
+        if self.default is not None:
+            payload["default"] = self.default
+        if self.enum:
+            payload["enum"] = list(self.enum)
+        if self.guided_from:
+            payload["guided_from"] = self.guided_from
+        return payload
+
 
 @dataclass(frozen=True)
 class CheckovPolicyPack:
@@ -151,6 +168,7 @@ class Blueprint:
             "artifact_type": self.artifact_type,
             "standard_source": self.standard_source,
             "standard_version": self.standard_version,
+            "inputs": [field.to_public_dict() for field in self.inputs],
         }
 
     def gate_config_for(self, gate_name: str) -> Mapping[str, Any]:

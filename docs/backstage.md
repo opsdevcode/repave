@@ -12,8 +12,9 @@ The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
 
 After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
 sunset. Platform-admin HTML already has Backstage pages (fleet through FinOps, plus
-ops / standards / campaigns, plus builder browse pages). Phase 4 is a product
-call — do not drop leftover guided generate forms silently.
+ops / standards / campaigns, plus builder browse pages). `/generate` now posts
+`POST /api/v2/generate` from Backstage. Phase 4 Jinja deletion is the approved
+product call — start after this form ships; do not drop leftover HTML silently.
 
 ## What you get
 
@@ -25,7 +26,7 @@ call — do not drop leftover guided generate forms silently.
 | Catalog | `catalog-info.yaml` file locations **and** `GET /api/v2/catalog/entities` |
 | Lineage card | Entity page shows `repave.dev/*` pins |
 | My services | `/my-services` — components with `repave.dev/blueprint` |
-| Generate | `/generate` — `GET /api/v2/catalog/blueprints`; submit stays Scaffolder `/create` |
+| Generate | `/generate` — `GET /api/v2/catalog/blueprints` (with `inputs`); form posts `POST /api/v2/generate` (`dry_run` default). Scaffolder `/create` stays as an alternate |
 | Bundles | `/bundles` — `GET /api/v2/bundles` + `GET /api/v2/bundles/{name}` |
 | Library | `/library` — `GET /api/v2/library` (`?family=`, `?owner=`) |
 | Teams | `/teams` — `GET /api/v2/catalog/entities?team=` |
@@ -117,7 +118,7 @@ The Backstage container talks to the in-cluster portal Service
 keys) plus `REPAVE_API_TOKEN` through `repave.backstage.extraEnv` when you
 want Auth0; omit them for guest-only / chart-smoke. The overlay sets `portal.html: false` so HTML
 routes return **410** with `Sunset` / `Link` (14 Feb 2027). It also sets
-`repave.serviceCatalog.enabled` and mounts bundled
+`repave.serviceCatalog.enabled` (chart default) and mounts bundled
 `examples/platform-dev` catalog YAML so `/sandbox` vend does not 404.
 CLI and `/api/v2` stay. Same-host Ingress (opt-in): `/` → Backstage,
 `/api` → engine (`ingress.enabled` + `repave.backstage.ingress.enabled`).
