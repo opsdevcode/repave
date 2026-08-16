@@ -24,6 +24,8 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   Do not fork a second entity store.
 - Sandbox: `/sandbox` → `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend`
   via the Backstage proxy (never scrape HTML `/sandbox`).
+- Vend: `/vend` → `GET /api/v2/component-kinds` + `POST /api/v2/components/vend`
+  (GitOps component request; not `POST /api/v2/components/plan`).
 - Reclaim: `/reclaim` → `POST /api/v2/environments/reclaim` (admin; dry-run default).
 - Runs: `/runs` → `GET /api/v2/runs` + `GET /api/v2/runs/{id}` +
   `POST /api/v2/runs/{id}/replay` (admin; failed/dead-letter only).
@@ -66,7 +68,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card + admin pages (`/fleet` … `/finops`, `/import/batch`, `/add`) |
+| `backstage/plugins/plugin-repave` | Lineage card + admin pages (`/fleet` … `/finops`, `/import/batch`, `/add`, `/vend`) |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality

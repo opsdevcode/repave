@@ -5,6 +5,7 @@ import AppsIcon from '@material-ui/icons/Apps';
 import AssessmentIcon from '@material-ui/icons/Assessment';
 import AssignmentTurnedInIcon from '@material-ui/icons/AssignmentTurnedIn';
 import BarChartIcon from '@material-ui/icons/BarChart';
+import CategoryIcon from '@material-ui/icons/Category';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import FeedbackIcon from '@material-ui/icons/Feedback';
@@ -38,6 +39,7 @@ import { RunsPage } from './components/RunsPage';
 import { SandboxPage } from './components/SandboxPage';
 import { UpgradePage } from './components/UpgradePage';
 import { ValueStreamPage } from './components/ValueStreamPage';
+import { VendComponentPage } from './components/VendComponentPage';
 import { VerifyPage } from './components/VerifyPage';
 
 const myServicesPage = PageBlueprint.make({
@@ -57,6 +59,16 @@ const sandboxPage = PageBlueprint.make({
     title: 'Sandbox',
     icon: <DeveloperBoardIcon />,
     loader: async () => <SandboxPage />,
+  },
+});
+
+const vendComponentPage = PageBlueprint.make({
+  name: 'vend',
+  params: {
+    path: '/vend',
+    title: 'Vend component',
+    icon: <CategoryIcon />,
+    loader: async () => <VendComponentPage />,
   },
 });
 
@@ -243,6 +255,7 @@ export const repavePlugin = createFrontendPlugin({
   extensions: [
     myServicesPage,
     sandboxPage,
+    vendComponentPage,
     reclaimPage,
     runsPage,
     upgradePage,

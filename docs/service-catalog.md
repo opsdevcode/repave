@@ -50,6 +50,7 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `/home` | Builders | My services (owner / default team filter) |
 | `/teams/{slug}` | Builders | Team maturity + initiatives |
 | `/sandbox` | Builders | Request environment from a deployment set |
+| Backstage `/vend` | Builders | Request a managed database, bucket, or queue |
 | `/library` | Builders | Maturity pills + initiative chips on entities |
 | `/services/{id}` | Builders | Tabs: overview, scorecard, dependencies, initiatives |
 | `/platform/maturity` | Admins | Fleet maturity distribution + heatmap |
@@ -64,6 +65,8 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `GET` | `/api/v2/catalog/entities/{id}` | viewer+ (includes `maturity`, `initiatives`) |
 | `GET` | `/api/v2/deployment-sets` | viewer+ |
 | `POST` | `/api/v2/environments/vend` | generator, admin |
+| `GET` | `/api/v2/component-kinds` | viewer+ |
+| `POST` | `/api/v2/components/vend` | generator, admin |
 | `GET` | `/api/v2/platform/maturity` | admin |
 | `GET` | `/api/v2/platform/initiatives` | admin |
 | `POST` | `/api/v2/platform/initiatives` | admin |
@@ -82,7 +85,9 @@ Profiles name a blueprint + default inputs. Deployment sets bind a profile to
 `class`, TTL, and stack inputs. `/sandbox` builds an ADR 003 `environment_vend`
 payload — GitOps PR only; no apply credentials in repave. JSON clients use
 `GET /api/v2/deployment-sets` and `POST /api/v2/environments/vend` (Backstage
-`/sandbox` included).
+`/sandbox` included). Managed components use `GET /api/v2/component-kinds` and
+`POST /api/v2/components/vend` (Backstage `/vend`) — GitOps PR only; not
+`POST /api/v2/components/plan`.
 
 ## Initiatives
 

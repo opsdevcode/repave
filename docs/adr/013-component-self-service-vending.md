@@ -48,8 +48,10 @@ Credentials stay GitHub-shaped. CD applies after merge.
 
 - TTL reclaim / decommission PRs for components
 - Dedicated RDS/S3/SQS module blueprints
-- Backstage `/vend` page
 - Operator JSON contract changes
+
+Backstage `/vend` calls `GET /api/v2/component-kinds` and
+`POST /api/v2/components/vend`.
 
 ## Consequences
 

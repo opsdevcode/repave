@@ -36,6 +36,7 @@ export const SidebarContent = NavContentBlueprint.make({
             {nav.take('page:catalog')}
             {nav.take('page:repave/my-services')}
             {nav.take('page:repave/sandbox')}
+            {nav.take('page:repave/vend')}
             {nav.take('page:repave/reclaim')}
             {nav.take('page:repave/runs')}
             {nav.take('page:repave/upgrade')}

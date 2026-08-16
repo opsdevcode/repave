@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.28.0  
 
-**In progress:** Component-level self-service vending (ADR 013). Phase 4 HTML
+**In progress:** Component TTL reclaim (ADR 013 follow-up). Phase 4 HTML
 removal is a product call.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
@@ -43,6 +43,8 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Forked blueprint packs** (local extra catalog roots);
 **API contract path** (Spectral + oasdiff);
 **Database migration path** (destructive DDL policy, [ADR 012](adr/012-destructive-ddl-policy.md));
+**Component self-service vending** (`POST /api/v2/components/vend`, [ADR 013](adr/013-component-self-service-vending.md));
+**Hosted Backstage component vend** (`/vend` → `/api/v2/components/vend`);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -155,7 +157,7 @@ v3.28.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Forked blueprint packs** | Shipped | Extra local catalog roots; git/OCI fetch stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
-| **Component self-service vending** | In progress | Managed database/bucket/queue via GitOps PR ([ADR 013](adr/013-component-self-service-vending.md)) |
+| **Component self-service vending** | Partial | API + Backstage `/vend` shipped; reclaim and kind-specific blueprints remain ([ADR 013](adr/013-component-self-service-vending.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -256,8 +258,9 @@ unwaived destructive DDL and on a missing rollback.
 
 ### Component-level self-service vending
 
-**Status:** In progress — `POST /api/v2/components/vend` plus catalog
-`source: component` on this PR ([ADR 013](adr/013-component-self-service-vending.md)).
+**Status:** Partial — `POST /api/v2/components/vend` and Backstage `/vend`
+shipped ([ADR 013](adr/013-component-self-service-vending.md)). Reclaim and
+kind-specific blueprints remain.
 
 **Problem:** Builders request a managed database, bucket, or queue by hand or
 ticket; the write never becomes gated GitOps lineage.
@@ -267,10 +270,11 @@ ticket; the write never becomes gated GitOps lineage.
 - Same GitOps PR flow as `environment_vend` (no `terraform apply`)
 - Built-in kinds `database` / `bucket` / `queue` (override via
   `component_vending.kinds`)
-- Registry + catalog entity; reclaim and a Backstage page are follow-ups
+- Registry + catalog entity; Backstage `/vend` for the request
+- Follow-up: TTL reclaim / decommission PRs; dedicated RDS/S3/SQS blueprints
 
 **Done when:** a builder can request a managed component and get a reviewable
-GitOps PR, same shape as environment vending.
+GitOps PR, same shape as environment vending — **met** for the request path.
 
 ---
 
