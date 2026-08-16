@@ -246,10 +246,10 @@ repave:
     initiatives: /data/initiatives.jsonl
     defaultTeam: platform
 
-  # Hosted Backstage IDP (ADR 011). Default off; make chart-smoke-backstage boots the image.
-  # Not written into the engine ConfigMap — Deployment/Service only.
+  # Hosted Backstage IDP (ADR 011). Default on (owner: Eric Skaggs).
+  # Kind/smoke overlays set false. Not written into the engine ConfigMap.
   backstage:
-    enabled: false
+    enabled: true
     replicaCount: 1
     image:
       repository: ghcr.io/opsdevcode/repave-backstage

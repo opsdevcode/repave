@@ -7,9 +7,9 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.26.0  
 
-**In progress:** Hosted Backstage flag stays default off until a named owner
-([ADR 011](adr/011-hosted-backstage-idp.md)); admin plugins shipped through
-feedback submit and run replay — Phase 4 is a product call.
+**In progress:** Hosted Backstage defaults on (owner: Eric Skaggs;
+[ADR 011](adr/011-hosted-backstage-idp.md)); Phase 4 HTML removal is a product
+call. Next planned theme: forked and remote blueprint packs.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -24,7 +24,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 
 **Shipped on `main` (recent):**
 **Hosted Backstage GHCR image** (`ghcr.io/opsdevcode/repave-backstage` on `main`/tags);
-**Hosted Backstage chart-smoke** (kind boots the image; flag stays default off);
+**Hosted Backstage chart-smoke** (kind boots the image);
 **Hosted Backstage Phases 1–3** (app, parity plugins, HTML sunset + ingress split);
 **Hosted Backstage Phase 2** (My services, sandbox, runs, upgrade preview);
 **Hosted Backstage fleet page** (`/fleet` → `/api/v2/fleet`);
@@ -40,6 +40,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Hosted Backstage add component** (`/add` → `/api/v2/components/plan`);
 **Hosted Backstage feedback submit** (`/feedback` → `POST /api/v2/platform/feedback`);
 **Hosted Backstage run replay** (`/runs` → `POST /api/v2/runs/{id}/replay`);
+**Hosted Backstage default-on** (owner: Eric Skaggs; kind/smoke stay off);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -148,7 +149,7 @@ v3.26.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Named owner | Admin pages + feedback submit + run replay shipped; chart-smoke + GHCR image shipped; flag stays default off ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -160,13 +161,10 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Chart-smoke, GHCR image, admin pages through FinOps, batch
-import, org scan, roadmap evidence, initiative writes, reclaim, add-component,
-feedback submit, and run replay shipped
-([ADR 011](adr/011-hosted-backstage-idp.md)).
-Remaining: named owner before `repave.backstage.enabled` default-on
-(duties listed in [`docs/backstage.md`](backstage.md#ownership)).
-Phase 4 HTML removal is a product call.
+**Status:** Chart-smoke, GHCR image, admin pages, and
+`repave.backstage.enabled` default-on shipped (owner: Eric Skaggs;
+[ADR 011](adr/011-hosted-backstage-idp.md)).
+Kind/smoke overlays keep the flag off. Phase 4 HTML removal is a product call.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -179,9 +177,10 @@ and the hosted catalog. HTML portal stays until the published sunset
 (14 Feb 2027); CLI remains the local-first path.
 
 **Done when:** a named owner takes the Backstage release treadmill and the
-chart flag can default on. Platform-admin HTML already has Backstage pages.
-Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke
-and GHCR publish already shipped.
+chart flag defaults on — **met** (Eric Skaggs). Platform-admin HTML already
+has Backstage pages. Apply stays CLI and operator
+(`POST /api/v2/upgrades/apply`). Chart-smoke and GHCR publish already shipped.
+Phase 4 (delete Jinja templates) remains a product call.
 
 ---
 

@@ -46,16 +46,17 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Feedback: `/feedback` → `GET` + `POST /api/v2/platform/feedback` (`surface=backstage`).
 - FinOps: `/finops` → `GET /api/v2/platform/finops/export`.
 - Local-first: `make serve` / `repave generate` must not require yarn.
-- Chart: `repave.backstage.enabled` default **off**. Overlay
-  `values-backstage.yaml` sets `portal.html: false` (HTML routes 410),
-  enables `serviceCatalog` with bundled platform-dev fixtures (sandbox vend
-  404s without it), and documents same-host `/` → Backstage, `/api` → engine.
+- Chart: `repave.backstage.enabled` default **on** (owner: Eric Skaggs).
+  Kind/smoke overlays set it off. Overlay `values-backstage.yaml` sets
+  `portal.html: false` (HTML routes 410), enables `serviceCatalog` with
+  bundled platform-dev fixtures (sandbox vend 404s without it), and
+  documents same-host `/` → Backstage, `/api` → engine.
 - HTML portal: `Sunset` / `Link` on HTML routes; sunset 14 Feb 2027.
 - Smoke: `make chart-smoke-backstage` (CI job `chart-smoke-backstage`, path-gated).
   Guest-only: do not set blank `AUTH0_*`. Catalog provider must not fail
   connect() if the engine is still starting.
 - Publish: `container.yml` matrix key `backstage` → `ghcr.io/opsdevcode/repave-backstage`
-  after `deploy/k8s/hack/build-backstage-bundle.sh`. Flag stays default off.
+  after `deploy/k8s/hack/build-backstage-bundle.sh`. Flag defaults on.
 
 ## Layout
 
