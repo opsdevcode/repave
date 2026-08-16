@@ -7,6 +7,12 @@ export {
   rowsFromDeploymentSets,
   buildVendRequest,
 } from './components/SandboxPage';
+export {
+  VendComponentPage,
+  parseComponentKinds,
+  rowsFromComponentKinds,
+  buildComponentVendRequest,
+} from './components/VendComponentPage';
 export { ReclaimPage, buildReclaimRequest, parseReclaimSummary } from './components/ReclaimPage';
 export { RunsPage, parseRunsPayload, rowsFromRuns, canReplayRun } from './components/RunsPage';
 export {
