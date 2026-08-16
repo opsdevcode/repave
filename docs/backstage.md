@@ -29,7 +29,7 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
 | Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |
 | Import | `/import` — `POST /api/v2/imports/plan` + `/apply` |
-| Batch import | `/import/batch` — `POST /api/v2/imports/batch/plan` + `/apply` |
+| Batch import | `/import/batch` — `POST /api/v2/imports/batch/plan` + `/apply`; `POST /api/v2/github/org-scan` |
 | Verify | `/verify` — `POST /api/v2/verify` (422 is a failed verify) |
 | Estate | `/estate` — `GET /api/v2/estate` (404 if fleet is unset) |
 | Adoption | `/adoption` — `GET /api/v2/platform/metrics` (admin; 404 if unset) |
