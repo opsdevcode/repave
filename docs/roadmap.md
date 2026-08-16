@@ -46,6 +46,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Component self-service vending** (`POST /api/v2/components/vend`, [ADR 013](adr/013-component-self-service-vending.md));
 **Hosted Backstage component vend** (`/vend` → `/api/v2/components/vend`);
 **Component TTL reclaim** (`POST /api/v2/components/reclaim`, [ADR 013](adr/013-component-self-service-vending.md));
+**Hosted Backstage component reclaim** (`/reclaim` → `/api/v2/components/reclaim`);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -158,7 +159,7 @@ v3.31.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Forked blueprint packs** | Shipped | Extra local catalog roots; git/OCI fetch stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
-| **Component self-service vending** | Partial | Vend + reclaim shipped; kind-specific blueprints remain ([ADR 013](adr/013-component-self-service-vending.md)) |
+| **Component self-service vending** | Partial | Vend + reclaim + Backstage UI shipped; kind-specific blueprints remain ([ADR 013](adr/013-component-self-service-vending.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -259,10 +260,9 @@ unwaived destructive DDL and on a missing rollback.
 
 ### Component-level self-service vending
 
-**Status:** Partial — vend, Backstage `/vend`, and
-`POST /api/v2/components/reclaim` shipped
-([ADR 013](adr/013-component-self-service-vending.md)). Kind-specific
-blueprints remain.
+**Status:** Partial — vend, reclaim, and Backstage `/vend` + `/reclaim`
+shipped ([ADR 013](adr/013-component-self-service-vending.md)).
+Kind-specific blueprints remain.
 
 **Problem:** Builders request a managed database, bucket, or queue by hand or
 ticket; the write never becomes gated GitOps lineage.
@@ -274,7 +274,8 @@ ticket; the write never becomes gated GitOps lineage.
   `component_vending.kinds`)
 - Registry + catalog entity; Backstage `/vend` for the request
 - TTL reclaim via `POST /api/v2/components/reclaim` / `repave components reclaim`
-- Follow-up: dedicated RDS/S3/SQS blueprints; Backstage reclaim UI
+  and Backstage `/reclaim`
+- Follow-up: dedicated RDS/S3/SQS blueprints
 
 **Done when:** a builder can request a managed component and get a reviewable
 GitOps PR, same shape as environment vending — **met** for the request path.

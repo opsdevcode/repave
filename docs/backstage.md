@@ -26,7 +26,7 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | My services | `/my-services` — components with `repave.dev/blueprint` |
 | Sandbox | `/sandbox` — `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend` |
 | Vend component | `/vend` — `GET /api/v2/component-kinds` + `POST /api/v2/components/vend` |
-| Reclaim | `/reclaim` — `POST /api/v2/environments/reclaim` (admin; dry-run default) |
+| Reclaim | `/reclaim` — `POST /api/v2/environments/reclaim` and `POST /api/v2/components/reclaim` (admin; dry-run default) |
 | Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` + replay |
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
 | Add component | `/add` — `POST /api/v2/components/plan` + `/apply` (local checkout) |

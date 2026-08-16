@@ -52,10 +52,10 @@ Credentials stay GitHub-shaped. CD applies after merge.
 
 - Dedicated RDS/S3/SQS module blueprints
 - Operator JSON contract changes
-- Backstage UI for component reclaim
 
 Backstage `/vend` calls `GET /api/v2/component-kinds` and
-`POST /api/v2/components/vend`.
+`POST /api/v2/components/vend`. Backstage `/reclaim` also calls
+`POST /api/v2/components/reclaim`.
 
 ## Consequences
 

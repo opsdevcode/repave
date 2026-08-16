@@ -54,6 +54,42 @@ export function buildReclaimRequest(input: {
   return { ok: true, body };
 }
 
+export type ComponentReclaimResultRow = {
+  name: string;
+  kind: string;
+  entityId: string;
+  mode: string;
+  status: string;
+  detail: string;
+  pullRequestUrl: string;
+};
+
+export type ComponentReclaimView = {
+  count: number;
+  reclaimed: number;
+  decommissionReview: number;
+  finalized: number;
+  skipped: number;
+  results: ComponentReclaimResultRow[];
+};
+
+export function buildComponentReclaimRequest(input: {
+  dryRun: boolean;
+  name: string;
+  kind: string;
+}): { ok: true; body: Record<string, unknown> } {
+  const body: Record<string, unknown> = { dry_run: input.dryRun };
+  const name = input.name.trim();
+  const kind = input.kind.trim();
+  if (name) {
+    body.name = name;
+  }
+  if (kind) {
+    body.kind = kind;
+  }
+  return { ok: true, body };
+}
+
 export function reclaimStatus(row: { skipped: boolean; reclaimed: boolean }): string {
   if (row.skipped) {
     return 'skipped';
@@ -94,6 +130,37 @@ export function parseReclaimSummary(body: unknown): ReclaimView {
   };
 }
 
+export function parseComponentReclaimSummary(body: unknown): ComponentReclaimView {
+  const record = body && typeof body === 'object' ? (body as Record<string, unknown>) : {};
+  const results = Array.isArray(record.results)
+    ? record.results
+        .filter(item => item && typeof item === 'object')
+        .map(item => {
+          const row = item as Record<string, unknown>;
+          const skipped = Boolean(row.skipped);
+          const reclaimed = Boolean(row.reclaimed);
+          return {
+            name: String(row.name ?? ''),
+            kind: String(row.kind ?? ''),
+            entityId: String(row.entity_id ?? ''),
+            mode: String(row.mode ?? ''),
+            status: reclaimStatus({ skipped, reclaimed }),
+            detail: String(row.skip_reason || row.detail || ''),
+            pullRequestUrl: String(row.pull_request_url ?? ''),
+          };
+        })
+        .filter(row => row.name)
+    : [];
+  return {
+    count: Number(record.count ?? results.length),
+    reclaimed: Number(record.reclaimed ?? 0),
+    decommissionReview: Number(record.decommission_review ?? 0),
+    finalized: Number(record.finalized ?? 0),
+    skipped: Number(record.skipped ?? 0),
+    results,
+  };
+}
+
 function parseJsonBody(text: string): unknown {
   try {
     return text ? JSON.parse(text) : {};
@@ -102,12 +169,8 @@ function parseJsonBody(text: string): unknown {
   }
 }
 
-const RESULT_COLUMNS: TableColumn<ReclaimResultRow>[] = [
-  { title: 'Stack', field: 'stackName' },
-  { title: 'Mode', field: 'mode' },
-  { title: 'Status', field: 'status' },
-  { title: 'Detail', field: 'detail' },
-  {
+function pullRequestColumn<T extends { pullRequestUrl: string }>(): TableColumn<T> {
+  return {
     title: 'Pull request',
     field: 'pullRequestUrl',
     render: row =>
@@ -118,7 +181,24 @@ const RESULT_COLUMNS: TableColumn<ReclaimResultRow>[] = [
       ) : (
         ''
       ),
-  },
+  };
+}
+
+const RESULT_COLUMNS: TableColumn<ReclaimResultRow>[] = [
+  { title: 'Stack', field: 'stackName' },
+  { title: 'Mode', field: 'mode' },
+  { title: 'Status', field: 'status' },
+  { title: 'Detail', field: 'detail' },
+  pullRequestColumn<ReclaimResultRow>(),
+];
+
+const COMPONENT_COLUMNS: TableColumn<ComponentReclaimResultRow>[] = [
+  { title: 'Name', field: 'name' },
+  { title: 'Kind', field: 'kind' },
+  { title: 'Mode', field: 'mode' },
+  { title: 'Status', field: 'status' },
+  { title: 'Detail', field: 'detail' },
+  pullRequestColumn<ComponentReclaimResultRow>(),
 ];
 
 export function ReclaimPage() {
@@ -129,6 +209,12 @@ export function ReclaimPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [view, setView] = useState<ReclaimView | undefined>();
+  const [componentName, setComponentName] = useState('');
+  const [componentKind, setComponentKind] = useState('');
+  const [componentDryRun, setComponentDryRun] = useState(true);
+  const [componentBusy, setComponentBusy] = useState(false);
+  const [componentError, setComponentError] = useState('');
+  const [componentView, setComponentView] = useState<ComponentReclaimView | undefined>();
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -158,11 +244,43 @@ export function ReclaimPage() {
     }
   }
 
+  async function onComponentSubmit(event: FormEvent) {
+    event.preventDefault();
+    const request = buildComponentReclaimRequest({
+      dryRun: componentDryRun,
+      name: componentName,
+      kind: componentKind,
+    });
+    setComponentBusy(true);
+    setComponentError('');
+    setComponentView(undefined);
+    try {
+      const base = await discoveryApi.getBaseUrl('proxy');
+      const response = await fetchApi.fetch(`${base}/repave/api/v2/components/reclaim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(request.body),
+      });
+      const text = await response.text();
+      const body = parseJsonBody(text);
+      if (!response.ok) {
+        throw new Error(
+          parseApiDetail(body, `POST /api/v2/components/reclaim returned ${response.status}`),
+        );
+      }
+      setComponentView(parseComponentReclaimSummary(body));
+    } catch (err) {
+      setComponentError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setComponentBusy(false);
+    }
+  }
+
   return (
     <Page themeId="tool">
       <Header
         title="Reclaim"
-        subtitle="Expire sandbox stacks via POST /api/v2/environments/reclaim. Apply uses the engine GitHub token."
+        subtitle="Expire sandbox stacks and managed components via GitOps decommission PRs. Apply uses the engine GitHub token."
       />
       <Content>
         <InfoCard title="Reclaim expired environments">
@@ -212,6 +330,68 @@ export function ReclaimPage() {
               columns={RESULT_COLUMNS}
               data={view.results}
               emptyContent={<p>No expired environments to reclaim.</p>}
+            />
+          </>
+        ) : null}
+        <InfoCard title="Reclaim expired components">
+          <form onSubmit={onComponentSubmit}>
+            <TextField
+              label="Name"
+              value={componentName}
+              onChange={event => setComponentName(event.target.value)}
+              helperText="Optional — leave blank to reclaim every expired component"
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              label="Kind"
+              value={componentKind}
+              onChange={event => setComponentKind(event.target.value)}
+              helperText="Optional — database, bucket, or queue"
+              fullWidth
+              margin="normal"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={componentDryRun}
+                  onChange={event => setComponentDryRun(event.target.checked)}
+                  color="primary"
+                />
+              }
+              label="Dry run (preview only)"
+            />
+            <div>
+              <Button type="submit" color="primary" variant="contained" disabled={componentBusy}>
+                {componentDryRun ? 'Preview component reclaim' : 'Apply component reclaim'}
+              </Button>
+            </div>
+          </form>
+        </InfoCard>
+        {componentError ? <p>{componentError}</p> : null}
+        {componentView ? (
+          <>
+            <InfoCard title={componentDryRun ? 'Component preview' : 'Component reclaim result'}>
+              <StructuredMetadataTable
+                metadata={{
+                  Count: String(componentView.count),
+                  Reclaimed: String(componentView.reclaimed),
+                  'Decommission review': String(componentView.decommissionReview),
+                  Finalized: String(componentView.finalized),
+                  Skipped: String(componentView.skipped),
+                }}
+              />
+            </InfoCard>
+            <Table
+              title="Components"
+              options={{
+                paging: componentView.results.length > 10,
+                search: true,
+                padding: 'dense',
+              }}
+              columns={COMPONENT_COLUMNS}
+              data={componentView.results}
+              emptyContent={<p>No expired components to reclaim.</p>}
             />
           </>
         ) : null}
