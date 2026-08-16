@@ -28,6 +28,7 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Reclaim | `/reclaim` — `POST /api/v2/environments/reclaim` (admin; dry-run default) |
 | Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` |
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
+| Add component | `/add` — `POST /api/v2/components/plan` + `/apply` (local checkout) |
 | Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |
 | Import | `/import` — `POST /api/v2/imports/plan` + `/apply` |
 | Batch import | `/import/batch` — `POST /api/v2/imports/batch/plan` + `/apply`; `POST /api/v2/github/org-scan` |

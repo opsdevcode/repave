@@ -10,6 +10,7 @@ import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import FeedbackIcon from '@material-ui/icons/Feedback';
 import FlagIcon from '@material-ui/icons/Flag';
 import HistoryIcon from '@material-ui/icons/History';
+import LibraryAddIcon from '@material-ui/icons/LibraryAdd';
 import MapIcon from '@material-ui/icons/Map';
 import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
 import RestoreIcon from '@material-ui/icons/Restore';
@@ -19,6 +20,7 @@ import StorageIcon from '@material-ui/icons/Storage';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import TimelineIcon from '@material-ui/icons/Timeline';
 import { ActivityPage } from './components/ActivityPage';
+import { AddComponentPage } from './components/AddComponentPage';
 import { CompliancePage } from './components/CompliancePage';
 import { EstatePage } from './components/EstatePage';
 import { FeedbackPage } from './components/FeedbackPage';
@@ -85,6 +87,16 @@ const upgradePage = PageBlueprint.make({
     title: 'Upgrade',
     icon: <SystemUpdateAltIcon />,
     loader: async () => <UpgradePage />,
+  },
+});
+
+const addComponentPage = PageBlueprint.make({
+  name: 'add',
+  params: {
+    path: '/add',
+    title: 'Add component',
+    icon: <LibraryAddIcon />,
+    loader: async () => <AddComponentPage />,
   },
 });
 
@@ -234,6 +246,7 @@ export const repavePlugin = createFrontendPlugin({
     reclaimPage,
     runsPage,
     upgradePage,
+    addComponentPage,
     fleetPage,
     importPage,
     importBatchPage,

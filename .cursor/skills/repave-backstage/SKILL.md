@@ -27,6 +27,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Reclaim: `/reclaim` → `POST /api/v2/environments/reclaim` (admin; dry-run default).
 - Runs: `/runs` → `GET /api/v2/runs` + `GET /api/v2/runs/{id}` via the same proxy.
 - Upgrade: `/upgrade` → `POST /api/v2/upgrades/plan` (preview only; apply stays CLI/operator).
+- Add: `/add` → `POST /api/v2/components/plan` + `/apply` (local checkout; no remote PR).
 - Fleet: `/fleet` → `GET` / `POST` / `DELETE /api/v2/fleet` via the same proxy
   (register/unregister need admin; 404 if `fleet.file` / `REPAVE_FLEET_FILE` unset).
 - Import: `/import` → `POST /api/v2/imports/plan` + `/apply` via the same proxy.
@@ -63,7 +64,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card + admin pages (`/fleet` … `/finops`, `/import/batch`) |
+| `backstage/plugins/plugin-repave` | Lineage card + admin pages (`/fleet` … `/finops`, `/import/batch`, `/add`) |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality

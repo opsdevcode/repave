@@ -15,6 +15,12 @@ export {
   parseUpgradePlan,
 } from './components/UpgradePage';
 export {
+  AddComponentPage,
+  buildAddRequest,
+  parseAddPlan,
+  parseAddApply,
+} from './components/AddComponentPage';
+export {
   FleetPage,
   buildRegisterRequest,
   parseFleetPayload,

@@ -89,6 +89,9 @@ under `REPAVE_MODULES_ROOT`.
 The form requires a local checkout path configured for the entity; remote-only fleet entries
 show the section only when a modules-root mirror exists.
 
+Backstage `/add` calls the same `/api/v2/components/plan` and `/apply` endpoints with an
+explicit checkout path. Apply still commits locally — it does not open a pull request.
+
 ## API
 
 | Method | Path | Role | Body |
