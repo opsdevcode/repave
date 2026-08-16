@@ -36,7 +36,8 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 - Adoption: `/adoption` → `GET /api/v2/platform/metrics` (admin; 404 if unset).
 - Roadmap: `/roadmap` → `GET /api/v2/platform/roadmap-evidence` (admin; 404 if unset).
 - Activity: `/activity` → `GET /api/v2/audit` (404 if audit is unset).
-- Maturity: `/maturity` → `GET /api/v2/platform/maturity` + `/initiatives` (read-only).
+- Maturity: `/maturity` → `GET /api/v2/platform/maturity` + `/initiatives`
+  (create/edit/deactivate via POST/PATCH/DELETE).
 - Compliance: `/compliance` → `GET /api/v2/platform/compliance`.
 - Value stream: `/value-stream` → `GET /api/v2/platform/value-stream`.
 - Feedback: `/feedback` → `GET /api/v2/platform/feedback` (submit stays HTML).

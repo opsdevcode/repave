@@ -50,6 +50,8 @@ export {
   MaturityPage,
   parseMaturityPayload,
   parseInitiativesPayload,
+  parseInactiveInitiatives,
+  buildCreateInitiativeRequest,
 } from './components/MaturityPage';
 export { CompliancePage, parseCompliancePayload } from './components/CompliancePage';
 export { ValueStreamPage, parseValueStreamPayload } from './components/ValueStreamPage';
