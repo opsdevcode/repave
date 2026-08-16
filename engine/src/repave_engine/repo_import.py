@@ -355,7 +355,8 @@ def assert_not_governed(repo_dir: Path) -> None:
     if (repo_dir / PROVENANCE_FILENAME).is_file():
         raise AlreadyGovernedError(
             f"{PROVENANCE_FILENAME} already present — this repository is governed. "
-            "Use the upgrade flow (/update) to re-render it against a newer blueprint."
+            "Use Backstage /upgrade or repave plan-upgrade to re-render it "
+            "against a newer blueprint."
         )
 
 
@@ -1097,7 +1098,8 @@ def plan_import_remote(
     if remote_has_provenance(owner, name, token, ref=ref):
         raise AlreadyGovernedError(
             f"{PROVENANCE_FILENAME} already present — this repository is governed. "
-            "Use the upgrade flow (/update) to re-render it against a newer blueprint."
+            "Use Backstage /upgrade or repave plan-upgrade to re-render it "
+            "against a newer blueprint."
         )
     try:
         rel_paths = inventory_github_paths(owner, name, token, ref=ref)

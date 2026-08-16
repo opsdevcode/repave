@@ -65,7 +65,6 @@ from repave_engine.blueprint import (
 from repave_engine.bundle import list_bundles, load_bundle
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.developer_lab import is_developer_lab_enabled
-from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
     find_catalog_entity,
@@ -147,6 +146,7 @@ from repave_engine.portal_surface_moved import (
     RESULT_MOVED,
     SERVICES_MOVED,
     TEAMS_MOVED,
+    UPGRADE_MOVED,
     VERIFY_MOVED,
     MovedSurface,
     moved_page_context,
@@ -200,7 +200,6 @@ from repave_engine.settings import (
 )
 from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.tracing import configure_tracing
-from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.workload_profiles import (
     SandboxVendError,
     load_deployment_sets,
@@ -1467,81 +1466,9 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return render_moved(request, RESULT_MOVED)
 
     @app.get("/update", response_class=HTMLResponse)
-    async def update_form(request: Request) -> HTMLResponse:
-        demo_path = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
-        repo_prefill = request.query_params.get("repo_url", "").strip()
-        if not repo_prefill:
-            repo_prefill = request.query_params.get("target_repo", "").strip()
-        return templates.TemplateResponse(
-            request,
-            "update.html",
-            page_context(
-                request,
-                nav_active="update",
-                demo_module_path=str(demo_path.resolve()) if demo_path.is_dir() else "",
-                target_repo=repo_prefill,
-            ),
-        )
-
     @app.post("/update", response_class=HTMLResponse)
-    async def update_plan(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
-        form = await request.form()
-        target_repo_raw = str(form.get("target_repo", "")).strip()
-        blueprint_override = str(form.get("blueprint", "")).strip() or None
-
-        if not target_repo_raw:
-            return templates.TemplateResponse(
-                request,
-                "update.html",
-                page_context(
-                    request,
-                    nav_active="update",
-                    error_message="Repository path is required.",
-                    target_repo=target_repo_raw,
-                    blueprint=blueprint_override or "",
-                ),
-            )
-
-        target_repo = Path(target_repo_raw).expanduser()
-        try:
-            plan = plan_upgrade(
-                target_repo,
-                repo_root,
-                blueprint_name=blueprint_override,
-            )
-        except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
-            return templates.TemplateResponse(
-                request,
-                "update.html",
-                page_context(
-                    request,
-                    nav_active="update",
-                    error_message=str(exc),
-                    target_repo=target_repo_raw,
-                    blueprint=blueprint_override or "",
-                ),
-            )
-
-        branch = _suggested_upgrade_branch(plan)
-        resolved = str(target_repo.resolve())
-        cli_apply = f"repave update --no-dry-run --git-branch {branch} --path {resolved}"
-        cli_open_pr = f"{cli_apply} --open-pr"
-        return templates.TemplateResponse(
-            request,
-            "update_result.html",
-            page_context(
-                request,
-                nav_active="update",
-                plan=plan,
-                target_repo=resolved,
-                cli_apply_command=cli_apply,
-                cli_open_pr_command=cli_open_pr,
-                upgrade_diff_views=diff_view_models_from_files(plan.file_diffs),
-            ),
-        )
+    async def update_moved(request: Request) -> HTMLResponse:
+        return render_moved(request, UPGRADE_MOVED)
 
     @app.get("/import", response_class=HTMLResponse)
     @app.post("/import", response_class=HTMLResponse)
@@ -1914,9 +1841,3 @@ def create_app_for_serve() -> FastAPI:
     """Factory entrypoint for `repave serve --reload` (local Docker / dev)."""
     repo_root = Path(os.environ.get("REPAVE_SERVE_REPO_ROOT", ".")).resolve()
     return create_app(repo_root=repo_root, output_config=load_output_config(repo_root))
-
-
-def _suggested_upgrade_branch(plan: UpgradePlanResult) -> str:
-    safe_name = plan.blueprint_name.replace("/", "-")
-    safe_version = plan.blueprint_version.replace("/", "-")
-    return f"repave/upgrade/{safe_name}-{safe_version}"

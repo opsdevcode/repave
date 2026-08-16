@@ -1324,17 +1324,9 @@ def test_result_includes_lineage_and_policy_block(
 def test_update_form_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/update")
-
-    assert response.status_code == 200
-    assert "Upgrade existing repository" in response.text
-    assert 'name="target_repo"' in response.text
-    assert ">Upgrade</a>" in response.text
-    assert "form-actions__toolbar" in response.text
-    assert "page-supplement" in response.text
-    assert "data-repave-busy-form" in response.text
-    assert "data-busy-stages" in response.text
-    assert "shell__main--golden-path" in response.text
-    assert "terraform-minimal" in response.text or "Use terraform-minimal" in response.text
+    assert_surface_moved(response, "upgrade")
+    assert 'name="target_repo"' not in response.text
+    assert "pin-diff-table" not in response.text
 
 
 def test_update_plan_preview(repo_root, output_config) -> None:
@@ -1349,21 +1341,9 @@ def test_update_plan_preview(repo_root, output_config) -> None:
         "/update",
         data={"target_repo": str(fixture)},
     )
-
-    assert response.status_code == 200
-    assert "Upgrade preview" in response.text
-    assert (
-        "Standards &amp; pin changes" in response.text or "Standards & pin changes" in response.text
-    )
-    assert "pin-diff-table" in response.text
-    assert "upgrade-diff" in response.text
-    assert "upgrade-diff__item--" in response.text
-    assert "diff-viewer" in response.text or "Unified diffs" in response.text
-    assert "repave update --no-dry-run" in response.text
-    assert "Auto-merge" in response.text
-    assert "Review required" in response.text
-    assert "v3.enabled" in response.text
-    assert "Opening the upgrade pull request merges Allowed" in response.text
+    assert_surface_moved(response, "upgrade")
+    assert "Unified diffs" not in response.text
+    assert "pin-diff-table" not in response.text
 
 
 def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config, tmp_path) -> None:
@@ -1375,10 +1355,8 @@ def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config
         "/update",
         data={"target_repo": str(empty)},
     )
-
-    assert response.status_code == 200
-    assert "alert--fail" in response.text
-    assert "repave.yaml" in response.text
+    assert_surface_moved(response, "upgrade")
+    assert "alert--fail" not in response.text
 
 
 def test_readyz(repo_root, output_config) -> None:

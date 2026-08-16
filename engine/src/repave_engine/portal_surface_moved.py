@@ -196,6 +196,17 @@ BUNDLE_RESULT_MOVED = _surface(
     nav_active="catalog",
 )
 
+UPGRADE_MOVED = _surface(
+    "upgrade",
+    title="Upgrade moved",
+    lead="Upgrade preview now lives in Backstage. This HTML form is gone.",
+    backstage_label="Upgrade",
+    backstage_path="/upgrade",
+    api_hint="POST /api/v2/upgrades/plan",
+    cli_hint="repave plan-upgrade --target-repo <path>",
+    nav_active="update",
+)
+
 _PLATFORM_PAGES: dict[str, tuple[str, str, str, str]] = {
     "fleet": ("Fleet", "/fleet", "GET /api/v2/fleet", "GET /api/v2/fleet"),
     "ops": ("Ops", "/ops", "GET /api/v2/platform/ops", "GET /api/v2/platform/ops"),

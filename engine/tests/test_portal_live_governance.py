@@ -91,11 +91,12 @@ def test_presenter_mode_shell(repo_root, output_config) -> None:
 
 def test_update_form_prefills_target_repo(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    body = client.get(
+    response = client.get(
         "/update",
         params={"target_repo": "https://github.com/acme/tf-vpc"},
-    ).text
-    assert 'value="https://github.com/acme/tf-vpc"' in body
+    )
+    assert_surface_moved(response, "upgrade")
+    assert 'value="https://github.com/acme/tf-vpc"' not in response.text
 
 
 def test_blueprint_page_explains_generate_move(repo_root, output_config) -> None:
@@ -144,9 +145,9 @@ def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:
         pytest.skip("operator fixture not present")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post("/update", data={"target_repo": str(fixture)})
-    assert response.status_code == 200
-    body = response.text
-    assert "Unified diffs" in body or "diff-viewer" in body
+    assert_surface_moved(response, "upgrade")
+    assert "Unified diffs" not in response.text
+    assert "diff-viewer" not in response.text
 
 
 def test_api_estate_json(repo_root, output_config, registry: Path) -> None:

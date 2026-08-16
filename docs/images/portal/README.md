@@ -11,7 +11,7 @@ major portal UI changes (see [Demo verification](../demo-verification.md)).
 | `home-catalog.png` | `/` (auth off) | Catalog hero, golden-path heading, family card grid |
 | `library-catalog.png` | `/library` | Family drawers in a 2–3 column grid that open a quiet shelf |
 | `blueprint-form.png` | `/blueprints/terraform-module-generic` | Governance rail + stepper form |
-| `update-repo.png` | `/update` | Upgrade / re-render flow |
+| `update-repo.png` | `/update` | Pointer page to Backstage `/upgrade` (legacy capture) |
 | `import-repo.png` | `/import` | Adopt an existing repo into a golden path |
 | `generate-result.png` | dry-run generate | Lineage, policy rules, gate dashboard |
 | `generate-result-backstage.png` | dry-run + Backstage catalog | Backstage card + `catalog-info.yaml` preview |

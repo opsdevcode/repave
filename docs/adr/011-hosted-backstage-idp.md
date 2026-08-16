@@ -23,6 +23,9 @@ sandbox, and landing remain until the 14 Feb 2027 sunset.
 are removed. GET `/bundles/{name}` and bundle POST `/generate` point at
 Backstage `/bundles`. Upgrade, run console, sandbox, and landing remain
 until the 14 Feb 2027 sunset.
+**Amendment (2026-08-16):** HTML `update.html` and `update_result.html` are
+removed. GET and POST `/update` point at Backstage `/upgrade`. Run console,
+sandbox, and landing remain until the 14 Feb 2027 sunset.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

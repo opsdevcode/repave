@@ -52,10 +52,9 @@ On the result page confirm:
 
 ## Act 4 — Existing estate (~1 min)
 
-1. Nav: **Update repo** (shell link).
-2. Click **Use terraform-minimal** (or paste path to
-   `operator/testdata/modules/terraform-minimal`).
-3. **Preview upgrade** — pin diff table and file-level upgrade diff.
+1. Open Backstage **Upgrade** (`/upgrade`), or run
+   `repave plan-upgrade --target-repo operator/testdata/modules/terraform-minimal`.
+2. HTML `/update` is a pointer page; preview and apply stay API/CLI.
 
 **Say:** “We plan upgrades from provenance, not from guessing what's in git.”
 

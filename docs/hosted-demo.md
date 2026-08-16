@@ -43,8 +43,8 @@ Same narrative as [seven-minute-demo.md](seven-minute-demo.md); only the **start
    **terraform-module-generic**.
 2. **Acts 2–3 — Generate:** module `demo`, AWS, **ec2 + s3** → **Dry run preview** → confirm gates
    and **Generated files**. Optional: enable **Live run console** and watch `/runs/{id}` stream.
-3. **Act 4 — Update repo:** **Update repo** → **Use terraform-minimal** (or a published demo repo) →
-   **Preview upgrade**.
+3. **Act 4 — Update repo:** Backstage `/upgrade` (or `POST /api/v2/upgrades/plan`)
+   against terraform-minimal or a published demo repo.
 4. **Act 5 — OPA block:** **opa-policy-generic**, plan demo `destructive_delete` → dry-run →
    **Publish blocked**.
 5. **Act 6 — Backstage:** Terraform form → **Advanced** → **Include Backstage catalog** `true`,
