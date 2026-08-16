@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
+
+from repave_engine.environment_record import parse_iso_timestamp
 
 
 def entity_id_for_component(*, kind: str, name: str) -> str:
@@ -32,6 +35,7 @@ class ComponentRecord:
     vended_by: str
     vended_at: str
     status: str
+    expires_at: str = ""
 
     def to_event(self, event: str) -> dict[str, Any]:
         return {
@@ -53,6 +57,7 @@ class ComponentRecord:
             "run_id": self.run_id,
             "vended_by": self.vended_by,
             "timestamp": self.vended_at,
+            "expires_at": self.expires_at,
             "status": self.status,
         }
 
@@ -75,6 +80,7 @@ class ComponentRecord:
             "run_id": self.run_id,
             "vended_by": self.vended_by,
             "vended_at": self.vended_at,
+            "expires_at": self.expires_at,
             "status": self.status,
         }
 
@@ -104,4 +110,63 @@ class ComponentRecord:
             vended_by=str(payload.get("vended_by", "")).strip(),
             vended_at=str(payload.get("timestamp", payload.get("vended_at", ""))).strip(),
             status=str(payload.get("status", "active")).strip() or "active",
+            expires_at=str(payload.get("expires_at", "")).strip(),
         )
+
+
+def resolve_component_ttl_hours(
+    kind: str,
+    *,
+    default_ttl_hours: int,
+    ttl_hours_by_kind: tuple[tuple[str, int], ...],
+) -> int | None:
+    needle = kind.strip().lower()
+    for kind_id, hours in ttl_hours_by_kind:
+        if kind_id.strip().lower() == needle and hours > 0:
+            return hours
+    if default_ttl_hours > 0:
+        return default_ttl_hours
+    return None
+
+
+def is_component_expired(
+    record: ComponentRecord,
+    *,
+    now: datetime | None = None,
+) -> bool:
+    expires = parse_iso_timestamp(record.expires_at)
+    if expires is None:
+        return False
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    return current >= expires
+
+
+def is_reclaim_eligible_kind(kind: str, reclaim_kinds: frozenset[str]) -> bool:
+    if not reclaim_kinds:
+        return False
+    needle = kind.strip().lower()
+    return needle in {item.strip().lower() for item in reclaim_kinds if item.strip()}
+
+
+def resolve_decommission_review_kinds(
+    *,
+    auto_reclaim_kinds: tuple[str, ...],
+    configured_review_kinds: tuple[str, ...],
+    observed_kinds: frozenset[str],
+) -> frozenset[str]:
+    auto = frozenset(item.strip().lower() for item in auto_reclaim_kinds if item.strip())
+    if configured_review_kinds:
+        return frozenset(
+            item.strip().lower()
+            for item in configured_review_kinds
+            if item.strip() and item.strip().lower() not in auto
+        )
+    return frozenset(
+        item.strip().lower() for item in observed_kinds if item.strip() and item not in auto
+    )
+
+
+def has_open_decommission_review(record: ComponentRecord) -> bool:
+    return record.status.strip().lower() == "expired" and record.pull_request_number > 0

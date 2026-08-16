@@ -42,6 +42,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "POST /api/v2/environments/vend" in payload["endpoints"]
     assert "GET /api/v2/component-kinds" in payload["endpoints"]
     assert "POST /api/v2/components/vend" in payload["endpoints"]
+    assert "POST /api/v2/components/reclaim" in payload["endpoints"]
 
 
 def test_api_v2_upgrades_plan(repo_root, output_config, tmp_path) -> None:

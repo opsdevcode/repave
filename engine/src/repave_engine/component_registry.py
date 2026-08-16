@@ -9,7 +9,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from repave_engine.component_record import ComponentRecord, entity_id_for_component
+from repave_engine.component_record import (
+    ComponentRecord,
+    entity_id_for_component,
+    resolve_component_ttl_hours,
+)
+from repave_engine.environment_record import expires_at_from_ttl
 from repave_engine.jsonl_lock import append_jsonl_line
 
 if TYPE_CHECKING:
@@ -18,6 +23,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 EVENT_REGISTER = "register"
+EVENT_DECOMMISSION = "decommission"
 _MAX_FILE_BYTES = 8_000_000
 
 
@@ -35,6 +41,7 @@ def build_component_record_from_vend(
     payload: dict[str, Any],
     run_id: str,
     acting_user: str,
+    ttl_hours: int | None = None,
 ) -> ComponentRecord:
     inputs_raw = payload.get("inputs", {})
     inputs = inputs_raw if isinstance(inputs_raw, dict) else {}
@@ -44,6 +51,7 @@ def build_component_record_from_vend(
         raise ComponentRegistryError("name and kind are required to register a component")
     cloud_provider = str(inputs.get("cloud_provider", "aws")).strip() or "aws"
     environment_tier = str(inputs.get("environment", "dev")).strip() or "dev"
+    vended_at = _now()
     return ComponentRecord(
         name=name,
         kind=kind,
@@ -61,13 +69,14 @@ def build_component_record_from_vend(
         gates_outcome=vend_result.gates_outcome,
         run_id=run_id,
         vended_by=acting_user.strip() or "unknown",
-        vended_at=_now(),
+        vended_at=vended_at,
         status="pending" if vend_result.draft else "active",
+        expires_at=expires_at_from_ttl(ttl_hours=ttl_hours, vended_at=vended_at),
     )
 
 
 def append_component_event(path: Path, record: ComponentRecord, event: str) -> None:
-    if event != EVENT_REGISTER:
+    if event not in (EVENT_REGISTER, EVENT_DECOMMISSION):
         raise ComponentRegistryError(f"unknown component registry event {event!r}")
     line = json.dumps(record.to_event(event), separators=(",", ":"))
     try:
@@ -80,11 +89,15 @@ def _fold_component_payloads(payloads: list[dict[str, Any]]) -> tuple[ComponentR
     current: dict[str, ComponentRecord] = {}
     for payload in payloads:
         event = str(payload.get("event", "")).strip()
+        entry = ComponentRecord.from_event(payload)
+        if entry is None:
+            continue
+        if event == EVENT_DECOMMISSION:
+            current.pop(entry.entity_id, None)
+            continue
         if event != EVENT_REGISTER:
             continue
-        entry = ComponentRecord.from_event(payload)
-        if entry is not None:
-            current[entry.entity_id] = entry
+        current[entry.entity_id] = entry
     return tuple(sorted(current.values(), key=lambda item: item.entity_id))
 
 
@@ -121,6 +134,32 @@ def register_component(path: Path, record: ComponentRecord) -> ComponentRecord:
     return stamped
 
 
+def decommission_component(path: Path, record: ComponentRecord) -> None:
+    """Remove a component from the registry (append-only decommission event)."""
+    if not record.name or not record.kind:
+        raise ComponentRegistryError("name and kind are required to decommission a component")
+    append_component_event(path, record, EVENT_DECOMMISSION)
+
+
+def mark_component_expired(
+    path: Path,
+    record: ComponentRecord,
+    *,
+    pull_request_url: str,
+    pull_request_number: int,
+    git_branch: str,
+) -> ComponentRecord:
+    """Keep the component in the catalog with expired status and a decommission PR."""
+    updated = replace(
+        record,
+        status="expired",
+        pull_request_url=pull_request_url.strip(),
+        pull_request_number=pull_request_number,
+        git_branch=git_branch.strip() or record.git_branch,
+    )
+    return register_component(path, updated)
+
+
 def register_component_from_vend(
     path: Path,
     *,
@@ -128,11 +167,19 @@ def register_component_from_vend(
     payload: dict[str, Any],
     run_id: str,
     acting_user: str,
+    default_ttl_hours: int = 0,
+    ttl_hours_by_kind: tuple[tuple[str, int], ...] = (),
 ) -> ComponentRecord:
+    ttl_hours = resolve_component_ttl_hours(
+        vend_result.kind,
+        default_ttl_hours=default_ttl_hours,
+        ttl_hours_by_kind=ttl_hours_by_kind,
+    )
     record = build_component_record_from_vend(
         vend_result=vend_result,
         payload=payload,
         run_id=run_id,
         acting_user=acting_user,
+        ttl_hours=ttl_hours,
     )
     return register_component(path, record)

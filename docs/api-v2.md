@@ -144,12 +144,28 @@ Default path: `{path_prefix}/{kind}/{name}` (`path_prefix` defaults to `componen
 | --- | --- | --- | --- |
 | `GET` | `/api/v2/component-kinds` | viewer+ | Built-in kinds plus optional `component_vending.kinds` YAML; `vend_available` when async runs and vending are on (Backstage `/vend`) |
 | `POST` | `/api/v2/components/vend` | generator, admin | `{ "kind": "database"\|"bucket"\|"queue", "name", "owner"?, "dry_run"? }` → 202 run (`kind: component_vend`; Backstage `/vend`) |
+| `POST` | `/api/v2/components/reclaim` | admin | `{ "name"?, "kind"?, "dry_run"? }` — expire managed components via GitOps decommission PRs |
 
-`name` must be 3–63 lowercase letters, numbers, and hyphens. `dry_run` defaults
-to `true`. A successful non–dry-run appends `data/components/registry.jsonl`
-and the catalog entity uses `"source": "component"`.
+`name` on vend must be 3–63 lowercase letters, numbers, and hyphens. Vend
+`dry_run` defaults to `true`. A successful non–dry-run vend appends
+`data/components/registry.jsonl` and the catalog entity uses
+`"source": "component"`. Reclaim `dry_run` defaults to `false` when omitted
+(same as environment reclaim); pass `"dry_run": true` to preview.
 
-This is not `POST /api/v2/components/plan` (`repave add` onto an existing repo).
+Set `component_vending.default_ttl_hours` or `ttl_hours_by_kind` so vended
+rows get `expires_at`. `auto_reclaim_kinds` defaults to `database` / `bucket` /
+`queue`. Other observed kinds open a **draft** decommission PR and stay in the
+catalog as `status: expired` until merge (`mode: registry_finalize`).
+
+CLI:
+
+```bash
+repave components reclaim --dry-run
+repave components reclaim --name checkout-db --kind database
+```
+
+This is not `POST /api/v2/components/plan` (`repave add` onto an existing repo)
+and not `POST /api/v2/environments/reclaim`.
 
 ## Operator upgrades
 
@@ -227,6 +243,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `POST` | `/api/v2/environments/vend` | generator, admin | Request a sandbox from a deployment set |
 | `GET` | `/api/v2/component-kinds` | viewer+ | Built-in kinds (Backstage `/vend`) |
 | `POST` | `/api/v2/components/vend` | generator, admin | Request a managed component (Backstage `/vend`) |
+| `POST` | `/api/v2/components/reclaim` | admin | Reclaim expired managed components |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandboxes (Backstage `/reclaim`) |
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption (Backstage `/adoption`; `?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 | `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity (Backstage `/maturity`) — see [`service-catalog.md`](service-catalog.md) |
