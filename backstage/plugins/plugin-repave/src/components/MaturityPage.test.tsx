@@ -1,5 +1,8 @@
 import {
+  buildCreateInitiativeRequest,
+  buildPatchInitiativeRequest,
   formatRatio,
+  parseInactiveInitiatives,
   parseInitiativesPayload,
   parseMaturityPayload,
   rowsFromInitiatives,
@@ -53,8 +56,11 @@ describe('maturity helpers', () => {
       {
         id: 'init-1',
         title: 'Runbook coverage',
+        description: '',
         owningTeam: 'platform',
+        dueDate: '',
         targetLevel: 3,
+        targetRuleKeys: '',
         passed: 2,
         total: 4,
         ratio: '50%',
@@ -67,5 +73,57 @@ describe('maturity helpers', () => {
       })[0]?.title,
     ).toBe('Tags');
     expect(formatRatio(0.25)).toBe('25%');
+  });
+
+  it('builds create and patch bodies and maps inactive rows', () => {
+    expect(
+      buildCreateInitiativeRequest({
+        title: '',
+        description: '',
+        owningTeam: '',
+        dueDate: '',
+        targetLevel: '',
+        targetRuleKeys: '',
+      }).ok,
+    ).toBe(false);
+    expect(
+      buildCreateInitiativeRequest({
+        title: 'Runbook coverage',
+        description: 'Close gaps',
+        owningTeam: 'platform',
+        dueDate: '2026-12-01',
+        targetLevel: '3',
+        targetRuleKeys: 'has_oncall, has_runbook',
+      }),
+    ).toEqual({
+      ok: true,
+      body: {
+        title: 'Runbook coverage',
+        description: 'Close gaps',
+        owning_team: 'platform',
+        due_date: '2026-12-01',
+        target_level: 3,
+        target_rule_keys: ['has_oncall', 'has_runbook'],
+      },
+    });
+    expect(
+      buildPatchInitiativeRequest({
+        title: 'Runbook coverage',
+        description: '',
+        owningTeam: '',
+        dueDate: '',
+        targetLevel: '',
+        targetRuleKeys: '',
+        active: true,
+      }),
+    ).toEqual({
+      ok: true,
+      body: { title: 'Runbook coverage', active: true },
+    });
+    expect(
+      parseInactiveInitiatives({
+        inactive: [{ id: 'init-old', title: 'Retired', owning_team: 'platform', due_date: '' }],
+      }),
+    ).toEqual([{ id: 'init-old', title: 'Retired', owningTeam: 'platform', dueDate: '' }]);
   });
 });

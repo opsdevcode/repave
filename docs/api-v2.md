@@ -208,9 +208,9 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/platform/metrics` | admin | Golden-path adoption (Backstage `/adoption`; `?persist=1`, `?history=N`) — see [`platform-metrics.md`](platform-metrics.md) |
 | `GET` | `/api/v2/platform/maturity` | admin | Fleet maturity (Backstage `/maturity`) — see [`service-catalog.md`](service-catalog.md) |
 | `GET` | `/api/v2/platform/initiatives` | admin | Initiative progress (Backstage `/maturity`; + inactive list) |
-| `POST` | `/api/v2/platform/initiatives` | admin | Create initiative (`title` required) |
-| `PATCH` | `/api/v2/platform/initiatives/{id}` | admin | Partial update (title, targets, `active`, …) |
-| `DELETE` | `/api/v2/platform/initiatives/{id}` | admin | Soft-deactivate (`active: false`) |
+| `POST` | `/api/v2/platform/initiatives` | admin | Create initiative (`title` required; Backstage `/maturity`) |
+| `PATCH` | `/api/v2/platform/initiatives/{id}` | admin | Partial update (title, targets, `active`, …; Backstage `/maturity`) |
+| `DELETE` | `/api/v2/platform/initiatives/{id}` | admin | Soft-deactivate (`active: false`; Backstage `/maturity`) |
 | `GET` | `/api/v2/platform/compliance` | admin | Gate pass rate + bypasses (Backstage `/compliance`) |
 | `GET` | `/api/v2/platform/value-stream` | admin | Adoption history (Backstage `/value-stream`) |
 | `GET` | `/api/v2/platform/roadmap-evidence` | admin | Theme adoption + sunset candidates (Backstage `/roadmap`) |

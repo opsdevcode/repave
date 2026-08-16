@@ -49,7 +49,7 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `/services/{id}` | Builders | Tabs: overview, scorecard, dependencies, initiatives |
 | `/platform/maturity` | Admins | Fleet maturity distribution + heatmap |
 | `/platform/initiatives` | Admins | Progress rollup + create / edit / deactivate |
-| Backstage `/maturity` | Admins | Same maturity + initiative reads via `/api/v2` (create/edit stays HTML/CLI) |
+| Backstage `/maturity` | Admins | Maturity + initiative create / edit / deactivate via `/api/v2` |
 
 ## APIs
 
