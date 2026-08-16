@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.entity_catalog import entity_id_for_repo_url
 from repave_engine.environment_vend import (
@@ -356,11 +357,7 @@ environment_vending:
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
     try:
         detail = client.get(f"/services/{entity_id}")
-        assert detail.status_code == 200
-        assert "Request environment" in detail.text
-        assert "Plan gates" in detail.text
-        assert "Open GitOps PR" in detail.text
-        assert "environments/tf-live" in detail.text or "tf-live" in detail.text
+        assert_surface_moved(detail, "services")
     finally:
         queue = client.app.state.run_queue
         if queue is not None:

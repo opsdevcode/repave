@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.developer_lab import is_developer_lab_enabled, load_developer_lab_paths
 from repave_engine.settings import (
@@ -101,9 +102,7 @@ def test_developer_lab_portal_routes(v3_lab_root: Path, monkeypatch: pytest.Monk
     client = TestClient(create_app(repo_root=v3_lab_root))
 
     home = client.get("/home")
-    assert home.status_code == 200
-    assert "Developer lab" in home.text
-    assert "request a developer lab" in home.text
+    assert_surface_moved(home, "home")
 
     lab = client.get("/lab")
     assert lab.status_code == 200

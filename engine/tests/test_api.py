@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, create_app
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.gate_registry import GateResult
@@ -54,8 +55,7 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
 
-    assert response.status_code == 200
-    assert "terraform-module-generic" in response.text
+    assert_surface_moved(response, "catalog")
     assert "/static/repave.css" in response.text
     assert "/static/repave.js" in response.text
     assert "/static/repave-motion.mjs" in response.text
@@ -65,59 +65,22 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert 'id="repave-toast"' in response.text
     assert 'class="shell"' in response.text
     assert "shell__atmosphere" in response.text
-    assert "home-console" in response.text
     assert 'rel="icon"' in response.text
     assert "/static/brand/favicon.svg" in response.text
     assert "/static/brand/svg/repave-mark-dark.svg" in response.text
     assert "shell__wordmark" in response.text
     assert "shell__edition" in response.text
     assert "shell__tagline" in response.text
-    assert "home-console__header" in response.text
-    assert "home-console__title" in response.text
     assert "The intelligent platform layer" in response.text
-    assert "Golden paths" in response.text
-    assert "Hosted generate is in Backstage" in response.text
     assert "shell__mark-frame" in response.text
     assert "repave v3 · The intelligent platform layer" in response.text
     assert 'property="og:image"' in response.text
     assert "static/brand/social/repave-social-card.png" in response.text
     assert 'name="twitter:card"' in response.text
-    assert "data-home-quick" in response.text
-    assert "catalog-inventory__item-icon" in response.text
-    assert "catalog-inventory__category" in response.text
-    assert "catalog-inventory--browse" in response.text
-    assert "catalog-inventory__heading" in response.text
-    assert "home-catalog-column" in response.text
-    assert "catalog-inventory__summary" not in response.text
-    assert 'href="/library"' in response.text
     assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text
     assert "shell__bar-start" in response.text
     assert "shell__search" in response.text
-    assert response.text.index("Library") < response.text.index("shell__nav-more")
-    assert "Terraform" in response.text
-    assert "Ansible" in response.text
-    assert (
-        'class="catalog-inventory__category catalog-inventory__category--terraform"'
-        in response.text
-    )
-    assert (
-        'class="catalog-inventory__category catalog-inventory__category--ansible"' in response.text
-    )
-    assert (
-        'class="catalog-inventory__category catalog-inventory__category--policy"' in response.text
-    )
-    assert (
-        'class="catalog-inventory__category catalog-inventory__category--observability"'
-        in response.text
-    )
-    assert 'id="catalog-observability"' in response.text
-    assert "Observability" in response.text
-    assert "dashboards-as-code-generic" in response.text
-    assert "monitors-as-code-generic" in response.text
-    assert 'id="catalog-policy"' in response.text
-    assert "opa-policy-generic" in response.text
-    assert "azure-policy-generic" in response.text
 
 
 def test_static_repave_js_served(repo_root, output_config) -> None:
@@ -183,11 +146,8 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
 def test_activity_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/activity")
-
-    assert response.status_code == 200
-    assert "Activity" in response.text
+    assert_surface_moved(response, "activity")
     assert 'href="/activity"' in response.text
-    assert "data-portal-view-toggle" in response.text or "audit.enabled" in response.text
 
 
 def test_activity_inflight_strip_when_async_enabled(
@@ -196,11 +156,7 @@ def test_activity_inflight_strip_when_async_enabled(
     monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
     monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    body = client.get("/activity").text
-    assert "data-activity-inflight" in body
-    assert "In-flight runs" in body
-    assert "data-activity-inflight-list" in body
-    assert "data-activity-inflight-hint" in body
+    assert_surface_moved(client.get("/activity"), "activity")
     js = client.get("/static/repave.js").text
     assert "initActivityInflight" in js
     assert "fetchQueuedAndRunning" in js
@@ -228,34 +184,23 @@ def test_home_does_not_embed_activity_feed(
         repo_root=repo_root,
     )
     response = client.get("/")
-    assert response.status_code == 200
+    assert_surface_moved(response, "catalog")
     assert 'class="home-activity"' not in response.text
     assert 'class="activity-story"' not in response.text
     assert ">vpc-demo<" not in response.text
-    assert 'href="/activity"' in response.text
 
 
 def test_home_no_activity_link_when_audit_disabled(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert response.status_code == 200
+    assert_surface_moved(response, "catalog")
     assert 'class="home-activity"' not in response.text
 
 
 def test_index_catalog_search(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-
-    assert response.status_code == 200
-    assert "data-catalog-search" in response.text
-    assert "data-catalog-card" in response.text
-    assert "home-console__title" in response.text
-    assert "/static/repave-home.mjs" in response.text
-    assert 'type="module"' in response.text
-    assert "data-home-quick" in response.text
-    assert "data-peek-name=" in response.text
-    assert "data-motion-face" in response.text
-    assert "data-motion-depth" in response.text
+    assert_surface_moved(response, "catalog")
     assert "@view-transition" in response.text
 
 
@@ -304,9 +249,7 @@ def test_helm_guided_only_generate_uses_defaults(repo_root, output_config) -> No
             "enable_ingress": "false",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_gitops_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -326,9 +269,7 @@ def test_gitops_guided_only_generate_uses_defaults(repo_root, output_config) -> 
             "sync_policy": "manual",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_checkov_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -342,9 +283,7 @@ def test_checkov_guided_only_generate_uses_defaults(repo_root, output_config) ->
             "organization": "acme",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_app_service_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -361,9 +300,7 @@ def test_app_service_guided_only_generate_uses_defaults(repo_root, output_config
             "port": "8080",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_ansible_collection_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -382,9 +319,7 @@ def test_ansible_collection_guided_only_generate_uses_defaults(repo_root, output
             "support_windows": "false",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_ansible_playbook_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -402,9 +337,7 @@ def test_ansible_playbook_guided_only_generate_uses_defaults(repo_root, output_c
             "support_windows": "false",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_env_stack_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -420,9 +353,7 @@ def test_env_stack_guided_only_generate_uses_defaults(repo_root, output_config) 
             "owner": "platform-engineering",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -544,19 +475,7 @@ def test_generate_form_submission(
         },
     )
 
-    assert response.status_code == 200
-    assert "tf-aws-example" in response.text
-    assert "Plan only" in response.text
-    assert "result-hero" in response.text
-    assert "gate-table" in response.text
-    assert "data-gate-dashboard" in response.text
-    assert "Generated files" in response.text
-    assert "ec2_diff.tf" in response.text
-    assert "s3_bucket.tf" in response.text
-    assert 'data-copy-target="#file-fallback-content-0"' in response.text
-    assert 'data-copy-target="#file-explorer-content-0"' in response.text
-    assert "publish-plan" in response.text
-    assert "repavePortal.saveLastRun" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_generate_publish_passes_github_token_from_env(
@@ -850,10 +769,7 @@ def test_generate_dry_run_promotes_missing_terraform_to_fail(
             **sample_inputs,
         },
     )
-    assert response.status_code == 200
-    assert "badge--fail" in response.text
-    assert "Dry-run preview runs all blueprint gates" in response.text
-    assert "terraform-fmt" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_terraform_guided_only_generate_uses_defaults(
@@ -880,9 +796,7 @@ def test_terraform_guided_only_generate_uses_defaults(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **guided},
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_terraform_guided_generate_derives_name_and_description(
@@ -911,11 +825,7 @@ def test_terraform_guided_generate_derives_name_and_description(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **guided},
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
-    assert "ec2-s3" in response.text
-    assert "aws Terraform module covering" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sample_inputs) -> None:
@@ -928,10 +838,7 @@ def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sampl
             **sample_inputs,
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
-    assert "result-hero" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) -> None:
@@ -950,10 +857,7 @@ def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) ->
             "windows_server_generation": "2022",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
-    assert "result-hero" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_ansible_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -972,9 +876,7 @@ def test_ansible_guided_only_generate_uses_defaults(repo_root, output_config) ->
             "windows_server_generation": "2022",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_ansible_guided_generate_derives_name_and_description(repo_root, output_config) -> None:
@@ -991,11 +893,7 @@ def test_ansible_guided_generate_derives_name_and_description(repo_root, output_
             "windows_server_generation": "2022",
         },
     )
-    assert response.status_code == 200
-    assert "Plan only" in response.text
-    assert "Generated files" in response.text
-    assert "linux_service" in response.text
-    assert "acme Ansible role" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:
@@ -1264,12 +1162,7 @@ def test_result_dashboard_failed_gate_excerpt(
         },
     )
 
-    assert response.status_code == 200
-    assert "result-hero--failed" in response.text
-    assert "Generation failed" in response.text
-    assert "gate-detail" in response.text
-    assert "gate-excerpt-2" in response.text
-    assert "fmt failed" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_plan_preview_with_files_surfaces_copyable_explorer(
@@ -1323,17 +1216,7 @@ def test_plan_preview_with_files_surfaces_copyable_explorer(
         },
     )
 
-    assert response.status_code == 200
-    assert "Plan preview ready" in response.text
-    assert "Browse and copy generated files below" in response.text
-    assert "result-hero--preview" in response.text
-    assert "Generation failed" not in response.text
-    assert "Generated files" in response.text
-    assert 'data-copy-target="#file-explorer-content-0"' in response.text
-    assert "# demo module" in response.text
-    files_idx = response.text.index("Generated files")
-    gates_idx = response.text.index('aria-labelledby="gates-heading"')
-    assert files_idx < gates_idx
+    assert_surface_moved(response, "result")
 
 
 def test_result_dashboard_published_repo_card(
@@ -1385,12 +1268,7 @@ def test_result_dashboard_published_repo_card(
         },
     )
 
-    assert response.status_code == 200
-    assert "result-hero--passed" in response.text
-    assert "Repository published" in response.text
-    assert "repo-preview" in response.text
-    assert "Open repository" in response.text
-    assert "repo-local-path" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_result_includes_lineage_and_policy_block(
@@ -1440,12 +1318,7 @@ def test_result_includes_lineage_and_policy_block(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **sample_inputs},
     )
-    assert response.status_code == 200
-    assert "Lineage" in response.text
-    assert "result-collapsible" in response.text
-    assert "result-gates--animated" in response.text
-    assert "Policy pack" in response.text
-    assert "Estate default" in response.text
+    assert_surface_moved(response, "result")
 
 
 def test_update_form_page(repo_root, output_config) -> None:
@@ -1548,12 +1421,7 @@ def test_api_v1_generate_dry_run(repo_root, output_config, monkeypatch) -> None:
 def test_index_lists_service_stack_bundle(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert response.status_code == 200
-    assert "service-stack" in response.text
-    assert "microservice-full" in response.text
-    assert "/bundles/service-stack" in response.text
-    assert "/bundles/microservice-full" in response.text
-    assert "preset-chip" in response.text
+    assert_surface_moved(response, "catalog")
 
 
 def test_bundle_form_renders_shared_inputs(repo_root, output_config) -> None:
@@ -1736,9 +1604,5 @@ def test_run_result_view_reuses_async_artifact_without_regenerating(
 
     monkeypatch.setattr("repave_engine.api.generate_from_blueprint", _spy_generate)
     page = client.get(f"/runs/{run_id}/result")
-    assert page.status_code == 200
+    assert_surface_moved(page, "result")
     assert regen_calls == 0
-    assert "terraform-module-generic" in page.text
-    assert "Generated files" in page.text
-    assert "data-copy-target" in page.text
-    assert "Browse and copy generated files below" in page.text

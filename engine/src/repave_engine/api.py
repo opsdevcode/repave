@@ -8,7 +8,6 @@ import tempfile
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import (
@@ -44,12 +43,6 @@ from repave_engine.api_deprecation import (
 from repave_engine.api_ops import build_ops_router
 from repave_engine.api_v1 import build_api_v1_router
 from repave_engine.api_v2 import build_api_v2_router
-from repave_engine.audit_history import (
-    AuditHistoryEntry,
-    AuditQueryFilters,
-    audit_filters_from_mapping,
-    query_audit_entries,
-)
 from repave_engine.auth import (
     ROLE_ADMIN,
     ROLE_GENERATOR,
@@ -65,7 +58,6 @@ from repave_engine.blueprint import (
     artifact_family,
     blueprint_dir,
     bundles_dir,
-    group_blueprints_by_artifact,
     list_catalog_blueprints,
     load_blueprint,
     policy_kind_label,
@@ -76,42 +68,25 @@ from repave_engine.bundle_portal import (
     bundle_member_previews,
 )
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
-from repave_engine.catalog_cost import enrich_entity_cost
-from repave_engine.catalog_deployment import (
-    deployment_scorecard_for_entity,
-)
-from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.developer_lab import is_developer_lab_enabled
 from repave_engine.diff_view import diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
-    CatalogEntity,
-    EntityLibraryGroup,
-    filter_entities_by_owner,
     find_catalog_entity,
-    group_catalog_entities,
-    library_family_copy,
     library_family_known,
-    observability_embed_url,
-    rollup_fleet_scorecard,
 )
 from repave_engine.environment_reclaim import reclaim_expired_environments
 from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
-from repave_engine.estate_map import build_estate_tiles, summarize_estate_tiles
 from repave_engine.execution_mode import ExecutionMode
-from repave_engine.finops_rollup import build_entity_cost_showback
 from repave_engine.fleet import FleetError
 from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
-from repave_engine.gates import GateResult, all_gates_passed, gate_summary
+from repave_engine.gates import GateResult, gate_summary
 from repave_engine.generate_api import (
     bundle_result_from_stored_run,
-    generation_result_from_stored_run,
 )
-from repave_engine.github_auth import github_credentials_configured, resolve_github_access_token
-from repave_engine.github_client import GitHubError
+from repave_engine.github_auth import resolve_github_access_token
 from repave_engine.governance_preflight import build_bundle_preflight
-from repave_engine.import_rules import parse_path_overrides
 from repave_engine.module_inventory import inventory_modules_json, inventory_versions_json
 from repave_engine.monitor_pack import blueprint_supports_monitor_packs
 from repave_engine.observability_catalog import catalog_for_api as observability_catalog_for_api
@@ -123,8 +98,6 @@ from repave_engine.observability_selection import (
     blueprint_supports_observability_notifications,
     observability_input_defaults,
 )
-from repave_engine.observability_slo import fetch_entity_slo_summary
-from repave_engine.org_import_scan import ORG_SCAN_SEARCH_PRESETS
 from repave_engine.pipeline import generate_from_blueprint, generate_from_bundle
 from repave_engine.policy_catalog import (
     catalog_for_api,
@@ -136,17 +109,10 @@ from repave_engine.policy_selection import (
     policy_input_defaults,
 )
 from repave_engine.portal_components import (
-    build_component_add_context,
     component_add_redirect_url,
 )
 from repave_engine.portal_context import (
-    audit_file_or_http404,
-    audit_portal_enabled,
-    build_enriched_portal_catalog_entities,
     build_portal_catalog_entities,
-    portal_fleet_context,
-    portal_recent_activity,
-    resolve_entity_docs,
 )
 from repave_engine.portal_errors import (
     PORTAL_FORM_POST_PATHS,
@@ -167,21 +133,9 @@ from repave_engine.portal_generate import (
 from repave_engine.portal_generate import (
     plan_preview_from_form as _plan_preview_from_form,
 )
-from repave_engine.portal_markdown import render_portal_markdown
 from repave_engine.portal_platform import (
-    build_platform_adoption_page,
     build_platform_campaigns_page,
-    build_platform_compliance_page,
-    build_platform_feedback_page,
-    build_platform_finops_page,
-    build_platform_fleet_page,
-    build_platform_initiatives_page,
-    build_platform_maturity_page,
-    build_platform_ops_page,
-    build_platform_roadmap_page,
     build_platform_standards_detail,
-    build_platform_standards_page,
-    build_platform_value_stream_page,
     find_campaign_in_snapshot,
     platform_admin_visible,
     platform_nav_links,
@@ -189,10 +143,24 @@ from repave_engine.portal_platform import (
     require_platform_admin,
     unregister_fleet_entry,
 )
-from repave_engine.portal_result import build_result_portal_context
+from repave_engine.portal_surface_moved import (
+    ACTIVITY_MOVED,
+    CATALOG_MOVED,
+    ESTATE_MOVED,
+    HOME_MOVED,
+    IMPORT_BATCH_MOVED,
+    IMPORT_MOVED,
+    LIBRARY_MOVED,
+    RESULT_MOVED,
+    SERVICES_MOVED,
+    TEAMS_MOVED,
+    VERIFY_MOVED,
+    MovedSurface,
+    moved_page_context,
+    platform_moved,
+)
 from repave_engine.pr_conventions import add_pull_request_title, load_pull_request_conventions
 from repave_engine.provider_catalog import get_service_definition, load_provider_catalog
-from repave_engine.publish_idempotency import publish_message_succeeded
 from repave_engine.repo_add import (
     NotGovernedError,
     RepoAddError,
@@ -202,19 +170,6 @@ from repave_engine.repo_add import (
     suggested_add_branch,
 )
 from repave_engine.repo_import import (
-    FAMILY_BLUEPRINT_MAP_SENTINEL,
-    AlreadyGovernedError,
-    ImportPlan,
-    RepoImportError,
-    build_default_family_blueprint_map,
-    import_repository,
-    import_repository_batch,
-    parse_target_blueprints,
-    plan_import,
-    plan_import_batch,
-    record_import,
-    resolve_batch_import_blueprint_options,
-    suggested_import_branch,
     target_blueprints_from_org_scan,
 )
 from repave_engine.run_queue import (
@@ -234,12 +189,6 @@ from repave_engine.run_submit import (
     is_org_scan_run,
     submit_async_run,
 )
-from repave_engine.service_catalog_overlay import (
-    enrich_entity_with_overlay,
-    entity_initiative_statuses,
-    filter_entities_by_team,
-    filter_entities_for_user,
-)
 from repave_engine.service_inventory import (
     load_merged_observability_catalog,
     services_inventory_json,
@@ -250,7 +199,6 @@ from repave_engine.settings import (
     load_auth_config,
     load_durability_config,
     load_environment_vending_config,
-    load_live_plan_config,
     load_output_config,
     load_portal_config,
     load_service_catalog_config,
@@ -260,7 +208,6 @@ from repave_engine.settings import (
 from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
-from repave_engine.verify import VerifyError, verify_target
 from repave_engine.workload_profiles import (
     SandboxVendError,
     load_deployment_sets,
@@ -435,6 +382,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "command_palette_items": command_palette_items(request),
             **extra,
         }
+
+    def render_moved(request: Request, surface: MovedSurface) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "surface_moved.html",
+            page_context(request, **moved_page_context(surface)),
+        )
 
     @app.exception_handler(HTTPException)
     async def portal_http_exception_handler(request: Request, exc: HTTPException) -> Response:
@@ -672,21 +626,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "landing.html",
                 page_context(request, nav_active="welcome", landing_page=True),
             )
-        blueprints = list_catalog_blueprints(repo_root)
-        catalog_groups = group_blueprints_by_artifact(blueprints)
-        catalog_bundles = list_bundles(repo_root)
-        return templates.TemplateResponse(
-            request,
-            "index.html",
-            page_context(
-                request,
-                blueprints=blueprints,
-                catalog_groups=catalog_groups,
-                catalog_bundles=catalog_bundles,
-                nav_active="catalog",
-                audit_enabled=audit_portal_enabled(repo_root),
-            ),
-        )
+        return render_moved(request, CATALOG_MOVED)
 
     @app.get("/signup", response_class=HTMLResponse, response_model=None)
     async def signup_page(request: Request) -> Response:
@@ -702,44 +642,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/activity", response_class=HTMLResponse)
     async def activity_page(request: Request) -> HTMLResponse:
-        activity_limit = 50
-        raw_filters = {key: str(value) for key, value in request.query_params.items()}
-        activity_filters = audit_filters_from_mapping(raw_filters)
-        activity_filters = AuditQueryFilters(
-            blueprint_name=activity_filters.blueprint_name,
-            module_name=activity_filters.module_name,
-            repository_url=activity_filters.repository_url,
-            acting_user=activity_filters.acting_user,
-            gates_outcome=activity_filters.gates_outcome,
-            since=activity_filters.since,
-            until=activity_filters.until,
-            limit=activity_limit,
-            offset=activity_filters.offset,
-        )
-        query_result = None
-        recent: tuple[AuditHistoryEntry, ...] = ()
-        enabled = audit_portal_enabled(repo_root)
-        if enabled:
-            audit_path = audit_file_or_http404(repo_root)
-            query_result = query_audit_entries(
-                audit_path,
-                activity_filters,
-                repo_root=repo_root,
-            )
-            recent = query_result.entries
-        return templates.TemplateResponse(
-            request,
-            "activity.html",
-            page_context(
-                request,
-                nav_active="activity",
-                recent_activity=recent,
-                audit_enabled=enabled,
-                activity_limit=activity_limit,
-                activity_filters=activity_filters,
-                activity_total=query_result.total if query_result is not None else 0,
-            ),
-        )
+        return render_moved(request, ACTIVITY_MOVED)
 
     @app.get("/fleet", response_class=RedirectResponse)
     async def fleet_redirect() -> RedirectResponse:
@@ -747,95 +650,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/estate", response_class=HTMLResponse)
     async def estate_map_page(request: Request) -> HTMLResponse:
-        enabled, fleet_repos, _namespace = portal_fleet_context(repo_root)
-        audit_entries: tuple[AuditHistoryEntry, ...] = ()
-        if audit_portal_enabled(repo_root):
-            audit_entries = portal_recent_activity(repo_root, limit=80)
-        tiles = build_estate_tiles(fleet_repos, audit_entries=audit_entries) if enabled else []
-        summary = summarize_estate_tiles(tiles)
-        return templates.TemplateResponse(
-            request,
-            "estate_map.html",
-            page_context(
-                request,
-                nav_active="estate",
-                estate_enabled=enabled,
-                estate_tiles=tiles,
-                estate_summary=summary,
-                audit_sparklines_enabled=audit_portal_enabled(repo_root),
-            ),
-        )
-
-    def _library_catalog(owner: str) -> tuple[list[CatalogEntity], list[EntityLibraryGroup]]:
-        cost_configured = cost_reader_configured(
-            cost_reader=portal_config.cost_reader,
-            cost_actuals_url=portal_config.cost_actuals_url,
-            cost_focus_file=portal_config.cost_focus.file,
-        )
-        entities = build_enriched_portal_catalog_entities(
-            repo_root,
-            resolved_output,
-            portal_config,
-            cost_actuals_configured=cost_configured,
-        )
-        if owner.strip():
-            entities = filter_entities_by_owner(entities, owner)
-        blueprint_types = {
-            blueprint.name: blueprint.artifact_type
-            for blueprint in list_catalog_blueprints(repo_root)
-        }
-        groups = group_catalog_entities(
-            entities,
-            blueprint_artifact_types=blueprint_types,
-        )
-        return entities, groups
+        return render_moved(request, ESTATE_MOVED)
 
     @app.get("/library", response_class=HTMLResponse)
     async def library_page(request: Request, owner: str = "") -> HTMLResponse:
-        entities, library_groups = _library_catalog(owner)
-        return templates.TemplateResponse(
-            request,
-            "library.html",
-            page_context(
-                request,
-                nav_active="library",
-                library_groups=library_groups,
-                library_family=None,
-                library_entity_count=len(entities),
-                fleet_scorecard_rollup=rollup_fleet_scorecard(entities),
-                library_owner_filter=owner.strip(),
-                observability_configured=bool(portal_config.observability_dashboard_url),
-            ),
-        )
+        return render_moved(request, LIBRARY_MOVED)
 
     @app.get("/library/{family}", response_class=HTMLResponse)
     async def library_family_page(request: Request, family: str, owner: str = "") -> HTMLResponse:
         if not library_family_known(family):
             raise HTTPException(status_code=404, detail="Library family not found")
-        _entities, library_groups = _library_catalog(owner)
-        group = next((item for item in library_groups if item.family == family), None)
-        if group is None:
-            title, subtitle = library_family_copy(family)
-            group = EntityLibraryGroup(
-                family=family,
-                title=title,
-                subtitle=subtitle,
-                entities=(),
-            )
-        return templates.TemplateResponse(
-            request,
-            "library.html",
-            page_context(
-                request,
-                nav_active="library",
-                library_groups=library_groups,
-                library_family=group,
-                library_entity_count=len(group.entities),
-                fleet_scorecard_rollup=rollup_fleet_scorecard(group.entities),
-                library_owner_filter=owner.strip(),
-                observability_configured=bool(portal_config.observability_dashboard_url),
-            ),
-        )
+        return render_moved(request, LIBRARY_MOVED)
 
     @app.get("/services", response_class=RedirectResponse)
     async def services_redirect() -> RedirectResponse:
@@ -843,111 +668,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/services/{entity_id}", response_class=HTMLResponse)
     async def service_detail_page(request: Request, entity_id: str) -> HTMLResponse:
-        cost_configured = cost_reader_configured(
-            cost_reader=portal_config.cost_reader,
-            cost_actuals_url=portal_config.cost_actuals_url,
-            cost_focus_file=portal_config.cost_focus.file,
-        )
-        entities = build_enriched_portal_catalog_entities(
-            repo_root,
-            resolved_output,
-            portal_config,
-            cost_actuals_configured=cost_configured,
-        )
-        entity = find_catalog_entity(entities, entity_id)
-        if entity is None:
-            raise HTTPException(status_code=404, detail="Entity not found")
-        entity, cost_actuals, cost_estimate = enrich_entity_cost(entity, portal_config)
-        cost_showback = build_entity_cost_showback(
-            entity,
-            portal_config,
-            repo_root=repo_root,
-            amount_float=cost_actuals.amount_float() if cost_actuals is not None else None,
-            currency=cost_actuals.currency if cost_actuals is not None else "USD",
-        )
-        entity, deployment_status = deployment_scorecard_for_entity(entity, portal_config)
-        if service_catalog_config is not None:
-            from repave_engine.initiatives import read_initiatives
-            from repave_engine.maturity_rubric import load_maturity_rubric
-
-            entity = enrich_entity_with_overlay(
-                entity,
-                config=service_catalog_config,
-                rubric=load_maturity_rubric(service_catalog_config.maturity_rubric),
-                initiatives=(
-                    read_initiatives(service_catalog_config.initiatives)
-                    if service_catalog_config.initiatives
-                    else ()
-                ),
-            )
-        initiative_statuses = entity_initiative_statuses(entity, service_catalog_config)
-        token = resolve_github_access_token()
-        docs = resolve_entity_docs(entity, github_token=token)
-        readme_html = render_portal_markdown(docs["readme"]) if docs.get("readme") else ""
-        runbook_html = render_portal_markdown(docs["runbook"]) if docs.get("runbook") else ""
-        runbook_label = docs.get("runbook_label", "Runbook")
-        upgrade_html = render_portal_markdown(docs["upgrade"]) if docs.get("upgrade") else ""
-        upgrade_label = docs.get("upgrade_label", "Upgrade notes")
-        provenance_html = ""
-        if docs.get("provenance"):
-            provenance_html = render_portal_markdown(f"```yaml\n{docs['provenance'].strip()}\n```")
-        obs_url = observability_embed_url(portal_config.observability_dashboard_url, entity)
-        slo_summary = fetch_entity_slo_summary(portal_config.observability_slo_url, entity)
-        live_plan_cfg = load_live_plan_config(repo_root)
-        live_plan_env = (
-            live_plan_cfg.environment_for(entity.entity_id) if live_plan_cfg is not None else None
-        )
-        live_plan_available = bool(run_queue is not None and live_plan_env is not None)
-        vend_cfg = load_environment_vending_config(repo_root)
-        environment_vend_available = bool(run_queue is not None and vend_cfg is not None)
-        default_stack_name = _default_environment_stack_name(entity.entity_id, entity.display_name)
-        default_vend_path = ""
-        if vend_cfg is not None:
-            prefix = vend_cfg.path_prefix.strip().strip("/")
-            default_vend_path = f"{prefix}/{default_stack_name}" if prefix else default_stack_name
-        add_status = str(request.query_params.get("add_status", "")).strip()
-        add_message = str(request.query_params.get("add_message", "")).strip()
-        component_add = build_component_add_context(
-            entity,
-            repo_root,
-            flash_status=add_status,
-            flash_message=add_message,
-        )
-        return templates.TemplateResponse(
-            request,
-            "service_detail.html",
-            page_context(
-                request,
-                nav_active="library",
-                entity=entity,
-                readme_html=readme_html,
-                runbook_html=runbook_html,
-                runbook_label=runbook_label,
-                upgrade_html=upgrade_html,
-                upgrade_label=upgrade_label,
-                provenance_html=provenance_html,
-                observability_url=obs_url,
-                slo_summary=slo_summary,
-                cost_actuals=cost_actuals,
-                cost_estimate=cost_estimate,
-                cost_showback=cost_showback,
-                deployment_status=deployment_status,
-                live_plan_available=live_plan_available,
-                live_plan_env=live_plan_env,
-                live_plan_policies_dir=(
-                    live_plan_env.policies_dir
-                    if live_plan_env is not None
-                    else (live_plan_cfg.policies_dir if live_plan_cfg else "")
-                ),
-                environment_vend_available=environment_vend_available,
-                environment_vend_cfg=vend_cfg,
-                environment_vend_blueprint=DEFAULT_VEND_BLUEPRINT,
-                default_stack_name=default_stack_name,
-                default_vend_path=default_vend_path,
-                initiative_statuses=initiative_statuses,
-                **component_add.to_template_dict(),
-            ),
-        )
+        return render_moved(request, SERVICES_MOVED)
 
     @app.get("/home", response_class=HTMLResponse)
     async def developer_home_page(request: Request, owner: str = "") -> HTMLResponse:
@@ -956,36 +677,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 status_code=404,
                 detail="Service catalog is not enabled (set service_catalog.enabled)",
             )
-        cost_configured = cost_reader_configured(
-            cost_reader=portal_config.cost_reader,
-            cost_actuals_url=portal_config.cost_actuals_url,
-            cost_focus_file=portal_config.cost_focus.file,
-        )
-        entities = build_enriched_portal_catalog_entities(
-            repo_root,
-            resolved_output,
-            portal_config,
-            cost_actuals_configured=cost_configured,
-        )
-        auth_user = session_user(request)
-        email = auth_user.email if auth_user is not None else ""
-        mine = filter_entities_for_user(
-            entities,
-            email=email,
-            owner_filter=owner,
-            default_team=service_catalog_config.default_team,
-        )
-        return templates.TemplateResponse(
-            request,
-            "home.html",
-            page_context(
-                request,
-                nav_active="home",
-                my_services=mine,
-                home_owner_filter=owner.strip(),
-                default_team=service_catalog_config.default_team,
-            ),
-        )
+        return render_moved(request, HOME_MOVED)
 
     @app.get("/teams/{team_slug}", response_class=HTMLResponse)
     async def team_page(request: Request, team_slug: str) -> HTMLResponse:
@@ -994,58 +686,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 status_code=404,
                 detail="Service catalog is not enabled (set service_catalog.enabled)",
             )
-        cost_configured = cost_reader_configured(
-            cost_reader=portal_config.cost_reader,
-            cost_actuals_url=portal_config.cost_actuals_url,
-            cost_focus_file=portal_config.cost_focus.file,
-        )
-        entities = build_enriched_portal_catalog_entities(
-            repo_root,
-            resolved_output,
-            portal_config,
-            cost_actuals_configured=cost_configured,
-        )
-        team_entities = filter_entities_by_team(
-            entities,
-            team_slug,
-            default_team=service_catalog_config.default_team,
-        )
-        avg = (
-            sum(item.maturity_level for item in team_entities) / len(team_entities)
-            if team_entities
-            else 0.0
-        )
-        from repave_engine.initiatives import initiative_progress, read_initiatives
-        from repave_engine.maturity_rubric import load_maturity_rubric
-
-        rubric = load_maturity_rubric(service_catalog_config.maturity_rubric)
-        initiatives = (
-            read_initiatives(service_catalog_config.initiatives)
-            if service_catalog_config.initiatives
-            else ()
-        )
-        team_initiatives = [
-            initiative_progress(item, team_entities, rubric)
-            for item in initiatives
-            if item.active
-            and (
-                not item.owning_team
-                or item.owning_team.lower() == team_slug.lower()
-                or item.owning_team.lower() in team_slug.lower()
-            )
-        ]
-        return templates.TemplateResponse(
-            request,
-            "team.html",
-            page_context(
-                request,
-                nav_active="home",
-                team_slug=team_slug,
-                team_entities=team_entities,
-                team_average_maturity=avg,
-                team_initiatives=team_initiatives,
-            ),
-        )
+        return render_moved(request, TEAMS_MOVED)
 
     @app.get("/sandbox", response_class=HTMLResponse)
     async def sandbox_page(request: Request) -> HTMLResponse:
@@ -1580,14 +1221,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
         if isinstance(outcome, PortalGenerateRedirect):
             return RedirectResponse(outcome.url, status_code=outcome.status_code)
+        extra = dict(outcome.context)
+        extra.setdefault("nav_active", "catalog")
         return templates.TemplateResponse(
             request,
             outcome.template_name,
-            page_context(
-                request,
-                nav_active="catalog",
-                **outcome.context,
-            ),
+            page_context(request, **extra),
         )
 
     def _user_can_replay_runs(request: Request) -> bool:
@@ -1927,48 +1566,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     bundle_topology=topology_public(topology_nodes, topology_edges),
                 ),
             )
-        blueprint_name = record.blueprint_name
-        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
-        dry_run = record.dry_run
-        result = generation_result_from_stored_run(
-            record=record,
-            repo_root=repo_root,
-            output_config=resolved_output,
-        )
-        if result is None:
-            inputs_raw = record.payload.get("inputs", {})
-            if not isinstance(inputs_raw, dict):
-                inputs_raw = {}
-            values = {str(k): str(v) for k, v in inputs_raw.items()}
-            require_run = dry_run
-            github_token = None if dry_run else resolve_github_access_token()
-            result = generate_from_blueprint(
-                blueprint,
-                values,
-                output_config=resolved_output,
-                dry_run=dry_run,
-                require_run=require_run,
-                github_token=github_token,
-                repo_root=repo_root,
-            )
-        return templates.TemplateResponse(
-            request,
-            "result.html",
-            page_context(
-                request,
-                result=result,
-                nav_active="catalog",
-                gate_summary=gate_summary(result.gates),
-                gates_ok=all_gates_passed(result.gates),
-                publish_ok=result.dry_run or publish_message_succeeded(result.pr_message),
-                gate_toolchain_callout=gate_toolchain_callout(
-                    result.gates,
-                    dry_run=result.dry_run,
-                ),
-                result_portal=build_result_portal_context(result, repo_root),
-                run_id=run_id,
-            ),
-        )
+        return render_moved(request, RESULT_MOVED)
 
     @app.get("/update", response_class=HTMLResponse)
     async def update_form(request: Request) -> HTMLResponse:
@@ -2047,479 +1645,28 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             ),
         )
 
-    def import_catalog_json() -> list[dict[str, object]]:
-        groups = group_blueprints_by_artifact(list_catalog_blueprints(repo_root))
-        return [
-            {
-                "family": group.family,
-                "title": group.title,
-                "blueprints": [
-                    {
-                        "name": blueprint.name,
-                        "label": f"{blueprint.name} ({blueprint.artifact_type})",
-                    }
-                    for blueprint in group.blueprints
-                ],
-            }
-            for group in groups
-        ]
-
-    def import_form_context(request: Request, **extra: object) -> dict[str, object]:
-        groups = group_blueprints_by_artifact(list_catalog_blueprints(repo_root))
-        scan_family_choices = [{"family": group.family, "title": group.title} for group in groups]
-        return page_context(
-            request,
-            nav_active="import",
-            catalog_groups=groups,
-            catalog_json=import_catalog_json(),
-            scan_family_choices=scan_family_choices,
-            scan_search_presets=list(ORG_SCAN_SEARCH_PRESETS),
-            default_family_blueprints=build_default_family_blueprint_map(repo_root),
-            family_blueprint_map_sentinel=FAMILY_BLUEPRINT_MAP_SENTINEL,
-            **extra,
-        )
-
-    def import_scorecard_rows(plan: ImportPlan) -> list[dict[str, str]]:
-        after_by_key = {dim.key: dim for dim in plan.scorecard.after}
-        rows: list[dict[str, str]] = []
-        for before in plan.scorecard.before:
-            after = after_by_key.get(before.key, before)
-            rows.append(
-                {
-                    "label": before.label,
-                    "before_level": before.level,
-                    "before_detail": before.detail,
-                    "after_level": after.level,
-                    "after_detail": after.detail,
-                }
-            )
-        return rows
-
-    def import_form_path_overrides(form: Any) -> dict[str, str]:
-        import json
-
-        raw_json = str(form.get("path_overrides_json", "")).strip()
-        try:
-            overrides = parse_path_overrides(json.loads(raw_json)) if raw_json else {}
-        except json.JSONDecodeError:
-            overrides = {}
-        prefix = "override__"
-        for key in form:
-            name = str(key)
-            if not name.startswith(prefix):
-                continue
-            source = name[len(prefix) :].replace("__", "/")
-            text = str(form.get(name, "")).strip()
-            if source and text:
-                overrides[source] = text
-        return overrides
-
-    def import_result_context(request: Request, plan: ImportPlan) -> dict[str, object]:
-        branch = suggested_import_branch(plan)
-        top = plan.candidates[0] if plan.candidates else None
-        cli_plan = f"repave import {plan.target}"
-        return page_context(
-            request,
-            nav_active="import",
-            plan=plan,
-            suggested_branch=branch,
-            scorecard_rows=import_scorecard_rows(plan),
-            gate_summary=gate_summary(list(plan.gates)),
-            detection_evidence=list(top.evidence[:4]) if top and plan.detected else [],
-            detection_confidence=top.percent if top else 0,
-            cli_plan_command=cli_plan,
-            cli_open_pr_command=(
-                f"{cli_plan} --blueprint {plan.blueprint_name} --git-branch {branch} --open-pr"
-            ),
-        )
-
     @app.get("/import", response_class=HTMLResponse)
-    async def import_form(request: Request) -> HTMLResponse:
-        requested_blueprint = str(request.query_params.get("blueprint", "")).strip()
-        family = ""
-        if requested_blueprint:
-            path = blueprint_dir(repo_root, requested_blueprint)
-            if path.is_dir():
-                family = artifact_family(load_blueprint(path, repo_root=repo_root).artifact_type)
-            else:
-                requested_blueprint = ""
-        return templates.TemplateResponse(
-            request,
-            "import.html",
-            import_form_context(
-                request,
-                target_repo=str(request.query_params.get("repo", "")).strip(),
-                selected_blueprint=requested_blueprint,
-                selected_family=family,
-            ),
-        )
-
     @app.post("/import", response_class=HTMLResponse)
-    async def import_plan_preview(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
-        form = await request.form()
-        target_repo_raw = str(form.get("target_repo", "")).strip()
-        blueprint_override = str(form.get("blueprint", "")).strip() or None
-        family = str(form.get("category", "")).strip()
-
-        def form_error(message: str, *, governed: bool = False) -> HTMLResponse:
-            return templates.TemplateResponse(
-                request,
-                "import.html",
-                import_form_context(
-                    request,
-                    error_message="" if governed else message,
-                    governed_message=message if governed else "",
-                    target_repo=target_repo_raw,
-                    selected_blueprint=blueprint_override or "",
-                    selected_family=family,
-                ),
-            )
-
-        if not target_repo_raw:
-            return form_error("Repository path or URL is required.")
-
-        try:
-            plan = plan_import(
-                target_repo_raw,
-                repo_root,
-                blueprint_name=blueprint_override,
-                path_overrides=import_form_path_overrides(form),
-                force_clone=str(form.get("force_clone", "")).lower() in {"1", "true", "on", "yes"},
-            )
-        except AlreadyGovernedError as exc:
-            return form_error(str(exc), governed=True)
-        except (RepoImportError, FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
-            return form_error(str(exc))
-
-        return templates.TemplateResponse(
-            request,
-            "import_result.html",
-            import_result_context(request, plan),
-        )
-
     @app.post("/import/apply", response_class=HTMLResponse)
-    async def import_apply(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
-        form = await request.form()
-        target_repo_raw = str(form.get("target_repo", "")).strip()
-        blueprint_override = str(form.get("blueprint", "")).strip() or None
-        branch = str(form.get("git_branch", "")).strip()
-
-        token = resolve_github_access_token(None)
-        if not token:
-            return templates.TemplateResponse(
-                request,
-                "import.html",
-                import_form_context(
-                    request,
-                    error_message=(
-                        "Opening an import pull request requires GITHUB_TOKEN or GitHub App "
-                        "credentials on the server."
-                    ),
-                    target_repo=target_repo_raw,
-                    selected_blueprint=blueprint_override or "",
-                ),
-            )
-
-        try:
-            result = import_repository(
-                target_repo_raw,
-                repo_root,
-                github_token=token,
-                blueprint_name=blueprint_override,
-                path_overrides=import_form_path_overrides(form),
-                git_branch=branch,
-            )
-        except (RepoImportError, GitHubError, OSError, RuntimeError, ValueError) as exc:
-            return templates.TemplateResponse(
-                request,
-                "import.html",
-                import_form_context(
-                    request,
-                    error_message=str(exc),
-                    target_repo=target_repo_raw,
-                    selected_blueprint=blueprint_override or "",
-                ),
-            )
-
-        registered = record_import(repo_root, result, acting_user=current_acting_user())
-        return templates.TemplateResponse(
-            request,
-            "import_published.html",
-            page_context(
-                request,
-                nav_active="import",
-                result=result,
-                registered=registered,
-            ),
-        )
+    async def import_moved(request: Request) -> HTMLResponse:
+        return render_moved(request, IMPORT_MOVED)
 
     @app.get("/import/batch", response_class=HTMLResponse)
-    async def import_batch_form(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse(
-            request,
-            "import_batch.html",
-            import_form_context(request),
-        )
-
     @app.post("/import/batch", response_class=HTMLResponse)
-    async def import_batch_preview(request: Request) -> HTMLResponse:
-        import json
-
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
-        form = await request.form()
-        targets_raw = str(form.get("targets", "")).strip()
-        org = str(form.get("org", "")).strip()
-        topic = str(form.get("topic", "")).strip()
-        blueprint_override = str(form.get("blueprint", "")).strip() or None
-        target_blueprints_raw = str(form.get("target_blueprints_json", "")).strip()
-        target_blueprints: dict[str, str] | None = None
-        if target_blueprints_raw:
-            try:
-                target_blueprints = parse_target_blueprints(json.loads(target_blueprints_raw))
-            except json.JSONDecodeError:
-                target_blueprints = None
-
-        def batch_error(message: str) -> HTMLResponse:
-            return templates.TemplateResponse(
-                request,
-                "import_batch.html",
-                import_form_context(
-                    request,
-                    error_message=message,
-                    targets=targets_raw,
-                    org=org,
-                    topic=topic,
-                    selected_blueprint=blueprint_override or "",
-                    target_blueprints_json=target_blueprints_raw,
-                ),
-            )
-
-        if target_blueprints_raw and target_blueprints is None:
-            return batch_error("target_blueprints_json must be valid JSON")
-
-        blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
-            repo_root,
-            blueprint=blueprint_override,
-        )
-        targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
-
-        if not targets and not org and not topic:
-            return batch_error("Paste at least one repository URL or provide an org/topic query.")
-
-        try:
-            batch = plan_import_batch(
-                targets,
-                repo_root,
-                blueprint_name=blueprint_name,
-                family_blueprints=family_blueprints,
-                target_blueprints=target_blueprints,
-                org=org,
-                topic=topic,
-                git_token=resolve_github_access_token(None),
-            )
-        except RepoImportError as exc:
-            return batch_error(str(exc))
-
-        return templates.TemplateResponse(
-            request,
-            "import_batch_result.html",
-            page_context(
-                request,
-                nav_active="import",
-                batch=batch,
-                targets=targets_raw,
-                org=org,
-                topic=topic,
-                selected_blueprint=blueprint_override or "",
-                target_blueprints_json=target_blueprints_raw,
-            ),
-        )
-
     @app.post("/import/batch/apply", response_class=HTMLResponse)
-    async def import_batch_apply(request: Request) -> HTMLResponse:
-        import json
-
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
-        form = await request.form()
-        targets_raw = str(form.get("targets", "")).strip()
-        org = str(form.get("org", "")).strip()
-        topic = str(form.get("topic", "")).strip()
-        blueprint_override = str(form.get("blueprint", "")).strip() or None
-        target_blueprints_raw = str(form.get("target_blueprints_json", "")).strip()
-        target_blueprints: dict[str, str] | None = None
-        if target_blueprints_raw:
-            try:
-                target_blueprints = parse_target_blueprints(json.loads(target_blueprints_raw))
-            except json.JSONDecodeError:
-                target_blueprints = None
-        blueprint_name, family_blueprints = resolve_batch_import_blueprint_options(
-            repo_root,
-            blueprint=blueprint_override,
-        )
-        targets = [line.strip() for line in targets_raw.splitlines() if line.strip()]
-
-        token = resolve_github_access_token(None)
-        if not token:
-            return templates.TemplateResponse(
-                request,
-                "import_batch.html",
-                import_form_context(
-                    request,
-                    error_message=(
-                        "Batch import requires GITHUB_TOKEN or GitHub App credentials "
-                        "on the server."
-                    ),
-                    targets=targets_raw,
-                    org=org,
-                    topic=topic,
-                ),
-            )
-
-        if target_blueprints_raw and target_blueprints is None:
-            return templates.TemplateResponse(
-                request,
-                "import_batch.html",
-                import_form_context(
-                    request,
-                    error_message="target_blueprints_json must be valid JSON",
-                    targets=targets_raw,
-                    org=org,
-                    topic=topic,
-                    selected_blueprint=blueprint_override or "",
-                    target_blueprints_json=target_blueprints_raw,
-                ),
-            )
-
-        try:
-            batch_result = import_repository_batch(
-                targets,
-                repo_root,
-                github_token=token,
-                blueprint_name=blueprint_name,
-                family_blueprints=family_blueprints,
-                target_blueprints=target_blueprints,
-                org=org,
-                topic=topic,
-            )
-        except RepoImportError as exc:
-            return templates.TemplateResponse(
-                request,
-                "import_batch.html",
-                import_form_context(request, error_message=str(exc), targets=targets_raw),
-            )
-
-        for item in batch_result.items:
-            record_import(repo_root, item, acting_user=current_acting_user())
-
-        return templates.TemplateResponse(
-            request,
-            "import_batch_published.html",
-            page_context(
-                request,
-                nav_active="import",
-                batch_result=batch_result,
-            ),
-        )
+    async def import_batch_moved(request: Request) -> HTMLResponse:
+        return render_moved(request, IMPORT_BATCH_MOVED)
 
     @app.get("/verify", response_class=HTMLResponse)
-    async def verify_form(request: Request) -> HTMLResponse:
-        demo_path = repo_root / "operator" / "testdata" / "modules" / "terraform-minimal"
-        return templates.TemplateResponse(
-            request,
-            "verify.html",
-            page_context(
-                request,
-                nav_active="verify",
-                demo_module_path=str(demo_path.resolve()) if demo_path.is_dir() else "",
-            ),
-        )
-
     @app.post("/verify", response_class=HTMLResponse)
-    async def verify_run(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        form = await request.form()
-        target_repo_raw = str(form.get("target_repo", "")).strip()
-        blueprint_override = str(form.get("blueprint", "")).strip() or None
-        require_run = str(form.get("require_run", "")).lower() in {"1", "true", "on", "yes"}
-
-        if not target_repo_raw:
-            return templates.TemplateResponse(
-                request,
-                "verify.html",
-                page_context(
-                    request,
-                    nav_active="verify",
-                    error_message="Repository path or URL is required.",
-                    target_repo=target_repo_raw,
-                    blueprint=blueprint_override or "",
-                ),
-            )
-
-        try:
-            outcome = verify_target(
-                target_repo_raw,
-                repo_root,
-                blueprint_name=blueprint_override,
-                require_run=require_run,
-            )
-        except VerifyError as exc:
-            return templates.TemplateResponse(
-                request,
-                "verify.html",
-                page_context(
-                    request,
-                    nav_active="verify",
-                    error_message=str(exc),
-                    target_repo=target_repo_raw,
-                    blueprint=blueprint_override or "",
-                ),
-            )
-
-        gates = list(outcome.gates)
-        return templates.TemplateResponse(
-            request,
-            "verify_result.html",
-            page_context(
-                request,
-                nav_active="verify",
-                verify=outcome,
-                target_repo=outcome.target,
-                gate_summary=gate_summary(gates),
-                gates_ok=outcome.gates_passed,
-            ),
-        )
+    async def verify_moved(request: Request) -> HTMLResponse:
+        return render_moved(request, VERIFY_MOVED)
 
     @app.get("/platform/fleet", response_class=HTMLResponse)
     async def platform_fleet_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        page = build_platform_fleet_page(repo_root)
-        return templates.TemplateResponse(
-            request,
-            "fleet.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="fleet",
-                fleet_enabled=page.fleet_enabled,
-                fleet_repos=page.fleet_repos,
-                fleet_gitops_namespace=page.gitops_namespace,
-                fleet_operator_status_enabled=page.operator_status_enabled,
-                fleet_blueprints=page.blueprints,
-            ),
-        )
+        return render_moved(request, platform_moved("fleet"))
 
     @app.post("/platform/fleet/register")
     async def platform_fleet_register(request: Request) -> RedirectResponse:
@@ -2563,32 +1710,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def platform_ops_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        probe_token = resolve_github_access_token() if github_credentials_configured() else None
-        session_store = getattr(app.state, "session_store", None)
-        ops_page = build_platform_ops_page(
-            repo_root,
-            run_queue=run_queue,
-            modules_root=resolved_output.modules_root,
-            runs_db=durability_config.runs_db if durability_config is not None else None,
-            shutting_down=bool(getattr(app.state, "shutting_down", False)),
-            auth_service_enabled=auth_config is not None and auth_config.service_enabled,
-            require_session_secret=(
-                durability_config.require_session_secret if durability_config else False
-            ),
-            github_token_configured=github_credentials_configured(),
-            github_probe_token=probe_token,
-            sql_session_store_ok=session_store.ping() if session_store is not None else None,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_ops.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="ops",
-                ops_page=ops_page,
-            ),
-        )
+        return render_moved(request, platform_moved("ops"))
 
     @app.post("/platform/ops/reclaim")
     async def platform_ops_reclaim(request: Request) -> RedirectResponse:
@@ -2626,17 +1748,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def platform_standards_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        standards_page = build_platform_standards_page(repo_root)
-        return templates.TemplateResponse(
-            request,
-            "platform_standards.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="standards",
-                standards_page=standards_page,
-            ),
-        )
+        return render_moved(request, platform_moved("standards"))
 
     @app.get("/platform/standards/{blueprint_name}", response_class=HTMLResponse)
     async def platform_standards_detail_page(
@@ -2645,19 +1757,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     ) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        summary = build_platform_standards_detail(repo_root, blueprint_name)
-        if summary is None:
-            raise HTTPException(status_code=404, detail=f"Blueprint {blueprint_name} not found")
-        return templates.TemplateResponse(
-            request,
-            "platform_standards_detail.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="standards",
-                summary=summary,
-            ),
-        )
+        return render_moved(request, platform_moved("standards"))
 
     @app.post("/platform/standards/{blueprint_name}/confirm-drift")
     async def platform_standards_confirm_drift(
@@ -2699,171 +1799,55 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     async def platform_campaigns_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        campaigns_page = build_platform_campaigns_page(repo_root)
-        return templates.TemplateResponse(
-            request,
-            "platform_campaigns.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="campaigns",
-                campaigns_page=campaigns_page,
-            ),
-        )
+        return render_moved(request, platform_moved("campaigns"))
 
     @app.get("/platform/finops", response_class=HTMLResponse)
     async def platform_finops_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        finops_page = build_platform_finops_page(repo_root, resolved_output=resolved_output)
-        return templates.TemplateResponse(
-            request,
-            "platform_finops.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="finops",
-                finops_page=finops_page,
-            ),
-        )
+        return render_moved(request, platform_moved("finops"))
 
     @app.get("/platform/adoption", response_class=HTMLResponse)
     async def platform_adoption_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        probe_token = resolve_github_access_token() if github_credentials_configured() else None
-        adoption_page = build_platform_adoption_page(
-            repo_root,
-            github_token=probe_token,
-            persist=False,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_adoption.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="adoption",
-                adoption_page=adoption_page,
-            ),
-        )
+        return render_moved(request, platform_moved("adoption"))
 
     @app.get("/platform/compliance", response_class=HTMLResponse)
     async def platform_compliance_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        probe_token = resolve_github_access_token() if github_credentials_configured() else None
-        compliance_page = build_platform_compliance_page(
-            repo_root,
-            github_token=probe_token,
-            persist=False,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_compliance.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="compliance",
-                compliance_page=compliance_page,
-            ),
-        )
+        return render_moved(request, platform_moved("compliance"))
 
     @app.get("/platform/value-stream", response_class=HTMLResponse)
     async def platform_value_stream_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        probe_token = resolve_github_access_token() if github_credentials_configured() else None
-        value_stream_page = build_platform_value_stream_page(
-            repo_root,
-            github_token=probe_token,
-            persist=False,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_value_stream.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="value-stream",
-                value_stream_page=value_stream_page,
-            ),
-        )
+        return render_moved(request, platform_moved("value-stream"))
 
     @app.get("/platform/roadmap", response_class=HTMLResponse)
     async def platform_roadmap_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        probe_token = resolve_github_access_token() if github_credentials_configured() else None
-        roadmap_page = build_platform_roadmap_page(
-            repo_root,
-            github_token=probe_token,
-            persist=False,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_roadmap.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="roadmap",
-                roadmap_page=roadmap_page,
-            ),
-        )
+        return render_moved(request, platform_moved("roadmap"))
 
     @app.get("/platform/feedback", response_class=HTMLResponse)
     async def platform_feedback_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        feedback_page = build_platform_feedback_page(repo_root)
-        return templates.TemplateResponse(
-            request,
-            "platform_feedback.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="feedback",
-                feedback_page=feedback_page,
-            ),
-        )
+        return render_moved(request, platform_moved("feedback"))
 
     @app.get("/platform/maturity", response_class=HTMLResponse)
     async def platform_maturity_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        maturity_page = build_platform_maturity_page(
-            repo_root,
-            resolved_output=resolved_output,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_maturity.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="maturity",
-                maturity_page=maturity_page,
-            ),
-        )
+        return render_moved(request, platform_moved("maturity"))
 
     @app.get("/platform/initiatives", response_class=HTMLResponse)
     async def platform_initiatives_page(request: Request) -> HTMLResponse:
         user = session_user(request)
         require_platform_admin(user, auth_config)
-        initiatives_page = build_platform_initiatives_page(
-            repo_root,
-            resolved_output=resolved_output,
-        )
-        return templates.TemplateResponse(
-            request,
-            "platform_initiatives.html",
-            page_context(
-                request,
-                nav_active="platform",
-                platform_nav="initiatives",
-                initiatives_page=initiatives_page,
-            ),
-        )
+        return render_moved(request, platform_moved("initiatives"))
 
     def _initiatives_store_path() -> Path:
         if service_catalog_config is None or service_catalog_config.initiatives is None:

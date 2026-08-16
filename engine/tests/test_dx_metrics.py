@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.dx_metrics import (
@@ -265,9 +266,7 @@ def test_platform_adoption_page_and_api(
     monkeypatch.delenv("REPAVE_AUDIT_FILE", raising=False)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     page = client.get("/platform/adoption")
-    assert page.status_code == 200
-    assert "Golden path adoption" in page.text
-    assert 'href="/platform/adoption"' in page.text
+    assert_surface_moved(page, "platform-adoption")
 
     api = client.get("/api/v2/platform/metrics")
     assert api.status_code == 200
@@ -289,14 +288,10 @@ def test_platform_stakeholder_pages_and_api(
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     compliance = client.get("/platform/compliance")
-    assert compliance.status_code == 200
-    assert "Compliance posture" in compliance.text
-    assert 'href="/platform/compliance"' in compliance.text
+    assert_surface_moved(compliance, "platform-compliance")
 
     value_stream = client.get("/platform/value-stream")
-    assert value_stream.status_code == 200
-    assert "Value stream" in value_stream.text
-    assert 'href="/platform/value-stream"' in value_stream.text
+    assert_surface_moved(value_stream, "platform-value-stream")
 
     compliance_api = client.get("/api/v2/platform/compliance")
     assert compliance_api.status_code == 200

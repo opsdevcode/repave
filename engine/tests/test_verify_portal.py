@@ -3,20 +3,13 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 
 
 def test_verify_form_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    response = client.get("/verify")
-
-    assert response.status_code == 200
-    assert "Verify existing repository" in response.text
-    assert 'name="target_repo"' in response.text
-    assert ">Verify</a>" in response.text
-    assert "form-actions__toolbar" in response.text
-    assert "page-supplement" in response.text
-    assert "Strict gates" in response.text
+    assert_surface_moved(client.get("/verify"), "verify")
 
 
 def test_verify_post_on_fixture(
@@ -33,12 +26,7 @@ def test_verify_post_on_fixture(
         lambda _name: False,
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    response = client.post("/verify", data={"target_repo": str(fixture)})
-
-    assert response.status_code == 200
-    assert "Verify report" in response.text
-    assert "Pin drift vs catalog" in response.text
-    assert "gate-table" in response.text
+    assert_surface_moved(client.post("/verify", data={"target_repo": str(fixture)}), "verify")
 
 
 def test_api_verify_json(
