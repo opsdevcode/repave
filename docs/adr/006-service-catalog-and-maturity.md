@@ -1,7 +1,12 @@
 # ADR 006: Service catalog overlay, maturity, and GitOps sandboxes
 
 **Status:** Accepted — Phase 1 + Phase 2 (initiatives CRUD) shipped on `main`  
-**Date:** 2026-08-10  
+**Date:** 2026-08-10
+**Amendment (2026-08-16):** Hosted Helm chart defaults `repave.serviceCatalog.enabled`
+and `bundleExamples` **on** so Backstage `/sandbox` / `/maturity` do not 404.
+Engine `load_service_catalog_config` stays off unless config or
+`REPAVE_SERVICE_CATALOG`. Kind/smoke keep Backstage off; catalog fixtures are
+small ConfigMaps.  
 **Scope:** portal catalog read models, `repave.config.yaml` `service_catalog` block,
 environment vending parameterization, platform console maturity surfaces — v2.x line
 
@@ -27,7 +32,9 @@ Constraints:
    vend requests.
 3. **Deterministic rules.** Maturity and initiatives evaluate config + scorecard data.
    Conversational / AI suggestions stay [v3](../roadmap.md#beyond-v200--autonomous-estate-and-lifecycle-control-plane).
-4. **Optional and off by default** unless `service_catalog.enabled` (or platform-dev profile).
+4. **Engine off by default** unless `service_catalog.enabled` or
+   `REPAVE_SERVICE_CATALOG` (or platform-dev / developer-lab paths). The hosted
+   Helm chart defaults the overlay **on** with bundled fixtures.
 
 ## Decision
 

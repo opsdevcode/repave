@@ -496,8 +496,13 @@ if grep -q 'developer_lab:' "${rendered}"; then
   exit 1
 fi
 
-if grep -q 'service_catalog:' "${rendered}"; then
-  echo "default values must not enable service_catalog" >&2
+if ! grep -q 'service_catalog:' "${rendered}"; then
+  echo "default values must enable service_catalog (Backstage sandbox 404s otherwise)" >&2
+  exit 1
+fi
+
+if ! grep -q 'api-sandbox-7d' "${rendered}"; then
+  echo "default values must mount bundled service-catalog fixtures" >&2
   exit 1
 fi
 
@@ -512,6 +517,7 @@ helm template repave-developer-lab "${CHART}" \
   --namespace repave-lab \
   --set repave.output.githubOrg=example-org \
   --set persistence.modules.enabled=false \
+  --set repave.serviceCatalog.enabled=false \
   --set repave.v3.enabled=true \
   --set repave.v3.developerLab.enabled=true \
   >"${lab_rendered}"
@@ -538,6 +544,7 @@ helm template repave-service-catalog "${CHART}" \
   --set repave.output.githubOrg=example-org \
   --set persistence.modules.enabled=false \
   --set repave.serviceCatalog.enabled=true \
+  --set repave.serviceCatalog.bundleExamples=false \
   >"${catalog_rendered}"
 
 if ! grep -q 'service_catalog:' "${catalog_rendered}"; then

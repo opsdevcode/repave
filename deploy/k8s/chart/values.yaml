@@ -233,13 +233,14 @@ repave:
         - ansible
         - observability
 
-  # Service catalog overlay (ADR 006). Required for /home and /sandbox UX.
-  # Hosted installs must provide the YAML at these paths; the image does not
-  # ship examples/platform-dev. Set bundleExamples to mount chart copies of
-  # examples/platform-dev (values-backstage.yaml does this).
+  # Service catalog overlay (ADR 006). Default on with bundled fixtures so
+  # hosted Backstage /sandbox, /maturity, and My services do not 404.
+  # Kind/smoke keep Backstage off; catalog fixtures are small ConfigMaps.
+  # Set enabled=false to opt out. bundleExamples=false requires operator-mounted
+  # YAML at the paths below (the engine image does not ship examples/).
   serviceCatalog:
-    enabled: false
-    bundleExamples: false
+    enabled: true
+    bundleExamples: true
     maturityRubric: /config/maturity-rubric.yaml
     workloadProfiles: /config/workload-profiles.yaml
     deploymentSets: /config/deployment-sets.yaml
