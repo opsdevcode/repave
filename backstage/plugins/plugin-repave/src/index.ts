@@ -26,6 +26,12 @@ export {
   parseImportApply,
 } from './components/ImportPage';
 export {
+  ImportBatchPage,
+  buildBatchRequest,
+  parseBatchPlan,
+  parseBatchApply,
+} from './components/ImportBatchPage';
+export {
   VerifyPage,
   buildVerifyRequest,
   parseVerifyResult,

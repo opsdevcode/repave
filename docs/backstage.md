@@ -28,7 +28,8 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` |
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
 | Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |
-| Import | `/import` — `POST /api/v2/imports/plan` + `/apply` (batch stays CLI) |
+| Import | `/import` — `POST /api/v2/imports/plan` + `/apply` |
+| Batch import | `/import/batch` — `POST /api/v2/imports/batch/plan` + `/apply` |
 | Verify | `/verify` — `POST /api/v2/verify` (422 is a failed verify) |
 | Estate | `/estate` — `GET /api/v2/estate` (404 if fleet is unset) |
 | Adoption | `/adoption` — `GET /api/v2/platform/metrics` (admin; 404 if unset) |
@@ -117,7 +118,8 @@ then `docker build -f backstage/packages/backend/Dockerfile`.
 `values-kind.yaml` + `values-backstage.yaml` on kind, and probes engine
 `/health` + `/api/v2`, HTML **410**, and Backstage liveness/readiness.
 CI runs that job when Backstage or overlay paths change. The flag stays
-**default off** until a named owner takes the Backstage release treadmill.
+**default off** until a named owner takes the Backstage release treadmill
+(see [Ownership](#ownership) below).
 `make chart-validate` renders the Deployment when the flag is on.
 
 Production config uses SQLite (`connection.directory: /tmp/backstage-db`) so a
@@ -208,6 +210,24 @@ spec:
   targets:
     - https://github.com/example/app-checkout-api/blob/main/catalog-info.yaml
 ```
+
+## Ownership
+
+`repave.backstage.enabled` stays **default off**. A named owner is required
+before hosted values flip it on ([ADR 011](adr/011-hosted-backstage-idp.md)).
+Record the owner here when someone takes the treadmill — do not invent a name.
+
+**Owner:** unassigned.
+
+The owner is on the hook for:
+
+- Backstage upstream upgrades (`backstage.json` / yarn lock) and `make backstage-lint`
+- `ghcr.io/opsdevcode/repave-backstage` publish via `container.yml`
+- `chart-smoke-backstage` staying green when plugin or overlay paths change
+- Auth0 / guest boot (never ship blank `AUTH0_*`)
+- The default-on decision for `repave.backstage.enabled`
+
+Until that line is filled, operators opt in with `values-backstage.yaml`.
 
 ## Later phases (same theme)
 

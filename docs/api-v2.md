@@ -197,6 +197,10 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/github/teams` | viewer+ | Org teams for `github-repo-generic` (requires GitHub credentials) |
 | `POST` | `/api/v2/fleet` | admin | Register a repository |
 | `DELETE` | `/api/v2/fleet` | admin | Unregister (`repo_url` query param) |
+| `POST` | `/api/v2/imports/plan` | generator, admin | Single-repo import preview (Backstage `/import`) |
+| `POST` | `/api/v2/imports/apply` | generator, admin | Open import PR (engine GitHub token) |
+| `POST` | `/api/v2/imports/batch/plan` | generator, admin | Batch preview (Backstage `/import/batch`) |
+| `POST` | `/api/v2/imports/batch/apply` | generator, admin | Open batch import PRs (engine GitHub token) |
 | `GET` | `/api/v2/deployment-sets` | viewer+ | Named sandbox / lab deployment sets |
 | `POST` | `/api/v2/environments/vend` | generator, admin | Request a sandbox from a deployment set |
 | `POST` | `/api/v2/environments/reclaim` | admin | Reclaim expired sandbox environments |
