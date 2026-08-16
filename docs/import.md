@@ -147,7 +147,7 @@ and links to [`/update`](../README.md#update-an-existing-repository).
 
 ## API
 
-Backstage `/import` calls the same plan and apply endpoints (single repo; batch stays CLI).
+Backstage `/import` and `/import/batch` call the same plan and apply endpoints.
 
 | Method | Path | Role (service mode) |
 | --- | --- | --- |
@@ -216,8 +216,9 @@ repave import https://github.com/acme/legacy-vpc --force-clone
 
 Plan or open pull requests for many repositories at once.
 
-Portal: [`/import/batch`](/import/batch) — scan a GitHub organization (with artifact-family
-and GitHub search filters), or paste a URL list.
+Portal: [`/import/batch`](/import/batch) and Backstage `/import/batch` — scan a
+GitHub organization (with artifact-family and GitHub search filters), or paste a
+URL list.
 
 CLI:
 

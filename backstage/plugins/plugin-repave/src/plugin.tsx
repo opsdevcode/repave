@@ -10,6 +10,7 @@ import DeveloperBoardIcon from '@material-ui/icons/DeveloperBoard';
 import FeedbackIcon from '@material-ui/icons/Feedback';
 import HistoryIcon from '@material-ui/icons/History';
 import MapIcon from '@material-ui/icons/Map';
+import PlaylistAddIcon from '@material-ui/icons/PlaylistAdd';
 import SecurityIcon from '@material-ui/icons/Security';
 import ShowChartIcon from '@material-ui/icons/ShowChart';
 import StorageIcon from '@material-ui/icons/Storage';
@@ -21,6 +22,7 @@ import { EstatePage } from './components/EstatePage';
 import { FeedbackPage } from './components/FeedbackPage';
 import { FinOpsPage } from './components/FinOpsPage';
 import { FleetPage } from './components/FleetPage';
+import { ImportBatchPage } from './components/ImportBatchPage';
 import { ImportPage } from './components/ImportPage';
 import { MaturityPage } from './components/MaturityPage';
 import { MetricsPage } from './components/MetricsPage';
@@ -89,6 +91,16 @@ const importPage = PageBlueprint.make({
     title: 'Import',
     icon: <CloudDownloadIcon />,
     loader: async () => <ImportPage />,
+  },
+});
+
+const importBatchPage = PageBlueprint.make({
+  name: 'import-batch',
+  params: {
+    path: '/import/batch',
+    title: 'Batch import',
+    icon: <PlaylistAddIcon />,
+    loader: async () => <ImportBatchPage />,
   },
 });
 
@@ -199,6 +211,7 @@ export const repavePlugin = createFrontendPlugin({
     upgradePage,
     fleetPage,
     importPage,
+    importBatchPage,
     verifyPage,
     estatePage,
     metricsPage,
