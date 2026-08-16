@@ -39,6 +39,8 @@ def test_platform_moved_ids() -> None:
         ("/import/batch", "import-batch"),
         ("/verify", "verify"),
         ("/update", "upgrade"),
+        ("/runs", "runs"),
+        ("/runs/example-run", "run-console"),
         ("/bundles/service-stack", "bundle"),
         ("/platform/fleet", "platform-fleet"),
         ("/platform/ops", "platform-ops"),
@@ -68,6 +70,7 @@ def test_import_and_verify_posts_point_to_backstage(repo_root, output_config) ->
     assert_surface_moved(client.post("/import/batch", data={}), "import-batch")
     assert_surface_moved(client.post("/verify", data={}), "verify")
     assert_surface_moved(client.post("/update", data={}), "upgrade")
+    assert_surface_moved(client.post("/runs/example-run/replay", data={}), "run-console")
 
 
 def test_generate_post_points_to_backstage_result(repo_root, output_config) -> None:

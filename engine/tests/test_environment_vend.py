@@ -436,9 +436,8 @@ environment_vending:
             run_url = response.headers["location"]
             assert run_url.startswith("/runs/")
             console = client.get(run_url)
-            assert console.status_code == 200
-            assert "data-environment-vend" in console.text
-            assert "Environment stack vend" in console.text
+            assert_surface_moved(console, "run-console")
+            assert "data-environment-vend" not in console.text
 
             run_id = run_url.rstrip("/").split("/")[-1]
             deadline = time.time() + 5.0

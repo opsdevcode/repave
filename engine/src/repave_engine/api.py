@@ -71,7 +71,6 @@ from repave_engine.entity_catalog import (
     library_family_known,
 )
 from repave_engine.environment_reclaim import reclaim_expired_environments
-from repave_engine.environment_vend import DEFAULT_VEND_BLUEPRINT
 from repave_engine.execution_mode import ExecutionMode
 from repave_engine.fleet import FleetError
 from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
@@ -113,8 +112,6 @@ from repave_engine.portal_errors import (
 )
 from repave_engine.portal_generate import (
     PortalGenerateRedirect,
-    console_preview_files_from_record,
-    publish_target_for_run,
     run_portal_generate,
 )
 from repave_engine.portal_generate import (
@@ -144,6 +141,9 @@ from repave_engine.portal_surface_moved import (
     IMPORT_MOVED,
     LIBRARY_MOVED,
     RESULT_MOVED,
+    RUN_CONSOLE_MOVED,
+    RUNS_MOVED,
+    SANDBOX_MOVED,
     SERVICES_MOVED,
     TEAMS_MOVED,
     UPGRADE_MOVED,
@@ -200,12 +200,6 @@ from repave_engine.settings import (
 )
 from repave_engine.sql_session_middleware import SqlSessionMiddleware
 from repave_engine.tracing import configure_tracing
-from repave_engine.workload_profiles import (
-    SandboxVendError,
-    load_deployment_sets,
-    load_workload_profiles,
-    resolve_sandbox_vend_payload,
-)
 
 
 def _default_environment_stack_name(entity_id: str, display_name: str) -> str:
@@ -680,99 +674,24 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         return render_moved(request, TEAMS_MOVED)
 
+    def _sandbox_moved(request: Request) -> HTMLResponse:
+        if service_catalog_config is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Service catalog is not enabled (set service_catalog.enabled)",
+            )
+        return render_moved(request, SANDBOX_MOVED)
+
     @app.get("/sandbox", response_class=HTMLResponse)
+    @app.post("/sandbox/request", response_class=HTMLResponse)
     async def sandbox_page(request: Request) -> HTMLResponse:
-        return _render_sandbox_page(request)
+        return _sandbox_moved(request)
 
     @app.get("/lab", response_class=HTMLResponse)
     async def developer_lab_page(request: Request) -> HTMLResponse:
         if not developer_lab_enabled:
             raise HTTPException(status_code=404, detail="Developer lab is not enabled")
-        return _render_sandbox_page(request)
-
-    def _render_sandbox_page(request: Request) -> HTMLResponse:
-        if service_catalog_config is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Service catalog is not enabled (set service_catalog.enabled)",
-            )
-        profiles = load_workload_profiles(service_catalog_config.workload_profiles)
-        sets = load_deployment_sets(service_catalog_config.deployment_sets)
-        vend_cfg = load_environment_vending_config(repo_root)
-        auth_user = session_user(request)
-        default_owner = (
-            auth_user.email
-            if auth_user is not None and auth_user.email
-            else f"group:{service_catalog_config.default_team}"
-        )
-        return templates.TemplateResponse(
-            request,
-            "sandbox.html",
-            page_context(
-                request,
-                nav_active="sandbox",
-                workload_profiles=profiles,
-                profiles_by_id={profile.id: profile for profile in profiles},
-                deployment_sets=sets,
-                environment_vend_available=bool(run_queue is not None and vend_cfg is not None),
-                environment_vend_cfg=vend_cfg,
-                default_sandbox_owner=default_owner,
-            ),
-        )
-
-    @app.post("/sandbox/request")
-    async def sandbox_request(request: Request) -> RedirectResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
-        if service_catalog_config is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Service catalog is not enabled (set service_catalog.enabled)",
-            )
-        if run_queue is None:
-            raise HTTPException(status_code=503, detail="Async runs are not enabled")
-        form = await request.form()
-        set_id = str(form.get("deployment_set", "")).strip()
-        stack_name = str(form.get("stack_name", "")).strip()
-        owner = str(form.get("owner", "")).strip()
-        dry_run = str(form.get("dry_run", "1")).strip().lower() in {
-            "1",
-            "true",
-            "on",
-            "yes",
-        }
-        sets = load_deployment_sets(service_catalog_config.deployment_sets)
-        profiles = load_workload_profiles(service_catalog_config.workload_profiles)
-        vend_cfg = load_environment_vending_config(repo_root)
-        gitops_repo = vend_cfg.gitops_repo if vend_cfg is not None else ""
-        try:
-            payload = resolve_sandbox_vend_payload(
-                sets=sets,
-                profiles=profiles,
-                deployment_set_id=set_id,
-                stack_name=stack_name,
-                owner=owner,
-                gitops_repo=gitops_repo,
-                dry_run=dry_run,
-            )
-        except SandboxVendError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        acting = user.subject if user else current_acting_user()
-        try:
-            record = submit_async_run(
-                run_queue,
-                payload=payload,
-                acting_user=acting,
-                repo_root=repo_root,
-            )
-        except RunQueueFullError as exc:
-            raise HTTPException(status_code=429, detail=str(exc)) from exc
-        except RunQueueShuttingDownError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return RedirectResponse(url=f"/runs/{record.run_id}", status_code=303)
+        return _sandbox_moved(request)
 
     @app.post("/services/{entity_id}/live-plan")
     async def service_live_plan(request: Request, entity_id: str) -> RedirectResponse:
@@ -1176,200 +1095,17 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             page_context(request, **extra),
         )
 
-    def _user_can_replay_runs(request: Request) -> bool:
-        if auth_config is None or not auth_config.service_enabled:
-            return True
-        user = session_user(request)
-        return user is not None and user.role == ROLE_ADMIN
-
     @app.get("/runs", response_class=HTMLResponse)
     async def runs_index(request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        if run_queue is None:
-            raise HTTPException(status_code=503, detail="Async runs are not enabled")
-        status_raw = request.query_params.get("status", "").strip().lower()
-        status_filter: RunStatus | None = None
-        if status_raw:
-            try:
-                status_filter = RunStatus(status_raw)
-            except ValueError as exc:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Invalid status filter: {status_raw}",
-                ) from exc
-        runs = run_queue.list_runs(status=status_filter, limit=50)
-        return templates.TemplateResponse(
-            request,
-            "runs_index.html",
-            page_context(
-                request,
-                nav_active="runs",
-                runs=runs,
-                status_filter=status_raw,
-                can_replay_runs=_user_can_replay_runs(request),
-            ),
-        )
+        return render_moved(request, RUNS_MOVED)
 
-    @app.post("/runs/{run_id}/replay")
-    async def runs_replay(run_id: str, request: Request) -> RedirectResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_ADMIN)
-        if run_queue is None:
-            raise HTTPException(status_code=503, detail="Async runs are not enabled")
-        try:
-            run_queue.replay(run_id)
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail="Run not found") from exc
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return RedirectResponse(f"/runs/{run_id}", status_code=303)
+    @app.post("/runs/{run_id}/replay", response_class=HTMLResponse)
+    async def runs_replay(run_id: str, request: Request) -> HTMLResponse:
+        return render_moved(request, RUN_CONSOLE_MOVED)
 
     @app.get("/runs/{run_id}", response_class=HTMLResponse)
     async def run_console(run_id: str, request: Request) -> HTMLResponse:
-        user = session_user(request)
-        if auth_config and auth_config.service_enabled:
-            require_role(user, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        if run_queue is None:
-            raise HTTPException(status_code=503, detail="Async runs are not enabled")
-        record = run_queue.get(run_id)
-        if record is None:
-            raise HTTPException(status_code=404, detail="Run not found")
-        if is_live_plan_run(record):
-            inputs = record.payload.get("inputs", {})
-            entity_id = ""
-            if isinstance(inputs, dict):
-                entity_id = str(inputs.get("entity_id", "")).strip()
-            return templates.TemplateResponse(
-                request,
-                "run_console.html",
-                page_context(
-                    request,
-                    nav_active="library",
-                    run_id=run_id,
-                    run_record=record,
-                    live_plan=True,
-                    live_plan_entity_id=entity_id,
-                ),
-            )
-        if is_environment_vend_run(record):
-            entity_id = str(record.payload.get("entity_id", "")).strip()
-            vend_blueprint_name = (
-                str(record.payload.get("blueprint", DEFAULT_VEND_BLUEPRINT)).strip()
-                or DEFAULT_VEND_BLUEPRINT
-            )
-            vend_blueprint = load_blueprint(
-                blueprint_dir(repo_root, vend_blueprint_name),
-                repo_root=repo_root,
-            )
-            return templates.TemplateResponse(
-                request,
-                "run_console.html",
-                page_context(
-                    request,
-                    nav_active="library",
-                    run_id=run_id,
-                    run_record=record,
-                    environment_vend=True,
-                    environment_vend_entity_id=entity_id,
-                    gate_names=vend_blueprint.gates,
-                ),
-            )
-        if is_bundle_run(record):
-            bundle_name = str(record.payload.get("bundle", "")).strip()
-            bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
-            gate_names: list[str] = []
-            seen_gates: set[str] = set()
-            for member in bundle.members:
-                member_blueprint = load_blueprint(
-                    blueprint_dir(repo_root, member.blueprint_name),
-                    repo_root=repo_root,
-                )
-                for gate in member_blueprint.gates:
-                    if gate not in seen_gates:
-                        seen_gates.add(gate)
-                        gate_names.append(gate)
-            return templates.TemplateResponse(
-                request,
-                "run_console.html",
-                page_context(
-                    request,
-                    nav_active="catalog",
-                    run_id=run_id,
-                    run_record=record,
-                    bundle=bundle,
-                    gate_names=gate_names,
-                    console_preview_files=console_preview_files_from_record(
-                        record, repo_root=repo_root
-                    ),
-                ),
-            )
-        if is_fleet_drift_confirm_run(record):
-            return templates.TemplateResponse(
-                request,
-                "run_console.html",
-                page_context(
-                    request,
-                    nav_active="platform",
-                    run_id=run_id,
-                    run_record=record,
-                    fleet_drift_confirm=True,
-                    gate_names=[],
-                ),
-            )
-        if is_org_scan_run(record):
-            return templates.TemplateResponse(
-                request,
-                "run_console.html",
-                page_context(
-                    request,
-                    nav_active="import",
-                    run_id=run_id,
-                    run_record=record,
-                    org_scan=True,
-                    gate_names=[],
-                ),
-            )
-        if is_environment_reclaim_run(record):
-            return templates.TemplateResponse(
-                request,
-                "run_console.html",
-                page_context(
-                    request,
-                    nav_active="platform",
-                    run_id=run_id,
-                    run_record=record,
-                    environment_reclaim=True,
-                    gate_names=[],
-                ),
-            )
-        blueprint = load_blueprint(
-            blueprint_dir(repo_root, record.blueprint_name),
-            repo_root=repo_root,
-        )
-        publish_target = publish_target_for_run(
-            blueprint=blueprint,
-            payload=record.payload,
-            output_config=resolved_output,
-        )
-        return templates.TemplateResponse(
-            request,
-            "run_console.html",
-            page_context(
-                request,
-                nav_active="catalog",
-                run_id=run_id,
-                run_record=record,
-                blueprint=blueprint,
-                gate_names=blueprint.gates,
-                publish_target=publish_target,
-                console_preview_files=console_preview_files_from_record(
-                    record, repo_root=repo_root
-                ),
-            ),
-        )
+        return render_moved(request, RUN_CONSOLE_MOVED)
 
     @app.get("/runs/{run_id}/result", response_class=HTMLResponse)
     async def run_result_view(run_id: str, request: Request) -> Response:

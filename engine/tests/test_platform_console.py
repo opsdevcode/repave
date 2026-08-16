@@ -314,9 +314,9 @@ def test_platform_standards_confirm_drift_submits_run(
         assert response.status_code == 303
         assert response.headers["location"].startswith("/runs/")
         run_page = client.get(response.headers["location"])
-        assert run_page.status_code == 200
-        assert 'data-fleet-drift-confirm="1"' in run_page.text
-        assert "Fleet drift confirm" in run_page.text
+        assert_surface_moved(run_page, "run-console")
+        assert 'data-fleet-drift-confirm="1"' not in run_page.text
+        assert "Fleet drift confirm" not in run_page.text
     finally:
         queue = client.app.state.run_queue
         if queue is not None:

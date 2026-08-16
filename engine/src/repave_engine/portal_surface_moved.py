@@ -207,6 +207,39 @@ UPGRADE_MOVED = _surface(
     nav_active="update",
 )
 
+RUNS_MOVED = _surface(
+    "runs",
+    title="Runs moved",
+    lead="Run history now lives in Backstage Runs. This HTML list is gone.",
+    backstage_label="Runs",
+    backstage_path="/runs",
+    api_hint="GET /api/v2/runs",
+    cli_hint="GET /api/v2/runs",
+    nav_active="runs",
+)
+
+RUN_CONSOLE_MOVED = _surface(
+    "run-console",
+    title="Run console moved",
+    lead="Live run console now lives in Backstage. This HTML console is gone.",
+    backstage_label="Run console",
+    backstage_path="/run-console",
+    api_hint="GET /api/v2/runs/{id}",
+    cli_hint="GET /api/v2/runs/{id}",
+    nav_active="runs",
+)
+
+SANDBOX_MOVED = _surface(
+    "sandbox",
+    title="Sandbox moved",
+    lead="Sandbox vending now lives in Backstage. This HTML form is gone.",
+    backstage_label="Sandbox",
+    backstage_path="/sandbox",
+    api_hint="POST /api/v2/environments/vend",
+    cli_hint="POST /api/v2/environments/vend",
+    nav_active="sandbox",
+)
+
 _PLATFORM_PAGES: dict[str, tuple[str, str, str, str]] = {
     "fleet": ("Fleet", "/fleet", "GET /api/v2/fleet", "GET /api/v2/fleet"),
     "ops": ("Ops", "/ops", "GET /api/v2/platform/ops", "GET /api/v2/platform/ops"),

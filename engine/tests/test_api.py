@@ -1481,12 +1481,9 @@ def test_run_console_page_when_async_enabled(
     assert submit.status_code == 202
     run_id = submit.json()["run_id"]
     page = client.get(f"/runs/{run_id}")
-    assert page.status_code == 200
-    assert "data-run-console" in page.text
-    assert "data-run-progress" in page.text
-    assert "command-palette" in page.text
-    assert "data-run-file-preview" in page.text
-    assert "Browse generated files" in page.text
+    assert_surface_moved(page, "run-console")
+    assert "data-run-console" not in page.text
+    assert "Browse generated files" not in page.text
 
 
 @pytest.mark.slow

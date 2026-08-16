@@ -11,9 +11,9 @@ labels; this file holds **visual layout**, **component patterns**, and
 
 | Route | Template | Highlights |
 | --- | --- | --- |
-| Home / catalog / platform / import / verify / results / bundles / upgrade | `surface_moved.html` | Pointer pages to Backstage + CLI / `/api/v2` |
+| Home / catalog / platform / import / verify / results / bundles / upgrade / runs / sandbox | `surface_moved.html` | Pointer pages to Backstage + CLI / `/api/v2` |
 | Blueprint page | `generate_moved.html` | HTML generate form retired; points to Backstage `/generate` and `repave generate` |
-| Run console | leftover Jinja | Still served until the 14 Feb 2027 sunset |
+| Landing / signup | leftover Jinja | Still served until the 14 Feb 2027 sunset |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
 and the shell shows a “Last run in this browser” snippet on home and form routes.

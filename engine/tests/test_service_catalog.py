@@ -276,9 +276,10 @@ def test_portal_service_catalog_pages(
     assert_surface_moved(client.get("/home"), "home")
 
     sandbox = client.get("/sandbox")
-    assert sandbox.status_code == 200
-    assert "Request a sandbox" in sandbox.text
-    assert "api-sandbox-7d" in sandbox.text
+    assert_surface_moved(sandbox, "sandbox")
+    assert "Request a sandbox" not in sandbox.text
+    assert "api-sandbox-7d" not in sandbox.text
+    assert_surface_moved(client.post("/sandbox/request", data={}), "sandbox")
 
     assert_surface_moved(client.get("/platform/maturity"), "platform-maturity")
 

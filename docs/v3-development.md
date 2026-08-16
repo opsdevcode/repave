@@ -71,8 +71,8 @@ and mounts bundled catalog YAML.
 | Surface | Route | Backing config |
 | --- | --- | --- |
 | My services | `/home` | Bundled maturity + initiatives paths |
-| Developer lab | `/lab` (alias `/sandbox`) | Workload profiles + deployment sets |
-| Sandbox vending | `POST /sandbox/request` | Explicit `environment_vending` (still required) |
+| Developer lab | `/lab` (alias `/sandbox`) | Pointer to Backstage `/sandbox` |
+| Sandbox vending | `POST /api/v2/environments/vend` | Explicit `environment_vending` (still required) |
 
 Missing fixtures fail closed with a path in the error. Explicit `service_catalog`
 blocks still override the bundled paths. `v3.developer_lab.enabled: false` keeps

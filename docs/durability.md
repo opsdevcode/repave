@@ -136,8 +136,8 @@ Environment: `REPAVE_EXECUTION_MODE=worker`, `REPAVE_EXTERNAL_WORKERS=1`.
 
 When `execution_mode=worker`, the API and portal **do not run gates in-process**. Sync
 `POST /api/v1/generate` and `POST /api/v2/generate` return **409** unless `"async": true`;
-use `POST /api/v1/runs` or enable the portal live run console (async is automatic in worker
-mode). Bundle generation uses the same async queue and run console as blueprint runs.
+use `POST /api/v1/runs` or Backstage `/run-console` (async is automatic in worker
+mode). Bundle generation uses the same async queue as blueprint runs.
 
 See [ADR 002](adr/002-v2-service-decomposition.md).
 

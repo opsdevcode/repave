@@ -74,7 +74,7 @@ The run result includes `gates_outcome`, `gitops_path`, and when not dry-run
 `pull_request_url` / `pull_request_number`. repave does not run `terraform apply`. See
 [ADR 003](adr/003-environment-lifecycle-and-live-state.md).
 
-Named deployment sets (HTML `/sandbox` and Backstage `/sandbox`) use the same payload
+Named deployment sets (Backstage `/sandbox`) use the same payload
 builder:
 
 | Method | Path | Role | Notes |
