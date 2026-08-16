@@ -10,11 +10,12 @@ The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
 
 **HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
 
-After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
-sunset. Platform-admin HTML already has Backstage pages (fleet through FinOps, plus
-ops / standards / campaigns, plus builder browse pages). `/generate` now posts
-`POST /api/v2/generate` from Backstage. Phase 4 Jinja deletion is the approved
-product call — start after this form ships; do not drop leftover HTML silently.
+After that date, Phase 4 removes the remaining Jinja templates. CLI and `/api/v2`
+are not sunset. Platform-admin HTML already has Backstage pages (fleet through
+FinOps, plus ops / standards / campaigns, plus builder browse pages).
+`/generate` posts `POST /api/v2/generate` from Backstage. The HTML generate form
+(`blueprint_form.html`) is removed; `GET /blueprints/{name}` points at Backstage
+and the CLI. Do not drop leftover HTML silently.
 
 ## What you get
 

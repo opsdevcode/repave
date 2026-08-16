@@ -135,7 +135,6 @@ from repave_engine.policy_selection import (
     blueprint_supports_policy_customization,
     policy_input_defaults,
 )
-from repave_engine.portal_blueprint_view import build_blueprint_form_extras
 from repave_engine.portal_components import (
     build_component_add_context,
     component_add_redirect_url,
@@ -1336,19 +1335,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         return RedirectResponse(url=f"/services/{entity_id}", status_code=302)
 
     @app.get("/blueprints/{blueprint_name}", response_class=HTMLResponse)
-    async def blueprint_form(request: Request, blueprint_name: str) -> HTMLResponse:
-        extras = build_blueprint_form_extras(
-            repo_root=repo_root,
-            blueprint_name=blueprint_name,
-            modules_root=resolved_output.modules_root,
-            output_config=resolved_output,
-        )
+    async def blueprint_generate_moved(request: Request, blueprint_name: str) -> HTMLResponse:
+        blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
         return templates.TemplateResponse(
             request,
-            "blueprint_form.html",
+            "generate_moved.html",
             page_context(
                 request,
-                **extras,
+                blueprint=blueprint,
                 nav_active="catalog",
             ),
         )

@@ -42,7 +42,7 @@ source. Labels, hints, and governance rails should explain **what they get**, no
 
 ## When adding governance or result panels
 
-- Match wording across `blueprint_form.html` (governance rail) and `result.html`
+- Match wording across Backstage `/generate` and `result.html`
   (lineage block): same terms for standard, policy, and `repave.yaml`.
 - If copy would only make sense to someone who read `engine/src/repave_engine/`,
   rewrite it or move it to `docs/` / code comments.

@@ -113,15 +113,14 @@ def test_update_form_prefills_target_repo(repo_root, output_config) -> None:
     assert 'value="https://github.com/acme/tf-vpc"' in body
 
 
-def test_blueprint_preflight_panel(repo_root, output_config) -> None:
+def test_blueprint_page_explains_generate_move(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     body = client.get("/blueprints/terraform-module-generic").text
 
-    assert "preflight-panel" in body
-    assert "form-actions__preflight-details" in body
-    assert "Example repo" in body
-    assert "Gate list" in body
+    assert "data-generate-moved" in body
+    assert "Generate moved" in body
+    assert "repave generate terraform-module-generic" in body
 
 
 def test_bundle_topology_section(repo_root, output_config) -> None:
