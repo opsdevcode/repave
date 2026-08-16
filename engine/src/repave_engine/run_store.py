@@ -60,7 +60,7 @@ class RunRecord:
             body["kind"] = kind
         if self.payload.get("bundle"):
             body["bundle"] = str(self.payload["bundle"])
-        elif kind == "environment_vend":
+        elif kind in ("environment_vend", "component_vend"):
             vend_blueprint = str(self.payload.get("blueprint", "")).strip()
             if vend_blueprint:
                 body["blueprint"] = vend_blueprint

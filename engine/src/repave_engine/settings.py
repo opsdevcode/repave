@@ -649,6 +649,77 @@ def load_environment_vending_config(repo_root: Path) -> EnvironmentVendingConfig
 
 
 @dataclass(frozen=True)
+class ComponentVendingConfig:
+    enabled: bool
+    gitops_repo: str = ""
+    base_branch: str = "main"
+    path_prefix: str = "components"
+    file: Path = Path("data/components/registry.jsonl")
+    kinds_file: Path | None = None
+
+
+def load_component_vending_config(repo_root: Path) -> ComponentVendingConfig | None:
+    """Optional ADR 013 component vending configuration."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    block = file_data.get("component_vending")
+    env_enabled = os.environ.get("REPAVE_COMPONENT_VENDING", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+    if block is None and not env_enabled:
+        return None
+    if block is not None and not isinstance(block, dict):
+        raise ValueError("component_vending must be a mapping in repave.config.yaml")
+    enabled = env_enabled
+    gitops_repo = ""
+    base_branch = "main"
+    path_prefix = "components"
+    registry_file = repo_root / "data" / "components" / "registry.jsonl"
+    kinds_file: Path | None = None
+
+    def _resolve(value: str) -> Path:
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (repo_root / path).resolve()
+        return path
+
+    if isinstance(block, dict):
+        enabled_raw = block.get("enabled", True)
+        if not isinstance(enabled_raw, bool):
+            raise ValueError("component_vending.enabled must be a boolean")
+        enabled = enabled_raw or env_enabled
+        gitops_repo = str(block.get("gitops_repo", "")).strip()
+        base_branch = str(block.get("base_branch", base_branch)).strip() or base_branch
+        path_prefix = str(block.get("path_prefix", path_prefix)).strip() or path_prefix
+        registry_env = os.environ.get("REPAVE_COMPONENT_REGISTRY_FILE", "").strip()
+        if registry_env:
+            registry_file = _resolve(registry_env)
+        else:
+            registry_file = _resolve(str(block.get("file", "data/components/registry.jsonl")))
+        kinds_raw = str(block.get("kinds", "")).strip()
+        if kinds_raw:
+            kinds_file = _resolve(kinds_raw)
+    if not gitops_repo:
+        env_cfg = load_environment_vending_config(repo_root)
+        if env_cfg is not None:
+            gitops_repo = env_cfg.gitops_repo
+            if base_branch == "main" and env_cfg.base_branch:
+                base_branch = env_cfg.base_branch
+    if not enabled:
+        return None
+    return ComponentVendingConfig(
+        enabled=True,
+        gitops_repo=gitops_repo,
+        base_branch=base_branch,
+        path_prefix=path_prefix,
+        file=registry_file,
+        kinds_file=kinds_file,
+    )
+
+
+@dataclass(frozen=True)
 class ServiceCatalogConfig:
     """Service catalog overlay: maturity, profiles, initiatives (ADR 006)."""
 

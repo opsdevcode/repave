@@ -193,7 +193,7 @@ def build_api_v1_router(
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Expected JSON object")
         kind = str(payload.get("kind", "")).strip()
-        if kind != "live_plan" and kind != "environment_vend":
+        if kind not in ("live_plan", "environment_vend", "component_vend"):
             try:
                 parse_run_target(payload)
             except ValueError as exc:

@@ -7,8 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.28.0  
 
-**In progress:** Database migration goldpath (destructive DDL policy). Phase 4
-HTML removal is a product call.
+**In progress:** Component-level self-service vending (ADR 013). Phase 4 HTML
+removal is a product call.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -42,6 +42,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Hosted Backstage default-on** (owner: Eric Skaggs; kind/smoke stay off);
 **Forked blueprint packs** (local extra catalog roots);
 **API contract path** (Spectral + oasdiff);
+**Database migration path** (destructive DDL policy, [ADR 012](adr/012-destructive-ddl-policy.md));
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -153,7 +154,8 @@ v3.28.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **Forked blueprint packs** | Shipped | Extra local catalog roots; git/OCI fetch stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
-| **Database migration path** | In progress | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
+| **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
+| **Component self-service vending** | In progress | Managed database/bucket/queue via GitOps PR ([ADR 013](adr/013-component-self-service-vending.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -234,8 +236,8 @@ errors and on oasdiff breaking changes versus the baseline.
 
 ### Database migration path
 
-**Status:** In progress — `db-migration-generic` plus `migration-policy` /
-`migration-rollback` on this PR ([ADR 012](adr/012-destructive-ddl-policy.md)).
+**Status:** Shipped on `main` — `db-migration-generic` plus `migration-policy` /
+`migration-rollback` ([ADR 012](adr/012-destructive-ddl-policy.md)).
 
 **Problem:** Schema migrations live in ad-hoc repos; destructive DDL reaches
 production without a recorded reason, expiry, or paired rollback.
@@ -252,15 +254,31 @@ unwaived destructive DDL and on a missing rollback.
 
 ---
 
+### Component-level self-service vending
+
+**Status:** In progress — `POST /api/v2/components/vend` plus catalog
+`source: component` on this PR ([ADR 013](adr/013-component-self-service-vending.md)).
+
+**Problem:** Builders request a managed database, bucket, or queue by hand or
+ticket; the write never becomes gated GitOps lineage.
+
+**Approach:**
+
+- Same GitOps PR flow as `environment_vend` (no `terraform apply`)
+- Built-in kinds `database` / `bucket` / `queue` (override via
+  `component_vending.kinds`)
+- Registry + catalog entity; reclaim and a Backstage page are follow-ups
+
+**Done when:** a builder can request a managed component and get a reviewable
+GitOps PR, same shape as environment vending.
+
+---
+
 ### Paved-road follow-ons
 
 Scoped enough to promote without new discovery (was deferred from the developer paved-roads
 cluster — detail for shipped paved roads is in the [archive](roadmap-archive.md#developer-paved-roads-v2x)):
 
-- **Component-level self-service vending** — request a managed database, bucket, or queue
-  through the same GitOps PR flow as `environment_vend`. This is Phase 4 of
-  [environment lifecycle](roadmap-archive.md#environment-lifecycle-and-deployment-awareness)
-  and warrants an ADR.
 - **Organization blueprint packs** — local extra roots are
   [forked and remote blueprint packs](#forked-and-remote-blueprint-packs); git/OCI
   registry fetch remains parking-lot.

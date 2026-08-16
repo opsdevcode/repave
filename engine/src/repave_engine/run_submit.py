@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from repave_engine.component_kinds import ComponentVendError, load_component_kinds
+from repave_engine.component_vend import (
+    COMPONENT_VEND_BLUEPRINT_SENTINEL,
+    resolve_component_vend_fields,
+)
 from repave_engine.environment_vend import (
     ENVIRONMENT_VEND_BLUEPRINT_SENTINEL,
     resolve_vend_request_fields,
@@ -19,6 +24,7 @@ from repave_engine.platform_runs import (
 from repave_engine.run_queue import RunQueue
 from repave_engine.run_store import RunRecord
 from repave_engine.settings import (
+    load_component_vending_config,
     load_environment_vending_config,
     load_live_plan_config,
 )
@@ -53,6 +59,14 @@ def submit_async_run(
         )
     if kind == "environment_vend":
         return _submit_environment_vend(
+            queue,
+            payload=payload,
+            acting_user=acting_user,
+            client_request_id=client_request_id,
+            repo_root=repo_root,
+        )
+    if kind == "component_vend":
+        return _submit_component_vend(
             queue,
             payload=payload,
             acting_user=acting_user,
@@ -202,6 +216,59 @@ def _submit_environment_vend(
         client_request_id=client_request_id,
         kind="environment_vend",
         environment_vend=vend_meta,
+    )
+
+
+def _submit_component_vend(
+    queue: RunQueue,
+    *,
+    payload: dict[str, Any],
+    acting_user: str,
+    client_request_id: str | None,
+    repo_root: Any | None,
+) -> RunRecord:
+    from pathlib import Path
+
+    root = Path(repo_root) if repo_root is not None else queue.repo_root
+    config = load_component_vending_config(root)
+    if config is None or not config.enabled:
+        raise ValueError(
+            "component_vending is not enabled; set component_vending.enabled in "
+            "repave.config.yaml or REPAVE_COMPONENT_VENDING=1"
+        )
+    kinds = load_component_kinds(config.kinds_file)
+    try:
+        (
+            kind,
+            name,
+            gitops_repo,
+            gitops_path,
+            owner,
+            base_branch,
+            dry_run,
+            inputs,
+        ) = resolve_component_vend_fields(payload, config, kinds)
+    except ComponentVendError as exc:
+        raise ValueError(str(exc)) from exc
+    git_branch = str(payload.get("git_branch", "")).strip()
+    vend_meta: dict[str, str] = {
+        "blueprint": kind.blueprint,
+        "gitops_repo": gitops_repo,
+        "gitops_path": gitops_path,
+        "owner": owner,
+        "component_kind": kind.id,
+        "name": name,
+        "base_branch": base_branch,
+        "git_branch": git_branch,
+    }
+    return queue.submit(
+        blueprint_name=COMPONENT_VEND_BLUEPRINT_SENTINEL,
+        inputs=inputs,
+        dry_run=dry_run,
+        acting_user=acting_user,
+        client_request_id=client_request_id,
+        kind="component_vend",
+        component_vend=vend_meta,
     )
 
 

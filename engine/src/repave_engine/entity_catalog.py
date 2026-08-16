@@ -13,6 +13,7 @@ from typing import Any, Literal
 
 from repave_engine.audit_history import AuditHistoryEntry
 from repave_engine.blueprint import artifact_family
+from repave_engine.component_record import ComponentRecord
 from repave_engine.cost_actuals import CostActualsSummary, tag_coverage_for_fields
 from repave_engine.cost_estimate import CostEstimate
 from repave_engine.deployment_status import DeploymentStatus
@@ -217,6 +218,17 @@ class CatalogEntity:
                 "label": self.maturity_label,
                 "passing_rules": self.maturity_passing,
                 "total_rules": self.maturity_total,
+            }
+        if self.source == "component":
+            payload["component"] = {
+                "kind": self.component_type,
+                "cloud_provider": self.cloud_provider,
+                "tier": self.environment_tier,
+                "gitops_repo": self.gitops_repo,
+                "gitops_path": self.gitops_path,
+                "status": self.vend_status,
+                "run_id": self.vend_run_id,
+                "pull_request_url": self.pull_request_url,
             }
         if self.source == "environment":
             payload["environment"] = {
@@ -688,6 +700,57 @@ def build_catalog_from_environments(
         _entity_from_environment_record(item, cost_actuals_configured=cost_actuals_configured)
         for item in records
     ]
+
+
+def _entity_from_component_record(record: ComponentRecord) -> CatalogEntity:
+    return CatalogEntity(
+        entity_id=record.entity_id,
+        display_name=record.name,
+        repo_url=None,
+        local_path=None,
+        owner=record.owner,
+        blueprint_name=record.blueprint_name,
+        blueprint_version=record.blueprint_version,
+        standard_source="",
+        standard_version="",
+        component_type=record.kind,
+        lifecycle=record.environment_tier,
+        operator_phase="",
+        operator_message="",
+        remediation_pr_url="",
+        manifest_name=record.name,
+        manifest_namespace=record.gitops_path,
+        source="component",
+        scorecard=(
+            ScorecardDimension(
+                "pins",
+                "Blueprint",
+                "pass" if record.blueprint_version else "warn",
+                f"{record.blueprint_name}@{record.blueprint_version or 'unknown'}",
+            ),
+            ScorecardDimension(
+                "gates",
+                "Vend gates",
+                "pass" if record.gates_outcome == "passed" else "fail",
+                record.gates_outcome or "unknown",
+            ),
+        ),
+        last_generation_at=record.vended_at[:19] if record.vended_at else "",
+        last_generation_outcome=record.gates_outcome,
+        cloud_provider=record.cloud_provider,
+        environment_tier=record.environment_tier,
+        gitops_repo=record.gitops_repo,
+        gitops_path=record.gitops_path,
+        vend_status=record.status,
+        vend_run_id=record.run_id,
+        pull_request_url=record.pull_request_url,
+    )
+
+
+def build_catalog_from_components(
+    records: tuple[ComponentRecord, ...] | list[ComponentRecord],
+) -> list[CatalogEntity]:
+    return [_entity_from_component_record(item) for item in records]
 
 
 def merge_catalog_entities(

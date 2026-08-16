@@ -2,7 +2,8 @@
 
 **Status:** Accepted — **Phase 1** shipped; **Phase 2** shipped (`kind: live_plan` worker runs;
 PR body attachment shipped). **Phase 3** shipped on `main` (vending, registry, TTL reclaim,
-decommission review); environment cost badges and post-merge registry finalize shipped on `main`.  
+decommission review); environment cost badges and post-merge registry finalize shipped on `main`.
+**Phase 4** (component vending) is [ADR 013](013-component-self-service-vending.md).  
 **Date:** 2026-08-01  
 **Scope:** engine catalog read models, portal, worker role, `repave.config.yaml`, blueprints
 (`terraform-environment-stack`) — v2.x line, post [contract freeze](../roadmap-archive.md#v200--platform-ga)
