@@ -7,6 +7,13 @@
 # v2 contract: apiVersion identifies the config schema line.
 apiVersion: repave.dev/v1
 #
+# Extra local blueprint catalogs (optional). ./blueprints is always first.
+# Relative paths resolve against this repo. Env: REPAVE_BLUEPRINTS_ROOT,
+# REPAVE_BLUEPRINT_SOURCES (comma-separated). See docs/repave-config-v1.md.
+# blueprints_root: ../org-blueprints
+# blueprint_sources:
+#   - /opt/repave/vendor-packs
+#
 # Generated Terraform modules are written to their own git repositories under
 # modules_root — never inside the repave platform repository.
 # The portal also scans this root for observability-* / dashboards-* repos to

@@ -30,7 +30,7 @@ from repave_engine.blueprint import (
     blueprint_dir,
     blueprints_dir,
     group_blueprints_by_artifact,
-    list_blueprints,
+    list_catalog_blueprints,
     load_blueprint,
     validate_inputs,
 )
@@ -598,7 +598,8 @@ def resolve_import_blueprint(
         path = blueprint_dir(repo_root, blueprint_name)
         if not path.is_dir():
             raise RepoImportError(
-                f"unknown blueprint {blueprint_name!r} under {blueprints_dir(repo_root)}"
+                f"unknown blueprint {blueprint_name!r}; add it under a configured "
+                f"catalog root (default {blueprints_dir(repo_root)})"
             )
         return load_blueprint(path, repo_root=repo_root), False
     if not candidates:
@@ -659,7 +660,7 @@ def target_blueprints_from_org_scan(summary: Mapping[str, Any]) -> dict[str, str
 
 
 def build_default_family_blueprint_map(repo_root: Path) -> dict[str, str]:
-    groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+    groups = group_blueprints_by_artifact(list_catalog_blueprints(repo_root))
     return {group.family: group.blueprints[0].name for group in groups if group.blueprints}
 
 
@@ -671,7 +672,7 @@ def _detect_candidates_for_target(
     ref: str | None = None,
 ) -> tuple[BlueprintCandidate, ...]:
     text = raw_target.strip()
-    catalog = list_blueprints(blueprints_dir(repo_root))
+    catalog = list_catalog_blueprints(repo_root)
     if looks_like_remote_url(text):
         token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
         if token and "github.com" in text.lower():
@@ -936,7 +937,7 @@ def build_import_plan(
     if not paths:
         raise RepoImportError(f"{target} has no files to import")
 
-    catalog = list_blueprints(blueprints_dir(repo_root))
+    catalog = list_catalog_blueprints(repo_root)
     candidates = detect_blueprint_candidates(
         repo_dir or Path("."),
         catalog,

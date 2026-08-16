@@ -77,6 +77,13 @@ class OutputConfig:
 
 
 @dataclass(frozen=True)
+class BlueprintSources:
+    """Local catalog roots. The first entry is always repo_root / blueprints."""
+
+    roots: tuple[Path, ...]
+
+
+@dataclass(frozen=True)
 class NotificationsConfig:
     enabled: bool
     slack_webhook_url: str | None
@@ -130,6 +137,52 @@ def load_output_config(
         modules_root=root_path,
         repo_name_template=str(resolved_template),
     )
+
+
+def _resolve_repo_path(repo_root: Path, raw: str) -> Path:
+    path = Path(raw.strip()).expanduser()
+    if not path.is_absolute():
+        path = repo_root / path
+    return path.resolve()
+
+
+def load_blueprint_sources(repo_root: Path) -> BlueprintSources:
+    """Default ./blueprints plus blueprints_root / blueprint_sources[] / env."""
+    file_data = _load_config_file(repo_root / "repave.config.yaml")
+    extras: list[str] = []
+    root_value = file_data.get("blueprints_root")
+    if root_value is not None:
+        if not isinstance(root_value, str) or not root_value.strip():
+            raise ValueError(
+                "blueprints_root must be a local path "
+                "(set blueprints_root or REPAVE_BLUEPRINTS_ROOT)"
+            )
+        extras.append(root_value)
+    sources_value = file_data.get("blueprint_sources")
+    if sources_value is not None:
+        if not isinstance(sources_value, list) or not all(
+            isinstance(item, str) and item.strip() for item in sources_value
+        ):
+            raise ValueError(
+                "blueprint_sources must be a list of local paths "
+                "(set blueprint_sources or REPAVE_BLUEPRINT_SOURCES)"
+            )
+        extras.extend(str(item) for item in sources_value)
+    env_root = os.environ.get("REPAVE_BLUEPRINTS_ROOT", "").strip()
+    if env_root:
+        extras.append(env_root)
+    env_sources = os.environ.get("REPAVE_BLUEPRINT_SOURCES", "").strip()
+    if env_sources:
+        extras.extend(part.strip() for part in env_sources.split(",") if part.strip())
+    roots: list[Path] = [(repo_root / "blueprints").resolve()]
+    seen = {roots[0]}
+    for raw in extras:
+        resolved = _resolve_repo_path(repo_root, raw)
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        roots.append(resolved)
+    return BlueprintSources(roots=tuple(roots))
 
 
 _DEFAULT_NOTIFY_EVENTS = frozenset({"publish_complete", "generation_failed"})

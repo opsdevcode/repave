@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import repave_engine.cli as _cli
-from repave_engine.blueprint import blueprints_dir, bundles_dir, list_blueprints
+from repave_engine.blueprint import blueprint_dir, bundles_dir, list_catalog_blueprints
 from repave_engine.cli._common import _load_output_config_from_args, _parse_inputs
 from repave_engine.cli._style import brand, gate_status, heading
 from repave_engine.github_auth import resolve_github_access_token
@@ -62,9 +62,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
                 exit_code = 1
         return exit_code
 
-    blueprint_path = Path(args.blueprint)
-    if not blueprint_path.is_absolute():
-        blueprint_path = (repo_root / blueprint_path).resolve()
+    blueprint_path = blueprint_dir(repo_root, args.blueprint)
 
     result = _cli.generate_from_path(
         blueprint_path,
@@ -99,7 +97,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
 
 def cmd_list(args: argparse.Namespace) -> int:
     repo_root = Path(args.repo_root).resolve()
-    blueprints = list_blueprints(blueprints_dir(repo_root))
+    blueprints = list_catalog_blueprints(repo_root)
     payload = [
         {
             "name": bp.name,

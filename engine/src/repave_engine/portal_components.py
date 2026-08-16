@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from repave_engine.blueprint import Blueprint, blueprints_dir, list_blueprints
+from repave_engine.blueprint import Blueprint, list_catalog_blueprints
 from repave_engine.entity_catalog import CatalogEntity
 from repave_engine.provenance_components import (
     blueprint_names_from_provenance,
@@ -102,7 +102,7 @@ def build_component_add_context(
 
     addable = tuple(
         blueprint
-        for blueprint in list_blueprints(blueprints_dir(repo_root))
+        for blueprint in list_catalog_blueprints(repo_root)
         if blueprint.name not in existing
     )
     git_message = ""

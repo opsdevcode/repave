@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from repave_engine.settings import (
+    load_blueprint_sources,
     load_gate_overrides,
     load_notifications_config,
     load_output_config,
@@ -189,3 +190,83 @@ def test_load_notifications_config_requires_webhook_when_enabled(tmp_path: Path)
     )
     with pytest.raises(ValueError, match="no webhook URL"):
         load_notifications_config(tmp_path)
+
+
+def test_load_blueprint_sources_defaults_to_repo_blueprints(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("REPAVE_BLUEPRINTS_ROOT", raising=False)
+    monkeypatch.delenv("REPAVE_BLUEPRINT_SOURCES", raising=False)
+
+    sources = load_blueprint_sources(tmp_path)
+
+    assert sources.roots == ((tmp_path / "blueprints").resolve(),)
+
+
+def test_load_blueprint_sources_from_file_and_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    extra_root = tmp_path / "org-packs"
+    extra_list = tmp_path / "vendor-packs"
+    env_root = tmp_path / "env-root"
+    env_a = tmp_path / "env-a"
+    env_b = tmp_path / "env-b"
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprints_root: org-packs",
+                "blueprint_sources:",
+                "  - vendor-packs",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("REPAVE_BLUEPRINTS_ROOT", str(env_root))
+    monkeypatch.setenv("REPAVE_BLUEPRINT_SOURCES", f"{env_a}, {env_b}")
+
+    sources = load_blueprint_sources(tmp_path)
+
+    assert sources.roots == (
+        (tmp_path / "blueprints").resolve(),
+        extra_root.resolve(),
+        extra_list.resolve(),
+        env_root.resolve(),
+        env_a.resolve(),
+        env_b.resolve(),
+    )
+
+
+def test_load_blueprint_sources_dedupes_and_rejects_bad_types(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("REPAVE_BLUEPRINTS_ROOT", raising=False)
+    monkeypatch.delenv("REPAVE_BLUEPRINT_SOURCES", raising=False)
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprints_root: blueprints",
+                "blueprint_sources:",
+                "  - ./blueprints",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    sources = load_blueprint_sources(tmp_path)
+    assert sources.roots == ((tmp_path / "blueprints").resolve(),)
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\nblueprints_root: []\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="blueprints_root must be a local path"):
+        load_blueprint_sources(tmp_path)
+
+    (tmp_path / "repave.config.yaml").write_text(
+        "apiVersion: repave.dev/v1\nblueprint_sources: extra-packs\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="blueprint_sources must be a list"):
+        load_blueprint_sources(tmp_path)

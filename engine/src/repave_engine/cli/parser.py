@@ -52,7 +52,10 @@ def build_parser() -> argparse.ArgumentParser:
         parents=[common],
     )
     _add_output_options(generate)
-    generate.add_argument("--blueprint", help="Blueprint path or name (required unless --bundle)")
+    generate.add_argument(
+        "--blueprint",
+        help="Blueprint name, path, or file:// URI under configured catalog roots",
+    )
     generate.add_argument(
         "--bundle",
         help="Bundle name or path under blueprints/bundles/ (composite golden path)",

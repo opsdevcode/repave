@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.auth import ROLE_ADMIN, AuthConfig, AuthUser, require_role
-from repave_engine.blueprint import Blueprint, blueprints_dir, list_blueprints
+from repave_engine.blueprint import Blueprint, list_catalog_blueprints
 from repave_engine.doctor import ToolCheckResult, run_doctor
 from repave_engine.environment_reclaim import (
     EnvironmentReclaimSummary,
@@ -110,7 +110,7 @@ def build_platform_fleet_page(repo_root: Path) -> PlatformFleetPage:
         fleet_repos=rows,
         gitops_namespace=namespace,
         operator_status_enabled=operator_enabled,
-        blueprints=tuple(list_blueprints(blueprints_dir(repo_root))),
+        blueprints=tuple(list_catalog_blueprints(repo_root)),
     )
 
 
@@ -253,7 +253,7 @@ def build_platform_standards_page(repo_root: Path) -> PlatformStandardsPage:
     from repave_engine.fleet import read_fleet
 
     entries = read_fleet(fleet_cfg.file, repo_root=repo_root)
-    blueprints = list_blueprints(blueprints_dir(repo_root))
+    blueprints = list_catalog_blueprints(repo_root)
     summaries = estimate_fleet_drift(entries, blueprints)
     return PlatformStandardsPage(summaries=summaries, fleet_enabled=True)
 

@@ -663,12 +663,79 @@ def _format_scope_summary(scope_json: str) -> str:
 
 
 def blueprints_dir(repo_root: Path) -> Path:
-    """Root directory for blueprint.yaml catalog entries."""
-    return repo_root / "blueprints"
+    """Primary catalog root (always repo_root / blueprints)."""
+    from repave_engine.settings import load_blueprint_sources
+
+    return load_blueprint_sources(repo_root).roots[0]
+
+
+def blueprint_source_roots(repo_root: Path) -> tuple[Path, ...]:
+    from repave_engine.settings import load_blueprint_sources
+
+    return load_blueprint_sources(repo_root).roots
+
+
+def _strip_file_uri(raw: str) -> str:
+    if raw.startswith("file://"):
+        return raw.removeprefix("file://")
+    return raw
+
+
+def _is_path_spec(spec: str) -> bool:
+    return spec.startswith(("file://", "/", ".", "~")) or "/" in spec
+
+
+def _catalog_dir_if_present(path: Path) -> Path | None:
+    if path.is_file() and path.name == "blueprint.yaml":
+        return path.parent
+    if (path / "blueprint.yaml").is_file():
+        return path
+    return None
+
+
+def _path_under_root(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
+def resolve_blueprint_path(repo_root: Path, spec: str) -> Path | None:
+    """Return a catalog directory if spec is a path under a configured source."""
+    stripped = _strip_file_uri(spec.strip())
+    if not stripped:
+        return None
+    raw = Path(stripped).expanduser()
+    candidate = raw if raw.is_absolute() else (repo_root / raw)
+    resolved = candidate.resolve()
+    catalog = _catalog_dir_if_present(resolved)
+    if catalog is None:
+        return None
+    catalog = catalog.resolve()
+    if any(_path_under_root(catalog, root) for root in blueprint_source_roots(repo_root)):
+        return catalog
+    return None
 
 
 def blueprint_dir(repo_root: Path, blueprint_name: str) -> Path:
-    return blueprints_dir(repo_root) / blueprint_name
+    spec = blueprint_name.strip()
+    if not spec:
+        raise ValueError("blueprint name is required")
+    if _is_path_spec(spec):
+        resolved = resolve_blueprint_path(repo_root, spec)
+        if resolved is None:
+            raise ValueError(
+                f"blueprint path {spec!r} is not a catalog entry under a configured "
+                "source; add the directory to blueprint_sources in repave.config.yaml "
+                "or REPAVE_BLUEPRINT_SOURCES"
+            )
+        return resolved
+    for root in blueprint_source_roots(repo_root):
+        candidate = (root / spec).resolve()
+        if (candidate / "blueprint.yaml").is_file():
+            return candidate
+    return blueprints_dir(repo_root) / spec
 
 
 def bundles_dir(repo_root: Path) -> Path:
@@ -684,6 +751,22 @@ def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
         results.append(
             load_blueprint(blueprint_file.parent, repo_root=_find_repo_root(blueprints_dir))
         )
+    return results
+
+
+def list_catalog_blueprints(repo_root: Path) -> list[Blueprint]:
+    """List unique blueprints across configured sources (first root wins on name)."""
+    seen: set[str] = set()
+    results: list[Blueprint] = []
+    for root in blueprint_source_roots(repo_root):
+        if not root.is_dir():
+            continue
+        for blueprint_file in sorted(root.glob("*/blueprint.yaml")):
+            blueprint = load_blueprint(blueprint_file.parent, repo_root=repo_root)
+            if blueprint.name in seen:
+                continue
+            seen.add(blueprint.name)
+            results.append(blueprint)
     return results
 
 
