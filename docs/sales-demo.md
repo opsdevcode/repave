@@ -35,7 +35,7 @@ Product model: [Concepts](concepts.md) · Today vs becoming: [README](../README.
 | 1 — Catalog | Home, families (Terraform, Ansible, Policy) | “This is the IDP catalog — builders pick a golden path; platform owns the blueprint and pins.” |
 | 2 — Governed generate | **terraform-module-generic**, module `demo`, AWS, **ec2 + s3**, **Dry-run preview** on | “Pins for standards and policy packs are visible before generate — no surprise drift.” |
 | 3 — Proof | Result: **Lineage & receipt**, policy rules, gate dashboard | “Same inputs → same artifact; gates ran in-process; this is what would land in `repave.yaml`.” |
-| 4 — Existing estate | **Update repo** → **Use terraform-minimal** → **Preview upgrade** | “The control plane doesn’t only create repos — we plan upgrades from provenance and can open remediation PRs.” |
+| 4 — Existing estate | Backstage `/upgrade` or `repave plan-upgrade` on terraform-minimal | “The control plane doesn’t only create repos — we plan upgrades from provenance and can open remediation PRs.” |
 | 5 — Optional block | **opa-policy-generic**, **plan demo** = `destructive_delete`, dry-run | “Policy isn’t documentation — a failing gate blocks publish.” See [examples/policy](../examples/policy/README.md). |
 | 6 — Optional catalog | Terraform form → **Advanced** → **Include Backstage catalog**, owner `group:platform` | “Same generate path registers `catalog-info.yaml` and lineage annotations for Backstage — one paved road, multiple IDP surfaces.” |
 | 7 — Optional sandbox | **My services** → **Sandbox** → pick deployment set → Plan only | “Named workload profiles vend ephemeral environments via GitOps — TTL reclaim, no apply credentials in repave.” See [service catalog](service-catalog.md). |

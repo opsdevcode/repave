@@ -34,8 +34,7 @@ def test_act4_update_repo_preview(repo_root, output_config) -> None:
 
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post("/update", data={"target_repo": str(fixture)})
-    assert response.status_code == 200
-    assert "Upgrade preview" in response.text
+    assert_surface_moved(response, "upgrade")
 
 
 def test_act5_opa_destructive_delete_blocks(repo_root, output_config) -> None:

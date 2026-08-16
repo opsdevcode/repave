@@ -142,8 +142,8 @@ results, and file plan with an **Open pull request** button.
 
 Deep links work: `/import?repo=https://github.com/acme/x&blueprint=ansible-role-generic`.
 
-A repository that already has `repave.yaml` is not an import candidate; the portal says so
-and links to [`/update`](../README.md#update-an-existing-repository).
+A repository that already has `repave.yaml` is not an import candidate; use
+Backstage `/upgrade` or `repave plan-upgrade` instead.
 
 ## API
 

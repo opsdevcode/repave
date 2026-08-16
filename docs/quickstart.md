@@ -60,8 +60,9 @@ calls and stakeholder-specific talking points, see [Sales demo runbook](sales-de
 3. **OPA block (optional):** **opa-policy-generic** → set **plan demo** to
    `destructive_delete` → dry-run → **opa** fails with **Publish blocked** (see
    [examples/policy](../examples/policy/README.md)).
-4. **Repave an existing repo:** **Update repo** → **Use terraform-minimal** →
-   **Preview upgrade** → copy **Apply locally** or **Open remediation PR**.
+4. **Repave an existing repo:** Backstage `/upgrade` or
+   `repave plan-upgrade --target-repo operator/testdata/modules/terraform-minimal`.
+   Apply stays `repave apply-upgrade` / the operator.
 5. **Backstage (optional):** on the Terraform form, switch to **Advanced**, set **Include Backstage
    catalog** to `true` and **owner** `group:platform` → dry-run → open
    `catalog-info.yaml` in the file preview.
