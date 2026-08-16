@@ -215,6 +215,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/platform/value-stream` | admin | Adoption history (Backstage `/value-stream`) |
 | `GET` | `/api/v2/platform/roadmap-evidence` | admin | Theme adoption + sunset candidates (Backstage `/roadmap`) |
 | `GET` | `/api/v2/platform/feedback` | admin | CSAT rollup (Backstage `/feedback`) |
+| `POST` | `/api/v2/platform/feedback` | generator, admin | CSAT event (`surface=backstage` from Backstage `/feedback`) |
 | `GET` | `/api/v2/platform/finops/export` | admin | Chargeback JSON/CSV (Backstage `/finops`) |
 
 ## `/api/v1` deprecation

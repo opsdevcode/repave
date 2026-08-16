@@ -40,7 +40,7 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Maturity | `/maturity` — `GET /api/v2/platform/maturity` + `/initiatives` (create/edit/deactivate) |
 | Compliance | `/compliance` — `GET /api/v2/platform/compliance` |
 | Value stream | `/value-stream` — `GET /api/v2/platform/value-stream` |
-| Feedback | `/feedback` — `GET /api/v2/platform/feedback` (submit stays HTML) |
+| Feedback | `/feedback` — `GET` + `POST /api/v2/platform/feedback` (`surface=backstage`) |
 | FinOps | `/finops` — `GET /api/v2/platform/finops/export` |
 | Helm | `repave.backstage.enabled` (**default off**); overlay sets `portal.html: false` |
 

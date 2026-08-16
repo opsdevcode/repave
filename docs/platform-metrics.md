@@ -128,6 +128,7 @@ JSONL export follows `durability.export_jsonl`.
 | --- | --- |
 | Portal capture | Result page card; compact panel on run-console complete |
 | Portal (admin) | `/platform/feedback` |
+| Backstage | `/feedback` — rollup plus submit (`surface=backstage`) |
 | API | `POST /api/v2/platform/feedback` (generator or admin) |
 | API rollup | `GET /api/v2/platform/feedback` (admin; `?limit=50`) |
 

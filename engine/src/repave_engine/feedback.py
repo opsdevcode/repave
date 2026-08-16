@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
-VALID_SURFACES = frozenset({"result", "run_console"})
+VALID_SURFACES = frozenset({"result", "run_console", "backstage"})
 VALID_FRICTION_TAGS = frozenset(
     {
         "slow",
@@ -134,12 +134,16 @@ def normalize_friction_tags(raw: object) -> tuple[str, ...]:
     return tuple(tags)
 
 
+def _surface_choices() -> str:
+    return ", ".join(sorted(VALID_SURFACES))
+
+
 def normalize_surface(raw: object) -> str:
     if not isinstance(raw, str):
-        raise ValueError("surface must be 'result' or 'run_console'")
+        raise ValueError(f"surface must be one of: {_surface_choices()}")
     surface = raw.strip()
     if surface not in VALID_SURFACES:
-        raise ValueError("surface must be 'result' or 'run_console'")
+        raise ValueError(f"surface must be one of: {_surface_choices()}")
     return surface
 
 

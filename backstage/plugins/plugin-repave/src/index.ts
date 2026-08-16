@@ -62,5 +62,9 @@ export {
 } from './components/MaturityPage';
 export { CompliancePage, parseCompliancePayload } from './components/CompliancePage';
 export { ValueStreamPage, parseValueStreamPayload } from './components/ValueStreamPage';
-export { FeedbackPage, parseFeedbackPayload } from './components/FeedbackPage';
+export {
+  FeedbackPage,
+  parseFeedbackPayload,
+  buildFeedbackRequest,
+} from './components/FeedbackPage';
 export { FinOpsPage, parseFinOpsExport } from './components/FinOpsPage';
