@@ -11,8 +11,9 @@ The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
 **HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
 
 After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
-sunset. Platform-admin HTML already has Backstage pages (fleet through FinOps).
-Phase 4 is a product call — do not drop leftover HTML ops silently.
+sunset. Platform-admin HTML already has Backstage pages (fleet through FinOps, plus
+ops / standards / campaigns). Phase 4 is a product call — do not drop leftover
+HTML generate/bundles silently.
 
 ## What you get
 
@@ -31,6 +32,9 @@ Phase 4 is a product call — do not drop leftover HTML ops silently.
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
 | Add component | `/add` — `POST /api/v2/components/plan` + `/apply` (local checkout) |
 | Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |
+| Ops | `/ops` — `GET /api/v2/platform/ops`; reclaim via `/environments/reclaim` + `/runs`; replay dead-letter |
+| Standards | `/standards` — `GET /api/v2/platform/standards`; confirm drift via `POST /api/v2/runs` |
+| Campaigns | `/campaigns` — `GET /api/v2/platform/campaigns`; pause via `POST /api/v2/platform/campaigns/{ns}/{name}/paused` |
 | Import | `/import` — `POST /api/v2/imports/plan` + `/apply` |
 | Batch import | `/import/batch` — `POST /api/v2/imports/batch/plan` + `/apply`; `POST /api/v2/github/org-scan` |
 | Verify | `/verify` — `POST /api/v2/verify` (422 is a failed verify) |

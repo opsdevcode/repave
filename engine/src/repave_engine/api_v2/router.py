@@ -59,7 +59,7 @@ from repave_engine.fleet import (
 from repave_engine.fleet_operator_status import load_operator_status_file
 from repave_engine.fleet_view import build_fleet_rows
 from repave_engine.generate_api import run_bundle_api, run_generate_api
-from repave_engine.github_auth import resolve_github_access_token
+from repave_engine.github_auth import github_credentials_configured, resolve_github_access_token
 from repave_engine.github_client import GitHubError
 from repave_engine.github_inventory import GitHubInventoryError
 from repave_engine.github_repo_provision import list_org_teams, list_team_members
@@ -176,6 +176,10 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/platform/feedback",
     "POST /api/v2/platform/feedback",
     "GET /api/v2/platform/finops/export",
+    "GET /api/v2/platform/ops",
+    "GET /api/v2/platform/standards",
+    "GET /api/v2/platform/campaigns",
+    "POST /api/v2/platform/campaigns/{namespace}/{name}/paused",
 )
 
 
@@ -1711,6 +1715,89 @@ def build_api_v2_router(
                 "currency": rollup.currency,
                 "rows": chargeback_export_to_json(rows),
                 "anomalies": anomalies,
+            }
+        )
+
+    @router.get("/platform/ops")
+    async def api_v2_platform_ops(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.portal_platform import build_platform_ops_page
+        from repave_engine.settings import load_durability_config
+
+        durability = load_durability_config(repo_root)
+        session_store = getattr(request.app.state, "session_store", None)
+        probe_token = resolve_github_access_token() if github_credentials_configured() else None
+        page = build_platform_ops_page(
+            repo_root,
+            run_queue=_run_queue(request),
+            modules_root=output_config.modules_root,
+            runs_db=durability.runs_db if durability is not None else None,
+            shutting_down=bool(getattr(request.app.state, "shutting_down", False)),
+            auth_service_enabled=auth_config is not None and auth_config.service_enabled,
+            require_session_secret=(
+                durability.require_session_secret if durability is not None else False
+            ),
+            github_token_configured=github_credentials_configured(),
+            github_probe_token=probe_token,
+            sql_session_store_ok=session_store.ping() if session_store is not None else None,
+        )
+        return JSONResponse(page.to_public_dict())
+
+    @router.get("/platform/standards")
+    async def api_v2_platform_standards(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.portal_platform import build_platform_standards_page
+
+        return JSONResponse(build_platform_standards_page(repo_root).to_public_dict())
+
+    @router.get("/platform/campaigns")
+    async def api_v2_platform_campaigns(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.portal_platform import build_platform_campaigns_page
+
+        return JSONResponse(build_platform_campaigns_page(repo_root).to_public_dict())
+
+    @router.post("/platform/campaigns/{namespace}/{name}/paused")
+    async def api_v2_platform_campaign_paused(
+        request: Request,
+        namespace: str,
+        name: str,
+    ) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        from repave_engine.fleet_operator_actions import patch_upgrade_campaign_paused
+        from repave_engine.portal_platform import (
+            build_platform_campaigns_page,
+            find_campaign_in_snapshot,
+        )
+
+        payload = await _parse_json_object(request)
+        paused_raw = payload.get("paused")
+        if not isinstance(paused_raw, bool):
+            raise HTTPException(status_code=400, detail="paused must be a boolean")
+        page = build_platform_campaigns_page(repo_root)
+        campaign = find_campaign_in_snapshot(
+            page.snapshot,
+            namespace=namespace,
+            name=name,
+        )
+        if campaign is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Campaign {namespace}/{name} not in snapshot",
+            )
+        try:
+            patch_upgrade_campaign_paused(
+                campaign.name,
+                campaign.namespace,
+                paused=paused_raw,
+            )
+        except (RuntimeError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        return JSONResponse(
+            {
+                "namespace": campaign.namespace or "default",
+                "name": campaign.name,
+                "paused": paused_raw,
             }
         )
 
