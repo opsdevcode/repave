@@ -35,10 +35,16 @@ export const SidebarContent = NavContentBlueprint.make({
           <SidebarGroup label="Menu" icon={<MenuIcon />}>
             {nav.take('page:catalog')}
             {nav.take('page:repave/my-services')}
+            {nav.take('page:repave/generate')}
+            {nav.take('page:repave/bundles')}
+            {nav.take('page:repave/library')}
+            {nav.take('page:repave/teams')}
+            {nav.take('page:repave/services')}
             {nav.take('page:repave/sandbox')}
             {nav.take('page:repave/vend')}
             {nav.take('page:repave/reclaim')}
             {nav.take('page:repave/runs')}
+            {nav.take('page:repave/run-console')}
             {nav.take('page:repave/upgrade')}
             {nav.take('page:repave/add')}
             {nav.take('page:repave/fleet')}

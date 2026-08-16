@@ -3,6 +3,7 @@ import {
   Content,
   Header,
   InfoCard,
+  Link,
   Page,
   Progress,
   StatusError,
@@ -19,6 +20,11 @@ const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const REPLAY_STATUSES = new Set(['failed', 'dead_letter']);
 const POLL_MS = 5_000;
 
+export type PreviewFile = {
+  path: string;
+  content: string;
+};
+
 export type RunRow = {
   runId: string;
   status: string;
@@ -29,6 +35,7 @@ export type RunRow = {
   updatedAt: string;
   error: string;
   gatesOutcome: string;
+  previewFiles: PreviewFile[];
 };
 
 export function isActiveRunStatus(status: string): boolean {
@@ -70,6 +77,18 @@ export function rowsFromRuns(items: unknown[]): RunRow[] {
         record.result && typeof record.result === 'object'
           ? (record.result as Record<string, unknown>)
           : {};
+      const previewFiles = Array.isArray(result.rendered_files)
+        ? result.rendered_files
+            .filter(fileItem => fileItem && typeof fileItem === 'object')
+            .map(fileItem => {
+              const file = fileItem as Record<string, unknown>;
+              return {
+                path: String(file.path ?? ''),
+                content: String(file.content ?? ''),
+              };
+            })
+            .filter(file => file.path)
+        : [];
       return {
         runId: String(record.run_id ?? ''),
         status: String(record.status ?? ''),
@@ -80,6 +99,7 @@ export function rowsFromRuns(items: unknown[]): RunRow[] {
         updatedAt: String(record.updated_at ?? record.created_at ?? ''),
         error: String(record.error ?? ''),
         gatesOutcome: String(result.gates_outcome ?? ''),
+        previewFiles,
       };
     })
     .filter(row => row.runId);
@@ -120,6 +140,10 @@ const COLUMNS: TableColumn<RunRow>[] = [
   { title: 'Mode', field: 'mode' },
   { title: 'User', field: 'actingUser' },
   { title: 'Updated', field: 'updatedAt' },
+  {
+    title: 'Console',
+    render: row => <Link to={`/run-console?run=${encodeURIComponent(row.runId)}`}>Open</Link>,
+  },
 ];
 
 export function RunsPage() {

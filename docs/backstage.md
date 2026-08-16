@@ -12,8 +12,8 @@ The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
 
 After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
 sunset. Platform-admin HTML already has Backstage pages (fleet through FinOps, plus
-ops / standards / campaigns). Phase 4 is a product call — do not drop leftover
-HTML generate/bundles silently.
+ops / standards / campaigns, plus builder browse pages). Phase 4 is a product
+call — do not drop leftover guided generate forms silently.
 
 ## What you get
 
@@ -25,10 +25,16 @@ HTML generate/bundles silently.
 | Catalog | `catalog-info.yaml` file locations **and** `GET /api/v2/catalog/entities` |
 | Lineage card | Entity page shows `repave.dev/*` pins |
 | My services | `/my-services` — components with `repave.dev/blueprint` |
+| Generate | `/generate` — `GET /api/v2/catalog/blueprints`; submit stays Scaffolder `/create` |
+| Bundles | `/bundles` — `GET /api/v2/bundles` + `GET /api/v2/bundles/{name}` |
+| Library | `/library` — `GET /api/v2/library` (`?family=`, `?owner=`) |
+| Teams | `/teams` — `GET /api/v2/catalog/entities?team=` |
+| Services | `/services` — `GET /api/v2/catalog/entities/{id}`; live plan via `POST /api/v2/runs` |
+| Run console | `/run-console` — `GET /api/v2/runs/{id}` + replay |
 | Sandbox | `/sandbox` — `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend` |
 | Vend component | `/vend` — `GET /api/v2/component-kinds` + `POST /api/v2/components/vend` |
 | Reclaim | `/reclaim` — `POST /api/v2/environments/reclaim` and `POST /api/v2/components/reclaim` (admin; dry-run default) |
-| Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` + replay |
+| Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` + replay; console at `/run-console` |
 | Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
 | Add component | `/add` — `POST /api/v2/components/plan` + `/apply` (local checkout) |
 | Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |

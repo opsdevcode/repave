@@ -54,7 +54,10 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `/sandbox` | Builders | Request environment from a deployment set |
 | Backstage `/vend` | Builders | Request a managed database, bucket, or queue |
 | `/library` | Builders | Maturity pills + initiative chips on entities |
+| Backstage `/library` | Builders | Family-grouped catalog via `GET /api/v2/library` |
+| Backstage `/teams` | Builders | Team entities via `GET /api/v2/catalog/entities?team=` |
 | `/services/{id}` | Builders | Tabs: overview, scorecard, dependencies, initiatives |
+| Backstage `/services` | Builders | Entity detail + live plan via `POST /api/v2/runs` |
 | `/platform/maturity` | Admins | Fleet maturity distribution + heatmap |
 | `/platform/initiatives` | Admins | Progress rollup + create / edit / deactivate |
 | Backstage `/maturity` | Admins | Maturity + initiative create / edit / deactivate via `/api/v2` |
@@ -65,6 +68,7 @@ Local demo: `make platform-dev-setup && make serve` — see
 | --- | --- | --- |
 | `GET` | `/api/v2/catalog/entities?team=&owner=` | viewer+ |
 | `GET` | `/api/v2/catalog/entities/{id}` | viewer+ (includes `maturity`, `initiatives`) |
+| `GET` | `/api/v2/library` | viewer+ (`?family=`, `?owner=`) |
 | `GET` | `/api/v2/deployment-sets` | viewer+ |
 | `POST` | `/api/v2/environments/vend` | generator, admin |
 | `GET` | `/api/v2/component-kinds` | viewer+ |

@@ -19,7 +19,13 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 ## Contracts
 
 - HTTP: **`/api/v2` only**. Never scrape HTML forms or call `/api/v1`.
-- Generate: `repave:generate` → `POST /api/v2/generate` (`dry_run`, `inputs`).
+- Generate: `/generate` lists `GET /api/v2/catalog/blueprints`; submit stays
+  `repave:generate` → `POST /api/v2/generate` (`dry_run`, `inputs`).
+- Bundles: `/bundles` → `GET /api/v2/bundles` + `GET /api/v2/bundles/{name}`.
+- Library: `/library` → `GET /api/v2/library` (`?family=`, `?owner=`).
+- Teams: `/teams` → `GET /api/v2/catalog/entities?team=`.
+- Services: `/services` → `GET /api/v2/catalog/entities/{id}`; live plan via
+  `POST /api/v2/runs` `{ kind: "live_plan", entity_id }`.
 - Catalog: generated `catalog-info.yaml` + `GET /api/v2/catalog/entities`.
   Do not fork a second entity store.
 - Sandbox: `/sandbox` → `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend`
@@ -30,6 +36,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
   `POST /api/v2/components/reclaim` (admin; dry-run default).
 - Runs: `/runs` → `GET /api/v2/runs` + `GET /api/v2/runs/{id}` +
   `POST /api/v2/runs/{id}/replay` (admin; failed/dead-letter only).
+  Console: `/run-console?run=` polls the same get/replay contract.
 - Upgrade: `/upgrade` → `POST /api/v2/upgrades/plan` (preview only; apply stays CLI/operator).
 - Add: `/add` → `POST /api/v2/components/plan` + `/apply` (local checkout; no remote PR).
 - Fleet: `/fleet` → `GET` / `POST` / `DELETE /api/v2/fleet` via the same proxy
@@ -74,7 +81,7 @@ and [ADR 011](../../../docs/adr/011-hosted-backstage-idp.md).
 | `backstage/packages/backend` | Backend + Auth0 + module wiring |
 | `backstage/plugins/scaffolder-backend-module-repave` | `repave:generate` |
 | `backstage/plugins/catalog-backend-module-repave` | Entity provider |
-| `backstage/plugins/plugin-repave` | Lineage card + admin pages (`/fleet` … `/finops`, `/import/batch`, `/add`, `/vend`) |
+| `backstage/plugins/plugin-repave` | Lineage card + pages (`/generate` … `/finops`, `/import/batch`, `/add`, `/vend`) |
 | `backstage/examples/templates/terraform-module-generic.yaml` | Software Template |
 
 ## Quality

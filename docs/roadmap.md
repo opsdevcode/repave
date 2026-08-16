@@ -7,8 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.35.0  
 
-**In progress:** Phase 4 HTML removal is a product call (generate/bundles and
-the rich run console still HTML-only). OCI blueprint pack pull stays parking-lot.
+**In progress:** Phase 4 HTML removal is a product call (guided generate forms
+and rich result templates still HTML-only). OCI blueprint pack pull stays parking-lot.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -50,6 +50,7 @@ execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execut
 **Kind-specific component blueprints** (`terraform-component-database` / `-bucket` / `-queue`);
 **Git URL blueprint pack fetch** (`blueprint_packs` url + ref);
 **Hosted Backstage ops / standards / campaigns** (`/ops`, `/standards`, `/campaigns`);
+**Hosted Backstage builder pages** (`/generate`, `/bundles`, `/library`, `/teams`, `/services`, `/run-console`);
 **GitHub auto-merge** for Allowed mechanical pin bumps
 ([runbook](operations/auto-merge-revert.md));
 **Mandatory policy** on regulated families
@@ -177,8 +178,9 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 **Status:** Chart-smoke, GHCR image, admin pages, and
 `repave.backstage.enabled` default-on shipped (owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md)).
-Kind/smoke overlays keep the flag off. Ops, standards, and campaigns have
-Backstage pages. Phase 4 HTML removal is a product call.
+Kind/smoke overlays keep the flag off. Ops, standards, campaigns, and builder
+browse pages have Backstage pages. Guided generate forms remain HTML. Phase 4
+HTML removal is a product call.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -192,7 +194,9 @@ and the hosted catalog. HTML portal stays until the published sunset
 
 **Done when:** a named owner takes the Backstage release treadmill and the
 chart flag defaults on — **met** (Eric Skaggs). Platform-admin HTML already
-has Backstage pages, including `/ops`, `/standards`, and `/campaigns`.
+has Backstage pages, including `/ops`, `/standards`, `/campaigns`, and builder
+browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
+`/run-console`). Guided generate forms and rich result templates remain HTML.
 Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke and
 GHCR publish already shipped. Phase 4 (delete Jinja templates) remains a
 product call.
