@@ -656,6 +656,38 @@ class ComponentVendingConfig:
     path_prefix: str = "components"
     file: Path = Path("data/components/registry.jsonl")
     kinds_file: Path | None = None
+    default_ttl_hours: int = 0
+    ttl_hours_by_kind: tuple[tuple[str, int], ...] = ()
+    auto_reclaim_kinds: tuple[str, ...] = ("database", "bucket", "queue")
+    decommission_review_kinds: tuple[str, ...] = ()
+
+
+def _parse_component_kind_list(
+    block: dict[str, Any],
+    key: str,
+    *,
+    default: tuple[str, ...],
+) -> tuple[str, ...]:
+    raw = block.get(key)
+    if raw is None:
+        return default
+    if not isinstance(raw, list):
+        raise ValueError(f"component_vending.{key} must be a list of kind names")
+    kinds = tuple(str(item).strip() for item in raw if str(item).strip())
+    return kinds if kinds else default
+
+
+def _parse_ttl_hours_by_kind(block: dict[str, Any]) -> tuple[tuple[str, int], ...]:
+    raw = block.get("ttl_hours_by_kind")
+    if not isinstance(raw, dict):
+        return ()
+    pairs: list[tuple[str, int]] = []
+    for key, value in raw.items():
+        kind_id = str(key).strip()
+        if not kind_id or not isinstance(value, int) or value <= 0:
+            continue
+        pairs.append((kind_id, value))
+    return tuple(sorted(pairs))
 
 
 def load_component_vending_config(repo_root: Path) -> ComponentVendingConfig | None:
@@ -678,6 +710,10 @@ def load_component_vending_config(repo_root: Path) -> ComponentVendingConfig | N
     path_prefix = "components"
     registry_file = repo_root / "data" / "components" / "registry.jsonl"
     kinds_file: Path | None = None
+    default_ttl_hours = 0
+    ttl_hours_by_kind: tuple[tuple[str, int], ...] = ()
+    auto_reclaim_kinds: tuple[str, ...] = ("database", "bucket", "queue")
+    decommission_review_kinds: tuple[str, ...] = ()
 
     def _resolve(value: str) -> Path:
         path = Path(value).expanduser()
@@ -701,6 +737,20 @@ def load_component_vending_config(repo_root: Path) -> ComponentVendingConfig | N
         kinds_raw = str(block.get("kinds", "")).strip()
         if kinds_raw:
             kinds_file = _resolve(kinds_raw)
+        ttl_raw = block.get("default_ttl_hours", 0)
+        if isinstance(ttl_raw, int) and ttl_raw >= 0:
+            default_ttl_hours = ttl_raw
+        ttl_hours_by_kind = _parse_ttl_hours_by_kind(block)
+        auto_reclaim_kinds = _parse_component_kind_list(
+            block,
+            "auto_reclaim_kinds",
+            default=("database", "bucket", "queue"),
+        )
+        decommission_review_kinds = _parse_component_kind_list(
+            block,
+            "decommission_review_kinds",
+            default=(),
+        )
     if not gitops_repo:
         env_cfg = load_environment_vending_config(repo_root)
         if env_cfg is not None:
@@ -716,6 +766,10 @@ def load_component_vending_config(repo_root: Path) -> ComponentVendingConfig | N
         path_prefix=path_prefix,
         file=registry_file,
         kinds_file=kinds_file,
+        default_ttl_hours=default_ttl_hours,
+        ttl_hours_by_kind=ttl_hours_by_kind,
+        auto_reclaim_kinds=auto_reclaim_kinds,
+        decommission_review_kinds=decommission_review_kinds,
     )
 
 

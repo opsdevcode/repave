@@ -1,9 +1,9 @@
 # ADR 013: Component-level self-service vending
 
-**Status:** Accepted — lands with `POST /api/v2/components/vend`  
+**Status:** Accepted — vend + TTL reclaim  
 **Date:** 2026-08-16  
-**Scope:** engine catalog, async runs, GitOps PR flow. Extends
-[ADR 003](003-environment-lifecycle-and-live-state.md) Phase 4.
+**Scope:** engine catalog, async runs, GitOps PR flow, component reclaim.
+Extends [ADR 003](003-environment-lifecycle-and-live-state.md) Phase 4.
 Does not change environment reclaim, state custody (ADR 004), or
 `POST /api/v2/components/plan` (`repave add` onto an existing repo).
 **Related:** [`docs/api-v2.md`](../api-v2.md),
@@ -41,14 +41,18 @@ override the catalog in `component_vending.kinds`.
    `{path_prefix}/{kind}/{name}`, and opens a reviewable PR.
 4. Success appends `data/components/registry.jsonl`. Catalog entities use
    `"source": "component"`.
+5. `POST /api/v2/components/reclaim` (admin) opens a GitOps decommission PR
+   that removes `{path_prefix}/{kind}/{name}`. Auto-reclaim kinds drop from
+   the registry when the PR opens (or the path is already gone). Other kinds
+   stay `expired` until the PR merges (`registry_finalize`).
 
 Credentials stay GitHub-shaped. CD applies after merge.
 
 ### Out of scope (later slices)
 
-- TTL reclaim / decommission PRs for components
 - Dedicated RDS/S3/SQS module blueprints
 - Operator JSON contract changes
+- Backstage UI for component reclaim
 
 Backstage `/vend` calls `GET /api/v2/component-kinds` and
 `POST /api/v2/components/vend`.
@@ -58,4 +62,4 @@ Backstage `/vend` calls `GET /api/v2/component-kinds` and
 - Environment and component vending share the GitOps-only boundary.
 - A later kind-specific blueprint can replace `terraform-environment-stack`
   without changing the API.
-- Reclaim stays environment-only until a follow-up ADR addendum.
+- Component reclaim is a separate admin API from environment reclaim.

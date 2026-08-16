@@ -10,6 +10,7 @@ from repave_engine.cli._common import (
 )
 from repave_engine.cli.add import cmd_add
 from repave_engine.cli.audit import cmd_audit_query
+from repave_engine.cli.components import cmd_components_reclaim
 from repave_engine.cli.create_repo import cmd_create_repo
 from repave_engine.cli.doctor import cmd_doctor
 from repave_engine.cli.environments import cmd_environments_reclaim
@@ -355,6 +356,40 @@ def build_parser() -> argparse.ArgumentParser:
     )
     reclaim.add_argument("--format", choices=["text", "json"], default="text")
     reclaim.set_defaults(func=cmd_environments_reclaim)
+
+    components = sub.add_parser(
+        "components",
+        help="Component registry operations (ADR 013)",
+        parents=[common],
+    )
+    cmp_sub = components.add_subparsers(dest="components_command", required=True)
+    cmp_reclaim = cmp_sub.add_parser(
+        "reclaim",
+        help="Reclaim expired managed components via GitOps decommission PRs",
+        parents=[common],
+    )
+    cmp_reclaim.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List expired components without opening GitOps pull requests",
+    )
+    cmp_reclaim.add_argument(
+        "--name",
+        default="",
+        help="Reclaim a single component by name (must be expired and eligible)",
+    )
+    cmp_reclaim.add_argument(
+        "--kind",
+        default="",
+        help="Optional kind filter (database, bucket, or queue)",
+    )
+    cmp_reclaim.add_argument(
+        "--github-token",
+        default=None,
+        help="GitHub token (defaults to GITHUB_TOKEN)",
+    )
+    cmp_reclaim.add_argument("--format", choices=["text", "json"], default="text")
+    cmp_reclaim.set_defaults(func=cmd_components_reclaim)
 
     verify_cmd = sub.add_parser(
         "verify",

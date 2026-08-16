@@ -276,6 +276,7 @@ component_vending:
             vended_by="tester",
             vended_at="2026-08-16T12:00:00+00:00",
             status="active",
+            expires_at="2026-08-23T12:00:00+00:00",
         ),
     )
     entities = build_portal_catalog_entities(
@@ -286,7 +287,10 @@ component_vending:
     match = [item for item in entities if item.entity_id == "cmp-database-checkout-db"]
     assert len(match) == 1
     assert match[0].source == "component"
-    assert match[0].to_public_dict()["component"]["kind"] == "database"
+    public = match[0].to_public_dict()
+    assert public["component"]["kind"] == "database"
+    assert public["component"]["expires_at"] == "2026-08-23T12:00:00+00:00"
+    assert any(dim["key"] == "ttl" for dim in public["scorecard"])
 
 
 def test_api_v2_component_kinds_and_vend(tmp_path: Path, output_config, monkeypatch) -> None:

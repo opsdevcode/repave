@@ -34,6 +34,7 @@ from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
 )
 from repave_engine.component_kinds import ComponentVendError, load_component_kinds
+from repave_engine.component_reclaim import ComponentReclaimError, reclaim_expired_components
 from repave_engine.component_vend import resolve_component_vend_fields
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.developer_lab import is_developer_lab_enabled
@@ -147,6 +148,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "POST /api/v2/components/apply",
     "GET /api/v2/component-kinds",
     "POST /api/v2/components/vend",
+    "POST /api/v2/components/reclaim",
     "POST /api/v2/verify",
     "GET /api/v2/catalog/entities",
     "GET /api/v2/catalog/entities/{entity_id}",
@@ -1265,6 +1267,39 @@ def build_api_v2_router(
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return JSONResponse(record.to_public_dict(), status_code=202)
+
+    @router.post("/components/reclaim")
+    async def api_v2_components_reclaim(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_ADMIN)
+        vend_cfg = load_component_vending_config(repo_root)
+        if vend_cfg is None:
+            raise HTTPException(
+                status_code=503,
+                detail="component_vending is not enabled; set component_vending.enabled "
+                "in repave.config.yaml or REPAVE_COMPONENT_VENDING=1",
+            )
+        payload = await _parse_json_object(request)
+        dry_run = bool(payload.get("dry_run", False))
+        name = str(payload.get("name", "")).strip() or None
+        kind = str(payload.get("kind", "")).strip() or None
+        github_token = resolve_github_access_token(None) if not dry_run else None
+        if not dry_run and not github_token:
+            raise HTTPException(
+                status_code=503,
+                detail="GITHUB_TOKEN is required unless dry_run is true",
+            )
+        try:
+            summary = reclaim_expired_components(
+                repo_root=repo_root,
+                config=vend_cfg,
+                github_token=github_token,
+                dry_run=dry_run,
+                name=name,
+                kind=kind,
+            )
+        except ComponentReclaimError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return JSONResponse(summary.to_public_dict())
 
     @router.post("/environments/reclaim")
     async def api_v2_environments_reclaim(request: Request) -> JSONResponse:

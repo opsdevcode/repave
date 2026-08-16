@@ -29,6 +29,8 @@ component_vending:
   enabled: true
   # gitops_repo falls back to environment_vending.gitops_repo
   file: data/components/registry.jsonl
+  default_ttl_hours: 168
+  auto_reclaim_kinds: [database, bucket, queue]
 ```
 
 Env override: `REPAVE_SERVICE_CATALOG=1`. That flag (or `service_catalog.enabled: true`
@@ -67,6 +69,7 @@ Local demo: `make platform-dev-setup && make serve` — see
 | `POST` | `/api/v2/environments/vend` | generator, admin |
 | `GET` | `/api/v2/component-kinds` | viewer+ |
 | `POST` | `/api/v2/components/vend` | generator, admin |
+| `POST` | `/api/v2/components/reclaim` | admin |
 | `GET` | `/api/v2/platform/maturity` | admin |
 | `GET` | `/api/v2/platform/initiatives` | admin |
 | `POST` | `/api/v2/platform/initiatives` | admin |

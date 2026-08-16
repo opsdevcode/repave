@@ -713,6 +713,8 @@ class RunQueue:
                                     payload=record.payload,
                                     run_id=record.run_id,
                                     acting_user=record.acting_user,
+                                    default_ttl_hours=cmp_cfg.default_ttl_hours,
+                                    ttl_hours_by_kind=cmp_cfg.ttl_hours_by_kind,
                                 )
                                 result["catalog_entity_id"] = cmp_record.entity_id
                             except ComponentRegistryError as exc:

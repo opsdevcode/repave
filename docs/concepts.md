@@ -27,7 +27,7 @@ reconciliation keeps the estate on the current road.
 | Service catalog integration | Optional Backstage `catalog-info.yaml` + `repave.dev/*` lineage |
 | Maturity / initiatives | Configurable rubric, team pages, `/platform/maturity` |
 | Ephemeral sandboxes | GitOps environment vending + workload profiles (ADR 003 / 006) |
-| Managed components | GitOps component vending (`database` / `bucket` / `queue`, ADR 013) |
+| Managed components | GitOps component vending and TTL reclaim (`database` / `bucket` / `queue`, ADR 013) |
 | Day-2 / estate control | Fleet registry, `repave update`, Kubernetes **operator** |
 | Cost awareness | Infracost gate, cost readers, [FinOps enablement](finops.md) |
 

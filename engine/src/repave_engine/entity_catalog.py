@@ -226,6 +226,7 @@ class CatalogEntity:
                 "tier": self.environment_tier,
                 "gitops_repo": self.gitops_repo,
                 "gitops_path": self.gitops_path,
+                "expires_at": self.expires_at,
                 "status": self.vend_status,
                 "run_id": self.vend_run_id,
                 "pull_request_url": self.pull_request_url,
@@ -728,6 +729,7 @@ def _entity_from_component_record(record: ComponentRecord) -> CatalogEntity:
                 "pass" if record.blueprint_version else "warn",
                 f"{record.blueprint_name}@{record.blueprint_version or 'unknown'}",
             ),
+            _ttl_scorecard_dimension(expires_at=record.expires_at),
             ScorecardDimension(
                 "gates",
                 "Vend gates",
@@ -741,6 +743,7 @@ def _entity_from_component_record(record: ComponentRecord) -> CatalogEntity:
         environment_tier=record.environment_tier,
         gitops_repo=record.gitops_repo,
         gitops_path=record.gitops_path,
+        expires_at=record.expires_at,
         vend_status=record.status,
         vend_run_id=record.run_id,
         pull_request_url=record.pull_request_url,
