@@ -1,0 +1,92 @@
+variable "stack_name" {
+  type = string
+}
+
+variable "environment" {
+  type = string
+}
+
+variable "name_prefix" {
+  type    = string
+  default = ""
+}
+
+variable "tags" {
+  type = map(string)
+}
+
+{% if cloud_provider == "aws" %}
+# Managed PostgreSQL (RDS). Pin an estate tf-* module before shared apply.
+resource "aws_vpc" "this" {
+  cidr_block           = "10.80.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  tags                 = var.tags
+}
+
+resource "aws_subnet" "a" {
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = "10.80.1.0/24"
+  availability_zone = "us-east-1a"
+  tags              = var.tags
+}
+
+resource "aws_subnet" "b" {
+  vpc_id            = aws_vpc.this.id
+  cidr_block        = "10.80.2.0/24"
+  availability_zone = "us-east-1b"
+  tags              = var.tags
+}
+
+resource "aws_db_subnet_group" "this" {
+  name       = "${var.name_prefix}-db"
+  subnet_ids = [aws_subnet.a.id, aws_subnet.b.id]
+  tags       = var.tags
+}
+
+resource "aws_security_group" "this" {
+  name        = "${var.name_prefix}-db"
+  description = "Inbound database access for ${var.stack_name}"
+  vpc_id      = aws_vpc.this.id
+  tags        = var.tags
+}
+
+resource "aws_db_instance" "this" {
+  identifier                      = replace(var.name_prefix, "_", "-")
+  engine                          = "postgres"
+  engine_version                  = "16"
+  instance_class                  = "db.t3.micro"
+  allocated_storage               = 20
+  username                        = "app"
+  manage_master_user_password     = true
+  storage_encrypted               = true
+  publicly_accessible             = false
+  backup_retention_period         = 7
+  copy_tags_to_snapshot           = true
+  auto_minor_version_upgrade      = true
+  deletion_protection             = false
+  skip_final_snapshot             = true
+  vpc_security_group_ids          = [aws_security_group.this.id]
+  db_subnet_group_name            = aws_db_subnet_group.this.name
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  tags                            = var.tags
+}
+
+output "resource_ids" {
+  value = [aws_db_instance.this.id]
+}
+{% else %}
+# {{ cloud_provider }}: replace with Cloud SQL / Azure SQL before apply.
+resource "null_resource" "example" {
+  triggers = {
+    stack       = var.stack_name
+    environment = var.environment
+    prefix      = var.name_prefix
+    tags        = jsonencode(var.tags)
+  }
+}
+
+output "resource_ids" {
+  value = [null_resource.example.id]
+}
+{% endif %}

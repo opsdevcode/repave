@@ -1,0 +1,12 @@
+{% if cloud_provider == "aws" %}
+provider "aws" {
+  region = "us-east-1"
+}
+{% elif cloud_provider == "azure" %}
+provider "azurerm" {
+  features {}
+}
+{% elif cloud_provider == "gcp" %}
+provider "google" {
+}
+{% endif %}

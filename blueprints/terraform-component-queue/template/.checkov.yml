@@ -2,3 +2,6 @@ external-checks-dir:
   - policy/checkov
 framework:
   - terraform
+# Stub uses SQS-managed SSE instead of a customer-managed KMS key.
+skip-check:
+  - CKV_AWS_174

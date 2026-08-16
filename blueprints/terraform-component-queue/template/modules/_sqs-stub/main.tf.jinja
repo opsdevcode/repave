@@ -15,8 +15,19 @@ variable "tags" {
   type = map(string)
 }
 
-# Stand-in for a managed queue (SQS / Pub/Sub). Replace this module
-# source with your estate tf-* coordinates before applying via CD.
+{% if cloud_provider == "aws" %}
+# Managed queue (SQS). Pin an estate tf-* module before shared apply.
+resource "aws_sqs_queue" "this" {
+  name                    = replace(var.name_prefix, "_", "-")
+  sqs_managed_sse_enabled = true
+  tags                    = var.tags
+}
+
+output "resource_ids" {
+  value = [aws_sqs_queue.this.id]
+}
+{% else %}
+# {{ cloud_provider }}: replace with Pub/Sub / Service Bus before apply.
 resource "null_resource" "example" {
   triggers = {
     stack       = var.stack_name
@@ -29,3 +40,4 @@ resource "null_resource" "example" {
 output "resource_ids" {
   value = [null_resource.example.id]
 }
+{% endif %}

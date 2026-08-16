@@ -3,7 +3,7 @@ kind: Blueprint
 metadata:
   name: terraform-component-queue
   version: 0.1.0
-  description: GitOps stack for a managed queue component (SQS-shaped stub).
+  description: GitOps stack for a managed queue component (aws_sqs_queue).
 spec:
   artifactType: terraform-environment-stack
   standard:
