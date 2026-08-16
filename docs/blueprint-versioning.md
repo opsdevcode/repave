@@ -5,7 +5,8 @@ stable integrator contracts. This document is the policy operators and blueprint
 authors follow when changing golden paths under `blueprints/`.
 
 Related: [concepts](concepts.md), [CONTRIBUTING.md](../CONTRIBUTING.md),
-[`schemas/`](../schemas/), [roadmap — Platform GA](roadmap-archive.md#v200--platform-ga).
+[`schemas/`](../schemas/), [config v1 extra roots](repave-config-v1.md#extra-blueprint-catalog-roots),
+[roadmap — Platform GA](roadmap-archive.md#v200--platform-ga).
 
 ## Frozen schemas (v2 line)
 
@@ -86,6 +87,25 @@ update with no bundle manifest change).
   blueprint version on `main`.
 - **Remediation:** Operator opens PRs only when pins drift; semver **MAJOR**
   blueprint changes may need manual input migration in target repos.
+
+## Extra catalog roots
+
+The engine always loads `./blueprints`. Forks and vendor packs add more local
+roots via `blueprints_root` / `blueprint_sources` (or
+`REPAVE_BLUEPRINTS_ROOT` / `REPAVE_BLUEPRINT_SOURCES`). See
+[`repave-config-v1.md`](repave-config-v1.md#extra-blueprint-catalog-roots).
+
+## Fork workflow
+
+1. Fork or copy the repave repo (or keep upstream and add a sibling pack repo).
+2. Add org golden paths as `blueprints/my-org-*` **or** keep them in a separate
+   tree and list that tree in `blueprint_sources`.
+3. Pin org standards from `standards/` (or a path your blueprint `spec.standard.source`
+   can resolve from the engine repo root).
+4. `repave list` and `repave generate --blueprint my-org-vpc` should see the extra
+   pack with no engine code changes.
+5. Remote git/OCI registry fetch stays in the
+   [parking lot](roadmap.md#parking-lot) — clone or submodule the pack locally.
 
 ## v3 and beyond
 

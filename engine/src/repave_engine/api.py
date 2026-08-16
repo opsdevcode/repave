@@ -64,10 +64,9 @@ from repave_engine.auth_context import current_acting_user, reset_acting_user, s
 from repave_engine.blueprint import (
     artifact_family,
     blueprint_dir,
-    blueprints_dir,
     bundles_dir,
     group_blueprints_by_artifact,
-    list_blueprints,
+    list_catalog_blueprints,
     load_blueprint,
     policy_kind_label,
 )
@@ -546,7 +545,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 }
                 for link in platform_nav_links()
             )
-        for blueprint in list_blueprints(blueprints_dir(repo_root)):
+        for blueprint in list_catalog_blueprints(repo_root):
             items.append(
                 {
                     "kind": "blueprint",
@@ -674,7 +673,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 "landing.html",
                 page_context(request, nav_active="welcome", landing_page=True),
             )
-        blueprints = list_blueprints(blueprints_dir(repo_root))
+        blueprints = list_catalog_blueprints(repo_root)
         catalog_groups = group_blueprints_by_artifact(blueprints)
         catalog_bundles = list_bundles(repo_root)
         return templates.TemplateResponse(
@@ -784,7 +783,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             entities = filter_entities_by_owner(entities, owner)
         blueprint_types = {
             blueprint.name: blueprint.artifact_type
-            for blueprint in list_blueprints(blueprints_dir(repo_root))
+            for blueprint in list_catalog_blueprints(repo_root)
         }
         groups = group_catalog_entities(
             entities,
@@ -2055,7 +2054,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         )
 
     def import_catalog_json() -> list[dict[str, object]]:
-        groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+        groups = group_blueprints_by_artifact(list_catalog_blueprints(repo_root))
         return [
             {
                 "family": group.family,
@@ -2072,7 +2071,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         ]
 
     def import_form_context(request: Request, **extra: object) -> dict[str, object]:
-        groups = group_blueprints_by_artifact(list_blueprints(blueprints_dir(repo_root)))
+        groups = group_blueprints_by_artifact(list_catalog_blueprints(repo_root))
         scan_family_choices = [{"family": group.family, "title": group.title} for group in groups]
         return page_context(
             request,

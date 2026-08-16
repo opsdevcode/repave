@@ -7,9 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.27.0  
 
-**In progress:** Hosted Backstage defaults on (owner: Eric Skaggs;
-[ADR 011](adr/011-hosted-backstage-idp.md)); Phase 4 HTML removal is a product
-call. Next planned theme: forked and remote blueprint packs.
+**In progress:** Forked blueprint packs (local `blueprint_sources`); git/OCI
+fetch stays in the parking lot. Phase 4 HTML removal is a product call.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -150,6 +149,7 @@ v3.27.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
 | **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; flag defaults on; Phase 4 HTML removal is a product call ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Forked blueprint packs** | In progress | Extra local catalog roots; git/OCI fetch stays parking-lot |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -203,8 +203,9 @@ want to fork repave and add paths, or pull read-only blueprint packs from git.
 **Done when:** A forked repave repo loads an additional blueprint from its own
 tree without patching engine code.
 
-**Status:** Not started. Blueprint discovery is still hardcoded to `repo_root / "blueprints"`
-in `cli.py` and `api.py`; `settings.py` has no `blueprints_root` / `blueprint_sources` key.
+**Status:** In progress — local `blueprints_root` / `blueprint_sources[]` and
+`--blueprint` path/`file://` resolution on this PR. Git/OCI remote fetch stays
+in the [parking lot](#parking-lot).
 
 ---
 
@@ -223,9 +224,9 @@ cluster — detail for shipped paved roads is in the [archive](roadmap-archive.m
   through the same GitOps PR flow as `environment_vend`. This is Phase 4 of
   [environment lifecycle](roadmap-archive.md#environment-lifecycle-and-deployment-awareness)
   and warrants an ADR.
-- **Organization blueprint packs** — same demand as
-  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs); pull ahead of the
-  items above if external demand appears.
+- **Organization blueprint packs** — local extra roots are
+  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs); git/OCI
+  registry fetch remains parking-lot.
 
 
 

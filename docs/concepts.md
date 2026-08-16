@@ -106,10 +106,11 @@ output contract.
 
 ## Blueprint
 
-Declarative pack under `blueprints/<name>/`. The engine reads `blueprint.yaml`,
-validates inputs, renders the Copier template, runs gates, and produces output.
-See [`blueprint-versioning.md`](blueprint-versioning.md) for v2 schema freeze and
-`metadata.version` bump rules.
+Declarative pack under `blueprints/<name>/` (plus optional extra catalog roots).
+The engine reads `blueprint.yaml`, validates inputs, renders the Copier template,
+runs gates, and produces output. See [`blueprint-versioning.md`](blueprint-versioning.md)
+for v2 schema freeze, `metadata.version` bump rules, and the
+[fork workflow](blueprint-versioning.md#fork-workflow).
 
 ## Governance-by-construction
 

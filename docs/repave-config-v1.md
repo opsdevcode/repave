@@ -83,6 +83,35 @@ instead of file tailing.
 **Local development** (`auth.service_mode: false`) may keep SQLite or JSONL-only paths
 without Postgres — see [`docs/durability.md`](durability.md#configuration).
 
+## Extra blueprint catalog roots
+
+`./blueprints` is always the first catalog root. Add more **local** directories
+without patching engine code:
+
+```yaml
+apiVersion: repave.dev/v1
+# Single extra root (relative to the repo, or absolute)
+blueprints_root: ../org-blueprints
+# Additional roots (searched after blueprints_root)
+blueprint_sources:
+  - /opt/repave/vendor-packs
+```
+
+Environment overrides append after the file:
+
+| Key | Env |
+| --- | --- |
+| `blueprints_root` | `REPAVE_BLUEPRINTS_ROOT` |
+| `blueprint_sources` | `REPAVE_BLUEPRINT_SOURCES` (comma-separated) |
+
+`--blueprint` / API generate accept a catalog **name**, a path under a configured
+root (`blueprints/terraform-module-generic`), or a `file://` URI to that
+directory. Paths outside configured roots are rejected. When two roots ship the
+same `metadata.name`, the earlier root wins.
+
+Git/OCI remote fetch is not implemented — copy or submodule a pack onto disk and
+point a source at it. Fork workflow: [blueprint versioning](blueprint-versioning.md#fork-workflow).
+
 ## Helm
 
 Mount the versioned config in the chart ConfigMap. Production overlays:

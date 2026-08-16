@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from repave_engine.blueprint import _ARTIFACT_FAMILY_ORDER, blueprints_dir, list_blueprints
+from repave_engine.blueprint import _ARTIFACT_FAMILY_ORDER, list_catalog_blueprints
 from repave_engine.fleet import normalize_repo_url
 from repave_engine.github_inventory import (
     GitHubInventoryError,
@@ -141,7 +141,7 @@ def classify_remote_repository(
             classification_error="repository has no scannable files",
             top_candidate=None,
         )
-    catalog = list_blueprints(blueprints_dir(repo_root))
+    catalog = list_catalog_blueprints(repo_root)
     candidates = detect_blueprint_candidates(Path("."), catalog, rel_paths=rel_paths)
     top = best_candidate(candidates)
     return ScannedRepository(
