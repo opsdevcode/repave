@@ -11,7 +11,7 @@ describe('component vend helpers', () => {
       {
         id: 'database',
         label: 'Managed database',
-        blueprint: 'terraform-environment-stack',
+        blueprint: 'terraform-component-database',
         description: 'Relational database instance requested through GitOps.',
       },
       { label: 'orphan' },
@@ -20,7 +20,7 @@ describe('component vend helpers', () => {
       {
         id: 'database',
         label: 'Managed database',
-        blueprint: 'terraform-environment-stack',
+        blueprint: 'terraform-component-database',
         description: 'Relational database instance requested through GitOps.',
       },
     ]);

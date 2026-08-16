@@ -1,0 +1,11 @@
+inputs:
+  stack_name: conformance
+  description: Conformance fixture managed queue
+  cloud_provider: aws
+  environment: dev
+  pinned_modules: '[{"name":"queue","source":"./modules/_sqs-stub","repo_name":"_sqs-stub"}]'
+required_files:
+  - repave.yaml
+  - README.md
+  - main.tf
+snapshot: false

@@ -27,9 +27,11 @@ blueprint, open a GitOps PR, register the result. repave does not run
 
 ### Kinds
 
-Built-in kinds: `database`, `bucket`, `queue`. Each maps to a blueprint
-(default `terraform-environment-stack`) and default inputs. Operators may
-override the catalog in `component_vending.kinds`.
+Built-in kinds: `database`, `bucket`, `queue`. Each maps to a kind-specific
+blueprint (`terraform-component-database` / `-bucket` / `-queue`) with an
+RDS/S3/SQS-shaped stub module. Operators may override the catalog in
+`component_vending.kinds`. YAML entries without `blueprint` still fall back
+to `terraform-environment-stack`.
 
 ### Flow
 
@@ -50,7 +52,8 @@ Credentials stay GitHub-shaped. CD applies after merge.
 
 ### Out of scope (later slices)
 
-- Dedicated RDS/S3/SQS module blueprints
+- Real `aws_db_instance` / `aws_s3_bucket` / `aws_sqs_queue` resources
+  (stubs keep gates green; pin estate `tf-*` modules before apply)
 - Operator JSON contract changes
 
 Backstage `/vend` calls `GET /api/v2/component-kinds` and
@@ -60,6 +63,6 @@ Backstage `/vend` calls `GET /api/v2/component-kinds` and
 ## Consequences
 
 - Environment and component vending share the GitOps-only boundary.
-- A later kind-specific blueprint can replace `terraform-environment-stack`
+- Kind-specific blueprints replace `terraform-environment-stack` for vend
   without changing the API.
 - Component reclaim is a separate admin API from environment reclaim.

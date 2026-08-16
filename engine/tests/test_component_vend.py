@@ -7,7 +7,11 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
-from repave_engine.component_kinds import builtin_component_kinds, find_component_kind
+from repave_engine.component_kinds import (
+    builtin_component_kinds,
+    find_component_kind,
+    load_component_kinds,
+)
 from repave_engine.component_record import ComponentRecord, entity_id_for_component
 from repave_engine.component_registry import read_components, register_component
 from repave_engine.component_vend import (
@@ -31,6 +35,44 @@ def test_builtin_component_kinds() -> None:
     kinds = builtin_component_kinds()
     assert {item.id for item in kinds} == {"database", "bucket", "queue"}
     assert find_component_kind(kinds, "database") is not None
+    by_id = {item.id: item.blueprint for item in kinds}
+    assert by_id == {
+        "database": "terraform-component-database",
+        "bucket": "terraform-component-bucket",
+        "queue": "terraform-component-queue",
+    }
+
+
+def test_load_component_kinds_from_yaml(tmp_path: Path) -> None:
+    path = tmp_path / "kinds.yaml"
+    path.write_text(
+        """
+kinds:
+  - id: cache
+    label: Managed cache
+    blueprint: terraform-environment-stack
+    description: Operator override
+    default_inputs:
+      description: Managed cache component
+""",
+        encoding="utf-8",
+    )
+    kinds = load_component_kinds(path)
+    assert len(kinds) == 1
+    assert kinds[0].id == "cache"
+    assert kinds[0].blueprint == "terraform-environment-stack"
+
+    fallback = tmp_path / "kinds-fallback.yaml"
+    fallback.write_text(
+        """
+kinds:
+  - id: cache
+    label: Managed cache
+""",
+        encoding="utf-8",
+    )
+    omitted = load_component_kinds(fallback)
+    assert omitted[0].blueprint == "terraform-environment-stack"
 
 
 def test_load_component_vending_config(tmp_path: Path) -> None:

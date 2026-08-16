@@ -212,10 +212,11 @@ def detect_blueprint_candidates(
             )
         )
 
-    def rank(candidate: BlueprintCandidate) -> tuple[float, int, str]:
-        # Prefer the "-generic" blueprint when several share an artifact type.
+    def rank(candidate: BlueprintCandidate) -> tuple[float, int, int, str]:
+        # Prefer the canonical blueprint (name == artifact type), then "-generic".
+        canonical_rank = 0 if candidate.blueprint_name == candidate.artifact_type else 1
         generic_rank = 0 if candidate.blueprint_name.endswith("-generic") else 1
-        return (-candidate.confidence, generic_rank, candidate.blueprint_name)
+        return (-candidate.confidence, canonical_rank, generic_rank, candidate.blueprint_name)
 
     candidates.sort(key=rank)
     return tuple(candidates)

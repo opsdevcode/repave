@@ -197,6 +197,20 @@ def test_detect_ranks_the_matching_family_first(
     assert candidates[0].evidence
 
 
+def test_detect_prefers_canonical_environment_stack_over_component_forks(
+    repo_root: Path, tmp_path: Path
+) -> None:
+    repo = _write(
+        tmp_path / "repo",
+        {"main.tf": "", "backend.tf": "", "envs/prod/terraform.tfvars": ""},
+    )
+    candidates = detect_blueprint_candidates(repo, list_blueprints(blueprints_dir(repo_root)))
+    names = [item.blueprint_name for item in candidates]
+    assert names[0] == "terraform-environment-stack"
+    assert "terraform-component-database" in names
+    assert names.index("terraform-environment-stack") < names.index("terraform-component-database")
+
+
 def test_detect_tolerates_code_nested_one_level_down(repo_root: Path, tmp_path: Path) -> None:
     repo = _write(tmp_path / "repo", _LEGACY_TF)
     candidates = detect_blueprint_candidates(repo, list_blueprints(blueprints_dir(repo_root)))
