@@ -325,4 +325,16 @@ def inputs_from_provenance(doc: dict[str, Any]) -> dict[str, Any]:
             "api_version": str(contract.get("api_version", "0.1.0")).strip(),
         }
 
+    if artifact_type == "db-migration":
+        migration = spec.get("dbMigration")
+        if not isinstance(migration, dict):
+            raise ValueError("db-migration provenance missing spec.dbMigration")
+        service_name = str(migration.get("service_name", artifact_name)).strip()
+        return {
+            "service_name": service_name,
+            "organization": str(migration.get("organization", "")).strip(),
+            "description": f"Repave upgrade plan for {service_name}",
+            "tool": str(migration.get("tool", "alembic")).strip() or "alembic",
+        }
+
     raise ValueError(f"unsupported artifactType {artifact_type!r}")

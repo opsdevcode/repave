@@ -28,6 +28,8 @@ _NO_CLI_GATES = frozenset(
         "grafana-dashboard",
         "datadog-dashboard",
         "datadog-monitor",
+        "migration-policy",
+        "migration-rollback",
     }
 )
 

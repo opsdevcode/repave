@@ -82,6 +82,11 @@ _ARTIFACT_REQUIRED_GATES: dict[str, tuple[str, ...]] = {
         "oasdiff",
         *_BASELINE_GATES,
     ),
+    "db-migration": (
+        "migration-policy",
+        "migration-rollback",
+        *_BASELINE_GATES,
+    ),
 }
 
 
