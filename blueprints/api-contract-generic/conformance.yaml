@@ -1,0 +1,14 @@
+inputs:
+  spec_name: conformance
+  organization: platform
+  description: Conformance fixture API contract
+  spec_kind: openapi
+  api_title: Conformance API
+  api_version: "0.1.0"
+required_files:
+  - repave.yaml
+  - README.md
+  - openapi.yaml
+  - baseline/openapi.yaml
+  - .spectral.yaml
+snapshot: false

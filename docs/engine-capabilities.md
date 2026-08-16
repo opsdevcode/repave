@@ -8,7 +8,9 @@ overview: [README](../README.md).
 Terraform modules, environment stacks, Ansible roles, collections, playbook
 projects, policy packs, observability bundles, Helm charts, and app-service
 scaffolds under [`blueprints/`](../blueprints/), plus extra local roots from
-`blueprints_root` / `blueprint_sources`. Rendering uses Copier; contracts
+`blueprints_root` / `blueprint_sources`. API contracts
+(`api-contract-generic`) lint with Spectral and detect OpenAPI breaking
+changes with oasdiff. Rendering uses Copier; contracts
 live in [`schemas/`](../schemas/) with versioning policy in
 [`docs/blueprint-versioning.md`](blueprint-versioning.md).
 

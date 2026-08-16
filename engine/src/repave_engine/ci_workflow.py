@@ -21,7 +21,9 @@ from repave_engine.ci_toolchain import (
     INFRACOST_VERSION,
     JAVA_VERSION,
     NODE_VERSION,
+    OASDIFF_VERSION,
     PYTHON_VERSION,
+    SPECTRAL_VERSION,
     TERRAFORM_VERSION,
     TFLINT_VERSION,
 )
@@ -113,6 +115,8 @@ def _gate_needs(gates: tuple[str, ...], *, artifact_type: str = "") -> dict[str,
         "needs_dotnet": "dotnet-test" in gate_set,
         "needs_buf": "buf-lint" in gate_set,
         "needs_actionlint": "actionlint" in gate_set,
+        "needs_spectral": "spectral" in gate_set,
+        "needs_oasdiff": "oasdiff" in gate_set,
         # Only artifacts that own Terraform state have anything to talk to the state
         # store about (ADR 004 Phase 3).
         "needs_state_client": artifact_family(artifact_type) == "terraform",
@@ -144,6 +148,8 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
         java_version=JAVA_VERSION,
         dotnet_version=DOTNET_VERSION,
         buf_version=BUF_VERSION,
+        spectral_version=SPECTRAL_VERSION,
+        oasdiff_version=OASDIFF_VERSION,
         infracost_version=INFRACOST_VERSION,
         prometheus_version=_PROMETHEUS_VERSION,
         alertmanager_version=_ALERTMANAGER_VERSION,

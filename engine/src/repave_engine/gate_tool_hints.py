@@ -28,6 +28,8 @@ GATE_TOOL_HINTS: dict[str, tuple[str, ...]] = {
     "java-build": ("mvn", "java"),
     "dotnet-test": ("dotnet",),
     "buf-lint": ("buf",),
+    "spectral": ("spectral",),
+    "oasdiff": ("oasdiff",),
     "promtool": ("promtool",),
     "amtool": ("amtool",),
 }

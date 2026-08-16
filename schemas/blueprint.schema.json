@@ -113,7 +113,9 @@
               "java-build",
               "dotnet-test",
               "buf-lint",
-              "actionlint"
+              "actionlint",
+              "spectral",
+              "oasdiff"
             ]
           }
         },
@@ -132,7 +134,8 @@
             "helm-chart",
             "app-service",
             "gitops-deployment",
-            "github-repo"
+            "github-repo",
+            "api-contract"
           ],
           "default": "terraform-module",
           "description": "Generated artifact type; drives gate artifact hygiene paths."
@@ -551,6 +554,34 @@
                   "type": "array",
                   "items": { "type": "string" },
                   "description": "Glob patterns for workflow files (default .github/workflows/*)."
+                }
+              }
+            },
+            "spectral": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "spec_file": {
+                  "type": "string",
+                  "description": "OpenAPI or AsyncAPI document relative to the generated repo root."
+                },
+                "ruleset": {
+                  "type": "string",
+                  "description": "Spectral ruleset path (default .spectral.yaml)."
+                }
+              }
+            },
+            "oasdiff": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "spec_file": {
+                  "type": "string",
+                  "description": "OpenAPI document relative to the generated repo root."
+                },
+                "baseline": {
+                  "type": "string",
+                  "description": "Published baseline spec for breaking-change detection."
                 }
               }
             }

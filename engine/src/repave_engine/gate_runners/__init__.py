@@ -15,6 +15,7 @@ from repave_engine.gate_runners.ansible import (
     run_ansible_syntax_check,
     run_molecule,
 )
+from repave_engine.gate_runners.api_contract import run_oasdiff, run_spectral
 from repave_engine.gate_runners.app import (
     run_buf_lint,
     run_dockerfile_lint,
@@ -92,12 +93,14 @@ __all__ = [
     "run_molecule",
     "run_node_lint",
     "run_node_test",
+    "run_oasdiff",
     "run_opa",
     "run_promtool",
     "run_provenance_drift",
     "run_python_lint",
     "run_python_test",
     "run_secrets",
+    "run_spectral",
     "run_terraform_fmt",
     "run_terraform_test",
     "run_terraform_validate",

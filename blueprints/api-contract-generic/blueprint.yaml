@@ -1,0 +1,65 @@
+apiVersion: repave.dev/v1alpha1
+kind: Blueprint
+metadata:
+  name: api-contract-generic
+  version: 0.1.0
+  description: OpenAPI or AsyncAPI spec repo with Spectral lint and oasdiff breaking-change gates.
+spec:
+  artifactType: api-contract
+  standard:
+    source: standards/api/contract-standard.md
+    version: 1.0.0
+  inputs:
+    - name: spec_name
+      type: string
+      required: true
+      description: Short name for this API contract (used in the repo name).
+      guided_from: "{api_title}"
+    - name: organization
+      type: string
+      required: true
+      description: Owning team or organization slug.
+    - name: description
+      type: string
+      required: true
+      description: What this API contract describes.
+      guided_from: "{organization} {spec_kind} contract for {spec_name}."
+    - name: spec_kind
+      type: string
+      required: false
+      default: openapi
+      enum:
+        - openapi
+        - asyncapi
+      description: OpenAPI (oasdiff + Spectral) or AsyncAPI (Spectral only).
+    - name: api_title
+      type: string
+      required: true
+      description: Title written into the spec info block.
+      guided_from: "{spec_name}"
+    - name: api_version
+      type: string
+      required: false
+      default: "0.1.0"
+      description: Spec info.version (semver).
+  template:
+    engine: copier
+    path: template
+  gates:
+    - spectral
+    - oasdiff
+    - secrets
+    - docs-drift
+    - provenance-drift
+  gate_config:
+    spectral:
+      ruleset: .spectral.yaml
+    oasdiff:
+      baseline: baseline/openapi.yaml
+  output:
+    type: pull_request
+    provenance:
+      file: repave.yaml
+    repository:
+      name_template: "api-contract-{organization}-{spec_name}"
+      title_template: "Bootstrap API contract {spec_name} for {organization}"
