@@ -669,10 +669,23 @@ def blueprints_dir(repo_root: Path) -> Path:
     return load_blueprint_sources(repo_root).roots[0]
 
 
+def _dedupe_paths(paths: tuple[Path, ...]) -> tuple[Path, ...]:
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for path in paths:
+        if path in seen:
+            continue
+        seen.add(path)
+        out.append(path)
+    return tuple(out)
+
+
 def blueprint_source_roots(repo_root: Path) -> tuple[Path, ...]:
+    from repave_engine.blueprint_pack_fetch import materialize_blueprint_pack_roots
     from repave_engine.settings import load_blueprint_sources
 
-    return load_blueprint_sources(repo_root).roots
+    local = load_blueprint_sources(repo_root).roots
+    return _dedupe_paths((*local, *materialize_blueprint_pack_roots(repo_root)))
 
 
 def _strip_file_uri(raw: str) -> str:

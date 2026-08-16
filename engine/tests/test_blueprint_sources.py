@@ -6,6 +6,7 @@ import pytest
 
 from repave_engine.blueprint import (
     blueprint_dir,
+    blueprint_source_roots,
     list_catalog_blueprints,
     resolve_blueprint_path,
 )
@@ -91,3 +92,50 @@ def test_blueprint_dir_rejects_path_outside_sources(
     with pytest.raises(ValueError, match="blueprint_sources"):
         blueprint_dir(repo_root, str(outside))
     assert resolve_blueprint_path(repo_root, str(outside)) is None
+
+
+def test_list_catalog_includes_git_pack_root(
+    repo_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    extra_root = tmp_path / "git-pack"
+    _write_extra_blueprint(repo_root, extra_root / "my-git-vpc", name="my-git-vpc")
+    monkeypatch.delenv("REPAVE_BLUEPRINTS_ROOT", raising=False)
+    monkeypatch.delenv("REPAVE_BLUEPRINT_SOURCES", raising=False)
+    monkeypatch.setattr(
+        "repave_engine.blueprint_pack_fetch.materialize_blueprint_pack_roots",
+        lambda _repo_root, **_kwargs: (extra_root.resolve(),),
+    )
+
+    names = [item.name for item in list_catalog_blueprints(repo_root)]
+    roots = blueprint_source_roots(repo_root)
+
+    assert "my-git-vpc" in names
+    assert extra_root.resolve() in roots
+    assert roots[0] == (repo_root / "blueprints").resolve()
+    assert names.index("terraform-module-generic") < names.index("my-git-vpc")
+
+
+def test_list_catalog_git_pack_loses_to_stock_name(
+    repo_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    extra_root = tmp_path / "git-pack"
+    _write_extra_blueprint(
+        repo_root,
+        extra_root / "terraform-module-generic",
+        name="terraform-module-generic",
+    )
+    monkeypatch.delenv("REPAVE_BLUEPRINTS_ROOT", raising=False)
+    monkeypatch.delenv("REPAVE_BLUEPRINT_SOURCES", raising=False)
+    monkeypatch.setattr(
+        "repave_engine.blueprint_pack_fetch.materialize_blueprint_pack_roots",
+        lambda _repo_root, **_kwargs: (extra_root.resolve(),),
+    )
+
+    matches = [
+        item
+        for item in list_catalog_blueprints(repo_root)
+        if item.name == "terraform-module-generic"
+    ]
+
+    assert len(matches) == 1
+    assert matches[0].description.startswith("Generic Terraform module")
