@@ -11,9 +11,8 @@ The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
 **HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
 
 After that date, Phase 4 removes the Jinja templates. CLI and `/api/v2` are not
-sunset. Fleet, import, verify, estate, adoption, activity, and maturity already
-have Backstage pages. Leftover `/platform/*` (FinOps, compliance, value-stream,
-feedback) is CLI/API-only or a later plugin — do not drop those ops silently.
+sunset. Platform-admin HTML already has Backstage pages (fleet through FinOps).
+Phase 4 is a product call — do not drop leftover HTML ops silently.
 
 ## What you get
 
@@ -35,6 +34,10 @@ feedback) is CLI/API-only or a later plugin — do not drop those ops silently.
 | Adoption | `/adoption` — `GET /api/v2/platform/metrics` (admin; 404 if unset) |
 | Activity | `/activity` — `GET /api/v2/audit` (404 if audit is unset) |
 | Maturity | `/maturity` — `GET /api/v2/platform/maturity` + `/initiatives` (read-only) |
+| Compliance | `/compliance` — `GET /api/v2/platform/compliance` |
+| Value stream | `/value-stream` — `GET /api/v2/platform/value-stream` |
+| Feedback | `/feedback` — `GET /api/v2/platform/feedback` (submit stays HTML) |
+| FinOps | `/finops` — `GET /api/v2/platform/finops/export` |
 | Helm | `repave.backstage.enabled` (**default off**); overlay sets `portal.html: false` |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
@@ -142,12 +145,10 @@ steps:
 
 Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
 
-Sandbox (`/sandbox`), Runs (`/runs`), Upgrade (`/upgrade`), Fleet (`/fleet`),
-Import (`/import`), Verify (`/verify`), Estate (`/estate`), Adoption
-(`/adoption`), Activity (`/activity`), and Maturity (`/maturity`) call the
-engine through the Backstage proxy (`/api/proxy/repave/api/v2/...`) so the
-browser never holds `REPAVE_API_TOKEN`. Local `app-config.yaml` targets
-`http://127.0.0.1:8089`; the production image uses `REPAVE_API_BASE_URL`.
+Repave plugin pages call the engine through the Backstage proxy
+(`/api/proxy/repave/api/v2/...`) so the browser never holds `REPAVE_API_TOKEN`.
+Local `app-config.yaml` targets `http://127.0.0.1:8089`; the production image
+uses `REPAVE_API_BASE_URL`.
 
 When `auth.service_mode` is on, set `repave.apiToken` / `REPAVE_API_TOKEN` so
 the backend sends `Authorization: Bearer`. Return body uses `gates_outcome` and
