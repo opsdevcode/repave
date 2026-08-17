@@ -105,9 +105,9 @@ roots via `blueprints_root` / `blueprint_sources` (or
    can resolve from the engine repo root).
 4. `repave list` and `repave generate --blueprint my-org-vpc` should see the extra
    pack with no engine code changes.
-5. Point `blueprint_packs.sources[]` at a git URL + ref (shallow clone into
-   `data/blueprint-packs`). Copy or submodule still works. OCI artifact pull
-   stays in the [parking lot](roadmap.md#parking-lot).
+5. Point `blueprint_packs.sources[]` at a git URL + ref (shallow clone) or
+   `oci://registry/repository` + tag/digest (`oras pull` into
+   `data/blueprint-packs`). Copy or submodule still works.
 
 ## v3 and beyond
 

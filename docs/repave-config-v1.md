@@ -111,8 +111,10 @@ same `metadata.name`, the earlier root wins.
 
 Git URL packs clone on first catalog load and reuse the cache until you delete
 the folder (no auto-fetch). HTTPS token comes from `GITHUB_TOKEN` or a GitHub
-App installation token (`sources[].token` is optional). OCI artifact pull is
-not implemented.
+App installation token (`sources[].token` is optional). OCI packs use
+`oci://registry/repository` and the same `ref` / `subdir` / `dest` / `token`
+fields. Pull requires [`oras`](https://oras.land) on PATH. Cache reuse is the
+same as git (delete the folder to refresh).
 
 ```yaml
 apiVersion: repave.dev/v1
@@ -123,6 +125,9 @@ blueprint_packs:
       ref: v1.2.0
       subdir: blueprints             # optional; catalog root inside the clone
       dest: acme-blueprints          # optional; stable cache folder name
+    - url: oci://ghcr.io/acme/org-blueprints
+      ref: v1.2.0                    # tag, or sha256:<digest>
+      dest: acme-oci
 ```
 
 Stock `./blueprints` still wins on `metadata.name`. Fork workflow:

@@ -11,6 +11,7 @@ from repave_engine.blueprint_pack_fetch import (
     pack_cache_name,
 )
 from repave_engine.git_clone import CloneError
+from repave_engine.oci_pull import OciPullError
 from repave_engine.settings import BlueprintPackConfig, BlueprintPackSource
 
 
@@ -153,3 +154,56 @@ def test_materialize_skips_missing_subdir(
 
 def test_materialize_returns_empty_when_unconfigured(tmp_path: Path) -> None:
     assert materialize_blueprint_pack_roots(tmp_path) == ()
+
+
+def test_materialize_pulls_oci_pack_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, Path, str, str | None]] = []
+
+    def fake_pull(
+        url: str,
+        dest_dir: Path,
+        *,
+        ref: str,
+        token: str | None = None,
+    ) -> None:
+        dest_dir.mkdir(parents=True)
+        (dest_dir / "marker").write_text("oci", encoding="utf-8")
+        calls.append((url, dest_dir, ref, token))
+
+    monkeypatch.setattr("repave_engine.blueprint_pack_fetch.pull_oci_artifact", fake_pull)
+    monkeypatch.setattr("repave_engine.blueprint_pack_fetch.resolve_git_token", lambda: "env-token")
+
+    source = _source(url="oci://ghcr.io/acme/org-blueprints", dest="acme-oci")
+    config = BlueprintPackConfig(cache_dir=tmp_path / "cache", sources=(source,))
+
+    first = materialize_blueprint_pack_roots(tmp_path, config=config)
+    second = materialize_blueprint_pack_roots(tmp_path, config=config)
+
+    assert first == ((tmp_path / "cache" / "acme-oci").resolve(),)
+    assert second == first
+    assert len(calls) == 1
+    assert calls[0] == (
+        source.url,
+        (tmp_path / "cache" / "acme-oci").resolve(),
+        "v1.2.0",
+        "env-token",
+    )
+
+
+def test_materialize_skips_oci_pull_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    def fake_pull(*_args: object, **_kwargs: object) -> None:
+        raise OciPullError("oras pull failed")
+
+    monkeypatch.setattr("repave_engine.blueprint_pack_fetch.pull_oci_artifact", fake_pull)
+    monkeypatch.setattr("repave_engine.blueprint_pack_fetch.resolve_git_token", lambda: None)
+    caplog.set_level(logging.WARNING)
+
+    source = _source(url="oci://ghcr.io/acme/org-blueprints", dest="missing-oci")
+    config = BlueprintPackConfig(cache_dir=tmp_path / "cache", sources=(source,))
+    roots = materialize_blueprint_pack_roots(tmp_path, config=config)
+
+    assert roots == ()
+    assert "pull skipped" in caplog.text
+    assert "oras pull failed" in caplog.text
