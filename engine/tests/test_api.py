@@ -1055,6 +1055,8 @@ def test_terraform_guided_only_generate_uses_defaults(
             "include_backstage_catalog",
             "system",
             "catalog_lifecycle",
+            "catalog_depends_on",
+            "catalog_provides_apis",
             "provider_service_scope",
         }
     }
@@ -1086,6 +1088,8 @@ def test_terraform_guided_generate_derives_name_and_description(
             "include_backstage_catalog",
             "system",
             "catalog_lifecycle",
+            "catalog_depends_on",
+            "catalog_provides_apis",
             "provider_service_scope",
         }
     }
@@ -1531,6 +1535,8 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert "Plan preview" in response.text
     assert "data-dry-run-run" in response.text
     assert 'id="catalog_lifecycle"' in response.text
+    assert 'id="catalog_depends_on"' in response.text
+    assert 'id="catalog_provides_apis"' in response.text
     assert 'id="runtime"' in response.text
     assert ">go</option>" in response.text
     assert 'data-form-mode="guided"' in response.text

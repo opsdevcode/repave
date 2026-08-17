@@ -19,6 +19,8 @@ is `true` (Terraform modules, Helm charts).
 - **spec.owner:** Team or group ref (required for app-service; required when catalog is enabled)
 - **spec.system:** Optional platform system name
 - **spec.lifecycle:** `experimental`, `production`, or `deprecated`
+- **spec.dependsOn:** Optional entity refs from `catalog_depends_on` (catalog graph)
+- **spec.providesApis:** Optional API refs from `catalog_provides_apis`
 
 ## Import
 

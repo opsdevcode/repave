@@ -1,4 +1,8 @@
 import { render, waitFor } from '@testing-library/react';
+import apiDocsPlugin from '@backstage/plugin-api-docs/alpha';
+import catalogGraphPlugin from '@backstage/plugin-catalog-graph/alpha';
+import catalogImportPlugin from '@backstage/plugin-catalog-import/alpha';
+import searchPlugin from '@backstage/plugin-search/alpha';
 import techdocsPlugin from '@backstage/plugin-techdocs/alpha';
 import App, { appFeatures } from './App';
 
@@ -27,7 +31,15 @@ describe('App', () => {
     });
   });
 
-  it('registers TechDocs so the entity Docs tab can appear', () => {
-    expect(appFeatures).toContain(techdocsPlugin);
+  it('registers catalog IDP plugins so graph, search, docs, and import work', () => {
+    expect(appFeatures).toEqual(
+      expect.arrayContaining([
+        catalogGraphPlugin,
+        catalogImportPlugin,
+        apiDocsPlugin,
+        searchPlugin,
+        techdocsPlugin,
+      ]),
+    );
   });
 });

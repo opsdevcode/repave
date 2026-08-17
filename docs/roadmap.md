@@ -22,6 +22,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Catalog graph, search, API docs, and import**
+(Backstage plugins + `catalog_depends_on` / `catalog_provides_apis` on generate);
 **Hosted TechDocs local generator**
 (`runIn: local` + pinned `mkdocs-techdocs-core` in the Backstage image; no DinD);
 **Catalog TechDocs**
@@ -199,14 +201,16 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Split by job + one product chrome + TechDocs (hosted local generator) shipped (owner: Eric Skaggs;
+**Status:** Split by job + one product chrome + TechDocs + catalog graph / search /
+API docs / import shipped (owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md),
 [`docs/ui-surfaces.md`](ui-surfaces.md)).
 Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench
 (**Golden paths**). Backstage is catalog ingest, lineage, My services, and
 optional Scaffolder (**Catalog**), with the night-ops top bar and TechDocs on
-the entity Docs tab. Hosted image generates Docs with `runIn: local` (no
-Docker-in-Docker). Plugin clones of generate/ops/platform pages are removed.
+the entity Docs tab, catalog graph, search, API docs, and catalog import.
+Hosted image generates Docs with `runIn: local` (no Docker-in-Docker).
+Plugin clones of generate/ops/platform pages are removed.
 Hosted overlay keeps `portal.html: true`
 and sends `/idp` to Backstage (`app.baseUrl` = `https://<host>/idp`). Do not
 iframe `/idp`.

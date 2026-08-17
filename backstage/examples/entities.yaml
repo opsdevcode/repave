@@ -17,6 +17,8 @@ spec:
   lifecycle: experimental
   owner: guests
   system: examples
+  dependsOn:
+    - component:default/tf-aws-demo
   providesApis: [example-grpc-api]
 ---
 apiVersion: backstage.io/v1alpha1
@@ -35,6 +37,19 @@ metadata:
 spec:
   type: library
   lifecycle: production
+  owner: group:default/platform
+  system: examples
+  dependsOn:
+    - resource:default/tf-aws-demo-state
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: tf-aws-demo-state
+  title: tf-aws-demo state
+  description: Example remote state the tf-aws-demo module depends on.
+spec:
+  type: s3-bucket
   owner: group:default/platform
   system: examples
 ---

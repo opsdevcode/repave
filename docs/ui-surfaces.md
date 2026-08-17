@@ -19,6 +19,9 @@ flowchart LR
 
   subgraph idp [Backstage - catalog only]
     catalog[Software Catalog]
+    graph[Catalog graph]
+    search[Search]
+    docs[TechDocs]
     lineage[Lineage card]
     scaffolder[Optional Scaffolder]
   end
@@ -33,6 +36,9 @@ flowchart LR
   scaffolder --> api
   api --> yaml
   yaml --> catalog
+  catalog --> graph
+  catalog --> search
+  catalog --> docs
   catalog --> lineage
   cli --> api
 ```
@@ -42,7 +48,7 @@ flowchart LR
 | Job | Owner | Why |
 | --- | --- | --- |
 | Generate, upgrade preview, import, verify, vend, sandbox, runs, fleet, platform | **HTML portal** | Night-ops look; `make serve` stays one process |
-| Software catalog, ownership, entity page, `repave.dev/*` lineage, TechDocs | **Backstage** | Catalog IDP; do not rebuild it in Jinja |
+| Software catalog, graph, search, API docs, import, ownership, TechDocs | **Backstage** | Catalog IDP; do not rebuild it in Jinja |
 | Offline / CI | **CLI** | Unchanged |
 | Apply / cluster | **CLI + operator** | Unchanged |
 
@@ -64,7 +70,11 @@ under `backstage/plugins/plugin-repave`.
 - Entity **Docs** is TechDocs when `backstage.io/techdocs-ref` is set (example:
   `tf-aws-demo`). Generated `catalog-info.yaml` gets that annotation when the
   repo has `docs/` or `mkdocs.yml`. Hosted builds use `runIn: local` (no
-  Docker-in-Docker). Do not clone TechDocs into Jinja.
+  Docker-in-Docker).
+- Catalog **graph**, **search**, **API docs**, and **import** stay on Backstage.
+  Generated `catalog-info.yaml` can set `spec.dependsOn` / `spec.providesApis`
+  from `catalog_depends_on` / `catalog_provides_apis`. Do not clone those
+  pages into Jinja.
 
 ## Hosted vs laptop
 
