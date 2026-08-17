@@ -1,64 +1,26 @@
-# Hosted Backstage (IDP UI)
+# Hosted Backstage (catalog IDP)
 
-Repave hosts [Backstage](https://backstage.io/) as the developer-facing UI
-([ADR 011](adr/011-hosted-backstage-idp.md)). The engine CLI and `/api/v2` stay
-the control plane. Local generate does **not** require yarn or Backstage
+Repave hosts [Backstage](https://backstage.io/) as the **catalog IDP**
+([ADR 011](adr/011-hosted-backstage-idp.md)). The night-ops HTML portal is the
+hosted and local **workbench**. How they hand off:
+[`docs/ui-surfaces.md`](ui-surfaces.md). The engine CLI and `/api/v2` stay the
+control plane. Local generate does **not** require yarn or Backstage
 (`make serve` / `repave generate`).
 
-The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
-**deprecated** for hosted installs. It still ships in this release so local
-`make serve` can open every nav destination without Backstage.
-
-**HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
-
-After that date, Phase 4 may remove the remaining Jinja templates. CLI and
-`/api/v2` are not sunset. Hosted Backstage already has the matching pages
-(fleet through FinOps, builder browse, generate, upgrade, verify, import,
-runs, sandbox). `/generate` posts `POST /api/v2/generate` from Backstage.
-Local HTML catalog, library, generate, upgrade, verify, import, platform,
-runs, sandbox, and results stay real pages. Landing and signup stay as the
-public splash when the HTML portal is on (`GET /` unauthenticated →
-`landing.html`). Do not drop leftover HTML silently.
+Do not clone workbench routes into Backstage plugins. Generate, upgrade, import,
+verify, vend, sandbox, runs, and platform stay on HTML.
 
 ## What you get
 
 | Piece | Path / contract |
 | --- | --- |
 | App we own | [`backstage/`](../backstage/) (`packages/app`, `packages/backend`) |
-| Generate | Scaffolder action `repave:generate` → `POST /api/v2/generate` |
+| Generate | Scaffolder action `repave:generate` → `POST /api/v2/generate` (alternate to HTML `/generate`) |
 | Template | `terraform-module-generic` with `include_backstage_catalog: true` |
 | Catalog | `catalog-info.yaml` file locations **and** `GET /api/v2/catalog/entities` |
-| Lineage card | Entity page shows `repave.dev/*` pins |
-| My services | `/my-services` — components with `repave.dev/blueprint` |
-| Generate | `/generate` — `GET /api/v2/catalog/blueprints` (with `inputs`); form posts `POST /api/v2/generate` (`dry_run` default). Scaffolder `/create` stays as an alternate |
-| Bundles | `/bundles` — `GET /api/v2/bundles` + `GET /api/v2/bundles/{name}` |
-| Library | `/library` — `GET /api/v2/library` (`?family=`, `?owner=`) |
-| Teams | `/teams` — `GET /api/v2/catalog/entities?team=` |
-| Services | `/services` — `GET /api/v2/catalog/entities/{id}`; live plan via `POST /api/v2/runs` |
-| Run console | `/run-console` — `GET /api/v2/runs/{id}` + replay |
-| Sandbox | `/sandbox` — `GET /api/v2/deployment-sets` + `POST /api/v2/environments/vend` |
-| Vend component | `/vend` — `GET /api/v2/component-kinds` + `POST /api/v2/components/vend` |
-| Reclaim | `/reclaim` — `POST /api/v2/environments/reclaim` and `POST /api/v2/components/reclaim` (admin; dry-run default) |
-| Runs | `/runs` — `GET /api/v2/runs` + `GET /api/v2/runs/{id}` + replay; console at `/run-console` |
-| Upgrade | `/upgrade` — `POST /api/v2/upgrades/plan` (preview; apply stays CLI/operator) |
-| Add component | `/add` — `POST /api/v2/components/plan` + `/apply` (local checkout) |
-| Fleet | `/fleet` — `GET` / `POST` / `DELETE /api/v2/fleet` (register/unregister need admin) |
-| Ops | `/ops` — `GET /api/v2/platform/ops`; reclaim via `/environments/reclaim` + `/runs`; replay dead-letter |
-| Standards | `/standards` — `GET /api/v2/platform/standards`; confirm drift via `POST /api/v2/runs` |
-| Campaigns | `/campaigns` — `GET /api/v2/platform/campaigns`; pause via `POST /api/v2/platform/campaigns/{ns}/{name}/paused` |
-| Import | `/import` — `POST /api/v2/imports/plan` + `/apply` |
-| Batch import | `/import/batch` — `POST /api/v2/imports/batch/plan` + `/apply`; `POST /api/v2/github/org-scan` |
-| Verify | `/verify` — `POST /api/v2/verify` (422 is a failed verify) |
-| Estate | `/estate` — `GET /api/v2/estate` (404 if fleet is unset) |
-| Adoption | `/adoption` — `GET /api/v2/platform/metrics` (admin; 404 if unset) |
-| Roadmap evidence | `/roadmap` — `GET /api/v2/platform/roadmap-evidence` (admin; 404 if unset) |
-| Activity | `/activity` — `GET /api/v2/audit` (404 if audit is unset) |
-| Maturity | `/maturity` — `GET /api/v2/platform/maturity` + `/initiatives` (create/edit/deactivate) |
-| Compliance | `/compliance` — `GET /api/v2/platform/compliance` |
-| Value stream | `/value-stream` — `GET /api/v2/platform/value-stream` |
-| Feedback | `/feedback` — `GET` + `POST /api/v2/platform/feedback` (`surface=backstage`) |
-| FinOps | `/finops` — `GET /api/v2/platform/finops/export` |
-| Helm | `repave.backstage.enabled` (**default on**); overlay sets `portal.html: false` |
+| Lineage card | Entity page shows `repave.dev/*` pins plus Generate / upgrade links to the portal |
+| My services | `/my-services` — catalog filter for components with `repave.dev/blueprint` |
+| Helm | `repave.backstage.enabled` (**default on**); overlay keeps `portal.html: true` |
 
 Do not teach Scaffolder to scrape HTML forms or call `/api/v1`.
 
@@ -120,12 +82,12 @@ The Backstage container talks to the in-cluster portal Service
 (`REPAVE_API_BASE_URL=http://{{ release }}-repave:8088`) unless you set
 `repave.backstage.apiBaseUrl`. Pass `AUTH0_CLIENT_ID` (and the other Auth0
 keys) plus `REPAVE_API_TOKEN` through `repave.backstage.extraEnv` when you
-want Auth0; omit them for guest-only / chart-smoke. The overlay sets `portal.html: false` so HTML
-routes return **410** with `Sunset` / `Link` (14 Feb 2027). It also sets
-`repave.serviceCatalog.enabled` (chart default) and mounts bundled
-`examples/platform-dev` catalog YAML so `/sandbox` vend does not 404.
-CLI and `/api/v2` stay. Same-host Ingress (opt-in): `/` → Backstage,
-`/api` → engine (`ingress.enabled` + `repave.backstage.ingress.enabled`).
+want Auth0; omit them for guest-only / chart-smoke. The overlay keeps
+`portal.html: true` and sets `portal.backstage_url: /idp` for “Open in catalog”.
+It also sets `repave.serviceCatalog.enabled` (chart default) and mounts bundled
+`examples/platform-dev` catalog YAML. CLI and `/api/v2` stay. Same-host Ingress
+(opt-in): `/` → HTML, `/api` → engine, `/idp` → Backstage
+(`ingress.enabled` + `repave.backstage.ingress.enabled`).
 
 Image: `ghcr.io/opsdevcode/repave-backstage`, published by
 [`.github/workflows/container.yml`](../.github/workflows/container.yml) on `main`
@@ -135,7 +97,7 @@ then `docker build -f backstage/packages/backend/Dockerfile`.
 
 `make chart-smoke-backstage` builds the engine + Backstage images, installs
 `values-kind.yaml` + `values-backstage.yaml` on kind, and probes engine
-`/health` + `/api/v2`, HTML **410**, and Backstage liveness/readiness.
+`/health` + `/api/v2`, HTML **200**, and Backstage liveness/readiness.
 CI runs that job when Backstage or overlay paths change. The flag defaults
 **on** (owner: [Eric Skaggs](#ownership)). Kind/smoke overlays keep it off.
 `make chart-validate` renders the Deployment from default values.
@@ -165,10 +127,11 @@ steps:
 
 Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
 
-Repave plugin pages call the engine through the Backstage proxy
+Scaffolder and the catalog provider call the engine through the Backstage proxy
 (`/api/proxy/repave/api/v2/...`) so the browser never holds `REPAVE_API_TOKEN`.
 Local `app-config.yaml` targets `http://127.0.0.1:8089`; the production image
-uses `REPAVE_API_BASE_URL`.
+uses `REPAVE_API_BASE_URL`. Lineage “Generate in portal” uses
+`repave.portalBaseUrl` (`REPAVE_PORTAL_BASE_URL`, default `/` in the image).
 
 When `auth.service_mode` is on, set `repave.apiToken` / `REPAVE_API_TOKEN` so
 the backend sends `Authorization: Bearer`. Return body uses `gates_outcome` and
@@ -233,8 +196,8 @@ spec:
 
 `repave.backstage.enabled` defaults **on** ([ADR 011](adr/011-hosted-backstage-idp.md)).
 Kind and chart-smoke overlays set it false so engine-only installs do not pull
-the Backstage image. Use `values-backstage.yaml` for the HTML 410 cutover
-(`portal.html: false`) and catalog fixtures.
+the Backstage image. Use `values-backstage.yaml` for catalog fixtures and the
+same-host `/idp` split (HTML workbench stays on).
 
 **Owner:** Eric Skaggs.
 
@@ -250,15 +213,16 @@ The owner is on the hook for:
 
 | Phase | Outcome |
 | --- | --- |
-| 2 | My services + sandbox + runs + upgrade preview — **shipped** |
-| 3 | Ingress flip; HTML `Sunset`/`Link`; overlay `portal.html: false` — **shipped** |
-| 4 | Delete HTML templates; FastAPI is API-only (no calendar gate) |
+| 1 | Hosted app, `repave:generate`, lineage card — **shipped** |
+| 2–3 | Parity plugins and HTML 410 cutover — **superseded** (2026-08-17) |
+| 4 | HTML template deletion — **cancelled**; workbench stays Jinja |
 | — | Chart-smoke boots Backstage; flag defaults **on** (owner: Eric Skaggs) |
 
 ## Related
 
+- [ui-surfaces.md](ui-surfaces.md) — split-by-job model
 - [ADR 011](adr/011-hosted-backstage-idp.md)
 - [ADR 006](adr/006-service-catalog-and-maturity.md) — catalog overlay (not a second store)
-- [portal-design.md](portal-design.md) — Visual v3 sunset note
+- [portal-design.md](portal-design.md)
 - [auth-service-mode.md](auth-service-mode.md)
 - [concepts.md](concepts.md)

@@ -7,7 +7,6 @@ from fastapi.testclient import TestClient
 
 from repave_engine.api import create_app
 from repave_engine.api_deprecation import (
-    HTML_PORTAL_DEPRECATION_HEADERS,
     HTML_PORTAL_DISABLED_DETAIL,
     V1_DEPRECATION_HEADERS,
     is_html_portal_path,
@@ -29,28 +28,25 @@ def test_is_html_portal_path_excludes_api_and_probes() -> None:
     assert not is_html_portal_path("/openapi.json")
 
 
-def test_html_routes_include_sunset_headers(repo_root, output_config) -> None:
+def test_html_routes_do_not_send_sunset_headers(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     landing = client.get("/")
     assert landing.status_code == 200
-    for key, value in HTML_PORTAL_DEPRECATION_HEADERS.items():
-        assert landing.headers.get(key) == value
+    assert "Sunset" not in landing.headers
+    assert "Deprecation" not in landing.headers
 
     health = client.get("/health")
     assert health.status_code == 200
-    for key in HTML_PORTAL_DEPRECATION_HEADERS:
-        assert key not in health.headers
+    assert "Sunset" not in health.headers
 
     v2 = client.get("/api/v2/catalog/entities")
     assert v2.status_code == 200
-    for key in HTML_PORTAL_DEPRECATION_HEADERS:
-        assert key not in v2.headers
+    assert "Sunset" not in v2.headers
 
     v1 = client.get("/api/v1/catalog/entities")
     assert v1.status_code == 200
     for key, value in V1_DEPRECATION_HEADERS.items():
         assert v1.headers.get(key) == value
-    assert v1.headers.get("Sunset") != HTML_PORTAL_DEPRECATION_HEADERS["Sunset"]
 
 
 def test_html_disabled_returns_410(
@@ -62,8 +58,7 @@ def test_html_disabled_returns_410(
     landing = client.get("/")
     assert landing.status_code == 410
     assert landing.json()["detail"] == HTML_PORTAL_DISABLED_DETAIL
-    for key, value in HTML_PORTAL_DEPRECATION_HEADERS.items():
-        assert landing.headers.get(key) == value
+    assert "Sunset" not in landing.headers
 
     home = client.get("/home")
     assert home.status_code == 410
@@ -78,6 +73,7 @@ def test_load_portal_config_html_default(tmp_path: Path) -> None:
     (tmp_path / "repave.config.yaml").write_text("portal:\n  density: default\n", encoding="utf-8")
     cfg = load_portal_config(tmp_path)
     assert cfg.html is True
+    assert cfg.backstage_url == ""
 
 
 def test_load_portal_config_html_file(tmp_path: Path) -> None:
@@ -93,6 +89,17 @@ def test_load_portal_config_html_env_overrides(
     monkeypatch.setenv("REPAVE_PORTAL_HTML", "false")
     cfg = load_portal_config(tmp_path)
     assert cfg.html is False
+
+
+def test_html_nav_includes_catalog_handoff_when_backstage_url_set(
+    repo_root, output_config, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_BACKSTAGE_URL", "/idp")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    library = client.get("/library")
+    assert library.status_code == 200
+    assert 'href="/idp"' in library.text
+    assert "Software catalog" in library.text
 
 
 def test_load_portal_config_html_rejects_non_bool(tmp_path: Path) -> None:

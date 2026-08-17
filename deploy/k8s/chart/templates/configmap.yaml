@@ -22,6 +22,9 @@ data:
     portal:
       html: {{ .Values.repave.portal.html }}
       density: {{ .Values.repave.portal.density | quote }}
+      {{- if .Values.repave.portal.backstageUrl }}
+      backstage_url: {{ .Values.repave.portal.backstageUrl | quote }}
+      {{- end }}
       {{- if .Values.repave.portal.logoUrl }}
       logo_url: {{ .Values.repave.portal.logoUrl | quote }}
       {{- end }}

@@ -35,34 +35,6 @@ export const SidebarContent = NavContentBlueprint.make({
           <SidebarGroup label="Menu" icon={<MenuIcon />}>
             {nav.take('page:catalog')}
             {nav.take('page:repave/my-services')}
-            {nav.take('page:repave/generate')}
-            {nav.take('page:repave/bundles')}
-            {nav.take('page:repave/library')}
-            {nav.take('page:repave/teams')}
-            {nav.take('page:repave/services')}
-            {nav.take('page:repave/sandbox')}
-            {nav.take('page:repave/vend')}
-            {nav.take('page:repave/reclaim')}
-            {nav.take('page:repave/runs')}
-            {nav.take('page:repave/run-console')}
-            {nav.take('page:repave/upgrade')}
-            {nav.take('page:repave/add')}
-            {nav.take('page:repave/fleet')}
-            {nav.take('page:repave/ops')}
-            {nav.take('page:repave/standards')}
-            {nav.take('page:repave/campaigns')}
-            {nav.take('page:repave/import')}
-            {nav.take('page:repave/import-batch')}
-            {nav.take('page:repave/verify')}
-            {nav.take('page:repave/estate')}
-            {nav.take('page:repave/adoption')}
-            {nav.take('page:repave/roadmap')}
-            {nav.take('page:repave/activity')}
-            {nav.take('page:repave/maturity')}
-            {nav.take('page:repave/compliance')}
-            {nav.take('page:repave/value-stream')}
-            {nav.take('page:repave/feedback')}
-            {nav.take('page:repave/finops')}
             {nav.take('page:scaffolder')}
             <SidebarDivider />
             <SidebarScrollWrapper>

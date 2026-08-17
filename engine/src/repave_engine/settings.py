@@ -1409,9 +1409,10 @@ class PortalConfig:
     deployment_status_url: str = ""
     deployment_argocd: DeploymentArgocdConfig = field(default_factory=DeploymentArgocdConfig)
     deployment_flux: DeploymentFluxConfig = field(default_factory=DeploymentFluxConfig)
-    # Local-first default: make serve still renders HTML. Hosted Backstage
-    # overlay (values-backstage.yaml) sets false so HTML routes return 410.
+    # Local-first and hosted workbench (ADR 011). Set false for API-only installs.
     html: bool = True
+    # Public Backstage base for "Open in catalog" (empty hides the links).
+    backstage_url: str = ""
 
 
 def _load_portal_html(block: dict[str, Any]) -> bool:
@@ -1430,6 +1431,27 @@ def _load_portal_html(block: dict[str, Any]) -> bool:
     return html
 
 
+def normalize_portal_backstage_url(raw: str) -> str:
+    """Accept same-origin paths or http(s) URLs for the catalog IDP handoff."""
+    value = raw.strip()
+    if not value:
+        return ""
+    lower = value.lower()
+    if lower.startswith(("javascript:", "data:", "vbscript:")):
+        raise ValueError(
+            "portal.backstage_url must be an http(s) URL or a root-relative path "
+            "(for example /idp or https://backstage.example.com)"
+        )
+    if value.startswith("/"):
+        return value.rstrip("/") or "/"
+    if lower.startswith("https://") or lower.startswith("http://"):
+        return value.rstrip("/")
+    raise ValueError(
+        "portal.backstage_url must be an http(s) URL or a root-relative path "
+        "(for example /idp or https://backstage.example.com)"
+    )
+
+
 def load_portal_config(repo_root: Path) -> PortalConfig:
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("portal")
@@ -1439,6 +1461,10 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     if density not in ("default", "compact"):
         raise ValueError("portal.density must be 'default' or 'compact'")
     html = _load_portal_html(block)
+    backstage_url = normalize_portal_backstage_url(str(block.get("backstage_url", "")))
+    env_backstage = os.environ.get("REPAVE_BACKSTAGE_URL", "").strip()
+    if env_backstage:
+        backstage_url = normalize_portal_backstage_url(env_backstage)
     logo_url = normalize_portal_logo_url(str(block.get("logo_url", "")))
     accent_color = normalize_portal_accent_color(str(block.get("accent_color", "")))
     env_logo = os.environ.get("REPAVE_PORTAL_LOGO_URL", "").strip()
@@ -1652,6 +1678,7 @@ def load_portal_config(repo_root: Path) -> PortalConfig:
     return PortalConfig(
         density=density,
         html=html,
+        backstage_url=backstage_url,
         observability_dashboard_url=obs_url,
         observability_slo_url=slo_url,
         logo_url=logo_url,

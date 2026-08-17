@@ -1,11 +1,13 @@
-# Overlay: hosted Backstage cutover (ADR 011). Image must exist locally or in GHCR.
+# Overlay: hosted catalog IDP (ADR 011). Image must exist locally or in GHCR.
 # CI: make chart-smoke-backstage. Flag defaults on in values.yaml; this overlay
-# also sets portal.html=false, catalog fixtures, and the / vs /api split.
+# enables catalog fixtures and the same-host / vs /api vs /idp split.
 #
 # Same-host path split (enable both ingresses when you cut over):
-#   /     → Backstage
+#   /     → HTML workbench (engine)
 #   /api  → engine
-# HTML portal returns 410 (portal.html=false). CLI and /api/v2 stay.
+#   /idp  → Backstage (catalog, lineage, scaffolder)
+# /idp avoids colliding with Backstage's own /catalog route.
+# HTML portal stays on (portal.html=true). CLI and /api/v2 stay.
 # Ingress stays opt-in so chart-smoke is unchanged.
 ingress:
   hosts:
@@ -13,18 +15,25 @@ ingress:
       paths:
         - path: /api
           pathType: Prefix
+        - path: /
+          pathType: Prefix
 repave:
   portal:
-    html: false
-  # Catalog defaults on in values.yaml; keep it explicit on the cutover overlay.
+    html: true
+    # Same-host catalog IDP. Operators on a second host should override.
+    backstageUrl: /idp
+  # Catalog defaults on in values.yaml; keep it explicit on the overlay.
   serviceCatalog:
     enabled: true
     bundleExamples: true
   backstage:
     enabled: true
+    extraEnv:
+      - name: REPAVE_PORTAL_BASE_URL
+        value: /
     ingress:
       hosts:
         - host: repave.example.com
           paths:
-            - path: /
+            - path: /idp
               pathType: Prefix

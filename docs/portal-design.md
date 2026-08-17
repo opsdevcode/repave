@@ -325,9 +325,9 @@ once against this shell. Do not recapture v2 chrome.
 - README screenshots: catalog hero + hosted landing recaptured after those pages
   landed; other portal/CLI shots remain the #648 v3-shell pass
 - Asset checklist: [`docs/brand/v3.md`](brand/v3.md)
-- **Hosted IDP:** Backstage is the developer UI ([ADR 011](adr/011-hosted-backstage-idp.md)).
-  HTML portal sunset **14 Feb 2027**. Recapture README shots against Backstage once
-  Phase 1 is default-on.
+- **Hosted workbench:** night-ops HTML is the growing UI. Backstage is the
+  catalog IDP only ([ADR 011](adr/011-hosted-backstage-idp.md),
+  [`ui-surfaces.md`](ui-surfaces.md)).
 
 Primary nav is a compact pill group: Catalog / Library / Upgrade / Verify, with
 Import, Repo status, Activity, Runs, and Platform under **More**. The right side
@@ -344,7 +344,7 @@ holds Search (⌘K), session, and environment badges.
 | **Live plan surfaces** | Entity preflight panel, busy overlay on submit, result hero with resource counts |
 | **Blueprint form** | Collapsible gate list on governance card; step progress text; mobile-first sticky actions; Guided/Advanced depth with `guided_from` identity fill |
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
-| **Hosted Backstage IDP** | **Default on** — owner Eric Skaggs ([ADR 011](adr/011-hosted-backstage-idp.md)); Phase 4 HTML removal is a product call |
+| **Hosted Backstage IDP** | **Catalog only** — owner Eric Skaggs ([ADR 011](adr/011-hosted-backstage-idp.md)); HTML is the workbench ([`ui-surfaces.md`](ui-surfaces.md)) |
 | **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |
 | **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
@@ -416,7 +416,7 @@ the result page lineage card. Cursor rule: `.cursor/rules/portal-ux-copy.mdc`.
 | --- | --- |
 | Templates | `engine/src/repave_engine/templates/` |
 | Static assets | `engine/src/repave_engine/static/repave.css`, `repave.js` |
-| Form logic | Backstage `/generate` posts `POST /api/v2/generate`; HTML POST `/generate` still renders `result.html` |
+| Form logic | HTML POST `/generate` renders `result.html`; Scaffolder `repave:generate` is an alternate `/api/v2` submit |
 | API routes | Engine FastAPI app (serves HTML responses) |
 
 When implementing Phase 1, add tests only where behavior changes (for example route

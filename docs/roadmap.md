@@ -9,7 +9,8 @@ major-boundary themes. Full shipped writeups live in
 
 **In progress:** —
 
-HTML portal sunset 14 Feb 2027 (templates can come out earlier).
+HTML is the hosted workbench; Backstage is the catalog IDP
+([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
 Mandatory policy on regulated families shipped.
 Service catalog env/`enabled: true` defaults maturity + initiatives paths.
 Public landing shipped in 3.1.0. Identity
@@ -21,14 +22,16 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**UI split by job**
+(HTML workbench + Backstage catalog/lineage/Scaffolder; plugin clones removed;
+[`docs/ui-surfaces.md`](ui-surfaces.md));
 **OCI blueprint pack pull**
 (`blueprint_packs.sources[]` `oci://` + tag/digest via `oras pull`);
 **Azure/GCP component stubs**
 (`azurerm_*` / `google_*` for database, bucket, and queue; no `null_resource`);
 **HTML portal pages restored for local-first**
 (nav, generate, upgrade, verify, import, platform, runs, sandbox, and results
-are real pages again so `make serve` can open them; hosted Backstage still owns
-the same routes when the cutover overlay is on);
+are the hosted workbench; Backstage is catalog-only);
 **HTML landing and signup stay**
 (public splash when auth is on; Sign in → `/auth/login`, Create account → `/signup`);
 **HTML catalog and library pages restored**
@@ -173,7 +176,7 @@ v3.43.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; platform/import/verify/result/bundle/upgrade/runs/sandbox/kind-result HTML retired; catalog, library, landing, and signup stay HTML pages ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Catalog only | Owner Eric Skaggs; HTML is the workbench; Backstage is catalog + lineage + Scaffolder ([ADR 011](adr/011-hosted-backstage-idp.md), [`ui-surfaces.md`](ui-surfaces.md)) |
 | **Forked blueprint packs** | Shipped | Local roots + git URL fetch + OCI `oras pull` (read-only cache) |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
@@ -189,35 +192,23 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Chart-smoke, GHCR image, admin pages, and
-`repave.backstage.enabled` default-on shipped (owner: Eric Skaggs;
-[ADR 011](adr/011-hosted-backstage-idp.md)).
-Kind/smoke overlays keep the flag off. Ops, standards, campaigns, and builder
-browse pages have Backstage pages. `/generate` posts `POST /api/v2/generate`
-(dry-run default). Local `make serve` keeps the FastAPI HTML pages (catalog,
-library, generate, upgrade, verify, import, platform, runs, sandbox, and
-results) so nav works without Backstage. Hosted cutover still sends `/` to
-Backstage. Landing and signup stay as the public splash when auth is on.
+**Status:** Split by job shipped (owner: Eric Skaggs;
+[ADR 011](adr/011-hosted-backstage-idp.md),
+[`docs/ui-surfaces.md`](ui-surfaces.md)).
+Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench.
+Backstage is catalog ingest, lineage, My services, and optional Scaffolder.
+Plugin clones of generate/ops/platform pages are removed. Hosted overlay keeps
+`portal.html: true` and sends `/idp` to Backstage.
 
-**Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
-that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
-`/` splash was a thin sign-in card, not a product page.
+**Problem:** Cloning every `/api/v2` page into Backstage created a second full
+portal without the night-ops look.
 
-**Approach:** Host Backstage next to `/api/v2`. Scaffolder calls generate over JSON.
-Catalog ingest uses `catalog-info.yaml`. `/my-services` lists components with
-`repave.dev/*` lineage. The unauthenticated `/` landing sells golden paths, gates,
-and the hosted catalog. HTML portal stays until the published sunset
-(14 Feb 2027); CLI remains the local-first path.
+**Approach:** Grow the HTML workbench. Keep Backstage for catalog, ownership,
+and `repave:generate`. Handoff via `portal.backstage_url` and
+`repave.portalBaseUrl`. CLI remains the offline path.
 
-**Done when:** a named owner takes the Backstage release treadmill and the
-chart flag defaults on — **met** (Eric Skaggs). Platform-admin HTML already
-has Backstage pages, including `/ops`, `/standards`, `/campaigns`, and builder
-browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
-`/run-console`). `/generate` picks a blueprint, fills inputs, and dry-runs
-`POST /api/v2/generate`. Local HTML pages stay so `make serve` nav works.
-Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke
-and GHCR publish already shipped. Landing and signup stay as the public
-splash when auth is on.
+**Done when:** one growing UI (HTML) and a catalog IDP that does not mirror it —
+**met**. Apply stays CLI and operator. Chart-smoke and GHCR publish stay.
 
 ---
 

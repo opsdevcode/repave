@@ -42,15 +42,6 @@ def _entry(
 
 V3_DEPRECATIONS: Final[tuple[DeprecationEntry, ...]] = (
     _entry(
-        "html_portal_removal",
-        "Remove FastAPI HTML portal templates after the hosted Backstage sunset",
-        year=2027,
-        month=2,
-        day=14,
-        migration_doc="docs/backstage.md",
-        successor_link='</docs/backstage>; rel="successor-version"',
-    ),
-    _entry(
         "api_v1_removal",
         "Remove legacy /api/v1 JSON surface",
         year=2027,

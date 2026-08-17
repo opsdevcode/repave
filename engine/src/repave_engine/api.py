@@ -36,7 +36,6 @@ from repave_engine.ansible_role_inventory import (
 )
 from repave_engine.api_auth import build_auth_router
 from repave_engine.api_deprecation import (
-    HTML_PORTAL_DEPRECATION_HEADERS,
     HTML_PORTAL_DISABLED_DETAIL,
     V1_DEPRECATION_HEADERS,
     is_html_portal_path,
@@ -61,6 +60,7 @@ from repave_engine.auth import (
     session_user,
 )
 from repave_engine.auth_context import current_acting_user, reset_acting_user, set_acting_user
+from repave_engine.backstage_urls import backstage_catalog_entity_href
 from repave_engine.blueprint import (
     artifact_family,
     blueprint_dir,
@@ -375,9 +375,6 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if path.startswith("/api/v1"):
             for key, value in V1_DEPRECATION_HEADERS.items():
                 response.headers[key] = value
-        elif is_html_portal_path(path):
-            for key, value in HTML_PORTAL_DEPRECATION_HEADERS.items():
-                response.headers[key] = value
         return response
 
     configure_tracing(load_tracing_config(repo_root))
@@ -418,6 +415,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "portal_density": portal_config.density,
             "portal_logo_url": portal_config.logo_url,
             "portal_accent_color": portal_config.accent_color,
+            "portal_backstage_url": portal_config.backstage_url,
+            "backstage_catalog_href": backstage_catalog_entity_href,
             "presenter_mode": presenter,
             "auth_enabled": auth_config is not None and auth_config.service_enabled,
             "auth_user": auth_user,
