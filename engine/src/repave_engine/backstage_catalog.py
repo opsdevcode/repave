@@ -11,6 +11,7 @@ from repave_engine import __version__
 from repave_engine.blueprint import Blueprint
 
 CATALOG_FILENAME = "catalog-info.yaml"
+TECHDOCS_REF_DIR = "dir:."
 ALWAYS_EMIT_ARTIFACT_TYPES = frozenset({"app-service"})
 
 
@@ -42,6 +43,13 @@ def catalog_component_type(artifact_type: str) -> str:
     if artifact_type.startswith("terraform-"):
         return "library"
     return "service"
+
+
+def catalog_techdocs_ref(output_dir: Path) -> str | None:
+    """Return dir:. when the generated repo has MkDocs source."""
+    if (output_dir / "mkdocs.yml").is_file() or (output_dir / "docs").is_dir():
+        return TECHDOCS_REF_DIR
+    return None
 
 
 def catalog_description(blueprint: Blueprint, values: dict[str, Any]) -> str:
@@ -100,6 +108,10 @@ def write_backstage_catalog_if_enabled(
     if not should_emit_catalog(blueprint, values):
         return False
     document = build_catalog_document(blueprint, values)
+    techdocs_ref = catalog_techdocs_ref(output_dir)
+    if techdocs_ref:
+        annotations = document["metadata"]["annotations"]
+        annotations["backstage.io/techdocs-ref"] = techdocs_ref
     path = output_dir / CATALOG_FILENAME
     path.write_text(
         yaml.safe_dump(document, sort_keys=False, default_flow_style=False),

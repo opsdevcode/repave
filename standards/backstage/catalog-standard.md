@@ -14,6 +14,7 @@ is `true` (Terraform modules, Helm charts).
   - `repave.dev/blueprint`, `repave.dev/blueprint-version`
   - `repave.dev/standard-source`, `repave.dev/standard-version`
   - `repave.dev/engine-version`, `repave.dev/artifact-type`
+  - `backstage.io/techdocs-ref: dir:.` when the repo has `docs/` or `mkdocs.yml`
 - **spec.type:** `service` (app-service, Helm) or `library` (Terraform modules)
 - **spec.owner:** Team or group ref (required for app-service; required when catalog is enabled)
 - **spec.system:** Optional platform system name

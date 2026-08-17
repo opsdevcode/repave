@@ -168,6 +168,7 @@ Each component includes:
 | `repave.dev/standard-version` | Pinned standards semver |
 | `repave.dev/engine-version` | Engine release that generated |
 | `repave.dev/artifact-type` | Golden-path artifact type |
+| `backstage.io/techdocs-ref` | `dir:.` when the repo has `docs/` or `mkdocs.yml` |
 
 Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
 
@@ -180,7 +181,11 @@ Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backsta
    without an API still loads example entities.
 
 The entity page **Repave lineage** card shows those annotations. Sample:
-`tf-aws-demo` in [`backstage/examples/entities.yaml`](../backstage/examples/entities.yaml).
+`tf-aws-demo` in [`backstage/examples/entities.yaml`](../backstage/examples/entities.yaml)
+(also annotated for TechDocs; source is [`examples/docs/`](../backstage/examples/docs/)
+next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**. Local `yarn start`
+builds with `techdocs.generator.runIn: docker`. Do not iframe or clone Docs
+into the HTML workbench.
 
 Example Location for a published repo:
 
