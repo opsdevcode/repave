@@ -27,7 +27,9 @@ backend:
 # AUTH0_CLIENT_ID is set — empty ${AUTH0_*:-} still fails provider init.
 auth:
   providers:
-    guest: {}
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+      userEntityRef: user:default/guest
 
 repave:
   apiBaseUrl: ${REPAVE_API_BASE_URL:-}
@@ -65,6 +67,17 @@ kubernetes:
           skipMetricsLookup: true
 
 catalog:
+  providers:
+    github:
+      repave:
+        organization: ${GITHUB_ORG:-}
+        catalogPath: /catalog-info.yaml
+        filters:
+          branch: main
+          repository: '.*'
+        schedule:
+          frequency: { hours: 6 }
+          timeout: { minutes: 5 }
   # Overrides the default list locations from app-config.yaml as these contain example data.
   # See https://backstage.io/docs/features/software-catalog/#adding-components-to-the-catalog for more details
   # on how to get entities into the catalog.

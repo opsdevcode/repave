@@ -37,6 +37,21 @@ spec:
           title: Plan only
           type: boolean
           default: true
+    - title: Catalog (optional)
+      properties:
+        catalogTags:
+          title: Tags
+          type: string
+        catalogKubernetesId:
+          title: Kubernetes id
+          type: string
+          description: backstage.io/kubernetes-id (defaults to chart name)
+        catalogGithubSlug:
+          title: GitHub slug
+          type: string
+        catalogDomain:
+          title: Domain
+          type: string
   steps:
     - id: generate
       name: repave generate
@@ -51,6 +66,10 @@ spec:
           image_repository: ${{ parameters.imageRepository }}
           owner: ${{ parameters.owner }}
           include_backstage_catalog: "true"
+          catalog_tags: ${{ parameters.catalogTags }}
+          catalog_kubernetes_id: ${{ parameters.catalogKubernetesId }}
+          catalog_github_slug: ${{ parameters.catalogGithubSlug }}
+          catalog_domain: ${{ parameters.catalogDomain }}
   output:
     text:
       - title: Summary

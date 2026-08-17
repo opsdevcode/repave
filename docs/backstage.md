@@ -52,6 +52,8 @@ export REPAVE_API_BASE_URL=http://127.0.0.1:8088
 ```
 
 Guest auth is on for local-first (`app-config.yaml` has no Auth0 block).
+Guest sign-in maps to `user:default/guest` so org ownership resolves against
+`examples/org.yaml`.
 The hosted image stays guest-only unless `AUTH0_CLIENT_ID` is set (then
 `docker-entrypoint.sh` loads `app-config.auth0.yaml`). Empty
 `${AUTH0_*:-}` still fails provider init — do not set blank Auth0 env in
@@ -155,9 +157,14 @@ The engine still writes `catalog-info.yaml` after Copier render
 
 | Golden path | Default | Inputs |
 | --- | --- | --- |
-| `app-service-generic` | Always | `owner` (required), `system`, `catalog_*` relations/tags/links/slug/kubernetes, `description` |
+| `app-service-generic` | Always | `owner` (required), `system`, `catalog_*` relations/tags/links/slug/kubernetes/domain, `description` |
 | `helm-chart-generic` | Off | `include_backstage_catalog=true` and `owner` |
 | `terraform-module-generic` | Off | Same optional inputs as Helm |
+
+When publish `github_org` is set and `catalog_github_slug` is empty, generate
+derives `github.com/project-slug` from `output_repo_name_template` (Copier
+`repo_name`). App-service and Helm auto-fill `catalog_kubernetes_id` from
+`service_name` / `chart_name` when unset.
 
 Each component includes:
 
@@ -172,20 +179,25 @@ Each component includes:
 | `backstage.io/techdocs-ref` | `dir:.` when the repo has `docs/` or `mkdocs.yml` |
 | `backstage.io/kubernetes-id` | Workload label for the Kubernetes tab (`catalog_kubernetes_id`) |
 | `backstage.io/kubernetes-namespace` | Namespace filter (`catalog_kubernetes_namespace`) |
-| `github.com/project-slug` | `org/repo` (`catalog_github_slug` or `github_org`+`github_repo`) |
+| `github.com/project-slug` | `org/repo` (`catalog_github_slug` or `github_org`+`github_repo`, or auto from publish org + repo template) |
 | `backstage.io/source-location` | `url:https://github.com/{slug}` when the slug is set |
+| `repave.dev/catalog-domain` | Domain name for catalog grouping (`catalog_domain`) |
 
 Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
 
 **Ingest**
 
 1. File / GitHub Location targeting `catalog-info.yaml` (org discovery or a
-   single repo URL).
+   single repo URL). Production `app-config.production.yaml` registers
+   `catalog.providers.github.repave` when `GITHUB_ORG` is set (chart passes
+   `repave.output.githubOrg`).
 2. `RepaveEntityProvider` polls `GET /api/v2/catalog/entities` when
    `repave.apiBaseUrl` is set. Idle (no error) when unset so `yarn start`
    without an API still loads example entities.
 
-The entity page **Repave lineage** card shows those annotations. Sample:
+The entity page **Repave lineage** card shows those annotations plus **View
+source** when `github.com/project-slug` or `backstage.io/source-location` is
+set. Kubernetes id and catalog domain appear in the metadata table. Sample:
 `tf-aws-demo` in [`backstage/examples/entities.yaml`](../backstage/examples/entities.yaml)
 (also annotated for TechDocs; source is [`examples/docs/`](../backstage/examples/docs/)
 next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**.
@@ -195,12 +207,16 @@ next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**.
 | Local `yarn start` | `techdocs.generator.runIn: docker` (needs Docker) |
 | Hosted image / chart | `runIn: local` — `mkdocs-techdocs-core==1.7.0` in [`packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile) so the pod does not need Docker-in-Docker |
 
+Entity Docs also registers TechDocs contrib addons (report issue).
+
 Catalog also registers **graph**, **search**, **API docs**, **import**, **org**,
 and **Kubernetes**. Example domain `demo` owns system `examples`. `tf-aws-demo`
 has a GitHub project-slug; `example-website` provides `example-grpc-api`;
 `example-worker` is a subcomponent that consumes that API. Open **Catalog** →
 **demo** / **guests** / **platform**. Hosted image uses an in-cluster locator
 plus a namespace Role (`repave.backstage.kubernetes.enabled`, default on).
+Set `repave.backstage.kubernetes.allNamespaces: true` for a ClusterRole when
+the Kubernetes tab must list workloads outside the release namespace.
 The Backstage pod is labeled `backstage.io/kubernetes-id: example-website` so
 the Kubernetes tab has a workload in the release namespace. Local `yarn start`
 keeps an empty cluster list. Create has Terraform, Helm, and app-service

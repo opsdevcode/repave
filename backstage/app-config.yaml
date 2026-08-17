@@ -96,7 +96,9 @@ auth:
   # Guest only. Auth0 is app-config.auth0.yaml when AUTH0_CLIENT_ID is set
   # (docker-entrypoint.sh). An empty auth0.* block still fails provider init.
   providers:
-    guest: {}
+    guest:
+      dangerouslyAllowOutsideDevelopment: true
+      userEntityRef: user:default/guest
   # see https://backstage.io/docs/ai/mcp-actions#client-id-metadata-documents
   # to learn more about client id metadata documents
   clientIdMetadataDocuments:

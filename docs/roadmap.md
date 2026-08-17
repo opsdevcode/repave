@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.47.0  
 
-**In progress:** —
+**In progress:** catalog closeout (auto slug, GitHub discovery, guest identity)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -207,9 +207,8 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Split by job + one product chrome + TechDocs + catalog graph / search /
-API docs / import + org / Kubernetes + catalog depth shipped
-(owner: Eric Skaggs;
+**Status:** Catalog closeout in progress (auto slug/k8s id, GitHub discovery, guest
+identity, TechDocs addons, lineage handoff, ClusterRole opt-in; owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md),
 [`docs/ui-surfaces.md`](ui-surfaces.md)).
 Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench

@@ -73,3 +73,8 @@
 #   required: false
 #   default: ""
 #   description: org/repo for github.com/project-slug and source-location.
+# - name: catalog_domain
+#   type: string
+#   required: false
+#   default: ""
+#   description: repave.dev/catalog-domain annotation (System.domain hint).

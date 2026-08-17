@@ -37,6 +37,15 @@ class BackstagePreview:
     owner: str
     name: str
     repave_annotations: tuple[tuple[str, str], ...]
+    tags: tuple[str, ...] = ()
+    links: tuple[tuple[str, str], ...] = ()
+    consumes_apis: tuple[str, ...] = ()
+    subcomponent_of: str = ""
+    github_slug: str = ""
+    github_source_url: str = ""
+    kubernetes_id: str = ""
+    kubernetes_namespace: str = ""
+    catalog_domain: str = ""
 
 
 def _file_content(rendered_files: tuple[Any, ...], name: str) -> str | None:
@@ -63,16 +72,72 @@ def _backstage_preview(content: str, path: str) -> BackstagePreview | None:
         owner = str(spec.get("owner", "")).strip()
     annotations = metadata.get("annotations")
     repave: list[tuple[str, str]] = []
+    github_slug = ""
+    github_source_url = ""
+    kubernetes_id = ""
+    kubernetes_namespace = ""
+    catalog_domain = ""
     if isinstance(annotations, dict):
         for key, val in sorted(annotations.items()):
             key_str = str(key)
-            if key_str.startswith("repave.dev/"):
+            if key_str == "repave.dev/catalog-domain":
+                catalog_domain = str(val).strip()
+            elif key_str.startswith("repave.dev/"):
                 repave.append((key_str, str(val)))
+            elif key_str == "github.com/project-slug":
+                github_slug = str(val).strip()
+            elif key_str == "backstage.io/source-location":
+                loc = str(val).strip()
+                if loc.startswith("url:"):
+                    github_source_url = loc[4:].strip()
+            elif key_str == "backstage.io/kubernetes-id":
+                kubernetes_id = str(val).strip()
+            elif key_str == "backstage.io/kubernetes-namespace":
+                kubernetes_namespace = str(val).strip()
+    if github_slug and not github_source_url:
+        github_source_url = f"https://github.com/{github_slug}"
+
+    tags: tuple[str, ...] = ()
+    raw_tags = metadata.get("tags")
+    if isinstance(raw_tags, list):
+        tags = tuple(str(item).strip() for item in raw_tags if str(item).strip())
+
+    links: tuple[tuple[str, str], ...] = ()
+    raw_links = metadata.get("links")
+    if isinstance(raw_links, list):
+        parsed_links: list[tuple[str, str]] = []
+        for item in raw_links:
+            if not isinstance(item, dict):
+                continue
+            url = str(item.get("url", "")).strip()
+            if not url:
+                continue
+            title = str(item.get("title", "")).strip()
+            parsed_links.append((title, url))
+        links = tuple(parsed_links)
+
+    consumes_apis: tuple[str, ...] = ()
+    subcomponent_of = ""
+    if isinstance(spec, dict):
+        raw_consumes = spec.get("consumesApis")
+        if isinstance(raw_consumes, list):
+            consumes_apis = tuple(str(item).strip() for item in raw_consumes if str(item).strip())
+        subcomponent_of = str(spec.get("subcomponentOf", "")).strip()
+
     return BackstagePreview(
         path=path,
         owner=owner,
         name=str(metadata.get("name", "")).strip(),
         repave_annotations=tuple(repave),
+        tags=tags,
+        links=links,
+        consumes_apis=consumes_apis,
+        subcomponent_of=subcomponent_of,
+        github_slug=github_slug,
+        github_source_url=github_source_url,
+        kubernetes_id=kubernetes_id,
+        kubernetes_namespace=kubernetes_namespace,
+        catalog_domain=catalog_domain,
     )
 
 

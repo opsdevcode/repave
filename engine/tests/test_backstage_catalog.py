@@ -13,6 +13,7 @@ from repave_engine.backstage_catalog import (
     catalog_links,
     catalog_optional_text,
     catalog_techdocs_ref,
+    enrich_catalog_values,
     should_emit_catalog,
     write_backstage_catalog_if_enabled,
 )
@@ -182,6 +183,51 @@ def test_build_catalog_document_relations_tags_links_and_github() -> None:
     assert annotations["backstage.io/source-location"] == (
         "url:https://github.com/acme/app-checkout"
     )
+
+
+def test_enrich_catalog_values_auto_slug_and_kubernetes_id() -> None:
+    bp = _bp("app-service")
+    bp = Blueprint(
+        path=bp.path,
+        name=bp.name,
+        version=bp.version,
+        description=bp.description,
+        artifact_type="app-service",
+        standard_source=bp.standard_source,
+        standard_version=bp.standard_version,
+        inputs=bp.inputs,
+        template_engine=bp.template_engine,
+        template_path=bp.template_path,
+        gates=bp.gates,
+        output_type=bp.output_type,
+        output_repo_name_template="app-{service_name}",
+        output_title_template=bp.output_title_template,
+    )
+    enriched = enrich_catalog_values(
+        bp,
+        {"service_name": "checkout", "owner": "group:payments"},
+        github_org="acme",
+    )
+    assert enriched["github_org"] == "acme"
+    assert enriched["github_repo"] == "app-checkout"
+    assert enriched["catalog_kubernetes_id"] == "checkout"
+    doc = build_catalog_document(bp, enriched)
+    slug = doc["metadata"]["annotations"]["github.com/project-slug"]
+    assert slug == "acme/app-checkout"
+    assert doc["metadata"]["annotations"]["backstage.io/kubernetes-id"] == "checkout"
+
+
+def test_build_catalog_document_catalog_domain() -> None:
+    bp = _bp("app-service")
+    doc = build_catalog_document(
+        bp,
+        {
+            "service_name": "checkout",
+            "owner": "group:payments",
+            "catalog_domain": "commerce",
+        },
+    )
+    assert doc["metadata"]["annotations"]["repave.dev/catalog-domain"] == "commerce"
 
 
 def test_catalog_component_name_terraform() -> None:

@@ -108,6 +108,41 @@ def catalog_description(blueprint: Blueprint, values: dict[str, Any]) -> str:
     return blueprint.description or f"Golden path {blueprint.name}"
 
 
+def enrich_catalog_values(
+    blueprint: Blueprint,
+    values: dict[str, Any],
+    *,
+    github_org: str | None = None,
+) -> dict[str, Any]:
+    """Apply publish defaults before building catalog-info.yaml."""
+    enriched = dict(values)
+    org = catalog_optional_text(github_org or enriched.get("github_org"))
+    if org and not catalog_github_slug(enriched):
+        enriched["github_org"] = org
+        try:
+            repo_name = blueprint.output_repo_name_template.format(**enriched)
+        except KeyError:
+            repo_name = ""
+        if repo_name.strip():
+            enriched["github_repo"] = repo_name.strip()
+
+    if blueprint.artifact_type == "app-service":
+        if not catalog_optional_text(
+            enriched.get("catalog_kubernetes_id") or enriched.get("kubernetes_id")
+        ):
+            service = catalog_optional_text(enriched.get("service_name"))
+            if service:
+                enriched["catalog_kubernetes_id"] = service
+    elif blueprint.artifact_type == "helm-chart" and not catalog_optional_text(
+        enriched.get("catalog_kubernetes_id") or enriched.get("kubernetes_id")
+    ):
+        chart = catalog_optional_text(enriched.get("chart_name") or enriched.get("app_name"))
+        if chart:
+            enriched["catalog_kubernetes_id"] = chart
+
+    return enriched
+
+
 def build_catalog_document(blueprint: Blueprint, values: dict[str, Any]) -> dict[str, Any]:
     name = catalog_component_name(blueprint, values)
     owner = str(values.get("owner", "group:default/unknown")).strip()
@@ -172,6 +207,9 @@ def build_catalog_document(blueprint: Blueprint, values: dict[str, Any]) -> dict
     )
     if kubernetes_namespace:
         annotations["backstage.io/kubernetes-namespace"] = kubernetes_namespace
+    catalog_domain = catalog_optional_text(values.get("catalog_domain"))
+    if catalog_domain:
+        annotations["repave.dev/catalog-domain"] = catalog_domain
 
     metadata: dict[str, Any] = {
         "name": name,
@@ -195,10 +233,13 @@ def write_backstage_catalog_if_enabled(
     output_dir: Path,
     blueprint: Blueprint,
     values: dict[str, Any],
+    *,
+    github_org: str | None = None,
 ) -> bool:
     if not should_emit_catalog(blueprint, values):
         return False
-    document = build_catalog_document(blueprint, values)
+    enriched = enrich_catalog_values(blueprint, values, github_org=github_org)
+    document = build_catalog_document(blueprint, enriched)
     techdocs_ref = catalog_techdocs_ref(output_dir)
     if techdocs_ref:
         annotations = document["metadata"]["annotations"]

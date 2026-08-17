@@ -16,9 +16,13 @@ is `true` (Terraform modules, Helm charts).
   - `repave.dev/engine-version`, `repave.dev/artifact-type`
   - `backstage.io/techdocs-ref: dir:.` when the repo has `docs/` or `mkdocs.yml`
   - `backstage.io/kubernetes-id` / `backstage.io/kubernetes-namespace` when
-    `catalog_kubernetes_id` / `catalog_kubernetes_namespace` are set
+    `catalog_kubernetes_id` / `catalog_kubernetes_namespace` are set, or when
+    app-service / Helm emit auto-fill `catalog_kubernetes_id` from
+    `service_name` / `chart_name`
   - `github.com/project-slug` / `backstage.io/source-location` when
-    `catalog_github_slug` (or `github_org` + `github_repo`) is set
+    `catalog_github_slug` (or `github_org` + `github_repo`) is set, or when
+    publish `github_org` + `output_repo_name_template` can derive `org/repo`
+  - `repave.dev/catalog-domain` when `catalog_domain` is set
 - **metadata.tags / metadata.links:** Optional from `catalog_tags` / `catalog_links`
 - **spec.type:** `service` (app-service, Helm) or `library` (Terraform modules)
 - **spec.owner:** Team or group ref (required for app-service; required when catalog is enabled)

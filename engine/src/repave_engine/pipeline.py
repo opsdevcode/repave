@@ -436,7 +436,12 @@ def generate_from_blueprint(
     try:
         with pipeline_span("repave.render"):
             _emit_stage(on_event, "render", started=True)
-            render_result = render_blueprint(blueprint, normalized, staging_dir)
+            render_result = render_blueprint(
+                blueprint,
+                normalized,
+                staging_dir,
+                github_org=output_config.github_org,
+            )
             _emit_stage(on_event, "render", started=False)
         run_gate_overrides = (
             load_gate_overrides(repo_root) if repo_root is not None else gate_overrides

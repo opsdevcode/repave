@@ -1064,6 +1064,7 @@ def test_terraform_guided_only_generate_uses_defaults(
             "catalog_tags",
             "catalog_links",
             "catalog_github_slug",
+            "catalog_domain",
             "provider_service_scope",
         }
     }
@@ -1104,6 +1105,7 @@ def test_terraform_guided_generate_derives_name_and_description(
             "catalog_tags",
             "catalog_links",
             "catalog_github_slug",
+            "catalog_domain",
             "provider_service_scope",
         }
     }
@@ -1558,6 +1560,7 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert 'id="catalog_tags"' in response.text
     assert 'id="catalog_links"' in response.text
     assert 'id="catalog_github_slug"' in response.text
+    assert 'id="catalog_domain"' in response.text
     assert 'id="runtime"' in response.text
     assert ">go</option>" in response.text
     assert 'data-form-mode="guided"' in response.text

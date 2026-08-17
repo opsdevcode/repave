@@ -7,6 +7,50 @@ metadata:
     {{- include "repave.labels" . | nindent 4 }}
     app.kubernetes.io/component: backstage-kubernetes
 ---
+{{- if include "repave.backstageKubernetesClusterWide" . }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "repave.fullname" . }}-backstage-kubernetes
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backstage-kubernetes
+rules:
+  - apiGroups: ["", "apps", "batch", "autoscaling", "networking.k8s.io"]
+    resources:
+      - pods
+      - pods/log
+      - services
+      - configmaps
+      - deployments
+      - replicasets
+      - horizontalpodautoscalers
+      - jobs
+      - cronjobs
+      - ingresses
+      - daemonsets
+      - statefulsets
+      - limitranges
+      - resourcequotas
+      - namespaces
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "repave.fullname" . }}-backstage-kubernetes
+  labels:
+    {{- include "repave.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backstage-kubernetes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "repave.fullname" . }}-backstage-kubernetes
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "repave.backstageServiceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- else }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -48,4 +92,5 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "repave.backstageServiceAccountName" . }}
     namespace: {{ .Release.Namespace }}
+{{- end }}
 {{- end }}

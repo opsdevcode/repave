@@ -9,6 +9,10 @@ const ANNOTATIONS = [
   ['repave.dev/standard-version', 'Standard version'],
   ['repave.dev/engine-version', 'Engine version'],
   ['repave.dev/artifact-type', 'Artifact type'],
+  ['repave.dev/catalog-domain', 'Domain'],
+  ['backstage.io/kubernetes-id', 'Kubernetes id'],
+  ['backstage.io/kubernetes-namespace', 'Kubernetes namespace'],
+  ['github.com/project-slug', 'GitHub'],
 ] as const;
 
 export function hasRepaveLineage(annotations: Record<string, string> | undefined): boolean {
@@ -40,6 +44,18 @@ export function portalUpgradeHref(portalBaseUrl: string): string {
   return portalPath(portalBaseUrl, '/update');
 }
 
+export function githubSourceUrl(annotations: Record<string, string>): string | undefined {
+  const slug = annotations['github.com/project-slug'];
+  if (slug) {
+    return `https://github.com/${slug}`;
+  }
+  const loc = annotations['backstage.io/source-location'];
+  if (loc?.startsWith('url:')) {
+    return loc.slice(4);
+  }
+  return undefined;
+}
+
 export function RepaveLineageCard() {
   const { entity } = useEntity();
   const config = useApi(configApiRef);
@@ -56,6 +72,7 @@ export function RepaveLineageCard() {
   }
   const portalBase = config.getOptionalString('repave.portalBaseUrl') ?? '/';
   const blueprint = annotations['repave.dev/blueprint'] ?? '';
+  const sourceUrl = githubSourceUrl(annotations);
   return (
     <InfoCard title="Repave lineage">
       <StructuredMetadataTable metadata={metadata} />
@@ -63,6 +80,14 @@ export function RepaveLineageCard() {
         <Link to={portalGenerateHref(portalBase, blueprint)}>Generate in portal</Link>
         {' · '}
         <Link to={portalUpgradeHref(portalBase)}>Upgrade in portal</Link>
+        {sourceUrl ? (
+          <>
+            {' · '}
+            <Link to={sourceUrl} target="_blank" rel="noopener noreferrer">
+              View source
+            </Link>
+          </>
+        ) : null}
       </p>
     </InfoCard>
   );
