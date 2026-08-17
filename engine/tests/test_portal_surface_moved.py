@@ -129,3 +129,36 @@ def test_bundle_run_result_points_to_backstage(
     )
     queue._store.update_status(record.run_id, RunStatus.SUCCEEDED)
     assert_surface_moved(client.get(f"/runs/{record.run_id}/result"), "bundle-result")
+
+
+@pytest.mark.parametrize(
+    ("payload", "surface_id"),
+    [
+        ({"kind": "live_plan", "entity_id": "entity-1"}, "live-plan-result"),
+        ({"kind": "environment_vend", "entity_id": "entity-1"}, "vend-result"),
+        ({"kind": "fleet_drift_confirm", "repo_urls": []}, "drift-confirm-result"),
+        ({"kind": "org_scan", "inputs": {"org": "acme"}}, "org-scan-result"),
+        ({"kind": "environment_reclaim", "dry_run": True}, "reclaim-result"),
+    ],
+)
+def test_kind_run_result_points_to_backstage(
+    repo_root,
+    output_config,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    payload: dict[str, object],
+    surface_id: str,
+) -> None:
+    monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
+    monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    queue = client.app.state.run_queue
+    assert queue is not None
+    record = queue._store.create_run(
+        blueprint_name=str(payload.get("kind", "run")),
+        dry_run=True,
+        payload=payload,
+        acting_user="tester",
+    )
+    queue._store.update_status(record.run_id, RunStatus.SUCCEEDED)
+    assert_surface_moved(client.get(f"/runs/{record.run_id}/result"), surface_id)

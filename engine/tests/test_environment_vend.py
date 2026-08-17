@@ -446,9 +446,9 @@ environment_vending:
                 if result_page.status_code == 200:
                     break
                 time.sleep(0.05)
-            assert result_page.status_code == 200
-            assert "Environment vend" in result_page.text
-            assert "Gate preview complete" in result_page.text
+            assert_surface_moved(result_page, "vend-result")
+            assert "Gate preview complete" not in result_page.text
+            assert "data-environment-vend" not in result_page.text
     finally:
         queue = client.app.state.run_queue
         if queue is not None:

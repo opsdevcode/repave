@@ -137,10 +137,14 @@ from repave_engine.portal_surface_moved import (
     ACTIVITY_MOVED,
     BUNDLE_MOVED,
     BUNDLE_RESULT_MOVED,
+    DRIFT_CONFIRM_RESULT_MOVED,
     ESTATE_MOVED,
     HOME_MOVED,
     IMPORT_BATCH_MOVED,
     IMPORT_MOVED,
+    LIVE_PLAN_RESULT_MOVED,
+    ORG_SCAN_RESULT_MOVED,
+    RECLAIM_RESULT_MOVED,
     RESULT_MOVED,
     RUN_CONSOLE_MOVED,
     RUNS_MOVED,
@@ -148,6 +152,7 @@ from repave_engine.portal_surface_moved import (
     SERVICES_MOVED,
     TEAMS_MOVED,
     UPGRADE_MOVED,
+    VEND_RESULT_MOVED,
     VERIFY_MOVED,
     MovedSurface,
     moved_page_context,
@@ -162,9 +167,6 @@ from repave_engine.repo_add import (
     plan_add,
     record_add_from_env,
     suggested_add_branch,
-)
-from repave_engine.repo_import import (
-    target_blueprints_from_org_scan,
 )
 from repave_engine.run_queue import (
     RunQueue,
@@ -1169,74 +1171,15 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 ),
             )
         if is_live_plan_run(record):
-            summary = record.result if isinstance(record.result, dict) else {}
-            return templates.TemplateResponse(
-                request,
-                "live_plan_result.html",
-                page_context(
-                    request,
-                    nav_active="library",
-                    run_id=run_id,
-                    run_record=record,
-                    live_plan_summary=summary,
-                ),
-            )
+            return render_moved(request, LIVE_PLAN_RESULT_MOVED)
         if is_environment_vend_run(record):
-            summary = record.result if isinstance(record.result, dict) else {}
-            entity_id = str(record.payload.get("entity_id", "")).strip()
-            if entity_id and not summary.get("entity_id"):
-                summary = {**summary, "entity_id": entity_id}
-            return templates.TemplateResponse(
-                request,
-                "environment_vend_result.html",
-                page_context(
-                    request,
-                    nav_active="library",
-                    run_id=run_id,
-                    run_record=record,
-                    environment_vend_summary=summary,
-                ),
-            )
+            return render_moved(request, VEND_RESULT_MOVED)
         if is_fleet_drift_confirm_run(record):
-            summary = record.result if isinstance(record.result, dict) else {}
-            return templates.TemplateResponse(
-                request,
-                "fleet_drift_confirm_result.html",
-                page_context(
-                    request,
-                    nav_active="platform",
-                    run_id=run_id,
-                    run_record=record,
-                    drift_summary=summary,
-                ),
-            )
+            return render_moved(request, DRIFT_CONFIRM_RESULT_MOVED)
         if is_org_scan_run(record):
-            summary = record.result if isinstance(record.result, dict) else {}
-            return templates.TemplateResponse(
-                request,
-                "org_scan_result.html",
-                page_context(
-                    request,
-                    nav_active="import",
-                    run_id=run_id,
-                    run_record=record,
-                    org_scan_summary=summary,
-                    org_scan_target_blueprints=target_blueprints_from_org_scan(summary),
-                ),
-            )
+            return render_moved(request, ORG_SCAN_RESULT_MOVED)
         if is_environment_reclaim_run(record):
-            summary = record.result if isinstance(record.result, dict) else {}
-            return templates.TemplateResponse(
-                request,
-                "environment_reclaim_result.html",
-                page_context(
-                    request,
-                    nav_active="platform",
-                    run_id=run_id,
-                    run_record=record,
-                    reclaim_summary=summary,
-                ),
-            )
+            return render_moved(request, RECLAIM_RESULT_MOVED)
         if is_bundle_run(record):
             return render_moved(request, BUNDLE_RESULT_MOVED)
         return render_moved(request, RESULT_MOVED)

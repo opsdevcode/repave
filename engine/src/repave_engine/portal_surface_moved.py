@@ -218,6 +218,61 @@ SANDBOX_MOVED = _surface(
     nav_active="sandbox",
 )
 
+LIVE_PLAN_RESULT_MOVED = _surface(
+    "live-plan-result",
+    title="Live plan results moved",
+    lead="Live plan results now live in Backstage Services.",
+    backstage_label="Services",
+    backstage_path="/services",
+    api_hint="POST /api/v2/runs",
+    cli_hint="POST /api/v2/runs",
+    nav_active="library",
+)
+
+VEND_RESULT_MOVED = _surface(
+    "vend-result",
+    title="Vend results moved",
+    lead="Environment vend results now live in Backstage Sandbox.",
+    backstage_label="Sandbox",
+    backstage_path="/sandbox",
+    api_hint="POST /api/v2/environments/vend",
+    cli_hint="POST /api/v2/environments/vend",
+    nav_active="sandbox",
+)
+
+DRIFT_CONFIRM_RESULT_MOVED = _surface(
+    "drift-confirm-result",
+    title="Drift confirm results moved",
+    lead="Drift confirm results now live in Backstage Standards.",
+    backstage_label="Standards",
+    backstage_path="/standards",
+    api_hint="POST /api/v2/runs",
+    cli_hint="POST /api/v2/runs",
+    nav_active="platform",
+)
+
+ORG_SCAN_RESULT_MOVED = _surface(
+    "org-scan-result",
+    title="Org scan results moved",
+    lead="Organization scan results now live in Backstage Batch import.",
+    backstage_label="Batch import",
+    backstage_path="/import/batch",
+    api_hint="POST /api/v2/github/org-scan",
+    cli_hint="POST /api/v2/github/org-scan",
+    nav_active="import",
+)
+
+RECLAIM_RESULT_MOVED = _surface(
+    "reclaim-result",
+    title="Reclaim results moved",
+    lead="Reclaim results now live in Backstage Reclaim.",
+    backstage_label="Reclaim",
+    backstage_path="/reclaim",
+    api_hint="POST /api/v2/environments/reclaim",
+    cli_hint="POST /api/v2/environments/reclaim",
+    nav_active="platform",
+)
+
 _PLATFORM_PAGES: dict[str, tuple[str, str, str, str]] = {
     "fleet": ("Fleet", "/fleet", "GET /api/v2/fleet", "GET /api/v2/fleet"),
     "ops": ("Ops", "/ops", "GET /api/v2/platform/ops", "GET /api/v2/platform/ops"),
