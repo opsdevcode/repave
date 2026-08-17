@@ -2,7 +2,8 @@
 # kind smoke: fleet shared PVC, operator fleetSync prune, snapshot CronJob, and campaign pause.
 # Seeds a fleet registry, waits for fleetSync GPRs, unregisters one repo via the portal API,
 # waits for GPR prune, applies an UpgradeCampaign, runs a one-off snapshot Job, verifies
-# GET /api/v2/fleet and GET /api/v2/platform/campaigns (HTML /platform/* pages are pointers),
+# GET /platform/fleet, GET /platform/campaigns, GET /api/v2/fleet, and
+# GET /api/v2/platform/campaigns,
 # pauses the campaign via the portal POST, and asserts spec.paused on the CR.
 # CI: .github/workflows/chart.yml (chart-smoke-fleet-snapshot job).
 set -euo pipefail
@@ -210,13 +211,14 @@ assert any(row.get('name') == sys.argv[2] for row in campaigns), body
 assert any(not row.get('paused') for row in campaigns if row.get('name') == sys.argv[2]), body
 " "${snapshot_json}" "${CAMPAIGN_NAME}"
 
-echo "==> probe platform fleet pointer + API overlay"
+echo "==> probe platform fleet page + API overlay"
 fleet_html="$(curl -sf "http://127.0.0.1:${PORT}/platform/fleet")"
 python3 -c "
 import sys
 html = sys.argv[1]
-assert 'data-surface-moved=\"platform-fleet\"' in html, html
-assert 'GET /api/v2/fleet' in html, html
+assert 'acme/tf-vpc' in html, 'expected kept repo on /platform/fleet'
+assert 'opa-guardrails' not in html, 'expected unregistered repo removed from fleet page'
+assert 'operator status from snapshot' in html.lower(), 'expected operator snapshot overlay'
 " "${fleet_html}"
 fleet_json="$(curl -sf "http://127.0.0.1:${PORT}/api/v2/fleet")"
 python3 -c "
@@ -227,14 +229,16 @@ assert any('acme/tf-vpc' in str(row.get('repo_url', '')) for row in repos), body
 assert not any('opa-guardrails' in str(row.get('repo_url', '')) for row in repos), body
 " "${fleet_json}"
 
-echo "==> probe platform campaigns pointer + API snapshot"
+echo "==> probe platform campaigns page + API snapshot"
 campaigns_html="$(curl -sf "http://127.0.0.1:${PORT}/platform/campaigns")"
 python3 -c "
 import sys
 html = sys.argv[1]
-assert 'data-surface-moved=\"platform-campaigns\"' in html, html
-assert 'GET /api/v2/platform/campaigns' in html, html
-" "${campaigns_html}"
+name = sys.argv[2]
+assert name in html, 'expected campaign on /platform/campaigns'
+assert 'Pause campaign' in html, 'expected pause action before patch'
+assert 'Resume campaign' not in html, 'campaign should not appear paused yet'
+" "${campaigns_html}" "${CAMPAIGN_NAME}"
 campaigns_json="$(curl -sf "http://127.0.0.1:${PORT}/api/v2/platform/campaigns")"
 python3 -c "
 import json, sys
