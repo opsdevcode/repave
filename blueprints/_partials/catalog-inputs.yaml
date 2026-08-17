@@ -38,3 +38,13 @@
 #   required: false
 #   default: ""
 #   description: Comma-separated API refs for spec.providesApis.
+# - name: catalog_kubernetes_id
+#   type: string
+#   required: false
+#   default: ""
+#   description: backstage.io/kubernetes-id (label on matching workloads).
+# - name: catalog_kubernetes_namespace
+#   type: string
+#   required: false
+#   default: ""
+#   description: backstage.io/kubernetes-namespace for the Kubernetes tab.

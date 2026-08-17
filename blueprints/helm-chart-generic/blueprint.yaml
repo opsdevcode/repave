@@ -118,6 +118,18 @@ spec:
       advanced: true
       default: ""
       description: Comma-separated Backstage API refs for spec.providesApis.
+    - name: catalog_kubernetes_id
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: backstage.io/kubernetes-id label for the Catalog Kubernetes tab.
+    - name: catalog_kubernetes_namespace
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: backstage.io/kubernetes-namespace for the Catalog Kubernetes tab.
     - name: enable_deploy_pipeline
       type: string
       required: false

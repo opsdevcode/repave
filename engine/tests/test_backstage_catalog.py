@@ -9,6 +9,7 @@ from repave_engine.backstage_catalog import (
     build_catalog_document,
     catalog_component_name,
     catalog_entity_refs,
+    catalog_optional_text,
     catalog_techdocs_ref,
     should_emit_catalog,
     write_backstage_catalog_if_enabled,
@@ -75,6 +76,8 @@ def test_build_catalog_document_annotations() -> None:
     assert annotations["repave.dev/engine-version"] == "1.43.0"
     assert "dependsOn" not in doc["spec"]
     assert "providesApis" not in doc["spec"]
+    assert "backstage.io/kubernetes-id" not in annotations
+    assert "backstage.io/kubernetes-namespace" not in annotations
 
 
 def test_catalog_entity_refs_splits_comma_and_newlines() -> None:
@@ -106,6 +109,28 @@ def test_build_catalog_document_relations() -> None:
         "resource:default/db",
     ]
     assert doc["spec"]["providesApis"] == ["api:default/checkout"]
+
+
+def test_catalog_optional_text_strips() -> None:
+    assert catalog_optional_text("  ns  ") == "ns"
+    assert catalog_optional_text(None) == ""
+    assert catalog_optional_text("  ") == ""
+
+
+def test_build_catalog_document_kubernetes_annotations() -> None:
+    bp = _bp("app-service")
+    doc = build_catalog_document(
+        bp,
+        {
+            "service_name": "checkout",
+            "owner": "group:payments",
+            "catalog_kubernetes_id": "checkout",
+            "catalog_kubernetes_namespace": "prod",
+        },
+    )
+    annotations = doc["metadata"]["annotations"]
+    assert annotations["backstage.io/kubernetes-id"] == "checkout"
+    assert annotations["backstage.io/kubernetes-namespace"] == "prod"
 
 
 def test_catalog_component_name_terraform() -> None:

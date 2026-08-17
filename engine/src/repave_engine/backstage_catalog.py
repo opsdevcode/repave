@@ -63,6 +63,12 @@ def catalog_entity_refs(raw: Any) -> tuple[str, ...]:
     return tuple(part for part in parts if part)
 
 
+def catalog_optional_text(raw: Any) -> str:
+    if raw is None:
+        return ""
+    return str(raw).strip()
+
+
 def catalog_description(blueprint: Blueprint, values: dict[str, Any]) -> str:
     raw = values.get("description") or values.get("catalog_description")
     if raw:
@@ -106,6 +112,17 @@ def build_catalog_document(blueprint: Blueprint, values: dict[str, Any]) -> dict
     )
     if provides_apis:
         spec["providesApis"] = list(provides_apis)
+
+    kubernetes_id = catalog_optional_text(
+        values.get("catalog_kubernetes_id") or values.get("kubernetes_id")
+    )
+    if kubernetes_id:
+        annotations["backstage.io/kubernetes-id"] = kubernetes_id
+    kubernetes_namespace = catalog_optional_text(
+        values.get("catalog_kubernetes_namespace") or values.get("kubernetes_namespace")
+    )
+    if kubernetes_namespace:
+        annotations["backstage.io/kubernetes-namespace"] = kubernetes_namespace
 
     return {
         "apiVersion": "backstage.io/v1alpha1",

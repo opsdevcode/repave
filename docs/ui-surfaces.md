@@ -22,6 +22,8 @@ flowchart LR
     graph[Catalog graph]
     search[Search]
     docs[TechDocs]
+    org[Org ownership]
+    k8s[Kubernetes]
     lineage[Lineage card]
     scaffolder[Optional Scaffolder]
   end
@@ -39,6 +41,8 @@ flowchart LR
   catalog --> graph
   catalog --> search
   catalog --> docs
+  catalog --> org
+  catalog --> k8s
   catalog --> lineage
   cli --> api
 ```
@@ -48,7 +52,7 @@ flowchart LR
 | Job | Owner | Why |
 | --- | --- | --- |
 | Generate, upgrade preview, import, verify, vend, sandbox, runs, fleet, platform | **HTML portal** | Night-ops look; `make serve` stays one process |
-| Software catalog, graph, search, API docs, import, ownership, TechDocs | **Backstage** | Catalog IDP; do not rebuild it in Jinja |
+| Software catalog, graph, search, API docs, import, org, Kubernetes, TechDocs | **Backstage** | Catalog IDP; do not rebuild it in Jinja |
 | Offline / CI | **CLI** | Unchanged |
 | Apply / cluster | **CLI + operator** | Unchanged |
 
@@ -71,10 +75,12 @@ under `backstage/plugins/plugin-repave`.
   `tf-aws-demo`). Generated `catalog-info.yaml` gets that annotation when the
   repo has `docs/` or `mkdocs.yml`. Hosted builds use `runIn: local` (no
   Docker-in-Docker).
-- Catalog **graph**, **search**, **API docs**, and **import** stay on Backstage.
-  Generated `catalog-info.yaml` can set `spec.dependsOn` / `spec.providesApis`
-  from `catalog_depends_on` / `catalog_provides_apis`. Do not clone those
-  pages into Jinja.
+- Catalog **graph**, **search**, **API docs**, **import**, **org**, and
+  **Kubernetes** stay on Backstage. Generated `catalog-info.yaml` can set
+  `spec.dependsOn` / `spec.providesApis` and `backstage.io/kubernetes-*`
+  from `catalog_depends_on` / `catalog_provides_apis` /
+  `catalog_kubernetes_id` / `catalog_kubernetes_namespace`. Do not clone
+  those pages into Jinja.
 
 ## Hosted vs laptop
 

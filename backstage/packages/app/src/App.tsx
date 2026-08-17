@@ -3,6 +3,8 @@ import apiDocsPlugin from '@backstage/plugin-api-docs/alpha';
 import catalogPlugin from '@backstage/plugin-catalog/alpha';
 import catalogGraphPlugin from '@backstage/plugin-catalog-graph/alpha';
 import catalogImportPlugin from '@backstage/plugin-catalog-import/alpha';
+import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
+import orgPlugin from '@backstage/plugin-org/alpha';
 import scaffolderPlugin from '@backstage/plugin-scaffolder/alpha';
 import searchPlugin from '@backstage/plugin-search/alpha';
 import techdocsPlugin from '@backstage/plugin-techdocs/alpha';
@@ -16,6 +18,8 @@ export const appFeatures = [
   catalogImportPlugin,
   apiDocsPlugin,
   searchPlugin,
+  orgPlugin,
+  kubernetesPlugin,
   scaffolderPlugin,
   techdocsPlugin,
   chromeModule,
