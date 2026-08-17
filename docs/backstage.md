@@ -18,8 +18,9 @@ FinOps, plus ops / standards / campaigns, plus builder browse pages).
 and the CLI. HTML catalog (`GET /`) and library (`GET /library`) stay real
 pages. Platform, import, verify, generate-result, bundle, upgrade, run
 console, sandbox, and kind-specific `/runs/{id}/result` HTML are pointer
-pages. Landing remains.
-Do not drop leftover HTML silently.
+pages. Landing and signup stay as the public splash when the HTML portal
+is on (`GET /` unauthenticated → `landing.html`). Do not retire them to
+pointers. Do not drop leftover HTML silently.
 
 ## What you get
 

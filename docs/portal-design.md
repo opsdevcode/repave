@@ -15,7 +15,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 | Library | `library.html` | Family drawers of created repos |
 | Home / platform / import / verify / results / bundles / upgrade / runs / sandbox / kind results | `surface_moved.html` | Pointer pages to Backstage + CLI / `/api/v2` |
 | Blueprint page | `generate_moved.html` | HTML generate form retired; points to Backstage `/generate` and `repave generate` |
-| Landing / signup | leftover Jinja | Still served until the 14 Feb 2027 sunset |
+| Landing / signup | `landing.html` / `signup.html` | Public splash when auth is on; Sign in and Create account |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
 and the shell shows a “Last run in this browser” snippet on home and form routes.

@@ -52,6 +52,9 @@ def test_portal_root_is_public_landing(service_mode, repo_root, output_config) -
     assert "Hosted catalog" in response.text
     assert "Who it is for" in response.text
     assert "shell__nav--primary" not in response.text
+    assert "data-surface-moved" not in response.text
+    assert 'href="/auth/login"' in response.text
+    assert 'href="/signup"' in response.text
 
 
 def test_signup_page_is_public(service_mode, repo_root, output_config) -> None:
@@ -67,6 +70,7 @@ def test_signup_page_is_public(service_mode, repo_root, output_config) -> None:
     assert "Create an account" in response.text
     assert 'href="/auth/signup"' in response.text
     assert 'href="/auth/login"' in response.text
+    assert "data-surface-moved" not in response.text
 
 
 def test_protected_portal_paths_redirect_to_login(service_mode, repo_root, output_config) -> None:
