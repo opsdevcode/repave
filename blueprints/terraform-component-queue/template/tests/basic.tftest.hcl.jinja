@@ -1,5 +1,9 @@
 {% if cloud_provider == "aws" %}
 mock_provider "aws" {}
+{% elif cloud_provider == "azure" %}
+mock_provider "azurerm" {}
+{% elif cloud_provider == "gcp" %}
+mock_provider "google" {}
 {% endif %}
 
 run "plan_default" {

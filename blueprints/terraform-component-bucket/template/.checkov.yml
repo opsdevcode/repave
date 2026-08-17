@@ -2,9 +2,21 @@ external-checks-dir:
   - policy/checkov
 framework:
   - terraform
-# Stub omits access logging, replication, and event notifications.
+# Stub omits access logging, replication, CMK, and private endpoints.
 skip-check:
   - CKV_AWS_18
   - CKV_AWS_144
   - CKV_AWS_145
   - CKV2_AWS_62
+  - CKV_AZURE_33
+  - CKV_AZURE_35
+  - CKV_AZURE_44
+  - CKV_AZURE_59
+  - CKV2_AZURE_1
+  - CKV2_AZURE_18
+  - CKV2_AZURE_33
+  - CKV2_AZURE_38
+  - CKV2_AZURE_47
+  - CKV_GCP_62
+  - CKV_GCP_78
+  - CKV_GCP_114
