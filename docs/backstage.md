@@ -6,21 +6,19 @@ the control plane. Local generate does **not** require yarn or Backstage
 (`make serve` / `repave generate`).
 
 The FastAPI HTML portal (`/home`, `/lab`, `/generate`, `/platform/*`, …) is
-**deprecated** for hosted installs. It still ships in this release.
+**deprecated** for hosted installs. It still ships in this release so local
+`make serve` can open every nav destination without Backstage.
 
 **HTML portal sunset:** Sat, 14 Feb 2027 00:00:00 GMT.
 
-After that date, Phase 4 removes the remaining Jinja templates. CLI and `/api/v2`
-are not sunset. Platform-admin HTML already has Backstage pages (fleet through
-FinOps, plus ops / standards / campaigns, plus builder browse pages).
-`/generate` posts `POST /api/v2/generate` from Backstage. The HTML generate form
-(`blueprint_form.html`) is removed; `GET /blueprints/{name}` points at Backstage
-and the CLI. HTML catalog (`GET /`) and library (`GET /library`) stay real
-pages. Platform, import, verify, generate-result, bundle, upgrade, run
-console, sandbox, and kind-specific `/runs/{id}/result` HTML are pointer
-pages. Landing and signup stay as the public splash when the HTML portal
-is on (`GET /` unauthenticated → `landing.html`). Do not retire them to
-pointers. Do not drop leftover HTML silently.
+After that date, Phase 4 may remove the remaining Jinja templates. CLI and
+`/api/v2` are not sunset. Hosted Backstage already has the matching pages
+(fleet through FinOps, builder browse, generate, upgrade, verify, import,
+runs, sandbox). `/generate` posts `POST /api/v2/generate` from Backstage.
+Local HTML catalog, library, generate, upgrade, verify, import, platform,
+runs, sandbox, and results stay real pages. Landing and signup stay as the
+public splash when the HTML portal is on (`GET /` unauthenticated →
+`landing.html`). Do not drop leftover HTML silently.
 
 ## What you get
 

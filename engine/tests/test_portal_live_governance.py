@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.fleet import FleetEntry, register_repo
 
@@ -64,7 +63,13 @@ def test_platform_finops_page_renders(
     monkeypatch.chdir(tmp_path)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
     response = client.get("/platform/finops")
-    assert_surface_moved(response, "platform-finops")
+    assert response.status_code == 200
+    assert "FinOps showback" in response.text
+    assert "Fleet rollup" in response.text
+    assert "tf-vpc" in response.text
+    assert "Cost anomalies" in response.text
+    assert "Month over month" in response.text
+    assert "+66.7%" in response.text
 
 
 def test_estate_map_page_lists_tiles(
@@ -79,7 +84,17 @@ def test_estate_map_page_lists_tiles(
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
     response = client.get("/estate")
-    assert_surface_moved(response, "estate")
+
+    assert response.status_code == 200
+    assert "Repo status" in response.text
+    assert "Which governed repositories are current" in response.text
+    assert "tf-vpc" in response.text
+    assert "estate-tile" in response.text
+    assert "estate-summary" in response.text
+    assert "data-estate-map" in response.text
+    assert 'data-view-mode="table"' in response.text
+    assert "/blueprints/terraform-module-generic" in response.text
+    assert "/update?target_repo=" in response.text
 
 
 def test_presenter_mode_shell(repo_root, output_config) -> None:
@@ -91,28 +106,30 @@ def test_presenter_mode_shell(repo_root, output_config) -> None:
 
 def test_update_form_prefills_target_repo(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    response = client.get(
+    body = client.get(
         "/update",
         params={"target_repo": "https://github.com/acme/tf-vpc"},
-    )
-    assert_surface_moved(response, "upgrade")
-    assert 'value="https://github.com/acme/tf-vpc"' not in response.text
+    ).text
+    assert 'value="https://github.com/acme/tf-vpc"' in body
 
 
-def test_blueprint_page_explains_generate_move(repo_root, output_config) -> None:
+def test_blueprint_preflight_panel(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     body = client.get("/blueprints/terraform-module-generic").text
 
-    assert "data-generate-moved" in body
-    assert "Generate moved" in body
-    assert "repave generate terraform-module-generic" in body
+    assert "preflight-panel" in body
+    assert "form-actions__preflight-details" in body
+    assert "Example repo" in body
+    assert "Gate list" in body
 
 
 def test_bundle_topology_section(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert_surface_moved(client.get("/bundles/service-stack"), "bundle")
+    body = client.get("/bundles/service-stack").text
+
+    assert "bundle-topology" in body
 
 
 def test_bundle_result_includes_topology(repo_root, output_config) -> None:
@@ -134,9 +151,12 @@ def test_bundle_result_includes_topology(repo_root, output_config) -> None:
             "provider_services": "ec2,s3",
         },
     )
-    assert_surface_moved(response, "bundle-result")
-    assert "bundle-topology" not in response.text
-    assert "Generated files" not in response.text
+    assert response.status_code == 200
+    assert "bundle-topology" in response.text
+    # Dry-run with rendered member files should invite copy, not read as a dead-end failure.
+    if "data-copy-target" in response.text or "Generated files" in response.text:
+        assert "Plan preview ready" in response.text or "Plan complete" in response.text
+        assert "Bundle generation failed" not in response.text
 
 
 def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:
@@ -145,9 +165,9 @@ def test_upgrade_preview_unified_diffs(repo_root, output_config) -> None:
         pytest.skip("operator fixture not present")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post("/update", data={"target_repo": str(fixture)})
-    assert_surface_moved(response, "upgrade")
-    assert "Unified diffs" not in response.text
-    assert "diff-viewer" not in response.text
+    assert response.status_code == 200
+    body = response.text
+    assert "Unified diffs" in body or "diff-viewer" in body
 
 
 def test_api_estate_json(repo_root, output_config, registry: Path) -> None:
@@ -177,11 +197,25 @@ def test_run_console_contract(
     assert submit.status_code == 202
     run_id = submit.json()["run_id"]
     page = client.get(f"/runs/{run_id}")
-    assert_surface_moved(page, "run-console")
-    assert "data-run-console" not in page.text
-    assert f"/api/v1/runs/{run_id}/events" not in page.text
+    assert page.status_code == 200
+    body = page.text
+    assert "data-run-console" in body
+    assert "run-console__gate-table" in body
+    assert "run-console-log" in body
+    assert 'data-stage="publish"' in body
+    assert "run-console__stage-index" in body
+    assert "run-console__stepper" in body
+    assert "data-run-stepper-fill" in body
+    assert "run-console__publish-chip" in body
+    assert "Starting apply" in body
+    assert 'data-dry-run="true"' in body
+    assert "run-console__outcome" in body
+    assert "no GitHub repository is created" in body
+    assert f"/api/v1/runs/{run_id}/events" not in body
+    assert 'data-run-id="' + run_id + '"' in body
     js = client.get("/static/repave.js").text
     assert "startStatusPolling" in js
+    assert "source.close()" not in js.split("source.onerror")[1].split("startStatusPolling")[0]
 
 
 def test_command_palette_contract(repo_root, output_config) -> None:

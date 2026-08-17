@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Async runs — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Async runs</h1>
+    <p class="page-lead">
+      Recent generation jobs from the durability queue. Filter by status or open a run for the
+      live console. This list refreshes while the page is open.
+    </p>
+  </div>
+</header>
+
+<form class="card activity-filters" method="get" action="/runs" aria-labelledby="runs-filter-heading">
+  <div class="card__header">
+    <h2 id="runs-filter-heading" class="card__title">Filter</h2>
+  </div>
+  <div class="card__body activity-filters__grid">
+    <label class="field">
+      <span class="field__label">Status</span>
+      <select class="field__input" name="status">
+        <option value="">Any</option>
+        {% for value, label in [
+          ('queued', 'Queued'),
+          ('running', 'Running'),
+          ('succeeded', 'Succeeded'),
+          ('failed', 'Failed'),
+          ('dead_letter', 'Dead letter'),
+        ] %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <div class="card__footer form-actions">
+    <button type="submit" class="btn btn--primary">Apply</button>
+    <a class="btn btn--ghost" href="/runs">Clear</a>
+  </div>
+</form>
+
+<section
+  class="card"
+  data-portal-view-toggle
+  data-runs-index
+  data-status-filter="{{ status_filter or '' }}"
+  data-can-replay="{% if can_replay_runs %}1{% else %}0{% endif %}"
+  aria-labelledby="runs-table-heading"
+>
+  <div class="card__header card__header--toolbar">
+    <div>
+      <h2 id="runs-table-heading">Recent runs</h2>
+      <p class="muted card__subtitle">
+        Newest first · up to 50 rows
+        <span class="runs-live-hint" data-runs-live-hint hidden aria-live="polite"></span>
+      </p>
+    </div>
+    {% if runs %}
+    <div class="portal-view-toggle" role="toolbar" aria-label="Runs view">
+      <button type="button" class="chip portal-view-toggle__btn is-active" data-view-mode="table">Table</button>
+      <button type="button" class="chip portal-view-toggle__btn" data-view-mode="timeline">Timeline</button>
+    </div>
+    {% endif %}
+  </div>
+  <div class="card__body">
+    {% if runs %}
+    <div data-view-panel="table">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col" data-sortable data-sort-type="text">Blueprint</th>
+          <th scope="col" data-sortable data-sort-type="text">Status</th>
+          <th scope="col" data-sortable data-sort-type="text">User</th>
+          <th scope="col" data-sortable data-sort-type="number">Attempts</th>
+          <th scope="col" data-sortable data-sort-type="date">Updated</th>
+          <th scope="col"><span class="visually-hidden">Actions</span></th>
+        </tr>
+      </thead>
+      <tbody data-runs-table-body>
+        {% for run in runs %}
+        <tr data-run-row data-run-id="{{ run.run_id }}">
+          <td><code data-run-blueprint>{{ run.blueprint_name }}</code></td>
+          <td>
+            <span
+              class="badge badge--{% if run.status.value == 'succeeded' %}pass{% elif run.status.value in ('failed', 'dead_letter') %}fail{% else %}muted{% endif %}"
+              data-run-status-badge
+              data-status="{{ run.status.value }}"
+            >
+              {% if run.status.value == 'dead_letter' %}Dead letter
+              {% elif run.status.value == 'queued' %}Queued
+              {% elif run.status.value == 'running' %}Running
+              {% elif run.status.value == 'succeeded' %}Succeeded
+              {% elif run.status.value == 'failed' %}Failed
+              {% else %}{{ run.status.value }}{% endif %}
+            </span>
+          </td>
+          <td class="muted" data-run-user>{{ run.acting_user }}</td>
+          <td data-run-attempts data-sort-value="{{ run.attempt_count }}">{{ run.attempt_count }}</td>
+          <td class="muted">
+            <time data-run-updated datetime="{{ run.updated_at }}" data-sort-value="{{ run.updated_at }}">{{ run.updated_at }}</time>
+          </td>
+          <td data-run-actions>
+            <a class="btn btn--ghost btn--sm" href="/runs/{{ run.run_id }}">Open</a>
+            {% if can_replay_runs and run.status.value in ('failed', 'dead_letter') %}
+            <form method="post" action="/runs/{{ run.run_id }}/replay" style="display:inline" data-run-replay>
+              <button class="btn btn--secondary btn--sm" type="submit">Replay</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% if run.error and run.status.value in ('failed', 'dead_letter') %}
+        <tr data-run-error-row data-run-id="{{ run.run_id }}">
+          <td colspan="6" class="muted"><code data-run-error>{{ run.error }}</code></td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <ol class="runs-timeline" data-view-panel="timeline" data-runs-timeline hidden aria-label="Runs timeline">
+      {% for run in runs %}
+      <li class="runs-timeline__item" data-run-timeline-item data-run-id="{{ run.run_id }}">
+        <span
+          class="runs-timeline__dot{% if run.status.value == 'succeeded' %} runs-timeline__dot--pass{% elif run.status.value in ('failed', 'dead_letter') %} runs-timeline__dot--fail{% else %} runs-timeline__dot--active{% endif %}"
+          data-run-timeline-dot
+          aria-hidden="true"
+        ></span>
+        <div class="runs-timeline__content">
+          <p class="runs-timeline__lead">
+            <code data-run-blueprint>{{ run.blueprint_name }}</code>
+            <span
+              class="badge badge--{% if run.status.value == 'succeeded' %}pass{% elif run.status.value in ('failed', 'dead_letter') %}fail{% else %}muted{% endif %}"
+              data-run-status-badge
+              data-status="{{ run.status.value }}"
+            >
+              {% if run.status.value == 'dead_letter' %}Dead letter
+              {% elif run.status.value == 'queued' %}Queued
+              {% elif run.status.value == 'running' %}Running
+              {% elif run.status.value == 'succeeded' %}Succeeded
+              {% elif run.status.value == 'failed' %}Failed
+              {% else %}{{ run.status.value }}{% endif %}
+            </span>
+          </p>
+          <p class="runs-timeline__meta muted">
+            <span data-run-user>{{ run.acting_user }}</span>
+            · <time data-run-updated datetime="{{ run.updated_at }}">{{ run.updated_at }}</time>
+            · <span data-run-attempts-label>{{ run.attempt_count }} attempt{{ '' if run.attempt_count == 1 else 's' }}</span>
+          </p>
+          {% if run.error and run.status.value in ('failed', 'dead_letter') %}
+          <p class="runs-timeline__error muted" data-run-error-wrap><code data-run-error>{{ run.error }}</code></p>
+          {% endif %}
+          <div class="runs-timeline__actions" data-run-actions>
+            <a class="btn btn--ghost btn--sm" href="/runs/{{ run.run_id }}">Open</a>
+            {% if can_replay_runs and run.status.value in ('failed', 'dead_letter') %}
+            <form method="post" action="/runs/{{ run.run_id }}/replay" style="display:inline" data-run-replay>
+              <button class="btn btn--secondary btn--sm" type="submit">Replay</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <div class="alert alert--info" role="status" data-runs-empty>No runs matched this filter yet.</div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

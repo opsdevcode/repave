@@ -1,0 +1,3572 @@
+{% extends "base.html" %}
+
+{% block title %}{{ blueprint.name }} — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+{% set publish_step = 2 if form_stepper in ('terraform', 'observability') else 1 %}
+<header class="form-hero">
+  <div>
+    <h1 class="page-title page-title--from-catalog">{{ blueprint.name }}</h1>
+    <p class="page-lead">
+      Blueprint v{{ blueprint.version }}
+      {% set bp_family = artifact_family(blueprint.artifact_type) %}
+      <span class="badge badge--{{ bp_family }}">
+        {% if bp_family == 'policy' %}
+          Policy · {{ policy_kind_label(blueprint.artifact_type) or blueprint.artifact_type }}
+        {% elif bp_family == 'observability' %}
+          Observability
+        {% elif bp_family == 'helm' %}
+          Kubernetes / Helm
+        {% elif bp_family == 'app' %}
+          Application service
+        {% elif bp_family == 'terraform' %}
+          Terraform
+        {% elif bp_family == 'ansible' %}
+          Ansible
+        {% elif bp_family == 'platform' %}
+          Platform · GitHub
+        {% else %}
+          {{ blueprint.artifact_type }}
+        {% endif %}
+      </span>
+    </p>
+  </div>
+</header>
+
+<div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'gitops', 'app', 'platform') %} form-layout--split{% endif %}">
+  {% set governance_collapsible = bp_family in ('terraform', 'ansible', 'observability', 'policy', 'helm', 'gitops', 'app', 'platform') %}
+  <aside class="governance-card governance-card--{{ bp_family }}"{% if not governance_collapsible %} aria-labelledby="governance-heading"{% endif %}>
+    {% if governance_collapsible %}
+    <details class="governance-card__details">
+      <summary class="governance-card__summary">
+        <span class="governance-card__summary-title" id="governance-heading">Controls &amp; lineage</span>
+        <span class="governance-card__summary-meta muted">
+          {{ blueprint.standard_source.rsplit('/', 1)[-1] }} @ {{ blueprint.standard_version -}}
+          {%- if blueprint.checkov_policies %} · Checkov{%- endif -%}
+          {%- if blueprint.opa_policies %} · OPA{%- endif -%}
+          {%- if blueprint.azure_policy_pack %} · Azure Policy{%- endif -%}
+          · {{ blueprint.gates|length }} gates
+        </span>
+        {% set governance_meter_penalty = 0 %}
+        {% if standards_diff.available and standards_diff.has_changes %}
+        {% set governance_meter_penalty = governance_meter_penalty + 20 %}
+        {% endif %}
+        {% if not governance_preflight.tools_ready %}
+        {% set governance_meter_penalty = governance_meter_penalty + 25 %}
+        {% endif %}
+        {% set governance_meter_pct = [100 - governance_meter_penalty, 35]|max %}
+        <span class="governance-meter governance-meter--compact" role="status" aria-label="Governance readiness {{ governance_meter_pct }} percent">
+          <span class="governance-meter__track" aria-hidden="true">
+            <span class="governance-meter__fill" style="width: {{ governance_meter_pct }}%"></span>
+          </span>
+          <span class="governance-meter__label muted">{{ governance_meter_pct }}% ready</span>
+        </span>
+      </summary>
+      <div class="governance-card__expand">
+        {% set governance_meter_penalty = 0 %}
+        {% if standards_diff.available and standards_diff.has_changes %}
+        {% set governance_meter_penalty = governance_meter_penalty + 20 %}
+        {% endif %}
+        {% if not governance_preflight.tools_ready %}
+        {% set governance_meter_penalty = governance_meter_penalty + 25 %}
+        {% endif %}
+        {% set governance_meter_pct = [100 - governance_meter_penalty, 35]|max %}
+        <div class="governance-meter" role="status" aria-label="Governance readiness {{ governance_meter_pct }} percent">
+          <div class="governance-meter__header">
+            <span class="governance-meter__title">Readiness</span>
+            <span class="governance-meter__value">{{ governance_meter_pct }}%</span>
+          </div>
+          <div class="governance-meter__track" aria-hidden="true">
+            <div class="governance-meter__fill" style="width: {{ governance_meter_pct }}%"></div>
+          </div>
+          <p class="hint governance-meter__hint">
+            {{ blueprint.gates|length }} gates on apply · {{ governance_preflight.policy_profile }}
+            {%- if standards_diff.available and standards_diff.has_changes %} · standard pin drift detected{% endif -%}
+            {%- if not governance_preflight.tools_ready %} · gate toolchain missing on worker{% endif -%}
+          </p>
+        </div>
+    {% else %}
+    <h2 class="governance-card__title" id="governance-heading">Controls &amp; lineage</h2>
+    {% endif %}
+    <dl class="governance-card__list">
+      <div>
+        <dt>Domain standard</dt>
+        <dd class="governance-card__value">
+          <code class="governance-card__code">{{ blueprint.standard_source }}</code>
+          <span class="badge">@ {{ blueprint.standard_version }}</span>
+        </dd>
+      </div>
+      <div>
+        <dt>Lineage</dt>
+        <dd class="governance-card__value governance-card__value--inline">
+          Engine <code>{{ app_version }}</code>
+          · <code>repave.yaml</code>
+        </dd>
+      </div>
+      {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
+      <div class="governance-card__section">
+        <dt class="governance-card__section-title">Policy</dt>
+        <dd class="governance-card__section-body">
+          {% if blueprint.checkov_policies %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">Checkov</span>
+            <code>{{ blueprint.checkov_policies.policies_source }}</code>
+            <span class="badge">@ {{ blueprint.checkov_policies.policy_version }}</span>
+          </div>
+          {% endif %}
+          {% if blueprint.opa_policies %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">OPA</span>
+            <code>{{ blueprint.opa_policies.policies_source }}</code>
+            <span class="badge">@ {{ blueprint.opa_policies.policy_version }}</span>
+          </div>
+          {% endif %}
+          {% if blueprint.azure_policy_pack %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">Azure Policy</span>
+            <code>{{ blueprint.azure_policy_pack.definitions_source }}</code>
+            <span class="badge">@ {{ blueprint.azure_policy_pack.policy_version }}</span>
+          </div>
+          {% endif %}
+        </dd>
+      </div>
+      {% endif %}
+      {% if blueprint.ansible_lint_pack %}
+      <div>
+        <dt>ansible-lint pack</dt>
+        <dd>
+          <code>{{ blueprint.ansible_lint_pack.pack_source }}</code>
+          <span class="badge">@ {{ blueprint.ansible_lint_pack.pack_version }}</span>
+        </dd>
+      </div>
+      {% endif %}
+      <div>
+        <dt>Quality gates</dt>
+        <dd class="governance-card__gates">
+          {% if blueprint.gates|length > 8 %}
+          <details class="governance-card__gates-details">
+            <summary>{{ blueprint.gates|length }} gates on apply</summary>
+            <div class="governance-card__gates-grid">
+              {% for gate in blueprint.gates %}
+              <span class="chip">{{ gate }}</span>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
+          {% for gate in blueprint.gates %}
+          <span class="chip">{{ gate }}</span>
+          {% endfor %}
+          {% endif %}
+        </dd>
+      </div>
+      <div class="governance-card__section governance-card__section--drift">
+        <dt class="governance-card__section-title">Standard pin drift</dt>
+        <dd class="governance-card__section-body">
+          {% if standards_diff.available %}
+            {% if standards_diff.has_changes %}
+            <p class="governance-drift-summary">
+              <span class="badge">{{ standards_diff.files|length }} changed</span>
+              since pin <code>{{ standards_diff.pinned_version }}</code>
+            </p>
+            <details class="governance-drift-details">
+              <summary>File list</summary>
+              <ul class="governance-drift-files">
+                {% for file in standards_diff.files %}
+                <li><code class="governance-drift-files__path">{{ file.path }}</code></li>
+                {% endfor %}
+              </ul>
+            </details>
+            {% include "partials/diff_viewer.html" %}
+            {% include "partials/governance_annotations.html" %}
+            <p class="hint governance-drift-hint">
+              Full pin comparison on <a href="/update">Upgrade existing repo</a>.
+            </p>
+            {% else %}
+            <p class="muted governance-drift-ok">Pinned standard matches platform repo HEAD.</p>
+            {% include "partials/governance_annotations.html" %}
+            {% endif %}
+          {% else %}
+            <p class="muted">{{ standards_diff.reason }}</p>
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+    {% if recent_activity %}
+    <div class="governance-card__activity" aria-labelledby="governance-activity-heading">
+      <h3 class="governance-card__activity-title" id="governance-activity-heading">Recent on this service</h3>
+      <ul class="activity-list activity-list--compact">
+        {% for row in recent_activity[:5] %}
+        <li class="activity-list__item">
+          <a class="activity-list__artifact" href="{{ row.activity_href() }}">
+            <span class="activity-list__artifact-name">{{ row.activity_artifact_name() }}</span>
+            {% if row.activity_version_label() %}
+            <span class="badge badge--muted">{{ row.activity_version_label() }}</span>
+            {% endif %}
+          </a>
+          <span class="badge {% if row.gates_outcome == 'failed' %}badge--fail{% else %}badge--pass{% endif %}">
+            {{ row.gates_outcome }}
+          </span>
+          <span class="muted">{{ row.acting_user }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    <p class="governance-card__footnote muted">
+      Pins are frozen on apply. Enable <code>audit</code> in config for fleet-wide activity.
+    </p>
+    {% if governance_collapsible %}
+      </div>
+    </details>
+    {% endif %}
+  </aside>
+
+  <form
+    method="post"
+    action="/generate"
+    id="generate-form"
+    class="form-panel form-panel--{{ bp_family }}{% if form_stepper %} form-panel--stepper{% endif %}"
+    data-repave-busy-form
+    data-repave-form-draft
+    data-blueprint-id="{{ blueprint.name }}"
+    data-busy-label="Scaffolding…"
+    data-busy-stages="Validating inputs…|Rendering template…|Running quality gates…|Finishing…"
+    {% if supports_form_mode %}
+    data-form-mode="{{ form_mode_default or 'guided' }}"
+    {% endif %}
+    {% if form_stepper %}
+    data-form-stepper
+    data-form-stepper-kind="{{ form_stepper }}"
+    data-form-stepper-max="{{ publish_step }}"
+    novalidate
+    {% endif %}
+  >
+    <input type="hidden" name="blueprint_name" value="{{ blueprint.name }}" />
+    <input type="hidden" name="dry_run" value="true" data-dry-run-force disabled />
+    <input type="hidden" name="plan_preview" value="" data-plan-preview-flag disabled />
+    {% if blueprint.terraform_layout != "single-resource" %}
+    <input type="hidden" id="provider_service_scope" name="provider_service_scope" value="" />
+    {% endif %}
+
+    {% if form_stepper %}
+    <nav class="form-stepper" aria-label="Generation steps">
+      <div class="form-stepper__visual" data-form-stepper-visual>
+        <div class="form-stepper__track" aria-hidden="true">
+          <div class="form-stepper__fill" data-form-stepper-fill style="width: 0%"></div>
+        </div>
+        <ol class="form-stepper__list">
+        {% if form_stepper == 'terraform' %}
+        <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__index" aria-hidden="true">1</span>
+          <span class="form-stepper__label">Identity</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__index" aria-hidden="true">2</span>
+          <span class="form-stepper__label">Services &amp; scope</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="2">
+          <span class="form-stepper__index" aria-hidden="true">3</span>
+          <span class="form-stepper__label">Delivery</span>
+        </li>
+        {% elif form_stepper == 'observability' %}
+        <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__index" aria-hidden="true">1</span>
+          <span class="form-stepper__label">Service context</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__index" aria-hidden="true">2</span>
+          <span class="form-stepper__label">Alert routing</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="2">
+          <span class="form-stepper__index" aria-hidden="true">3</span>
+          <span class="form-stepper__label">Delivery</span>
+        </li>
+        {% else %}
+        <li class="form-stepper__step is-active" data-stepper-index="0">
+          <span class="form-stepper__index" aria-hidden="true">1</span>
+          <span class="form-stepper__label">Parameters</span>
+        </li>
+        <li class="form-stepper__step" data-stepper-index="1">
+          <span class="form-stepper__index" aria-hidden="true">2</span>
+          <span class="form-stepper__label">Delivery</span>
+        </li>
+        {% endif %}
+        </ol>
+      </div>
+      <p class="form-stepper__progress muted" data-stepper-progress aria-live="polite"></p>
+      <div class="form-stepper__actions">
+        <button type="button" class="btn btn--ghost btn--sm" data-stepper-back hidden>Back</button>
+        <button type="button" class="btn btn--secondary btn--sm" data-stepper-next>Next</button>
+      </div>
+    </nav>
+    {% endif %}
+
+    <section class="form-section" aria-labelledby="inputs-heading">
+      <h2 class="form-section__title" id="inputs-heading">Parameters</h2>
+
+      {% if supports_form_mode %}
+      <fieldset class="segmented publish-toggle" id="form-mode-toggle" aria-label="Form depth">
+        <legend class="hint">Form depth</legend>
+        <label class="segmented__option">
+          <input
+            type="radio"
+            name="form_mode"
+            data-form-mode-option
+            value="guided"
+            {% if (form_mode_default or 'guided') == 'guided' %}checked{% endif %}
+          />
+          Guided
+        </label>
+        <label class="segmented__option">
+          <input
+            type="radio"
+            name="form_mode"
+            data-form-mode-option
+            value="advanced"
+            {% if form_mode_default == 'advanced' %}checked{% endif %}
+          />
+          Advanced
+        </label>
+      </fieldset>
+      <p class="hint">
+        Guided names the repository from your selections and uses safe defaults.
+        Advanced lets you edit the name and description and reveals policy, catalog, and
+        platform options already on this golden path — not freeform extras.
+      </p>
+      {% if has_guided_identity %}
+      <div class="identity-preview" data-identity-preview hidden>
+        <p class="identity-preview__kicker">Generated from your selections</p>
+        <p class="identity-preview__name" data-identity-preview-name></p>
+        <p class="identity-preview__description" data-identity-preview-description></p>
+        <p class="hint">Switch to Advanced to edit the name and description.</p>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      {% if form_stepper == 'standard' %}
+      <div class="form-step-panel" data-form-step="0">
+      {% endif %}
+
+      {% if observability_field_catalog and observability_catalog %}
+      {% if blueprint.name == "observability-as-code-generic" %}
+      <div class="alert alert--info observability-umbrella-callout" role="note">
+        <strong>Legacy umbrella path.</strong> For new repositories, use
+        <a href="/blueprints/dashboards-as-code-generic">dashboards-as-code-generic</a> or
+        <a href="/blueprints/monitors-as-code-generic">monitors-as-code-generic</a>.
+        Keep this blueprint when you need OTel scaffolding or multiple backends in one repo.
+      </div>
+      {% endif %}
+      <div class="field-block observability-field-catalog" id="observability-field-catalog">
+        {% set obs_input_names = blueprint.inputs | map(attribute='name') | list %}
+        <div class="form-step-panel" {% if form_stepper == 'observability' %}data-form-step="0"{% endif %}>
+        <h3 class="form-section__subtitle" id="observability-fields-heading">Service context</h3>
+        <p class="hint">Pick a registered service from the platform catalog and live inventory. Recommended mode applies estate defaults.</p>
+        <fieldset class="segmented publish-toggle" id="configuration-mode-toggle">
+          <legend class="hint">Configuration depth</legend>
+          <label class="segmented__option">
+            <input
+              type="radio"
+              name="configuration_mode"
+              value="recommended"
+              {% if observability_defaults.get('configuration_mode', 'recommended') == 'recommended' %}checked{% endif %}
+            />
+            Platform defaults
+          </label>
+          <label class="segmented__option">
+            <input
+              type="radio"
+              name="configuration_mode"
+              value="custom"
+              {% if observability_defaults.get('configuration_mode') == 'custom' %}checked{% endif %}
+            />
+            Full parameter set
+          </label>
+        </fieldset>
+        <p class="hint" id="configuration-mode-hint">
+          Choose service{% if observability_dashboard_packs %}, dashboard platform, and pack{% elif observability_monitor_packs %}, monitor platform, and pack{% else %} and observability backend{% endif %}; platform defaults fill org, team, runbooks, and routing.
+        </p>
+        <label for="service_name">Service *</label>
+        <select class="select" id="service_name" name="service_name" required>
+          {% for svc in observability_catalog.services %}
+          <option
+            value="{{ svc['id'] }}"
+            {% if svc['id'] == observability_defaults.service_name %}selected{% endif %}
+            {% if svc.get('description') %}title="{{ svc['description'] }}"{% endif %}
+          >{{ svc.get('label') or svc['id'] }}{% if svc.get('source_kind') == 'discovered' %} (inventory){% endif %}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="service-inventory-hint" aria-live="polite"></p>
+        <p class="hint" id="obs-defaults-summary" aria-live="polite"></p>
+        {% for field in blueprint.inputs %}
+          {% if field.name == "backend" and field.enum %}
+        <div class="obs-decision-fields" id="obs-backend-decision">
+          <label for="backend">
+            {% if blueprint.name == "dashboards-as-code-generic" %}Dashboard platform{% elif blueprint.name == "monitors-as-code-generic" %}Monitor platform{% else %}Observability backend{% endif %}
+            {% if field.required %} *{% endif %}
+          </label>
+          <select class="select" id="backend" name="backend" {% if field.required %}required{% endif %}>
+            {% for option in field.enum %}
+            <option
+              value="{{ option }}"
+              {% if observability_defaults.get('backend', field.default) == option %}selected{% endif %}
+            >{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% if field.description %}<p class="hint">{{ field.description }}</p>{% endif %}
+        </div>
+          {% endif %}
+        {% endfor %}
+        {% if observability_dashboard_packs and observability_catalog %}
+        {% set initial_dashboard_backend = observability_defaults.get('backend', 'grafana') %}
+        <div class="obs-decision-fields dashboard-pack" id="dashboard-pack">
+          <h4 class="form-section__subtitle form-section__subtitle--sm">Dashboard pack</h4>
+          <p class="hint">
+            Curated forks from <code>observability/dashboards/</code> (Grafana.com / Datadog).
+            Every pack includes the platform baseline (overview + golden signals) plus bundled community layouts below.
+          </p>
+          <label for="dashboard_pack_source">Pack</label>
+          <select class="select" id="dashboard_pack_source" name="dashboard_pack_source">
+            {% for pack in observability_catalog.dashboard_packs %}
+              {% if pack['backend'] == 'any' or pack['backend'] == initial_dashboard_backend %}
+            <option
+              value="{{ pack['id'] }}"
+              {% if pack['id'] == observability_defaults.dashboard_pack_source %}selected{% endif %}
+              {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+            >{{ pack.get('label') or pack['id'] }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <p class="hint" id="dashboard-pack-hint"></p>
+          <p class="hint dashboard-pack-includes-label" id="dashboard-pack-includes-label">Included dashboards</p>
+          <ul class="dashboard-pack-includes" id="dashboard-pack-includes" aria-labelledby="dashboard-pack-includes-label"></ul>
+        </div>
+        {% elif observability_monitor_packs and observability_catalog %}
+        {% set initial_monitor_backend = observability_defaults.get('backend', 'datadog') %}
+        <div class="obs-decision-fields monitor-pack" id="monitor-pack">
+          <h4 class="form-section__subtitle form-section__subtitle--sm">Monitor pack</h4>
+          <p class="hint">
+            Curated forks from <code>observability/monitors/</code>.
+            Every pack includes the platform baseline (target down + optional SLO) plus bundled community layouts below.
+          </p>
+          <label for="monitor_pack_source">Pack</label>
+          <select class="select" id="monitor_pack_source" name="monitor_pack_source">
+            {% for pack in observability_catalog.monitor_packs %}
+              {% if pack['backend'] == 'any' or pack['backend'] == initial_monitor_backend %}
+            <option
+              value="{{ pack['id'] }}"
+              {% if pack['id'] == observability_defaults.monitor_pack_source %}selected{% endif %}
+              {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+            >{{ pack.get('label') or pack['id'] }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+          <p class="hint" id="monitor-pack-hint"></p>
+          <p class="hint monitor-pack-includes-label" id="monitor-pack-includes-label">Included monitors</p>
+          <ul class="monitor-pack-includes" id="monitor-pack-includes" aria-labelledby="monitor-pack-includes-label"></ul>
+        </div>
+        {% endif %}
+        </div>
+        <div
+          class="form-step-panel obs-step-panel obs-step-panel--configure"
+          id="obs-step-configure"
+          {% if form_stepper == 'observability' %}data-form-step="1" hidden{% endif %}
+        >
+        <h3 class="form-section__subtitle">Alert routing &amp; metadata</h3>
+        <p class="hint" id="obs-step-configure-hint">
+          Tune on-call routing and service metadata. With platform defaults, catalog values apply unless you choose the full parameter set.
+        </p>
+        <div id="obs-advanced-fields" class="obs-advanced-fields">
+        <label for="organization">Organization *</label>
+        <select class="select" id="organization" name="organization" required>
+          {% for org in observability_catalog.organizations %}
+          <option
+            value="{{ org['id'] }}"
+            {% if org['id'] == observability_defaults.organization %}selected{% endif %}
+          >{{ org.get('label') or org['id'] }}</option>
+          {% endfor %}
+        </select>
+        <label for="team">Team *</label>
+        <select class="select" id="team" name="team" required>
+          {% set initial_org = observability_defaults.organization %}
+          {% for team in observability_catalog.teams %}
+            {% if team['organization'] == initial_org %}
+          <option
+            value="{{ team['id'] }}"
+            {% if team['id'] == observability_defaults.team %}selected{% endif %}
+          >{{ team.get('label') or team['id'] }}</option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        {% if 'environment' in obs_input_names %}
+        <label for="environment">Environment</label>
+        <select class="select" id="environment" name="environment">
+          {% for env in observability_catalog.environments %}
+          <option
+            value="{{ env['id'] }}"
+            {% if env['id'] == observability_defaults.environment %}selected{% endif %}
+          >{{ env.get('label') or env['id'] }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        <label for="description">Description *</label>
+        <textarea
+          class="input"
+          id="description"
+          name="description"
+          rows="3"
+          required
+        >{{ observability_defaults.description or '' }}</textarea>
+        {% if 'datasource_uid' in obs_input_names %}
+        <div id="observability-backend-grafana-fields" class="obs-backend-panel">
+          <label for="datasource_uid">Grafana datasource UID</label>
+          <select class="select" id="datasource_uid" name="datasource_uid">
+            {% for ds in observability_catalog.grafana_datasources %}
+            <option
+              value="{{ ds['uid'] }}"
+              {% if ds['uid'] == observability_defaults.datasource_uid %}selected{% endif %}
+            >{{ ds.get('label') or ds['uid'] }}</option>
+            {% endfor %}
+          </select>
+          <p class="hint">Prometheus-compatible datasource referenced in Grafana panel JSON.</p>
+        </div>
+        <div id="observability-backend-datadog-fields" class="obs-backend-panel" hidden>
+          <p class="hint">
+            Datadog dashboards use native JSON under <code>datadog/dashboards/</code>.
+            Choose a Datadog community pack above; widgets follow Datadog metrics and APM conventions
+            (no Grafana datasource).
+          </p>
+        </div>
+        {% endif %}
+        {% set runbook_required = false %}
+        {% for field in blueprint.inputs %}
+          {% if field.name == 'runbook_url' and field.required %}
+            {% set runbook_required = true %}
+          {% endif %}
+        {% endfor %}
+        {% if 'runbook_url' in obs_input_names %}
+        <label for="runbook_url">Runbook{% if runbook_required %} *{% endif %}</label>
+        <select
+          class="select"
+          id="runbook_url"
+          name="runbook_url"
+          {% if runbook_required %}required{% endif %}
+        >
+          {% if not runbook_required %}
+          <option value="" {% if not observability_defaults.runbook_url %}selected{% endif %}>None</option>
+          {% endif %}
+          {% for rb in observability_catalog.runbooks %}
+          <option
+            value="{{ rb['url'] }}"
+            {% if rb['url'] == observability_defaults.runbook_url %}selected{% endif %}
+          >{{ rb.get('label') or rb['id'] }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        {% if 'slo_target_percent' in obs_input_names %}
+        <label for="slo_target_percent">SLO target</label>
+        <select class="select" id="slo_target_percent" name="slo_target_percent">
+          {% for slo in observability_catalog.slo_targets %}
+          <option
+            value="{{ slo['value'] }}"
+            {% if slo['value'] == observability_defaults.get('slo_target_percent', '') %}selected{% endif %}
+          >{{ slo.get('label') or slo['id'] }}</option>
+          {% endfor %}
+        </select>
+        {% endif %}
+        {% if 'output_mode' in obs_input_names %}
+        <input type="hidden" name="output_mode" value="native" />
+        {% endif %}
+        </div>
+      {% if observability_notifications and observability_catalog %}
+      <div class="field-block observability-notifications" id="observability-notifications">
+        <h3 class="form-section__subtitle" id="notifications-heading">Notifications</h3>
+        <p class="hint">
+          Choose a notification source; targets list only destinations for that source.
+        </p>
+        <label for="notification_source">Notification source</label>
+        <select class="select" id="notification_source" name="notification_source">
+          {% for source in observability_catalog.notification_sources %}
+          <option
+            value="{{ source['id'] }}"
+            {% if source['id'] == observability_defaults.notification_source %}selected{% endif %}
+            {% if source.get('description') %}title="{{ source['description'] }}"{% endif %}
+          >{{ source.get('label') or source['id'] }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="notification-source-hint"></p>
+        <label for="notification_target">Notification target</label>
+        <select class="select" id="notification_target" name="notification_target">
+          {% set initial_source = observability_defaults.notification_source %}
+          {% for source in observability_catalog.notification_sources %}
+            {% if source['id'] == initial_source %}
+              {% for target in source['targets'] %}
+              <option
+                value="{{ target['id'] }}"
+                {% if target['id'] == observability_defaults.notification_target %}selected{% endif %}
+                {% if target.get('description') %}title="{{ target['description'] }}"{% endif %}
+              >{{ target.get('label') or target['id'] }}</option>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </select>
+        <p class="hint" id="notification-target-hint"></p>
+      </div>
+      {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if policy_mandatory and policy_catalog %}
+      <div class="field-block policy-enable" id="policy-mandatory">
+        <input type="hidden" id="enable_policy" name="enable_policy" value="true" />
+        <p class="hint">
+          Policy is required on this regulated family. Set <code>enable_policy: true</code>,
+          or add a waiver in <code>data/waivers.jsonl</code> with
+          <code>gate_id: mandatory-policy</code> and an expiry.
+        </p>
+      </div>
+      {% elif policy_customization_optional and policy_catalog %}
+      <div class="field-block policy-enable" id="policy-enable">
+        <label class="checkbox-row" for="enable_policy_toggle">
+          <input
+            type="checkbox"
+            id="enable_policy_toggle"
+            {% if policy_defaults.get('enable_policy') == 'true' %}checked{% endif %}
+          />
+          Apply OPA policy pack
+        </label>
+        <input type="hidden" id="enable_policy" name="enable_policy" value="false" />
+        <p class="hint">
+          When enabled, vend Conftest Rego from <code>repave-observability-pack</code> and run the
+          <code>opa</code> gate. Leave off for monitor layout and non-OPA gates only.
+        </p>
+      </div>
+      {% endif %}
+      {% if (policy_customization or policy_customization_optional or policy_mandatory) and policy_catalog %}
+      <details
+        class="field-block policy-customization"
+        id="policy-customization"
+        {% if policy_customization_optional and not policy_mandatory %}hidden{% endif %}
+        {% if form_stepper == 'terraform' %}data-form-step="0"{% endif %}
+        {% if supports_form_mode %}data-form-advanced{% endif %}
+      >
+        <summary class="policy-customization__summary">
+          <span class="policy-customization__title">Policy</span>
+          <span class="policy-customization__meta muted" id="policy-compact-summary">
+            {% set initial_profile = policy_defaults.policy_profile or 'estate-default' %}
+            {{ (policy_catalog.profiles.get(initial_profile) or {}).get('label') or initial_profile }}
+            profile
+          </span>
+        </summary>
+        <div class="policy-customization__body">
+        <p class="hint">Choose a pack and profile; required catalog rules stay enforced. Titles match the policy catalog.</p>
+        <label for="policy_pack_source">Policy pack source</label>
+        <select class="select" id="policy_pack_source" name="policy_pack_source">
+          {% for pack in policy_catalog.pack_sources %}
+          <option
+            value="{{ pack['id'] }}"
+            {% if pack['id'] == policy_defaults.policy_pack_source %}selected{% endif %}
+            {% if pack.get('description') %}title="{{ pack['description'] }}"{% endif %}
+          >{{ pack.get('label') or pack['id'] }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="policy-pack-hint"></p>
+        <label for="policy_profile">Policy profile</label>
+        <select class="select" id="policy_profile" name="policy_profile">
+          {% for profile_id, profile in policy_catalog.profiles.items() %}
+          <option
+            value="{{ profile_id }}"
+            {% if profile_id == policy_defaults.policy_profile %}selected{% endif %}
+            {% if profile.get('description') %}title="{{ profile['description'] }}"{% endif %}
+          >{{ profile.get('label') or profile_id }}</option>
+          {% endfor %}
+        </select>
+        <p class="policy-profile-summary hint" id="policy-profile-summary" aria-live="polite"></p>
+        <details id="policy-rules-advanced" class="policy-rules-advanced">
+          <summary>Individual rules</summary>
+          <p class="hint policy-rules-hint" id="policy-rules-hint">
+            {% if policy_defaults.policy_profile == 'custom' %}
+            Toggle optional rules; required rules stay enabled.
+            {% else %}
+            Rules included in this profile (switch to Custom to change optional rules).
+            {% endif %}
+          </p>
+          <div class="policy-rules-actions">
+            <button type="button" class="btn btn--ghost btn--sm" id="policy-rules-enable-optional">
+              Enable all optional
+            </button>
+            <button type="button" class="btn btn--ghost btn--sm" id="policy-rules-use-profile">
+              Match current profile
+            </button>
+          </div>
+          <input type="search" class="input" id="policy-rules-filter" placeholder="Filter rules…" />
+          <div id="policy-rules-list" class="policy-rules-list">
+            {% set initial_profile = policy_defaults.policy_profile %}
+            {% for rule in policy_catalog.rules %}
+            <label class="checkbox-row" data-rule-id="{{ rule['id'] }}" title="{{ rule['id'] }}">
+              <input
+                type="checkbox"
+                value="{{ rule['id'] }}"
+                {% if initial_profile != 'custom' or rule['required'] %}disabled{% endif %}
+                {% if rule['id'] in policy_enabled_rule_ids %}checked{% endif %}
+              />
+              {{ rule['title'] }}
+            </label>
+            {% endfor %}
+          </div>
+        </details>
+        <input type="hidden" id="policy_rules" name="policy_rules" value="" />
+        </div>
+      </details>
+      {% endif %}
+      {% if blueprint.name == "dashboards-as-code-generic" %}
+      <input type="hidden" name="observability_focus" value="dashboards" />
+      {% endif %}
+      {% if blueprint.name == "monitors-as-code-generic" %}
+      <input type="hidden" name="observability_focus" value="monitors" />
+      {% endif %}
+      {% if blueprint.name == "observability-as-code-generic" %}
+      <input type="hidden" name="observability_focus" value="multi" />
+      {% endif %}
+
+      {% if blueprint.name == "app-service-generic" %}
+      <div
+        class="field-block app-service-catalog"
+        id="app-service-catalog"
+        {% if supports_form_mode %}data-form-advanced{% endif %}
+      >
+        <h3 class="form-section__subtitle">Backstage catalog</h3>
+        <p class="hint">
+          Generated repos include <code>catalog-info.yaml</code> (component kind). Set owner above;
+          optional system and lifecycle appear in the developer portal.
+        </p>
+        {% for field in blueprint.inputs if field.name == "system" %}
+        <label for="{{ field.name }}">System</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <input
+          class="input"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          type="text"
+          value="{{ field.default or '' }}"
+          placeholder="e.g. platform-checkout"
+        />
+        {% endfor %}
+        {% for field in blueprint.inputs if field.name == "catalog_lifecycle" %}
+        <label for="{{ field.name }}">Catalog lifecycle</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}">
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% for field in blueprint.inputs %}
+      {% if field.name == "provider_service_scope" %}
+      {% elif field.name in ("policy_pack_source", "policy_profile", "policy_rules", "enable_policy") %}
+      {% elif field.name in ("notification_source", "notification_target") %}
+      {% elif blueprint.name == "app-service-generic" and field.name in ("system", "catalog_lifecycle") %}
+      {% elif field.name == "dashboard_pack_source" %}
+      {% elif field.name == "monitor_pack_source" %}
+      {% elif field.name == "backend" %}
+      {% elif field.name == "configuration_mode" %}
+      {% elif observability_field_catalog and field.name in (
+        "service_name", "organization", "team", "environment", "datasource_uid",
+        "runbook_url", "slo_target_percent", "description", "output_mode"
+      ) %}
+      {% elif field.name == "observability_focus" %}
+      {% elif provider_catalog and field.name == "cloud_provider" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif provider_catalog and blueprint.terraform_layout == "single-resource" and field.name == "provider_service" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          <option value="" disabled selected>Select a service…</option>
+        </select>
+      </div>
+      {% elif provider_catalog and blueprint.terraform_layout == "single-resource" and field.name == "provider_resource" %}
+      <div class="field-block">
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %} disabled>
+          <option value="" disabled selected>Select a resource…</option>
+        </select>
+        <p id="single-resource-validation" class="form-validation" role="alert" hidden></p>
+      </div>
+      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name == "pinned_modules" %}
+      <div class="field-block">
+        <label>Terraform modules</label>
+        <div class="hint">Pin one or more modules from <code>REPAVE_MODULES_ROOT</code> (<code>tf-*</code> / <code>tfm-*</code>) plus the local example stub.</div>
+        <div id="pinned-modules-rows" class="pinned-roles"></div>
+        <button type="button" class="btn btn--ghost btn--sm" id="add-pinned-module">Add module</button>
+        <p id="pinned-modules-validation" class="form-validation" role="alert" hidden></p>
+        <input type="hidden" id="pinned_modules" name="pinned_modules" value="[]" />
+      </div>
+      {% elif blueprint.artifact_type == "terraform-environment-stack" and field.name in ("module_name", "module_source", "module_version") %}
+      {% elif blueprint.artifact_type == "ansible-playbook-project" and ansible_playbook_patterns and ansible_catalog and field.name == "playbook_pattern_source" %}
+      <div
+        class="field-block"
+        id="ansible-playbook-pattern-block"
+        {% if field.advanced %}data-form-advanced{% endif %}
+      >
+        <label for="playbook_pattern_source">Playbook pattern</label>
+        <p class="hint">Community patterns from <code>ansible/catalog.json</code>; filtered by Linux/Windows below.</p>
+        <select class="select" id="playbook_pattern_source" name="playbook_pattern_source">
+          {% for pattern in ansible_catalog.playbook_patterns %}
+          <option
+            value="{{ pattern['id'] }}"
+            {% if pattern['id'] == ansible_catalog.defaults.get('playbook_pattern_source', 'linux-patch-baseline') %}selected{% endif %}
+          >
+            {{ pattern['label'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-playbook-project" and ansible_playbook_patterns and field.name == "support_linux" %}
+      <div class="field-block">
+        <label>Target platforms</label>
+        <div class="hint">Patterns and sample inventory groups follow Linux and/or Windows selection.</div>
+        <div class="platform-picker">
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_linux_cb" checked />
+            Linux
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_windows_cb" />
+            Windows
+          </label>
+          <input type="hidden" id="support_linux" name="support_linux" value="true" />
+          <input type="hidden" id="support_windows" name="support_windows" value="false" />
+        </div>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "support_windows" %}
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "team_slugs" %}
+      <div class="field-block" id="github-team-slugs-block">
+        <label id="github-team-picker-label">Destination teams</label>
+        <p class="hint">
+          Choose org teams to grant the permission below. Check the teams that
+          should have access; add extra slugs only when you need a team that is
+          not in the list yet.
+        </p>
+        <p class="hint" id="github-teams-hint">Loading org teams…</p>
+        <input
+          class="input"
+          id="github-team-filter"
+          type="search"
+          hidden
+          autocomplete="off"
+          placeholder="Filter teams…"
+          aria-label="Filter organization teams"
+        />
+        <div
+          id="github-team-picker"
+          class="github-team-picker"
+          hidden
+          role="group"
+          aria-labelledby="github-team-picker-label"
+        ></div>
+        <input type="hidden" id="team_slugs" name="team_slugs" value="{{ field.default or '' }}" />
+        <label class="hint" for="github-team-slugs-extra">Additional team slugs</label>
+        <input
+          class="input"
+          id="github-team-slugs-extra"
+          type="text"
+          autocomplete="off"
+          placeholder="new-team, other-slug"
+        />
+        <datalist id="github-team-slugs"></datalist>
+      </div>
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "membership_source_team" %}
+      <div class="field-block" id="github-membership-source-block">
+        <label for="membership_source_team" id="github-source-team-label">Membership source team</label>
+        <p class="hint">
+          Existing org team whose members are copied into the destination teams
+          (additive only). Required when sync is on and destination teams are set.
+        </p>
+        <select class="select" id="github-source-team-select" hidden>
+          <option value="">None</option>
+        </select>
+        <input
+          class="input"
+          id="membership_source_team"
+          name="membership_source_team"
+          type="text"
+          list="github-team-slugs"
+          value="{{ field.default or '' }}"
+          autocomplete="off"
+          placeholder="platform"
+        />
+        <div
+          id="github-source-team-members"
+          class="github-team-members"
+          hidden
+          aria-live="polite"
+        >
+          <p class="hint" id="github-source-team-members-status"></p>
+          <ul id="github-source-team-members-list" class="github-team-members__list"></ul>
+        </div>
+      </div>
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "sync_team_membership" %}
+      <div class="field-block" id="github-sync-membership-block">
+        <label class="checkbox-row" for="sync_team_membership_toggle">
+          <input type="checkbox" id="sync_team_membership_toggle" />
+          Sync membership from source team
+        </label>
+        <input type="hidden" id="sync_team_membership" name="sync_team_membership" value="" />
+        <p class="hint">
+          Adds members who are missing on destination teams; does not remove extras.
+        </p>
+      </div>
+      {% elif blueprint.artifact_type == "github-repo" and field.name == "ruleset_profile" %}
+      <div class="field-block" id="github-ruleset-profile-block">
+        <label for="ruleset_profile">Ruleset profile</label>
+        <p class="hint">
+          Applied after the overlay push. default-pr requires pull requests and blocks
+          force-push on the default branch (no required status checks).
+        </p>
+        <select class="select" id="ruleset_profile" name="ruleset_profile">
+          <option value="none" {% if (field.default or 'none') == 'none' %}selected{% endif %}>
+            none — skip ruleset
+          </option>
+          <option value="default-pr" {% if field.default == 'default-pr' %}selected{% endif %}>
+            default-pr — require PRs, block force-push
+          </option>
+        </select>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-collection" and ansible_collection_sample_patterns and ansible_catalog and field.name == "sample_role_pattern_source" %}
+      <div
+        class="field-block"
+        id="ansible-collection-sample-pattern-block"
+        {% if field.advanced %}data-form-advanced{% endif %}
+      >
+        <label for="sample_role_pattern_source">Sample role pattern</label>
+        <p class="hint">Same pattern catalog as standalone roles; materialized under <code>roles/&lt;sample_role_name&gt;/</code>.</p>
+        <select class="select" id="sample_role_pattern_source" name="sample_role_pattern_source">
+          {% for pattern in ansible_catalog.collection_sample_patterns %}
+          <option
+            value="{{ pattern['id'] }}"
+            {% if pattern['id'] == ansible_catalog.defaults.get('sample_role_pattern_source', 'linux-service') %}selected{% endif %}
+          >
+            {{ pattern['label'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-collection" and ansible_collection_sample_patterns and field.name == "support_linux" %}
+      <div class="field-block">
+        <label>Sample role platforms</label>
+        <div class="hint">Patterns filtered by Linux and/or Windows selection.</div>
+        <div class="platform-picker">
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_linux_cb" checked />
+            Linux
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_windows_cb" />
+            Windows
+          </label>
+          <input type="hidden" id="support_linux" name="support_linux" value="true" />
+          <input type="hidden" id="support_windows" name="support_windows" value="false" />
+        </div>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-collection" and field.name == "support_windows" %}
+      {% elif blueprint.artifact_type == "ansible-playbook-project" and field.name == "pinned_roles" %}
+      <div class="field-block">
+        <label>Galaxy roles</label>
+        <div class="hint">Pin one or more roles from <code>REPAVE_MODULES_ROOT</code> (<code>ansible-role-*</code> repos).</div>
+        <div id="pinned-roles-rows" class="pinned-roles"></div>
+        <button type="button" class="btn btn--ghost btn--sm" id="add-pinned-role">Add role</button>
+        <p id="pinned-roles-validation" class="form-validation" role="alert" hidden></p>
+        <input type="hidden" id="pinned_roles" name="pinned_roles" value="[]" />
+      </div>
+      {% elif blueprint.artifact_type == "ansible-role" and ansible_role_patterns and ansible_catalog and field.name == "role_pattern_source" %}
+      <div
+        class="field-block"
+        id="ansible-role-pattern-block"
+        {% if field.advanced %}data-form-advanced{% endif %}
+      >
+        <label for="role_pattern_source">Role pattern</label>
+        <p class="hint">Community patterns from <code>ansible/catalog.json</code>; filtered by Linux/Windows selection below.</p>
+        <select class="select" id="role_pattern_source" name="role_pattern_source">
+          {% for pattern in ansible_catalog.role_patterns %}
+          <option
+            value="{{ pattern['id'] }}"
+            {% if pattern['id'] == ansible_catalog.defaults.get('role_pattern_source', 'linux-service') %}selected{% endif %}
+          >
+            {{ pattern['label'] }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-role" and field.name == "support_linux" %}
+      <div class="field-block">
+        <label>Target platforms</label>
+        <div class="hint">
+          Linux uses estate defaults (<code>EL:9</code>, <code>Ubuntu:jammy</code>, <code>Debian:bookworm</code>).
+          Use advanced to pick specific Galaxy <code>Name:version</code> pairs.
+        </div>
+        <div class="platform-picker">
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_linux_cb" checked />
+            Linux (default platform set)
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="support_windows_cb" />
+            Windows Server
+          </label>
+          <div class="field-block platform-picker__windows" id="windows-generation-row" hidden>
+            <label for="windows_server_generation_select">Windows generation</label>
+            <select class="select" id="windows_server_generation_select" aria-label="Windows Server generation">
+              <option value="2022" selected>2022</option>
+              <option value="2019">2019</option>
+            </select>
+          </div>
+          <input type="hidden" id="support_linux" name="support_linux" value="true" />
+          <input type="hidden" id="support_windows" name="support_windows" value="false" />
+          <input type="hidden" id="windows_server_generation" name="windows_server_generation" value="2022" />
+        </div>
+        <details
+          class="platform-advanced"
+          id="platform-advanced-panel"
+          {% if supports_form_mode %}data-form-advanced{% endif %}
+        >
+          <summary>Advanced Galaxy platforms</summary>
+          <p class="hint">When any option is selected here, Linux/Windows presets above are ignored.</p>
+          <select
+            class="select select--multi"
+            id="target_platforms_advanced"
+            name="target_platforms_advanced"
+            multiple
+            size="8"
+            aria-label="Advanced Galaxy platforms"
+          >
+            {% for platform_field in blueprint.inputs if platform_field.name == "target_platforms_advanced" %}
+            {% for option in platform_field.enum %}
+            <option value="{{ option }}">{{ option }}</option>
+            {% endfor %}
+            {% endfor %}
+          </select>
+        </details>
+      </div>
+      {% elif blueprint.artifact_type == "ansible-role" and field.name in ("support_windows", "windows_server_generation", "target_platforms_advanced") %}
+      {% elif provider_catalog and field.name == "provider_services" %}
+      <div class="field-block" {% if form_stepper == 'terraform' %}data-form-step="1" hidden{% endif %}>
+        <label>{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        <div class="service-tools">
+          <input type="text" class="input" id="provider-services-filter" placeholder="Filter services..." aria-label="Filter provider services" />
+          <span id="provider-services-count" class="service-count"></span>
+        </div>
+        <div id="scope-summary-bar" class="scope-summary-bar" hidden aria-live="polite"></div>
+        <div class="service-presets" id="service-presets" aria-label="Service selection presets"></div>
+        <div id="provider-services" class="service-grid" aria-live="polite"></div>
+        <p id="form-validation" class="form-validation" role="alert" hidden></p>
+        <div
+          id="service-scope-panel"
+          class="scope-panel"
+          aria-live="polite"
+          {% if supports_form_mode %}data-form-advanced{% endif %}
+        ></div>
+        <input type="hidden" id="provider_services" name="provider_services" value="" />
+      </div>
+      {% else %}
+      <div
+        class="field-block"
+        {% if form_stepper == 'terraform' and field.name in ("module_name", "description", "cloud_provider") %}
+        data-form-step="0"
+        {% elif form_stepper == 'terraform' %}
+        data-form-step="0"
+        {% endif %}
+        {% if field.advanced %}data-form-advanced{% endif %}
+        {% if field.guided_from %}
+        data-form-identity
+        data-guided-from="{{ field.guided_from }}"
+        data-guided-slug="{{ 'false' if field.name == 'description' else 'true' }}"
+        data-guided-separator="{{ '_' if field.name in ('role_name', 'collection_name', 'sample_role_name', 'namespace') else '-' }}"
+        {% endif %}
+        {% if blueprint.artifact_type == 'github-repo' and field.name in ('template_owner', 'template_repo') %}
+        data-github-repo-when="template"
+        {% endif %}
+      >
+        <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
+        {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
+        {% if field.enum and field.multi %}
+        <select
+          class="select select--multi"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          multiple
+          size="{{ [field.enum|length, 10]|min }}"
+          {% if field.required %}required{% endif %}
+          aria-describedby="{{ field.name }}-hint"
+        >
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if option == field.default %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        <p class="hint" id="{{ field.name }}-hint">
+          Select one or more Galaxy platforms. On macOS hold Cmd; on Windows/Linux hold Ctrl to pick multiple.
+        </p>
+        {% elif field.enum %}
+        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+          {% for option in field.enum %}
+          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+        {% else %}
+        <input
+          class="input"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          type="text"
+          {% if field.required %}required{% endif %}
+          {% if field.default is not none %}value="{{ field.default }}"{% endif %}
+        />
+        {% endif %}
+      </div>
+      {% endif %}
+      {% endfor %}
+      {% if form_stepper == 'standard' %}
+      </div>
+      {% endif %}
+    </section>
+
+    {% if form_stepper %}
+    <section
+      class="form-section"
+      aria-labelledby="publish-heading"
+      data-form-step="{{ publish_step }}"
+      hidden
+    >
+      <h2 class="form-section__title" id="publish-heading">Delivery</h2>
+      <p class="hint">
+        <strong>Plan preview</strong> validates gates without creating a GitHub repo.
+        <strong>Apply</strong> publishes under your configured GitHub org (worker needs
+        GitHub App or token).
+      </p>
+    </section>
+    {% endif %}
+
+    <div class="form-actions form-actions--sticky{% if form_stepper %} form-actions--stepper{% if publish_step == 0 %} form-actions--stepper-final{% endif %}{% endif %}">
+      {% include "partials/governance_preflight_collapsible.html" %}
+      <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
+      <div id="form-draft-banner" class="form-draft-banner" hidden aria-live="polite"></div>
+      <div class="form-actions__toolbar form-actions__toolbar--solo">
+        {% if async_generation_enabled %}
+        <input type="hidden" name="stream" value="1" />
+        {% endif %}
+        {% include "partials/delivery_mode_toggle.html" %}
+        <div class="form-actions__buttons form-actions__buttons--stack">
+          <button
+            type="submit"
+            class="dry-run-submit"
+            data-dry-run-submit
+            tabindex="-1"
+            aria-hidden="true"
+          >
+            Plan preview
+          </button>
+          <button type="button" class="btn btn--primary" data-dry-run-run>
+            Plan preview
+          </button>
+          {% if form_stepper %}
+          <button class="btn btn--secondary" type="submit" data-stepper-submit>Apply</button>
+          {% else %}
+          <button class="btn btn--secondary" type="submit">Apply</button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if blueprint.artifact_type == "ansible-role" %}
+<script id="ansible-catalog-data" type="application/json">{% if ansible_catalog %}{{ ansible_catalog | tojson }}{% else %}{}{% endif %}</script>
+<script>
+  const linuxCheckbox = document.getElementById("support_linux_cb");
+  const windowsCheckbox = document.getElementById("support_windows_cb");
+  const linuxInput = document.getElementById("support_linux");
+  const windowsInput = document.getElementById("support_windows");
+  const windowsRow = document.getElementById("windows-generation-row");
+  const windowsSelect = document.getElementById("windows_server_generation_select");
+  const windowsHidden = document.getElementById("windows_server_generation");
+  const advancedSelect = document.getElementById("target_platforms_advanced");
+  const platformForm = document.getElementById("generate-form");
+  const blueprintName = {{ blueprint.name | tojson }};
+  const patternSelect = document.getElementById("role_pattern_source");
+  let ansibleCatalog = {};
+  try {
+    ansibleCatalog = JSON.parse(document.getElementById("ansible-catalog-data")?.textContent || "{}");
+  } catch (_err) {
+    ansibleCatalog = {};
+  }
+
+  function defaultPatternForPlatforms(linux, windows) {
+    if (windows && !linux) return "windows-service";
+    if (linux) return "linux-service";
+    return "repave-baseline";
+  }
+
+  async function refreshRolePatterns() {
+    if (!patternSelect) return;
+    const linux = linuxInput?.value === "true";
+    const windows = windowsInput?.value === "true";
+    const previous = patternSelect.value;
+    let catalog = ansibleCatalog;
+    try {
+      const params = new URLSearchParams({
+        support_linux: linux ? "true" : "false",
+        support_windows: windows ? "true" : "false",
+      });
+      const resp = await fetch(`/blueprints/${encodeURIComponent(blueprintName)}/ansible-catalog?${params}`);
+      if (resp.ok) catalog = await resp.json();
+    } catch (_err) {
+      /* keep embedded catalog */
+    }
+    const patterns = catalog.role_patterns || [];
+    patternSelect.innerHTML = "";
+    for (const pattern of patterns) {
+      const opt = document.createElement("option");
+      opt.value = pattern.id;
+      opt.textContent = pattern.label;
+      patternSelect.appendChild(opt);
+    }
+    const ids = patterns.map((p) => p.id);
+    const fallback = defaultPatternForPlatforms(linux, windows);
+    if (ids.includes(previous)) {
+      patternSelect.value = previous;
+    } else if (ids.includes(fallback)) {
+      patternSelect.value = fallback;
+    } else if (ids.length) {
+      patternSelect.value = ids[0];
+    }
+  }
+
+  function syncPlatformInputs() {
+    if (linuxInput && linuxCheckbox) {
+      linuxInput.value = linuxCheckbox.checked ? "true" : "false";
+    }
+    if (windowsInput && windowsCheckbox) {
+      windowsInput.value = windowsCheckbox.checked ? "true" : "false";
+    }
+    if (windowsHidden && windowsSelect) {
+      windowsHidden.value = windowsSelect.value;
+    }
+    if (windowsRow && windowsCheckbox) {
+      windowsRow.hidden = !windowsCheckbox.checked;
+    }
+    refreshRolePatterns();
+  }
+
+  linuxCheckbox?.addEventListener("change", syncPlatformInputs);
+  windowsCheckbox?.addEventListener("change", syncPlatformInputs);
+  windowsSelect?.addEventListener("change", syncPlatformInputs);
+  platformForm?.addEventListener("submit", syncPlatformInputs);
+  platformForm?.addEventListener("repave:stepper-pre-submit", syncPlatformInputs);
+  syncPlatformInputs();
+</script>
+{% elif blueprint.artifact_type == "ansible-playbook-project" %}
+<script id="ansible-catalog-data" type="application/json">{% if ansible_catalog %}{{ ansible_catalog | tojson }}{% else %}{}{% endif %}</script>
+<script>
+  const playbookBlueprintName = {{ blueprint.name | tojson }};
+  const linuxCheckbox = document.getElementById("support_linux_cb");
+  const windowsCheckbox = document.getElementById("support_windows_cb");
+  const linuxInput = document.getElementById("support_linux");
+  const windowsInput = document.getElementById("support_windows");
+  const platformForm = document.getElementById("generate-form");
+  const playbookPatternSelect = document.getElementById("playbook_pattern_source");
+  let ansibleCatalog = {};
+  try {
+    ansibleCatalog = JSON.parse(document.getElementById("ansible-catalog-data")?.textContent || "{}");
+  } catch (_err) {
+    ansibleCatalog = {};
+  }
+
+  function defaultPlaybookPattern(linux, windows) {
+    if (windows && !linux) return "windows-update-baseline";
+    if (linux) return "linux-patch-baseline";
+    return "repave-baseline";
+  }
+
+  async function refreshPlaybookPatterns() {
+    if (!playbookPatternSelect) return;
+    const linux = linuxInput?.value === "true";
+    const windows = windowsInput?.value === "true";
+    const previous = playbookPatternSelect.value;
+    let catalog = ansibleCatalog;
+    try {
+      const params = new URLSearchParams({
+        support_linux: linux ? "true" : "false",
+        support_windows: windows ? "true" : "false",
+      });
+      const resp = await fetch(
+        `/blueprints/${encodeURIComponent(playbookBlueprintName)}/ansible-catalog?${params}`
+      );
+      if (resp.ok) catalog = await resp.json();
+    } catch (_err) {
+      /* keep embedded catalog */
+    }
+    const patterns = catalog.playbook_patterns || [];
+    playbookPatternSelect.innerHTML = "";
+    for (const pattern of patterns) {
+      const opt = document.createElement("option");
+      opt.value = pattern.id;
+      opt.textContent = pattern.label;
+      playbookPatternSelect.appendChild(opt);
+    }
+    const ids = patterns.map((p) => p.id);
+    const fallback = defaultPlaybookPattern(linux, windows);
+    if (ids.includes(previous)) {
+      playbookPatternSelect.value = previous;
+    } else if (ids.includes(fallback)) {
+      playbookPatternSelect.value = fallback;
+    } else if (ids.length) {
+      playbookPatternSelect.value = ids[0];
+    }
+  }
+
+  function syncPlaybookPlatformInputs() {
+    if (linuxInput && linuxCheckbox) {
+      linuxInput.value = linuxCheckbox.checked ? "true" : "false";
+    }
+    if (windowsInput && windowsCheckbox) {
+      windowsInput.value = windowsCheckbox.checked ? "true" : "false";
+    }
+    refreshPlaybookPatterns();
+  }
+
+  linuxCheckbox?.addEventListener("change", syncPlaybookPlatformInputs);
+  windowsCheckbox?.addEventListener("change", syncPlaybookPlatformInputs);
+  platformForm?.addEventListener("submit", syncPlaybookPlatformInputs);
+  platformForm?.addEventListener("repave:stepper-pre-submit", syncPlaybookPlatformInputs);
+  syncPlaybookPlatformInputs();
+</script>
+<script>
+  const rolesPanel = document.getElementById("pinned-roles-rows");
+  const addRoleButton = document.getElementById("add-pinned-role");
+  const pinnedRolesInput = document.getElementById("pinned_roles");
+  const form = document.getElementById("generate-form");
+  const rolesValidation = document.getElementById("pinned-roles-validation");
+  let inventoryRoles = [];
+
+  function clearRolesValidation() {
+    if (!rolesValidation) return;
+    rolesValidation.hidden = true;
+    rolesValidation.textContent = "";
+  }
+
+  function showRolesValidation(message) {
+    if (!rolesValidation) return;
+    rolesValidation.textContent = message;
+    rolesValidation.hidden = false;
+  }
+
+  function syncPinnedRolesInput() {
+    const payload = [];
+    for (const row of rolesPanel.querySelectorAll(".pinned-role-row")) {
+      const roleSelect = row.querySelector(".pinned-role-select");
+      const versionSelect = row.querySelector(".pinned-role-version");
+      const option = roleSelect.selectedOptions[0];
+      if (!option || !option.dataset.payload || !versionSelect.value) {
+        continue;
+      }
+      const role = JSON.parse(option.dataset.payload);
+      payload.push({
+        repo_name: role.repo_name,
+        galaxy_name: role.galaxy_name,
+        version: versionSelect.value,
+        src: role.git_url.replace(/\.git$/, ""),
+      });
+    }
+    pinnedRolesInput.value = JSON.stringify(payload);
+  }
+
+  function fillRoleSelect(select, placeholder) {
+    select.innerHTML = "";
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+    for (const role of inventoryRoles) {
+      const el = document.createElement("option");
+      el.value = role.repo_name;
+      el.textContent = `${role.galaxy_name} (${role.repo_name})`;
+      el.dataset.payload = JSON.stringify(role);
+      select.appendChild(el);
+    }
+  }
+
+  async function loadVersions(select, repoName) {
+    const versionSelect = select.closest(".pinned-role-row")?.querySelector(".pinned-role-version");
+    if (!versionSelect) return;
+    if (!repoName) {
+      versionSelect.innerHTML = "<option value=\"\" disabled selected>Select a role first…</option>";
+      versionSelect.disabled = true;
+      return;
+    }
+    versionSelect.disabled = true;
+    versionSelect.innerHTML = "<option value=\"\">Loading…</option>";
+    const response = await fetch(
+      `/blueprints/${playbookBlueprintName}/role-inventory/${encodeURIComponent(repoName)}/versions`,
+    );
+    const data = await response.json();
+    versionSelect.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "Select version…";
+    ph.disabled = true;
+    ph.selected = true;
+    versionSelect.appendChild(ph);
+    for (const tag of data.versions || []) {
+      const opt = document.createElement("option");
+      opt.value = tag;
+      opt.textContent = tag;
+      versionSelect.appendChild(opt);
+    }
+    versionSelect.disabled = (data.versions || []).length === 0;
+    syncPinnedRolesInput();
+  }
+
+  function addRoleRow() {
+    const row = document.createElement("div");
+    row.className = "pinned-role-row field-block";
+    row.innerHTML = `
+      <div class="pinned-role-row__controls">
+        <select class="select pinned-role-select" aria-label="Ansible role"><option disabled selected>Loading…</option></select>
+        <select class="select pinned-role-version" aria-label="Role version" disabled><option disabled selected>Select a role first…</option></select>
+        <button type="button" class="btn btn--ghost btn--sm pinned-role-remove">Remove</button>
+      </div>
+    `;
+    rolesPanel.appendChild(row);
+    const roleSelect = row.querySelector(".pinned-role-select");
+    fillRoleSelect(roleSelect, "Select role…");
+    roleSelect.addEventListener("change", () => {
+      void loadVersions(roleSelect, roleSelect.value);
+      syncPinnedRolesInput();
+    });
+    row.querySelector(".pinned-role-version").addEventListener("change", syncPinnedRolesInput);
+    row.querySelector(".pinned-role-remove").addEventListener("click", () => {
+      row.remove();
+      syncPinnedRolesInput();
+    });
+  }
+
+  addRoleButton.addEventListener("click", () => {
+    addRoleRow();
+    clearRolesValidation();
+  });
+
+  form.addEventListener("submit", () => {
+    syncPinnedRolesInput();
+    clearRolesValidation();
+  });
+
+  async function initRoleInventory() {
+    const response = await fetch(`/blueprints/${playbookBlueprintName}/role-inventory`);
+    const data = await response.json();
+    inventoryRoles = data.roles || [];
+    addRoleRow();
+  }
+
+  void initRoleInventory();
+</script>
+{% elif blueprint.artifact_type == "ansible-collection" %}
+<script id="ansible-catalog-data" type="application/json">{% if ansible_catalog %}{{ ansible_catalog | tojson }}{% else %}{}{% endif %}</script>
+<script>
+  const collectionBlueprintName = {{ blueprint.name | tojson }};
+  const linuxCheckbox = document.getElementById("support_linux_cb");
+  const windowsCheckbox = document.getElementById("support_windows_cb");
+  const linuxInput = document.getElementById("support_linux");
+  const windowsInput = document.getElementById("support_windows");
+  const platformForm = document.getElementById("generate-form");
+  const samplePatternSelect = document.getElementById("sample_role_pattern_source");
+  let ansibleCatalog = {};
+  try {
+    ansibleCatalog = JSON.parse(document.getElementById("ansible-catalog-data")?.textContent || "{}");
+  } catch (_err) {
+    ansibleCatalog = {};
+  }
+
+  function defaultCollectionSamplePattern(linux, windows) {
+    if (windows && !linux) return "windows-service";
+    if (linux) return "linux-service";
+    return "repave-baseline";
+  }
+
+  async function refreshCollectionSamplePatterns() {
+    if (!samplePatternSelect) return;
+    const linux = linuxInput?.value === "true";
+    const windows = windowsInput?.value === "true";
+    const previous = samplePatternSelect.value;
+    let catalog = ansibleCatalog;
+    try {
+      const params = new URLSearchParams({
+        support_linux: linux ? "true" : "false",
+        support_windows: windows ? "true" : "false",
+      });
+      const resp = await fetch(
+        `/blueprints/${encodeURIComponent(collectionBlueprintName)}/ansible-catalog?${params}`
+      );
+      if (resp.ok) catalog = await resp.json();
+    } catch (_err) {
+      /* keep embedded catalog */
+    }
+    const patterns = catalog.collection_sample_patterns || [];
+    samplePatternSelect.innerHTML = "";
+    for (const pattern of patterns) {
+      const opt = document.createElement("option");
+      opt.value = pattern.id;
+      opt.textContent = pattern.label;
+      samplePatternSelect.appendChild(opt);
+    }
+    const ids = patterns.map((p) => p.id);
+    const fallback = defaultCollectionSamplePattern(linux, windows);
+    if (ids.includes(previous)) {
+      samplePatternSelect.value = previous;
+    } else if (ids.includes(fallback)) {
+      samplePatternSelect.value = fallback;
+    } else if (ids.length) {
+      samplePatternSelect.value = ids[0];
+    }
+  }
+
+  function syncCollectionPlatformInputs() {
+    if (linuxInput && linuxCheckbox) {
+      linuxInput.value = linuxCheckbox.checked ? "true" : "false";
+    }
+    if (windowsInput && windowsCheckbox) {
+      windowsInput.value = windowsCheckbox.checked ? "true" : "false";
+    }
+    refreshCollectionSamplePatterns();
+  }
+
+  linuxCheckbox?.addEventListener("change", syncCollectionPlatformInputs);
+  windowsCheckbox?.addEventListener("change", syncCollectionPlatformInputs);
+  platformForm?.addEventListener("submit", syncCollectionPlatformInputs);
+  platformForm?.addEventListener("repave:stepper-pre-submit", syncCollectionPlatformInputs);
+  syncCollectionPlatformInputs();
+</script>
+{% elif blueprint.artifact_type == "terraform-environment-stack" %}
+<script>
+  const stackBlueprintName = {{ blueprint.name | tojson }};
+  const providerSelect = document.getElementById("cloud_provider");
+  const modulesPanel = document.getElementById("pinned-modules-rows");
+  const addModuleButton = document.getElementById("add-pinned-module");
+  const pinnedModulesInput = document.getElementById("pinned_modules");
+  const form = document.getElementById("generate-form");
+  const modulesValidation = document.getElementById("pinned-modules-validation");
+  let inventoryModules = [];
+
+  function clearStackValidation() {
+    if (!modulesValidation) return;
+    modulesValidation.hidden = true;
+    modulesValidation.textContent = "";
+  }
+
+  function showStackValidation(message) {
+    if (!modulesValidation) return;
+    modulesValidation.textContent = message;
+    modulesValidation.hidden = false;
+    modulesValidation.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function moduleSourceFromSelection(module, version) {
+    if (!module) return null;
+    const blockName = module.module_name || "foundation";
+    if (module.source_kind === "local") {
+      return {
+        name: blockName,
+        source: module.local_source || "./modules/_example",
+        version: "",
+        repo_name: module.repo_name || "_example",
+      };
+    }
+    const ref = version || "main";
+    const gitUrl = (module.git_url || "").replace(/\.git$/, "") + ".git";
+    return {
+      name: blockName,
+      source: `git::${gitUrl}?ref=${ref}`,
+      version: "",
+      repo_name: module.repo_name,
+    };
+  }
+
+  function syncPinnedModulesInput() {
+    const payload = [];
+    const usedNames = new Set();
+    for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
+      const moduleSelect = row.querySelector(".pinned-module-select");
+      const versionSelect = row.querySelector(".pinned-module-version");
+      const option = moduleSelect.selectedOptions[0];
+      if (!option || !option.dataset.payload) {
+        continue;
+      }
+      const module = JSON.parse(option.dataset.payload);
+      if (module.repo_name !== "_example" && !versionSelect.value) {
+        continue;
+      }
+      const version = module.repo_name === "_example" ? "local" : versionSelect.value;
+      const entry = moduleSourceFromSelection(module, version);
+      if (!entry) continue;
+      if (usedNames.has(entry.name)) {
+        entry.name = `${entry.name}_${entry.repo_name.replace(/^tf-|^tfm-/, "").replace(/-/g, "_")}`;
+      }
+      usedNames.add(entry.name);
+      payload.push(entry);
+    }
+    pinnedModulesInput.value = JSON.stringify(payload);
+  }
+
+  function fillModuleSelect(select, placeholder) {
+    select.innerHTML = "";
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+    for (const module of inventoryModules) {
+      const el = document.createElement("option");
+      el.value = module.repo_name;
+      el.textContent =
+        module.repo_name === "_example"
+          ? "Local example stub"
+          : `${module.repo_name} (${module.module_name})`;
+      el.dataset.payload = JSON.stringify(module);
+      select.appendChild(el);
+    }
+  }
+
+  async function loadVersions(select, repoName) {
+    const versionSelect = select.closest(".pinned-module-row")?.querySelector(".pinned-module-version");
+    if (!versionSelect) return;
+    if (!repoName) {
+      versionSelect.innerHTML = "<option value=\"\" disabled selected>Select a module first…</option>";
+      versionSelect.disabled = true;
+      return;
+    }
+    if (repoName === "_example") {
+      versionSelect.innerHTML = "";
+      const opt = document.createElement("option");
+      opt.value = "local";
+      opt.textContent = "local";
+      opt.selected = true;
+      versionSelect.appendChild(opt);
+      versionSelect.disabled = false;
+      syncPinnedModulesInput();
+      return;
+    }
+    versionSelect.disabled = true;
+    versionSelect.innerHTML = "<option value=\"\">Loading…</option>";
+    const response = await fetch(
+      `/blueprints/${stackBlueprintName}/module-inventory/${encodeURIComponent(repoName)}/versions`,
+    );
+    const data = await response.json();
+    versionSelect.innerHTML = "";
+    const ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "Select version…";
+    ph.disabled = true;
+    ph.selected = true;
+    versionSelect.appendChild(ph);
+    for (const tag of data.versions || []) {
+      const opt = document.createElement("option");
+      opt.value = tag;
+      opt.textContent = tag;
+      versionSelect.appendChild(opt);
+    }
+    versionSelect.disabled = (data.versions || []).length === 0;
+    syncPinnedModulesInput();
+  }
+
+  function addModuleRow() {
+    const row = document.createElement("div");
+    row.className = "pinned-module-row field-block";
+    row.innerHTML = `
+      <div class="pinned-role-row__controls">
+        <select class="select pinned-module-select" aria-label="Terraform module"><option disabled selected>Loading…</option></select>
+        <select class="select pinned-module-version" aria-label="Module version" disabled><option disabled selected>Select a module first…</option></select>
+        <button type="button" class="btn btn--ghost btn--sm pinned-module-remove">Remove</button>
+      </div>
+    `;
+    modulesPanel.appendChild(row);
+    const moduleSelect = row.querySelector(".pinned-module-select");
+    fillModuleSelect(moduleSelect, "Select module…");
+    moduleSelect.addEventListener("change", () => {
+      void loadVersions(moduleSelect, moduleSelect.value);
+      syncPinnedModulesInput();
+    });
+    row.querySelector(".pinned-module-version").addEventListener("change", syncPinnedModulesInput);
+    row.querySelector(".pinned-module-remove").addEventListener("click", () => {
+      row.remove();
+      syncPinnedModulesInput();
+    });
+  }
+
+  addModuleButton.addEventListener("click", () => {
+    addModuleRow();
+    clearStackValidation();
+  });
+
+  async function loadModules() {
+    const provider = providerSelect ? providerSelect.value : "";
+    const url = `/blueprints/${stackBlueprintName}/module-inventory?cloud_provider=${encodeURIComponent(provider)}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    inventoryModules = data.modules || [];
+    for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
+      const moduleSelect = row.querySelector(".pinned-module-select");
+      const selected = moduleSelect.value;
+      fillModuleSelect(moduleSelect, "Select module…");
+      if (selected) {
+        moduleSelect.value = selected;
+      }
+    }
+    clearStackValidation();
+  }
+
+  if (providerSelect) {
+    providerSelect.addEventListener("change", () => void loadModules());
+  }
+
+  function validatePinnedModulesBeforeGenerate(event) {
+    syncPinnedModulesInput();
+    clearStackValidation();
+    let parsed = [];
+    try {
+      parsed = JSON.parse(pinnedModulesInput.value || "[]");
+    } catch {
+      parsed = [];
+    }
+    if (!parsed.length) {
+      if (event) {
+        event.preventDefault();
+      }
+      showStackValidation("Add at least one module with a version before generating.");
+      return false;
+    }
+    for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
+      const moduleSelect = row.querySelector(".pinned-module-select");
+      const versionSelect = row.querySelector(".pinned-module-version");
+      const option = moduleSelect.selectedOptions[0];
+      if (!option || !option.dataset.payload) {
+        continue;
+      }
+      const module = JSON.parse(option.dataset.payload);
+      if (module.repo_name !== "_example" && !versionSelect.value) {
+        if (event) {
+          event.preventDefault();
+        }
+        showStackValidation("Select a module version (git tag) for each pinned module.");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  form.addEventListener("repave:stepper-will-submit", (event) => {
+    if (!validatePinnedModulesBeforeGenerate(event)) {
+      event.preventDefault();
+    }
+  });
+  form.addEventListener("submit", (event) => {
+    validatePinnedModulesBeforeGenerate(event);
+  });
+
+  async function initModuleInventory() {
+    await loadModules();
+    if (!modulesPanel.querySelector(".pinned-module-row")) {
+      addModuleRow();
+    }
+  }
+
+  void initModuleInventory();
+</script>
+{% elif provider_catalog %}
+<script id="provider-catalog" type="application/json">{{ provider_catalog | tojson }}</script>
+{% if blueprint.terraform_layout == "single-resource" %}
+<script>
+  const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
+  const providerSelect = document.getElementById("cloud_provider");
+  const serviceSelect = document.getElementById("provider_service");
+  const resourceSelect = document.getElementById("provider_resource");
+  const form = document.getElementById("generate-form");
+  const validationBanner = document.getElementById("single-resource-validation");
+
+  function providerServices(provider) {
+    return Object.keys(catalog[provider] || {}).sort();
+  }
+
+  function serviceResources(provider, service) {
+    const definition = catalog[provider]?.[service];
+    if (!definition?.resources?.length) {
+      return [];
+    }
+    return [...new Set(definition.resources)].sort();
+  }
+
+  function fillSelect(select, options, placeholder) {
+    select.innerHTML = "";
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = placeholder;
+    placeholderOption.disabled = true;
+    placeholderOption.selected = true;
+    select.appendChild(placeholderOption);
+    for (const option of options) {
+      const el = document.createElement("option");
+      el.value = option;
+      el.textContent = option;
+      select.appendChild(el);
+    }
+  }
+
+  function clearValidation() {
+    if (!validationBanner) {
+      return;
+    }
+    validationBanner.hidden = true;
+    validationBanner.textContent = "";
+  }
+
+  function showValidation(message) {
+    if (!validationBanner) {
+      return;
+    }
+    validationBanner.textContent = message;
+    validationBanner.hidden = false;
+    validationBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function renderServices() {
+    const provider = providerSelect.value;
+    fillSelect(serviceSelect, providerServices(provider), "Select a service…");
+    fillSelect(resourceSelect, [], "Select a resource…");
+    resourceSelect.disabled = true;
+    clearValidation();
+  }
+
+  function renderResources() {
+    const provider = providerSelect.value;
+    const service = serviceSelect.value;
+    if (!service) {
+      fillSelect(resourceSelect, [], "Select a resource…");
+      resourceSelect.disabled = true;
+      return;
+    }
+    const resources = serviceResources(provider, service);
+    fillSelect(resourceSelect, resources, "Select a resource…");
+    resourceSelect.disabled = resources.length === 0;
+    clearValidation();
+  }
+
+  providerSelect.addEventListener("change", () => {
+    renderServices();
+  });
+  serviceSelect.addEventListener("change", () => {
+    renderResources();
+  });
+  form.addEventListener("repave:stepper-pre-submit", () => {
+    clearValidation();
+  });
+  form.addEventListener("repave:stepper-will-submit", (event) => {
+    clearValidation();
+    if (!serviceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider service before generating.");
+      return;
+    }
+    if (!resourceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider resource before generating.");
+    }
+  });
+  form.addEventListener("submit", (event) => {
+    clearValidation();
+    if (!serviceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider service before generating.");
+      return;
+    }
+    if (!resourceSelect.value) {
+      event.preventDefault();
+      showValidation("Select a provider resource before generating.");
+    }
+  });
+
+  renderServices();
+</script>
+{% else %}
+<script>
+  const catalog = JSON.parse(document.getElementById("provider-catalog").textContent);
+  const blueprintName = {{ blueprint.name | tojson }};
+  const providerSelect = document.getElementById("cloud_provider");
+  const servicesContainer = document.getElementById("provider-services");
+  const servicesFilter = document.getElementById("provider-services-filter");
+  const servicesCount = document.getElementById("provider-services-count");
+  const servicesInput = document.getElementById("provider_services");
+  const scopePanel = document.getElementById("service-scope-panel");
+  const scopeInput = document.getElementById("provider_service_scope");
+  const form = document.getElementById("generate-form");
+  const scopeState = new Map();
+  const resourceCache = new Map();
+  const validationBanner = document.getElementById("form-validation");
+  const presetsContainer = document.getElementById("service-presets");
+  const scopeSummaryBar = document.getElementById("scope-summary-bar");
+  const SERVICE_PRESETS = {
+    aws: [
+      { label: "Compute + storage", services: ["ec2", "s3"] },
+      { label: "Network core", services: ["vpc", "elb"] },
+    ],
+    gcp: [{ label: "Core services", services: ["compute", "storage"] }],
+    azure: [{ label: "Core services", services: ["compute", "storage"] }],
+  };
+
+  function clearValidation() {
+    validationBanner.hidden = true;
+    validationBanner.textContent = "";
+    scopePanel.querySelectorAll(".scope-card--invalid").forEach((card) => {
+      card.classList.remove("scope-card--invalid");
+    });
+  }
+
+  function showValidation(message) {
+    validationBanner.textContent = message;
+    validationBanner.hidden = false;
+    validationBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function providerServices(provider) {
+    return Object.keys(catalog[provider] || {}).sort();
+  }
+
+  function applyServiceFilter() {
+    const query = servicesFilter.value.trim().toLowerCase();
+    const services = providerServices(providerSelect.value);
+    let visible = 0;
+    let selectedVisible = 0;
+    for (const label of servicesContainer.querySelectorAll(".service-option")) {
+      const match = !query || label.dataset.service.toLowerCase().includes(query);
+      label.hidden = !match;
+      if (match) {
+        visible += 1;
+        if (label.querySelector('input[type="checkbox"]').checked) {
+          selectedVisible += 1;
+        }
+      }
+    }
+    const selected = selectedServices().length;
+    servicesCount.textContent = query
+      ? `${selected} selected · ${visible} of ${services.length} shown`
+      : `${selected} selected · ${services.length} services`;
+  }
+
+  function selectedServices() {
+    return Array.from(
+      servicesContainer.querySelectorAll('input[type="checkbox"]:checked')
+    ).map((input) => input.value);
+  }
+
+  async function loadServiceResources(provider, service) {
+    const cacheKey = `${provider}:${service}`;
+    if (resourceCache.has(cacheKey)) {
+      return resourceCache.get(cacheKey);
+    }
+    const embedded = catalog[provider]?.[service];
+    if (embedded?.resources?.length) {
+      resourceCache.set(cacheKey, embedded);
+      return embedded;
+    }
+    const response = await fetch(
+      `/blueprints/${blueprintName}/provider-services/${provider}/${service}`
+    );
+    const data = await response.json();
+    resourceCache.set(cacheKey, data);
+    return data;
+  }
+
+  function ensureScopeState(service) {
+    if (!scopeState.has(service)) {
+      scopeState.set(service, {
+        includeBasic: true,
+        resources: new Set(),
+        basic: new Set(),
+      });
+    }
+    return scopeState.get(service);
+  }
+
+  async function renderScopeCard(service) {
+    const state = ensureScopeState(service);
+    const modeName = `scope-mode-${service}`;
+    const card = document.createElement("div");
+    card.className = "scope-card motion-panel";
+    card.dataset.service = service;
+    card.innerHTML = `
+      <h3>${service}</h3>
+      <div class="scope-card__tools">
+        <input type="search" class="input input--sm scope-resource-filter" placeholder="Filter resources..." aria-label="Filter resources for ${service}" />
+      </div>
+      <div class="segmented scope-mode" role="radiogroup" aria-label="Scope mode for ${service}">
+        <label class="segmented__option">
+          <input type="radio" name="${modeName}" class="include-basic" value="basic" checked />
+          Basic + optional
+        </label>
+        <label class="segmented__option">
+          <input type="radio" name="${modeName}" class="custom-only" value="custom" />
+          Custom only
+        </label>
+      </div>
+      <div class="scope-status">Loading resources...</div>
+      <div class="resource-section-title additional-title">Additional resources</div>
+      <div class="resource-grid additional-grid"></div>
+      <div class="resource-section-title custom-title" hidden>Select resources</div>
+      <div class="resource-grid custom-grid" hidden></div>
+    `;
+    scopePanel.appendChild(card);
+
+    const includeBasicRadio = card.querySelector(".include-basic");
+    const customOnlyRadio = card.querySelector(".custom-only");
+    const status = card.querySelector(".scope-status");
+    const additionalTitle = card.querySelector(".additional-title");
+    const additionalGrid = card.querySelector(".additional-grid");
+    const customTitle = card.querySelector(".custom-title");
+    const customGrid = card.querySelector(".custom-grid");
+    const resourceFilter = card.querySelector(".scope-resource-filter");
+
+    includeBasicRadio.checked = state.includeBasic;
+    customOnlyRadio.checked = !state.includeBasic;
+
+    const definition = await loadServiceResources(providerSelect.value, service);
+    const basicSet = new Set(definition.basic || []);
+    state.basic = basicSet;
+    const additionalResources = (definition.resources || []).filter(
+      (resource) => !basicSet.has(resource)
+    );
+
+    function renderGrid(grid, resources) {
+      grid.innerHTML = "";
+      const uniqueResources = [...new Set(resources)];
+      for (const resource of uniqueResources) {
+        const label = document.createElement("label");
+        label.className = "resource-option";
+        label.dataset.resource = resource;
+        const checked = state.resources.has(resource) ? "checked" : "";
+        label.innerHTML = `<input type="checkbox" value="${resource}" ${checked} /> ${resource}`;
+        grid.appendChild(label);
+      }
+      applyResourceFilter();
+    }
+
+    function applyResourceFilter() {
+      const query = resourceFilter.value.trim().toLowerCase();
+      for (const grid of [additionalGrid, customGrid]) {
+        for (const label of grid.querySelectorAll(".resource-option")) {
+          const match =
+            !query || label.dataset.resource.toLowerCase().includes(query);
+          label.hidden = !match;
+        }
+      }
+    }
+
+    resourceFilter.addEventListener("input", applyResourceFilter);
+
+    renderGrid(additionalGrid, additionalResources);
+    renderGrid(customGrid, definition.resources || []);
+
+    function refreshStatus() {
+      if (state.includeBasic) {
+        const basicList = (definition.basic || []).join(", ") || "none defined";
+        const extras = Array.from(state.resources)
+          .filter((resource) => !basicSet.has(resource))
+          .sort();
+        additionalTitle.hidden = false;
+        additionalGrid.hidden = false;
+        customTitle.hidden = true;
+        customGrid.hidden = true;
+        status.textContent = extras.length
+          ? `Basic capabilities: ${basicList}. Additional: ${extras.join(", ")}`
+          : `Basic capabilities: ${basicList}`;
+      } else {
+        const selected = Array.from(state.resources).sort();
+        additionalTitle.hidden = true;
+        additionalGrid.hidden = true;
+        customTitle.hidden = false;
+        customGrid.hidden = false;
+        status.textContent = selected.length
+          ? `Selected resources: ${selected.join(", ")}`
+          : "Select at least one resource.";
+        card.classList.toggle("scope-card--invalid", selected.length === 0);
+      }
+    }
+
+    function setIncludeBasic(includeBasic) {
+      state.includeBasic = includeBasic;
+      includeBasicRadio.checked = includeBasic;
+      customOnlyRadio.checked = !includeBasic;
+      if (includeBasic) {
+        state.resources = new Set(
+          Array.from(state.resources).filter((resource) => !basicSet.has(resource))
+        );
+      }
+      refreshStatus();
+      syncScopeInput();
+    }
+
+    includeBasicRadio.addEventListener("change", () => {
+      if (includeBasicRadio.checked) {
+        setIncludeBasic(true);
+      }
+    });
+    customOnlyRadio.addEventListener("change", () => {
+      if (customOnlyRadio.checked) {
+        setIncludeBasic(false);
+      }
+    });
+    additionalGrid.addEventListener("change", () => {
+      state.resources = new Set(
+        Array.from(additionalGrid.querySelectorAll('input[type="checkbox"]:checked'))
+          .map((input) => input.value)
+          .filter((resource) => !basicSet.has(resource))
+      );
+      refreshStatus();
+      syncScopeInput();
+    });
+    customGrid.addEventListener("change", () => {
+      state.resources = new Set(
+        Array.from(customGrid.querySelectorAll('input[type="checkbox"]:checked')).map(
+          (input) => input.value
+        )
+      );
+      refreshStatus();
+      syncScopeInput();
+    });
+
+    refreshStatus();
+  }
+
+  async function renderScopePanels() {
+    const selected = new Set(selectedServices());
+    for (const service of Array.from(scopeState.keys())) {
+      if (!selected.has(service)) {
+        scopeState.delete(service);
+      }
+    }
+    scopePanel.innerHTML = "";
+    for (const service of selectedServices()) {
+      ensureScopeState(service);
+      await renderScopeCard(service);
+    }
+    syncScopeInput();
+    applyServiceFilter();
+  }
+
+  async function setServiceSelection(services, { replace = false } = {}) {
+    const target = new Set(replace ? [] : selectedServices());
+    for (const service of services) {
+      target.add(service);
+    }
+    for (const input of servicesContainer.querySelectorAll('input[type="checkbox"]')) {
+      input.checked = target.has(input.value);
+    }
+    syncServicesInput();
+    await renderScopePanels();
+    clearValidation();
+  }
+
+  function renderServicePresets(provider) {
+    presetsContainer.innerHTML = "";
+    const presets = SERVICE_PRESETS[provider] || [];
+    function addPresetButton(label, onClick) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "btn btn--ghost btn--sm preset-chip";
+      button.textContent = label;
+      button.addEventListener("click", onClick);
+      presetsContainer.appendChild(button);
+    }
+
+    addPresetButton("Select visible", () => {
+      const visible = [];
+      for (const label of servicesContainer.querySelectorAll(".service-option")) {
+        if (!label.hidden) {
+          visible.push(label.dataset.service);
+        }
+      }
+      void setServiceSelection(visible, { replace: false });
+    });
+    addPresetButton("Clear all", () => void setServiceSelection([], { replace: true }));
+
+    for (const preset of presets) {
+      const available = preset.services.filter((service) =>
+        providerServices(provider).includes(service)
+      );
+      if (!available.length) {
+        continue;
+      }
+      addPresetButton(preset.label, () => void setServiceSelection(available, { replace: false }));
+    }
+  }
+
+  function renderServices(provider) {
+    servicesContainer.innerHTML = "";
+    scopePanel.innerHTML = "";
+    scopeState.clear();
+    resourceCache.clear();
+    servicesFilter.value = "";
+    for (const service of providerServices(provider)) {
+      const label = document.createElement("label");
+      label.className = "service-option";
+      label.dataset.service = service;
+      label.innerHTML = `<input type="checkbox" name="provider_service_option" value="${service}" /> ${service}`;
+      servicesContainer.appendChild(label);
+    }
+    applyServiceFilter();
+    renderServicePresets(provider);
+    syncServicesInput();
+    syncScopeInput();
+  }
+
+  function syncServicesInput() {
+    servicesInput.value = selectedServices().join(",");
+  }
+
+  function updateScopeSummaryBar() {
+    if (!scopeSummaryBar) {
+      return;
+    }
+    const selected = selectedServices();
+    if (!selected.length) {
+      scopeSummaryBar.hidden = true;
+      scopeSummaryBar.textContent = "";
+      return;
+    }
+    let resourceTotal = 0;
+    let customCount = 0;
+    for (const service of selected) {
+      const state = scopeState.get(service);
+      if (!state) {
+        continue;
+      }
+      resourceTotal += state.resources ? state.resources.size : 0;
+      if (!state.includeBasic) {
+        customCount += 1;
+      }
+    }
+    const parts = [
+      selected.length + " service" + (selected.length === 1 ? "" : "s"),
+      resourceTotal + " resource" + (resourceTotal === 1 ? "" : "s"),
+    ];
+    if (customCount) {
+      parts.push(customCount + " custom scope");
+    }
+    scopeSummaryBar.textContent = parts.join(" · ");
+    scopeSummaryBar.hidden = false;
+  }
+
+  function syncScopeInput() {
+    const payload = {};
+    for (const service of selectedServices()) {
+      const state = ensureScopeState(service);
+      const basic = state.basic || new Set();
+      if (state.includeBasic) {
+        payload[service] = {
+          mode: "basic",
+          additional_resources: Array.from(state.resources)
+            .filter((resource) => !basic.has(resource))
+            .sort(),
+        };
+      } else {
+        payload[service] = {
+          mode: "custom",
+          resources: Array.from(state.resources).sort(),
+        };
+      }
+    }
+    scopeInput.value = JSON.stringify(payload);
+    updateScopeSummaryBar();
+  }
+
+  providerSelect.addEventListener("change", () => renderServices(providerSelect.value));
+  servicesFilter.addEventListener("input", applyServiceFilter);
+  servicesContainer.addEventListener("change", async () => {
+    syncServicesInput();
+    clearValidation();
+    await renderScopePanels();
+  });
+  function validateProviderServicesBeforeGenerate(event) {
+    syncServicesInput();
+    syncScopeInput();
+    clearValidation();
+    if (!servicesInput.value.trim()) {
+      if (event) {
+        event.preventDefault();
+      }
+      showValidation("Select at least one provider service before generating.");
+      return false;
+    }
+    for (const service of selectedServices()) {
+      const state = ensureScopeState(service);
+      if (!state.includeBasic && state.resources.size === 0) {
+        if (event) {
+          event.preventDefault();
+        }
+        const card = scopePanel.querySelector(`.scope-card[data-service="${service}"]`);
+        if (card) {
+          card.classList.add("scope-card--invalid");
+        }
+        showValidation(
+          `For ${service}, select at least one resource or switch to Basic + optional.`
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  form.addEventListener("repave:stepper-will-submit", (event) => {
+    if (!validateProviderServicesBeforeGenerate(event)) {
+      event.preventDefault();
+    }
+  });
+  form.addEventListener("submit", (event) => {
+    validateProviderServicesBeforeGenerate(event);
+  });
+
+  renderServices(providerSelect.value);
+</script>
+{% endif %}
+{% endif %}
+{% if (policy_customization or policy_customization_optional or policy_mandatory) and policy_catalog %}
+<script id="policy-catalog-data" type="application/json">{{ policy_catalog | tojson }}</script>
+<script>
+(function () {
+  const catalogEl = document.getElementById("policy-catalog-data");
+  const root = document.getElementById("policy-customization");
+  const policyEnableToggle = document.getElementById("enable_policy_toggle");
+  const policyEnableHidden = document.getElementById("enable_policy");
+  const profileSelect = document.getElementById("policy_profile");
+  const packSelect = document.getElementById("policy_pack_source");
+  const rulesHidden = document.getElementById("policy_rules");
+  const advanced = document.getElementById("policy-rules-advanced");
+  const rulesList = document.getElementById("policy-rules-list");
+  const filterInput = document.getElementById("policy-rules-filter");
+  const rulesHint = document.getElementById("policy-rules-hint");
+  const packHint = document.getElementById("policy-pack-hint");
+  const enableOptionalBtn = document.getElementById("policy-rules-enable-optional");
+  const useProfileBtn = document.getElementById("policy-rules-use-profile");
+  if (!root || !profileSelect || !rulesHidden || !rulesList || !catalogEl) return;
+
+  const policyOptional = Boolean(policyEnableToggle && policyEnableHidden);
+
+  function setPolicyPanelEnabled(enabled) {
+    if (!policyOptional) return;
+    policyEnableHidden.value = enabled ? "true" : "false";
+    root.hidden = !enabled;
+    for (const el of root.querySelectorAll("select, input, button, textarea, search")) {
+      el.disabled = !enabled;
+    }
+  }
+
+  function syncPolicyEnableFromToggle() {
+    setPolicyPanelEnabled(Boolean(policyEnableToggle?.checked));
+  }
+
+  if (policyOptional) {
+    policyEnableToggle.addEventListener("change", syncPolicyEnableFromToggle);
+    syncPolicyEnableFromToggle();
+    document.getElementById("generate-form")?.addEventListener("submit", syncPolicyEnableFromToggle);
+    document.getElementById("generate-form")?.addEventListener("repave:stepper-pre-submit", syncPolicyEnableFromToggle);
+  }
+
+  const blueprintName = {{ blueprint.name | tojson }};
+  const policyDefaults = {{ policy_defaults | tojson }};
+  let catalog;
+  try {
+    catalog = JSON.parse(catalogEl.textContent || "{}");
+  } catch (_err) {
+    catalog = { rules: [], profiles: {}, pack_sources: [], defaults: {} };
+  }
+  let lastPresetProfile = profileSelect.value || policyDefaults.policy_profile || "estate-default";
+  let customSeedProfile = lastPresetProfile;
+
+  function resolveInitialPackId(packs) {
+    const preferred = policyDefaults.policy_pack_source;
+    if (preferred && packs.some((pack) => pack.id === preferred)) {
+      return preferred;
+    }
+    if (catalog.defaults?.policy_pack_source) {
+      const fromApi = catalog.defaults.policy_pack_source;
+      if (packs.some((pack) => pack.id === fromApi)) {
+        return fromApi;
+      }
+    }
+    return packs[0]?.id || "";
+  }
+
+  function resolveInitialProfileId(packs, packId) {
+    const preferred = policyDefaults.policy_profile;
+    if (preferred && catalog.profiles?.[preferred]) {
+      return preferred;
+    }
+    if (catalog.defaults?.policy_profile && catalog.profiles?.[catalog.defaults.policy_profile]) {
+      return catalog.defaults.policy_profile;
+    }
+    const pack = packs.find((item) => item.id === packId);
+    if (pack?.default_profile && catalog.profiles?.[pack.default_profile]) {
+      return pack.default_profile;
+    }
+    return catalog.profiles?.["estate-default"] ? "estate-default" : Object.keys(catalog.profiles || {})[0];
+  }
+
+  function matchInclude(pattern, ruleId) {
+    if (pattern === ruleId) return true;
+    if (pattern.endsWith(":*")) {
+      const prefix = pattern.slice(0, -1);
+      return ruleId.startsWith(prefix);
+    }
+    return false;
+  }
+
+  function rulesForProfile(profile, seedFrom) {
+    const rules = catalog.rules || [];
+    const enabled = new Set();
+    const seed = seedFrom || profile;
+    if (profile === "custom") {
+      const includes = catalog.profiles?.[seed]?.includes || [];
+      for (const rule of rules) {
+        for (const pattern of includes) {
+          if (matchInclude(pattern, rule.id)) {
+            enabled.add(rule.id);
+            break;
+          }
+        }
+        if (rule.required) enabled.add(rule.id);
+      }
+      return enabled;
+    }
+    const includes = catalog.profiles?.[profile]?.includes || [];
+    for (const rule of rules) {
+      for (const pattern of includes) {
+        if (matchInclude(pattern, rule.id)) {
+          enabled.add(rule.id);
+          break;
+        }
+      }
+      if (rule.required) enabled.add(rule.id);
+    }
+    return enabled;
+  }
+
+  const profileSummary = document.getElementById("policy-profile-summary");
+  const policyCompactSummary = document.getElementById("policy-compact-summary");
+
+  function updateProfileSummary() {
+    const profile = profileSelect.value;
+    const meta = (catalog.profiles || {})[profile] || {};
+    const enabled = rulesForProfile(profile, profile === "custom" ? customSeedProfile : null);
+    const desc = meta.description || meta.label || profile;
+    if (profileSummary) {
+      profileSummary.textContent = `${desc} — ${enabled.size} catalog rule(s) active for this profile.`;
+    }
+    if (policyCompactSummary) {
+      const pack = (catalog.pack_sources || []).find((p) => p.id === packSelect?.value);
+      const packLabel = pack?.label || pack?.id || "";
+      const profileLabel = meta.label || profile;
+      const parts = [];
+      if (packLabel) parts.push(packLabel);
+      parts.push(profileLabel);
+      parts.push(`${enabled.size} rules`);
+      policyCompactSummary.textContent = parts.join(" · ");
+    }
+  }
+
+  function syncHiddenRules() {
+    if (profileSelect.value !== "custom") {
+      rulesHidden.value = "";
+      return;
+    }
+    const checked = [...rulesList.querySelectorAll('input[type="checkbox"]:checked')]
+      .map((el) => el.value);
+    rulesHidden.value = checked.join(",");
+  }
+
+  function renderRules() {
+    const filter = (filterInput?.value || "").toLowerCase();
+    const profile = profileSelect.value;
+    const custom = profile === "custom";
+    const enabled = rulesForProfile(profile, customSeedProfile);
+    rulesList.innerHTML = "";
+    let visible = 0;
+    for (const rule of catalog.rules || []) {
+      if (filter && !rule.title.toLowerCase().includes(filter) && !rule.id.toLowerCase().includes(filter)) {
+        continue;
+      }
+      visible += 1;
+      const label = document.createElement("label");
+      label.className = "checkbox-row";
+      label.title = rule.id;
+      label.dataset.ruleId = rule.id;
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.value = rule.id;
+      input.disabled = !custom || rule.required;
+      input.checked = enabled.has(rule.id);
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(rule.title));
+      rulesList.appendChild(label);
+    }
+    if (rulesHint) {
+      if (!(catalog.rules || []).length) {
+        rulesHint.textContent = "No rules in the catalog for this golden path.";
+      } else if (custom) {
+        rulesHint.textContent = "Toggle optional rules; required rules stay enabled.";
+      } else {
+        rulesHint.textContent = "Rules included in this profile (switch to Custom to change optional rules).";
+      }
+    }
+    if (visible === 0 && (catalog.rules || []).length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "No rules match the filter.";
+      rulesList.appendChild(empty);
+    }
+    syncHiddenRules();
+    updateProfileSummary();
+  }
+
+  function updatePackHint() {
+    if (!packHint || !packSelect) return;
+    const pack = (catalog.pack_sources || []).find((p) => p.id === packSelect.value);
+    if (!pack) {
+      packHint.textContent = "";
+      return;
+    }
+    const parts = [pack.description || ""];
+    if (pack.reference_url) {
+      parts.push(`Reference: ${pack.reference_url}`);
+    }
+    packHint.textContent = parts.filter(Boolean).join(" ");
+  }
+
+  function populateProfileSelect(selectedId) {
+    profileSelect.innerHTML = "";
+    const profiles = catalog.profiles || {};
+    for (const [id, meta] of Object.entries(profiles)) {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = meta.label || id;
+      if (meta.description) opt.title = meta.description;
+      profileSelect.appendChild(opt);
+    }
+    if (selectedId && profiles[selectedId]) {
+      profileSelect.value = selectedId;
+    } else if (profiles.estate-default) {
+      profileSelect.value = "estate-default";
+    }
+  }
+
+  function updateProfileUi() {
+    const custom = profileSelect.value === "custom";
+    if (advanced && custom) {
+      advanced.open = true;
+    }
+    renderRules();
+    updatePackHint();
+    updateProfileSummary();
+  }
+
+  profileSelect.addEventListener("change", () => {
+    const val = profileSelect.value;
+    if (val !== "custom") {
+      lastPresetProfile = val;
+      customSeedProfile = val;
+    } else {
+      customSeedProfile = lastPresetProfile;
+    }
+    updateProfileUi();
+  });
+
+  packSelect?.addEventListener("change", () => {
+    const pack = (catalog.pack_sources || []).find((p) => p.id === packSelect.value);
+    if (pack?.default_profile && catalog.profiles?.[pack.default_profile]) {
+      profileSelect.value = pack.default_profile;
+      lastPresetProfile = pack.default_profile;
+      customSeedProfile = pack.default_profile;
+    }
+    updateProfileUi();
+  });
+
+  enableOptionalBtn?.addEventListener("click", () => {
+    profileSelect.value = "custom";
+    customSeedProfile = lastPresetProfile;
+    renderRules();
+    for (const rule of catalog.rules || []) {
+      const input = rulesList.querySelector(`input[value="${CSS.escape(rule.id)}"]`);
+      if (input && !rule.required) input.checked = true;
+    }
+    syncHiddenRules();
+  });
+
+  useProfileBtn?.addEventListener("click", () => {
+    customSeedProfile = lastPresetProfile;
+    renderRules();
+  });
+  filterInput?.addEventListener("input", renderRules);
+  rulesList.addEventListener("change", syncHiddenRules);
+  document.getElementById("generate-form")?.addEventListener("repave:stepper-pre-submit", syncHiddenRules);
+
+  updatePackHint();
+  updateProfileUi();
+
+  fetch(`/blueprints/${encodeURIComponent(blueprintName)}/policy-catalog`)
+    .then((r) => {
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    })
+    .then((data) => {
+      catalog = data;
+      const packs = data.pack_sources || [];
+      if (packSelect && packs.length) {
+        const selected = packSelect.value;
+        packSelect.innerHTML = "";
+        for (const pack of packs) {
+          const opt = document.createElement("option");
+          opt.value = pack.id;
+          opt.textContent = pack.label || pack.id;
+          if (pack.description) opt.title = pack.description;
+          packSelect.appendChild(opt);
+        }
+        packSelect.value = packs.some((p) => p.id === selected)
+          ? selected
+          : resolveInitialPackId(packs);
+      }
+      if (data.profiles && profileSelect) {
+        const selectedProfile = profileSelect.value;
+        const packId = packSelect?.value || "";
+        profileSelect.innerHTML = "";
+        for (const [id, meta] of Object.entries(data.profiles)) {
+          const opt = document.createElement("option");
+          opt.value = id;
+          opt.textContent = meta.label || id;
+          if (meta.description) opt.title = meta.description;
+          profileSelect.appendChild(opt);
+        }
+        const resolved = resolveInitialProfileId(packs, packId);
+        profileSelect.value = data.profiles[selectedProfile] ? selectedProfile : resolved;
+        if (!profileSelect.value) {
+          profileSelect.value = resolved;
+        }
+      }
+      lastPresetProfile = profileSelect.value;
+      customSeedProfile = lastPresetProfile;
+      updateProfileUi();
+    })
+    .catch(() => {
+      if (rulesHint) {
+        rulesHint.textContent =
+          "Could not refresh the policy catalog; using server defaults. Submit still works.";
+      }
+      updateProfileUi();
+    });
+})();
+</script>
+{% endif %}
+{% if observability_catalog and (observability_notifications or observability_dashboard_packs or observability_monitor_packs or observability_field_catalog) %}
+<script id="observability-catalog-data" type="application/json">{{ observability_catalog | tojson }}</script>
+<script>
+(function () {
+  const catalogEl = document.getElementById("observability-catalog-data");
+  const sourceSelect = document.getElementById("notification_source");
+  const targetSelect = document.getElementById("notification_target");
+  const sourceHint = document.getElementById("notification-source-hint");
+  const targetHint = document.getElementById("notification-target-hint");
+  if (!catalogEl) return;
+
+  const observabilityDefaults = {{ observability_defaults | tojson }};
+  const blueprintName = {{ blueprint.name | tojson }};
+  let catalog;
+  try {
+    catalog = JSON.parse(catalogEl.textContent || "{}");
+  } catch (_err) {
+    catalog = { notification_sources: [], dashboard_packs: [], monitor_packs: [], defaults: {}, services: [], teams: [] };
+  }
+
+  const decisionFields = new Set(catalog.form_preset?.decision_fields || []);
+
+  function notificationSources() {
+    return catalog.notification_sources || [];
+  }
+
+  function notificationSourceById(sourceId) {
+    return notificationSources().find((item) => item.id === sourceId);
+  }
+
+  function resolveNotificationTargetId(source, preferred) {
+    const targets = source?.targets || [];
+    if (!targets.length) return "";
+    if (preferred && targets.some((t) => t.id === preferred)) {
+      return preferred;
+    }
+    const fromDefaults = catalog.defaults?.notification_target;
+    if (fromDefaults && targets.some((t) => t.id === fromDefaults)) {
+      return fromDefaults;
+    }
+    return targets[0].id;
+  }
+
+  function syncNotificationTargets(sourceId, preferredTarget) {
+    if (!sourceSelect || !targetSelect) return;
+    const source = notificationSourceById(sourceId);
+    const targets = source?.targets || [];
+    targetSelect.innerHTML = "";
+    if (!targets.length) {
+      targetSelect.disabled = true;
+      if (sourceHint) sourceHint.textContent = source?.description || "";
+      if (targetHint) targetHint.textContent = "No targets configured for this source.";
+      return;
+    }
+    targetSelect.disabled = false;
+    const group = document.createElement("optgroup");
+    group.label = source?.label || sourceId || "Targets";
+    for (const target of targets) {
+      const opt = document.createElement("option");
+      opt.value = target.id;
+      opt.textContent = target.label || target.id;
+      if (target.description) opt.title = target.description;
+      group.appendChild(opt);
+    }
+    targetSelect.appendChild(group);
+    const chosen = resolveNotificationTargetId(source, preferredTarget);
+    if (chosen) targetSelect.value = chosen;
+    if (sourceHint) sourceHint.textContent = source?.description || "";
+    const active = targets.find((t) => t.id === targetSelect.value);
+    if (targetHint) targetHint.textContent = active?.description || "";
+  }
+
+  function wireNotificationTargets() {
+    if (!sourceSelect || !targetSelect) return;
+    sourceSelect.addEventListener("change", () => {
+      syncNotificationTargets(sourceSelect.value, "");
+    });
+    targetSelect.addEventListener("change", () => {
+      const source = notificationSourceById(sourceSelect.value);
+      const active = (source?.targets || []).find((t) => t.id === targetSelect.value);
+      if (targetHint) targetHint.textContent = active?.description || "";
+    });
+    syncNotificationTargets(
+      sourceSelect.value || observabilityDefaults.notification_source,
+      targetSelect.value || observabilityDefaults.notification_target
+    );
+  }
+
+  wireNotificationTargets();
+
+  function isRecommendedMode() {
+    const selected = document.querySelector('input[name="configuration_mode"]:checked');
+    return !selected || selected.value === "recommended";
+  }
+
+  function serviceById(serviceId) {
+    return (catalog.services || []).find((item) => item.id === serviceId);
+  }
+
+  function effectiveDefaultsFromDecisions() {
+    const merged = { ...(catalog.defaults || {}), ...observabilityDefaults };
+    const serviceSelect = document.getElementById("service_name");
+    const backendSelect = document.getElementById("backend");
+    const packSelect = document.getElementById("dashboard_pack_source");
+    const monitorPackSelect = document.getElementById("monitor_pack_source");
+    if (serviceSelect?.value) merged.service_name = serviceSelect.value;
+    if (backendSelect?.value) merged.backend = backendSelect.value;
+    if (packSelect?.value) merged.dashboard_pack_source = packSelect.value;
+    if (monitorPackSelect?.value) merged.monitor_pack_source = monitorPackSelect.value;
+    const service = serviceById(merged.service_name);
+    if (service) {
+      merged.organization = service.organization;
+      merged.team = service.team;
+      merged.description = service.description;
+      if (service.runbook_url) merged.runbook_url = service.runbook_url;
+    }
+    return merged;
+  }
+
+  function setFieldValue(id, value) {
+    const el = document.getElementById(id);
+    if (!el || value === undefined) return;
+    el.value = value;
+  }
+
+  function applyEffectiveDefaultsToForm() {
+    if (!isRecommendedMode()) return;
+    const effective = effectiveDefaultsFromDecisions();
+    setFieldValue("organization", effective.organization);
+    syncTeamsForOrganization(effective.team);
+    setFieldValue("team", effective.team);
+    setFieldValue("environment", effective.environment);
+    setFieldValue("description", effective.description);
+    setFieldValue("datasource_uid", effective.datasource_uid);
+    setFieldValue("runbook_url", effective.runbook_url);
+    setFieldValue("slo_target_percent", effective.slo_target_percent);
+    setFieldValue("notification_source", effective.notification_source);
+    syncNotificationTargets(effective.notification_source, effective.notification_target);
+    updateDefaultsSummary(effective);
+  }
+
+  function updateDefaultsSummary(effective) {
+    const summary = document.getElementById("obs-defaults-summary");
+    if (!summary || !isRecommendedMode()) {
+      if (summary) summary.textContent = "";
+      return;
+    }
+    const parts = [
+      effective.organization && `org: ${effective.organization}`,
+      effective.team && `team: ${effective.team}`,
+      effective.environment && `env: ${effective.environment}`,
+      effective.notification_source && `notify: ${effective.notification_source}`,
+    ].filter(Boolean);
+    summary.textContent = parts.length
+      ? `Platform defaults — ${parts.join(" · ")}`
+      : "";
+  }
+
+  function updateConfigurationModeUi() {
+    const recommended = isRecommendedMode();
+    const advanced = document.getElementById("obs-advanced-fields");
+    if (advanced) {
+      advanced.hidden = recommended;
+    }
+    for (const section of document.querySelectorAll(".obs-advanced-section")) {
+      section.hidden = recommended;
+    }
+    const hint = document.getElementById("configuration-mode-hint");
+    if (hint) {
+      hint.hidden = !recommended;
+    }
+    if (recommended) {
+      applyEffectiveDefaultsToForm();
+    } else {
+      updateDefaultsSummary({});
+      syncBackendSpecificFields();
+      if (sourceSelect?.value) {
+        syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
+      }
+    }
+  }
+
+  document.querySelectorAll('input[name="configuration_mode"]').forEach((input) => {
+    input.addEventListener("change", updateConfigurationModeUi);
+  });
+
+  function packsForBackend(backend) {
+    return (catalog.dashboard_packs || []).filter(
+      (pack) => pack.backend === "any" || pack.backend === backend
+    );
+  }
+
+  function starterDashboardPaths(backend) {
+    const root = backend === "datadog" ? "datadog/dashboards" : "grafana/dashboards";
+    return [
+      `${root}/service-overview.json`,
+      `${root}/service-golden-signals.json`,
+    ];
+  }
+
+  function updateDashboardPackIncludes() {
+    const list = document.getElementById("dashboard-pack-includes");
+    const packSelect = document.getElementById("dashboard_pack_source");
+    const backendSelect = document.getElementById("backend");
+    if (!list || !packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "grafana";
+    const pack = (catalog.dashboard_packs || []).find((item) => item.id === packSelect.value);
+    list.innerHTML = "";
+    for (const path of starterDashboardPaths(backend)) {
+      const li = document.createElement("li");
+      li.textContent = path;
+      list.appendChild(li);
+    }
+    const files = pack?.files || [];
+    for (const file of files) {
+      const li = document.createElement("li");
+      const dest = file.dest || file.source || "";
+      li.textContent = dest;
+      if (file.source) li.title = `Template: observability/${file.source}`;
+      list.appendChild(li);
+    }
+    if (!files.length && pack && pack.id !== "repave-red-starter") {
+      const li = document.createElement("li");
+      li.textContent = "No extra community files in this pack.";
+      list.appendChild(li);
+    }
+  }
+
+  function syncDashboardPackOptions() {
+    const packSelect = document.getElementById("dashboard_pack_source");
+    const backendSelect = document.getElementById("backend");
+    const packHint = document.getElementById("dashboard-pack-hint");
+    if (!packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "grafana";
+    const packs = packsForBackend(backend);
+    const preferred =
+      packSelect.value ||
+      observabilityDefaults.dashboard_pack_source ||
+      catalog.defaults?.dashboard_pack_source;
+    packSelect.innerHTML = "";
+    for (const pack of packs) {
+      const opt = document.createElement("option");
+      opt.value = pack.id;
+      opt.textContent = pack.label || pack.id;
+      if (pack.description) opt.title = pack.description;
+      packSelect.appendChild(opt);
+    }
+    const chosen =
+      packs.find((pack) => pack.id === preferred)?.id || packs[0]?.id || "";
+    if (chosen) packSelect.value = chosen;
+    const active = packs.find((pack) => pack.id === packSelect.value);
+    if (packHint && active) {
+      const parts = [active.description || ""];
+      if (active.reference_url) {
+        parts.push(`Upstream: ${active.reference_url}`);
+      }
+      if (active.license) {
+        parts.push(`License: ${active.license}`);
+      }
+      packHint.textContent = parts.filter(Boolean).join(" · ");
+    }
+    updateDashboardPackIncludes();
+  }
+
+  function monitorPacksForBackend(backend) {
+    return (catalog.monitor_packs || []).filter(
+      (pack) => pack.backend === "any" || pack.backend === backend
+    );
+  }
+
+  function starterMonitorPaths(backend) {
+    if (backend === "datadog") {
+      return ["datadog/monitors/service-alerts.json"];
+    }
+    return [
+      "prometheus/rules/service-alerts.yaml",
+      "prometheus/alertmanager/alertmanager.yaml",
+    ];
+  }
+
+  function updateMonitorPackIncludes() {
+    const list = document.getElementById("monitor-pack-includes");
+    const packSelect = document.getElementById("monitor_pack_source");
+    const backendSelect = document.getElementById("backend");
+    if (!list || !packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "datadog";
+    const pack = (catalog.monitor_packs || []).find((item) => item.id === packSelect.value);
+    list.innerHTML = "";
+    for (const path of starterMonitorPaths(backend)) {
+      const li = document.createElement("li");
+      li.textContent = path;
+      list.appendChild(li);
+    }
+    const files = pack?.files || [];
+    for (const file of files) {
+      const li = document.createElement("li");
+      const dest = file.dest || file.source || "";
+      li.textContent = dest;
+      if (file.source) li.title = `Template: observability/${file.source}`;
+      list.appendChild(li);
+    }
+  }
+
+  function syncMonitorPackOptions() {
+    const packSelect = document.getElementById("monitor_pack_source");
+    const backendSelect = document.getElementById("backend");
+    const packHint = document.getElementById("monitor-pack-hint");
+    if (!packSelect) return;
+    const backend = backendSelect?.value || observabilityDefaults.backend || "datadog";
+    const packs = monitorPacksForBackend(backend);
+    const preferred =
+      packSelect.value ||
+      observabilityDefaults.monitor_pack_source ||
+      catalog.defaults?.monitor_pack_source;
+    packSelect.innerHTML = "";
+    for (const pack of packs) {
+      const opt = document.createElement("option");
+      opt.value = pack.id;
+      opt.textContent = pack.label || pack.id;
+      if (pack.description) opt.title = pack.description;
+      packSelect.appendChild(opt);
+    }
+    const chosen =
+      packs.find((pack) => pack.id === preferred)?.id || packs[0]?.id || "";
+    if (chosen) packSelect.value = chosen;
+    const active = packs.find((pack) => pack.id === packSelect.value);
+    if (packHint && active) {
+      const parts = [active.description || ""];
+      if (active.reference_url) {
+        parts.push(`Upstream: ${active.reference_url}`);
+      }
+      if (active.license) {
+        parts.push(`License: ${active.license}`);
+      }
+      packHint.textContent = parts.filter(Boolean).join(" · ");
+    }
+    updateMonitorPackIncludes();
+  }
+
+  const backendSelect = document.getElementById("backend");
+  if (backendSelect) {
+    backendSelect.addEventListener("change", () => {
+      syncDashboardPackOptions();
+      syncMonitorPackOptions();
+      syncBackendSpecificFields();
+      applyEffectiveDefaultsToForm();
+    });
+  }
+  syncDashboardPackOptions();
+  syncMonitorPackOptions();
+  syncBackendSpecificFields();
+
+  function teamsForOrganization(orgId) {
+    return (catalog.teams || []).filter((team) => team.organization === orgId);
+  }
+
+  function syncTeamsForOrganization(preferredTeam) {
+    const orgSelect = document.getElementById("organization");
+    const teamSelect = document.getElementById("team");
+    if (!orgSelect || !teamSelect) return;
+    const orgId = orgSelect.value;
+    const teams = teamsForOrganization(orgId);
+    teamSelect.innerHTML = "";
+    for (const team of teams) {
+      const opt = document.createElement("option");
+      opt.value = team.id;
+      opt.textContent = team.label || team.id;
+      teamSelect.appendChild(opt);
+    }
+    const chosen =
+      teams.find((team) => team.id === preferredTeam)?.id || teams[0]?.id || "";
+    if (chosen) teamSelect.value = chosen;
+  }
+
+  function applyServiceSelection() {
+    const serviceSelect = document.getElementById("service_name");
+    const descInput = document.getElementById("description");
+    const orgSelect = document.getElementById("organization");
+    const teamSelect = document.getElementById("team");
+    const runbookSelect = document.getElementById("runbook_url");
+    if (!serviceSelect) return;
+    const service = (catalog.services || []).find((item) => item.id === serviceSelect.value);
+    if (!service) return;
+    if (orgSelect && service.organization) {
+      orgSelect.value = service.organization;
+      syncTeamsForOrganization(service.team);
+    } else if (teamSelect && service.team) {
+      syncTeamsForOrganization(service.team);
+    }
+    if (descInput && service.description) {
+      descInput.value = service.description;
+    }
+    if (runbookSelect && service.runbook_url) {
+      runbookSelect.value = service.runbook_url;
+    }
+  }
+
+  function syncBackendSpecificFields() {
+    const backendSelect = document.getElementById("backend");
+    const backend = backendSelect?.value || observabilityDefaults.backend || "grafana";
+    const grafanaPanel = document.getElementById("observability-backend-grafana-fields");
+    const datadogPanel = document.getElementById("observability-backend-datadog-fields");
+    if (grafanaPanel) {
+      grafanaPanel.hidden = backend !== "grafana";
+    }
+    if (datadogPanel) {
+      datadogPanel.hidden = backend !== "datadog";
+    }
+  }
+
+  const orgSelect = document.getElementById("organization");
+  if (orgSelect) {
+    orgSelect.addEventListener("change", () => {
+      syncTeamsForOrganization("");
+    });
+  }
+  const serviceSelect = document.getElementById("service_name");
+  if (serviceSelect) {
+    function populateServiceSelect(services, selectedId) {
+      const current = selectedId || serviceSelect.value;
+      serviceSelect.innerHTML = "";
+      for (const svc of services || []) {
+        const opt = document.createElement("option");
+        opt.value = svc.id;
+        const suffix = svc.source_kind === "discovered" ? " (inventory)" : "";
+        opt.textContent = (svc.label || svc.id) + suffix;
+        if (svc.description) opt.title = svc.description;
+        serviceSelect.appendChild(opt);
+      }
+      if (current && [...serviceSelect.options].some((o) => o.value === current)) {
+        serviceSelect.value = current;
+      }
+    }
+
+    async function refreshServiceInventory() {
+      const hint = document.getElementById("service-inventory-hint");
+      try {
+        const resp = await fetch(`/blueprints/${blueprintName}/observability-catalog`);
+        if (!resp.ok) return;
+        const payload = await resp.json();
+        if (payload.services?.length) {
+          catalog.services = payload.services;
+          populateServiceSelect(payload.services, serviceSelect.value);
+        }
+        const discovered = (payload.services || []).filter(
+          (s) => s.source_kind === "discovered"
+        ).length;
+        if (hint) {
+          hint.textContent = discovered
+            ? `${discovered} service(s) from modules_root inventory.`
+            : "";
+        }
+      } catch (_err) {
+        if (hint) hint.textContent = "";
+      }
+    }
+
+    serviceSelect.addEventListener("change", () => {
+      applyServiceSelection();
+      applyEffectiveDefaultsToForm();
+    });
+    refreshServiceInventory().then(() => {
+      applyServiceSelection();
+    });
+  } else if (orgSelect) {
+    syncTeamsForOrganization(observabilityDefaults.team || "");
+  }
+  const packSelect = document.getElementById("dashboard_pack_source");
+  if (packSelect) {
+    packSelect.addEventListener("change", applyEffectiveDefaultsToForm);
+  }
+  const monitorPackSelect = document.getElementById("monitor_pack_source");
+  if (monitorPackSelect) {
+    monitorPackSelect.addEventListener("change", applyEffectiveDefaultsToForm);
+  }
+  updateConfigurationModeUi();
+
+  const generateForm = document.getElementById("generate-form");
+  if (generateForm) {
+    generateForm.addEventListener("repave:stepper-will-advance", (event) => {
+      if (event.detail.fromStep === 0) {
+        applyEffectiveDefaultsToForm();
+      }
+    });
+    generateForm.addEventListener("repave:stepper-pre-submit", () => {
+      applyEffectiveDefaultsToForm();
+      if (sourceSelect?.value) {
+        syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
+      }
+    });
+    generateForm.addEventListener("submit", () => {
+      applyEffectiveDefaultsToForm();
+      if (sourceSelect?.value) {
+        syncNotificationTargets(sourceSelect.value, targetSelect?.value || "");
+      }
+    });
+  }
+})();
+</script>
+{% endif %}
+{% if blueprint.artifact_type == "github-repo" %}
+<script>
+(() => {
+  const modeSelect = document.getElementById("create_mode");
+  const templateBlocks = document.querySelectorAll("[data-github-repo-when='template']");
+  const teamInput = document.getElementById("team_slugs");
+  const teamExtra = document.getElementById("github-team-slugs-extra");
+  const teamFilter = document.getElementById("github-team-filter");
+  const teamPicker = document.getElementById("github-team-picker");
+  const sourceInput = document.getElementById("membership_source_team");
+  const sourceSelect = document.getElementById("github-source-team-select");
+  const syncToggle = document.getElementById("sync_team_membership_toggle");
+  const syncHidden = document.getElementById("sync_team_membership");
+  const teamsHint = document.getElementById("github-teams-hint");
+  const dataList = document.getElementById("github-team-slugs");
+  const membersPanel = document.getElementById("github-source-team-members");
+  const membersStatus = document.getElementById("github-source-team-members-status");
+  const membersList = document.getElementById("github-source-team-members-list");
+  let syncTouched = false;
+  let membersTimer = 0;
+  let listedTeamSlugs = [];
+
+  const syncTemplateFields = () => {
+    const isTemplate = modeSelect && modeSelect.value === "template";
+    templateBlocks.forEach((block) => {
+      block.hidden = !isTemplate;
+      block.querySelectorAll("input, select, textarea").forEach((el) => {
+        if (isTemplate) {
+          el.removeAttribute("disabled");
+        } else {
+          el.setAttribute("disabled", "disabled");
+        }
+      });
+    });
+  };
+
+  const writeSyncHidden = () => {
+    if (!syncHidden || !syncToggle) {
+      return;
+    }
+    syncHidden.value = syncToggle.checked ? "true" : "false";
+  };
+
+  const syncMembershipDefaults = () => {
+    if (!syncToggle || !sourceInput) {
+      return;
+    }
+    const hasSource = Boolean(sourceInput.value.trim());
+    if (!syncTouched) {
+      syncToggle.checked = hasSource;
+    }
+    writeSyncHidden();
+  };
+
+  const parseSlugs = (raw) =>
+    String(raw || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const uniqueSlugs = (slugs) => {
+    const seen = new Set();
+    return slugs.filter((slug) => {
+      if (seen.has(slug)) {
+        return false;
+      }
+      seen.add(slug);
+      return true;
+    });
+  };
+
+  const writeSourceTeam = () => {
+    if (sourceInput && sourceSelect && !sourceSelect.hidden) {
+      sourceInput.value = sourceSelect.value;
+    }
+    syncMembershipDefaults();
+    loadSourceMembers();
+  };
+
+  const fillSourceSelect = (teams) => {
+    if (!sourceSelect) {
+      return;
+    }
+    const current = sourceInput ? sourceInput.value.trim() : "";
+    sourceSelect.replaceChildren();
+    const none = document.createElement("option");
+    none.value = "";
+    none.textContent = "None";
+    sourceSelect.appendChild(none);
+    teams.forEach((team) => {
+      const slug = team && team.slug ? String(team.slug) : "";
+      if (!slug) {
+        return;
+      }
+      const name = team.name ? String(team.name) : slug;
+      const option = document.createElement("option");
+      option.value = slug;
+      option.textContent = name === slug ? slug : `${name} (${slug})`;
+      sourceSelect.appendChild(option);
+    });
+    if (current && !listedTeamSlugs.includes(current)) {
+      const extra = document.createElement("option");
+      extra.value = current;
+      extra.textContent = current;
+      sourceSelect.appendChild(extra);
+    }
+    sourceSelect.value = current;
+    sourceSelect.hidden = false;
+    if (sourceInput) {
+      sourceInput.type = "hidden";
+      sourceInput.removeAttribute("list");
+    }
+    const sourceLabel = document.getElementById("github-source-team-label");
+    if (sourceLabel) {
+      sourceLabel.htmlFor = "github-source-team-select";
+    }
+    if (current) {
+      loadSourceMembers();
+    }
+  };
+
+  const fillTeamDatalist = (slugs) => {
+    if (!dataList) {
+      return;
+    }
+    dataList.replaceChildren();
+    slugs.forEach((slug) => {
+      const option = document.createElement("option");
+      option.value = slug;
+      dataList.appendChild(option);
+    });
+  };
+
+  const writeTeamSlugs = () => {
+    if (!teamInput) {
+      return;
+    }
+    const selected = teamPicker
+      ? Array.from(teamPicker.querySelectorAll('input[type="checkbox"]:checked')).map(
+          (box) => box.value
+        )
+      : [];
+    const extra = parseSlugs(teamExtra ? teamExtra.value : "");
+    teamInput.value = uniqueSlugs([...selected, ...extra]).join(", ");
+  };
+
+  const selectedTeamSet = () => new Set(parseSlugs(teamInput ? teamInput.value : ""));
+
+  const renderTeamPicker = (teams) => {
+    if (!teamPicker) {
+      return;
+    }
+    const selected = selectedTeamSet();
+    teamPicker.replaceChildren();
+    teams.forEach((team) => {
+      const slug = team && team.slug ? String(team.slug) : "";
+      if (!slug) {
+        return;
+      }
+      const name = team.name ? String(team.name) : slug;
+      const description = team.description ? String(team.description) : "";
+      const row = document.createElement("label");
+      row.className = "checkbox-row github-team-picker__row";
+      row.dataset.teamSlug = slug;
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.value = slug;
+      box.checked = selected.has(slug);
+      box.addEventListener("change", writeTeamSlugs);
+      const text = document.createElement("span");
+      text.className = "github-team-picker__label";
+      const title = document.createElement("span");
+      title.className = "github-team-picker__name";
+      title.textContent = name === slug ? slug : `${name} (${slug})`;
+      text.appendChild(title);
+      if (description) {
+        const detail = document.createElement("span");
+        detail.className = "github-team-picker__description";
+        detail.textContent = description;
+        text.appendChild(detail);
+      }
+      row.appendChild(box);
+      row.appendChild(text);
+      teamPicker.appendChild(row);
+    });
+    teamPicker.hidden = !teamPicker.childElementCount;
+    if (teamFilter) {
+      teamFilter.hidden = teamPicker.childElementCount < 8;
+    }
+    if (teamExtra) {
+      teamExtra.value = parseSlugs(teamInput ? teamInput.value : "")
+        .filter((slug) => !listedTeamSlugs.includes(slug))
+        .join(", ");
+    }
+    writeTeamSlugs();
+  };
+
+  const filterTeamPicker = () => {
+    if (!teamPicker || !teamFilter) {
+      return;
+    }
+    const query = teamFilter.value.trim().toLowerCase();
+    teamPicker.querySelectorAll("[data-team-slug]").forEach((row) => {
+      const slug = String(row.dataset.teamSlug || "").toLowerCase();
+      const label = row.textContent ? row.textContent.toLowerCase() : "";
+      row.hidden = Boolean(query) && !slug.includes(query) && !label.includes(query);
+    });
+  };
+
+  const clearMemberPreview = () => {
+    if (membersList) {
+      membersList.replaceChildren();
+    }
+    if (membersStatus) {
+      membersStatus.textContent = "";
+    }
+    if (membersPanel) {
+      membersPanel.hidden = true;
+    }
+  };
+
+  const renderMemberPreview = (members) => {
+    if (!membersPanel || !membersStatus || !membersList) {
+      return;
+    }
+    membersPanel.hidden = false;
+    membersList.replaceChildren();
+    if (!members.length) {
+      membersStatus.textContent = "Source team has no members (or none visible to this token).";
+      return;
+    }
+    const preview = members.slice(0, 25);
+    membersStatus.textContent =
+      members.length > preview.length
+        ? `${members.length} members (showing first ${preview.length}):`
+        : `${members.length} member${members.length === 1 ? "" : "s"}:`;
+    preview.forEach((login) => {
+      const item = document.createElement("li");
+      item.textContent = login;
+      membersList.appendChild(item);
+    });
+  };
+
+  const loadSourceMembers = () => {
+    if (!sourceInput || !membersPanel) {
+      return;
+    }
+    const slug = sourceInput.value.trim();
+    if (!slug) {
+      clearMemberPreview();
+      return;
+    }
+    membersPanel.hidden = false;
+    if (membersStatus) {
+      membersStatus.textContent = `Loading members of ${slug}…`;
+    }
+    if (membersList) {
+      membersList.replaceChildren();
+    }
+    const path = `/api/v2/github/teams/${encodeURIComponent(slug)}/members`;
+    fetch(path)
+      .then((response) => {
+        if (!response.ok) {
+          return Promise.reject(response);
+        }
+        return response.json();
+      })
+      .then((payload) => {
+        const members = Array.isArray(payload.members) ? payload.members : [];
+        renderMemberPreview(members.map((item) => String(item)).filter(Boolean));
+      })
+      .catch(() => {
+        if (membersStatus) {
+          membersStatus.textContent =
+            `Could not list members of ${slug}. Check the team slug and GitHub credentials.`;
+        }
+        if (membersList) {
+          membersList.replaceChildren();
+        }
+        membersPanel.hidden = false;
+      });
+  };
+
+  const scheduleMemberPreview = () => {
+    window.clearTimeout(membersTimer);
+    membersTimer = window.setTimeout(loadSourceMembers, 300);
+  };
+
+  if (modeSelect) {
+    modeSelect.addEventListener("change", syncTemplateFields);
+    syncTemplateFields();
+  }
+
+  if (syncToggle && syncHidden) {
+    syncToggle.addEventListener("change", () => {
+      syncTouched = true;
+      writeSyncHidden();
+    });
+    syncMembershipDefaults();
+  }
+
+  if (sourceSelect) {
+    sourceSelect.addEventListener("change", writeSourceTeam);
+  }
+  if (sourceInput) {
+    sourceInput.addEventListener("input", () => {
+      syncMembershipDefaults();
+      scheduleMemberPreview();
+    });
+    sourceInput.addEventListener("change", () => {
+      syncMembershipDefaults();
+      loadSourceMembers();
+    });
+    if (sourceInput.value.trim()) {
+      loadSourceMembers();
+    }
+  }
+
+  if (teamExtra) {
+    teamExtra.addEventListener("input", writeTeamSlugs);
+    teamExtra.addEventListener("change", writeTeamSlugs);
+  }
+  if (teamFilter) {
+    teamFilter.addEventListener("input", filterTeamPicker);
+  }
+  const generateForm = document.getElementById("generate-form");
+  if (generateForm) {
+    generateForm.addEventListener("submit", writeTeamSlugs);
+    generateForm.addEventListener("repave:stepper-pre-submit", writeTeamSlugs);
+  }
+
+  const showTeamSlugFallback = (message) => {
+    if (teamsHint) {
+      teamsHint.textContent = message;
+    }
+    if (teamInput) {
+      teamInput.type = "text";
+      teamInput.classList.add("input");
+      teamInput.setAttribute("placeholder", "platform-admins, developers");
+      teamInput.setAttribute("list", "github-team-slugs");
+    }
+    if (teamExtra) {
+      teamExtra.hidden = true;
+    }
+  };
+
+  if (teamsHint || teamPicker) {
+    fetch("/api/v2/github/teams")
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((payload) => {
+        const teams = Array.isArray(payload.teams) ? payload.teams : [];
+        const slugs = teams
+          .map((team) => (team && team.slug ? String(team.slug) : ""))
+          .filter(Boolean);
+        listedTeamSlugs = slugs;
+        fillTeamDatalist(slugs);
+        if (!teams.length) {
+          showTeamSlugFallback(
+            "No teams returned; enter team slugs as a comma-separated list."
+          );
+          return;
+        }
+        if (teamsHint) {
+          teamsHint.textContent = `${teams.length} org team${
+            teams.length === 1 ? "" : "s"
+          } you can add to this repository:`;
+        }
+        renderTeamPicker(teams);
+        fillSourceSelect(teams);
+      })
+      .catch(() => {
+        showTeamSlugFallback(
+          "Could not list org teams (token/org). Enter team slugs as a comma-separated list."
+        );
+      });
+  }
+})();
+</script>
+{% endif %}
+{% endblock %}

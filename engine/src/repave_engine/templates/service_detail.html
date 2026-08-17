@@ -1,0 +1,660 @@
+{% extends "base.html" %}
+
+{% block title %}{{ entity.display_name }} — Library — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">{{ entity.display_name }}</h1>
+    <p class="page-lead">
+      {% if entity.source == 'environment' %}
+      Vended environment · <code>{{ entity.cloud_provider }}</code> / {{ entity.environment_tier }}
+      {% if entity.env_class %} · class {{ entity.env_class }}{% endif %}
+      {% elif entity.repo_url %}
+      <a href="{{ entity.repo_url }}" rel="noreferrer noopener" target="_blank"><code>{{ entity.repo_url }}</code></a>
+      {% else %}
+      Local entity under <code>modules_root</code>
+      {% endif %}
+      {% if entity.owner %} · owner {{ entity.owner }}{% endif %}
+      {% if entity.team_slug %} · <a href="/teams/{{ entity.team_slug }}">team {{ entity.team_slug }}</a>{% endif %}
+      {% if entity.oncall %} · on-call {{ entity.oncall }}{% endif %}
+    </p>
+  </div>
+</header>
+
+<nav class="entity-tabs" aria-label="Entity sections">
+  <a href="#overview">Overview</a>
+  <a href="#scorecard">Scorecard</a>
+  <a href="#dependencies">Dependencies</a>
+  <a href="#initiatives">Initiatives</a>
+</nav>
+
+<section class="card" id="overview" aria-labelledby="pins-heading">
+  <div class="card__header">
+    <h2 id="pins-heading">Pins and governance</h2>
+  </div>
+  <div class="card__body entity-detail-meta">
+    {% if entity.blueprint_name %}
+    <p>
+      <span class="badge badge--pass">
+        {{ entity.blueprint_name }}{% if entity.blueprint_version %}@{{ entity.blueprint_version }}{% endif %}
+      </span>
+      {% if entity.standard_version %}
+      <span class="badge badge--skip">standard {{ entity.standard_version }}</span>
+      {% endif %}
+    </p>
+    {% endif %}
+    {% if entity.operator_phase %}
+    <p>
+      {% if entity.operator_phase == 'Ready' %}
+      <span class="badge badge--pass">operator {{ entity.operator_phase }}</span>
+      {% elif entity.operator_phase == 'OutOfDate' %}
+      <span class="badge badge--fail">operator {{ entity.operator_phase }}</span>
+      {% elif entity.operator_phase == 'Error' %}
+      <span class="badge badge--error">operator {{ entity.operator_phase }}</span>
+      {% else %}
+      <span class="badge badge--skip">operator {{ entity.operator_phase }}</span>
+      {% endif %}
+      {% if entity.operator_message %}
+      <span class="muted">{{ entity.operator_message }}</span>
+      {% endif %}
+    </p>
+    {% endif %}
+    {% if entity.remediation_pr_url %}
+    <p><a href="{{ entity.remediation_pr_url }}" rel="noreferrer noopener" target="_blank">Remediation pull request</a></p>
+    {% endif %}
+    {% if entity.last_generation_at %}
+    <p class="muted">
+      Last generation {{ entity.last_generation_outcome or 'unknown' }}
+      <time datetime="{{ entity.last_generation_at }}">{{ entity.last_generation_at }}</time>
+    </p>
+    {% endif %}
+    {% if entity.manifest_name %}
+    <p class="muted">GitOps manifest {{ entity.manifest_namespace }}/{{ entity.manifest_name }}</p>
+    {% endif %}
+    {% if provenance_components %}
+    <ul class="muted">
+      {% for component in provenance_components %}
+      <li>
+        {% if component.primary %}Primary{% else %}Component{% endif %}
+        <code>{{ component.component_id }}</code>:
+        {{ component.blueprint_name }}@{{ component.blueprint_version }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</section>
+
+{% if component_add_available %}
+<section class="card" aria-labelledby="add-component-heading">
+  <div class="card__header">
+    <h2 id="add-component-heading">Add component</h2>
+    <p class="muted card__subtitle">
+      Layer a second golden path onto this repository (local checkout:
+      <code>{{ component_add_local_path }}</code>).
+    </p>
+  </div>
+  <div class="card__body">
+    {% if component_add_flash_message %}
+    <p
+      class="alert {% if component_add_flash_status == 'error' %}alert--fail{% elif component_add_flash_status == 'blocked' %}alert--warn{% else %}alert--pass{% endif %}"
+      role="status"
+    >
+      {{ component_add_flash_message }}
+    </p>
+    {% endif %}
+    {% if component_add_git_message %}
+    <p class="muted">{{ component_add_git_message }}</p>
+    {% endif %}
+    <form
+      method="post"
+      action="/services/{{ entity.entity_id }}/add-component"
+      data-repave-busy-form
+      data-busy-label="Planning component add…"
+    >
+      <div class="field">
+        <label class="field__label" for="add-component-blueprint">Blueprint</label>
+        <select class="field__input" id="add-component-blueprint" name="blueprint" required>
+          {% for blueprint in addable_blueprints %}
+          <option value="{{ blueprint.name }}">{{ blueprint.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <label class="field field--inline">
+        <input type="checkbox" name="force" value="on" />
+        <span>Force overwrite when files differ</span>
+      </label>
+      <div class="form-actions">
+        <button class="btn btn--secondary btn--sm" type="submit" name="action" value="plan">
+          Plan add
+        </button>
+        <button class="btn btn--primary btn--sm" type="submit" name="action" value="apply">
+          Apply locally
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+<section class="card" id="scorecard" aria-labelledby="scorecard-heading">
+  <div class="card__header">
+    <h2 id="scorecard-heading">Scorecard</h2>
+    {% if entity.maturity_label %}
+    <p class="muted card__subtitle">
+      Maturity
+      <span class="badge badge--maturity">L{{ entity.maturity_level }} {{ entity.maturity_label }}</span>
+      ({{ entity.maturity_passing }}/{{ entity.maturity_total }} rules)
+    </p>
+    {% endif %}
+  </div>
+  <div class="card__body">
+    {% if entity.maturity_total %}
+    <span
+      class="maturity-bar maturity-bar--wide"
+      role="img"
+      aria-label="Maturity {{ entity.maturity_passing }} of {{ entity.maturity_total }}"
+    >
+      <span
+        class="maturity-bar__fill"
+        style="--maturity-pct: {{ (entity.maturity_passing / entity.maturity_total * 100)|round|int }}%"
+      ></span>
+    </span>
+    {% endif %}
+    <ul class="scorecard-grid">
+      {% for dim in entity.scorecard %}
+      <li class="scorecard-grid__item">
+        <span class="badge badge--{% if dim.level == 'unknown' %}muted{% else %}{{ dim.level }}{% endif %}">{{ dim.label }}</span>
+        <p class="muted scorecard-grid__detail">{{ dim.detail }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<section class="card" id="dependencies" aria-labelledby="dependencies-heading">
+  <div class="card__header">
+    <h2 id="dependencies-heading">Dependencies</h2>
+    <p class="muted card__subtitle">From <code>catalog-info.yaml</code> <code>spec.dependsOn</code> when present.</p>
+  </div>
+  <div class="card__body">
+    {% if entity.dependencies %}
+    <ul class="initiative-list">
+      {% for dep in entity.dependencies %}
+      <li><code>{{ dep }}</code></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No dependencies declared.</p>
+    {% endif %}
+    {% if entity.oncall %}
+    <p>On-call: <strong>{{ entity.oncall }}</strong></p>
+    {% endif %}
+    {% if entity.workload_profile %}
+    <p class="muted">Workload profile: <code>{{ entity.workload_profile }}</code></p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" id="initiatives" aria-labelledby="entity-initiatives-heading">
+  <div class="card__header">
+    <h2 id="entity-initiatives-heading">Initiatives</h2>
+  </div>
+  <div class="card__body">
+    {% if initiative_statuses %}
+    <ul class="initiative-list">
+      {% for status in initiative_statuses %}
+      <li>
+        <span class="badge badge--{% if status.passed %}pass{% else %}warn{% endif %}">
+          {% if status.passed %}passing{% else %}open{% endif %}
+        </span>
+        <strong>{{ status.title }}</strong>
+        <span class="muted">{{ status.detail }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No active initiatives for this entity.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% if entity.source == 'environment' %}
+<section class="card" aria-labelledby="environment-meta-heading">
+  <div class="card__header">
+    <h2 id="environment-meta-heading">Environment</h2>
+    <p class="muted card__subtitle">Governed stack vended into GitOps.</p>
+  </div>
+  <div class="card__body">
+    <dl class="preflight-panel" aria-label="Environment metadata">
+      <div class="preflight-panel__row">
+        <dt>Status</dt>
+        <dd>
+          {% if entity.vend_status == 'active' %}
+          <span class="badge badge--pass">Active</span>
+          {% elif entity.vend_status == 'pending' %}
+          <span class="badge badge--skip">Pending</span>
+          {% elif entity.vend_status == 'expired' %}
+          <span class="badge badge--warn">Expired</span>
+          {% else %}
+          <span class="badge badge--muted">{{ entity.vend_status or 'unknown' }}</span>
+          {% endif %}
+        </dd>
+      </div>
+      {% if entity.gitops_repo %}
+      <div class="preflight-panel__row">
+        <dt>GitOps repo</dt>
+        <dd><code>{{ entity.gitops_repo }}</code></dd>
+      </div>
+      {% endif %}
+      {% if entity.gitops_path %}
+      <div class="preflight-panel__row">
+        <dt>Path</dt>
+        <dd><code>{{ entity.gitops_path }}</code></dd>
+      </div>
+      {% endif %}
+      {% if entity.expires_at %}
+      <div class="preflight-panel__row">
+        <dt>Expires</dt>
+        <dd><time datetime="{{ entity.expires_at }}">{{ entity.expires_at[:19] }}</time></dd>
+      </div>
+      {% endif %}
+      {% if entity.source_entity_id %}
+      <div class="preflight-panel__row">
+        <dt>Requested from</dt>
+        <dd><a href="/services/{{ entity.source_entity_id }}">{{ entity.source_entity_id }}</a></dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% if entity.pull_request_url %}
+    <p><a class="btn btn--secondary btn--sm" href="{{ entity.pull_request_url }}" rel="noreferrer noopener" target="_blank">{% if entity.vend_status == 'expired' %}Open decommission pull request{% else %}Open vend pull request{% endif %}</a></p>
+    {% endif %}
+    {% if entity.vend_run_id %}
+    <p><a class="btn btn--ghost btn--sm" href="/runs/{{ entity.vend_run_id }}">View vend run</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if deployment_status %}
+<section class="card entity-deployment" aria-labelledby="deployment-heading">
+  <div class="card__header">
+    <h2 id="deployment-heading">Deployment</h2>
+    <p class="muted card__subtitle">Read-only GitOps status from portal configuration.</p>
+  </div>
+  <div class="card__body">
+    <p>
+      {% if deployment_status.sync_status == 'synced' %}
+      <span class="badge badge--pass">Synced</span>
+      {% elif deployment_status.sync_status == 'out_of_sync' %}
+      <span class="badge badge--fail">Out of sync</span>
+      {% else %}
+      <span class="badge badge--muted">Sync unknown</span>
+      {% endif %}
+      {% if deployment_status.health == 'healthy' %}
+      <span class="badge badge--pass">Healthy</span>
+      {% elif deployment_status.health == 'degraded' %}
+      <span class="badge badge--fail">Degraded</span>
+      {% elif deployment_status.health == 'progressing' %}
+      <span class="badge badge--warn">Progressing</span>
+      {% else %}
+      <span class="badge badge--muted">Health unknown</span>
+      {% endif %}
+      {% if deployment_status.revision %}
+      <span class="muted">· rev {{ deployment_status.revision[:12] }}</span>
+      {% endif %}
+      {% if deployment_status.last_synced %}
+      <span class="muted">· <time datetime="{{ deployment_status.last_synced }}">{{ deployment_status.last_synced[:19] }}</time></span>
+      {% endif %}
+    </p>
+    {% if deployment_status.detail %}
+    <p class="muted">{{ deployment_status.detail }}</p>
+    {% endif %}
+    {% if deployment_status.deep_link %}
+    <p><a class="btn btn--ghost btn--sm" href="{{ deployment_status.deep_link }}" rel="noreferrer noopener" target="_blank">Open in GitOps</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if live_plan_available and entity.source != 'environment' %}
+<section class="card entity-live-plan" aria-labelledby="live-plan-heading">
+  <div class="card__header">
+    <h2 id="live-plan-heading">Live plan</h2>
+    <p class="muted card__subtitle">
+      Run terraform plan against live state and evaluate OPA on plan JSON (plan only).
+    </p>
+  </div>
+  <div class="card__body">
+    {% if live_plan_env %}
+    <dl class="preflight-panel" aria-label="Live plan configuration">
+      <div class="preflight-panel__row">
+        <dt>Target</dt>
+        <dd><code>{{ live_plan_env.target }}</code></dd>
+      </div>
+      <div class="preflight-panel__row">
+        <dt>Policy</dt>
+        <dd><code>{{ live_plan_policies_dir }}</code></dd>
+      </div>
+    </dl>
+    {% endif %}
+    <form
+      method="post"
+      action="/services/{{ entity.entity_id }}/live-plan"
+      data-repave-busy-form
+      data-busy-label="Planning against live state…"
+      data-busy-stages="Checking out target|Terraform plan|Evaluating policy"
+    >
+      <button class="btn btn--secondary btn--sm" type="submit">Plan against live state</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if environment_vend_available and entity.source != 'environment' %}
+<section class="card entity-environment-vend" aria-labelledby="environment-vend-heading">
+  <div class="card__header">
+    <h2 id="environment-vend-heading">Request environment</h2>
+    <p class="muted card__subtitle">
+      Render a governed environment stack and open a GitOps pull request (or preview gates only).
+    </p>
+  </div>
+  <div class="card__body">
+    {% if environment_vend_cfg %}
+    <dl class="preflight-panel" aria-label="Environment vending configuration">
+      <div class="preflight-panel__row">
+        <dt>Blueprint</dt>
+        <dd><code>{{ environment_vend_blueprint }}</code></dd>
+      </div>
+      {% if environment_vend_cfg.gitops_repo %}
+      <div class="preflight-panel__row">
+        <dt>GitOps repo</dt>
+        <dd><code>{{ environment_vend_cfg.gitops_repo }}</code></dd>
+      </div>
+      {% endif %}
+      <div class="preflight-panel__row">
+        <dt>Path prefix</dt>
+        <dd><code>{{ environment_vend_cfg.path_prefix }}</code></dd>
+      </div>
+      <div class="preflight-panel__row">
+        <dt>Base branch</dt>
+        <dd><code>{{ environment_vend_cfg.base_branch }}</code></dd>
+      </div>
+      {% if default_vend_path %}
+      <div class="preflight-panel__row">
+        <dt>Default path</dt>
+        <dd><code>{{ default_vend_path }}</code></dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% endif %}
+    <form
+      method="post"
+      action="/services/{{ entity.entity_id }}/request-environment"
+      data-repave-busy-form
+      data-busy-label="Vending environment stack…"
+      data-busy-stages="Validating inputs|Rendering stack|Running gates|Opening GitOps PR"
+    >
+      <div class="field">
+        <label class="field__label" for="vend-stack-name">Stack name</label>
+        <input
+          class="field__input"
+          id="vend-stack-name"
+          name="stack_name"
+          type="text"
+          required
+          value="{{ default_stack_name }}"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-description">Description</label>
+        <input
+          class="field__input"
+          id="vend-description"
+          name="description"
+          type="text"
+          required
+          value="Environment stack for {{ entity.display_name }}"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-cloud-provider">Cloud provider</label>
+        <select class="field__input" id="vend-cloud-provider" name="cloud_provider">
+          <option value="aws" selected>aws</option>
+          <option value="azure">azure</option>
+          <option value="gcp">gcp</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-environment">Environment</label>
+        <select class="field__input" id="vend-environment" name="environment">
+          <option value="dev" selected>dev</option>
+          <option value="staging">staging</option>
+          <option value="prod">prod</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-owner">Owner</label>
+        <input
+          class="field__input"
+          id="vend-owner"
+          name="owner"
+          type="text"
+          value="{{ entity.owner or '' }}"
+          placeholder="team-platform"
+        />
+      </div>
+      <div class="field">
+        <label class="field__label" for="vend-class">Class</label>
+        <input class="field__input" id="vend-class" name="class" type="text" value="sandbox" />
+      </div>
+      <div class="form-actions">
+        <button class="btn btn--secondary btn--sm" type="submit" name="action" value="preview">
+          Plan gates
+        </button>
+        <button
+          class="btn btn--primary btn--sm"
+          type="submit"
+          name="action"
+          value="open_pr"
+          {% if environment_vend_cfg and not environment_vend_cfg.gitops_repo %}disabled title="Set environment_vending.gitops_repo in repave.config.yaml"{% endif %}
+        >
+          Open GitOps PR
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if slo_summary %}
+<section class="card entity-slo" aria-labelledby="slo-heading">
+  <div class="card__header">
+    <h2 id="slo-heading">Health summary</h2>
+    <p class="muted card__subtitle">Read-only SLO panel from portal configuration.</p>
+  </div>
+  <div class="card__body">
+    <p>
+      {% if slo_summary.status == 'healthy' %}
+      <span class="badge badge--pass">Healthy</span>
+      {% elif slo_summary.status == 'degraded' %}
+      <span class="badge badge--fail">Degraded</span>
+      {% else %}
+      <span class="badge badge--muted">Unknown</span>
+      {% endif %}
+      {% if slo_summary.slo_target %}
+      <span class="muted">target {{ slo_summary.slo_target }}</span>
+      {% endif %}
+      {% if slo_summary.slo_current %}
+      <span class="muted">· current {{ slo_summary.slo_current }}</span>
+      {% endif %}
+    </p>
+    {% if slo_summary.detail %}
+    <p class="muted">{{ slo_summary.detail }}</p>
+    {% endif %}
+    {% if slo_summary.source_url %}
+    <p><a class="btn btn--ghost btn--sm" href="{{ slo_summary.source_url }}" rel="noreferrer noopener" target="_blank">View SLO source</a></p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if cost_actuals %}
+<section class="card entity-cost" aria-labelledby="cost-actuals-heading">
+  <div class="card__header">
+    <h2 id="cost-actuals-heading">Cloud spend</h2>
+    <p class="muted card__subtitle">Last 30 days from configured read-only cost reader.</p>
+  </div>
+  <div class="card__body">
+    <p class="entity-cost__amount">
+      <span class="badge badge--pass">{{ cost_actuals.currency }} {{ cost_actuals.amount_30d }}</span>
+      {% if cost_actuals.as_of %}
+      <span class="muted">as of <time datetime="{{ cost_actuals.as_of }}">{{ cost_actuals.as_of[:19] }}</time></span>
+      {% endif %}
+    </p>
+    {% if cost_showback and cost_showback.monthly_budget_usd is not none %}
+    <p class="entity-cost__budget">
+      <span class="badge badge--{% if cost_showback.budget_level == 'unknown' %}muted{% else %}{{ cost_showback.budget_level }}{% endif %}">
+        Budget {{ cost_actuals.currency }} {{ '%.2f'|format(cost_showback.monthly_budget_usd) }}/mo
+        {% if cost_showback.budget_used_pct is not none %}
+        · {{ cost_showback.budget_used_pct }}% of budget
+        {% endif %}
+      </span>
+    </p>
+    <p class="muted">{{ cost_showback.budget_detail }}</p>
+    {% endif %}
+    {% if cost_showback and cost_showback.sparkline %}
+    <div
+      class="cost-sparkline cost-sparkline--detail"
+      role="img"
+      aria-label="{{ cost_showback.sparkline_detail or 'Cost trend' }}"
+      title="{{ cost_showback.sparkline_detail }}"
+    >
+      {% for height in cost_showback.sparkline %}
+      <span class="cost-spark" style="--cost-spark-height: {{ height }}%"></span>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% if cost_actuals.detail %}
+    <p class="muted">{{ cost_actuals.detail }}</p>
+    {% endif %}
+    {% if cost_actuals.source_url %}
+    <p><a class="btn btn--ghost btn--sm" href="{{ cost_actuals.source_url }}" rel="noreferrer noopener" target="_blank">View cost source</a></p>
+    {% endif %}
+  </div>
+</section>
+{% elif cost_estimate %}
+<section class="card entity-cost" aria-labelledby="cost-estimate-heading">
+  <div class="card__header">
+    <h2 id="cost-estimate-heading">Cost estimate</h2>
+    <p class="muted card__subtitle">Infracost breakdown from the last terraform plan in this checkout.</p>
+  </div>
+  <div class="card__body">
+    <p class="entity-cost__amount">
+      <span class="badge badge--pass">{{ cost_estimate.currency }} {{ cost_estimate.monthly_cost }}/month</span>
+      {% if cost_estimate.hourly_cost and cost_estimate.hourly_cost != '—' %}
+      <span class="muted">· {{ cost_estimate.hourly_cost }}/hour</span>
+      {% endif %}
+    </p>
+    {% if cost_estimate.detail %}
+    <p class="muted">{{ cost_estimate.detail }}</p>
+    {% endif %}
+    {% if cost_estimate.resource_count %}
+    <p class="hint">{{ cost_estimate.resource_count }} priced resource(s) in breakdown.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if observability_url %}
+<section class="card entity-observability" aria-labelledby="obs-heading">
+  <div class="card__header">
+    <h2 id="obs-heading">Observability</h2>
+    <p class="muted card__subtitle">Read-only dashboard link from portal configuration.</p>
+  </div>
+  <div class="card__body">
+    <p><a class="btn btn--secondary btn--sm" href="{{ observability_url }}" rel="noreferrer noopener" target="_blank">Open dashboard</a></p>
+    <iframe
+      class="entity-observability__frame"
+      title="Observability dashboard for {{ entity.display_name }}"
+      src="{{ observability_url }}"
+      loading="lazy"
+      referrerpolicy="no-referrer"
+    ></iframe>
+  </div>
+</section>
+{% endif %}
+
+{% if provenance_html or provenance_components %}
+<section class="card" aria-labelledby="lineage-heading">
+  <div class="card__header">
+    <h2 id="lineage-heading">Lineage</h2>
+    <p class="muted card__subtitle">
+      Pins recorded in <code>repave.yaml</code> from the repository checkout or GitHub.
+    </p>
+  </div>
+  <div class="card__body">
+    {% if provenance_components %}
+    <dl class="governance-card__list">
+      {% for component in provenance_components %}
+      <div>
+        <dt>{% if component.primary %}Primary{% else %}Component{% endif %}</dt>
+        <dd>
+          <code>{{ component.component_id }}</code>
+          · {{ component.blueprint_name }}@{{ component.blueprint_version }}
+        </dd>
+      </div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+    {% if provenance_html %}
+    <details class="result-collapsible">
+      <summary class="result-collapsible__summary">
+        <span class="result-collapsible__title">View <code>repave.yaml</code></span>
+      </summary>
+      <div class="result-collapsible__body entity-docs markdown-body">
+        {{ provenance_html | safe }}
+      </div>
+    </details>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if upgrade_html %}
+<section class="card" aria-labelledby="upgrade-heading">
+  <div class="card__header">
+    <h2 id="upgrade-heading">{{ upgrade_label or 'Upgrade notes' }}</h2>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ upgrade_html | safe }}
+  </div>
+</section>
+{% endif %}
+
+{% if readme_html %}
+<section class="card" aria-labelledby="readme-heading">
+  <div class="card__header">
+    <h2 id="readme-heading">README</h2>
+    <p class="muted card__subtitle">Rendered from the local checkout when available.</p>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ readme_html | safe }}
+  </div>
+</section>
+{% endif %}
+
+{% if runbook_html %}
+<section class="card" aria-labelledby="runbook-heading">
+  <div class="card__header">
+    <h2 id="runbook-heading">{{ runbook_label or 'Runbook' }}</h2>
+  </div>
+  <div class="card__body entity-docs markdown-body">
+    {{ runbook_html | safe }}
+  </div>
+</section>
+{% endif %}
+{% endblock %}

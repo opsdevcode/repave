@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Environment vend — {{ environment_vend_summary.entity_id or run_id }} — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<section
+  class="result-hero result-hero--{% if environment_vend_summary.gates_outcome == 'passed' %}passed{% else %}failed{% endif %}"
+  aria-labelledby="environment-vend-result-heading"
+>
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">Environment vend</p>
+    <h1 id="environment-vend-result-heading" class="result-hero__title">
+      {% if run_record.dry_run %}
+      Gate preview complete
+      {% elif environment_vend_summary.gates_outcome == 'passed' %}
+      GitOps pull request opened
+      {% else %}
+      Draft pull request opened
+      {% endif %}
+    </h1>
+    <p class="result-hero__banner">
+      {% if environment_vend_summary.gates_outcome == 'passed' %}
+      <span class="badge badge--pass">Gates passed</span>
+      {% else %}
+      <span class="badge badge--fail">Gates failed</span>
+      {% endif %}
+      {% if environment_vend_summary.entity_id %}
+      <span class="muted">· {{ environment_vend_summary.entity_id }}</span>
+      {% endif %}
+      {% if environment_vend_summary.blueprint %}
+      <span class="muted">· <code>{{ environment_vend_summary.blueprint }}</code></span>
+      {% endif %}
+    </p>
+    {% if environment_vend_summary.detail %}
+    <p class="muted">{{ environment_vend_summary.detail }}</p>
+    {% endif %}
+  </div>
+  <dl class="result-hero__counts" aria-label="Environment metadata">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Owner</dt>
+      <dd>{{ environment_vend_summary.owner or '—' }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--skip">
+      <dt>Class</dt>
+      <dd>{{ environment_vend_summary.class or 'sandbox' }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Path</dt>
+      <dd><code>{{ environment_vend_summary.gitops_path or '—' }}</code></dd>
+    </div>
+  </dl>
+</section>
+
+<section class="card stack-gap" aria-labelledby="environment-vend-gitops-heading">
+  <div class="card__header">
+    <h2 id="environment-vend-gitops-heading" class="card__title">GitOps</h2>
+  </div>
+  <div class="card__body">
+    {% if environment_vend_summary.pull_request_url %}
+    <p>
+      {% if environment_vend_summary.draft %}
+      <span class="badge badge--skip">Draft PR</span>
+      {% else %}
+      <span class="badge badge--pass">Pull request</span>
+      {% endif %}
+      <a href="{{ environment_vend_summary.pull_request_url }}" rel="noreferrer noopener" target="_blank">
+        #{{ environment_vend_summary.pull_request_number }}
+      </a>
+      on <code>{{ environment_vend_summary.gitops_repo }}</code>
+    </p>
+    <p class="muted">Branch <code>{{ environment_vend_summary.git_branch }}</code></p>
+    {% elif run_record.dry_run %}
+    <div class="alert alert--info" role="note">
+      Plan only — gates were evaluated; no GitOps pull request was opened.
+    </div>
+    {% else %}
+    <p class="muted">No pull request URL was recorded on this run.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

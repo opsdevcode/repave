@@ -83,7 +83,7 @@ CHART_SMOKE_FLEET_SNAPSHOT_KEEP_CLUSTER=1 make chart-smoke-fleet-snapshot
 - After portal/API unregister of one URL, that GPR is pruned; the other remains
 - Operator status snapshot `version==2` matches remaining fleet repos
 - `GET /api/v2/fleet` shows the remaining repos plus operator snapshot overlay
-  (`GET /platform/fleet` is a Backstage pointer)
+  (`GET /platform/fleet` is the HTML fleet page)
 
 Inspect:
 

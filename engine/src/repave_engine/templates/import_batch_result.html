@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Batch import preview — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<section class="result-hero {% if batch.ok %}result-hero--passed{% else %}result-hero--failed{% endif %}">
+  <h1 class="page-title">Batch import preview</h1>
+  <p class="result-hero__banner">
+    {{ batch.items|length }} planned{% if batch.failures|length %}, {{ batch.failures|length }} failed{% endif %}
+  </p>
+</section>
+
+{% if batch.failures %}
+<section class="card">
+  <div class="card__header"><h2>Failures</h2></div>
+  <div class="card__body">
+    <ul>
+      {% for target, error in batch.failures %}
+      <li><code>{{ target }}</code> — {{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card__header"><h2>Roll-up</h2></div>
+  <div class="card__body">
+    <table class="pin-diff-table">
+      <thead>
+        <tr>
+          <th>Repository</th>
+          <th>Golden path</th>
+          <th>Moved</th>
+          <th>Scaffold</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for plan in batch.items %}
+        <tr>
+          <td><code>{{ plan.target }}</code></td>
+          <td>{{ plan.blueprint_name }}</td>
+          <td>{{ plan.renames|length }}</td>
+          <td>{{ plan.scaffold_added|length }}</td>
+          <td>
+            {% if plan.conflicts %}conflicts{% elif plan.is_noop %}noop{% else %}ready{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if batch.items %}
+<section class="card">
+  <div class="card__header"><h2>Open pull requests</h2></div>
+  <div class="card__body">
+    <form method="post" action="/import/batch/apply" data-repave-busy-form data-busy-label="Opening pull requests…">
+      <input type="hidden" name="targets" value="{{ targets }}" />
+      <input type="hidden" name="org" value="{{ org }}" />
+      <input type="hidden" name="topic" value="{{ topic }}" />
+      <input type="hidden" name="blueprint" value="{{ selected_blueprint }}" />
+      <input type="hidden" name="target_blueprints_json" value="{{ target_blueprints_json or '' }}" />
+      <p class="hint muted">Requires push access via <code>GITHUB_TOKEN</code> or GitHub App credentials.</p>
+      <button class="btn btn--primary" type="submit">Open pull requests</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Verify report — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<section
+  class="result-hero result-hero--{{ gate_summary.outcome }}"
+  aria-labelledby="verify-heading"
+>
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">
+      {{ verify.catalog_blueprint_name }}@{{ verify.catalog_blueprint_version }}
+    </p>
+    <h1 id="verify-heading" class="result-hero__title">Verify report</h1>
+    <p class="result-hero__banner">
+      {% if verify.ok %}
+      <span class="badge badge--pass">Aligned</span>
+      Gates passed and pins match the catalog.
+      {% else %}
+      <span class="badge badge--fail">Drift or gate failure</span>
+      Review gates and pin differences below.
+      {% endif %}
+    </p>
+  </div>
+  {% if verify.gates %}
+  <dl class="result-hero__counts" aria-label="Gate summary">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Passed</dt>
+      <dd>{{ gate_summary.passed }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Failed</dt>
+      <dd>{{ gate_summary.failed }}</dd>
+    </div>
+    <div class="result-hero__count">
+      <dt>Skipped</dt>
+      <dd>{{ gate_summary.skipped }}</dd>
+    </div>
+  </dl>
+  {% endif %}
+</section>
+
+<section class="card" aria-labelledby="path-heading">
+  <div class="card__header">
+    <h2 id="path-heading">Target</h2>
+  </div>
+  <div class="card__body">
+    <code>{{ target_repo }}</code>
+    {% if not verify.provenance_present %}
+    <p class="hint muted">No <code>repave.yaml</code> — gates ran from the catalog blueprint.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% if verify.pin_changes %}
+<section class="card" aria-labelledby="pins-heading">
+  <div class="card__header">
+    <h2 id="pins-heading">Pin drift vs catalog</h2>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table">
+      <thead>
+        <tr>
+          <th scope="col">Field</th>
+          <th scope="col">Observed</th>
+          <th scope="col">Catalog</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in verify.pin_changes %}
+        <tr>
+          <th scope="row">{{ row.field }}</th>
+          <td><code>{{ row.before }}</code></td>
+          <td><code>{{ row.after }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if verify.gates %}
+<section class="card" aria-labelledby="gates-heading">
+  <div class="card__header">
+    <h2 id="gates-heading">Gates</h2>
+  </div>
+  <div class="card__body">
+    <div class="gate-table-wrap">
+      <table class="gate-table">
+        <thead>
+          <tr>
+            <th scope="col">Gate</th>
+            <th scope="col">Status</th>
+            <th scope="col">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for gate in verify.gates %}
+          <tr
+            class="gate-table__row gate-table__row--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}"
+          >
+            <th scope="row">{{ gate.name }}</th>
+            <td>
+              <span class="badge {% if gate.skipped %}badge--skip{% elif gate.passed %}badge--pass{% else %}badge--fail{% endif %}">
+                {% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}
+              </span>
+            </td>
+            <td>{{ gate.message }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}

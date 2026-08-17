@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, create_app
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.gate_registry import GateResult
@@ -13,17 +12,6 @@ from repave_engine.pipeline import GenerationResult
 from repave_engine.render import RenderedFile, RenderResult
 from repave_engine.settings import OutputConfig
 from repave_engine.target_repo import ModuleRepository
-
-
-def _assert_generate_moved(response, blueprint_name: str) -> None:
-    assert response.status_code == 200
-    assert "data-generate-moved" in response.text
-    assert "Generate moved" in response.text
-    assert blueprint_name in response.text
-    assert "POST /api/v2/generate" in response.text
-    assert f"repave generate {blueprint_name}" in response.text
-    assert "data-form-mode" not in response.text
-    assert "governance-card" not in response.text
 
 
 def test_health(repo_root, output_config) -> None:
@@ -77,7 +65,6 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "home-console__title" in response.text
     assert "The intelligent platform layer" in response.text
     assert "Golden paths" in response.text
-    assert "Hosted generate is in Backstage" in response.text
     assert "shell__mark-frame" in response.text
     assert "repave v3 · The intelligent platform layer" in response.text
     assert 'property="og:image"' in response.text
@@ -90,6 +77,7 @@ def test_index_lists_blueprints(repo_root, output_config) -> None:
     assert "catalog-inventory__heading" in response.text
     assert "home-catalog-column" in response.text
     assert "catalog-inventory__summary" not in response.text
+    assert 'href="/library"' in response.text
     assert 'href="/library"' in response.text
     assert "shell__nav--primary" in response.text
     assert "shell__bar-start" in response.text
@@ -183,8 +171,11 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
 def test_activity_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/activity")
-    assert_surface_moved(response, "activity")
+
+    assert response.status_code == 200
+    assert "Activity" in response.text
     assert 'href="/activity"' in response.text
+    assert "data-portal-view-toggle" in response.text or "audit.enabled" in response.text
 
 
 def test_activity_inflight_strip_when_async_enabled(
@@ -193,7 +184,11 @@ def test_activity_inflight_strip_when_async_enabled(
     monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
     monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    assert_surface_moved(client.get("/activity"), "activity")
+    body = client.get("/activity").text
+    assert "data-activity-inflight" in body
+    assert "In-flight runs" in body
+    assert "data-activity-inflight-list" in body
+    assert "data-activity-inflight-hint" in body
     js = client.get("/static/repave.js").text
     assert "initActivityInflight" in js
     assert "fetchQueuedAndRunning" in js
@@ -225,6 +220,7 @@ def test_home_does_not_embed_activity_feed(
     assert 'class="home-activity"' not in response.text
     assert 'class="activity-story"' not in response.text
     assert ">vpc-demo<" not in response.text
+    assert 'href="/activity"' in response.text
 
 
 def test_home_no_activity_link_when_audit_disabled(repo_root, output_config) -> None:
@@ -251,33 +247,114 @@ def test_index_catalog_search(repo_root, output_config) -> None:
     assert "@view-transition" in response.text
 
 
+def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic")
+
+    assert response.status_code == 200
+    assert "data-repave-form-draft" in response.text
+    assert "Standard pin drift" in response.text
+    assert "form-actions__preflight" in response.text
+    assert "form-actions__preflight-details" in response.text
+
+
+def test_terraform_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert 'name="form_mode"' in response.text
+    assert "data-form-mode-option" in response.text
+    assert "Guided" in response.text
+    assert "Advanced" in response.text
+    assert "not freeform extras" in response.text
+    assert "Generated from your selections" in response.text
+    assert "data-form-identity" in response.text
+    assert 'data-guided-from="{provider_services}"' in response.text
+    assert 'id="policy-customization"' in response.text
+    assert "data-form-advanced" in response.text
+    # Advanced field labels remain in HTML (CSS/JS hide them); controls keep defaults.
+    assert 'name="policy_pack_source"' in response.text
+    assert 'name="include_backstage_catalog"' in response.text
+    assert 'name="cost_center"' in response.text
+    assert 'id="service-scope-panel"' in response.text
+
+
+def test_ansible_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-role-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert 'name="form_mode"' in response.text
+    assert 'id="ansible-role-pattern-block"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{role_pattern_source}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="min_ansible_version"' in response.text
+    assert 'id="platform-advanced-panel"' in response.text
+
+
+def test_helm_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/helm-chart-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{image_repository}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="include_backstage_catalog"' in response.text
+    assert 'name="enable_deploy_pipeline"' in response.text
+    assert 'name="gitops_repo"' in response.text
+    assert 'name="image_repository"' in response.text
+
+
+def test_gitops_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/gitops-deployment-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{environment}-{chart_name}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="destination_server"' in response.text
+    assert 'name="argocd_project"' in response.text
+    assert 'name="flux_source_name"' in response.text
+    assert 'name="chart_repo_url"' in response.text
+
+
 @pytest.mark.parametrize(
-    "blueprint_name",
+    ("blueprint_name", "guided_from"),
     [
-        "terraform-module-generic",
-        "ansible-role-generic",
-        "helm-chart-generic",
-        "gitops-deployment-generic",
-        "checkov-policy-generic",
-        "opa-policy-generic",
-        "azure-policy-generic",
-        "app-service-generic",
-        "ansible-collection-generic",
-        "ansible-playbook-project",
-        "terraform-environment-stack",
-        "github-repo-generic",
-        "observability-as-code-generic",
-        "dashboards-as-code-generic",
-        "monitors-as-code-generic",
-        "terraform-module-resource",
+        ("checkov-policy-generic", "{policy_profile}"),
+        ("opa-policy-generic", "{policy_profile}"),
+        ("azure-policy-generic", "{policy_profile}"),
     ],
 )
-def test_blueprint_page_points_to_backstage_generate(
-    repo_root, output_config, blueprint_name: str
+def test_policy_form_guided_advanced_mode(
+    repo_root, output_config, blueprint_name: str, guided_from: str
 ) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get(f"/blueprints/{blueprint_name}")
-    _assert_generate_moved(response, blueprint_name)
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert f'data-guided-from="{guided_from}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="policy-customization"' in response.text
+    assert 'name="policy_pack_source"' in response.text
+    assert 'name="policy_profile"' in response.text
+    if blueprint_name == "opa-policy-generic":
+        assert 'name="plan_demo"' in response.text
 
 
 def test_helm_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -296,7 +373,9 @@ def test_helm_guided_only_generate_uses_defaults(repo_root, output_config) -> No
             "enable_ingress": "false",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_gitops_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -316,7 +395,9 @@ def test_gitops_guided_only_generate_uses_defaults(repo_root, output_config) -> 
             "sync_policy": "manual",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_checkov_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -330,7 +411,66 @@ def test_checkov_guided_only_generate_uses_defaults(repo_root, output_config) ->
             "organization": "acme",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+
+
+def test_app_service_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/app-service-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert 'id="form-mode-toggle"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{runtime}-{layout}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="app-service-catalog"' in response.text
+    assert 'name="enable_deploy_pipeline"' in response.text
+    assert 'name="runtime"' in response.text
+
+
+def test_ansible_collection_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-collection-generic")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{sample_role_pattern_source}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="ansible-collection-sample-pattern-block"' in response.text
+    assert 'name="min_ansible_version"' in response.text
+    assert 'name="namespace"' in response.text
+
+
+def test_ansible_playbook_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-playbook-project")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{environment}-{playbook_pattern_source}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'id="ansible-playbook-pattern-block"' in response.text
+    assert 'name="min_ansible_version"' in response.text
+    assert 'name="pinned_roles"' in response.text
+
+
+def test_env_stack_form_guided_advanced_mode(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-environment-stack")
+
+    assert response.status_code == 200
+    assert 'data-form-mode="guided"' in response.text
+    assert "Generated from your selections" in response.text
+    assert 'data-guided-from="{environment}-{cloud_provider}"' in response.text
+    assert "data-form-advanced" in response.text
+    assert 'name="cost_center"' in response.text
+    assert 'id="policy-customization"' in response.text
+    assert 'name="pinned_modules"' in response.text
 
 
 def test_app_service_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -347,7 +487,9 @@ def test_app_service_guided_only_generate_uses_defaults(repo_root, output_config
             "port": "8080",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_ansible_collection_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -366,7 +508,9 @@ def test_ansible_collection_guided_only_generate_uses_defaults(repo_root, output
             "support_windows": "false",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_ansible_playbook_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -384,7 +528,9 @@ def test_ansible_playbook_guided_only_generate_uses_defaults(repo_root, output_c
             "support_windows": "false",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_env_stack_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -400,7 +546,9 @@ def test_env_stack_guided_only_generate_uses_defaults(repo_root, output_config) 
             "owner": "platform-engineering",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_static_repave_css_served(repo_root, output_config) -> None:
@@ -522,7 +670,19 @@ def test_generate_form_submission(
         },
     )
 
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "tf-aws-example" in response.text
+    assert "Plan only" in response.text
+    assert "result-hero" in response.text
+    assert "gate-table" in response.text
+    assert "data-gate-dashboard" in response.text
+    assert "Generated files" in response.text
+    assert "ec2_diff.tf" in response.text
+    assert "s3_bucket.tf" in response.text
+    assert 'data-copy-target="#file-fallback-content-0"' in response.text
+    assert 'data-copy-target="#file-explorer-content-0"' in response.text
+    assert "publish-plan" in response.text
+    assert "repavePortal.saveLastRun" in response.text
 
 
 def test_generate_publish_passes_github_token_from_env(
@@ -667,6 +827,56 @@ def test_provider_service_detail(repo_root, output_config) -> None:
     assert "bucket" in payload["resources"]
 
 
+def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic")
+
+    assert response.status_code == 200
+    assert "cloud_provider" in response.text
+    assert "provider_services" in response.text
+    assert "governance-card" in response.text
+    assert "governance-card__details" in response.text
+    assert "governance-card__summary-meta" in response.text
+    assert "form-layout--split" in response.text
+    assert "form-panel--terraform" in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Apply (publish to GitHub)" not in response.text
+    assert "chip" in response.text
+    assert "service-presets" in response.text
+    assert "form-validation" in response.text
+    assert (
+        'providerSelect.addEventListener("change", () => renderServices(providerSelect.value))'
+        in response.text
+    )
+    assert "scope-resource-filter" in response.text
+    assert "policy-rules-list" in response.text
+    assert 'id="policy-rules-advanced"' in response.text
+    assert 'id="policy-rules-advanced" class="policy-rules-advanced" open' not in response.text
+    assert "policy-compact-summary" in response.text
+    assert "policy-catalog" in response.text
+    assert "data-repave-busy-form" in response.text
+    assert "data-portal-submit-error" in response.text
+    assert "form-actions--sticky" in response.text
+    assert "Standard pin drift" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
+    assert "governance-meter" in response.text
+    assert "data-dry-run-run" in response.text
+    assert "data-dry-run-force" in response.text
+    assert "Plan preview" in response.text
+    assert ">Apply<" in response.text or ">Apply</button>" in response.text
+    assert "form-actions__preflight-details" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert 'name="dry_run" value="true"' in response.text
+    assert 'name="dry_run" value="false"' in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "Stream gates" not in response.text
+    assert "governance-card__gates-details" in response.text
+    assert "receipt in" not in response.text.lower()
+    assert "form-actions__buttons--stack" in response.text
+    assert "repave.yaml" in response.text
+
+
 def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/static/repave.js")
@@ -802,6 +1012,13 @@ def test_portal_generate_viewer_returns_html_insufficient_role(
     assert "Could not complete request" in response.text
 
 
+def test_generate_form_includes_plan_preview_flag(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-generic")
+    assert response.status_code == 200
+    assert "data-plan-preview-flag" in response.text
+
+
 def test_generate_dry_run_promotes_missing_terraform_to_fail(
     repo_root, output_config, sample_inputs, monkeypatch
 ) -> None:
@@ -816,7 +1033,10 @@ def test_generate_dry_run_promotes_missing_terraform_to_fail(
             **sample_inputs,
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "badge--fail" in response.text
+    assert "Dry-run preview runs all blueprint gates" in response.text
+    assert "terraform-fmt" in response.text
 
 
 def test_terraform_guided_only_generate_uses_defaults(
@@ -843,7 +1063,9 @@ def test_terraform_guided_only_generate_uses_defaults(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **guided},
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_terraform_guided_generate_derives_name_and_description(
@@ -872,7 +1094,11 @@ def test_terraform_guided_generate_derives_name_and_description(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **guided},
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "ec2-s3" in response.text
+    assert "aws Terraform module covering" in response.text
 
 
 def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sample_inputs) -> None:
@@ -885,10 +1111,26 @@ def test_terraform_dry_run_shows_files_in_result(repo_root, output_config, sampl
             **sample_inputs,
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "result-hero" in response.text
 
 
-def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) -> None:
+def test_ansible_role_form_single_page(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-role-generic")
+    assert response.status_code == 200
+    assert 'id="role_pattern_source"' in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
+    assert "data-dry-run-run" in response.text
+    assert "data-dry-run-force" in response.text
+    assert "Apply (publish to GitHub)" not in response.text
+    assert "form-actions__delivery--wire" in response.text
+    assert "form-actions__toolbar--solo" in response.text
+    assert "Plan preview" in response.text
+    assert "governance-card__gates-details" not in response.text
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.post(
         "/generate",
@@ -904,7 +1146,10 @@ def test_ansible_role_dry_run_shows_files_in_result(repo_root, output_config) ->
             "windows_server_generation": "2022",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "result-hero" in response.text
 
 
 def test_ansible_guided_only_generate_uses_defaults(repo_root, output_config) -> None:
@@ -923,7 +1168,9 @@ def test_ansible_guided_only_generate_uses_defaults(repo_root, output_config) ->
             "windows_server_generation": "2022",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
 
 
 def test_ansible_guided_generate_derives_name_and_description(repo_root, output_config) -> None:
@@ -940,7 +1187,22 @@ def test_ansible_guided_generate_derives_name_and_description(repo_root, output_
             "windows_server_generation": "2022",
         },
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan only" in response.text
+    assert "Generated files" in response.text
+    assert "linux_service" in response.text
+    assert "acme Ansible role" in response.text
+
+
+def test_observability_form_single_page(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/observability-as-code-generic")
+    assert response.status_code == 200
+    assert "data-form-stepper" not in response.text
+    assert "Alert routing" in response.text
+    assert "Legacy umbrella path" in response.text
+    assert 'id="enable_policy_toggle"' in response.text
+    assert "governance-drift-details" in response.text or "Standard pin drift" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:
@@ -955,6 +1217,18 @@ def test_policy_catalog_endpoint(repo_root, output_config) -> None:
     assert payload["pack_sources"][0].get("default_profile")
     assert payload["defaults"]["policy_pack_source"] == "repave-default"
     assert payload["defaults"]["policy_profile"] == "estate-default"
+
+
+def test_terraform_module_form_policy_defaults_and_rule_titles(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    form = client.get("/blueprints/terraform-module-generic")
+    assert form.status_code == 200
+    assert 'value="estate-default"' in form.text
+    estate_block = form.text.split('value="estate-default"', 1)[1][:120]
+    assert "selected" in estate_block
+    assert "Terraform required_version must be declared" in form.text
+    rules_region = form.text.split('id="policy-rules-list"', 1)[1].split("</details>", 1)[0]
+    assert "(checkov:CKV2_REPAVE_1)" not in rules_region
 
 
 def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
@@ -978,12 +1252,98 @@ def test_policy_catalog_azure_pack_defaults(repo_root, output_config) -> None:
     )
     assert any(t["id"] == "pagerduty-platform-primary" for t in pagerduty["targets"])
 
+    obs_form = client.get("/blueprints/observability-as-code-generic")
+    assert obs_form.status_code == 200
+    assert 'id="observability-notifications"' in obs_form.text
+    assert 'id="notification_source"' in obs_form.text
+    assert 'id="notification_target"' in obs_form.text
+    assert 'value="pagerduty-platform-primary"' in obs_form.text
+
     inv = client.get("/blueprints/observability-as-code-generic/service-inventory").json()
     assert "services" in inv
     assert inv["merge_catalog"] is True
 
+    dash_form = client.get("/blueprints/dashboards-as-code-generic")
+    assert dash_form.status_code == 200
+    assert 'id="obs-backend-decision"' in dash_form.text
+    assert 'id="dashboard_pack_source"' in dash_form.text
+    assert 'value="datadog"' in dash_form.text
+    assert 'value="grafana"' in dash_form.text
+    assert 'id="observability-backend-datadog-fields"' in dash_form.text
+    assert 'id="dashboard-pack-includes"' in dash_form.text
+    assert "grafana-red-plus-node-exporter-1860" in dash_form.text
+    assert (
+        "datadog-red-plus-apm-service"
+        not in dash_form.text.split('id="dashboard_pack_source"', 1)[1].split("</select>", 1)[0]
+    )
+    backend_pos = dash_form.text.index('id="backend"')
+    advanced_pos = dash_form.text.index('id="obs-advanced-fields"')
+    assert backend_pos < advanced_pos
+
+    mon_form = client.get("/blueprints/monitors-as-code-generic")
+    assert mon_form.status_code == 200
+    assert 'id="enable_policy_toggle"' in mon_form.text
+    assert 'id="policy-customization"' in mon_form.text
+    policy_region = mon_form.text.split('id="policy-customization"', 1)[1][:120]
+    assert "hidden" in policy_region
+    assert 'id="monitor_pack_source"' in mon_form.text
+    assert 'id="monitor-pack-includes"' in mon_form.text
+    assert "prometheus-red-plus-host-cpu" in mon_form.text
     mon_obs = client.get("/blueprints/monitors-as-code-generic/observability-catalog").json()
     assert len(mon_obs.get("monitor_packs", [])) >= 2
+
+    form = client.get("/blueprints/azure-policy-generic")
+    assert form.status_code == 200
+    assert 'value="repave-azure-samples"' in form.text
+    assert (
+        "repave-azure-samples" in form.text
+        and "selected" in form.text.split("repave-azure-samples", 1)[1][:80]
+    )
+
+    checkov_form = client.get("/blueprints/checkov-policy-generic")
+    assert checkov_form.status_code == 200
+    assert 'value="repave-checkov-pack"' in checkov_form.text
+    assert "checkov-full" in checkov_form.text
+    assert "CKV2_REPAVE_1" in checkov_form.text
+    assert 'id="policy-rules-list"' in checkov_form.text
+    assert checkov_form.text.count('class="checkbox-row"') >= 12
+
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-module-resource")
+
+    assert response.status_code == 200
+    assert 'id="cloud_provider"' in response.text
+    assert 'id="provider_service"' in response.text
+    assert 'id="provider_resource"' in response.text
+    assert "Select a service" in response.text
+    assert "Select a resource" in response.text
+    assert "provider-services" not in response.text
+    assert "service-presets" not in response.text
+    assert "form-layout--split" in response.text
+
+
+def test_env_stack_form_renders_module_inventory_picker(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/terraform-environment-stack")
+
+    assert response.status_code == 200
+    assert 'id="pinned-modules-rows"' in response.text
+    assert 'id="add-pinned-module"' in response.text
+    assert "module-inventory" in response.text
+    assert 'name="pinned_modules"' in response.text
+    assert "form-layout--split" in response.text
+
+
+def test_ansible_playbook_form_renders_role_inventory_picker(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-playbook-project")
+
+    assert response.status_code == 200
+    assert 'id="pinned-roles-rows"' in response.text
+    assert 'id="add-pinned-role"' in response.text
+    assert "role-inventory" in response.text
+    assert 'name="pinned_roles"' in response.text
+    assert "form-layout--split" in response.text
 
 
 def test_role_inventory_api_scans_modules_root(
@@ -1105,6 +1465,79 @@ def test_generate_resource_module_from_form(repo_root, output_config, monkeypatc
     assert values["provider_resource"] == "bucket"
 
 
+def test_ansible_form_renders_split_governance(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/ansible-role-generic")
+
+    assert response.status_code == 200
+    assert "governance-card governance-card--ansible" in response.text
+    assert "governance-card__details" in response.text
+    assert "form-layout--split" in response.text
+    assert "ansible-lint" in response.text or "ansible_lint" in response.text
+    assert 'id="support_linux_cb"' in response.text
+    assert 'name="support_linux"' in response.text
+    assert 'id="target_platforms_advanced"' in response.text
+    assert "Advanced Galaxy platforms" in response.text
+    assert 'id="min_ansible_version"' in response.text
+    assert "2.18" in response.text
+    assert 'option value="2.18" selected' in response.text
+
+
+def test_github_repo_form_renders_phase2_controls(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/github-repo-generic")
+
+    assert response.status_code == 200
+    assert "form-panel--platform" in response.text
+    assert "governance-card--platform" in response.text
+    assert 'id="create_mode"' in response.text
+    assert 'data-github-repo-when="template"' in response.text
+    assert 'id="github-team-slugs-block"' in response.text
+    assert 'id="github-team-picker"' in response.text
+    assert 'id="github-team-filter"' in response.text
+    assert 'id="github-team-slugs-extra"' in response.text
+    assert 'id="team_slugs"' in response.text
+    assert 'id="github-teams-hint"' in response.text
+    assert 'id="github-team-slugs"' in response.text
+    assert 'id="sync_team_membership_toggle"' in response.text
+    assert 'id="sync_team_membership"' in response.text
+    assert 'name="sync_team_membership"' in response.text
+    assert 'id="membership_source_team"' in response.text
+    assert 'id="github-source-team-select"' in response.text
+    assert "fillSourceSelect" in response.text
+    assert 'id="github-source-team-members"' in response.text
+    assert 'id="github-source-team-members-list"' in response.text
+    assert 'id="ruleset_profile"' in response.text
+    assert "default-pr — require PRs" in response.text
+    assert "/api/v2/github/teams" in response.text
+    assert "/api/v2/github/teams/${encodeURIComponent(slug)}/members" in response.text
+    assert "you can add to this repository" in response.text
+    assert "renderTeamPicker" in response.text
+    sync_pos = response.text.index('id="sync_team_membership_toggle"')
+    source_pos = response.text.index('id="membership_source_team"')
+    assert sync_pos < source_pos
+
+
+def test_app_service_form_renders_backstage_catalog(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get("/blueprints/app-service-generic")
+
+    assert response.status_code == 200
+    assert 'id="app-service-catalog"' in response.text
+    assert "Backstage catalog" in response.text
+    assert "governance-card__details" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "Plan (validate only)" not in response.text
+    assert "Plan preview" in response.text
+    assert "data-dry-run-run" in response.text
+    assert 'id="catalog_lifecycle"' in response.text
+    assert 'id="runtime"' in response.text
+    assert ">go</option>" in response.text
+    assert 'data-form-mode="guided"' in response.text
+    assert 'data-guided-from="{runtime}-{layout}"' in response.text
+    assert "data-form-advanced" in response.text
+
+
 def test_provider_service_detail_unknown_returns_empty(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get(
@@ -1209,7 +1642,12 @@ def test_result_dashboard_failed_gate_excerpt(
         },
     )
 
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "result-hero--failed" in response.text
+    assert "Generation failed" in response.text
+    assert "gate-detail" in response.text
+    assert "gate-excerpt-2" in response.text
+    assert "fmt failed" in response.text
 
 
 def test_plan_preview_with_files_surfaces_copyable_explorer(
@@ -1263,7 +1701,17 @@ def test_plan_preview_with_files_surfaces_copyable_explorer(
         },
     )
 
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Plan preview ready" in response.text
+    assert "Browse and copy generated files below" in response.text
+    assert "result-hero--preview" in response.text
+    assert "Generation failed" not in response.text
+    assert "Generated files" in response.text
+    assert 'data-copy-target="#file-explorer-content-0"' in response.text
+    assert "# demo module" in response.text
+    files_idx = response.text.index("Generated files")
+    gates_idx = response.text.index('aria-labelledby="gates-heading"')
+    assert files_idx < gates_idx
 
 
 def test_result_dashboard_published_repo_card(
@@ -1315,7 +1763,12 @@ def test_result_dashboard_published_repo_card(
         },
     )
 
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "result-hero--passed" in response.text
+    assert "Repository published" in response.text
+    assert "repo-preview" in response.text
+    assert "Open repository" in response.text
+    assert "repo-local-path" in response.text
 
 
 def test_result_includes_lineage_and_policy_block(
@@ -1365,15 +1818,28 @@ def test_result_includes_lineage_and_policy_block(
         "/generate",
         data={"blueprint_name": "terraform-module-generic", "dry_run": "true", **sample_inputs},
     )
-    assert_surface_moved(response, "result")
+    assert response.status_code == 200
+    assert "Lineage" in response.text
+    assert "result-collapsible" in response.text
+    assert "result-gates--animated" in response.text
+    assert "Policy pack" in response.text
+    assert "Estate default" in response.text
 
 
 def test_update_form_page(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/update")
-    assert_surface_moved(response, "upgrade")
-    assert 'name="target_repo"' not in response.text
-    assert "pin-diff-table" not in response.text
+
+    assert response.status_code == 200
+    assert "Upgrade existing repository" in response.text
+    assert 'name="target_repo"' in response.text
+    assert ">Upgrade</a>" in response.text
+    assert "form-actions__toolbar" in response.text
+    assert "page-supplement" in response.text
+    assert "data-repave-busy-form" in response.text
+    assert "data-busy-stages" in response.text
+    assert "shell__main--golden-path" in response.text
+    assert "terraform-minimal" in response.text or "Use terraform-minimal" in response.text
 
 
 def test_update_plan_preview(repo_root, output_config) -> None:
@@ -1388,9 +1854,21 @@ def test_update_plan_preview(repo_root, output_config) -> None:
         "/update",
         data={"target_repo": str(fixture)},
     )
-    assert_surface_moved(response, "upgrade")
-    assert "Unified diffs" not in response.text
-    assert "pin-diff-table" not in response.text
+
+    assert response.status_code == 200
+    assert "Upgrade preview" in response.text
+    assert (
+        "Standards &amp; pin changes" in response.text or "Standards & pin changes" in response.text
+    )
+    assert "pin-diff-table" in response.text
+    assert "upgrade-diff" in response.text
+    assert "upgrade-diff__item--" in response.text
+    assert "diff-viewer" in response.text or "Unified diffs" in response.text
+    assert "repave update --no-dry-run" in response.text
+    assert "Auto-merge" in response.text
+    assert "Review required" in response.text
+    assert "v3.enabled" in response.text
+    assert "Opening the upgrade pull request merges Allowed" in response.text
 
 
 def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config, tmp_path) -> None:
@@ -1402,8 +1880,10 @@ def test_update_plan_shows_error_for_missing_provenance(repo_root, output_config
         "/update",
         data={"target_repo": str(empty)},
     )
-    assert_surface_moved(response, "upgrade")
-    assert "alert--fail" not in response.text
+
+    assert response.status_code == 200
+    assert "alert--fail" in response.text
+    assert "repave.yaml" in response.text
 
 
 def test_readyz(repo_root, output_config) -> None:
@@ -1457,9 +1937,15 @@ def test_index_lists_service_stack_bundle(repo_root, output_config) -> None:
 def test_bundle_form_renders_shared_inputs(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/bundles/service-stack")
-    assert_surface_moved(response, "bundle")
-    assert "Generated files" not in response.text
-    assert "data-bundle-preview" not in response.text
+    assert response.status_code == 200
+    assert 'name="bundle_name"' in response.text
+    assert 'name="service_name"' in response.text
+    assert "app-service-generic" in response.text
+    assert "data-form-stepper" not in response.text
+    assert "form-stepper" not in response.text
+    assert "data-dry-run-run" in response.text
+    assert "data-bundle-preview" in response.text
+    assert "Repository preview" in response.text
 
 
 def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) -> None:
@@ -1481,10 +1967,14 @@ def test_bundle_generate_dry_run_shows_member_files(repo_root, output_config) ->
             "provider_services": "ec2,s3",
         },
     )
-    assert_surface_moved(response, "bundle-result")
-    assert "Generated files" not in response.text
-    assert "data-bundle-member-tabs" not in response.text
-    assert "bundle-topology" not in response.text
+    assert response.status_code == 200
+    assert "Bundle service-stack" in response.text
+    assert "Generated files" in response.text or "file-explorer" in response.text
+    assert "app-service-generic" in response.text
+    assert "Lineage" in response.text
+    assert "data-bundle-member-tabs" in response.text
+    assert "Repositories" in response.text
+    assert "bundle-topology" in response.text
 
 
 def test_generate_stream_redirects_when_async_enabled(
@@ -1533,9 +2023,12 @@ def test_run_console_page_when_async_enabled(
     assert submit.status_code == 202
     run_id = submit.json()["run_id"]
     page = client.get(f"/runs/{run_id}")
-    assert_surface_moved(page, "run-console")
-    assert "data-run-console" not in page.text
-    assert "Browse generated files" not in page.text
+    assert page.status_code == 200
+    assert "data-run-console" in page.text
+    assert "data-run-progress" in page.text
+    assert "command-palette" in page.text
+    assert "data-run-file-preview" in page.text
+    assert "Browse generated files" in page.text
 
 
 @pytest.mark.slow
@@ -1621,5 +2114,9 @@ def test_run_result_view_reuses_async_artifact_without_regenerating(
 
     monkeypatch.setattr("repave_engine.api.generate_from_blueprint", _spy_generate)
     page = client.get(f"/runs/{run_id}/result")
-    assert_surface_moved(page, "result")
+    assert page.status_code == 200
     assert regen_calls == 0
+    assert "terraform-module-generic" in page.text
+    assert "Generated files" in page.text
+    assert "data-copy-target" in page.text
+    assert "Browse and copy generated files below" in page.text

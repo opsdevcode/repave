@@ -7,7 +7,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.entity_catalog import CatalogEntity, ScorecardDimension
 from repave_engine.initiatives import (
@@ -273,17 +272,22 @@ def test_portal_service_catalog_pages(
     output_config,
 ) -> None:
     client = TestClient(create_app(repo_root=platform_dev_repo, output_config=output_config))
-    assert_surface_moved(client.get("/home"), "home")
+    home = client.get("/home")
+    assert home.status_code == 200
+    assert "My services" in home.text
 
     sandbox = client.get("/sandbox")
-    assert_surface_moved(sandbox, "sandbox")
-    assert "Request a sandbox" not in sandbox.text
-    assert "api-sandbox-7d" not in sandbox.text
-    assert_surface_moved(client.post("/sandbox/request", data={}), "sandbox")
+    assert sandbox.status_code == 200
+    assert "Request a sandbox" in sandbox.text
+    assert "api-sandbox-7d" in sandbox.text
 
-    assert_surface_moved(client.get("/platform/maturity"), "platform-maturity")
+    maturity = client.get("/platform/maturity")
+    assert maturity.status_code == 200
+    assert "Service maturity" in maturity.text
 
-    assert_surface_moved(client.get("/platform/initiatives"), "platform-initiatives")
+    initiatives = client.get("/platform/initiatives")
+    assert initiatives.status_code == 200
+    assert "Runbook coverage" in initiatives.text
 
     api_maturity = client.get("/api/v2/platform/maturity")
     assert api_maturity.status_code == 200
@@ -295,7 +299,8 @@ def test_portal_service_catalog_pages(
     assert catalog.json()["count"] >= 1
 
     team = client.get("/teams/platform")
-    assert_surface_moved(team, "teams")
+    assert team.status_code == 200
+    assert "Team platform" in team.text
 
 
 def test_initiatives_portal_and_api_crud(
@@ -352,7 +357,10 @@ def test_initiatives_portal_and_api_crud(
     assert patched_resp.json()["target_level"] == 4
 
     page = client.get("/platform/initiatives")
-    assert_surface_moved(page, "platform-initiatives")
+    assert page.status_code == 200
+    assert "API runbooks v2" in page.text
+    assert "Edit" in page.text
+    assert "Deactivate" in page.text
 
     portal_update = client.post(
         f"/platform/initiatives/{initiative_id}",
@@ -378,7 +386,9 @@ def test_initiatives_portal_and_api_crud(
     assert any(item["id"] == initiative_id for item in after.json()["inactive"])
 
     inactive_page = client.get("/platform/initiatives")
-    assert_surface_moved(inactive_page, "platform-initiatives")
+    assert inactive_page.status_code == 200
+    assert "Inactive" in inactive_page.text
+    assert "Reactivate" in inactive_page.text
 
 
 @pytest.fixture

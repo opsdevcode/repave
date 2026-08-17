@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Import pull request — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<section class="result-hero result-hero--passed" aria-labelledby="published-heading">
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">{{ result.apply.plan.blueprint_name }}@{{ result.apply.plan.blueprint_version }}</p>
+    <h1 id="published-heading" class="result-hero__title">Import pull request opened</h1>
+    <p class="result-hero__banner">
+      {% if result.draft %}<span class="badge badge--skip">Draft</span>{% endif %}
+      {{ result.apply.plan.summary }}
+    </p>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="pr-heading">
+  <div class="card__header">
+    <h2 id="pr-heading">Pull request</h2>
+  </div>
+  <div class="card__body">
+    <p>
+      <a class="btn btn--primary" href="{{ result.pull_request_url }}" target="_blank" rel="noopener">
+        Review #{{ result.pull_request_number }} on GitHub
+      </a>
+    </p>
+    <ul class="hint">
+      <li>
+        Branch <code>{{ result.apply.git_branch }}</code>
+      </li>
+      <li>
+        Commit <code>{{ result.apply.move_commit_sha[:12] }}</code> moves
+        {{ result.apply.verified_moves }} file(s) with no content change — SHA-256 verified.
+      </li>
+      <li>
+        Commit <code>{{ result.apply.scaffold_commit_sha[:12] }}</code> adds
+        {{ result.apply.plan.scaffold_added|length }} scaffold file(s).
+      </li>
+      {% if result.draft %}
+      <li>
+        Opened as a draft because gates did not pass on the reorganized tree. Fix them on the
+        branch, then mark the PR ready.
+      </li>
+      {% endif %}
+    </ul>
+  </div>
+</section>
+
+{% if registered %}
+<div class="alert alert--info" role="status">
+  Registered in the fleet, so it appears in the <a href="/library">library</a> once the pull
+  request merges.
+</div>
+{% endif %}
+{% endblock %}

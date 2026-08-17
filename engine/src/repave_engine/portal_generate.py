@@ -11,7 +11,9 @@ from fastapi import HTTPException
 
 from repave_engine.blueprint import blueprint_dir, bundles_dir, load_blueprint
 from repave_engine.bundle import load_bundle
-from repave_engine.gates import GateResult
+from repave_engine.bundle_portal import build_bundle_result_portal_context, bundle_member_previews
+from repave_engine.bundle_topology import build_bundle_topology, topology_public
+from repave_engine.gates import GateResult, all_gates_passed, gate_summary
 from repave_engine.generate_api import preview_file_dicts_from_stored
 from repave_engine.pipeline import (
     BundleGenerationResult,
@@ -19,7 +21,8 @@ from repave_engine.pipeline import (
     generate_from_blueprint,
     generate_from_bundle,
 )
-from repave_engine.portal_surface_moved import BUNDLE_RESULT_MOVED, RESULT_MOVED, moved_page_context
+from repave_engine.portal_result import build_result_portal_context
+from repave_engine.publish_idempotency import publish_message_succeeded
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunRecord, RunStatus
 from repave_engine.settings import OutputConfig
@@ -261,7 +264,7 @@ def run_portal_generate(
             except RunQueueShuttingDownError as exc:
                 raise HTTPException(status_code=503, detail=str(exc)) from exc
             return PortalGenerateRedirect(url=f"/runs/{record.run_id}", status_code=303)
-        generate_from_bundle_fn(
+        bundle_result = generate_from_bundle_fn(
             bundle,
             bundle_values,
             repo_root=repo_root,
@@ -270,9 +273,30 @@ def run_portal_generate(
             require_run=require_run,
             github_token=github_token,
         )
+        combined = bundle_result.combined_gates()
+        previews = bundle_member_previews(
+            bundle,
+            bundle_values,
+            repo_root=repo_root,
+            output_config=output_config,
+        )
+        topology_nodes, topology_edges = build_bundle_topology(bundle, previews)
         return PortalGenerateTemplate(
-            template_name="surface_moved.html",
-            context=moved_page_context(BUNDLE_RESULT_MOVED),
+            template_name="bundle_result.html",
+            context={
+                "bundle_result": bundle_result,
+                "gate_summary": gate_summary(combined),
+                "gates_ok": bundle_result.all_members_passed(),
+                "gate_toolchain_callout": gate_toolchain_callout(
+                    combined,
+                    dry_run=bundle_result.dry_run,
+                ),
+                "result_portal": build_bundle_result_portal_context(
+                    bundle_result,
+                    shared_inputs=bundle_result.shared_inputs,
+                ),
+                "bundle_topology": topology_public(topology_nodes, topology_edges),
+            },
         )
 
     blueprint_name = str(get("blueprint_name", ""))
@@ -314,7 +338,7 @@ def run_portal_generate(
         else:
             return PortalGenerateRedirect(url=f"/runs/{record.run_id}", status_code=303)
 
-    generate_from_blueprint_fn(
+    result = generate_from_blueprint_fn(
         blueprint,
         values,
         output_config=output_config,
@@ -324,6 +348,16 @@ def run_portal_generate(
         repo_root=repo_root,
     )
     return PortalGenerateTemplate(
-        template_name="surface_moved.html",
-        context=moved_page_context(RESULT_MOVED),
+        template_name="result.html",
+        context={
+            "result": result,
+            "gate_summary": gate_summary(result.gates),
+            "gates_ok": all_gates_passed(result.gates),
+            "publish_ok": result.dry_run or publish_message_succeeded(result.pr_message),
+            "gate_toolchain_callout": gate_toolchain_callout(
+                result.gates,
+                dry_run=result.dry_run,
+            ),
+            "result_portal": build_result_portal_context(result, repo_root),
+        },
     )

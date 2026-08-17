@@ -4,7 +4,6 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.audit import AuditRecord, append_audit_record
 
@@ -41,4 +40,7 @@ def test_activity_page_filter_form(repo_root, output_config, tmp_path: Path, mon
     monkeypatch.setenv("REPAVE_AUDIT_FILE", str(tmp_path / "audit.jsonl"))
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/activity", params={"blueprint": "terraform-module-generic"})
-    assert_surface_moved(response, "activity")
+    assert response.status_code == 200
+    assert "activity-filters" in response.text
+    assert 'name="blueprint"' in response.text
+    assert "terraform-module-generic" in response.text

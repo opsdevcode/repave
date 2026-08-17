@@ -7,7 +7,6 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 
 
@@ -121,12 +120,16 @@ def test_runs_index_lists_recent_runs(async_client) -> None:
         run_id = submit.json()["run_id"]
         deadline = time.time() + 5.0
         while time.time() < deadline:
-            listed = async_client.get("/api/v1/runs?limit=10")
-            assert listed.status_code == 200
-            if any(row.get("run_id") == run_id for row in listed.json().get("runs", [])):
-                page = async_client.get("/runs")
-                assert_surface_moved(page, "runs")
-                assert "data-runs-index" not in page.text
+            body = async_client.get("/runs").text
+            if run_id in body and "Async runs" in body:
+                assert "terraform-module-generic" in body
+                assert "data-portal-view-toggle" in body
+                assert "data-runs-index" in body
+                assert 'data-run-id="' + run_id + '"' in body
+                assert "data-run-status-badge" in body
+                assert "data-runs-live-hint" in body
+                assert "runs-timeline" in body
+                assert "initRunsIndex" in async_client.get("/static/repave.js").text
                 return
             time.sleep(0.05)
-        pytest.fail("run did not appear in API list")
+        pytest.fail("run did not appear on /runs index")

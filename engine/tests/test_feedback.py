@@ -6,7 +6,6 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.feedback import (
     build_feedback_event,
@@ -139,7 +138,9 @@ def test_platform_feedback_page_and_api(
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
     page = client.get("/platform/feedback")
-    assert_surface_moved(page, "platform-feedback")
+    assert page.status_code == 200
+    assert "Developer feedback" in page.text
+    assert 'href="/platform/feedback"' in page.text
 
     post = client.post(
         "/api/v2/platform/feedback",

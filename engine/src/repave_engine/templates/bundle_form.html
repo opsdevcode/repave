@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bundle.name }} bundle — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero">
+  <div>
+    <h1 class="page-title">{{ bundle.name }}</h1>
+    <p class="page-lead">
+      Bundle v{{ bundle.version }}
+      <span class="badge badge--app">Composite · {{ bundle.members|length }} repos</span>
+    </p>
+    {% if bundle.description %}
+    <p class="muted">{{ bundle.description }}</p>
+    {% endif %}
+  </div>
+</header>
+
+<div class="form-layout form-layout--split">
+  <aside class="governance-card governance-card--app" aria-labelledby="bundle-members-heading">
+    <h2 class="governance-card__title" id="bundle-members-heading">Members</h2>
+    <ul class="governance-card__list">
+      {% for member in bundle.members %}
+      <li>
+        <code>{{ member.member_id }}</code>
+        → <a href="/blueprints/{{ member.blueprint_name }}">{{ member.blueprint_name }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    <p class="hint stack-gap">
+      Shared naming flows to every member. The app repo references the Helm chart; the chart image
+      matches the app repository name.
+    </p>
+    <p class="governance-card__footnote muted">
+      Engine <code>{{ app_version }}</code> · {{ bundle.members|length }} quality gate sets (one per repo)
+    </p>
+  </aside>
+
+  <form
+    method="post"
+    action="/generate"
+    id="bundle-generate-form"
+    class="form-panel golden-path-form"
+    data-repave-busy-form
+    data-busy-label="Scaffolding…"
+    data-busy-stages="Validating inputs…|Rendering members…|Running quality gates…|Finishing…"
+    data-bundle-preview
+    data-github-org="{{ github_org }}"
+  >
+    <input type="hidden" name="bundle_name" value="{{ bundle.name }}" />
+    <input type="hidden" name="dry_run" value="true" data-dry-run-force disabled />
+    <input type="hidden" name="plan_preview" value="" data-plan-preview-flag disabled />
+
+    <section class="form-section" aria-labelledby="bundle-inputs-heading">
+      <h2 class="form-section__title" id="bundle-inputs-heading">Shared inputs</h2>
+      <p class="hint">One set of values for all member repositories.</p>
+      <div class="form-grid stack-gap">
+        {% for field in bundle.inputs %}
+        <div class="field">
+          <label class="field__label" for="field-{{ field.name }}">
+            {{ field.name }}
+            {% if field.required %}<span class="field__required">*</span>{% endif %}
+          </label>
+          {% if field.enum %}
+          <select
+            class="field__input select"
+            id="field-{{ field.name }}"
+            name="{{ field.name }}"
+            {% if field.required %}required{% endif %}
+            {% if field.name == 'service_name' %}data-bundle-service-name{% endif %}
+          >
+            {% for option in field.enum %}
+            <option value="{{ option }}"{% if field.default == option %} selected{% endif %}>{{ option }}</option>
+            {% endfor %}
+          </select>
+          {% else %}
+          <input
+            class="field__input input"
+            id="field-{{ field.name }}"
+            name="{{ field.name }}"
+            type="text"
+            value="{{ field.default or '' }}"
+            {% if field.required %}required{% endif %}
+            {% if field.name == 'service_name' %}data-bundle-service-name{% endif %}
+          />
+          {% endif %}
+          {% if field.description %}
+          <p class="hint">{{ field.description }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="form-section stack-gap" aria-labelledby="bundle-preview-heading">
+      <h2 class="form-section__title" id="bundle-preview-heading">Repository preview</h2>
+      <p class="hint">
+        Target names update as you change <code>service_name</code>. Cross-links are applied on apply.
+      </p>
+      <ul class="bundle-repo-grid" id="bundle-repo-preview" aria-live="polite">
+        {% for preview in member_previews %}
+        <li class="bundle-repo-grid__item" data-preview-member="{{ preview.member_id }}">
+          <p class="bundle-repo-grid__member">
+            <strong>{{ preview.member_id }}</strong>
+            <span class="muted">· {{ preview.blueprint_name }}</span>
+          </p>
+          <p class="bundle-repo-grid__repo">
+            <code data-preview-repo-name>{{ preview.repo_name }}</code>
+          </p>
+          <p class="hint bundle-repo-grid__xref" data-preview-cross-ref>{{ preview.cross_ref }}</p>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    {% include "partials/bundle_topology.html" %}
+
+    <div class="form-actions form-actions--sticky">
+      {% include "partials/governance_preflight_collapsible.html" %}
+      <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
+      <div class="form-actions__toolbar form-actions__toolbar--solo">
+      {% include "partials/delivery_mode_toggle.html" %}
+      <div class="form-actions__buttons form-actions__buttons--stack">
+        <button
+          type="submit"
+          class="dry-run-submit"
+          data-dry-run-submit
+          tabindex="-1"
+          aria-hidden="true"
+        >
+          Plan preview
+        </button>
+        <button type="button" class="btn btn--primary" data-dry-run-run>
+          Plan preview
+        </button>
+        <button class="btn btn--secondary" type="submit">Apply</button>
+      </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script type="application/json" id="bundle-preview-templates">
+{
+  "githubOrg": {{ github_org | tojson }},
+  "members": [
+    {% for preview in member_previews %}
+    {
+      "id": {{ preview.member_id | tojson }},
+      "repoName": {{ preview.repo_name | tojson }},
+      "crossRef": {{ preview.cross_ref | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}
+</script>
+{% endblock %}

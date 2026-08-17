@@ -4,7 +4,6 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.portal_generate import console_preview_files_from_record
 from repave_engine.run_store import RunRecord, RunStatus
@@ -90,9 +89,13 @@ def test_run_console_ssr_preview_when_succeeded(
         },
     )
     page = client.get(f"/runs/{record.run_id}")
-    assert_surface_moved(page, "run-console")
-    assert "data-run-file-preview-json" not in page.text
-    assert "Browse generated files" not in page.text
+    assert page.status_code == 200
+    assert "data-run-file-preview-json" in page.text
+    assert "README.md" in page.text
+    assert "# demo" in page.text
+    assert "Browse generated files" in page.text
+    # Succeeded runs must not keep the CTA / preview shell hidden.
+    assert "data-run-complete-actions hidden" not in page.text
 
 
 def test_run_result_redirects_while_still_running(

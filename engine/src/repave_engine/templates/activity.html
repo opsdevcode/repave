@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Activity — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Activity</h1>
+    <p class="page-lead">
+      Applies, plans, and imports recorded when <code>audit.enabled</code> is set in config.
+    </p>
+  </div>
+</header>
+
+{% if async_generation_enabled %}
+<section class="card" data-activity-inflight aria-labelledby="activity-inflight-heading">
+  <div class="card__header card__header--toolbar">
+    <div>
+      <h2 id="activity-inflight-heading">In-flight runs</h2>
+      <p class="muted card__subtitle">
+        Queued and running async jobs
+        <span class="runs-live-hint" data-activity-inflight-hint hidden aria-live="polite"></span>
+      </p>
+    </div>
+    <a class="btn btn--ghost btn--sm" href="/runs?status=running">Open runs</a>
+  </div>
+  <div class="card__body">
+    <p class="muted" data-activity-inflight-empty>Loading in-flight runs…</p>
+    <ul class="activity-inflight-list" data-activity-inflight-list hidden aria-label="In-flight async runs"></ul>
+  </div>
+</section>
+{% endif %}
+
+{% if audit_enabled %}
+<form class="card activity-filters" method="get" action="/activity" aria-labelledby="activity-filter-heading">
+  <div class="card__header">
+    <h2 id="activity-filter-heading" class="card__title">Filter</h2>
+    <p class="muted card__subtitle">Narrow by blueprint, repo, user, outcome, or time range (UTC ISO timestamps).</p>
+  </div>
+  <div class="card__body activity-filters__grid">
+    <label class="field">
+      <span class="field__label">Blueprint</span>
+      <input class="field__input" name="blueprint" type="text" value="{{ activity_filters.blueprint_name or '' }}" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span class="field__label">Module / repo</span>
+      <input class="field__input" name="module_name" type="text" value="{{ activity_filters.module_name or '' }}" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span class="field__label">Acting user</span>
+      <input class="field__input" name="acting_user" type="text" value="{{ activity_filters.acting_user or '' }}" autocomplete="off" />
+    </label>
+    <label class="field">
+      <span class="field__label">Gate outcome</span>
+      <select class="field__input" name="gates_outcome">
+        <option value="">Any</option>
+        <option value="passed" {% if activity_filters.gates_outcome == 'passed' %}selected{% endif %}>passed</option>
+        <option value="failed" {% if activity_filters.gates_outcome == 'failed' %}selected{% endif %}>failed</option>
+        <option value="empty" {% if activity_filters.gates_outcome == 'empty' %}selected{% endif %}>empty</option>
+      </select>
+    </label>
+    <label class="field">
+      <span class="field__label">Since (ISO)</span>
+      <input class="field__input" name="since" type="text" value="{{ activity_filters.since or '' }}" placeholder="2026-01-01T00:00:00+00:00" />
+    </label>
+    <label class="field">
+      <span class="field__label">Until (ISO)</span>
+      <input class="field__input" name="until" type="text" value="{{ activity_filters.until or '' }}" />
+    </label>
+  </div>
+  <div class="card__footer form-actions">
+    <button type="submit" class="btn btn--primary">Apply filters</button>
+    <a class="btn btn--ghost" href="/activity">Clear</a>
+  </div>
+</form>
+
+  {% if recent_activity %}
+<section class="card activity-card" data-portal-view-toggle aria-labelledby="activity-full-heading">
+  <div class="card__header card__header--toolbar">
+    <div>
+      <h2 id="activity-full-heading">Audit log</h2>
+      <p class="muted card__subtitle">
+        Newest first · {{ activity_total }} matching · showing up to {{ activity_limit }} rows
+      </p>
+    </div>
+    <div class="portal-view-toggle" role="toolbar" aria-label="Activity view">
+      <button type="button" class="chip portal-view-toggle__btn is-active" data-view-mode="list">List</button>
+      <button type="button" class="chip portal-view-toggle__btn" data-view-mode="story">Timeline</button>
+    </div>
+  </div>
+  <div class="card__body">
+    <div data-view-panel="list">
+      {% include "partials/activity_list.html" %}
+    </div>
+    <div data-view-panel="story" hidden>
+      {% include "partials/activity_story.html" %}
+    </div>
+  </div>
+</section>
+  {% else %}
+<div class="alert alert--info">
+  Audit is enabled but no generation events matched these filters yet.
+</div>
+  {% endif %}
+{% else %}
+<div class="alert alert--info" role="status">
+  Enable audit in <code>repave.config.yaml</code> to record fleet-wide generation history here.
+</div>
+{% endif %}
+{% endblock %}

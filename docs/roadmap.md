@@ -21,21 +21,14 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**HTML portal pages restored for local-first**
+(nav, generate, upgrade, verify, import, platform, runs, sandbox, and results
+are real pages again so `make serve` can open them; hosted Backstage still owns
+the same routes when the cutover overlay is on);
 **HTML landing and signup stay**
 (public splash when auth is on; Sign in → `/auth/login`, Create account → `/signup`);
-**HTML kind-specific run results retired**
-(pointer pages → Backstage `/services`, `/sandbox`, `/standards`, `/import/batch`, `/reclaim`);
 **HTML catalog and library pages restored**
-(`GET /` and `/library` stay real pages; generate/bundle forms stay pointers);
-**HTML run console and sandbox retired**
-(pointer pages → Backstage `/runs`, `/run-console`, `/sandbox` + `/api/v2`);
-**HTML upgrade form and results retired**
-(pointer pages → Backstage `/upgrade` + CLI/`/api/v2`);
-**HTML bundle form and results retired**
-(pointer pages → Backstage `/bundles` + CLI/`/api/v2`);
-**HTML platform, import, verify, and generate results retired**
-(pointer pages → Backstage + CLI/`/api/v2`);
-**HTML generate form retired** (Backstage `/generate` + CLI; `GET /blueprints/{name}` points there);
+(`GET /` and `/library` stay real pages);
 **Real RDS/S3/SQS component stubs** ([ADR 013](adr/013-component-self-service-vending.md));
 **Service catalog Helm default-on**;
 **Hosted Backstage generate form** (`/generate` → `POST /api/v2/generate`);
@@ -197,12 +190,10 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 [ADR 011](adr/011-hosted-backstage-idp.md)).
 Kind/smoke overlays keep the flag off. Ops, standards, campaigns, and builder
 browse pages have Backstage pages. `/generate` posts `POST /api/v2/generate`
-(dry-run default). HTML generate form, results, platform, import, and
-verify pages are pointer pages. Bundle form and results are pointer pages.
-Run console, sandbox, and kind-specific run-result HTML are pointer pages.
-HTML catalog (`GET /` when signed in), library (`GET /library`), and the
-public landing/signup splash stay real pages. Phase 4 does not retire them
-to pointers.
+(dry-run default). Local `make serve` keeps the FastAPI HTML pages (catalog,
+library, generate, upgrade, verify, import, platform, runs, sandbox, and
+results) so nav works without Backstage. Hosted cutover still sends `/` to
+Backstage. Landing and signup stay as the public splash when auth is on.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -219,9 +210,7 @@ chart flag defaults on — **met** (Eric Skaggs). Platform-admin HTML already
 has Backstage pages, including `/ops`, `/standards`, `/campaigns`, and builder
 browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
 `/run-console`). `/generate` picks a blueprint, fills inputs, and dry-runs
-`POST /api/v2/generate`. HTML generate form, results, platform, import,
-and verify are gone. Catalog and library stay HTML pages. Bundle, upgrade,
-run console, sandbox, and kind-specific run-result HTML are pointer pages.
+`POST /api/v2/generate`. Local HTML pages stay so `make serve` nav works.
 Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke
 and GHCR publish already shipped. Landing and signup stay as the public
 splash when auth is on.

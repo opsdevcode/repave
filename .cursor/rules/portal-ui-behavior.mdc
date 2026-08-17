@@ -20,16 +20,12 @@ intercepts `method="post"` submits (except `data-repave-native-submit`, logout,
 and checked `stream=1`) via `fetch`, keeps the user on the form, and shows
 `[data-portal-submit-error]` / `.form-validation` for 4xx/5xx (including
 `Insufficient role`). Success still replaces the document with HTML or follows
-redirects to `/runs/{id}` (pointer page to Backstage `/run-console`).
+redirects to `/runs/{id}`.
 
 ## Required flows (every golden path)
 
-1. **Plan** — POST `/generate` with `dry_run=true` still runs generate and
-   returns **200** with `data-surface-moved="result"` (Backstage `/generate`).
-   GET `/blueprints/{name}` no longer hosts the generate form (Backstage `/generate`).
-   Bundle POST `/generate` still runs generate and returns
-   `data-surface-moved="bundle-result"` (Backstage `/bundles`).
-   GET `/bundles/{name}` no longer hosts the bundle form.
+1. **Plan** — POST `/generate` with `dry_run=true` returns **200** and
+   the result page shows gate summary and **Generated files** (file tree / preview).
 2. **Stepper forms** — When `data-form-stepper` is present:
    - **Plan preview** (`data-dry-run-run`) must work from early steps without
      requiring the user to reach Delivery first.
@@ -59,8 +55,7 @@ redirects to `/runs/{id}` (pointer page to Backstage `/run-console`).
 
 ## Review checklist
 
-- [ ] Plan POST (`dry_run=true`) for a single blueprint returns the result moved page.
-- [ ] Bundle Plan POST returns the bundle-result moved page.
+- [ ] Plan POST (`dry_run=true`) still returns rendered files in HTML result.
 - [ ] Stepper: **Plan preview** present where submit is step-gated; `novalidate` + validation wired.
 - [ ] Tests updated for new strings or form attributes.
 - [ ] No orphaned `terraform_stepper` / dead selectors in JS.

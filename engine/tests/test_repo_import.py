@@ -388,7 +388,7 @@ def test_plan_import_rejects_a_governed_repo(repo_root: Path, tmp_path: Path) ->
         {"main.tf": "", "repave.yaml": "apiVersion: repave.dev/v1beta1\n"},
     )
 
-    with pytest.raises(AlreadyGovernedError, match="plan-upgrade"):
+    with pytest.raises(AlreadyGovernedError, match="/update"):
         plan_import(str(repo), repo_root, with_gates=False)
 
 
