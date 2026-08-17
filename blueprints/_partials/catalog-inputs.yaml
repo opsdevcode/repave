@@ -28,3 +28,13 @@
 #   default: experimental
 #   enum: [experimental, production, deprecated]
 #   description: Backstage spec.lifecycle for the generated component.
+# - name: catalog_depends_on
+#   type: string
+#   required: false
+#   default: ""
+#   description: Comma-separated entity refs for spec.dependsOn (catalog graph).
+# - name: catalog_provides_apis
+#   type: string
+#   required: false
+#   default: ""
+#   description: Comma-separated API refs for spec.providesApis.

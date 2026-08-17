@@ -106,6 +106,18 @@ spec:
         - production
         - deprecated
       description: Backstage spec.lifecycle for the generated component.
+    - name: catalog_depends_on
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Comma-separated Backstage entity refs for spec.dependsOn.
+    - name: catalog_provides_apis
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Comma-separated Backstage API refs for spec.providesApis.
     - name: enable_deploy_pipeline
       type: string
       required: false

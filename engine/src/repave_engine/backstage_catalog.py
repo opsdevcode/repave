@@ -52,6 +52,17 @@ def catalog_techdocs_ref(output_dir: Path) -> str | None:
     return None
 
 
+def catalog_entity_refs(raw: Any) -> tuple[str, ...]:
+    """Split comma or newline entity refs (component:default/foo)."""
+    if raw is None:
+        return ()
+    text = str(raw).strip()
+    if not text:
+        return ()
+    parts = (part.strip() for part in text.replace("\n", ",").split(","))
+    return tuple(part for part in parts if part)
+
+
 def catalog_description(blueprint: Blueprint, values: dict[str, Any]) -> str:
     raw = values.get("description") or values.get("catalog_description")
     if raw:
@@ -87,6 +98,14 @@ def build_catalog_document(blueprint: Blueprint, values: dict[str, Any]) -> dict
     }
     if system:
         spec["system"] = system
+    depends_on = catalog_entity_refs(values.get("catalog_depends_on") or values.get("depends_on"))
+    if depends_on:
+        spec["dependsOn"] = list(depends_on)
+    provides_apis = catalog_entity_refs(
+        values.get("catalog_provides_apis") or values.get("provides_apis")
+    )
+    if provides_apis:
+        spec["providesApis"] = list(provides_apis)
 
     return {
         "apiVersion": "backstage.io/v1alpha1",

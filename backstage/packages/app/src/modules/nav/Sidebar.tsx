@@ -34,6 +34,8 @@ export const SidebarContent = NavContentBlueprint.make({
           <SidebarDivider />
           <SidebarGroup label="Menu" icon={<MenuIcon />}>
             {nav.take('page:catalog')}
+            {nav.take('page:catalog-graph')}
+            {nav.take('page:catalog-import')}
             {nav.take('page:repave/my-services')}
             {nav.take('page:scaffolder')}
             <SidebarDivider />
