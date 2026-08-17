@@ -103,8 +103,11 @@ repave:
   github:
     preferApp: false
   portal:
-    # Local-first / HTML-only installs. values-backstage.yaml sets false (410).
+    # Hosted workbench (ADR 011). Set false only for API-only installs (HTML 410).
     html: true
+    # Public Backstage base for "Open in catalog" (empty = hide links).
+    # Overlay sets /idp when Backstage is on the same host.
+    backstageUrl: ""
     density: default
     # Optional white-label (empty = Converge defaults). See docs/brand/README.md.
     logoUrl: ""

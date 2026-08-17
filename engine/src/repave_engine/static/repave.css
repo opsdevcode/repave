@@ -5940,6 +5940,12 @@
     text-decoration: none;
   }
 
+  .library-shelf__catalog {
+    display: inline-block;
+    padding: 0 1.15rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
   .library-shelf__item:hover {
     background: color-mix(in srgb, var(--accent) 7%, transparent);
     text-decoration: none;

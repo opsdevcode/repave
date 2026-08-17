@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # kind smoke: engine + hosted Backstage (ADR 011).
 # Builds both images, installs values-kind + values-backstage, probes
-# engine /health + /api/v2, HTML 410, and Backstage liveness/readiness.
+# engine /health + /api/v2, HTML workbench 200, and Backstage liveness/readiness.
 # CI: .github/workflows/chart.yml (chart-smoke-backstage; path-gated).
 set -euo pipefail
 
@@ -113,13 +113,10 @@ probe_match() {
   grep -qiE "${pattern}" <<<"${body}"
 }
 
-probe_html_gone() {
-  local headers body code
-  headers="$(mktemp)"
-  body="$(mktemp)"
-  code="$(curl -sS -D "${headers}" -o "${body}" -w '%{http_code}' "http://127.0.0.1:${ENGINE_PORT}/")"
-  [[ "${code}" == "410" ]] || return 1
-  grep -qi '^sunset:' "${headers}"
+probe_html_workbench() {
+  local code
+  code="$(curl -sS -o /dev/null -w '%{http_code}' "http://127.0.0.1:${ENGINE_PORT}/")"
+  [[ "${code}" == "200" ]]
 }
 
 for attempt in 1 2 3 4 5 6 7 8; do
@@ -127,7 +124,7 @@ for attempt in 1 2 3 4 5 6 7 8; do
     && probe_match "http://127.0.0.1:${ENGINE_PORT}/readyz" '"status":"ready"' \
     && probe_match "http://127.0.0.1:${ENGINE_PORT}/api/v2/catalog/entities" '"entities"' \
     && probe_match "http://127.0.0.1:${ENGINE_PORT}/api/v2/deployment-sets" 'api-sandbox-7d' \
-    && probe_html_gone \
+    && probe_html_workbench \
     && curl -sf "http://127.0.0.1:${BS_PORT}/.backstage/health/v1/liveness" >/dev/null \
     && curl -sf "http://127.0.0.1:${BS_PORT}/.backstage/health/v1/readiness" >/dev/null; then
     echo "OK: Backstage chart smoke passed"

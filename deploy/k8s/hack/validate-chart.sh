@@ -647,13 +647,28 @@ helm template repave-backstage-overlay "${CHART}" \
   --set repave.backstage.ingress.enabled=true \
   >"${bs_overlay}"
 
-if ! grep -q 'html: false' "${bs_overlay}"; then
-  echo "values-backstage.yaml must set portal.html=false in the ConfigMap" >&2
+if ! grep -q 'html: true' "${bs_overlay}"; then
+  echo "values-backstage.yaml must keep portal.html=true in the ConfigMap" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if grep -q 'html: false' "${bs_overlay}"; then
+  echo "values-backstage.yaml must not disable the HTML workbench" >&2
   rm -f "${bs_overlay}"
   exit 1
 fi
 if ! grep -q 'path: /api' "${bs_overlay}"; then
   echo "values-backstage.yaml must send /api to the engine Ingress" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'path: /idp' "${bs_overlay}"; then
+  echo "values-backstage.yaml must send /idp to the Backstage Ingress" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'backstage_url: "/idp"' "${bs_overlay}"; then
+  echo "values-backstage.yaml must set portal.backstage_url=/idp for catalog handoff" >&2
   rm -f "${bs_overlay}"
   exit 1
 fi

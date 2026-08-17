@@ -30,6 +30,7 @@ auth:
 repave:
   apiBaseUrl: ${REPAVE_API_BASE_URL:-}
   apiToken: ${REPAVE_API_TOKEN:-}
+  portalBaseUrl: ${REPAVE_PORTAL_BASE_URL:-/}
 
 proxy:
   endpoints:

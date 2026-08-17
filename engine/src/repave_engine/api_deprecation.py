@@ -7,12 +7,10 @@ from repave_engine.deprecations import http_deprecation_headers
 V1_DEPRECATION_HEADERS: dict[str, str] = http_deprecation_headers("api_v1_removal")
 V1_SUNSET_HTTP: str = V1_DEPRECATION_HEADERS["Sunset"]
 
-HTML_PORTAL_DEPRECATION_HEADERS: dict[str, str] = http_deprecation_headers("html_portal_removal")
-HTML_PORTAL_SUNSET_HTTP: str = HTML_PORTAL_DEPRECATION_HEADERS["Sunset"]
 HTML_PORTAL_DISABLED_DETAIL: str = (
     "HTML portal is disabled (portal.html=false). "
-    "Use the hosted Backstage UI or /api/v2. "
-    "Set portal.html=true or REPAVE_PORTAL_HTML=1 to serve HTML locally."
+    "The night-ops HTML workbench is the hosted UI; set portal.html=true or "
+    "REPAVE_PORTAL_HTML=1. CLI and /api/v2 stay available."
 )
 
 _NON_HTML_EXACT = frozenset(

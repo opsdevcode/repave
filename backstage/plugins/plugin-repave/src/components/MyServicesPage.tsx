@@ -8,10 +8,10 @@ import {
   Table,
   type TableColumn,
 } from '@backstage/core-components';
-import { useApi } from '@backstage/frontend-plugin-api';
+import { configApiRef, useApi } from '@backstage/frontend-plugin-api';
 import type { Entity } from '@backstage/catalog-model';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
-import { hasRepaveLineage } from './RepaveLineageCard';
+import { hasRepaveLineage, portalHomeHref } from './RepaveLineageCard';
 
 export type RepaveServiceRow = {
   name: string;
@@ -54,6 +54,8 @@ const COLUMNS: TableColumn<RepaveServiceRow>[] = [
 
 export function MyServicesPage() {
   const catalogApi = useApi(catalogApiRef);
+  const config = useApi(configApiRef);
+  const portalBase = config.getOptionalString('repave.portalBaseUrl') ?? '/';
   const [rows, setRows] = useState<RepaveServiceRow[] | undefined>();
   const [error, setError] = useState<string>('');
 
@@ -93,7 +95,9 @@ export function MyServicesPage() {
             emptyContent={
               <p>
                 No golden-path services yet.{' '}
-                <Link to="/create">Create one from a template</Link>.
+                <Link to="/create">Create one from a template</Link>
+                {' or '}
+                <Link to={portalHomeHref(portalBase)}>generate in the portal</Link>.
               </p>
             }
           />
