@@ -1,6 +1,8 @@
 app:
+  # Hosted same-host Catalog is https://<host>/idp (chart sets APP_BASE_URL).
+  # Do not iframe /idp into the HTML workbench.
   # Should be the same as backend.baseUrl when using the `app-backend` plugin.
-  baseUrl: http://localhost:7007
+  baseUrl: ${APP_BASE_URL:-http://localhost:7007}
 
 backend:
   # Note that the baseUrl should be the URL that the browser and other clients
@@ -8,7 +10,7 @@ backend:
   # reachable not just from within the backend host, but from all of your
   # callers. When its value is "http://localhost:7007", it's strictly private
   # and can't be reached by others.
-  baseUrl: http://localhost:7007
+  baseUrl: ${APP_BASE_URL:-http://localhost:7007}
   # The listener can also be expressed as a single <host>:<port> string. In this case we bind to
   # all interfaces, the most permissive setting. The right value depends on your specific deployment.
   listen: ':7007'
@@ -31,6 +33,8 @@ repave:
   apiBaseUrl: ${REPAVE_API_BASE_URL:-}
   apiToken: ${REPAVE_API_TOKEN:-}
   portalBaseUrl: ${REPAVE_PORTAL_BASE_URL:-/}
+  logoUrl: ${REPAVE_PORTAL_LOGO_URL:-}
+  accentColor: ${REPAVE_PORTAL_ACCENT_COLOR:-}
 
 proxy:
   endpoints:

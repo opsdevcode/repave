@@ -21,7 +21,7 @@ reconciliation keeps the estate on the current road.
 
 | IDP capability | In repave |
 | --- | --- |
-| Software catalog / self-service | Portal home catalog, library, [service catalog hub](service-catalog.md) |
+| Software catalog / self-service | HTML **Golden paths** + library; Backstage **Catalog**; [service catalog hub](service-catalog.md) |
 | Paved roads / scaffolding | Versioned **blueprints** (golden paths) |
 | Governance & policy | Mandatory **gates**, pinned standards and policy packs |
 | Service catalog integration | Optional Backstage `catalog-info.yaml` + `repave.dev/*` lineage |

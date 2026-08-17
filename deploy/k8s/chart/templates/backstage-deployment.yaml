@@ -36,6 +36,14 @@ spec:
               value: ""
             - name: GITHUB_TOKEN
               value: ""
+            - name: REPAVE_PORTAL_LOGO_URL
+              value: {{ .Values.repave.portal.logoUrl | quote }}
+            - name: REPAVE_PORTAL_ACCENT_COLOR
+              value: {{ .Values.repave.portal.accentColor | quote }}
+            {{- if .Values.repave.backstage.publicBaseUrl }}
+            - name: APP_BASE_URL
+              value: {{ .Values.repave.backstage.publicBaseUrl | quote }}
+            {{- end }}
             {{- with .Values.repave.backstage.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

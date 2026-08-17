@@ -672,6 +672,16 @@ if ! grep -q 'backstage_url: "/idp"' "${bs_overlay}"; then
   rm -f "${bs_overlay}"
   exit 1
 fi
+if ! grep -q 'name: APP_BASE_URL' "${bs_overlay}"; then
+  echo "values-backstage.yaml must set APP_BASE_URL so Catalog is same-host /idp" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
+if ! grep -q 'https://repave.example.com/idp' "${bs_overlay}"; then
+  echo "values-backstage.yaml must wire app.baseUrl to https://<host>/idp (no iframe)" >&2
+  rm -f "${bs_overlay}"
+  exit 1
+fi
 if ! grep -q 'app.kubernetes.io/component: backstage' "${bs_overlay}"; then
   echo "values-backstage.yaml must render a Backstage Ingress/Deployment" >&2
   rm -f "${bs_overlay}"

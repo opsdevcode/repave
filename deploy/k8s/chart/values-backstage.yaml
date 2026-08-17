@@ -7,6 +7,7 @@
 #   /api  → engine
 #   /idp  → Backstage (catalog, lineage, scaffolder)
 # /idp avoids colliding with Backstage's own /catalog route.
+# Catalog is https://<host>/idp (app.baseUrl). Do not iframe /idp into Jinja.
 # HTML portal stays on (portal.html=true). CLI and /api/v2 stay.
 # Ingress stays opt-in so chart-smoke is unchanged.
 ingress:
@@ -28,6 +29,8 @@ repave:
     bundleExamples: true
   backstage:
     enabled: true
+    # Same-host Catalog origin. Override the host when you cut over Ingress.
+    publicBaseUrl: https://repave.example.com/idp
     extraEnv:
       - name: REPAVE_PORTAL_BASE_URL
         value: /
