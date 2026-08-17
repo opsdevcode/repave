@@ -1,4 +1,4 @@
-"""Materialize git-backed blueprint packs into a local cache (catalog extra roots)."""
+"""Materialize git- or OCI-backed blueprint packs into a local cache."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 
 from repave_engine.git_clone import CloneError, resolve_git_token, shallow_clone
+from repave_engine.oci_pull import OciPullError, is_oci_pack_url, pull_oci_artifact
 from repave_engine.settings import (
     BlueprintPackConfig,
     BlueprintPackSource,
@@ -48,11 +49,16 @@ def _ensure_clone(source: BlueprintPackSource, clone_dir: Path) -> bool:
         return True
     token = source.token or resolve_git_token()
     try:
-        shallow_clone(source.url, clone_dir, token=token, ref=source.ref)
-    except CloneError as exc:
+        if is_oci_pack_url(source.url):
+            pull_oci_artifact(source.url, clone_dir, ref=source.ref, token=token)
+        else:
+            shallow_clone(source.url, clone_dir, token=token, ref=source.ref)
+    except (CloneError, OciPullError) as exc:
+        action = "pull" if is_oci_pack_url(source.url) else "clone"
         logger.warning(
-            "blueprint pack clone skipped for %s ref %s: %s "
+            "blueprint pack %s skipped for %s ref %s: %s "
             "(delete %s to retry after fixing auth or the URL)",
+            action,
             source.url,
             source.ref,
             exc,
@@ -67,10 +73,10 @@ def materialize_blueprint_pack_roots(
     *,
     config: BlueprintPackConfig | None = None,
 ) -> tuple[Path, ...]:
-    """Clone missing packs; return catalog roots in config order.
+    """Clone or pull missing packs; return catalog roots in config order.
 
     Existing cache directories are reused (no fetch). Delete a cache folder to
-    refresh. Clone failures log a warning and skip that pack.
+    refresh. Clone/pull failures log a warning and skip that pack.
     """
     cfg = config if config is not None else load_blueprint_pack_config(repo_root)
     if cfg is None or not cfg.sources:

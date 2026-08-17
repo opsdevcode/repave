@@ -304,6 +304,32 @@ def test_load_blueprint_pack_config_parses_sources(
     assert config.sources[0].dest == "acme-blueprints"
 
 
+def test_load_blueprint_pack_config_parses_oci_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("REPAVE_BLUEPRINT_PACK_CACHE", raising=False)
+    (tmp_path / "repave.config.yaml").write_text(
+        "\n".join(
+            [
+                "apiVersion: repave.dev/v1",
+                "blueprint_packs:",
+                "  sources:",
+                "    - url: oci://ghcr.io/acme/org-blueprints",
+                "      ref: sha256:abcd",
+                "      dest: acme-oci",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    config = load_blueprint_pack_config(tmp_path)
+
+    assert config is not None
+    assert config.sources[0].url == "oci://ghcr.io/acme/org-blueprints"
+    assert config.sources[0].ref == "sha256:abcd"
+    assert config.sources[0].dest == "acme-oci"
+
+
 def test_load_blueprint_pack_config_env_cache_and_defaults(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.42.1  
 
-**In progress:** OCI blueprint pack pull stays parking-lot.
+**In progress:** —
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -21,6 +21,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**OCI blueprint pack pull**
+(`blueprint_packs.sources[]` `oci://` + tag/digest via `oras pull`);
 **Azure/GCP component stubs**
 (`azurerm_*` / `google_*` for database, bucket, and queue; no `null_resource`);
 **HTML portal pages restored for local-first**
@@ -172,7 +174,7 @@ v3.42.1 today      platform GA line on main (contract freeze + DR shipped)
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
 | **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; platform/import/verify/result/bundle/upgrade/runs/sandbox/kind-result HTML retired; catalog, library, landing, and signup stay HTML pages ([ADR 011](adr/011-hosted-backstage-idp.md)) |
-| **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
+| **Forked blueprint packs** | Shipped | Local roots + git URL fetch + OCI `oras pull` (read-only cache) |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
 | **Component self-service vending** | Shipped | Vend, reclaim, Backstage UI, kind-specific AWS/Azure/GCP modules ([ADR 013](adr/013-component-self-service-vending.md)) |
@@ -231,17 +233,18 @@ want to fork repave and add paths, or pull read-only blueprint packs from git.
 - `repave.config.yaml` `blueprints_root` or `blueprint_sources[]` (local paths)
 - `blueprint_packs.sources[]` with `url` + `ref` (shallow clone into
   `data/blueprint-packs`; reuse cache until the folder is deleted)
+- `oci://registry/repository` + tag or `sha256:` digest (`oras pull`)
 - CLI/API `--blueprint` accepts absolute path or `file://` under configured roots
 - Document fork workflow: copy repave, add `blueprints/my-org-*`, pin org standards
-- Defer OCI artifact pull to the parking lot
 
 **Dependencies:** Blueprint loader and schema validation (stable since v1.0).
 
 **Done when:** A forked repave repo loads an additional blueprint from its own
-tree without patching engine code.
+tree without patching engine code — **met**. Git URL and OCI packs also load
+as extra catalog roots.
 
-**Status:** Partial — local extra catalog roots and git URL + ref fetch shipped.
-OCI artifact pull stays in the [parking lot](#parking-lot).
+**Status:** Shipped — local extra catalog roots, git URL + ref fetch, and OCI
+artifact pull.
 
 ---
 
@@ -318,9 +321,9 @@ GitOps PR, same shape as environment vending — **met** for the request path.
 Scoped enough to promote without new discovery (was deferred from the developer paved-roads
 cluster — detail for shipped paved roads is in the [archive](roadmap-archive.md#developer-paved-roads-v2x)):
 
-- **Organization blueprint packs** — local extra roots and git URL fetch are
-  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs); OCI
-  registry fetch remains parking-lot.
+- **Organization blueprint packs** — local extra roots, git URL fetch, and OCI
+  pull are
+  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs).
 
 
 
@@ -466,8 +469,9 @@ families; waivers use `gate_id: mandatory-policy`
 - **Cost showback:** **Promoted** to [FinOps enablement (v1.90–v1.94)](roadmap-archive.md#finops-enablement-v2x).
   Remaining v3 only if org-wide invoicing or a full billing warehouse is required beyond the
   hybrid enablement path ([`docs/finops.md`](finops.md))
-- Optional promotions from the parking lot: **multi-tenant** config namespacing and an **OCI
-  blueprint registry**
+- Optional promotions from the parking lot: **multi-tenant** config namespacing.
+  OCI blueprint pack pull shipped under
+  [forked and remote blueprint packs](#forked-and-remote-blueprint-packs).
 
 ### Conversational and governed AI generation
 
@@ -587,10 +591,9 @@ named treadmill owner; preferably two quarters with zero unexplained state diver
 ## Parking lot
 
 Ideas not yet scheduled — promote into [Planned](#planned) when there is an owner and a
-concrete next step. Two of these (**multi-tenant repave** and the
-**private blueprint registry**) are named as optional promotions in
-[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); they stay here
-until someone owns them. Stategraph / graph-scoped execution is under
+concrete next step. **Multi-tenant repave** is named as an optional promotion in
+[beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane); it stays here
+until someone owns it. Stategraph / graph-scoped execution is under
 [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution), not here.
 
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
@@ -599,8 +602,6 @@ until someone owns them. Stategraph / graph-scoped execution is under
 - **Standards diff in portal** — side-by-side standard/policy changes between
   blueprint versions before generate (see [`portal-design.md`](portal-design.md)
   Phase 5)
-- **Private blueprint registry** — pull blueprint packs from an OCI artifact
-  (git URL + ref shipped)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
 - **Auth0 FGA / fine-grained authorization** — relationship checks on catalog,
   generate, and environment actions (Auth0 FGA or OpenFGA), wrapping today's

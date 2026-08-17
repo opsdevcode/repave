@@ -85,7 +85,7 @@ class BlueprintSources:
 
 @dataclass(frozen=True)
 class BlueprintPackSource:
-    """One git-backed blueprint pack (url + ref)."""
+    """One git- or OCI-backed blueprint pack (url + ref)."""
 
     url: str
     ref: str
@@ -96,7 +96,7 @@ class BlueprintPackSource:
 
 @dataclass(frozen=True)
 class BlueprintPackConfig:
-    """Git URL catalog packs. Cloned into cache_dir; first-root-wins still applies."""
+    """Git or OCI catalog packs. Materialized into cache_dir; first-root-wins still applies."""
 
     cache_dir: Path
     sources: tuple[BlueprintPackSource, ...]
@@ -212,15 +212,15 @@ def _normalize_pack_url(raw: object) -> str:
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError(
             "blueprint_packs.sources[].url is required "
-            "(http(s) or file:// git URL; set url and ref)"
+            "(http(s) or file:// git URL, or oci://; set url and ref)"
         )
     value = raw.strip()
     lowered = value.lower()
-    if lowered.startswith(("https://", "http://", "file://")):
+    if lowered.startswith(("https://", "http://", "file://", "oci://")):
         return value
     raise ValueError(
         "blueprint_packs.sources[].url must be an http(s) or file:// git URL "
-        "(SSH remotes are not supported yet)"
+        "or oci://registry/repository (SSH remotes are not supported)"
     )
 
 
@@ -228,7 +228,7 @@ def _normalize_pack_ref(raw: object) -> str:
     if not isinstance(raw, str) or not raw.strip():
         raise ValueError(
             "blueprint_packs.sources[].ref is required "
-            "(branch, tag, or commit passed to git --branch)"
+            "(git branch/tag/commit, or OCI tag / sha256:digest)"
         )
     return raw.strip()
 
@@ -268,7 +268,7 @@ def _normalize_pack_token(raw: object) -> str | None:
 
 
 def load_blueprint_pack_config(repo_root: Path) -> BlueprintPackConfig | None:
-    """Return git pack sources, or None when blueprint_packs is unset."""
+    """Return git/OCI pack sources, or None when blueprint_packs is unset."""
     file_data = _load_config_file(repo_root / "repave.config.yaml")
     block = file_data.get("blueprint_packs")
     if block is None:
