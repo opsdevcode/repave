@@ -32,6 +32,17 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -y --no-install-recommends libsqlite3-dev && \
     rm -rf /var/lib/apt/lists/*
 
+# TechDocs local generator — hosted image has no Docker socket (no DinD).
+# Pin: https://pypi.org/project/mkdocs-techdocs-core/
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip python3-venv && \
+    python3 -m venv /opt/techdocs && \
+    /opt/techdocs/bin/pip install --no-cache-dir mkdocs-techdocs-core==1.7.0 && \
+    rm -rf /var/lib/apt/lists/*
+ENV PATH="/opt/techdocs/bin:${PATH}"
+
 # From here on we use the least-privileged `node` user to run the backend.
 USER node
 

@@ -183,9 +183,14 @@ Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backsta
 The entity page **Repave lineage** card shows those annotations. Sample:
 `tf-aws-demo` in [`backstage/examples/entities.yaml`](../backstage/examples/entities.yaml)
 (also annotated for TechDocs; source is [`examples/docs/`](../backstage/examples/docs/)
-next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**. Local `yarn start`
-builds with `techdocs.generator.runIn: docker`. Do not iframe or clone Docs
-into the HTML workbench.
+next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**.
+
+| Context | TechDocs generate |
+| --- | --- |
+| Local `yarn start` | `techdocs.generator.runIn: docker` (needs Docker) |
+| Hosted image / chart | `runIn: local` — `mkdocs-techdocs-core==1.7.0` in [`packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile) so the pod does not need Docker-in-Docker |
+
+Do not iframe or clone Docs into the HTML workbench.
 
 Example Location for a published repo:
 
