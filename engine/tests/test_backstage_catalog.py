@@ -5,8 +5,10 @@ from pathlib import Path
 import yaml
 
 from repave_engine.backstage_catalog import (
+    TECHDOCS_REF_DIR,
     build_catalog_document,
     catalog_component_name,
+    catalog_techdocs_ref,
     should_emit_catalog,
     write_backstage_catalog_if_enabled,
 )
@@ -93,3 +95,35 @@ def test_write_backstage_catalog(tmp_path) -> None:
     payload = yaml.safe_load((tmp_path / "catalog-info.yaml").read_text(encoding="utf-8"))
     assert payload["metadata"]["name"] == "api"
     assert payload["spec"]["type"] == "service"
+    assert "backstage.io/techdocs-ref" not in payload["metadata"]["annotations"]
+
+
+def test_catalog_techdocs_ref_when_docs_dir(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    assert catalog_techdocs_ref(tmp_path) == TECHDOCS_REF_DIR
+
+
+def test_catalog_techdocs_ref_when_mkdocs_yml(tmp_path: Path) -> None:
+    (tmp_path / "mkdocs.yml").write_text("site_name: demo\n", encoding="utf-8")
+    assert catalog_techdocs_ref(tmp_path) == TECHDOCS_REF_DIR
+
+
+def test_catalog_techdocs_ref_absent_without_docs(tmp_path: Path) -> None:
+    assert catalog_techdocs_ref(tmp_path) is None
+
+
+def test_write_backstage_catalog_emits_techdocs_ref(tmp_path: Path) -> None:
+    (tmp_path / "docs").mkdir()
+    bp = _bp("helm-chart")
+    written = write_backstage_catalog_if_enabled(
+        tmp_path,
+        bp,
+        {
+            "include_backstage_catalog": "true",
+            "chart_name": "api",
+            "owner": "group:platform",
+        },
+    )
+    assert written is True
+    payload = yaml.safe_load((tmp_path / "catalog-info.yaml").read_text(encoding="utf-8"))
+    assert payload["metadata"]["annotations"]["backstage.io/techdocs-ref"] == TECHDOCS_REF_DIR

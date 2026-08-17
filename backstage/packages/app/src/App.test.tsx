@@ -1,5 +1,6 @@
 import { render, waitFor } from '@testing-library/react';
-import App from './App';
+import techdocsPlugin from '@backstage/plugin-techdocs/alpha';
+import App, { appFeatures } from './App';
 
 describe('App', () => {
   it('should render', async () => {
@@ -24,5 +25,9 @@ describe('App', () => {
     await waitFor(() => {
       expect(rendered.baseElement).toBeInTheDocument();
     });
+  });
+
+  it('registers TechDocs so the entity Docs tab can appear', () => {
+    expect(appFeatures).toContain(techdocsPlugin);
   });
 });

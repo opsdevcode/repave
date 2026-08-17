@@ -31,6 +31,7 @@ metadata:
     repave.dev/standard-version: 1.0.0
     repave.dev/engine-version: 3.6.0
     repave.dev/artifact-type: terraform-module
+    backstage.io/techdocs-ref: dir:.
 spec:
   type: library
   lifecycle: production

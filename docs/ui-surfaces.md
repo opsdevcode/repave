@@ -42,7 +42,7 @@ flowchart LR
 | Job | Owner | Why |
 | --- | --- | --- |
 | Generate, upgrade preview, import, verify, vend, sandbox, runs, fleet, platform | **HTML portal** | Night-ops look; `make serve` stays one process |
-| Software catalog, ownership, entity page, `repave.dev/*` lineage | **Backstage** | Catalog IDP; do not rebuild it in Jinja |
+| Software catalog, ownership, entity page, `repave.dev/*` lineage, TechDocs | **Backstage** | Catalog IDP; do not rebuild it in Jinja |
 | Offline / CI | **CLI** | Unchanged |
 | Apply / cluster | **CLI + operator** | Unchanged |
 
@@ -61,6 +61,9 @@ under `backstage/plugins/plugin-repave`.
 - Scaffolder `repave:generate` stays an alternate submit for teams on `/create`.
 - Backstage uses the night-ops theme and a top bar that repeats Golden paths,
   Catalog, Library, Upgrade, Verify. Sidebar stays Catalog / My services / Create.
+- Entity **Docs** is TechDocs when `backstage.io/techdocs-ref` is set (example:
+  `tf-aws-demo`). Generated `catalog-info.yaml` gets that annotation when the
+  repo has `docs/` or `mkdocs.yml`. Do not clone TechDocs into Jinja.
 
 ## Hosted vs laptop
 

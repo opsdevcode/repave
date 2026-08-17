@@ -24,6 +24,10 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
   Do not fork a second entity store.
 - Lineage card: `repave.dev/*` pins plus Generate / upgrade links to the HTML
   portal (`repave.portalBaseUrl`).
+- TechDocs: frontend `@backstage/plugin-techdocs/alpha` on the entity Docs tab.
+  Example `tf-aws-demo` uses `backstage.io/techdocs-ref: dir:.`. Engine emit
+  adds that annotation when `docs/` or `mkdocs.yml` exists. Do not clone
+  TechDocs into Jinja.
 - My services: `/my-services` filters catalog components with
   `repave.dev/blueprint`.
 - Scaffolder `repave:generate` remains an **alternate** submit path
