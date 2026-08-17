@@ -77,9 +77,8 @@ under `backstage/plugins/plugin-repave`.
   Docker-in-Docker).
 - Catalog **graph**, **search**, **API docs**, **import**, **org**, and
   **Kubernetes** stay on Backstage. Generated `catalog-info.yaml` can set
-  `spec.dependsOn` / `spec.providesApis` and `backstage.io/kubernetes-*`
-  from `catalog_depends_on` / `catalog_provides_apis` /
-  `catalog_kubernetes_id` / `catalog_kubernetes_namespace`. Do not clone
+  relations, tags, links, GitHub `project-slug`, and `backstage.io/kubernetes-*`.
+  Hosted image uses an in-cluster locator plus a namespace Role. Do not clone
   those pages into Jinja.
 
 ## Hosted vs laptop

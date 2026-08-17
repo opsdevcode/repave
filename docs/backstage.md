@@ -128,7 +128,8 @@ steps:
         owner: ${{ parameters.owner }}
 ```
 
-Template: [`backstage/examples/templates/terraform-module-generic.yaml`](../backstage/examples/templates/terraform-module-generic.yaml).
+Templates: Terraform, Helm, and app-service under
+[`backstage/examples/templates/`](../backstage/examples/templates/).
 
 Scaffolder and the catalog provider call the engine through the Backstage proxy
 (`/api/proxy/repave/api/v2/...`) so the browser never holds `REPAVE_API_TOKEN`.
@@ -154,7 +155,7 @@ The engine still writes `catalog-info.yaml` after Copier render
 
 | Golden path | Default | Inputs |
 | --- | --- | --- |
-| `app-service-generic` | Always | `owner` (required), `system`, `catalog_lifecycle`, `catalog_depends_on`, `catalog_provides_apis`, `catalog_kubernetes_id`, `catalog_kubernetes_namespace`, `description` |
+| `app-service-generic` | Always | `owner` (required), `system`, `catalog_*` relations/tags/links/slug/kubernetes, `description` |
 | `helm-chart-generic` | Off | `include_backstage_catalog=true` and `owner` |
 | `terraform-module-generic` | Off | Same optional inputs as Helm |
 
@@ -171,6 +172,8 @@ Each component includes:
 | `backstage.io/techdocs-ref` | `dir:.` when the repo has `docs/` or `mkdocs.yml` |
 | `backstage.io/kubernetes-id` | Workload label for the Kubernetes tab (`catalog_kubernetes_id`) |
 | `backstage.io/kubernetes-namespace` | Namespace filter (`catalog_kubernetes_namespace`) |
+| `github.com/project-slug` | `org/repo` (`catalog_github_slug` or `github_org`+`github_repo`) |
+| `backstage.io/source-location` | `url:https://github.com/{slug}` when the slug is set |
 
 Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
 
@@ -193,13 +196,16 @@ next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**.
 | Hosted image / chart | `runIn: local` — `mkdocs-techdocs-core==1.7.0` in [`packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile) so the pod does not need Docker-in-Docker |
 
 Catalog also registers **graph**, **search**, **API docs**, **import**, **org**,
-and **Kubernetes**. Example `tf-aws-demo` depends on resource `tf-aws-demo-state`;
-`example-website` depends on `tf-aws-demo`, provides `example-grpc-api`, and
-carries `backstage.io/kubernetes-id`. Open **Catalog** → **guests** or
-**platform** for org cards. The Kubernetes tab lists workloads when a cluster
-is configured (`kubernetes.clusterLocatorMethods`); local/hosted default is
-an empty cluster list so the backend still starts. Search uses the sidebar
-modal. **Register existing component** imports a `catalog-info.yaml` URL.
+and **Kubernetes**. Example domain `demo` owns system `examples`. `tf-aws-demo`
+has a GitHub project-slug; `example-website` provides `example-grpc-api`;
+`example-worker` is a subcomponent that consumes that API. Open **Catalog** →
+**demo** / **guests** / **platform**. Hosted image uses an in-cluster locator
+plus a namespace Role (`repave.backstage.kubernetes.enabled`, default on).
+The Backstage pod is labeled `backstage.io/kubernetes-id: example-website` so
+the Kubernetes tab has a workload in the release namespace. Local `yarn start`
+keeps an empty cluster list. Create has Terraform, Helm, and app-service
+templates. Search uses the sidebar modal. **Register existing component**
+imports a `catalog-info.yaml` URL.
 
 Do not iframe or clone Docs, graph, search, org, or Kubernetes into the HTML
 workbench.

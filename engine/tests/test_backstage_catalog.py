@@ -9,6 +9,8 @@ from repave_engine.backstage_catalog import (
     build_catalog_document,
     catalog_component_name,
     catalog_entity_refs,
+    catalog_github_slug,
+    catalog_links,
     catalog_optional_text,
     catalog_techdocs_ref,
     should_emit_catalog,
@@ -76,6 +78,11 @@ def test_build_catalog_document_annotations() -> None:
     assert annotations["repave.dev/engine-version"] == "1.43.0"
     assert "dependsOn" not in doc["spec"]
     assert "providesApis" not in doc["spec"]
+    assert "consumesApis" not in doc["spec"]
+    assert "subcomponentOf" not in doc["spec"]
+    assert "tags" not in doc["metadata"]
+    assert "links" not in doc["metadata"]
+    assert "github.com/project-slug" not in annotations
     assert "backstage.io/kubernetes-id" not in annotations
     assert "backstage.io/kubernetes-namespace" not in annotations
 
@@ -131,6 +138,50 @@ def test_build_catalog_document_kubernetes_annotations() -> None:
     annotations = doc["metadata"]["annotations"]
     assert annotations["backstage.io/kubernetes-id"] == "checkout"
     assert annotations["backstage.io/kubernetes-namespace"] == "prod"
+
+
+def test_catalog_github_slug_from_parts_and_rejects_invalid() -> None:
+    assert catalog_github_slug({"catalog_github_slug": "acme/checkout"}) == "acme/checkout"
+    assert catalog_github_slug({"github_org": "acme", "github_repo": "app-checkout"}) == (
+        "acme/app-checkout"
+    )
+    assert catalog_github_slug({"catalog_github_slug": "not-a-slug"}) == ""
+    assert catalog_github_slug({"catalog_github_slug": "acme/has space"}) == ""
+
+
+def test_catalog_links_parses_title_and_bare_urls() -> None:
+    assert catalog_links("Docs|https://docs.example, https://status.example") == (
+        {"url": "https://docs.example", "title": "Docs"},
+        {"url": "https://status.example"},
+    )
+    assert catalog_links("not-a-url, ftp://skip") == ()
+
+
+def test_build_catalog_document_relations_tags_links_and_github() -> None:
+    bp = _bp("app-service")
+    doc = build_catalog_document(
+        bp,
+        {
+            "service_name": "checkout",
+            "owner": "group:payments",
+            "catalog_consumes_apis": "api:default/payments",
+            "catalog_subcomponent_of": "component:default/commerce",
+            "catalog_tags": "payments, checkout",
+            "catalog_links": "Runbook|https://runbooks.example/checkout",
+            "catalog_github_slug": "acme/app-checkout",
+        },
+    )
+    assert doc["spec"]["consumesApis"] == ["api:default/payments"]
+    assert doc["spec"]["subcomponentOf"] == "component:default/commerce"
+    assert doc["metadata"]["tags"] == ["payments", "checkout"]
+    assert doc["metadata"]["links"] == [
+        {"url": "https://runbooks.example/checkout", "title": "Runbook"}
+    ]
+    annotations = doc["metadata"]["annotations"]
+    assert annotations["github.com/project-slug"] == "acme/app-checkout"
+    assert annotations["backstage.io/source-location"] == (
+        "url:https://github.com/acme/app-checkout"
+    )
 
 
 def test_catalog_component_name_terraform() -> None:

@@ -15,8 +15,9 @@ spec:
     metadata:
       labels:
         {{- include "repave.backstageSelectorLabels" . | nindent 8 }}
+        backstage.io/kubernetes-id: example-website
     spec:
-      serviceAccountName: {{ include "repave.serviceAccountName" . }}
+      serviceAccountName: {{ include "repave.backstageServiceAccountName" . }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}

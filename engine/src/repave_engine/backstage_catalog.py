@@ -69,6 +69,38 @@ def catalog_optional_text(raw: Any) -> str:
     return str(raw).strip()
 
 
+def catalog_github_slug(values: dict[str, Any]) -> str:
+    """Return org/repo for github.com/project-slug, or empty when unset/invalid."""
+    raw = catalog_optional_text(values.get("catalog_github_slug") or values.get("github_slug"))
+    if not raw:
+        org = catalog_optional_text(values.get("catalog_github_org") or values.get("github_org"))
+        repo = catalog_optional_text(values.get("catalog_github_repo") or values.get("github_repo"))
+        raw = f"{org}/{repo}" if org and repo else ""
+    if raw.count("/") != 1 or " " in raw:
+        return ""
+    org, repo = raw.split("/", 1)
+    if not org or not repo:
+        return ""
+    return raw
+
+
+def catalog_links(raw: Any) -> tuple[dict[str, str], ...]:
+    """Parse Title|https://url or bare https://url entries."""
+    links: list[dict[str, str]] = []
+    for part in catalog_entity_refs(raw):
+        title = ""
+        url = part
+        if "|" in part:
+            title, url = (piece.strip() for piece in part.split("|", 1))
+        if not url.startswith(("http://", "https://")):
+            continue
+        item = {"url": url}
+        if title:
+            item["title"] = title
+        links.append(item)
+    return tuple(links)
+
+
 def catalog_description(blueprint: Blueprint, values: dict[str, Any]) -> str:
     raw = values.get("description") or values.get("catalog_description")
     if raw:
@@ -112,6 +144,23 @@ def build_catalog_document(blueprint: Blueprint, values: dict[str, Any]) -> dict
     )
     if provides_apis:
         spec["providesApis"] = list(provides_apis)
+    consumes_apis = catalog_entity_refs(
+        values.get("catalog_consumes_apis") or values.get("consumes_apis")
+    )
+    if consumes_apis:
+        spec["consumesApis"] = list(consumes_apis)
+    subcomponent_of = catalog_optional_text(
+        values.get("catalog_subcomponent_of") or values.get("subcomponent_of")
+    )
+    if subcomponent_of:
+        spec["subcomponentOf"] = subcomponent_of
+
+    tags = catalog_entity_refs(values.get("catalog_tags") or values.get("tags"))
+    links = catalog_links(values.get("catalog_links") or values.get("links"))
+    github_slug = catalog_github_slug(values)
+    if github_slug:
+        annotations["github.com/project-slug"] = github_slug
+        annotations["backstage.io/source-location"] = f"url:https://github.com/{github_slug}"
 
     kubernetes_id = catalog_optional_text(
         values.get("catalog_kubernetes_id") or values.get("kubernetes_id")
@@ -124,14 +173,20 @@ def build_catalog_document(blueprint: Blueprint, values: dict[str, Any]) -> dict
     if kubernetes_namespace:
         annotations["backstage.io/kubernetes-namespace"] = kubernetes_namespace
 
+    metadata: dict[str, Any] = {
+        "name": name,
+        "description": catalog_description(blueprint, values),
+        "annotations": annotations,
+    }
+    if tags:
+        metadata["tags"] = list(tags)
+    if links:
+        metadata["links"] = [dict(item) for item in links]
+
     return {
         "apiVersion": "backstage.io/v1alpha1",
         "kind": "Component",
-        "metadata": {
-            "name": name,
-            "description": catalog_description(blueprint, values),
-            "annotations": annotations,
-        },
+        "metadata": metadata,
         "spec": spec,
     }
 

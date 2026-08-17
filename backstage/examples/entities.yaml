@@ -1,4 +1,14 @@
 ---
+# https://backstage.io/docs/features/software-catalog/descriptor-format#kind-domain
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: demo
+  title: Demo
+  description: Example domain for local yarn start and chart-smoke Catalog.
+spec:
+  owner: group:default/platform
+---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-system
 apiVersion: backstage.io/v1alpha1
 kind: System
@@ -6,15 +16,21 @@ metadata:
   name: examples
 spec:
   owner: guests
+  domain: demo
 ---
 # https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: example-website
+  tags:
+    - demo
+    - website
+  links:
+    - url: https://example.com
+      title: Example site
   annotations:
     backstage.io/kubernetes-id: example-website
-    backstage.io/kubernetes-namespace: default
 spec:
   type: website
   lifecycle: experimental
@@ -27,8 +43,28 @@ spec:
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
+  name: example-worker
+  title: example-worker
+  description: Child worker that consumes the example gRPC API.
+  tags:
+    - demo
+    - worker
+spec:
+  type: service
+  lifecycle: experimental
+  owner: guests
+  system: examples
+  subcomponentOf: component:default/example-website
+  consumesApis: [example-grpc-api]
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
   name: tf-aws-demo
   title: tf-aws-demo
+  tags:
+    - terraform
+    - aws
   annotations:
     repave.dev/blueprint: terraform-module-generic
     repave.dev/blueprint-version: 1.0.0
@@ -37,6 +73,8 @@ metadata:
     repave.dev/engine-version: 3.6.0
     repave.dev/artifact-type: terraform-module
     backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: opsdevcode/tf-aws-demo
+    backstage.io/source-location: url:https://github.com/opsdevcode/tf-aws-demo
 spec:
   type: library
   lifecycle: production

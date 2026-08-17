@@ -22,6 +22,9 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Catalog depth**
+(GitHub slug/source-location, consumesApis/subcomponentOf/tags/links,
+Helm + app-service Scaffolder, Domain `demo`, in-cluster Kubernetes Role);
 **Catalog org and Kubernetes**
 (Group/User cards, Kubernetes tab, `catalog_kubernetes_id` /
 `catalog_kubernetes_namespace` on generate);
@@ -205,15 +208,18 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 ### Hosted Backstage IDP
 
 **Status:** Split by job + one product chrome + TechDocs + catalog graph / search /
-API docs / import + org / Kubernetes shipped (owner: Eric Skaggs;
+API docs / import + org / Kubernetes + catalog depth shipped
+(owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md),
 [`docs/ui-surfaces.md`](ui-surfaces.md)).
 Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench
 (**Golden paths**). Backstage is catalog ingest, lineage, My services, and
 optional Scaffolder (**Catalog**), with the night-ops top bar and TechDocs on
 the entity Docs tab, catalog graph, search, API docs, catalog import, org
-(Group/User), and Kubernetes (`catalog_kubernetes_*` emit). Hosted image
-generates Docs with `runIn: local` (no Docker-in-Docker).
+(Group/User), Kubernetes, Domain, and Scaffolder Terraform/Helm/app-service.
+Generate emits GitHub slug, tags, links, and remaining relations. Hosted
+image uses an in-cluster Kubernetes locator plus a namespace Role.
+Hosted image generates Docs with `runIn: local` (no Docker-in-Docker).
 Plugin clones of generate/ops/platform pages are removed.
 Hosted overlay keeps `portal.html: true`
 and sends `/idp` to Backstage (`app.baseUrl` = `https://<host>/idp`). Do not

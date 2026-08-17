@@ -54,6 +54,10 @@ if ! grep -q 'app.kubernetes.io/component: backstage' "${rendered}"; then
   echo "default values must render Backstage (repave.backstage.enabled default on)" >&2
   exit 1
 fi
+if ! grep -q 'app.kubernetes.io/component: backstage-kubernetes' "${rendered}"; then
+  echo "default values must render Backstage Kubernetes RBAC" >&2
+  exit 1
+fi
 
 helm template repave-kind "${CHART}" \
   --namespace repave-kind \
@@ -632,6 +636,11 @@ if ! grep -q 'REPAVE_API_TOKEN' "${bs_rendered}"; then
 fi
 if ! grep -q 'initialDelaySeconds: 60' "${bs_rendered}"; then
   echo "Backstage liveness initialDelaySeconds must be 60 for first boot" >&2
+  rm -f "${bs_rendered}"
+  exit 1
+fi
+if ! grep -q 'app.kubernetes.io/component: backstage-kubernetes' "${bs_rendered}"; then
+  echo "Backstage Kubernetes RBAC must render when backstage is enabled" >&2
   rm -f "${bs_rendered}"
   exit 1
 fi

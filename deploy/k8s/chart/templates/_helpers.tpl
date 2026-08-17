@@ -67,6 +67,20 @@ app.kubernetes.io/component: backstage
 {{- end }}
 {{- end }}
 
+{{- define "repave.backstageKubernetesEnabled" -}}
+{{- if and .Values.repave.backstage.enabled .Values.repave.backstage.kubernetes.enabled -}}
+true
+{{- end -}}
+{{- end }}
+
+{{- define "repave.backstageServiceAccountName" -}}
+{{- if include "repave.backstageKubernetesEnabled" . }}
+{{- printf "%s-backstage" (include "repave.fullname" .) }}
+{{- else }}
+{{- include "repave.serviceAccountName" . }}
+{{- end }}
+{{- end }}
+
 {{- define "repave.image" -}}
 {{- if .Values.image.digest }}
 {{- printf "%s@%s" .Values.image.repository .Values.image.digest }}

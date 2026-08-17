@@ -1,0 +1,57 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: repave-helm-chart
+  title: Helm chart (repave)
+  description: Generate a governed Helm chart via POST /api/v2/generate
+spec:
+  owner: group:default/platform
+  type: service
+  parameters:
+    - title: Chart
+      required:
+        - chartName
+        - appName
+        - imageRepository
+        - owner
+      properties:
+        chartName:
+          title: Chart name
+          type: string
+        appName:
+          title: App name
+          type: string
+        description:
+          title: Description
+          type: string
+          default: Scaffolder bootstrap
+        imageRepository:
+          title: Image repository
+          type: string
+          default: ghcr.io/example/app
+        owner:
+          title: Owner
+          type: string
+          default: group:platform
+        dryRun:
+          title: Plan only
+          type: boolean
+          default: true
+  steps:
+    - id: generate
+      name: repave generate
+      action: repave:generate
+      input:
+        blueprint: helm-chart-generic
+        dryRun: ${{ parameters.dryRun }}
+        inputs:
+          chart_name: ${{ parameters.chartName }}
+          app_name: ${{ parameters.appName }}
+          description: ${{ parameters.description }}
+          image_repository: ${{ parameters.imageRepository }}
+          owner: ${{ parameters.owner }}
+          include_backstage_catalog: "true"
+  output:
+    text:
+      - title: Summary
+        text: ${{ steps.generate.output.summary }}
