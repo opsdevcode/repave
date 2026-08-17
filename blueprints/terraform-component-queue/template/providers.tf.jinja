@@ -8,5 +8,7 @@ provider "azurerm" {
 }
 {% elif cloud_provider == "gcp" %}
 provider "google" {
+  project = "example"
+  region  = "us-central1"
 }
 {% endif %}

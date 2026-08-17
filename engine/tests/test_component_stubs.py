@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def test_component_stubs_emit_aws_resources(repo_root: Path) -> None:
+def test_component_stubs_emit_cloud_resources(repo_root: Path) -> None:
     roots = repo_root / "blueprints"
     rds = (
         roots / "terraform-component-database/template/modules/_rds-stub/main.tf.jinja"
@@ -22,6 +22,12 @@ def test_component_stubs_emit_aws_resources(repo_root: Path) -> None:
     assert "aws_s3_bucket" in bucket
     assert "aws_s3_bucket_ownership_controls" in bucket
     assert "aws_sqs_queue" in queue
-    assert "null_resource" in rds
-    assert "null_resource" in bucket
-    assert "null_resource" in queue
+    assert "azurerm_postgresql_flexible_server" in rds
+    assert "google_sql_database_instance" in rds
+    assert "azurerm_storage_account" in bucket
+    assert "google_storage_bucket" in bucket
+    assert "azurerm_servicebus_queue" in queue
+    assert "google_pubsub_topic" in queue
+    assert "null_resource" not in rds
+    assert "null_resource" not in bucket
+    assert "null_resource" not in queue

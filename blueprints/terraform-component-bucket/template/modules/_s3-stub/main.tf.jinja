@@ -71,18 +71,53 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
 output "resource_ids" {
   value = [aws_s3_bucket.this.id]
 }
-{% else %}
-# {{ cloud_provider }}: replace with GCS / Blob before apply.
-resource "null_resource" "example" {
-  triggers = {
-    stack       = var.stack_name
-    environment = var.environment
-    prefix      = var.name_prefix
-    tags        = jsonencode(var.tags)
+{% elif cloud_provider == "azure" %}
+# Managed object store (Blob). Pin an estate tf-* module before shared apply.
+resource "azurerm_resource_group" "this" {
+  name     = replace(var.name_prefix, "_", "-")
+  location = "eastus"
+  tags     = var.tags
+}
+
+resource "azurerm_storage_account" "this" {
+  name                            = substr(replace(replace(var.name_prefix, "_", ""), "-", ""), 0, 24)
+  resource_group_name             = azurerm_resource_group.this.name
+  location                        = azurerm_resource_group.this.location
+  account_tier                    = "Standard"
+  account_replication_type        = "LRS"
+  min_tls_version                 = "TLS1_2"
+  https_traffic_only_enabled      = true
+  allow_nested_items_to_be_public = false
+  shared_access_key_enabled       = false
+  local_user_enabled              = false
+  public_network_access_enabled   = false
+
+  blob_properties {
+    versioning_enabled = true
+    delete_retention_policy {
+      days = 7
+    }
+  }
+
+  tags = var.tags
+}
+
+output "resource_ids" {
+  value = [azurerm_storage_account.this.id]
+}
+{% elif cloud_provider == "gcp" %}
+# Managed object bucket (GCS). Pin an estate tf-* module before shared apply.
+resource "google_storage_bucket" "this" {
+  name                        = replace(var.name_prefix, "_", "-")
+  location                    = "US"
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  versioning {
+    enabled = true
   }
 }
 
 output "resource_ids" {
-  value = [null_resource.example.id]
+  value = [google_storage_bucket.this.id]
 }
 {% endif %}
