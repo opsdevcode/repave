@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.developer_lab import is_developer_lab_enabled, load_developer_lab_paths
 from repave_engine.settings import (
@@ -102,12 +101,22 @@ def test_developer_lab_portal_routes(v3_lab_root: Path, monkeypatch: pytest.Monk
     client = TestClient(create_app(repo_root=v3_lab_root))
 
     home = client.get("/home")
-    assert_surface_moved(home, "home")
+    assert home.status_code == 200
+    assert "Developer lab" in home.text
+    assert "request a developer lab" in home.text
 
     lab = client.get("/lab")
-    assert_surface_moved(lab, "sandbox")
-    assert "Request developer lab" not in lab.text
-    assert_surface_moved(client.get("/sandbox"), "sandbox")
+    assert lab.status_code == 200
+    assert "Request developer lab" in lab.text
+    assert "fleet-tile" in lab.text
+    assert "fleet-tile--choice" in lab.text
+    assert "my-feature-lab" in lab.text
+    assert "Sandboxes expire" not in lab.text
+    assert "environment_vending" not in lab.text
+    assert "durability.async_generation" not in lab.text
+    assert "service_catalog.deployment_sets" not in lab.text
+
+    assert client.get("/sandbox").status_code == 200
 
 
 def test_lab_route_404_when_developer_lab_disabled(

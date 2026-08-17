@@ -54,7 +54,7 @@ On the result page confirm:
 
 1. Open Backstage **Upgrade** (`/upgrade`), or run
    `repave plan-upgrade --target-repo operator/testdata/modules/terraform-minimal`.
-2. HTML `/update` is a pointer page; preview and apply stay API/CLI.
+2. HTML `/update` is the upgrade form; preview and apply also stay on API/CLI.
 
 **Say:** “We plan upgrades from provenance, not from guessing what's in git.”
 

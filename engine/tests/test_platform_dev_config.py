@@ -9,7 +9,6 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine import settings
 from repave_engine.api import create_app
 from repave_engine.settings import (
@@ -93,26 +92,27 @@ def test_platform_dev_pages_render(
     output_config,
 ) -> None:
     client = TestClient(create_app(repo_root=platform_dev_repo, output_config=output_config))
-    for path, surface_id in (
-        ("/platform/fleet", "platform-fleet"),
-        ("/platform/ops", "platform-ops"),
-        ("/platform/standards", "platform-standards"),
-        ("/platform/finops", "platform-finops"),
-        ("/platform/adoption", "platform-adoption"),
-        ("/platform/compliance", "platform-compliance"),
-        ("/platform/value-stream", "platform-value-stream"),
-        ("/platform/feedback", "platform-feedback"),
-        ("/platform/campaigns", "platform-campaigns"),
-        ("/platform/maturity", "platform-maturity"),
-        ("/platform/initiatives", "platform-initiatives"),
-        ("/home", "home"),
+    for path, needle in (
+        ("/platform/fleet", "Governed repositories"),
+        ("/platform/ops", "Estate health"),
+        ("/platform/standards", "Standards blast radius"),
+        ("/platform/finops", "FinOps showback"),
+        ("/platform/adoption", "Golden path adoption"),
+        ("/platform/compliance", "Compliance posture"),
+        ("/platform/value-stream", "Value stream"),
+        ("/platform/feedback", "Developer feedback"),
+        ("/platform/campaigns", "Operator campaigns"),
+        ("/platform/maturity", "Service maturity"),
+        ("/platform/initiatives", "Initiatives"),
+        ("/home", "My services"),
+        ("/sandbox", "Request a sandbox"),
     ):
         response = client.get(path)
-        assert_surface_moved(response, surface_id)
+        assert response.status_code == 200, path
+        assert needle in response.text, path
 
-    sandbox = client.get("/sandbox")
-    assert_surface_moved(sandbox, "sandbox")
-    assert "Request a sandbox" not in sandbox.text
+    campaigns = client.get("/platform/campaigns").text
+    assert "platform-rollout" in campaigns
 
     home = client.get("/").text
     primary = home.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
@@ -137,6 +137,11 @@ def test_platform_dev_pages_render(
     assert "repave v3 · The intelligent platform layer" in footer
     assert "shell__footer-link" not in footer
 
-    assert_surface_moved(client.get("/platform/roadmap"), "platform-roadmap")
-    assert_surface_moved(client.get("/platform/finops"), "platform-finops")
+    roadmap = client.get("/platform/roadmap").text
+    assert "Roadmap evidence" in roadmap
+    assert "Theme adoption evidence" in roadmap
+
+    finops = client.get("/platform/finops").text
+    assert "Cost anomalies" in finops
     assert 'href="/platform/fleet"' in primary
+    assert 'class="platform-subnav shell__nav"' in client.get("/platform/fleet").text

@@ -9,7 +9,6 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.entity_catalog import entity_id_for_repo_url
 from repave_engine.fleet import FleetEntry, register_repo
@@ -339,7 +338,8 @@ live_plan:
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
     try:
         detail = client.get(f"/services/{entity_id}")
-        assert_surface_moved(detail, "services")
+        assert detail.status_code == 200
+        assert "Plan against live state" in detail.text
         with patch(
             "repave_engine.run_queue.run_live_plan",
             return_value=LivePlanSummary(

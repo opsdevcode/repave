@@ -38,6 +38,11 @@ Landing remains until the 14 Feb 2027 sunset.
 **Amendment (2026-08-16):** HTML `landing.html` and `signup.html` stay real
 pages. Unauthenticated `GET /` with auth on is the product splash
 (Create account / Sign in). Phase 4 does not replace them with pointers.
+**Amendment (2026-08-16):** Local-first HTML pages are restored. Nav,
+generate, upgrade, verify, import, platform, runs, sandbox, and result
+templates are real pages again so `make serve` can open them. Hosted
+Backstage still owns the same routes when `values-backstage.yaml` is on.
+Earlier pointer-page amendments apply only to that hosted cutover.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.

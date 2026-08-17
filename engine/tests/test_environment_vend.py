@@ -7,7 +7,6 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.entity_catalog import entity_id_for_repo_url
 from repave_engine.environment_vend import (
@@ -357,7 +356,11 @@ environment_vending:
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
     try:
         detail = client.get(f"/services/{entity_id}")
-        assert_surface_moved(detail, "services")
+        assert detail.status_code == 200
+        assert "Request environment" in detail.text
+        assert "Plan gates" in detail.text
+        assert "Open GitOps PR" in detail.text
+        assert "environments/tf-live" in detail.text or "tf-live" in detail.text
     finally:
         queue = client.app.state.run_queue
         if queue is not None:
@@ -436,8 +439,9 @@ environment_vending:
             run_url = response.headers["location"]
             assert run_url.startswith("/runs/")
             console = client.get(run_url)
-            assert_surface_moved(console, "run-console")
-            assert "data-environment-vend" not in console.text
+            assert console.status_code == 200
+            assert "data-environment-vend" in console.text
+            assert "Environment stack vend" in console.text
 
             run_id = run_url.rstrip("/").split("/")[-1]
             deadline = time.time() + 5.0
@@ -446,9 +450,9 @@ environment_vending:
                 if result_page.status_code == 200:
                     break
                 time.sleep(0.05)
-            assert_surface_moved(result_page, "vend-result")
-            assert "Gate preview complete" not in result_page.text
-            assert "data-environment-vend" not in result_page.text
+            assert result_page.status_code == 200
+            assert "Environment vend" in result_page.text
+            assert "Gate preview complete" in result_page.text
     finally:
         queue = client.app.state.run_queue
         if queue is not None:

@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Estate health — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--home{% endblock %}
+
+{% block content %}
+{% set platform_console_title = "Estate health" %}
+{% set platform_console_heading_id = "ops-console-title" %}
+{% set platform_console_lead %}
+  Toolchain readiness, async queue depth, environment TTL, and service probes in one view.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+
+<div class="platform-stack">
+<section class="card" aria-labelledby="readiness-heading">
+  <div class="card__header">
+    <h2 id="readiness-heading">Readiness</h2>
+    <p class="muted card__subtitle">
+      Same checks as <code>/readyz</code> — {% if ops_page.readiness.ready %}all probes passing{% else %}one or more probes failing{% endif %}.
+    </p>
+  </div>
+  <div class="card__body">
+    <ul class="library-drawers platform-stat-grid" aria-label="Readiness checks">
+      {% for name, ok in ops_page.readiness.checks.items() %}
+      <li>
+        <div
+          class="library-drawer platform-stat platform-stat--{{ 'pass' if ok else 'fail' }}"
+          data-motion-face
+          data-library-drawer
+        >
+          <header class="library-drawer__label">
+            <h3 class="library-drawer__title">{{ name }}</h3>
+            <p class="library-drawer__subtitle muted">{% if ok %}passing{% else %}failing{% endif %}</p>
+          </header>
+          <p class="fleet-tile__badges">
+            <span class="badge badge--{% if ok %}pass{% else %}fail{% endif %}">{% if ok %}pass{% else %}fail{% endif %}</span>
+          </p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% if ops_page.readiness_payload %}
+    <details class="hint">
+      <summary>Probe details</summary>
+      <pre class="panel-code"><code>{{ ops_page.readiness_payload | tojson(indent=2) }}</code></pre>
+    </details>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="doctor-heading">
+  <div class="card__header">
+    <h2 id="doctor-heading">Gate toolchain</h2>
+    <p class="muted card__subtitle">Core gate CLIs on this server vs CI pins.</p>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Tool</th>
+          <th scope="col">Present</th>
+          <th scope="col">Detected</th>
+          <th scope="col">Pinned</th>
+          <th scope="col">Match</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ops_page.doctor_results %}
+        <tr>
+          <td><code>{{ row.tool }}</code></td>
+          <td>{% if row.present %}yes{% else %}no{% endif %}</td>
+          <td>{{ row.detected_version or '—' }}</td>
+          <td>{{ row.pinned_version or '—' }}</td>
+          <td>
+            {% if row.version_match is none %}—{% elif row.version_match %}ok{% else %}mismatch{% endif %}
+          </td>
+        </tr>
+        {% if not row.present and row.install_hint %}
+        <tr>
+          <td colspan="5" class="muted">{{ row.install_hint }}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card" aria-labelledby="queue-heading">
+  <div class="card__header">
+    <h2 id="queue-heading">Async queue</h2>
+    <p
+      class="muted card__subtitle"
+      data-platform-ops-queue
+      {% if ops_page.queue_depth is not none %}data-async-queue="1"{% endif %}
+    >
+      <span data-ops-queue-summary>
+        {% if ops_page.queue_depth is not none %}
+        {{ ops_page.queued_runs }} queued · {{ ops_page.running_runs }} running · {{ ops_page.queue_depth }} in flight
+        {% else %}
+        Async generation is not enabled on this deployment.
+        {% endif %}
+      </span>
+      <span class="runs-live-hint" data-ops-queue-live-hint hidden aria-live="polite"></span>
+    </p>
+  </div>
+  <div class="card__body">
+    {% if ops_page.dead_letter_runs %}
+    <h3 class="card__title">Dead-letter runs</h3>
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Run</th>
+          <th scope="col">Blueprint</th>
+          <th scope="col">Error</th>
+          <th scope="col">Replay</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in ops_page.dead_letter_runs %}
+        <tr>
+          <td><a href="/runs/{{ run.run_id }}"><code>{{ run.run_id[:8] }}</code></a></td>
+          <td><code>{{ run.blueprint_name }}</code></td>
+          <td class="muted">{{ (run.error or '')[:120] }}</td>
+          <td>
+            <form method="post" action="/runs/{{ run.run_id }}/replay">
+              <button type="submit" class="btn btn--secondary btn--sm">Replay</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% elif ops_page.queue_depth is not none %}
+    <p class="muted">No dead-letter runs.</p>
+    {% endif %}
+    {% if ops_page.queue_depth is not none %}
+    <p class="hint"><a href="/runs?status=dead_letter">View all runs</a></p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" aria-labelledby="env-heading">
+  <div class="card__header">
+    <h2 id="env-heading">Environment TTL</h2>
+    <p class="muted card__subtitle">
+      {% if ops_page.environment_vending_enabled %}
+      {{ ops_page.environment_count }} vended environment(s) tracked.
+      {% else %}
+      Environment vending is not enabled.
+      {% endif %}
+    </p>
+  </div>
+  <div class="card__body">
+    {% if ops_page.environment_vending_enabled and ops_page.reclaim_preview %}
+    <p class="muted">
+      Plan reclaim preview:
+      {{ ops_page.reclaim_preview.to_public_dict().reclaimed }} to reclaim,
+      {{ ops_page.reclaim_preview.to_public_dict().skipped }} skipped.
+    </p>
+    {% if async_generation_enabled %}
+    <form method="post" action="/platform/ops/reclaim" class="form-actions">
+      <input type="hidden" name="dry_run" value="1" />
+      <button type="submit" class="btn btn--secondary">Refresh plan preview</button>
+    </form>
+    <form method="post" action="/platform/ops/reclaim" class="form-actions">
+      <input type="hidden" name="dry_run" value="0" />
+      <button type="submit" class="btn btn--primary">Apply reclaim (async)</button>
+    </form>
+    {% else %}
+    <form method="post" action="/platform/ops/reclaim" class="form-actions">
+      <input type="hidden" name="dry_run" value="0" />
+      <button type="submit" class="btn btn--primary">Apply reclaim</button>
+    </form>
+    {% endif %}
+    {% elif ops_page.environment_vending_enabled %}
+    <p class="muted">No expired environments to reclaim.</p>
+    {% endif %}
+  </div>
+</section>
+</div>
+</div>
+{% endblock %}

@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.entity_catalog import entity_id_for_repo_url
@@ -72,7 +71,10 @@ def test_service_detail_renders_scorecard_and_readme(
 
     response = client.get(f"/services/{entity_id}")
 
-    assert_surface_moved(response, "services")
+    assert response.status_code == 200
+    body = response.text
+    assert "Scorecard" in body
+    assert "VPC module" in body or "Hello catalog" in body
 
 
 def test_api_catalog_entities_json(repo_root, output_config, registry: Path) -> None:
@@ -185,9 +187,14 @@ def test_observability_url_on_detail(
     entity_id = entity_id_for_repo_url(PROVENANCE_ENTRY.repo_url)
     client = TestClient(create_app(repo_root=tmp_path, output_config=output_config))
 
-    response = client.get(f"/services/{entity_id}")
+    body = client.get(f"/services/{entity_id}").text
 
-    assert_surface_moved(response, "services")
+    assert "grafana.example" in body
+    assert "Observability" in body
+    assert "Health summary" in body
+    assert "Upgrade notes" in body
+    assert "Lineage" in body
+    assert "repave.yaml" in body
 
 
 def test_api_v2_entity_detail_includes_deployment_status(
@@ -339,4 +346,8 @@ def test_service_detail_shows_cost_estimate_panel(repo_root, output_config, regi
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 
-    assert_surface_moved(client.get("/services/acme-tf-vpc"), "services")
+    body = client.get("/services/acme-tf-vpc").text
+
+    assert "Cost estimate" in body
+    assert "USD 25.00/month" in body
+    assert "Cloud spend" in body

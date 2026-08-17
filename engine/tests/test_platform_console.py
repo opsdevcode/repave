@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.blueprint import blueprints_dir, list_blueprints
 from repave_engine.fleet import FleetEntry, register_repo
@@ -148,7 +147,18 @@ def test_platform_fleet_page_requires_admin_when_service_mode(
 def test_platform_fleet_page_renders(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    assert_surface_moved(client.get("/platform/fleet"), "platform-fleet")
+    body = client.get("/platform/fleet").text
+    assert "Governed repositories" in body
+    assert "Register repository" in body
+    assert "terraform-module-generic@0.9.0" in body
+    assert "fleet-grid" in body
+    assert "data-motion-face" in body
+    assert "library-drawer--terraform" in body
+    assert ">tf-vpc<" in body
+    assert "/platform/ops" in body
+    assert "/platform/adoption" in body
+    assert "/platform/feedback" in body
+    assert "/platform/finops" in body
 
 
 def test_platform_fleet_register_and_unregister(repo_root, output_config, registry: Path) -> None:
@@ -179,8 +189,11 @@ def test_platform_fleet_register_and_unregister(repo_root, output_config, regist
 
 def test_platform_ops_page_renders(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    response = client.get("/platform/ops")
-    assert_surface_moved(response, "platform-ops")
+    body = client.get("/platform/ops").text
+    assert "Estate health" in body
+    assert "Gate toolchain" in body
+    assert "home-console" in body
+    assert "platform-stat-grid" in body
 
 
 def test_platform_ops_queue_live_markers(
@@ -189,7 +202,11 @@ def test_platform_ops_queue_live_markers(
     monkeypatch.setenv("REPAVE_ASYNC_GENERATION", "true")
     monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    assert_surface_moved(client.get("/platform/ops"), "platform-ops")
+    body = client.get("/platform/ops").text
+    assert "data-platform-ops-queue" in body
+    assert 'data-async-queue="1"' in body
+    assert "data-ops-queue-summary" in body
+    assert "data-ops-queue-live-hint" in body
     js = client.get("/static/repave.js").text
     assert "initPlatformOpsQueue" in js
     assert "fetchQueuedAndRunning" in js
@@ -198,7 +215,11 @@ def test_platform_ops_queue_live_markers(
 def test_platform_standards_page_renders(repo_root, output_config, registry: Path) -> None:
     register_repo(registry, PROVENANCE_ENTRY)
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    assert_surface_moved(client.get("/platform/standards"), "platform-standards")
+    body = client.get("/platform/standards").text
+    assert "Standards blast radius" in body
+    assert "terraform-module-generic" in body
+    assert "fleet-grid" in body
+    assert "data-motion-face" in body
     page = build_platform_standards_page(repo_root)
     assert page.summaries
 
@@ -212,14 +233,22 @@ def test_platform_campaigns_page_without_snapshot(
         str(tmp_path / "missing-operator-status.json"),
     )
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    assert_surface_moved(client.get("/platform/campaigns"), "platform-campaigns")
+    body = client.get("/platform/campaigns").text
+    assert "Operator campaigns" in body
+    assert "fleet-operator-snapshot" in body
+    assert "home-console" in body
+    assert "fleet-gitops" in body
 
 
 def test_platform_feedback_page_without_metrics(repo_root, output_config, monkeypatch) -> None:
     # Force-disable even when a local (gitignored) repave.config.yaml enables metrics.
     monkeypatch.setenv("REPAVE_PLATFORM_METRICS", "0")
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
-    assert_surface_moved(client.get("/platform/feedback"), "platform-feedback")
+    body = client.get("/platform/feedback").text
+    assert "Developer feedback" in body
+    assert "platform_metrics" in body
+    assert "make platform-dev-setup" in body
+    assert "repave.platformMetrics.enabled: false" in body
 
 
 def test_find_campaign_in_snapshot() -> None:
@@ -290,7 +319,9 @@ def test_platform_campaign_pause_action(
     assert response.status_code == 303
     assert response.headers["location"] == "/platform/campaigns"
     assert calls == [("platform-rollout", "repave-system", True)]
-    assert_surface_moved(client.get("/platform/campaigns"), "platform-campaigns")
+    body = client.get("/platform/campaigns").text
+    assert "Pause campaign" in body
+    assert "Resume campaign" not in body or "platform-rollout" in body
 
 
 def test_platform_standards_confirm_drift_submits_run(
@@ -305,7 +336,8 @@ def test_platform_standards_confirm_drift_submits_run(
     monkeypatch.setenv("REPAVE_RUNS_DB", str(tmp_path / "runs.sqlite"))
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     try:
-        assert_surface_moved(client.get("/platform/standards"), "platform-standards")
+        body = client.get("/platform/standards").text
+        assert "Confirm drift" in body
         response = client.post(
             "/platform/standards/terraform-module-generic/confirm-drift",
             data={"repo_urls": PROVENANCE_ENTRY.repo_url},
@@ -314,9 +346,9 @@ def test_platform_standards_confirm_drift_submits_run(
         assert response.status_code == 303
         assert response.headers["location"].startswith("/runs/")
         run_page = client.get(response.headers["location"])
-        assert_surface_moved(run_page, "run-console")
-        assert 'data-fleet-drift-confirm="1"' not in run_page.text
-        assert "Fleet drift confirm" not in run_page.text
+        assert run_page.status_code == 200
+        assert 'data-fleet-drift-confirm="1"' in run_page.text
+        assert "Fleet drift confirm" in run_page.text
     finally:
         queue = client.app.state.run_queue
         if queue is not None:
@@ -337,3 +369,5 @@ def test_nav_shows_platform_link(repo_root, output_config) -> None:
         page = client.get(path).text
         assert 'class="breadcrumb"' not in page
         assert "← Catalog" not in page
+    fleet = client.get("/platform/fleet").text
+    assert "platform-subnav" in fleet

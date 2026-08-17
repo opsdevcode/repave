@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Batch import — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Batch import</h1>
+    <p class="page-lead">
+      Plan imports for many repositories at once. Scan a GitHub organization, filter by
+      artifact family or GitHub search, or paste a URL list.
+    </p>
+  </div>
+</header>
+
+{% if error_message %}
+<div class="alert alert--fail" role="alert">{{ error_message }}</div>
+{% endif %}
+
+<form
+  class="form-panel form-panel--compact"
+  method="post"
+  action="/import/batch"
+  data-repave-busy-form
+  data-busy-label="Planning batch…"
+  data-import-org-scan
+>
+  <section class="card" data-import-org-scan-panel>
+    <div class="card__header"><h2>Scan organization</h2></div>
+    <div class="card__body">
+      <div class="field">
+        <label class="field__label" for="batch-org">GitHub org</label>
+        <input
+          class="field__input"
+          type="text"
+          id="batch-org"
+          name="org"
+          value="{{ org or '' }}"
+          placeholder="acme"
+          data-import-org-scan-org
+        />
+      </div>
+
+      {% if scan_search_presets %}
+      <div class="field">
+        <span class="field__label">GitHub search presets</span>
+        <div class="chip-row" data-import-org-scan-presets>
+          {% for preset in scan_search_presets %}
+          <button
+            class="chip"
+            type="button"
+            data-import-search-preset
+            data-preset-language="{{ preset.language }}"
+            data-preset-topic="{{ preset.topic }}"
+          >
+            {{ preset.label }}
+          </button>
+          {% endfor %}
+        </div>
+        <p class="field__hint muted">
+          Presets set GitHub search qualifiers before scan. Classification still uses marker
+          files in each repository.
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="field">
+        <label class="field__label" for="scan-topic">Topic (GitHub search)</label>
+        <input
+          class="field__input"
+          type="text"
+          id="scan-topic"
+          data-import-org-scan-topic
+          placeholder="terraform"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="scan-language">Language (GitHub search)</label>
+        <input
+          class="field__input"
+          type="text"
+          id="scan-language"
+          data-import-org-scan-language
+          placeholder="HCL"
+        />
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="scan-pushed">Pushed since</label>
+        <input
+          class="field__input"
+          type="date"
+          id="scan-pushed"
+          data-import-org-scan-pushed
+        />
+        <p class="field__hint muted">Optional. Uses GitHub <code>pushed:&gt;YYYY-MM-DD</code> search.</p>
+      </div>
+
+      {% if scan_family_choices %}
+      <div class="field">
+        <span class="field__label">Artifact families (post-scan filter)</span>
+        <div class="chip-row" data-import-org-scan-families>
+          {% for choice in scan_family_choices %}
+          <label class="chip">
+            <input
+              type="checkbox"
+              name="scan_family"
+              value="{{ choice.family }}"
+              data-import-family
+              {% if choice.family in ('terraform', 'ansible') %}checked{% endif %}
+            />
+            {{ choice.title }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="field">
+        <label class="chip">
+          <input type="checkbox" data-import-org-scan-skip-governed checked />
+          Skip repositories that already have <code>repave.yaml</code>
+        </label>
+      </div>
+
+      <div class="field">
+        <label class="chip">
+          <input type="checkbox" data-import-org-scan-exclude-archived checked />
+          Exclude archived repositories
+        </label>
+      </div>
+
+      <div class="field">
+        <label class="chip">
+          <input type="checkbox" data-import-org-scan-exclude-forks checked />
+          Exclude forked repositories
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn--secondary" type="button" data-import-org-scan-run>
+          Scan org
+        </button>
+      </div>
+
+      <div class="alert alert--fail" role="alert" hidden data-import-org-scan-error></div>
+
+      <div hidden data-import-org-scan-results>
+        <p class="hint muted" data-import-org-scan-summary></p>
+        <table class="pin-diff-table">
+          <thead>
+            <tr>
+              <th><input type="checkbox" data-import-org-scan-select-all checked /></th>
+              <th>Repository</th>
+              <th>Family</th>
+              <th>Match</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody data-import-org-scan-tbody></tbody>
+        </table>
+        <div class="form-actions">
+          <button class="btn btn--secondary" type="button" data-import-org-scan-add>
+            Add selected to list
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="field">
+    <label class="field__label" for="targets">Repository URLs (one per line)</label>
+    <textarea class="field__input" id="targets" name="targets" rows="8" placeholder="https://github.com/acme/legacy-vpc&#10;https://github.com/acme/legacy-sg">{{ targets or '' }}</textarea>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="batch-topic">Topic filter (optional)</label>
+    <input class="field__input" type="text" id="batch-topic" name="topic" value="{{ topic or '' }}" placeholder="terraform" />
+    <p class="field__hint muted">
+      When topic is set, matching repositories are appended during batch preview (in addition to
+      the list above). Uses the same GitHub search qualifiers as org scan.
+    </p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="batch-blueprint">Golden path (optional)</label>
+    <select class="field__input" id="batch-blueprint" name="blueprint">
+      <option value="">Detect per repository</option>
+      <option
+        value="{{ family_blueprint_map_sentinel }}"
+        {% if selected_blueprint == family_blueprint_map_sentinel %}selected{% endif %}
+      >
+        Map by artifact family
+      </option>
+      {% for group in catalog_groups %}
+        {% for blueprint in group.blueprints %}
+        <option value="{{ blueprint.name }}" {% if selected_blueprint == blueprint.name %}selected{% endif %}>
+          {{ blueprint.name }}
+        </option>
+        {% endfor %}
+      {% endfor %}
+    </select>
+    <p class="field__hint muted">
+      Choose <strong>Map by artifact family</strong> after an org scan, or leave detection per
+      repository. Org scan results can pre-fill per-repo golden paths when you add URLs from the
+      scan result page.
+    </p>
+  </div>
+
+  <input
+    type="hidden"
+    id="target-blueprints-json"
+    name="target_blueprints_json"
+    value="{{ target_blueprints_json or '' }}"
+  />
+
+  <div class="form-actions">
+    <button class="btn btn--primary" type="submit">Preview batch</button>
+  </div>
+</form>
+{% endblock %}

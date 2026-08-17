@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Upgrade repository — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Upgrade existing repository</h1>
+    <p class="page-lead">
+      Re-render from <code>repave.yaml</code> and review the file plan before you apply locally or open a pull request.
+    </p>
+  </div>
+</header>
+
+{% if error_message %}
+<div class="alert alert--fail" role="alert">{{ error_message }}</div>
+{% endif %}
+
+<form
+  class="form-panel form-panel--compact"
+  method="post"
+  action="/update"
+  data-repave-busy-form
+  data-busy-label="Planning upgrade…"
+  data-busy-stages="Reading repave.yaml…|Rendering blueprint…|Diffing files…"
+>
+  <div class="field">
+    <label class="field__label" for="target_repo">Repository path</label>
+    <input
+      class="field__input"
+      type="text"
+      id="target_repo"
+      name="target_repo"
+      required
+      placeholder="/path/to/tf-aws-my-module"
+      value="{{ target_repo or '' }}"
+      autocomplete="off"
+    />
+    <p class="field__hint muted">
+      Local checkout of a module or role repo that contains <code>repave.yaml</code>.
+      {% if demo_module_path %}
+      Try the bundled fixture:
+      <button type="button" class="btn btn--ghost btn--sm" data-fill-demo-path="{{ demo_module_path }}">
+        Use terraform-minimal
+      </button>
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="field">
+    <label class="field__label" for="blueprint">Blueprint override</label>
+    <input
+      class="field__input"
+      type="text"
+      id="blueprint"
+      name="blueprint"
+      placeholder="Optional — default from repave.yaml"
+      value="{{ blueprint or '' }}"
+      autocomplete="off"
+    />
+  </div>
+
+  <div class="form-actions form-actions--sticky">
+    <div class="form-actions__toolbar form-actions__toolbar--solo">
+      <div class="form-actions__buttons">
+        <button class="btn btn--primary" type="submit">Preview upgrade</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+{% if demo_module_path %}
+<script>
+  (function () {
+    var btn = document.querySelector("[data-fill-demo-path]");
+    var input = document.getElementById("target_repo");
+    if (!btn || !input) return;
+    btn.addEventListener("click", function () {
+      input.value = btn.getAttribute("data-fill-demo-path") || "";
+      input.focus();
+    });
+  })();
+</script>
+{% endif %}
+
+<details class="page-supplement card">
+  <summary class="page-supplement__summary">How upgrade works</summary>
+  <div class="page-supplement__body">
+    <ol class="update-howto__steps">
+      <li>Preview file diffs when blueprint or standard pins move forward.</li>
+      <li>Apply on a branch locally, or open a remediation PR for reviewers.</li>
+      <li>Operator mode (optional) watches the same pins across many repos.</li>
+    </ol>
+    <p class="hint">
+      After reviewing the diff, commit on a branch with
+      <code>repave update --no-dry-run --git-branch … --path …</code>
+      or add <code>--open-pr</code> when <code>GITHUB_TOKEN</code> is set.
+    </p>
+  </div>
+</details>
+{% endblock %}

@@ -11,10 +11,11 @@ labels; this file holds **visual layout**, **component patterns**, and
 
 | Route | Template | Highlights |
 | --- | --- | --- |
-| Catalog | `index.html` | Golden-path browse; opening a path points at Backstage generate |
+| Catalog | `index.html` | Golden-path browse; tiles open `/blueprints/{name}` |
 | Library | `library.html` | Family drawers of created repos |
-| Home / platform / import / verify / results / bundles / upgrade / runs / sandbox / kind results | `surface_moved.html` | Pointer pages to Backstage + CLI / `/api/v2` |
-| Blueprint page | `generate_moved.html` | HTML generate form retired; points to Backstage `/generate` and `repave generate` |
+| Generate | `blueprint_form.html` | Guided/Advanced form; POST `/generate` |
+| Upgrade / verify / import | `update.html` / `verify.html` / `import.html` | Local-first forms; `/api/v2` unchanged |
+| Home / platform / runs / sandbox / results | matching Jinja pages | Local-first nav destinations |
 | Landing / signup | `landing.html` / `signup.html` | Public splash when auth is on; Sign in and Create account |
 
 **Last run:** After generate, the result page stores a summary in **sessionStorage**
@@ -67,7 +68,7 @@ v1.18-polish       home hero, scope presets, browser last-run snippet
 - Add `engine/src/repave_engine/static/repave.css` (and minimal `repave.js` if
   needed for copy buttons or theme toggle).
 - Introduce `base.html` with blocks for title, content, and optional scripts;
-  extend from `index.html`, `generate_moved.html`, and `result.html`.
+  extend from `index.html`, `blueprint_form.html`, and `result.html`.
 - Wire static files in the FastAPI app (existing pattern or `StaticFiles` mount).
 
 ### Design tokens (CSS custom properties)

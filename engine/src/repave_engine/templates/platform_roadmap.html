@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Roadmap evidence — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--home{% endblock %}
+
+{% block content %}
+{% set platform_console_title = "Roadmap evidence" %}
+{% set platform_console_heading_id = "roadmap-console-title" %}
+{% set platform_console_lead %}
+  Tie shipped platform themes to adoption metrics from
+  <a href="/platform/adoption">golden path adoption</a> and surface low-adoption golden
+  paths as sunset or simplification candidates.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+<div class="platform-stack">
+
+{% if not roadmap_page.metrics_enabled %}
+{% set platform_metrics_purpose = "Enable it to build roadmap evidence." %}
+{% include "partials/platform_metrics_disabled.html" %}
+{% else %}
+  {% set report = roadmap_page.report %}
+
+<section class="card" aria-labelledby="theme-evidence-heading">
+  <div class="card__header">
+    <h2 id="theme-evidence-heading">Theme adoption evidence</h2>
+    <p class="muted card__subtitle">
+      Captured {{ report.captured_at }} · requesting-team attribution per theme
+    </p>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Theme</th>
+          <th scope="col">Requested by</th>
+          <th scope="col">Evidence</th>
+          <th scope="col">Baseline</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.themes %}
+        <tr>
+          <td>
+            <strong>{{ row.title }}</strong>
+            <div class="muted"><code>{{ row.key }}</code></div>
+          </td>
+          <td>{{ row.requesting_team }}</td>
+          <td>
+            {{ row.evidence_summary }}
+            <div class="muted">{{ row.evidence_detail }}</div>
+          </td>
+          <td>
+            {% if row.meets_baseline is none %}
+            <span class="muted">n/a</span>
+            {% elif row.meets_baseline %}
+            <span class="badge badge--pass">at/above</span>
+            {% else %}
+            <span class="badge badge--fail">below</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if report.sunset_candidates %}
+<section class="card" aria-labelledby="sunset-heading">
+  <div class="card__header">
+    <h2 id="sunset-heading">Sunset / simplification candidates</h2>
+    <p class="muted card__subtitle">
+      Golden paths with plan→apply conversion below the configured threshold.
+    </p>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Blueprint</th>
+          <th scope="col">Plans</th>
+          <th scope="col">Applies</th>
+          <th scope="col">Conversion</th>
+          <th scope="col">Review by</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in report.sunset_candidates %}
+        <tr>
+          <td><code>{{ row.blueprint_name }}</code></td>
+          <td>{{ row.plans }}</td>
+          <td>{{ row.applies }}</td>
+          <td>{{ '%.0f'|format(row.conversion_ratio * 100) }}%</td>
+          <td>{{ row.review_by }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <ul class="muted" style="margin-top:1rem;">
+      {% for row in report.sunset_candidates %}
+      <li>{{ row.reason }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% else %}
+<section class="card" aria-labelledby="sunset-heading">
+  <div class="card__header">
+    <h2 id="sunset-heading">Sunset / simplification candidates</h2>
+  </div>
+  <div class="card__body">
+    <p class="muted">No golden paths are below the sunset conversion threshold right now.</p>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+</div>
+</div>
+{% endblock %}

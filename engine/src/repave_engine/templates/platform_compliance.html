@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}Compliance posture — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--home{% endblock %}
+
+{% block content %}
+{% set platform_console_title = "Compliance posture" %}
+{% set platform_console_heading_id = "compliance-console-title" %}
+{% set platform_console_lead %}
+  Read-only security and compliance view — gate pass rate and bypass list size —
+  without competing for the developer catalog surface.
+{% endset %}
+{% include "partials/platform_console_header.html" %}
+<div class="platform-stack">
+
+{% if not compliance_page.metrics_enabled %}
+{% set platform_metrics_purpose = "Enable it to collect compliance posture." %}
+{% include "partials/platform_metrics_disabled.html" %}
+{% else %}
+  {% set snap = compliance_page.snapshot %}
+  {% if snap.message %}
+  <div class="alert alert--info">{{ snap.message }}</div>
+  {% endif %}
+
+<section class="card" aria-labelledby="compliance-summary-heading">
+  <div class="card__header">
+    <h2 id="compliance-summary-heading">Summary</h2>
+    <p class="muted card__subtitle">
+      Captured {{ snap.captured_at }} · eligible source {{ snap.eligible_source }}
+    </p>
+  </div>
+  <div class="card__body">
+    <dl class="platform-summary-grid">
+      <div>
+        <dt class="muted">Gate pass rate</dt>
+        <dd>
+          {% if compliance_page.gate_pass_rate is not none %}
+          <strong>{{ '%.0f'|format(compliance_page.gate_pass_rate * 100) }}%</strong>
+          {% else %}
+          <span class="muted">n/a</span>
+          {% endif %}
+        </dd>
+      </div>
+      <div>
+        <dt class="muted">Bypass list size</dt>
+        <dd><strong>{{ compliance_page.bypass_count }}</strong></dd>
+      </div>
+      <div>
+        <dt class="muted">Governed / eligible</dt>
+        <dd><strong>{{ snap.governed_count }}</strong> / {{ snap.eligible_count }}</dd>
+      </div>
+      <div>
+        <dt class="muted">Audit</dt>
+        <dd>
+          {% if snap.audit_available %}
+          <span class="badge badge--pass">available</span>
+          {% else %}
+          <span class="badge badge--skip">unavailable</span>
+          {% endif %}
+        </dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+{% if compliance_page.friction %}
+<section class="card" aria-labelledby="compliance-friction-heading">
+  <div class="card__header">
+    <h2 id="compliance-friction-heading">Gate outcomes by golden path</h2>
+    <p class="muted card__subtitle">Fail rate from audit gate outcomes (highest friction first).</p>
+  </div>
+  <div class="card__body">
+    <table class="pin-diff-table" data-sortable>
+      <thead>
+        <tr>
+          <th scope="col">Blueprint</th>
+          <th scope="col">Failed</th>
+          <th scope="col">Total</th>
+          <th scope="col">Pass rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in compliance_page.friction %}
+        <tr>
+          <td><code>{{ row.blueprint_name }}</code></td>
+          <td><span class="badge badge--fail">{{ row.failed }}</span></td>
+          <td>{{ row.total }}</td>
+          <td>{{ '%.0f'|format((1 - row.fail_ratio) * 100) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if compliance_page.bypass_preview %}
+<section class="card" aria-labelledby="compliance-bypass-heading">
+  <div class="card__header">
+    <h2 id="compliance-bypass-heading">Bypass list</h2>
+    <p class="muted card__subtitle">
+      Eligible repositories not yet in the fleet registry.
+      Showing {{ compliance_page.bypass_preview|length }} of {{ compliance_page.bypass_count }}.
+    </p>
+  </div>
+  <div class="card__body">
+    <ul class="muted">
+      {% for url in compliance_page.bypass_preview %}
+      <li><code>{{ url }}</code></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+{% endif %}
+</div>
+</div>
+{% endblock %}

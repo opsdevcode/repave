@@ -64,7 +64,7 @@ repave unregister https://github.com/acme/tf-vpc
 
 In hosted deployments, admins register and unregister through `POST`/`DELETE`
 `/api/v2/fleet` (Backstage Fleet; requires `ROLE_ADMIN` when service mode is on).
-`GET /platform/fleet` is a pointer page.
+`GET /platform/fleet` is the HTML fleet page (Backstage `/fleet` when hosted).
 
 URL spellings collapse to one entry: `https://github.com/acme/tf-vpc.git`, the same URL
 with a trailing slash, and the bare form are one repository. Register and unregister
@@ -141,7 +141,7 @@ portal without shell `kubectl` hints:
 
 | Surface | Action | Mechanism |
 | --- | --- | --- |
-| `POST /platform/campaigns/{ns}/{name}/paused` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`; validated by `make chart-smoke-fleet-snapshot`). `GET /platform/campaigns` is a pointer. |
+| `POST /platform/campaigns/{ns}/{name}/paused` | Pause / resume `UpgradeCampaign` | Validates campaign in operator snapshot, then `kubectl patch upgradecampaign` (requires `kubectl` in the engine image and RBAC `patch` on `upgradecampaigns`; validated by `make chart-smoke-fleet-snapshot`). `GET /platform/campaigns` is the HTML campaigns page. |
 | `/platform/standards` | Confirm drift for behind repos | Submits a `fleet_drift_confirm` async run (`verify` fan-out); requires `durability.async_generation` |
 
 Campaign phase updates still follow the fleet operator snapshot schedule — re-run snapshot or

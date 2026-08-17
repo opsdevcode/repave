@@ -1,0 +1,489 @@
+{% extends "base.html" %}
+
+{% block title %}Result — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+{% if gates_ok and not result.dry_run and not publish_ok %}
+<section class="alert alert--fail stack-gap" role="alert" aria-labelledby="publish-error-heading">
+  <h2 id="publish-error-heading" class="h3">GitHub publish failed</h2>
+  <p>Gates passed, but the module repository was not updated on GitHub.</p>
+  {% if result.pr_message %}
+  <pre class="panel-code publish-error__detail">{{ result.pr_message }}</pre>
+  {% endif %}
+</section>
+{% endif %}
+
+<section
+  class="result-hero result-hero--{% if result.dry_run and result.rendered_files and gate_summary.outcome != 'passed' %}preview{% else %}{{ gate_summary.outcome }}{% endif %}{% if gates_ok and publish_ok and result.module_repository and not result.dry_run %} result-hero--with-repo{% endif %}"
+  aria-labelledby="result-heading"
+>
+  <div class="result-hero__main">
+    <p class="result-hero__eyebrow">{{ result.blueprint.name }}@{{ result.blueprint.version }}</p>
+    <h1 id="result-heading" class="result-hero__title">
+      {% if result.dry_run and result.rendered_files %}
+      {% if gate_summary.outcome == "passed" %}
+      Plan complete
+      {% else %}
+      Plan preview ready
+      {% endif %}
+      {% elif gate_summary.outcome == "failed" %}
+      Generation failed
+      {% elif gate_summary.outcome == "passed" %}
+      {% if result.dry_run %}
+      Plan complete
+      {% elif publish_ok %}
+      Repository published
+      {% else %}
+      Publish failed
+      {% endif %}
+      {% else %}
+      Generation result
+      {% endif %}
+    </h1>
+    <p class="result-hero__banner">
+      {% if result.dry_run %}
+      <span class="badge badge--skip">Plan only</span>
+      {% if result.rendered_files %}
+      Browse and copy generated files below. Nothing was published to GitHub.
+      {% if gate_summary.outcome != "passed" %}
+      Gate issues are listed under Gates.
+      {% endif %}
+      {% else %}
+      Nothing was published to GitHub.
+      {% endif %}
+      {% elif gates_ok and publish_ok and result.module_repository %}
+      <span class="badge badge--pass">Applied</span>
+      Gates passed and output is live on GitHub.
+      {% elif gates_ok and not publish_ok %}
+      <span class="badge badge--fail">Publish failed</span>
+      Gates passed, but GitHub publish did not succeed.
+      {% else %}
+      <span class="badge badge--fail">Apply blocked</span>
+      Gates did not pass; the repository was not updated.
+      {% endif %}
+    </p>
+    {% if result.gates %}
+    <dl class="result-hero__counts result-hero__counts--inline" aria-label="Gate summary">
+      <div class="result-hero__count result-hero__count--pass">
+        <dt>Passed</dt>
+        <dd>{{ gate_summary.passed }}</dd>
+      </div>
+      <div class="result-hero__count result-hero__count--fail">
+        <dt>Failed</dt>
+        <dd>{{ gate_summary.failed }}</dd>
+      </div>
+      <div class="result-hero__count result-hero__count--skip">
+        <dt>Skipped</dt>
+        <dd>{{ gate_summary.skipped }}</dd>
+      </div>
+    </dl>
+    {% endif %}
+  </div>
+  {% if gates_ok and publish_ok and result.module_repository and not result.dry_run %}
+  <aside class="repo-preview" aria-label="Published repository">
+    <div class="repo-preview__chrome">
+      <span class="repo-preview__provider">GitHub</span>
+      <span class="repo-preview__status badge badge--pass">Published</span>
+    </div>
+    <p class="repo-preview__owner muted">{{ result.module_repository.owner }}</p>
+    <p class="repo-preview__name">{{ result.module_repository.name }}</p>
+    <div class="repo-preview__actions">
+      <a
+        class="btn btn--primary btn--glow"
+        href="{{ result.module_repository.web_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Open repository
+      </a>
+    </div>
+    <p class="repo-preview__hint hint">
+      Local checkout:
+      <code>{{ result.module_repository.local_path }}</code>
+    </p>
+  </aside>
+  {% elif result.gates %}
+  <dl class="result-hero__counts" aria-label="Gate summary">
+    <div class="result-hero__count result-hero__count--pass">
+      <dt>Passed</dt>
+      <dd>{{ gate_summary.passed }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--fail">
+      <dt>Failed</dt>
+      <dd>{{ gate_summary.failed }}</dd>
+    </div>
+    <div class="result-hero__count result-hero__count--skip">
+      <dt>Skipped</dt>
+      <dd>{{ gate_summary.skipped }}</dd>
+    </div>
+  </dl>
+  {% endif %}
+</section>
+
+{% if result_portal and result_portal.cost_estimate %}
+<section class="card result-cost-estimate" aria-labelledby="cost-estimate-heading">
+  <div class="card__header">
+    <h2 id="cost-estimate-heading">Cost estimate</h2>
+    <p class="muted card__subtitle">Infracost breakdown from the terraform plan (warn-only by default).</p>
+  </div>
+  <div class="card__body">
+    <p class="result-cost-estimate__amount">
+      <span class="badge badge--pass">{{ result_portal.cost_estimate.currency }} {{ result_portal.cost_estimate.monthly_cost }}/month</span>
+      {% if result_portal.cost_estimate.hourly_cost and result_portal.cost_estimate.hourly_cost != '—' %}
+      <span class="muted">· {{ result_portal.cost_estimate.hourly_cost }}/hour</span>
+      {% endif %}
+    </p>
+    <p class="muted">{{ result_portal.cost_estimate.detail }}</p>
+    {% if result_portal.cost_estimate.resource_count %}
+    <p class="hint">{{ result_portal.cost_estimate.resource_count }} priced resource(s) in breakdown.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% if gate_toolchain_callout %}
+<section class="alert alert--warn result-toolchain-callout" aria-labelledby="toolchain-heading" role="status">
+  <h2 id="toolchain-heading" class="form-section__subtitle">Gate toolchain</h2>
+  <p class="hint">{{ gate_toolchain_callout }}</p>
+</section>
+{% endif %}
+
+{% if result.rendered_files %}
+{% include "partials/generated_files.html" %}
+{% endif %}
+
+{% if portal_runtime and not portal_runtime.in_container and result.dry_run and '/var/folders/' in (result.render.output_dir | string) %}
+<section class="alert alert--warn stack-gap" role="status">
+  <p class="hint">
+    This plan ran on the <strong>host</strong> <code>make serve</code> process (macOS temp staging above),
+    not the Docker Compose portal. Compose with the full gate toolchain is at
+    <a href="http://localhost:8088/">http://localhost:8088</a>.
+    Stop native serve on port 8089 if you only want Docker on 8088.
+  </p>
+</section>
+{% endif %}
+
+{% if result_portal %}
+<details class="result-collapsible card result-lineage stack-gap">
+  <summary class="result-collapsible__summary">
+    <span class="result-collapsible__title" id="lineage-heading">Lineage</span>
+    <span class="result-collapsible__meta muted">
+      {{ result.blueprint.name }}@{{ result.blueprint.version -}}
+      {%- if result_portal.policy_profile %} · {{ result_portal.policy_profile_label or result_portal.policy_profile }}{%- endif -%}
+      · {{ result_portal.provenance_filename }}
+    </span>
+  </summary>
+  <div class="result-collapsible__body card__body">
+    <dl class="governance-card__list result-lineage__list">
+      {% for row in result_portal.lineage %}
+      <div>
+        <dt>{{ row.label }}</dt>
+        <dd><code>{{ row.value }}</code></dd>
+      </div>
+      {% endfor %}
+    </dl>
+    <div class="lineage-receipt{% if presenter_mode %} presenter-receipt{% endif %}">
+      <button type="button" class="btn btn--secondary btn--sm" data-copy-lineage-receipt>
+        Copy lineage summary
+      </button>
+      <script type="application/json" id="lineage-receipt-data">
+        {% set lineage_receipt_rows = [] %}
+        {% for row in result_portal.lineage %}
+        {% if lineage_receipt_rows.append({"label": row.label, "value": row.value}) %}{% endif %}
+        {% endfor %}
+        {{ {"lineage": lineage_receipt_rows, "blueprint": result.blueprint.name, "outcome": gate_summary.outcome} | tojson }}
+      </script>
+    </div>
+    {% if result_portal.policy_profile %}
+    <div class="result-lineage__policy">
+      <h3 class="form-section__subtitle form-section__subtitle--sm">Policy pack</h3>
+      <p class="hint">
+        Profile <strong>{{ result_portal.policy_profile_label or result_portal.policy_profile }}</strong>
+        {% if result_portal.policy_pack_source %}
+        · source <code>{{ result_portal.policy_pack_source }}</code>
+        {% endif %}
+        {% if result_portal.policy_gate_names %}
+        · enforced via {{ result_portal.policy_gate_names | join(", ") }} gate(s)
+        {% endif %}
+      </p>
+      {% if result_portal.policy_rules %}
+      <details class="result-collapsible result-collapsible--nested">
+        <summary class="result-collapsible__summary result-collapsible__summary--sm">
+          <span>{{ result_portal.policy_rules | length }} catalog rule(s)</span>
+        </summary>
+        <ul class="result-lineage__rules" aria-label="Catalog rules in this generation">
+          {% for rule in result_portal.policy_rules %}
+          <li>
+            <span class="badge badge--muted">{{ rule.enforced_by }}</span>
+            {{ rule.title }}
+            <code class="muted">{{ rule.rule_id }}</code>
+          </li>
+          {% endfor %}
+        </ul>
+      </details>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</details>
+
+{% if result_portal.backstage %}
+<details class="result-collapsible card stack-gap result-backstage" data-backstage-highlight>
+  <summary class="result-collapsible__summary">
+    <span class="result-collapsible__title" id="backstage-heading">Backstage catalog entity</span>
+    <span class="result-collapsible__meta muted">
+      <code>{{ result_portal.backstage.path }}</code>
+      {%- if result_portal.backstage.name %} · {{ result_portal.backstage.name }}{%- endif -%}
+    </span>
+  </summary>
+  <div class="result-collapsible__body card__body">
+    <dl class="governance-card__list">
+      <div>
+        <dt>File</dt>
+        <dd><code>{{ result_portal.backstage.path }}</code></dd>
+      </div>
+      {% if result_portal.backstage.name %}
+      <div>
+        <dt>Component</dt>
+        <dd><code>{{ result_portal.backstage.name }}</code></dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.owner %}
+      <div>
+        <dt>Owner</dt>
+        <dd><code>{{ result_portal.backstage.owner }}</code></dd>
+      </div>
+      {% endif %}
+    </dl>
+    {% if result_portal.backstage.repave_annotations %}
+    <ul class="result-lineage__rules">
+      {% for key, val in result_portal.backstage.repave_annotations %}
+      <li><code>{{ key }}</code> = {{ val }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    <p class="hint">Open <code>catalog-info.yaml</code> in the file preview below for the full document.</p>
+  </div>
+</details>
+{% elif result_portal.backstage_expected and not result_portal.backstage %}
+<p class="alert alert--info stack-gap">
+  Enable <strong>Include Backstage catalog</strong> on the form (and set owner) to generate <code>catalog-info.yaml</code>.
+</p>
+{% endif %}
+{% endif %}
+
+{% if result.module_repository and gates_ok and not result.dry_run %}
+<section class="card repo-card repo-card--compact" aria-labelledby="repo-heading">
+  <div class="card__header">
+    <h2 id="repo-heading" class="card__title--sm">Repository details</h2>
+  </div>
+  <div class="card__body repo-card__body">
+    <div class="copy-row">
+      <span class="copy-row__label muted">Local path</span>
+      <code class="copy-row__value" id="repo-local-path">{{ result.module_repository.local_path }}</code>
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-target="#repo-local-path">
+        Copy
+      </button>
+    </div>
+    <p class="hint">
+      Remote:
+      <a href="{{ result.module_repository.web_url }}" target="_blank" rel="noopener noreferrer">
+        {{ result.module_repository.web_url }}
+      </a>
+    </p>
+  </div>
+</section>
+{% elif result.dry_run %}
+<p class="muted result-staging">
+  <strong>Staging output:</strong> <code>{{ result.render.output_dir }}</code>
+</p>
+{% elif not result.module_repository %}
+<p class="muted result-staging">
+  <strong>Output directory:</strong> <code>{{ result.render.output_dir }}</code>
+</p>
+{% endif %}
+
+{% if result.gates %}
+<section class="card result-gates stack-gap result-gates--animated" aria-labelledby="gates-heading" data-gate-dashboard>
+  <div class="card__header card__header--toolbar card__header--compact">
+    <div>
+      <h2 id="gates-heading" class="card__title--sm">Gates</h2>
+      <p class="muted card__subtitle card__subtitle--inline">
+        {{ gate_summary.passed }} passed · {{ gate_summary.failed }} failed · {{ gate_summary.skipped }} skipped
+      </p>
+    </div>
+    <div class="gate-toolbar" data-gate-filter role="toolbar" aria-label="Filter gates">
+      <button type="button" class="chip gate-filter is-active" data-gate-filter-value="all">All</button>
+      <button type="button" class="chip gate-filter" data-gate-filter-value="pass">Passed</button>
+      <button type="button" class="chip gate-filter" data-gate-filter-value="fail">Failed</button>
+      <button type="button" class="chip gate-filter" data-gate-filter-value="skip">Skipped</button>
+      {% if gate_summary.failed %}
+      <button type="button" class="btn btn--ghost btn--sm" data-gate-jump-fail>Jump to first failure</button>
+      {% elif gate_summary.skipped and gate_toolchain_callout %}
+      <button type="button" class="btn btn--ghost btn--sm" data-gate-jump-skip>Jump to skipped gates</button>
+      {% endif %}
+      <button type="button" class="btn btn--ghost btn--sm" data-copy-result-summary>Copy summary</button>
+    </div>
+  </div>
+  <div class="card__body card__body--compact">
+    <div class="gate-table-wrap gate-table-wrap--compact">
+      <table class="gate-table gate-table--compact">
+        <thead>
+          <tr>
+            <th scope="col">Gate</th>
+            <th scope="col">Status</th>
+            <th scope="col">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set gate_detail_ns = namespace(open_fail=false) %}
+          {% for gate in result.gates %}
+          <tr
+            class="gate-table__row gate-table__row--{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}"
+            data-gate-row
+            data-gate-status="{% if gate.skipped %}skip{% elif gate.passed %}pass{% else %}fail{% endif %}"
+            id="gate-row-{{ loop.index }}"
+          >
+            <th scope="row">{{ gate.name }}</th>
+            <td>
+              <span class="badge {% if gate.skipped %}badge--skip{% elif gate.passed %}badge--pass{% else %}badge--fail{% endif %}">
+                {% if gate.skipped %}SKIP{% elif gate.passed %}PASS{% else %}FAIL{% endif %}
+              </span>
+            </td>
+            <td>
+              {% set show_gate_detail = (not gate.passed and not gate.skipped) or (gate.message | length > 96) %}
+              {% set open_detail = show_gate_detail and not gate.passed and not gate.skipped and not gate_detail_ns.open_fail %}
+              {% if open_detail %}
+              {% set gate_detail_ns.open_fail = true %}
+              {% endif %}
+              {% if show_gate_detail %}
+              <details class="gate-detail motion-panel"{% if open_detail %} open{% endif %}>
+                <summary>{{ gate.message | truncate(120, True, "…") }}</summary>
+                <div class="gate-detail__panel">
+                  <div class="gate-detail__toolbar">
+                    <span class="muted">Output excerpt</span>
+                    <button
+                      type="button"
+                      class="btn btn--ghost btn--sm"
+                      data-copy-target="#gate-excerpt-{{ loop.index }}"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <pre class="panel-code" id="gate-excerpt-{{ loop.index }}">{{ gate.message }}</pre>
+                </div>
+              </details>
+              {% else %}
+              {{ gate.message }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section
+  class="card feedback-capture"
+  aria-labelledby="feedback-heading"
+  data-feedback-capture
+  data-surface="result"
+  data-blueprint="{{ result.blueprint.name }}"
+  data-blueprint-version="{{ result.blueprint.version }}"
+  data-dry-run="{{ result.dry_run | tojson }}"
+  data-gates-outcome="{{ gate_summary.outcome }}"
+  {% if run_id is defined and run_id %}data-run-id="{{ run_id }}"{% endif %}
+  hidden
+>
+  <div class="card__header">
+    <h2 id="feedback-heading" class="card__title--sm">How was this run?</h2>
+    <p class="muted card__subtitle">One-tap CSAT helps the platform team prioritize friction.</p>
+  </div>
+  <div class="card__body">
+    <div class="feedback-capture__stars" role="group" aria-label="Satisfaction rating">
+      {% for score in range(1, 6) %}
+      <button type="button" class="feedback-capture__star" data-csat="{{ score }}" aria-label="{{ score }} star{% if score != 1 %}s{% endif %}">
+        {{ score }}
+      </button>
+      {% endfor %}
+    </div>
+    <fieldset class="feedback-capture__tags">
+      <legend class="muted">Friction (optional)</legend>
+      <div class="feedback-capture__tag-grid">
+        <label class="chip"><input type="checkbox" value="slow" hidden> Slow</label>
+        <label class="chip"><input type="checkbox" value="confusing-form" hidden> Confusing form</label>
+        <label class="chip"><input type="checkbox" value="unclear-errors" hidden> Unclear errors</label>
+        <label class="chip"><input type="checkbox" value="missing-docs" hidden> Missing docs</label>
+        <label class="chip"><input type="checkbox" value="gates-heavy" hidden> Gates heavy</label>
+        <label class="chip"><input type="checkbox" value="other" hidden> Other</label>
+      </div>
+    </fieldset>
+    <label class="field">
+      <span class="field__label muted">Comment (optional)</span>
+      <textarea class="field__input feedback-capture__comment" rows="2" maxlength="2000" placeholder="What would make the next run smoother?"></textarea>
+    </label>
+    <div class="form-actions">
+      <button type="button" class="btn btn--primary btn--sm" data-feedback-submit>Send feedback</button>
+      <button type="button" class="btn btn--ghost btn--sm" data-feedback-dismiss>Not now</button>
+    </div>
+  </div>
+</section>
+
+{% if result.pr_message %}
+<section class="card stack-gap" aria-labelledby="pr-description-heading">
+  <details class="publish-plan" {% if gates_ok and not result.dry_run and not publish_ok %}open{% endif %}>
+    <summary class="publish-plan__summary">
+      <h2 id="pr-description-heading" class="publish-plan__title">
+        {% if gates_ok and not result.dry_run and not publish_ok %}Publish log{% else %}PR description{% endif %}
+      </h2>
+      <span class="muted">
+        {% if gates_ok and not result.dry_run and not publish_ok %}
+        Full publish output including the GitHub error
+        {% else %}
+        Preview of the pull request body
+        {% endif %}
+      </span>
+    </summary>
+    <div class="publish-plan__body publish-plan__body--markdown">
+      <pre class="panel-code publish-plan__markdown">{{ result.pr_message }}</pre>
+    </div>
+  </details>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="result-summary-json">
+{
+  "blueprint": {{ result.blueprint.name | tojson }},
+  "version": {{ result.blueprint.version | tojson }},
+  "outcome": {{ gate_summary.outcome | tojson }},
+  "dryRun": {{ result.dry_run | tojson }},
+  "gates": {
+    "passed": {{ gate_summary.passed }},
+    "failed": {{ gate_summary.failed }},
+    "skipped": {{ gate_summary.skipped }}
+  }
+}
+</script>
+<script>
+  (function () {
+    if (!window.repavePortal || !window.repavePortal.saveLastRun) {
+      return;
+    }
+    window.repavePortal.saveLastRun({
+      blueprint: {{ result.blueprint.name | tojson }},
+      blueprintVersion: {{ result.blueprint.version | tojson }},
+      outcome: {{ gate_summary.outcome | tojson }},
+      dryRun: {{ result.dry_run | tojson }},
+      gatesPassed: {{ gate_summary.passed }},
+      gatesFailed: {{ gate_summary.failed }},
+    });
+  })();
+</script>
+{% endblock %}
