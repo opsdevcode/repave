@@ -422,6 +422,7 @@ def write_manifest_snapshot(
 
 
 _CONFORMANCE_GENERATED_AT = "1970-01-01T00:00:00+00:00"
+_CONFORMANCE_GITHUB_ORG = "conformance"
 
 
 def _resolve_conformance_spec(
@@ -494,7 +495,12 @@ def run_blueprint_conformance(
                 gate_overrides=gate_overrides,
             )
             staging_dir.mkdir(parents=True, exist_ok=True)
-            render_result = render_blueprint(blueprint, normalized, staging_dir)
+            render_result = render_blueprint(
+                blueprint,
+                normalized,
+                staging_dir,
+                github_org=output_config.github_org,
+            )
             output_dir = render_result.output_dir
             gate_failures = ()
     finally:
@@ -535,7 +541,7 @@ def update_all_manifests(
     modules_root: Path,
     staging_root: Path,
 ) -> list[str]:
-    output_config = OutputConfig(github_org="conformance", modules_root=modules_root)
+    output_config = OutputConfig(github_org=_CONFORMANCE_GITHUB_ORG, modules_root=modules_root)
     updated: list[str] = []
     for blueprint_dir in blueprint_dirs(repo_root):
         specs = load_conformance_specs(blueprint_dir)
@@ -572,7 +578,7 @@ def find_snapshot_manifest_drifts(
     render_only: bool = False,
 ) -> tuple[str, ...]:
     """Return human-readable drift labels for snapshot conformance manifests."""
-    output_config = OutputConfig(github_org="conformance-check", modules_root=modules_root)
+    output_config = OutputConfig(github_org=_CONFORMANCE_GITHUB_ORG, modules_root=modules_root)
     drifts: list[str] = []
     for blueprint_dir in blueprint_dirs(repo_root):
         for spec in load_conformance_specs(blueprint_dir):

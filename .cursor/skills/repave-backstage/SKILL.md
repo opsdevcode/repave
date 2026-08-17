@@ -46,6 +46,9 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
   (`POST /api/v2/generate`). Workbench generate/upgrade/import/verify/vend/runs
   stay on HTML.
 - Do **not** add workbench pages under `backstage/plugins/plugin-repave`.
+- Catalog emit changes (`backstage_catalog.py`, `render.py`, `blueprints/**` catalog inputs):
+  run **`make blueprint-conformance-check`** before PR; on drift **`make blueprint-conformance-update`**
+  and commit `blueprints/*/conformance.manifest*.json` (CI `corpus-manifest-check` + Python quality).
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **on** (owner: Eric Skaggs).
   Kind/smoke overlays set it off. Overlay `values-backstage.yaml` keeps
@@ -75,6 +78,12 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
 ```bash
 make backstage-lint
 cd backstage && yarn test --watch=false
+```
+
+When the PR also changes catalog emit or blueprint catalog inputs:
+
+```bash
+make blueprint-conformance-check
 ```
 
 Pin versions to the create-app lock (`backstage/backstage.json`). Run

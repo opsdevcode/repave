@@ -63,4 +63,10 @@ Security-specific rules: **`.cursor/rules/python-security.mdc`**.
 make format && make quality && make test
 ```
 
+When blueprint output may change (`blueprints/**`, `backstage_catalog.py`, `render.py`):
+
+```bash
+make blueprint-conformance-check
+```
+
 Use **`make test-fast`** while iterating; run full **`make test`** before opening a PR.

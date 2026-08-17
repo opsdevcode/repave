@@ -41,8 +41,17 @@ Always run before commit (see `.cursor/rules/pre-commit.mdc`):
 make format && make quality && make security && make test
 ```
 
+Blueprint or catalog emit changes (`blueprints/**`, `backstage_catalog.py`, `render.py`):
+
+```bash
+make blueprint-conformance-check
+# on drift: make blueprint-conformance-update && make blueprint-conformance-check
+```
+
 | Target | What it runs |
 |--------|----------------|
+| `make blueprint-conformance-check` | `scripts/check_blueprint_conformance_manifests.py` (same as CI corpus-manifest-check) |
+| `make blueprint-conformance-update` | Re-render snapshot variants and rewrite `conformance.manifest*.json` |
 | `make lint` | `ruff check src tests` |
 | `make format` | `ruff format src tests` |
 | `make typecheck` | `mypy src` |
@@ -107,7 +116,7 @@ Implementation checklists and repo examples: **[reference.md](reference.md)**.
 - Place tests in `engine/tests/test_<area>.py`.
 - Use **`pytest.raises`** for expected errors; **`tmp_path`** / fixtures for filesystem work.
 - Mark slow integration (Copier render, real gate binaries, conformance) with **`@pytest.mark.slow`**.
-- Blueprint conformance: `conformance.yaml` per blueprint; refresh manifests with `make blueprint-conformance-update` when snapshot output changes.
+- Blueprint conformance: `conformance.yaml` per blueprint; run **`make blueprint-conformance-check`** before PR when output may change; refresh with **`make blueprint-conformance-update`** and commit manifests on drift.
 
 Example shape (from existing tests):
 
@@ -131,6 +140,7 @@ Doc-version sync runs in Release CI after semver bumps (`make sync-doc-versions`
 | Failure | Fix |
 |---------|-----|
 | `ruff format --check` | `make format` |
+| Blueprint conformance manifest drift | `make blueprint-conformance-update` then `make blueprint-conformance-check` |
 | mypy on new function | Add full annotations; avoid untyped `def` in `repave_engine` |
 | Coverage below 75% | Add tests for new branches |
 | Lockfile drift | `make lock` after dependency edits |

@@ -19,6 +19,8 @@ htmlcov/
 .repave-out/
 .conformance-staging/
 .conformance-modules/
+.conformance-manifest-check-staging/
+.conformance-manifest-check-modules/
 .gate-tools/
 .tmp-staging/
 .tmp-*/

@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot chart-smoke-backstage validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-check blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot chart-smoke-backstage validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -76,6 +76,9 @@ gate-doctor:
 # Full suite with parallel workers (requires pytest-xdist; gate tools on PATH).
 test-parallel:
 	cd engine && $(ENGINE_PYTEST) -n auto --cov=repave_engine --cov-report=term-missing
+
+blueprint-conformance-check:
+	cd engine && uv run python ../scripts/check_blueprint_conformance_manifests.py
 
 blueprint-conformance-update:
 	cd engine && uv run python -c "from pathlib import Path; from repave_engine.blueprint_conformance import update_all_manifests; root=Path('..').resolve(); staging=root/'.conformance-staging'; staging.mkdir(exist_ok=True); mods=root/'.conformance-modules'; mods.mkdir(exist_ok=True); names=update_all_manifests(root, modules_root=mods, staging_root=staging); print('Updated manifests:', ', '.join(names) or '(none with snapshot: true)')"
