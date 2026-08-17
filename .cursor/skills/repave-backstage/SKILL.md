@@ -26,8 +26,9 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
   portal (`repave.portalBaseUrl`).
 - TechDocs: frontend `@backstage/plugin-techdocs/alpha` on the entity Docs tab.
   Example `tf-aws-demo` uses `backstage.io/techdocs-ref: dir:.`. Engine emit
-  adds that annotation when `docs/` or `mkdocs.yml` exists. Do not clone
-  TechDocs into Jinja.
+  adds that annotation when `docs/` or `mkdocs.yml` exists. Hosted image uses
+  `techdocs.generator.runIn: local` plus pinned `mkdocs-techdocs-core` in the
+  backend Dockerfile (no Docker-in-Docker). Do not clone TechDocs into Jinja.
 - My services: `/my-services` filters catalog components with
   `repave.dev/blueprint`.
 - Scaffolder `repave:generate` remains an **alternate** submit path

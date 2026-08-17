@@ -44,6 +44,15 @@ proxy:
       headers:
         Authorization: Bearer ${REPAVE_API_TOKEN:-}
 
+# Hosted image installs mkdocs-techdocs-core (see packages/backend/Dockerfile).
+# Do not use runIn: docker here — the pod has no Docker socket.
+techdocs:
+  builder: local
+  generator:
+    runIn: local
+  publisher:
+    type: local
+
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.
   # See https://backstage.io/docs/features/software-catalog/#adding-components-to-the-catalog for more details

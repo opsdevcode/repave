@@ -63,7 +63,8 @@ under `backstage/plugins/plugin-repave`.
   Catalog, Library, Upgrade, Verify. Sidebar stays Catalog / My services / Create.
 - Entity **Docs** is TechDocs when `backstage.io/techdocs-ref` is set (example:
   `tf-aws-demo`). Generated `catalog-info.yaml` gets that annotation when the
-  repo has `docs/` or `mkdocs.yml`. Do not clone TechDocs into Jinja.
+  repo has `docs/` or `mkdocs.yml`. Hosted builds use `runIn: local` (no
+  Docker-in-Docker). Do not clone TechDocs into Jinja.
 
 ## Hosted vs laptop
 
