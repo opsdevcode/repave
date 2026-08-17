@@ -7,9 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.41.1  
 
-**In progress:** Phase 4 leftover HTML (landing).
-Catalog and library stay HTML pages.
-OCI blueprint pack pull stays parking-lot.
+**In progress:** OCI blueprint pack pull stays parking-lot.
 
 HTML portal sunset 14 Feb 2027 (templates can come out earlier).
 Mandatory policy on regulated families shipped.
@@ -23,6 +21,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**HTML landing and signup stay**
+(public splash when auth is on; Sign in → `/auth/login`, Create account → `/signup`);
 **HTML kind-specific run results retired**
 (pointer pages → Backstage `/services`, `/sandbox`, `/standards`, `/import/batch`, `/reclaim`);
 **HTML catalog and library pages restored**
@@ -176,7 +176,7 @@ v3.41.1 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; platform/import/verify/result/bundle/upgrade/runs/sandbox/kind-result HTML retired; catalog and library stay HTML pages; leftover landing until 14 Feb 2027 ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; platform/import/verify/result/bundle/upgrade/runs/sandbox/kind-result HTML retired; catalog, library, landing, and signup stay HTML pages ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
@@ -200,8 +200,9 @@ browse pages have Backstage pages. `/generate` posts `POST /api/v2/generate`
 (dry-run default). HTML generate form, results, platform, import, and
 verify pages are pointer pages. Bundle form and results are pointer pages.
 Run console, sandbox, and kind-specific run-result HTML are pointer pages.
-HTML catalog (`GET /`) and library (`GET /library`) stay real pages. Phase 4
-leftover templates (landing) stay until 14 Feb 2027.
+HTML catalog (`GET /` when signed in), library (`GET /library`), and the
+public landing/signup splash stay real pages. Phase 4 does not retire them
+to pointers.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -222,8 +223,8 @@ browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
 and verify are gone. Catalog and library stay HTML pages. Bundle, upgrade,
 run console, sandbox, and kind-specific run-result HTML are pointer pages.
 Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke
-and GHCR publish already shipped. Remaining Phase 4 work is leftover Jinja
-(landing).
+and GHCR publish already shipped. Landing and signup stay as the public
+splash when auth is on.
 
 ---
 

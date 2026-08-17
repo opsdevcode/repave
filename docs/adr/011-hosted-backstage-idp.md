@@ -35,6 +35,9 @@ those browse pages; hosted Backstage still owns `/generate` and `/library`.
 **Amendment (2026-08-16):** Kind-specific `GET /runs/{id}/result` pages
 (live plan, vend, drift confirm, org scan, reclaim) are pointer pages.
 Landing remains until the 14 Feb 2027 sunset.
+**Amendment (2026-08-16):** HTML `landing.html` and `signup.html` stay real
+pages. Unauthenticated `GET /` with auth on is the product splash
+(Create account / Sign in). Phase 4 does not replace them with pointers.
 **Date:** 2026-08-14
 **Scope:** developer-facing UI, Helm chart, `/api/v2` as the only HTTP contract
 Backstage may call. Does not rename CLI, PyPI, CRDs, or `repave.dev/*` annotations.
