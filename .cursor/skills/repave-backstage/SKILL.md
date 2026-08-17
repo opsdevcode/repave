@@ -24,9 +24,12 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
   Do not fork a second entity store.
 - Lineage card: `repave.dev/*` pins plus Generate / upgrade links to the HTML
   portal (`repave.portalBaseUrl`).
-- Catalog IDP plugins: TechDocs, catalog-graph, search, api-docs, catalog-import
-  (alpha). Engine emit can set `spec.dependsOn` / `spec.providesApis` from
-  `catalog_depends_on` / `catalog_provides_apis`.
+- Catalog IDP plugins: TechDocs, catalog-graph, search, api-docs, catalog-import,
+  org, kubernetes (alpha). Engine emit can set `spec.dependsOn` /
+  `spec.providesApis` and `backstage.io/kubernetes-*` from
+  `catalog_depends_on` / `catalog_provides_apis` / `catalog_kubernetes_id` /
+  `catalog_kubernetes_namespace`. Example org is `examples/org.yaml`
+  (`guests` + `platform`). Kubernetes config defaults to an empty cluster list.
 - TechDocs: frontend `@backstage/plugin-techdocs/alpha` on the entity Docs tab.
   Example `tf-aws-demo` uses `backstage.io/techdocs-ref: dir:.`. Engine emit
   adds that annotation when `docs/` or `mkdocs.yml` exists. Hosted image uses

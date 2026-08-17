@@ -2,6 +2,8 @@ import { render, waitFor } from '@testing-library/react';
 import apiDocsPlugin from '@backstage/plugin-api-docs/alpha';
 import catalogGraphPlugin from '@backstage/plugin-catalog-graph/alpha';
 import catalogImportPlugin from '@backstage/plugin-catalog-import/alpha';
+import kubernetesPlugin from '@backstage/plugin-kubernetes/alpha';
+import orgPlugin from '@backstage/plugin-org/alpha';
 import searchPlugin from '@backstage/plugin-search/alpha';
 import techdocsPlugin from '@backstage/plugin-techdocs/alpha';
 import App, { appFeatures } from './App';
@@ -31,7 +33,7 @@ describe('App', () => {
     });
   });
 
-  it('registers catalog IDP plugins so graph, search, docs, and import work', () => {
+  it('registers catalog IDP plugins so graph, search, docs, import, org, and kubernetes work', () => {
     expect(appFeatures).toEqual(
       expect.arrayContaining([
         catalogGraphPlugin,
@@ -39,6 +41,8 @@ describe('App', () => {
         apiDocsPlugin,
         searchPlugin,
         techdocsPlugin,
+        orgPlugin,
+        kubernetesPlugin,
       ]),
     );
   });

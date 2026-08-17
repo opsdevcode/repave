@@ -154,7 +154,7 @@ The engine still writes `catalog-info.yaml` after Copier render
 
 | Golden path | Default | Inputs |
 | --- | --- | --- |
-| `app-service-generic` | Always | `owner` (required), `system`, `catalog_lifecycle`, `catalog_depends_on`, `catalog_provides_apis`, `description` |
+| `app-service-generic` | Always | `owner` (required), `system`, `catalog_lifecycle`, `catalog_depends_on`, `catalog_provides_apis`, `catalog_kubernetes_id`, `catalog_kubernetes_namespace`, `description` |
 | `helm-chart-generic` | Off | `include_backstage_catalog=true` and `owner` |
 | `terraform-module-generic` | Off | Same optional inputs as Helm |
 
@@ -169,6 +169,8 @@ Each component includes:
 | `repave.dev/engine-version` | Engine release that generated |
 | `repave.dev/artifact-type` | Golden-path artifact type |
 | `backstage.io/techdocs-ref` | `dir:.` when the repo has `docs/` or `mkdocs.yml` |
+| `backstage.io/kubernetes-id` | Workload label for the Kubernetes tab (`catalog_kubernetes_id`) |
+| `backstage.io/kubernetes-namespace` | Namespace filter (`catalog_kubernetes_namespace`) |
 
 Standard shape: [`standards/backstage/catalog-standard.md`](../standards/backstage/catalog-standard.md).
 
@@ -190,13 +192,17 @@ next to `mkdocs.yml`). Open **Catalog** → entity → **Docs**.
 | Local `yarn start` | `techdocs.generator.runIn: docker` (needs Docker) |
 | Hosted image / chart | `runIn: local` — `mkdocs-techdocs-core==1.7.0` in [`packages/backend/Dockerfile`](../backstage/packages/backend/Dockerfile) so the pod does not need Docker-in-Docker |
 
-Catalog also registers **graph**, **search**, **API docs**, and **import**.
-Example `tf-aws-demo` depends on resource `tf-aws-demo-state`; `example-website`
-depends on `tf-aws-demo` and provides `example-grpc-api`. Open **Catalog** →
-entity → **Diagram** (or the catalog graph page). Search uses the sidebar
+Catalog also registers **graph**, **search**, **API docs**, **import**, **org**,
+and **Kubernetes**. Example `tf-aws-demo` depends on resource `tf-aws-demo-state`;
+`example-website` depends on `tf-aws-demo`, provides `example-grpc-api`, and
+carries `backstage.io/kubernetes-id`. Open **Catalog** → **guests** or
+**platform** for org cards. The Kubernetes tab lists workloads when a cluster
+is configured (`kubernetes.clusterLocatorMethods`); local/hosted default is
+an empty cluster list so the backend still starts. Search uses the sidebar
 modal. **Register existing component** imports a `catalog-info.yaml` URL.
 
-Do not iframe or clone Docs, graph, or search into the HTML workbench.
+Do not iframe or clone Docs, graph, search, org, or Kubernetes into the HTML
+workbench.
 
 Example Location for a published repo:
 
