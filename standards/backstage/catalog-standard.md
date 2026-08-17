@@ -17,12 +17,17 @@ is `true` (Terraform modules, Helm charts).
   - `backstage.io/techdocs-ref: dir:.` when the repo has `docs/` or `mkdocs.yml`
   - `backstage.io/kubernetes-id` / `backstage.io/kubernetes-namespace` when
     `catalog_kubernetes_id` / `catalog_kubernetes_namespace` are set
+  - `github.com/project-slug` / `backstage.io/source-location` when
+    `catalog_github_slug` (or `github_org` + `github_repo`) is set
+- **metadata.tags / metadata.links:** Optional from `catalog_tags` / `catalog_links`
 - **spec.type:** `service` (app-service, Helm) or `library` (Terraform modules)
 - **spec.owner:** Team or group ref (required for app-service; required when catalog is enabled)
 - **spec.system:** Optional platform system name
 - **spec.lifecycle:** `experimental`, `production`, or `deprecated`
 - **spec.dependsOn:** Optional entity refs from `catalog_depends_on` (catalog graph)
 - **spec.providesApis:** Optional API refs from `catalog_provides_apis`
+- **spec.consumesApis:** Optional API refs from `catalog_consumes_apis`
+- **spec.subcomponentOf:** Optional parent component ref from `catalog_subcomponent_of`
 
 ## Import
 

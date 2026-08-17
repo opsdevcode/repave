@@ -116,6 +116,36 @@ spec:
       advanced: true
       default: ""
       description: backstage.io/kubernetes-namespace for the Catalog Kubernetes tab.
+    - name: catalog_consumes_apis
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Comma-separated Backstage API refs for spec.consumesApis.
+    - name: catalog_subcomponent_of
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Parent component ref for spec.subcomponentOf.
+    - name: catalog_tags
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Comma-separated Backstage metadata.tags.
+    - name: catalog_links
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: Comma-separated Title|https://url (or bare URL) metadata.links.
+    - name: catalog_github_slug
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: GitHub org/repo for project-slug and source-location.
   template:
     engine: copier
     path: template

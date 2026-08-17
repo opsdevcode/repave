@@ -58,7 +58,11 @@ kubernetes:
     type: 'multiTenant'
   clusterLocatorMethods:
     - type: 'config'
-      clusters: []
+      clusters:
+        - name: in-cluster
+          url: https://kubernetes.default.svc
+          authProvider: serviceAccount
+          skipMetricsLookup: true
 
 catalog:
   # Overrides the default list locations from app-config.yaml as these contain example data.
@@ -72,6 +76,16 @@ catalog:
 
     - type: file
       target: ./examples/templates/terraform-module-generic.yaml
+      rules:
+        - allow: [Template]
+
+    - type: file
+      target: ./examples/templates/helm-chart-generic.yaml
+      rules:
+        - allow: [Template]
+
+    - type: file
+      target: ./examples/templates/app-service-generic.yaml
       rules:
         - allow: [Template]
 

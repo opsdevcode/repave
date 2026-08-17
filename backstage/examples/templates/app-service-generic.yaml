@@ -1,0 +1,57 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: repave-app-service
+  title: Application service (repave)
+  description: Generate a governed application service via POST /api/v2/generate
+spec:
+  owner: group:default/platform
+  type: service
+  parameters:
+    - title: Service
+      required:
+        - serviceName
+        - owner
+      properties:
+        serviceName:
+          title: Service name
+          type: string
+        description:
+          title: Description
+          type: string
+          default: Scaffolder bootstrap
+        runtime:
+          title: Runtime
+          type: string
+          enum: [python, go, nodejs, java, dotnet]
+          default: python
+        layout:
+          title: Layout
+          type: string
+          enum: [http-api, worker, scheduled-job, grpc]
+          default: http-api
+        owner:
+          title: Owner
+          type: string
+          default: group:platform
+        dryRun:
+          title: Plan only
+          type: boolean
+          default: true
+  steps:
+    - id: generate
+      name: repave generate
+      action: repave:generate
+      input:
+        blueprint: app-service-generic
+        dryRun: ${{ parameters.dryRun }}
+        inputs:
+          service_name: ${{ parameters.serviceName }}
+          description: ${{ parameters.description }}
+          runtime: ${{ parameters.runtime }}
+          layout: ${{ parameters.layout }}
+          owner: ${{ parameters.owner }}
+  output:
+    text:
+      - title: Summary
+        text: ${{ steps.generate.output.summary }}

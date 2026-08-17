@@ -270,6 +270,10 @@ repave:
     # so Catalog is https://<host>/idp. Do not iframe /idp into Jinja.
     publicBaseUrl: ""
     extraEnv: []
+    # In-cluster Kubernetes tab (namespace Role + dedicated SA). Local yarn
+    # start keeps an empty cluster list. Set false to skip RBAC.
+    kubernetes:
+      enabled: true
     # Kind / first boot can take a minute; keep liveness from killing the pod.
     probes:
       liveness:

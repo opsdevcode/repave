@@ -12,7 +12,10 @@ Install the repave **portal and API** on Kubernetes. Images build from
 
 The gate-toolchain image includes pinned CLIs for Plan/dry-run. The portal-only image
 is smaller and suits catalog/auth-only deployments; dry-run gates report missing tools.
-Hosted Backstage is a second Deployment (`:7007`). `make chart-smoke-backstage`
+Hosted Backstage is a second Deployment (`:7007`) with a dedicated ServiceAccount
+and namespace Role when `repave.backstage.kubernetes.enabled` (default on) so
+the Catalog Kubernetes tab can list workloads in the release namespace.
+`make chart-smoke-backstage`
 boots that image on kind. The flag defaults on (owner: Eric Skaggs). See
 [`docs/backstage.md`](../../../docs/backstage.md).
 

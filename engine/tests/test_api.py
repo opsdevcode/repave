@@ -1059,6 +1059,11 @@ def test_terraform_guided_only_generate_uses_defaults(
             "catalog_provides_apis",
             "catalog_kubernetes_id",
             "catalog_kubernetes_namespace",
+            "catalog_consumes_apis",
+            "catalog_subcomponent_of",
+            "catalog_tags",
+            "catalog_links",
+            "catalog_github_slug",
             "provider_service_scope",
         }
     }
@@ -1094,6 +1099,11 @@ def test_terraform_guided_generate_derives_name_and_description(
             "catalog_provides_apis",
             "catalog_kubernetes_id",
             "catalog_kubernetes_namespace",
+            "catalog_consumes_apis",
+            "catalog_subcomponent_of",
+            "catalog_tags",
+            "catalog_links",
+            "catalog_github_slug",
             "provider_service_scope",
         }
     }
@@ -1543,6 +1553,11 @@ def test_app_service_form_renders_backstage_catalog(repo_root, output_config) ->
     assert 'id="catalog_provides_apis"' in response.text
     assert 'id="catalog_kubernetes_id"' in response.text
     assert 'id="catalog_kubernetes_namespace"' in response.text
+    assert 'id="catalog_consumes_apis"' in response.text
+    assert 'id="catalog_subcomponent_of"' in response.text
+    assert 'id="catalog_tags"' in response.text
+    assert 'id="catalog_links"' in response.text
+    assert 'id="catalog_github_slug"' in response.text
     assert 'id="runtime"' in response.text
     assert ">go</option>" in response.text
     assert 'data-form-mode="guided"' in response.text
