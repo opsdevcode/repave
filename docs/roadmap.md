@@ -23,6 +23,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**HTML kind-specific run results retired**
+(pointer pages → Backstage `/services`, `/sandbox`, `/standards`, `/import/batch`, `/reclaim`);
 **HTML catalog and library pages restored**
 (`GET /` and `/library` stay real pages; generate/bundle forms stay pointers);
 **HTML run console and sandbox retired**
@@ -174,7 +176,7 @@ v3.41.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; platform/import/verify/result/bundle/upgrade/runs/sandbox HTML retired; catalog and library stay HTML pages; leftover landing until 14 Feb 2027 ([ADR 011](adr/011-hosted-backstage-idp.md)) |
+| **Hosted Backstage IDP** | Default on | Owner Eric Skaggs; platform/import/verify/result/bundle/upgrade/runs/sandbox/kind-result HTML retired; catalog and library stay HTML pages; leftover landing until 14 Feb 2027 ([ADR 011](adr/011-hosted-backstage-idp.md)) |
 | **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
@@ -197,9 +199,9 @@ Kind/smoke overlays keep the flag off. Ops, standards, campaigns, and builder
 browse pages have Backstage pages. `/generate` posts `POST /api/v2/generate`
 (dry-run default). HTML generate form, results, platform, import, and
 verify pages are pointer pages. Bundle form and results are pointer pages.
-Run console and sandbox HTML are pointer pages. HTML catalog (`GET /`)
-and library (`GET /library`) stay real pages. Phase 4 leftover templates
-(landing) stay until 14 Feb 2027.
+Run console, sandbox, and kind-specific run-result HTML are pointer pages.
+HTML catalog (`GET /`) and library (`GET /library`) stay real pages. Phase 4
+leftover templates (landing) stay until 14 Feb 2027.
 
 **Problem:** The custom HTML portal duplicates catalog, ownership, and scaffolding
 that Backstage already owns. Growing `/home` / `/lab` is a second IDP. The public
@@ -218,9 +220,10 @@ browse pages (`/generate`, `/bundles`, `/library`, `/teams`, `/services`,
 `/run-console`). `/generate` picks a blueprint, fills inputs, and dry-runs
 `POST /api/v2/generate`. HTML generate form, results, platform, import,
 and verify are gone. Catalog and library stay HTML pages. Bundle, upgrade,
-run console, and sandbox HTML are pointer pages. Apply stays CLI and
-operator (`POST /api/v2/upgrades/apply`). Chart-smoke and GHCR publish
-already shipped. Remaining Phase 4 work is leftover Jinja (landing).
+run console, sandbox, and kind-specific run-result HTML are pointer pages.
+Apply stays CLI and operator (`POST /api/v2/upgrades/apply`). Chart-smoke
+and GHCR publish already shipped. Remaining Phase 4 work is leftover Jinja
+(landing).
 
 ---
 

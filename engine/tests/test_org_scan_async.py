@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from unittest.mock import patch
 
+from portal_moved import assert_surface_moved
 from repave_engine.org_import_scan import (
     ORG_SCAN_SENTINEL,
     ScannedRepository,
@@ -237,10 +238,8 @@ def test_org_scan_result_page(tmp_path, output_config, monkeypatch) -> None:
             assert terminal.status == RunStatus.SUCCEEDED
 
             page = client.get(f"/runs/{record.run_id}/result")
-            assert page.status_code == 200
-            assert "Organization scan" in page.text
-            assert "data-org-scan-add-to-batch" in page.text
-            assert "data-org-scan-target-blueprints" in page.text
-            assert "https://github.com/acme/vpc" in page.text
+            assert_surface_moved(page, "org-scan-result")
+            assert "data-org-scan-add-to-batch" not in page.text
+            assert "data-org-scan-target-blueprints" not in page.text
     finally:
         queue.close()

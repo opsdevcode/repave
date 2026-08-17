@@ -17,7 +17,8 @@ FinOps, plus ops / standards / campaigns, plus builder browse pages).
 (`blueprint_form.html`) is removed; `GET /blueprints/{name}` points at Backstage
 and the CLI. HTML catalog (`GET /`) and library (`GET /library`) stay real
 pages. Platform, import, verify, generate-result, bundle, upgrade, run
-console, and sandbox HTML are pointer pages. Landing remains.
+console, sandbox, and kind-specific `/runs/{id}/result` HTML are pointer
+pages. Landing remains.
 Do not drop leftover HTML silently.
 
 ## What you get
