@@ -21,6 +21,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Azure/GCP component stubs**
+(`azurerm_*` / `google_*` for database, bucket, and queue; no `null_resource`);
 **HTML portal pages restored for local-first**
 (nav, generate, upgrade, verify, import, platform, runs, sandbox, and results
 are real pages again so `make serve` can open them; hosted Backstage still owns
@@ -173,7 +175,7 @@ v3.42.1 today      platform GA line on main (contract freeze + DR shipped)
 | **Forked blueprint packs** | Partial | Local roots + git URL fetch (read-only cache); OCI stays parking-lot |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
-| **Component self-service vending** | Shipped | Vend, reclaim, Backstage UI, kind-specific AWS RDS/S3/SQS modules ([ADR 013](adr/013-component-self-service-vending.md)); Azure/GCP stay placeholders |
+| **Component self-service vending** | Shipped | Vend, reclaim, Backstage UI, kind-specific AWS/Azure/GCP modules ([ADR 013](adr/013-component-self-service-vending.md)) |
 | **v3.0.0** | — | Autonomous remediation, mandatory policy, conversational governed AI |
 | **v4.0.0** | — | Stategraph / graph-scoped plan/apply |
 
@@ -287,9 +289,11 @@ unwaived destructive DDL and on a missing rollback.
 
 **Status:** Shipped — vend, reclaim, Backstage `/vend` + `/reclaim`, and
 kind-specific blueprints (`terraform-component-database` / `-bucket` / `-queue`)
-([ADR 013](adr/013-component-self-service-vending.md)). AWS stubs emit
-`aws_db_instance` / `aws_s3_bucket` / `aws_sqs_queue`; Azure/GCP stay
-placeholders.
+([ADR 013](adr/013-component-self-service-vending.md)). Stubs emit AWS
+(`aws_db_instance` / `aws_s3_bucket` / `aws_sqs_queue`), Azure
+(`azurerm_postgresql_flexible_server` / `azurerm_storage_account` /
+`azurerm_servicebus_queue`), and GCP (`google_sql_database_instance` /
+`google_storage_bucket` / `google_pubsub_topic`).
 
 **Problem:** Builders request a managed database, bucket, or queue by hand or
 ticket; the write never becomes gated GitOps lineage.
@@ -299,11 +303,10 @@ ticket; the write never becomes gated GitOps lineage.
 - Same GitOps PR flow as `environment_vend` (no `terraform apply`)
 - Built-in kinds `database` / `bucket` / `queue` (override via
   `component_vending.kinds`)
-- Kind-specific blueprints with real AWS RDS/S3/SQS modules
+- Kind-specific blueprints with AWS, Azure, and GCP stub modules
 - Registry + catalog entity; Backstage `/vend` for the request
 - TTL reclaim via `POST /api/v2/components/reclaim` / `repave components reclaim`
   and Backstage `/reclaim`
-- Follow-up: Azure/GCP equivalents of those modules
 
 **Done when:** a builder can request a managed component and get a reviewable
 GitOps PR, same shape as environment vending — **met** for the request path.

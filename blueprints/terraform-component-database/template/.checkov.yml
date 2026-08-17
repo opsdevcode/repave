@@ -2,7 +2,8 @@ external-checks-dir:
   - policy/checkov
 framework:
   - terraform
-# Stub omits multi-AZ, CMK, replica, and VPC flow logs. Pin an estate module before shared apply.
+# Stub omits multi-AZ, CMK, replica, private endpoints, and VPC flow logs.
+# Pin an estate module before shared apply.
 skip-check:
   - CKV_AWS_118
   - CKV_AWS_157
@@ -11,3 +12,8 @@ skip-check:
   - CKV_AWS_354
   - CKV2_AWS_8
   - CKV2_AWS_11
+  - CKV_AZURE_136
+  - CKV2_AZURE_57
+  - CKV_GCP_110
+  - CKV_GCP_111
+  - CKV_GCP_142

@@ -52,11 +52,14 @@ Credentials stay GitHub-shaped. CD applies after merge.
 
 ### Out of scope (later slices)
 
-- Azure/GCP equivalents of the AWS component modules (placeholders remain)
 - Operator JSON contract changes
 
 **Amendment (2026-08-16):** AWS stubs emit `aws_db_instance` / `aws_s3_bucket` /
 `aws_sqs_queue`. Pin estate `tf-*` modules before shared apply.
+**Amendment (2026-08-17):** Azure and GCP stubs emit
+`azurerm_postgresql_flexible_server` / `azurerm_storage_account` /
+`azurerm_servicebus_queue` and `google_sql_database_instance` /
+`google_storage_bucket` / `google_pubsub_topic`. Placeholders are gone.
 
 Backstage `/vend` calls `GET /api/v2/component-kinds` and
 `POST /api/v2/components/vend`. Backstage `/reclaim` also calls
