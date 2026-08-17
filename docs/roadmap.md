@@ -22,6 +22,9 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**One product chrome**
+(HTML **Golden paths** + Backstage **Catalog**; night-ops theme and shared top
+bar; same-host `/idp` `app.baseUrl`; no iframe);
 **UI split by job**
 (HTML workbench + Backstage catalog/lineage/Scaffolder; plugin clones removed;
 [`docs/ui-surfaces.md`](ui-surfaces.md));
@@ -176,7 +179,7 @@ v3.44.0 today      platform GA line on main (contract freeze + DR shipped)
 | **Platform as a product** | Shipped | [archive](roadmap-archive.md#platform-as-a-product-v2x) |
 | **Service catalog maturity** | Shipped | [ADR 006](adr/006-service-catalog-and-maturity.md), [`service-catalog.md`](service-catalog.md) |
 | **State custody / resource graph** | Phases 0–3 shipped; Phase 4 → **v4** | Enablement gates still open ([below](#state-custody-and-the-resource-graph-v2x)) |
-| **Hosted Backstage IDP** | Catalog only | Owner Eric Skaggs; HTML is the workbench; Backstage is catalog + lineage + Scaffolder ([ADR 011](adr/011-hosted-backstage-idp.md), [`ui-surfaces.md`](ui-surfaces.md)) |
+| **Hosted Backstage IDP** | Catalog + chrome | Owner Eric Skaggs; HTML is the workbench; Backstage is catalog + lineage + Scaffolder with night-ops chrome ([ADR 011](adr/011-hosted-backstage-idp.md), [`ui-surfaces.md`](ui-surfaces.md)) |
 | **Forked blueprint packs** | Shipped | Local roots + git URL fetch + OCI `oras pull` (read-only cache) |
 | **API contract path** | Shipped | OpenAPI/AsyncAPI repo with Spectral + oasdiff gates |
 | **Database migration path** | Shipped | Alembic/Flyway/Atlas + destructive-DDL policy ([ADR 012](adr/012-destructive-ddl-policy.md)) |
@@ -192,20 +195,22 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Split by job shipped (owner: Eric Skaggs;
+**Status:** Split by job + one product chrome shipped (owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md),
 [`docs/ui-surfaces.md`](ui-surfaces.md)).
-Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench.
-Backstage is catalog ingest, lineage, My services, and optional Scaffolder.
-Plugin clones of generate/ops/platform pages are removed. Hosted overlay keeps
-`portal.html: true` and sends `/idp` to Backstage.
+Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench
+(**Golden paths**). Backstage is catalog ingest, lineage, My services, and
+optional Scaffolder (**Catalog**), with the night-ops top bar. Plugin clones of
+generate/ops/platform pages are removed. Hosted overlay keeps `portal.html: true`
+and sends `/idp` to Backstage (`app.baseUrl` = `https://<host>/idp`). Do not
+iframe `/idp`.
 
 **Problem:** Cloning every `/api/v2` page into Backstage created a second full
 portal without the night-ops look.
 
 **Approach:** Grow the HTML workbench. Keep Backstage for catalog, ownership,
-and `repave:generate`. Handoff via `portal.backstage_url` and
-`repave.portalBaseUrl`. CLI remains the offline path.
+and `repave:generate`. Shared nav + night-ops tokens. Handoff via
+`portal.backstage_url` and `repave.portalBaseUrl`. CLI remains the offline path.
 
 **Done when:** one growing UI (HTML) and a catalog IDP that does not mirror it —
 **met**. Apply stays CLI and operator. Chart-smoke and GHCR publish stay.

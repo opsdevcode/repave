@@ -33,8 +33,10 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **on** (owner: Eric Skaggs).
   Kind/smoke overlays set it off. Overlay `values-backstage.yaml` keeps
-  `portal.html: true` and sets `portal.backstage_url: /idp`. Same-host
-  `/` + `/api` → engine, `/idp` → Backstage.
+  `portal.html: true` and sets `portal.backstage_url: /idp` plus
+  `repave.backstage.publicBaseUrl` (`APP_BASE_URL` → `app.baseUrl`) so
+  Catalog is `https://<host>/idp`. Same-host `/` + `/api` → engine,
+  `/idp` → Backstage. Do not iframe `/idp`.
 - Smoke: `make chart-smoke-backstage` (CI job `chart-smoke-backstage`, path-gated).
   Guest-only: do not set blank `AUTH0_*`. Catalog provider must not fail
   connect() if the engine is still starting.

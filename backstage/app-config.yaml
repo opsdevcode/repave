@@ -10,6 +10,11 @@ app:
     - page:catalog:
         config:
           path: /
+    # Night-ops is the product chrome. Keep default Material themes off.
+    - theme:app/light:
+        disabled: true
+    - theme:app/dark:
+        disabled: true
 
 organization:
   name: repave
@@ -19,6 +24,8 @@ repave:
   apiToken: ${REPAVE_API_TOKEN:-}
   # Night-ops workbench (make serve). Hosted chart sets REPAVE_PORTAL_BASE_URL=/.
   portalBaseUrl: ${REPAVE_PORTAL_BASE_URL:-http://127.0.0.1:8089}
+  logoUrl: ${REPAVE_PORTAL_LOGO_URL:-}
+  accentColor: ${REPAVE_PORTAL_ACCENT_COLOR:-}
 
 backend:
   # Used for enabling authentication, secret is shared by all backend plugins

@@ -458,14 +458,25 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     def command_palette_items(request: Request | None = None) -> list[dict[str, str]]:
         items: list[dict[str, str]] = [
-            {"kind": "nav", "label": "Catalog", "href": "/", "subtitle": "Golden paths home"},
+            {"kind": "nav", "label": "Golden paths", "href": "/", "subtitle": "Golden paths home"},
+        ]
+        if portal_config.backstage_url:
+            items.append(
+                {
+                    "kind": "nav",
+                    "label": "Catalog",
+                    "href": portal_config.backstage_url,
+                    "subtitle": "Ownership and lineage",
+                }
+            )
+        items.append(
             {
                 "kind": "nav",
                 "label": "Library",
                 "href": "/library",
                 "subtitle": "Created repositories",
-            },
-        ]
+            }
+        )
         if service_catalog_config is not None:
             items.extend(
                 (

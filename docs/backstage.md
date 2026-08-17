@@ -83,10 +83,13 @@ The Backstage container talks to the in-cluster portal Service
 `repave.backstage.apiBaseUrl`. Pass `AUTH0_CLIENT_ID` (and the other Auth0
 keys) plus `REPAVE_API_TOKEN` through `repave.backstage.extraEnv` when you
 want Auth0; omit them for guest-only / chart-smoke. The overlay keeps
-`portal.html: true` and sets `portal.backstage_url: /idp` for “Open in catalog”.
-It also sets `repave.serviceCatalog.enabled` (chart default) and mounts bundled
-`examples/platform-dev` catalog YAML. CLI and `/api/v2` stay. Same-host Ingress
-(opt-in): `/` → HTML, `/api` → engine, `/idp` → Backstage
+`portal.html: true` and sets `portal.backstage_url: /idp` so the HTML **Catalog**
+nav/button lands on Backstage. It also sets `repave.backstage.publicBaseUrl` to
+`https://repave.example.com/idp` (`APP_BASE_URL` → `app.baseUrl`) so Catalog is
+same-host. Do **not** iframe `/idp` into Jinja. Override the host when you cut
+over Ingress. It also sets `repave.serviceCatalog.enabled` (chart default) and
+mounts bundled `examples/platform-dev` catalog YAML. CLI and `/api/v2` stay.
+Same-host Ingress (opt-in): `/` → HTML, `/api` → engine, `/idp` → Backstage
 (`ingress.enabled` + `repave.backstage.ingress.enabled`).
 
 Image: `ghcr.io/opsdevcode/repave-backstage`, published by

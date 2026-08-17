@@ -5,7 +5,9 @@ Decision: [ADR 011](adr/011-hosted-backstage-idp.md). Visual language:
 [portal-design.md](portal-design.md). Operator Backstage notes:
 [backstage.md](backstage.md).
 
-They do **not** clone each other. They hand off.
+They do **not** clone each other. They hand off. Shared **product chrome**
+(top nav, mark, night-ops tokens) makes the two jobs read as one product.
+Do **not** iframe `/idp` into Jinja.
 
 ```mermaid
 flowchart LR
@@ -51,11 +53,14 @@ under `backstage/plugins/plugin-repave`.
 
 - Generate (HTML or CLI) writes `catalog-info.yaml`.
 - Backstage ingests that file and `GET /api/v2/catalog/entities`.
-- HTML **Open in catalog** appears when `portal.backstage_url` (or
-  `REPAVE_BACKSTAGE_URL`) is set — library, service detail, generate result.
+- HTML **Golden paths** is `/`. **Catalog** is the Backstage nav/button and
+  appears when `portal.backstage_url` (or `REPAVE_BACKSTAGE_URL`) is set —
+  library, service detail, generate result.
 - The lineage card links **Generate in portal** / **Upgrade in portal** using
   `repave.portalBaseUrl` (`REPAVE_PORTAL_BASE_URL`).
 - Scaffolder `repave:generate` stays an alternate submit for teams on `/create`.
+- Backstage uses the night-ops theme and a top bar that repeats Golden paths,
+  Catalog, Library, Upgrade, Verify. Sidebar stays Catalog / My services / Create.
 
 ## Hosted vs laptop
 
@@ -66,7 +71,10 @@ under `backstage/plugins/plugin-repave`.
 | CLI | No UI. |
 
 `/idp` is the Backstage path prefix so it does not collide with Backstage’s own
-`/catalog` route. `portal.html: false` remains an operator opt-out (HTML 410).
+`/catalog` route. Set `app.baseUrl` / `repave.backstage.publicBaseUrl` to
+`https://<host>/idp` so Catalog is same-origin. Cookies and Auth0 stay one
+site. Do **not** iframe `/idp` into Jinja. `portal.html: false` remains an
+operator opt-out (HTML 410).
 
 ## Related
 

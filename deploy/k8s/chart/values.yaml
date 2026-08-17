@@ -105,8 +105,8 @@ repave:
   portal:
     # Hosted workbench (ADR 011). Set false only for API-only installs (HTML 410).
     html: true
-    # Public Backstage base for "Open in catalog" (empty = hide links).
-    # Overlay sets /idp when Backstage is on the same host.
+    # Public Backstage base for the Catalog nav/button (empty = hide Catalog).
+    # Overlay sets /idp when Backstage is on the same host. Do not iframe /idp.
     backstageUrl: ""
     density: default
     # Optional white-label (empty = Converge defaults). See docs/brand/README.md.
@@ -265,6 +265,10 @@ repave:
       port: 7007
     # Empty = in-cluster portal/API service (http://{{ release }}-repave:8088).
     apiBaseUrl: ""
+    # Public Catalog origin, e.g. https://repave.example.com/idp. Empty keeps
+    # the image default (http://localhost:7007). Same-host overlay sets this
+    # so Catalog is https://<host>/idp. Do not iframe /idp into Jinja.
+    publicBaseUrl: ""
     extraEnv: []
     # Kind / first boot can take a minute; keep liveness from killing the pod.
     probes:

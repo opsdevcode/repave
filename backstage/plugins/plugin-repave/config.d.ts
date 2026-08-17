@@ -1,9 +1,7 @@
 export interface Config {
   repave?: {
-    apiBaseUrl?: string;
-    apiToken?: string;
     /**
-     * Night-ops workbench base (HTML portal).
+     * Night-ops workbench base (HTML portal). Hosted same-host is `/`.
      * @visibility frontend
      */
     portalBaseUrl?: string;

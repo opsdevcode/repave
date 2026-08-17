@@ -1411,7 +1411,7 @@ class PortalConfig:
     deployment_flux: DeploymentFluxConfig = field(default_factory=DeploymentFluxConfig)
     # Local-first and hosted workbench (ADR 011). Set false for API-only installs.
     html: bool = True
-    # Public Backstage base for "Open in catalog" (empty hides the links).
+    # Public Backstage base for the Catalog nav/button (empty hides Catalog).
     backstage_url: str = ""
 
 

@@ -99,7 +99,24 @@ def test_html_nav_includes_catalog_handoff_when_backstage_url_set(
     library = client.get("/library")
     assert library.status_code == 200
     assert 'href="/idp"' in library.text
-    assert "Software catalog" in library.text
+    primary = library.text.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert ">Golden paths<" in primary
+    assert ">Catalog<" in primary
+    assert "Software catalog" not in library.text
+    assert '"label": "Catalog"' in library.text
+    assert '"href": "/idp"' in library.text
+    assert "Ownership and lineage" in library.text
+
+
+def test_html_nav_hides_catalog_without_backstage_url(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    home = client.get("/")
+    assert home.status_code == 200
+    primary = home.text.split("shell__nav--primary", 1)[1].split("shell__nav-more", 1)[0]
+    assert ">Golden paths<" in primary
+    assert ">Catalog<" not in primary
+    assert '"label": "Golden paths"' in home.text
+    assert '"label": "Catalog"' not in home.text
 
 
 def test_load_portal_config_html_rejects_non_bool(tmp_path: Path) -> None:

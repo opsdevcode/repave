@@ -11,7 +11,7 @@ labels; this file holds **visual layout**, **component patterns**, and
 
 | Route | Template | Highlights |
 | --- | --- | --- |
-| Catalog | `index.html` | Golden-path browse; tiles open `/blueprints/{name}` |
+| Golden paths | `index.html` | Golden-path browse; tiles open `/blueprints/{name}` |
 | Library | `library.html` | Family drawers of created repos |
 | Generate | `blueprint_form.html` | Guided/Advanced form; POST `/generate` |
 | Upgrade / verify / import | `update.html` / `verify.html` / `import.html` | Local-first forms; `/api/v2` unchanged |
@@ -90,8 +90,10 @@ Default theme is **night-ops** (`color-scheme: dark` on `:root`), evolved with t
 ### App shell
 
 - Top bar: platform-layer mark + **repave** wordmark + amber **v3**, primary nav
-  (Catalog, Library, …), optional environment badge (for example `local` when running
-  under Docker Compose). Favicons under `/static/brand/`.
+  (Golden paths, Catalog when Backstage is configured, Library, …), optional
+  environment badge (for example `local` when running under Docker Compose).
+  Favicons under `/static/brand/`. Backstage repeats the same mark, navy, amber,
+  and nav words.
 - Content area: consistent max width and horizontal padding; mobile single column.
 - Breadcrumb or back link styled consistently (not bare `<a>` above `<h1>`).
 - Tagline (*The intelligent platform layer*) appears in the shell lockup and catalog

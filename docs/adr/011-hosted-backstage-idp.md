@@ -8,7 +8,9 @@
 Backstage. HTML is the growing UI. Backstage keeps catalog provider, lineage
 card, My services (catalog filter), and `repave:generate`. Hosted overlay keeps
 `portal.html: true`. Same-host ingress is `/` + `/api` → engine, `/idp` →
-Backstage. See [`docs/ui-surfaces.md`](../ui-surfaces.md).
+Backstage. Shared product chrome: HTML `/` is **Golden paths**; **Catalog** is
+Backstage (`app.baseUrl` = `https://<host>/idp`). Night-ops theme + top bar on
+Backstage. Do not iframe `/idp`. See [`docs/ui-surfaces.md`](../ui-surfaces.md).
 **Amendment (2026-08-16):** Owner **Eric Skaggs**. `repave.backstage.enabled`
 defaults **on**. Kind/smoke overlays keep it off.
 **Date:** 2026-08-14
@@ -52,8 +54,9 @@ plane.**
   on `repave.dev/blueprint`), and Scaffolder **`repave:generate`**. Do not add
   workbench pages under `backstage/plugins/plugin-repave`.
 - New `/api/v2` features land in HTML **or** CLI only — not both UIs.
-- White-label (`portal.logo_url` / `portal.accent_color`) stays on the HTML
-  portal. Optional `portal.backstage_url` enables “Open in catalog” handoff.
+- White-label (`portal.logo_url` / `portal.accent_color`) is shared: HTML and
+  the Backstage night-ops chrome both read those values. Optional
+  `portal.backstage_url` enables the **Catalog** nav/button (not an iframe).
 - Fine-grained Auth0 FGA stays parking-lot (ADR 010+). The Sign-In Resolver maps
   groups the same way `auth.oidc.roles` does today.
 - Chart flag `repave.backstage.enabled` defaults **on** (owner: Eric Skaggs).
@@ -76,8 +79,8 @@ They work together by **handoff**, not by mirroring:
 
 - Generate (HTML or CLI) writes `catalog-info.yaml`
 - Backstage ingests it and shows the entity + lineage card
-- HTML “Open in catalog” links to the Backstage entity page when
-  `portal.backstage_url` is set
+- HTML **Catalog** links to the Backstage entity page when
+  `portal.backstage_url` is set. `/` is **Golden paths**. Do not iframe `/idp`.
 - Lineage card “Generate / upgrade” links back to the portal
 - Scaffolder `repave:generate` stays an **alternate** submit for `/create`
 

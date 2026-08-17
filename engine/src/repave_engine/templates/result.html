@@ -267,7 +267,7 @@
     {% if portal_backstage_url and result_portal.backstage.name %}
     {% set catalog_href = backstage_catalog_href(portal_backstage_url, name=result_portal.backstage.name) %}
     {% if catalog_href %}
-    <p><a href="{{ catalog_href }}">Open in catalog</a></p>
+    <p><a class="btn btn--primary btn--sm" href="{{ catalog_href }}">Catalog</a></p>
     {% endif %}
     {% endif %}
     <p class="hint">Open <code>catalog-info.yaml</code> in the file preview below for the full document.</p>

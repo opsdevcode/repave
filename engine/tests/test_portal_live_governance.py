@@ -225,6 +225,8 @@ def test_command_palette_contract(repo_root, output_config) -> None:
     assert "command-palette-data" in body
     assert '"subtitle"' in body
     assert "Golden paths home" in body
+    assert '"label": "Golden paths"' in body
+    assert '"label": "Catalog"' not in body
     assert "Resume last run" in body
     assert "terraform-module-generic" in body
     assert '"/platform/finops"' in body
