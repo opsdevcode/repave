@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 from portal_moved import assert_surface_moved
 from repave_engine.api import create_app
 from repave_engine.portal_surface_moved import (
-    CATALOG_MOVED,
     RESULT_MOVED,
     moved_page_context,
     platform_moved,
@@ -17,8 +16,8 @@ from repave_engine.run_store import RunStatus
 
 
 def test_moved_page_context_exposes_surface_id() -> None:
-    ctx = moved_page_context(CATALOG_MOVED)
-    assert ctx["moved_surface_id"] == "catalog"
+    ctx = moved_page_context(RESULT_MOVED)
+    assert ctx["moved_surface_id"] == "result"
     assert ctx["moved_backstage_path"] == "/generate"
     assert ctx["nav_active"] == "catalog"
 
@@ -31,8 +30,6 @@ def test_platform_moved_ids() -> None:
 @pytest.mark.parametrize(
     ("path", "surface_id"),
     [
-        ("/", "catalog"),
-        ("/library", "library"),
         ("/activity", "activity"),
         ("/estate", "estate"),
         ("/import", "import"),

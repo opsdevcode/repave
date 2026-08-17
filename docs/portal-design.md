@@ -11,7 +11,9 @@ labels; this file holds **visual layout**, **component patterns**, and
 
 | Route | Template | Highlights |
 | --- | --- | --- |
-| Home / catalog / platform / import / verify / results / bundles / upgrade / runs / sandbox | `surface_moved.html` | Pointer pages to Backstage + CLI / `/api/v2` |
+| Catalog | `index.html` | Golden-path browse; opening a path points at Backstage generate |
+| Library | `library.html` | Family drawers of created repos |
+| Home / platform / import / verify / results / bundles / upgrade / runs / sandbox | `surface_moved.html` | Pointer pages to Backstage + CLI / `/api/v2` |
 | Blueprint page | `generate_moved.html` | HTML generate form retired; points to Backstage `/generate` and `repave generate` |
 | Landing / signup | leftover Jinja | Still served until the 14 Feb 2027 sunset |
 

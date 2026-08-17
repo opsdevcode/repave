@@ -16,14 +16,20 @@ from repave_engine.audit_history import (
 from repave_engine.component_registry import read_components
 from repave_engine.entity_catalog import (
     CatalogEntity,
+    EntityLibraryGroup,
     build_catalog_entities,
     build_catalog_from_audit_applies,
     build_catalog_from_components,
     build_catalog_from_environments,
     build_catalog_from_fleet,
     fetch_remote_entity_docs,
+    filter_entities_by_owner,
+    group_catalog_entities,
+    library_family_copy,
+    library_family_known,
     merge_catalog_entities,
     read_entity_docs,
+    rollup_fleet_scorecard,
 )
 from repave_engine.environment_registry import read_environments
 from repave_engine.fleet import normalize_repo_url, read_fleet
@@ -235,28 +241,18 @@ def build_enriched_portal_catalog_entities(
     return enrich_catalog_entities_with_overlay(entities, catalog_cfg)
 
 
-def build_library_catalog_payload(
+def load_library_catalog_groups(
     repo_root: Path,
     output_config: OutputConfig,
     portal_config: PortalConfig,
     *,
     owner: str = "",
-    family: str = "",
-) -> dict[str, Any]:
-    """Grouped library catalog for GET /api/v2/library (HTML /library uses the same groups)."""
+) -> tuple[list[CatalogEntity], list[EntityLibraryGroup]]:
+    """Family-grouped library entities for HTML /library and GET /api/v2/library."""
     from repave_engine.blueprint import list_catalog_blueprints
     from repave_engine.cost_actuals import cost_reader_configured
-    from repave_engine.entity_catalog import (
-        EntityLibraryGroup,
-        filter_entities_by_owner,
-        group_catalog_entities,
-        library_family_copy,
-        library_family_known,
-        rollup_fleet_scorecard,
-    )
 
     owner = owner.strip()
-    family = family.strip()
     cost_configured = cost_reader_configured(
         cost_reader=portal_config.cost_reader,
         cost_actuals_url=portal_config.cost_actuals_url,
@@ -274,20 +270,82 @@ def build_library_catalog_payload(
         blueprint.name: blueprint.artifact_type for blueprint in list_catalog_blueprints(repo_root)
     }
     groups = group_catalog_entities(entities, blueprint_artifact_types=blueprint_types)
+    return entities, groups
+
+
+def _library_family_group(
+    groups: list[EntityLibraryGroup],
+    family: str,
+) -> EntityLibraryGroup:
+    match = next((item for item in groups if item.family == family), None)
+    if match is not None:
+        return match
+    title, subtitle = library_family_copy(family)
+    return EntityLibraryGroup(
+        family=family,
+        title=title,
+        subtitle=subtitle,
+        entities=(),
+    )
+
+
+def build_library_page_context(
+    repo_root: Path,
+    output_config: OutputConfig,
+    portal_config: PortalConfig,
+    *,
+    owner: str = "",
+    family: str = "",
+) -> dict[str, Any]:
+    """Jinja context for GET /library and GET /library/{family}."""
+    owner = owner.strip()
+    family = family.strip()
+    entities, groups = load_library_catalog_groups(
+        repo_root,
+        output_config,
+        portal_config,
+        owner=owner,
+    )
+    if family:
+        family_group = _library_family_group(groups, family)
+        scoped = list(family_group.entities)
+    else:
+        family_group = None
+        scoped = list(entities)
+    return {
+        "nav_active": "library",
+        "library_groups": groups,
+        "library_family": family_group,
+        "library_entity_count": len(scoped),
+        "fleet_scorecard_rollup": rollup_fleet_scorecard(scoped),
+        "library_owner_filter": owner,
+        "observability_configured": bool(portal_config.observability_dashboard_url),
+    }
+
+
+def build_library_catalog_payload(
+    repo_root: Path,
+    output_config: OutputConfig,
+    portal_config: PortalConfig,
+    *,
+    owner: str = "",
+    family: str = "",
+) -> dict[str, Any]:
+    """Grouped library catalog for GET /api/v2/library (HTML /library uses the same groups)."""
+    owner = owner.strip()
+    family = family.strip()
+    entities, groups = load_library_catalog_groups(
+        repo_root,
+        output_config,
+        portal_config,
+        owner=owner,
+    )
     if family:
         if not library_family_known(family):
             raise ValueError(
                 f"unknown library family {family!r}; omit family or use a known family"
             )
-        match = next((item for item in groups if item.family == family), None)
-        if match is None:
-            title, subtitle = library_family_copy(family)
-            match = EntityLibraryGroup(
-                family=family,
-                title=title,
-                subtitle=subtitle,
-                entities=(),
-            )
+        match = _library_family_group(groups, family)
         scoped = list(match.entities)
         groups = [match]
     else:

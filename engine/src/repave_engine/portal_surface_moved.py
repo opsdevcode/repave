@@ -53,28 +53,6 @@ def _surface(
     )
 
 
-CATALOG_MOVED = _surface(
-    "catalog",
-    title="Catalog moved",
-    lead="Golden-path browse now lives in Backstage. This HTML catalog is gone.",
-    backstage_label="Generate",
-    backstage_path="/generate",
-    api_hint="GET /api/v2/catalog/blueprints",
-    cli_hint="repave generate <blueprint>",
-    nav_active="catalog",
-)
-
-LIBRARY_MOVED = _surface(
-    "library",
-    title="Library moved",
-    lead="Created repos now live in the Backstage library.",
-    backstage_label="Library",
-    backstage_path="/library",
-    api_hint="GET /api/v2/library",
-    cli_hint="GET /api/v2/library",
-    nav_active="library",
-)
-
 HOME_MOVED = _surface(
     "home",
     title="My services moved",

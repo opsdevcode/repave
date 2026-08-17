@@ -14,7 +14,11 @@ pytestmark = pytest.mark.slow
 def test_act1_home_catalog(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/")
-    assert_surface_moved(response, "catalog")
+    assert response.status_code == 200
+    assert "terraform-module-generic" in response.text
+    assert "opa-policy-generic" in response.text
+    assert "azure-policy-generic" in response.text
+    assert "checkov-policy-generic" in response.text
 
 
 def test_act2_and_3_terraform_dry_run_preview(repo_root, output_config, sample_inputs) -> None:
