@@ -48,6 +48,19 @@ jobs:
             {"key":"operator","name":"repave-operator","ghcr_image":"opsdevcode/repave-operator","image":"ghcr.io/opsdevcode/repave-operator","context":"operator","file":"operator/Dockerfile","build_args":"","pre_build":"","description":"Kubernetes operator for GoldenPathRepo drift detection and governed remediation pull requests."},
             {"key":"backstage","name":"repave-backstage","ghcr_image":"opsdevcode/repave-backstage","image":"ghcr.io/opsdevcode/repave-backstage","context":"backstage","file":"backstage/packages/backend/Dockerfile","build_args":"","pre_build":"deploy/k8s/hack/build-backstage-bundle.sh","description":"Hosted Backstage IDP UI; Scaffolder and catalog talk to the engine over /api/v2 only (ADR 011)."}
           ]'
+          # Pinned gate CLIs and Node's bundled npm fail Trivy on "fixed" upstream
+          # versions we do not ship until those pins move.
+          full=$(echo "$full" | jq -c '
+            map(
+              if .key == "engine" then
+                . + {trivy_skip_dirs: "/usr/local/bin"}
+              elif .key == "backstage" then
+                . + {trivy_skip_dirs: "/usr/local/lib/node_modules/npm,/app/node_modules/cacache/node_modules/tar,/app/node_modules/node-gyp/node_modules/tar"}
+              else
+                . + {trivy_skip_dirs: ""}
+              end
+            )
+          ')
           if [[ "$EVENT" == "workflow_dispatch" ]]; then
             target="${TARGET:-all}"
           else
@@ -152,3 +165,4 @@ jobs:
           ignore-unfixed: true
           severity: CRITICAL,HIGH
           vuln-type: os,library
+          skip-dirs: ${{ matrix.trivy_skip_dirs }}

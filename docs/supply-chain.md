@@ -51,6 +51,11 @@ regenerates their workflow.
 Bump base digests deliberately — re-run `make chart-smoke` or `make chart-smoke-decomposed`
 after changing them.
 
+Image builds also run `apt-get upgrade` so Debian security updates (for example
+`util-linux` CVE-2026-53615) land without waiting on a new slim digest. The engine
+image still pins gate CLIs from `deploy/local/gate-toolchain-pins.env`; Trivy skips
+`/usr/local/bin` on that image until those pins move.
+
 ## Published engine images
 
 [`.github/workflows/container.yml`](../.github/workflows/container.yml) builds and pushes

@@ -21,6 +21,7 @@ ENV PYTHON=/usr/bin/python3
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
     apt-get install -y --no-install-recommends python3 g++ build-essential && \
     rm -rf /var/lib/apt/lists/*
 
@@ -40,6 +41,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get install -y --no-install-recommends python3-pip python3-venv && \
     python3 -m venv /opt/techdocs && \
     /opt/techdocs/bin/pip install --no-cache-dir mkdocs-techdocs-core==1.7.0 && \
+    /opt/techdocs/bin/pip install --no-cache-dir --upgrade pymdown-extensions && \
     rm -rf /var/lib/apt/lists/*
 ENV PATH="/opt/techdocs/bin:${PATH}"
 
