@@ -25,13 +25,13 @@
     "@material-ui/icons": "^4.9.1"
   },
   "peerDependencies": {
-    "react": "^18.0.2"
+    "react": "^19.2.8"
   },
   "devDependencies": {
     "@backstage/cli": "^0.36.4",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
-    "react": "^18.0.2"
+    "react": "^19.2.8"
   },
   "configSchema": "config.d.ts",
   "files": [
