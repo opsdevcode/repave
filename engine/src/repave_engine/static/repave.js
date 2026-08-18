@@ -3131,13 +3131,14 @@
     }
 
     function scheduleResultRedirect(delayMs) {
-      if (redirectScheduled || !resultUrl) {
+      var dest = safeInternalPath(resultUrl);
+      if (redirectScheduled || !dest) {
         return;
       }
       redirectScheduled = true;
       previewSettled = true;
       window.setTimeout(function () {
-        window.location.assign(resultUrl);
+        window.location.assign(dest);
       }, typeof delayMs === "number" ? delayMs : 800);
     }
 

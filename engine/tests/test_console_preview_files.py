@@ -144,3 +144,4 @@ def test_run_console_js_browse_waits_until_succeeded() -> None:
     assert "/result → console 303 loop" in js
     assert "function runResultPath" in js
     assert 'return "/runs/" + match[0] + "/result";' in js
+    assert "var dest = safeInternalPath(resultUrl)" in js
