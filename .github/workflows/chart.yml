@@ -30,7 +30,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
@@ -62,7 +62,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
@@ -113,7 +113,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
@@ -164,7 +164,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
@@ -215,7 +215,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
@@ -266,7 +266,7 @@ jobs:
         if: >-
           github.event_name != 'pull_request' ||
           steps.paths.outputs.chart_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
@@ -322,7 +322,7 @@ jobs:
 
       - name: Install Helm
         if: steps.paths.outputs.backstage_smoke_needed == 'true'
-        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310
         with:
           version: v3.16.4
 
