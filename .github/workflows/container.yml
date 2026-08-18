@@ -135,7 +135,7 @@ jobs:
             ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${VERSION}"
           fi
 
-      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
