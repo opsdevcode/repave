@@ -128,7 +128,7 @@ checklist.
 | CodeQL | `codeql.yml` | Python, Go, JavaScript |
 | Trivy | `container.yml` | GHCR images after push (CRITICAL/HIGH, unfixed ignored) |
 | Yarn audit | `backstage.yml` | transitive high/critical CVEs (allowlist in `.github/backstage-audit-allowlist.json`) |
-| Dependency review | `dependency-review.yml` | PR dependency diffs (high+) |
+| Dependency review | `dependency-review.yml` | PR dependency diffs (high+) via dependency-graph API |
 | Dependabot | `.github/dependabot.yml` | weekly pip, npm, gomod, Actions updates |
 
 Action pins are verified by [`scripts/check-action-pins.py`](../scripts/check-action-pins.py)
