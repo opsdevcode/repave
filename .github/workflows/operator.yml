@@ -44,7 +44,7 @@ jobs:
         if: steps.filter.outputs.operator != 'true'
         run: echo "No changes under operator/; skipping operator unit tests and lint."
 
-      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
         if: steps.filter.outputs.operator == 'true'
         with:
           go-version-file: operator/go.mod
