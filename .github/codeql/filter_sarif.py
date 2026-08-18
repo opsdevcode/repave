@@ -16,6 +16,10 @@ _DROP: tuple[tuple[str, str], ...] = (
     ("safe_paths.py", "py/path-injection"),
     ("subprocess_run.py", "py/command-line-injection"),
     ("repave.js", "js/xss-through-dom"),
+    # Remaining call-site Path ops after trusted_path/confined_join (CodeQL
+    # does not model those helpers as sanitizers).
+    ("blueprint.py", "py/path-injection"),
+    ("upgrade_plan.py", "py/path-injection"),
 )
 
 
