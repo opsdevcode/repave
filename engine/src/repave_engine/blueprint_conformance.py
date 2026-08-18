@@ -425,6 +425,17 @@ _CONFORMANCE_GENERATED_AT = "1970-01-01T00:00:00+00:00"
 _CONFORMANCE_GITHUB_ORG = "conformance"
 
 
+def _snapshot_output_config(output_config: OutputConfig) -> OutputConfig:
+    """Snapshot manifests pin a stable publish org for catalog slug derivation."""
+    if output_config.github_org == _CONFORMANCE_GITHUB_ORG:
+        return output_config
+    return OutputConfig(
+        github_org=_CONFORMANCE_GITHUB_ORG,
+        modules_root=output_config.modules_root,
+        repo_name_template=output_config.repo_name_template,
+    )
+
+
 def _resolve_conformance_spec(
     blueprint_dir: Path,
     *,
@@ -460,6 +471,8 @@ def run_blueprint_conformance(
 
     blueprint = load_blueprint(blueprint_dir, repo_root=repo_root)
     values = {k: str(v) for k, v in spec.inputs.items()}
+    if spec.snapshot:
+        output_config = _snapshot_output_config(output_config)
 
     staging_name = blueprint.name
     if spec.variant_id:
