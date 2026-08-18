@@ -1665,6 +1665,10 @@
     font-size: 0.95rem;
   }
 
+  .result-hero__handoff {
+    margin: var(--space-3) 0 0;
+  }
+
   .result-hero__counts {
     display: flex;
     gap: var(--space-4);

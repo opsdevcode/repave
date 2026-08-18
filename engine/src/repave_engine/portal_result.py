@@ -9,6 +9,7 @@ from typing import Any
 import yaml
 
 from repave_engine import __version__
+from repave_engine.backstage_urls import backstage_catalog_entity_href
 from repave_engine.cost_estimate import CostEstimate, cost_estimate_for_result
 from repave_engine.governance import GOVERNANCE_BASELINE_SOURCE, GOVERNANCE_BASELINE_VERSION
 from repave_engine.pipeline import GenerationResult
@@ -36,7 +37,9 @@ class BackstagePreview:
     path: str
     owner: str
     name: str
-    repave_annotations: tuple[tuple[str, str], ...]
+    kind: str = "Component"
+    namespace: str = "default"
+    repave_annotations: tuple[tuple[str, str], ...] = ()
     tags: tuple[str, ...] = ()
     links: tuple[tuple[str, str], ...] = ()
     consumes_apis: tuple[str, ...] = ()
@@ -66,6 +69,8 @@ def _backstage_preview(content: str, path: str) -> BackstagePreview | None:
     metadata = data.get("metadata")
     if not isinstance(metadata, dict):
         return None
+    kind = str(data.get("kind", "Component")).strip() or "Component"
+    namespace = str(metadata.get("namespace", "default")).strip() or "default"
     spec = data.get("spec")
     owner = ""
     if isinstance(spec, dict):
@@ -128,6 +133,8 @@ def _backstage_preview(content: str, path: str) -> BackstagePreview | None:
         path=path,
         owner=owner,
         name=str(metadata.get("name", "")).strip(),
+        kind=kind,
+        namespace=namespace,
         repave_annotations=tuple(repave),
         tags=tags,
         links=links,
@@ -141,7 +148,24 @@ def _backstage_preview(content: str, path: str) -> BackstagePreview | None:
     )
 
 
-def build_result_portal_context(result: GenerationResult, repo_root: Path) -> dict[str, Any]:
+def catalog_handoff_href(*, backstage_url: str, preview: BackstagePreview | None) -> str:
+    """Entity page URL when the IDP base and catalog name are both set."""
+    if preview is None or not preview.name:
+        return ""
+    return backstage_catalog_entity_href(
+        backstage_url,
+        name=preview.name,
+        namespace=preview.namespace,
+        kind=preview.kind.lower(),
+    )
+
+
+def build_result_portal_context(
+    result: GenerationResult,
+    repo_root: Path,
+    *,
+    backstage_url: str = "",
+) -> dict[str, Any]:
     blueprint = result.blueprint
     values = result.render.values
 
@@ -236,5 +260,9 @@ def build_result_portal_context(result: GenerationResult, repo_root: Path) -> di
         "provenance_filename": provenance_filename,
         "backstage": backstage,
         "backstage_expected": backstage_expected,
+        "catalog_handoff_href": catalog_handoff_href(
+            backstage_url=backstage_url,
+            preview=backstage,
+        ),
         "cost_estimate": cost_estimate,
     }

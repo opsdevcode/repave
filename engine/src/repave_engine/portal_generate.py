@@ -237,6 +237,7 @@ def run_portal_generate(
     gate_toolchain_callout: GateToolchainCallout,
     generate_from_blueprint_fn: Callable[..., GenerationResult] = generate_from_blueprint,
     generate_from_bundle_fn: Callable[..., BundleGenerationResult] = generate_from_bundle,
+    backstage_url: str = "",
 ) -> PortalGenerateRedirect | PortalGenerateTemplate:
     get = getattr(form, "get", lambda _k, _d="": "")
     bundle_name = str(get("bundle_name", "")).strip()
@@ -358,6 +359,10 @@ def run_portal_generate(
                 result.gates,
                 dry_run=result.dry_run,
             ),
-            "result_portal": build_result_portal_context(result, repo_root),
+            "result_portal": build_result_portal_context(
+                result,
+                repo_root,
+                backstage_url=backstage_url,
+            ),
         },
     )

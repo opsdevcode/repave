@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.49.0  
 
-**In progress:** HTML workbench polish (standards diff side-by-side, catalog handoff)
+**In progress:** HTML workbench polish (policy pack side-by-side diff)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -22,6 +22,12 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Generate catalog handoff**
+(result page **View in catalog** when `portal.backstage_url` is set);
+**CI security scanning**
+(CodeQL, Trivy on publish, gosec/govulncheck, yarn audit, Dependabot, dependency review);
+**Standards diff side-by-side**
+(blueprint form pinned vs HEAD);
 **Catalog closeout**
 (auto slug/k8s id, GitHub org discovery, guest identity, TechDocs addons, lineage
 View source, expanded HTML catalog preview, Scaffolder catalog fields, ClusterRole
@@ -226,7 +232,8 @@ Hosted image generates Docs with `runIn: local` (no Docker-in-Docker).
 Plugin clones of generate/ops/platform pages are removed.
 Hosted overlay keeps `portal.html: true`
 and sends `/idp` to Backstage (`app.baseUrl` = `https://<host>/idp`). Do not
-iframe `/idp`.
+iframe `/idp`. Generate result **View in catalog** links to the entity page when
+`portal.backstage_url` is set.
 
 **Problem:** Cloning every `/api/v2` page into Backstage created a second full
 portal without the night-ops look.

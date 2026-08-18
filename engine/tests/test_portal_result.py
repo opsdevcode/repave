@@ -7,8 +7,12 @@ from pathlib import Path
 from helpers import make_blueprint
 from repave_engine.pipeline import GenerationResult
 from repave_engine.policy_selection import PolicySelection
-from repave_engine.portal_result import build_result_portal_context
-from repave_engine.render import RenderResult
+from repave_engine.portal_result import (
+    BackstagePreview,
+    build_result_portal_context,
+    catalog_handoff_href,
+)
+from repave_engine.render import RenderedFile, RenderResult
 
 
 def test_build_result_portal_context_includes_policy_rules(repo_root: Path, tmp_path: Path) -> None:
@@ -102,3 +106,45 @@ spec:
     assert preview.links == (("Runbook", "https://runbooks.example/checkout"),)
     assert preview.consumes_apis == ("api:default/payments",)
     assert preview.subcomponent_of == "component:default/commerce"
+    assert preview.kind == "Component"
+    assert preview.namespace == "default"
+
+
+def test_catalog_handoff_href_empty_without_base_or_preview() -> None:
+    preview = BackstagePreview(path="catalog-info.yaml", owner="group:platform", name="checkout")
+    assert catalog_handoff_href(backstage_url="", preview=preview) == ""
+    assert catalog_handoff_href(backstage_url="/idp", preview=None) == ""
+    assert (
+        catalog_handoff_href(backstage_url="/idp", preview=preview)
+        == "/idp/catalog/default/component/checkout"
+    )
+
+
+def test_build_result_portal_context_catalog_handoff(tmp_path: Path) -> None:
+    blueprint = make_blueprint(tmp_path, artifact_type="terraform-module")
+    catalog = """
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: tf-aws-demo
+  namespace: default
+spec:
+  owner: group:platform
+"""
+    result = GenerationResult(
+        blueprint=blueprint,
+        render=RenderResult(
+            output_dir=tmp_path,
+            values={"include_backstage_catalog": "true"},
+        ),
+        gates=[],
+        module_repository=None,
+        pr_plan=None,
+        pr_message="",
+        rendered_files=(RenderedFile(path="catalog-info.yaml", content=catalog),),
+        dry_run=True,
+    )
+    with_idp = build_result_portal_context(result, tmp_path, backstage_url="/idp")
+    assert with_idp["catalog_handoff_href"] == "/idp/catalog/default/component/tf-aws-demo"
+    without_idp = build_result_portal_context(result, tmp_path)
+    assert without_idp["catalog_handoff_href"] == ""
