@@ -254,6 +254,8 @@ def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) ->
     assert response.status_code == 200
     assert "data-repave-form-draft" in response.text
     assert "Standard pin drift" in response.text
+    assert "standards-diff-panel" in response.text
+    assert "diff-split" in response.text
     assert "form-actions__preflight" in response.text
     assert "form-actions__preflight-details" in response.text
 

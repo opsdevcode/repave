@@ -13,7 +13,7 @@ from repave_engine.ansible_pattern import (
 )
 from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
-from repave_engine.diff_view import diff_view_models
+from repave_engine.diff_view import diff_view_models, split_diff_view_models
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.governance_preflight import build_blueprint_preflight
 from repave_engine.mandatory_policy import evaluate_policy_skip
@@ -152,6 +152,7 @@ def build_blueprint_form_extras(
         "has_guided_identity": any(field.guided_from for field in blueprint.inputs),
         "standards_diff": standards,
         "standards_diff_views": diff_view_models(standards),
+        "standards_diff_split_views": split_diff_view_models(repo_root, standards),
         "governance_previews": governance_previews,
         "governance_preflight": build_blueprint_preflight(
             blueprint,

@@ -1,0 +1,12 @@
+{% if standards_diff_split_views %}
+<div class="diff-split-stack" aria-label="Side-by-side standard changes">
+  {% for view in standards_diff_split_views %}
+  <details class="diff-split-file" {% if loop.first %}open{% endif %}>
+    <summary><code>{{ view.path }}</code></summary>
+    <div class="diff-split-file__body">
+      {{ view.html | safe }}
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% endif %}

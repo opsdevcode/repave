@@ -35,6 +35,25 @@
   </div>
 </header>
 
+{% if standards_diff.available and standards_diff.has_changes %}
+<section class="standards-diff-panel card" aria-labelledby="standards-diff-heading">
+  <div class="standards-diff-panel__header">
+    <h2 class="standards-diff-panel__title" id="standards-diff-heading">Standard changes since pin</h2>
+    <p class="hint standards-diff-panel__lead">
+      Compare the blueprint’s pinned standard (<code>{{ standards_diff.pinned_version }}</code>,
+      ref <code>{{ standards_diff.baseline_ref }}</code>) with platform repo HEAD before you generate.
+    </p>
+  </div>
+  {% include "partials/split_diff_viewer.html" %}
+  {% if standards_diff_views %}
+  <details class="standards-diff-panel__unified">
+    <summary>Unified diff</summary>
+    {% include "partials/diff_viewer.html" %}
+  </details>
+  {% endif %}
+</section>
+{% endif %}
+
 <div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'gitops', 'app', 'platform') %} form-layout--split{% endif %}">
   {% set governance_collapsible = bp_family in ('terraform', 'ansible', 'observability', 'policy', 'helm', 'gitops', 'app', 'platform') %}
   <aside class="governance-card governance-card--{{ bp_family }}"{% if not governance_collapsible %} aria-labelledby="governance-heading"{% endif %}>
@@ -178,7 +197,15 @@
                 {% endfor %}
               </ul>
             </details>
-            {% include "partials/diff_viewer.html" %}
+            {% if standards_diff_split_views %}
+            {% include "partials/split_diff_viewer.html" %}
+            {% endif %}
+            {% if standards_diff_views %}
+            <details class="governance-drift-unified">
+              <summary>Unified diff</summary>
+              {% include "partials/diff_viewer.html" %}
+            </details>
+            {% endif %}
             {% include "partials/governance_annotations.html" %}
             <p class="hint governance-drift-hint">
               Full pin comparison on <a href="/update">Upgrade existing repo</a>.

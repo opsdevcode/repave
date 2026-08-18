@@ -27,6 +27,7 @@ class StandardsDiffResult:
     available: bool
     pinned_version: str
     standard_source: str
+    baseline_commit: str
     baseline_ref: str
     reason: str
     files: tuple[StandardsDiffFile, ...]
@@ -106,6 +107,7 @@ def standards_diff_for_pin(
             available=False,
             pinned_version=pinned,
             standard_source=rel,
+            baseline_commit="",
             baseline_ref="",
             reason="Standard source or version is not configured on this blueprint.",
             files=(),
@@ -116,6 +118,7 @@ def standards_diff_for_pin(
             available=False,
             pinned_version=pinned,
             standard_source=rel,
+            baseline_commit="",
             baseline_ref="",
             reason=f"Standard path `{rel}` was not found in the catalog root.",
             files=(),
@@ -125,6 +128,7 @@ def standards_diff_for_pin(
             available=False,
             pinned_version=pinned,
             standard_source=rel,
+            baseline_commit="",
             baseline_ref="",
             reason="Standards diff requires a git checkout of the repave catalog.",
             files=(),
@@ -136,6 +140,7 @@ def standards_diff_for_pin(
             available=False,
             pinned_version=pinned,
             standard_source=rel,
+            baseline_commit="",
             baseline_ref="",
             reason=(
                 f"No git ref found for standard version {pinned}. "
@@ -150,7 +155,8 @@ def standards_diff_for_pin(
             available=False,
             pinned_version=pinned,
             standard_source=rel,
-            baseline_ref=baseline,
+            baseline_commit="",
+            baseline_ref="",
             reason="Git diff failed for the standard path.",
             files=(),
         )
@@ -159,10 +165,34 @@ def standards_diff_for_pin(
         available=True,
         pinned_version=pinned,
         standard_source=rel,
+        baseline_commit=baseline,
         baseline_ref=baseline[:12],
         reason="",
         files=files,
     )
+
+
+def read_standard_file_pair(
+    repo_root: Path,
+    standards: StandardsDiffResult,
+    diff_file: StandardsDiffFile,
+) -> tuple[str, str]:
+    """Return (pinned_at_baseline, at_head) text for a changed standard file."""
+    rel = diff_file.path.replace("\\", "/").strip().lstrip("/")
+    before = ""
+    if standards.baseline_commit:
+        show = _git(repo_root, "show", f"{standards.baseline_commit}:{rel}")
+        if show.returncode == 0:
+            before = show.stdout
+    head_path = repo_root / rel
+    if head_path.is_file():
+        try:
+            after = head_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            after = ""
+    else:
+        after = ""
+    return before, after
 
 
 @dataclass(frozen=True)
