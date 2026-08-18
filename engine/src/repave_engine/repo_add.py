@@ -34,6 +34,7 @@ from repave_engine.repo_import import (
     infer_import_values,
     inventory_relative_paths,
 )
+from repave_engine.safe_paths import trusted_path
 from repave_engine.settings import load_audit_config
 from repave_engine.upgrade_plan import _git_branch_commit
 
@@ -311,7 +312,7 @@ def plan_add(
     component_id: str | None = None,
     force: bool = False,
 ) -> AddPlan:
-    path = Path(target).expanduser().resolve()
+    path = trusted_path(target)
     if not path.is_dir():
         raise RepoAddError(f"not a directory: {target}")
     return build_add_plan(

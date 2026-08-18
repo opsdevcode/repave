@@ -32,6 +32,7 @@ from repave_engine.portal_context import fleet_registry_path_or_http404, portal_
 from repave_engine.readiness import ReadinessReport, evaluate_readiness
 from repave_engine.run_queue import RunQueue
 from repave_engine.run_store import RunRecord, RunStatus
+from repave_engine.safe_paths import trusted_path
 from repave_engine.settings import (
     FleetConfig,
     OutputConfig,
@@ -133,7 +134,7 @@ def register_fleet_entry_from_form(
         "standard_version": standard_version.strip(),
     }
     if local_path.strip():
-        pins.update(pins_from_repave_file(Path(local_path).expanduser().resolve()))
+        pins.update(pins_from_repave_file(trusted_path(local_path)))
     if not pins["blueprint_name"]:
         raise FleetError("blueprint name is required when local path is not supplied")
     return register_repo(

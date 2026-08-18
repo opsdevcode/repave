@@ -96,6 +96,7 @@ from repave_engine.pr_conventions import (
 )
 from repave_engine.provider_catalog import load_provider_catalog
 from repave_engine.render import render_blueprint
+from repave_engine.safe_paths import trusted_path
 from repave_engine.settings import load_audit_config, load_fleet_config, load_gate_overrides
 from repave_engine.subprocess_run import run_subprocess
 from repave_engine.target_repo import (
@@ -103,6 +104,7 @@ from repave_engine.target_repo import (
     _git_executable,
     resolve_module_repository_from_git,
 )
+from repave_engine.url_hosts import is_github_url
 
 PROVENANCE_FILENAME = "repave.yaml"
 BLAME_IGNORE_FILENAME = ".git-blame-ignore-revs"
@@ -344,7 +346,7 @@ def materialize_import_target(
         except CloneError as exc:
             raise ImportCloneError(str(exc)) from exc
     else:
-        path = Path(text).expanduser().resolve()
+        path = trusted_path(text)
         if not path.is_dir():
             raise RepoImportError(f"{path} is not a directory")
         yield path, False, str(path)
@@ -676,7 +678,7 @@ def _detect_candidates_for_target(
     catalog = list_catalog_blueprints(repo_root)
     if looks_like_remote_url(text):
         token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
-        if token and "github.com" in text.lower():
+        if token and is_github_url(text):
             try:
                 owner, name = parse_github_repository(text)
                 if remote_has_provenance(owner, name, token, ref=ref):
@@ -1142,7 +1144,7 @@ def plan_import(
     text = raw_target.strip()
     if looks_like_remote_url(text) and not force_clone:
         token = resolve_git_token(git_token) or resolve_github_access_token(git_token)
-        if token and "github.com" in text.lower():
+        if token and is_github_url(text):
             try:
                 return plan_import_remote(
                     text,

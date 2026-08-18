@@ -17,6 +17,7 @@ from repave_engine.provider_catalog import (
     load_provider_catalog,
     normalize_provider_service_scope,
 )
+from repave_engine.safe_paths import confined_join, trusted_path
 
 
 @dataclass(frozen=True)
@@ -735,11 +736,7 @@ def _catalog_dir_if_present(path: Path) -> Path | None:
 
 
 def _path_under_root(path: Path, root: Path) -> bool:
-    try:
-        path.relative_to(root)
-    except ValueError:
-        return False
-    return True
+    return path.resolve().is_relative_to(root.resolve())
 
 
 def resolve_blueprint_path(repo_root: Path, spec: str) -> Path | None:
@@ -748,8 +745,10 @@ def resolve_blueprint_path(repo_root: Path, spec: str) -> Path | None:
     if not stripped:
         return None
     raw = Path(stripped).expanduser()
-    candidate = raw if raw.is_absolute() else (repo_root / raw)
-    resolved = candidate.resolve()
+    try:
+        resolved = trusted_path(raw) if raw.is_absolute() else confined_join(repo_root, raw)
+    except ValueError:
+        return None
     catalog = _catalog_dir_if_present(resolved)
     if catalog is None:
         return None
@@ -984,5 +983,5 @@ def group_blueprints_by_artifact(blueprints: list[Blueprint]) -> list[BlueprintC
 def _find_repo_root(start: Path) -> Path:
     for candidate in [start, *start.parents]:
         if (candidate / "schemas" / "blueprint.schema.json").exists():
-            return candidate
+            return trusted_path(candidate)
     raise FileNotFoundError("Could not locate repave repo root (schemas/blueprint.schema.json)")

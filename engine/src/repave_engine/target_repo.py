@@ -8,8 +8,10 @@ from pathlib import Path
 from typing import Any
 
 from repave_engine.gates import is_gate_artifact_path
+from repave_engine.safe_paths import confined_join, trusted_path
 from repave_engine.settings import OutputConfig
 from repave_engine.subprocess_run import git_subprocess_error, run_subprocess
+from repave_engine.url_hosts import parse_github_owner_repo
 
 
 @dataclass(frozen=True)
@@ -32,7 +34,7 @@ def resolve_module_repository(
     if template_values:
         format_values.update({key: str(value) for key, value in template_values.items()})
     repo_name = name_template.format(**format_values)
-    local_path = config.modules_root / repo_name
+    local_path = confined_join(config.modules_root, repo_name)
     return ModuleRepository(
         name=repo_name,
         owner=config.github_org,
@@ -42,11 +44,8 @@ def resolve_module_repository(
     )
 
 
-_GITHUB_REMOTE = re.compile(r"github\.com[/:](?P<owner>[^/]+)/(?P<name>[^/.]+(?:\.git)?)")
-
-
 def resolve_module_repository_from_git(repo_dir: Path) -> ModuleRepository:
-    repo_dir = repo_dir.resolve()
+    repo_dir = trusted_path(repo_dir)
     try:
         result = run_subprocess(
             [_git_executable(), "remote", "get-url", "origin"],
@@ -57,13 +56,10 @@ def resolve_module_repository_from_git(repo_dir: Path) -> ModuleRepository:
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError("git remote get-url origin timed out") from exc
     url = result.stdout.strip()
-    match = _GITHUB_REMOTE.search(url)
-    if not match:
+    parsed = parse_github_owner_repo(url)
+    if parsed is None:
         raise RuntimeError(f"cannot parse GitHub owner/repo from origin URL: {url}")
-    owner = match.group("owner")
-    name = match.group("name")
-    if name.endswith(".git"):
-        name = name[:-4]
+    owner, name = parsed
     return ModuleRepository(
         name=name,
         owner=owner,

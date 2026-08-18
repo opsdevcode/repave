@@ -43,6 +43,7 @@ from repave_engine.provenance_inputs import (
     load_provenance_document,
 )
 from repave_engine.render import render_blueprint
+from repave_engine.safe_paths import confined_join, trusted_path
 from repave_engine.settings import load_gate_overrides
 from repave_engine.standards_diff import PinChange, StandardsDiffFile, diff_observed_vs_catalog_pins
 from repave_engine.subprocess_run import run_subprocess
@@ -455,7 +456,7 @@ def _apply_render_to_target(
     staging_hint_root = target_repo / ".repave" / "upgrade-staging"
 
     for rel in removed:
-        dest = target_repo / rel
+        dest = confined_join(target_repo, rel)
         if dest.is_file():
             dest.unlink()
         elif dest.is_dir():
@@ -464,11 +465,11 @@ def _apply_render_to_target(
     for rel, src in _iter_relative_files(staging_dir).items():
         if preserve_local and rel in modified_set:
             preserved.append(rel)
-            hint_dest = staging_hint_root / rel
+            hint_dest = confined_join(staging_hint_root, rel)
             hint_dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, hint_dest)
             continue
-        dest = target_repo / rel
+        dest = confined_join(target_repo, rel)
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)
 
@@ -507,9 +508,9 @@ def _render_upgrade_staging(
     blueprint_name: str | None,
     staging_root: Path | None,
 ) -> tuple[UpgradePlanResult, Path, tempfile.TemporaryDirectory[str] | None, bool]:
-    target_repo = target_repo.resolve()
-    repo_root = repo_root.resolve()
-    provenance_path = target_repo / "repave.yaml"
+    target_repo = trusted_path(target_repo)
+    repo_root = trusted_path(repo_root)
+    provenance_path = confined_join(target_repo, "repave.yaml")
     if not provenance_path.is_file():
         raise FileNotFoundError(f"missing provenance file: {provenance_path}")
 

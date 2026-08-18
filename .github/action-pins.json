@@ -19,5 +19,6 @@
   "terraform-linters/setup-tflint@v4": "90f302c255ef959cbfb4bd10581afecdb7ece3e6",
   "aquasecurity/trivy-action@0.36.0": "ed142fd0673e97e23eac54620cfb913e5ce36c25",
   "github/codeql-action/init@v4": "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd",
-  "github/codeql-action/analyze@v4": "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd"
+  "github/codeql-action/analyze@v4": "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd",
+  "github/codeql-action/upload-sarif@v4": "ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd"
 }

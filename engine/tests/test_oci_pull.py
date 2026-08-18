@@ -72,7 +72,7 @@ def test_pull_oci_artifact_invokes_oras(tmp_path: Path, monkeypatch: pytest.Monk
     assert captured["check"] is True
     docker = captured["docker_config"]
     assert isinstance(docker, dict)
-    assert "ghcr.io" in docker["auths"]
+    assert docker["auths"].get("ghcr.io") is not None
     assert (dest / "blueprint.yaml").read_text(encoding="utf-8") == "ok\n"
 
 

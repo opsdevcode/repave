@@ -27,6 +27,7 @@ from repave_engine.ci_toolchain import (
     TERRAFORM_VERSION,
     TFLINT_VERSION,
 )
+from repave_engine.safe_paths import confined_join, trusted_path
 
 _TEMPLATES = Path(__file__).resolve().parent / "templates" / "ci"
 
@@ -160,7 +161,7 @@ def render_ci_workflow(blueprint: Blueprint) -> str:
 
 def write_ci_workflow(output_dir: Path, blueprint: Blueprint) -> Path:
     rel = ci_workflow_relpath(blueprint)
-    target = output_dir / rel
+    target = confined_join(trusted_path(output_dir), rel)
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_ci_workflow(blueprint), encoding="utf-8")
     return target

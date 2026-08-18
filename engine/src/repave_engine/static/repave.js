@@ -1,6 +1,21 @@
 (function () {
   var STORAGE_KEY = "repave:lastRun";
 
+  function safeInternalPath(url) {
+    if (typeof url !== "string") {
+      return "";
+    }
+    try {
+      var parsed = new URL(url, window.location.origin);
+      if (parsed.origin !== window.location.origin) {
+        return "";
+      }
+      return parsed.pathname + parsed.search + parsed.hash;
+    } catch (_err) {
+      return "";
+    }
+  }
+
   function readLastRun() {
     try {
       var raw = sessionStorage.getItem(STORAGE_KEY);
@@ -205,7 +220,10 @@
 
   function applyPortalSuccessResponse(response, html) {
     if (response.redirected && response.url) {
-      window.location.href = response.url;
+      var redirected = safeInternalPath(response.url);
+      if (redirected) {
+        window.location.assign(redirected);
+      }
       return;
     }
     var trimmed = (html || "").trim();
@@ -216,7 +234,10 @@
       return;
     }
     if (response.url) {
-      window.location.href = response.url;
+      var next = safeInternalPath(response.url);
+      if (next) {
+        window.location.assign(next);
+      }
       return;
     }
     window.location.reload();
@@ -2391,7 +2412,6 @@
       return;
     }
     var runId = root.getAttribute("data-run-id");
-    var resultUrl = root.getAttribute("data-result-url") || "";
     var logEl = document.getElementById("run-console-log");
     var completeActions = root.querySelector("[data-run-complete-actions]");
     var initialStatus = root.getAttribute("data-run-status") || "";
@@ -3052,7 +3072,7 @@
           completeActions.hidden = false;
         }
         showRunConsoleFeedback(data.gates_outcome || "");
-        if (resultUrl && data.status === "succeeded") {
+        if (resultCta && data.status === "succeeded") {
           if (data.publish_succeeded === false) {
             if (progressLabel) {
               progressLabel.textContent = "Gates passed — publish failed (see error below)";
@@ -3099,13 +3119,14 @@
     }
 
     function scheduleResultRedirect(delayMs) {
-      if (redirectScheduled || !resultUrl) {
+      if (redirectScheduled || !resultCta) {
         return;
       }
       redirectScheduled = true;
       previewSettled = true;
       window.setTimeout(function () {
-        window.location.href = resultUrl;
+        // Server-rendered <a href> — do not assign DOM text to location.
+        resultCta.click();
       }, typeof delayMs === "number" ? delayMs : 800);
     }
 

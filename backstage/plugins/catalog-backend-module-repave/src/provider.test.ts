@@ -42,6 +42,15 @@ describe('catalogItemToEntity', () => {
   it('slugifies entity ids for metadata.name', () => {
     expect(entityNameFromId('Org/TF Module')).toBe('org-tf-module');
   });
+
+  it('slugifies a long id without quantified replace', () => {
+    const longId = `${'A'.repeat(80)}///${'!'.repeat(80)} Module`;
+    const slug = entityNameFromId(longId);
+    expect(slug.startsWith('a')).toBe(true);
+    expect(slug.includes('module')).toBe(true);
+    expect(slug.includes('!')).toBe(false);
+    expect(slug.length).toBeLessThanOrEqual(256);
+  });
 });
 
 describe('RepaveEntityProvider.refresh', () => {

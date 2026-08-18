@@ -9,6 +9,7 @@ import yaml
 
 from repave_engine import __version__
 from repave_engine.blueprint import Blueprint
+from repave_engine.safe_paths import confined_join, trusted_path
 
 CATALOG_FILENAME = "catalog-info.yaml"
 TECHDOCS_REF_DIR = "dir:."
@@ -47,7 +48,11 @@ def catalog_component_type(artifact_type: str) -> str:
 
 def catalog_techdocs_ref(output_dir: Path) -> str | None:
     """Return dir:. when the generated repo has MkDocs source."""
-    if (output_dir / "mkdocs.yml").is_file() or (output_dir / "docs").is_dir():
+    output_dir = trusted_path(output_dir)
+    if (
+        confined_join(output_dir, "mkdocs.yml").is_file()
+        or confined_join(output_dir, "docs").is_dir()
+    ):
         return TECHDOCS_REF_DIR
     return None
 
@@ -244,7 +249,7 @@ def write_backstage_catalog_if_enabled(
     if techdocs_ref:
         annotations = document["metadata"]["annotations"]
         annotations["backstage.io/techdocs-ref"] = techdocs_ref
-    path = output_dir / CATALOG_FILENAME
+    path = confined_join(trusted_path(output_dir), CATALOG_FILENAME)
     path.write_text(
         yaml.safe_dump(document, sort_keys=False, default_flow_style=False),
         encoding="utf-8",

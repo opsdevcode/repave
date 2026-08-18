@@ -16,6 +16,7 @@ from repave_engine.blueprint import Blueprint
 from repave_engine.finops_anomalies import CostAnomaly
 from repave_engine.gates import GateResult, gate_summary
 from repave_engine.settings import NotificationsConfig, load_notifications_config
+from repave_engine.url_hosts import webhook_channel
 
 logger = logging.getLogger(__name__)
 
@@ -148,9 +149,10 @@ def notify_after_generation(
     }
 
     for url in resolved.webhook_urls():
-        if "office.com" in url or "office365.com" in url or "webhook.office.com" in url:
+        channel = webhook_channel(url)
+        if channel == "teams":
             _post_webhook(url, _teams_payload(text), label="teams")
-        elif "hooks.slack.com" in url:
+        elif channel == "slack":
             _post_webhook(url, _slack_payload(text), label="slack")
         else:
             _post_webhook(url, generic_payload, label="webhook")
@@ -190,9 +192,10 @@ def notify_finops_anomalies(
         "message": text,
     }
     for url in resolved.webhook_urls():
-        if "office.com" in url or "office365.com" in url or "webhook.office.com" in url:
+        channel = webhook_channel(url)
+        if channel == "teams":
             _post_webhook(url, _teams_payload(text), label="teams")
-        elif "hooks.slack.com" in url:
+        elif channel == "slack":
             _post_webhook(url, _slack_payload(text), label="slack")
         else:
             _post_webhook(url, generic_payload, label="webhook")

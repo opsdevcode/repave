@@ -17,6 +17,7 @@ from typing import Any
 import yaml
 
 from repave_engine.jsonl_lock import append_jsonl_line
+from repave_engine.safe_paths import trusted_path
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +108,7 @@ def normalize_repo_url(raw: str) -> str:
 
 def pins_from_repave_file(repo_path: Path) -> dict[str, str]:
     """Read blueprint and standard pins from a repo's repave.yaml provenance."""
+    repo_path = trusted_path(repo_path)
     provenance_file = repo_path / "repave.yaml"
     if not provenance_file.is_file():
         raise FleetError(f"no repave.yaml under {repo_path}")

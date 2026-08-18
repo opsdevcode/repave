@@ -42,6 +42,7 @@ def test_strip_index_removes_for_each_and_count_suffixes() -> None:
     assert strip_index("aws_instance.web[0]") == "aws_instance.web"
     assert strip_index('aws_instance.web["blue"]') == "aws_instance.web"
     assert strip_index("aws_instance.web") == "aws_instance.web"
+    assert strip_index("module.x.aws_instance.web[count.index]") == "module.x.aws_instance.web"
 
 
 def test_is_sensitive_name_matches_case_insensitively() -> None:

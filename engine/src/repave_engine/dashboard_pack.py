@@ -11,6 +11,7 @@ from repave_engine.observability_catalog import (
     dashboard_packs_for_backend,
     load_observability_catalog,
 )
+from repave_engine.safe_paths import confined_join, trusted_path
 
 OBSERVABILITY_ROOT = Path("observability")
 
@@ -59,18 +60,20 @@ def materialize_dashboard_pack(
     if pack is None or not pack.files:
         return
 
+    output_dir = trusted_path(output_dir)
+    repo_root = trusted_path(repo_root)
     env = Environment(
         autoescape=select_autoescape(enabled_extensions=()),
         keep_trailing_newline=True,
     )
-    pack_root = repo_root / OBSERVABILITY_ROOT
+    pack_root = confined_join(repo_root, OBSERVABILITY_ROOT)
     for entry in pack.files:
-        source_path = pack_root / entry.source
+        source_path = confined_join(pack_root, entry.source)
         if not source_path.is_file():
             raise FileNotFoundError(f"Dashboard pack file missing: {source_path}")
         template = env.from_string(source_path.read_text(encoding="utf-8"))
         rendered = template.render(**values)
-        dest = output_dir / entry.dest
+        dest = confined_join(output_dir, entry.dest)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(rendered, encoding="utf-8")
 

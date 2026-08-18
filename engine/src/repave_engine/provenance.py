@@ -14,6 +14,7 @@ from repave_engine.blueprint import Blueprint
 from repave_engine.ci_workflow import build_ci_provenance_block
 from repave_engine.governance import governance_provenance_block
 from repave_engine.policy_selection import PolicySelection, policy_provenance_block
+from repave_engine.safe_paths import confined_join, trusted_path
 
 
 def _opa_provenance_block(blueprint: Blueprint) -> dict[str, str] | None:
@@ -571,7 +572,7 @@ def write_provenance_file(
     *,
     filename: str,
 ) -> Path:
-    path = output_dir / filename
+    path = confined_join(trusted_path(output_dir), filename)
     document = build_provenance_document(blueprint, values)
 
     class _ProvenanceDumper(yaml.SafeDumper):

@@ -8,6 +8,7 @@ from typing import Any
 
 from repave_engine.blueprint import Blueprint
 from repave_engine.provenance import build_provenance_document
+from repave_engine.safe_paths import confined_join, trusted_path
 
 
 def _line_items(blueprint: Blueprint, document: dict[str, Any]) -> list[str]:
@@ -57,7 +58,7 @@ def sync_readme_provenance_section(
     blueprint: Blueprint,
     values: dict[str, Any],
 ) -> None:
-    readme = output_dir / "README.md"
+    readme = confined_join(trusted_path(output_dir), "README.md")
     if not readme.is_file():
         return
 

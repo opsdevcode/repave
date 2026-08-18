@@ -7,6 +7,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from repave_engine.safe_paths import confined_join, trusted_path
+
 
 def _terraform_resource_name(stem: str) -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_]", "_", stem)
@@ -20,7 +22,8 @@ def _hcl_string(value: str) -> str:
 
 
 def _write_datadog_monitor_pack_terraform(output_dir: Path) -> None:
-    json_dir = output_dir / "datadog" / "monitors"
+    output_dir = trusted_path(output_dir)
+    json_dir = confined_join(output_dir, "datadog", "monitors")
     if not json_dir.is_dir():
         return
     lines = [
@@ -67,11 +70,12 @@ def _write_datadog_monitor_pack_terraform(output_dir: Path) -> None:
             lines.extend(["}", ""])
     if len(lines) <= 2:
         return
-    (output_dir / "monitor_packs.tf").write_text("\n".join(lines), encoding="utf-8")
+    confined_join(output_dir, "monitor_packs.tf").write_text("\n".join(lines), encoding="utf-8")
 
 
 def _write_prometheus_monitor_pack_terraform(output_dir: Path) -> None:
-    rules_dir = output_dir / "prometheus" / "rules"
+    output_dir = trusted_path(output_dir)
+    rules_dir = confined_join(output_dir, "prometheus", "rules")
     if not rules_dir.is_dir():
         return
     lines = [
@@ -97,7 +101,7 @@ def _write_prometheus_monitor_pack_terraform(output_dir: Path) -> None:
         )
     if len(lines) <= 2:
         return
-    (output_dir / "monitor_packs.tf").write_text("\n".join(lines), encoding="utf-8")
+    confined_join(output_dir, "monitor_packs.tf").write_text("\n".join(lines), encoding="utf-8")
 
 
 def write_monitor_pack_terraform(output_dir: Path, *, backend: str) -> None:

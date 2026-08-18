@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from repave_engine.url_hosts import github_repo_name
+
 logger = logging.getLogger(__name__)
 
 _DEFAULT_LIMIT = 8
@@ -25,17 +27,7 @@ def initial_artifact_version_for_audit() -> str:
 
 
 def _github_repo_slug(repository_url: str) -> str:
-    normalized = repository_url.strip().rstrip("/")
-    if not normalized:
-        return ""
-    if "github.com/" in normalized:
-        tail = normalized.split("github.com/", 1)[1]
-        parts = [part for part in tail.split("/") if part]
-        if len(parts) >= 2:
-            return parts[1]
-        if parts:
-            return parts[0]
-    return normalized.rsplit("/", 1)[-1]
+    return github_repo_name(repository_url)
 
 
 @dataclass(frozen=True)

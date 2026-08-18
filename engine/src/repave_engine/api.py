@@ -235,6 +235,7 @@ from repave_engine.run_submit import (
     is_org_scan_run,
     submit_async_run,
 )
+from repave_engine.safe_paths import trusted_path
 from repave_engine.service_catalog_overlay import (
     enrich_entity_with_overlay,
     entity_initiative_statuses,
@@ -280,6 +281,7 @@ def _default_environment_stack_name(entity_id: str, display_name: str) -> str:
 
 
 def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) -> FastAPI:
+    repo_root = trusted_path(repo_root)
     package_dir = Path(__file__).parent
     templates = Jinja2Templates(directory=str(package_dir / "templates"))
     templates.env.cache = None
@@ -2030,8 +2032,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 ),
             )
 
-        target_repo = Path(target_repo_raw).expanduser()
         try:
+            target_repo = trusted_path(target_repo_raw)
             plan = plan_upgrade(
                 target_repo,
                 repo_root,
@@ -3051,7 +3053,7 @@ def _mount_state_router(app: FastAPI, *, repo_root: Path, auth_config: AuthConfi
 
 def create_app_for_serve() -> FastAPI:
     """Factory entrypoint for `repave serve --reload` (local Docker / dev)."""
-    repo_root = Path(os.environ.get("REPAVE_SERVE_REPO_ROOT", ".")).resolve()
+    repo_root = trusted_path(os.environ.get("REPAVE_SERVE_REPO_ROOT", "."))
     return create_app(repo_root=repo_root, output_config=load_output_config(repo_root))
 
 

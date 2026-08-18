@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from repave_engine.gate_registry import GateResult
+from repave_engine.safe_paths import confined_join, trusted_path
 
 if TYPE_CHECKING:
     from repave_engine.pipeline import GenerationResult
@@ -243,14 +244,14 @@ def total_monthly_cost(
 
 
 def write_cost_estimate_file(output_dir: Path, estimate: CostEstimate) -> Path:
-    path = output_dir / COST_ESTIMATE_REL_PATH
+    path = confined_join(trusted_path(output_dir), COST_ESTIMATE_REL_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(estimate.to_public_dict(), indent=2), encoding="utf-8")
     return path
 
 
 def load_cost_estimate_file(output_dir: Path) -> CostEstimate | None:
-    path = output_dir / COST_ESTIMATE_REL_PATH
+    path = confined_join(trusted_path(output_dir), COST_ESTIMATE_REL_PATH)
     if not path.is_file():
         return None
     try:
