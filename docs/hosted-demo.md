@@ -81,7 +81,7 @@ then **UpgradePlanned** and a remediation PR when remediation is enabled.
 | Generate 401 | Session expired — re-login; API needs browser session or `REPAVE_API_TOKEN` |
 | Operator idle / no GPR status | Leader-election RBAC; `kubectl logs -n repave-system deploy/repave-operator` |
 | Portal down after node drain | RWO PVCs pin portal+workers to one node — see demo-week notes in infra `repave-prod.yaml` |
-| Container publish failed on `main` | Re-run failed jobs: `gh run rerun <run-id> --failed`. Portal-only hotfix: **Actions → Container images → Run workflow → target `portal`**. Images tag `main` and `${{ github.sha }}` on every merge. |
+| Container publish failed on `main` | Re-run failed jobs: `gh run rerun <run-id> --failed`. Portal-only hotfix: **Actions → Container images → Run workflow → target `portal`**. Images tag `main` and the 7-character SHA on every merge. |
 
 ---
 

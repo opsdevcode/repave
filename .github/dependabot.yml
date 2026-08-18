@@ -6,33 +6,75 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      engine-python:
+        patterns:
+          - "*"
 
   - package-ecosystem: pip
     directory: /cli
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      cli-python:
+        patterns:
+          - "*"
 
   - package-ecosystem: gomod
     directory: /operator
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      operator-k8s:
+        patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
+      operator-go:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "k8s.io/*"
+          - "sigs.k8s.io/*"
 
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      root-js:
+        patterns:
+          - "*"
 
   - package-ecosystem: npm
     directory: /backstage
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      backstage-patch:
+        update-types:
+          - patch
+          - minor
+    ignore:
+      # Coordinated via `yarn backstage-cli versions:bump`, not solo majors.
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
+      - dependency-name: "@types/react-dom"
+      - dependency-name: "react-router"
+      - dependency-name: "react-router-dom"
+      - dependency-name: "@testing-library/react"
+      - dependency-name: "@testing-library/dom"
+      - dependency-name: "prettier"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

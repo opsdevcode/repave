@@ -112,7 +112,3 @@ type UpgradeCampaignList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []UpgradeCampaign `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&UpgradeCampaign{}, &UpgradeCampaignList{})
-}

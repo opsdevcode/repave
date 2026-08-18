@@ -221,7 +221,3 @@ type GoldenPathRepoList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []GoldenPathRepo `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&GoldenPathRepo{}, &GoldenPathRepoList{})
-}

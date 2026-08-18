@@ -120,12 +120,14 @@ jobs:
           ./deploy/k8s/hack/ghcr-build-push.sh
 
       - name: Verify image on GHCR
+        id: published
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.repository_owner }}
         run: |
           chmod +x deploy/k8s/hack/verify-ghcr-tag.sh
           SHA_SHORT="${GITHUB_SHA::7}"
+          echo "sha_short=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
           ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${SHA_SHORT}"
           if [[ "${{ github.ref }}" == refs/heads/main ]]; then
             ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "main"
@@ -144,7 +146,7 @@ jobs:
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
-          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          image-ref: ${{ matrix.image }}:${{ steps.published.outputs.sha_short }}
           format: table
           exit-code: 1
           ignore-unfixed: true

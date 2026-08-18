@@ -231,9 +231,5 @@ type GoldenPathRepoList struct {
 	Items           []GoldenPathRepo `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&GoldenPathRepo{}, &GoldenPathRepoList{})
-}
-
 // Hub marks GoldenPathRepo as the conversion hub (storage version).
 func (*GoldenPathRepo) Hub() {}
