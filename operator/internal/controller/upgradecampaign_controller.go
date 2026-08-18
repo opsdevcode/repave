@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"math"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -134,7 +135,14 @@ func applyGitHubRateLimitStatus(
 		return false, "", 0
 	}
 
-	remaining := int32(state.Remaining)
+	var remaining int32
+	if state.Remaining > math.MaxInt32 {
+		remaining = math.MaxInt32
+	} else if state.Remaining < math.MinInt32 {
+		remaining = math.MinInt32
+	} else {
+		remaining = int32(state.Remaining)
+	}
 	status.GitHubRateLimitRemaining = &remaining
 	resetAt := metav1.NewTime(state.ResetAt)
 	status.GitHubRateLimitResetAt = &resetAt

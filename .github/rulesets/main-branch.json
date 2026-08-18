@@ -43,7 +43,12 @@
           {"context": "chart-smoke"},
           {"context": "chart-smoke-decomposed"},
           {"context": "chart-smoke-multi-replica"},
-          {"context": "chart-smoke-backstage"}
+          {"context": "chart-smoke-backstage"},
+          {"context": "CodeQL (python)"},
+          {"context": "CodeQL (javascript-typescript)"},
+          {"context": "CodeQL (go)"},
+          {"context": "dependency review"},
+          {"context": "backstage-audit"}
         ]
       }
     },

@@ -185,7 +185,9 @@ jobs:
 
       - name: Security scan
         if: needs.paths.outputs.ci_needed == 'true'
-        run: uv run --no-project bandit -r src -c pyproject.toml
+        run: |
+          uv run --no-project bandit -r src -c pyproject.toml
+          uv run --no-project pip-audit
 
       - name: Run tests
         if: needs.paths.outputs.ci_needed == 'true'

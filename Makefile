@@ -132,7 +132,7 @@ cli-typecheck:
 	cd cli && uv run --no-project mypy src
 
 cli-security:
-	cd cli && uv run --no-project bandit -r src -c pyproject.toml
+	cd cli && uv run --no-project bandit -r src -c pyproject.toml && uv run --no-project pip-audit
 
 cli-quality: cli-lint cli-typecheck
 	@cd cli && uv run --no-project ruff format --check src tests
@@ -170,7 +170,7 @@ operator-test:
 	cd operator && $(MAKE) test
 
 operator-lint:
-	cd operator && $(MAKE) lint
+	cd operator && $(MAKE) lint govulncheck
 
 operator-run:
 	cd operator && $(MAKE) run

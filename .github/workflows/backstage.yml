@@ -1,15 +1,9 @@
 name: Backstage
 
 on:
+  pull_request:
   push:
     branches: [main]
-    paths:
-      - "backstage/**"
-      - ".github/workflows/backstage.yml"
-  pull_request:
-    paths:
-      - "backstage/**"
-      - ".github/workflows/backstage.yml"
 
 concurrency:
   group: backstage-${{ github.ref }}
@@ -19,12 +13,9 @@ permissions:
   contents: read
 
 jobs:
-  backstage:
-    name: lint and test
+  audit:
+    name: backstage-audit
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backstage
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
@@ -33,16 +24,72 @@ jobs:
           node-version: "22"
 
       - name: Enable corepack yarn
+        working-directory: backstage
         run: corepack enable
 
       - name: Install
+        working-directory: backstage
+        run: yarn install --immutable
+
+      - name: Dependency audit (high/critical CVEs)
+        run: python3 scripts/check_yarn_audit.py
+
+  backstage:
+    name: lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Detect Backstage changes
+        id: filter
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" != "pull_request" ]; then
+            if git diff --name-only "${GITHUB_EVENT_BEFORE}" "${GITHUB_SHA}" | grep -qE '^(backstage/|\.github/workflows/backstage\.yml)'; then
+              echo "backstage=true" >> "${GITHUB_OUTPUT}"
+            else
+              echo "backstage=false" >> "${GITHUB_OUTPUT}"
+            fi
+            exit 0
+          fi
+          base="${{ github.event.pull_request.base.sha }}"
+          if git diff --name-only "${base}" HEAD | grep -qE '^(backstage/|\.github/workflows/backstage\.yml)'; then
+            echo "backstage=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "backstage=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: No Backstage changes (skip lint and test)
+        if: steps.filter.outputs.backstage != 'true'
+        run: echo "No changes under backstage/; skipping lint and test."
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        if: steps.filter.outputs.backstage == 'true'
+        with:
+          node-version: "22"
+
+      - name: Enable corepack yarn
+        if: steps.filter.outputs.backstage == 'true'
+        working-directory: backstage
+        run: corepack enable
+
+      - name: Install
+        if: steps.filter.outputs.backstage == 'true'
+        working-directory: backstage
         run: yarn install --immutable
 
       - name: Typecheck
+        if: steps.filter.outputs.backstage == 'true'
+        working-directory: backstage
         run: yarn tsc
 
       - name: Lint
+        if: steps.filter.outputs.backstage == 'true'
+        working-directory: backstage
         run: yarn lint:all
 
       - name: Test
+        if: steps.filter.outputs.backstage == 'true'
+        working-directory: backstage
         run: yarn test --watch=false
