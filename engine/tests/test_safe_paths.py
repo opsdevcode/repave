@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from repave_engine.safe_paths import confined_join, trusted_path
 
 
