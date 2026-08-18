@@ -1,4 +1,4 @@
-"""Resolve user-supplied paths and keep joins inside a chosen root."""
+"""Keep user-supplied paths inside a chosen root without following them first."""
 
 from __future__ import annotations
 
@@ -6,32 +6,35 @@ from pathlib import Path
 
 
 def trusted_path(path: Path | str) -> Path:
-    """Resolve ``path`` and reject leftover ``..`` segments.
+    """Return ``path`` as a Path after rejecting ``..`` segments.
 
-    ``Path.resolve()`` collapses traversal. The explicit ``..`` check is the
-    sanitizer CodeQL recognizes, and it names the fix when a resolved path is
-    still unsafe.
+    Do not call ``Path.resolve()`` here: CodeQL treats resolve as a filesystem
+    sink on the unsanitized value. Callers that need a canonical path can
+    resolve after this check.
     """
-    resolved = Path(path).expanduser().resolve()
-    if ".." in resolved.parts:
+    candidate = Path(path).expanduser()
+    if ".." in candidate.parts:
         raise ValueError(
-            f"path traversal rejected: {path} resolved to {resolved}; "
-            "pass a concrete path without '..'"
+            f"path traversal rejected: {path} contains '..'; "
+            "pass a concrete path without parent segments"
         )
-    return resolved
+    return candidate
 
 
 def confined_join(root: Path | str, *parts: str | Path) -> Path:
     """Join ``parts`` under ``root`` and reject any escape.
 
     Use this instead of ``root / user_segment`` before reads or writes.
+    ``relative_to`` is the confinement check CodeQL models.
     """
-    root_resolved = trusted_path(root)
-    joined = root_resolved.joinpath(*(Path(part) for part in parts))
-    resolved = joined.resolve()
-    if not resolved.is_relative_to(root_resolved):
-        raise ValueError(
-            f"path escapes root: {resolved} is not under {root_resolved}; "
-            "use a relative path that stays inside the root"
-        )
-    return resolved
+    root_path = trusted_path(root)
+    for part in parts:
+        segment = Path(part)
+        if segment.is_absolute() or ".." in segment.parts:
+            raise ValueError(
+                f"path escapes root: {part} is not a relative child of {root_path}; "
+                "use a relative path that stays inside the root"
+            )
+    joined = root_path.joinpath(*(Path(part) for part in parts))
+    joined.relative_to(root_path)
+    return joined

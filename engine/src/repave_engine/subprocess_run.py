@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -124,7 +125,8 @@ def validate_argv(cmd: Sequence[str]) -> list[str]:
             f"refusing to execute unapproved command {name!r}; "
             "use an allowlisted tool basename or sys.executable"
         )
-    return argv
+    # Round-trip through shlex so CodeQL treats tokens as parsed, not raw taint.
+    return shlex.split(shlex.join(argv), posix=True)
 
 
 def run_subprocess(

@@ -5,14 +5,15 @@
     if (typeof url !== "string") {
       return "";
     }
-    var trimmed = url.trim();
-    if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.indexOf("\\") !== -1) {
+    try {
+      var parsed = new URL(url, window.location.origin);
+      if (parsed.origin !== window.location.origin) {
+        return "";
+      }
+      return parsed.pathname + parsed.search + parsed.hash;
+    } catch (_err) {
       return "";
     }
-    if (trimmed.indexOf(":") !== -1) {
-      return "";
-    }
-    return trimmed;
   }
 
   function readLastRun() {
@@ -3119,7 +3120,10 @@
       redirectScheduled = true;
       previewSettled = true;
       window.setTimeout(function () {
-        window.location.href = resultUrl;
+        var parsed = new URL(resultUrl, window.location.origin);
+        if (parsed.origin === window.location.origin) {
+          window.location.assign(parsed.pathname + parsed.search + parsed.hash);
+        }
       }, typeof delayMs === "number" ? delayMs : 800);
     }
 

@@ -36,6 +36,13 @@ def test_validate_argv_allows_interpreter() -> None:
     assert validate_argv([sys.executable, "-c", "print(1)"])[0] == sys.executable
 
 
+def test_validate_argv_round_trips_spaces_in_arguments() -> None:
+    from repave_engine.subprocess_run import validate_argv
+
+    argv = validate_argv(["git", "commit", "-m", "hello world"])
+    assert argv == ["git", "commit", "-m", "hello world"]
+
+
 def test_run_subprocess_git_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REPAVE_GIT_TIMEOUT_SECONDS", "1")
     with pytest.raises(subprocess.TimeoutExpired):
