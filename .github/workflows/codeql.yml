@@ -1,0 +1,53 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+  - cron: "06 00 * * 1"
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: python
+            paths: engine cli scripts
+          - language: javascript-typescript
+            paths: backstage engine/src/repave_engine/static
+          - language: go
+            paths: operator
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: github/codeql-action/init@f3712979fa5f215279b101dd0a2e3bdfb4353324
+        with:
+          languages: ${{ matrix.language }}
+          paths: ${{ matrix.paths }}
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        if: matrix.language == 'go'
+        with:
+          go-version-file: operator/go.mod
+          cache-dependency-path: operator/go.sum
+
+      - name: Build operator for CodeQL
+        if: matrix.language == 'go'
+        working-directory: operator
+        run: go build -o /tmp/repave-operator ./cmd/main.go
+
+      - uses: github/codeql-action/analyze@f3712979fa5f215279b101dd0a2e3bdfb4353324
+        with:
+          category: /language:${{ matrix.language }}

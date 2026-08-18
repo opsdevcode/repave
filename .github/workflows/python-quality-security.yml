@@ -74,6 +74,11 @@ jobs:
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run bandit -r src -c pyproject.toml
 
+      - name: Bandit (scripts)
+        if: steps.paths.outputs.ci_needed == 'true'
+        working-directory: ${{ github.workspace }}
+        run: cd engine && uv run bandit -r ../scripts -c pyproject.toml -ll
+
       - name: pip-audit (dependency vulnerabilities)
         if: steps.paths.outputs.ci_needed == 'true'
         run: uv run pip-audit

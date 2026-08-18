@@ -105,9 +105,9 @@ Every **`.py`** file in this repository follows the same conventions — not onl
 
 Tool versions and Ruff/mypy/pytest settings live in **`engine/pyproject.toml`**.
 
-CI runs Ruff, mypy, Bandit, and pip-audit on **`engine/src`** and
-**`engine/tests`**. When you change Python under **`scripts/`** or other paths,
-run the same tools on those files before opening a PR:
+CI runs Ruff, mypy, Bandit, and pip-audit on **`engine/src`**, **`engine/tests`**, and
+**`scripts/`**. The **`repave-cli`** job runs Bandit and pip-audit on **`cli/src`**. When you
+change Python under other paths, run the same tools on those files before opening a PR:
 
 ```bash
 cd engine
@@ -261,6 +261,15 @@ Tools on full CI runs:
 | [mypy](https://mypy-lang.org/) | Static type checking |
 | [Bandit](https://bandit.readthedocs.io/) | Python SAST security scan |
 | [pip-audit](https://pypi.org/project/pip-audit/) | Dependency vulnerability scan (OSV) |
+| [CodeQL](https://codeql.github.com/) | Cross-language SAST (Python, Go, JavaScript) |
+| [govulncheck](https://go.dev/doc/security/vuln/) | Go module vulnerability scan |
+| [gosec](https://github.com/securego/gosec) | Go SAST (via golangci-lint) |
+| [Trivy](https://trivy.dev/) | Container image CVE scan on GHCR publishes |
+| Yarn `npm audit` | Backstage transitive dependency CVE gate |
+| [Dependency review](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/about-dependency-review) | PR dependency diff gate |
+| [Dependabot](https://docs.github.com/en/code-security/dependabot) | Weekly dependency update PRs |
+
+See also [`docs/supply-chain.md`](docs/supply-chain.md) for the full CI security matrix.
 
 Configuration lives in `engine/pyproject.toml` (`repo_dir = ".."`, changelog at
 `engine/CHANGELOG.md`). Release commits include changelog updates from

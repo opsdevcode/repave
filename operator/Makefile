@@ -42,6 +42,10 @@ test: manifests generate envtest
 lint: golangci-lint
 	$(GOLANGCI_LINT) run ./...
 
+.PHONY: govulncheck
+govulncheck:
+	go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+
 .PHONY: run
 run: manifests generate
 	go run ./cmd/main.go

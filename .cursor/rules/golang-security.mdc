@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Go security (repave)
 
-**Scope:** all **`.go`** in the repository. CI runs **golangci-lint** (includes **govet**, **staticcheck**) on **`operator/**`** via **`make operator-lint`**.
+**Scope:** all **`.go`** in the repository. CI runs **golangci-lint** (includes **gosec**), **govulncheck**, and **govet** / **staticcheck** on **`operator/**`** via **`make operator-lint`**.
 
 ## Secrets and configuration
 

@@ -134,3 +134,19 @@ jobs:
             VERSION="${GITHUB_REF_NAME#v}"
             ./deploy/k8s/hack/verify-ghcr-tag.sh "${{ matrix.ghcr_image }}" "${VERSION}"
           fi
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2
+        with:
+          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+          vuln-type: os,library

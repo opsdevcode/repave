@@ -117,6 +117,23 @@ The operator chart supports `image.digest` the same way
 See [Upgrade and rollback](operations/upgrade-and-rollback.md) for the pre-upgrade smoke
 checklist.
 
+## Security scanning in CI
+
+| Check | Workflow | Scope |
+| --- | --- | --- |
+| Bandit + pip-audit | `python-quality-security.yml` | `engine/src`, `scripts/` |
+| Bandit + pip-audit | `ci.yml` (`repave-cli`) | `cli/src` |
+| golangci-lint (gosec) + govulncheck | `operator.yml` | `operator/` |
+| ESLint security rules | `python-quality-security.yml` | portal JS, commitlint |
+| CodeQL | `codeql.yml` | Python, Go, JavaScript |
+| Trivy | `container.yml` | GHCR images after push (CRITICAL/HIGH, unfixed ignored) |
+| Yarn audit | `backstage.yml` | transitive high/critical CVEs (allowlist in `.github/backstage-audit-allowlist.json`) |
+| Dependency review | `dependency-review.yml` | PR dependency diffs (high+) via dependency-graph API |
+| Dependabot | `.github/dependabot.yml` | weekly pip, npm, gomod, Actions updates |
+
+Action pins are verified by [`scripts/check-action-pins.py`](../scripts/check-action-pins.py)
+in the Python quality job.
+
 ## Related
 
 - [Durability — container images](durability.md) — decomposed portal/worker/corpus layout

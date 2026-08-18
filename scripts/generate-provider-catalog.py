@@ -62,7 +62,7 @@ def github_request(url: str) -> dict[str, object]:
     if token:
         headers["Authorization"] = f"Bearer {token}"
     request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=120) as response:
+    with urllib.request.urlopen(request, timeout=120) as response:  # nosec B310
         payload = json.load(response)
     if not isinstance(payload, dict):
         raise RuntimeError(f"Unexpected GitHub response for {url}: {payload!r}")

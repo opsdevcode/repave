@@ -76,6 +76,10 @@ jobs:
         if: steps.filter.outputs.operator == 'true'
         run: make lint
 
+      - name: govulncheck
+        if: steps.filter.outputs.operator == 'true'
+        run: make govulncheck
+
       - name: Verify generated manifests committed
         if: steps.filter.outputs.operator == 'true'
         run: |
