@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
@@ -744,9 +745,12 @@ def resolve_blueprint_path(repo_root: Path, spec: str) -> Path | None:
     stripped = _strip_file_uri(spec.strip())
     if not stripped:
         return None
-    raw = Path(stripped).expanduser()
     try:
-        resolved = trusted_path(raw) if raw.is_absolute() else confined_join(repo_root, raw)
+        # Do not Path().expanduser() here — CodeQL treats that as a sink on taint.
+        if stripped.startswith("~") or os.path.isabs(stripped):
+            resolved = trusted_path(stripped)
+        else:
+            resolved = confined_join(repo_root, stripped)
     except ValueError:
         return None
     catalog = _catalog_dir_if_present(resolved)

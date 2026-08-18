@@ -337,6 +337,7 @@ def _maybe_merge_upgrade_pull_request(
 
 def _iter_relative_files(root: Path) -> dict[str, Path]:
     files: dict[str, Path] = {}
+    root = trusted_path(root)
     if not root.is_dir():
         return files
     for path in root.rglob("*"):
@@ -366,7 +367,7 @@ def _is_text_diff_candidate(relative_path: str) -> bool:
 
 def _read_text_file(path: Path, *, max_bytes: int = _MAX_UPGRADE_DIFF_BYTES) -> str:
     try:
-        raw = path.read_bytes()
+        raw = trusted_path(path).read_bytes()
     except OSError:
         return ""
     if len(raw) > max_bytes:
@@ -400,8 +401,11 @@ def build_upgrade_file_diffs(
     for relative_path in modified:
         if not _is_text_diff_candidate(relative_path):
             continue
-        left = existing_root / relative_path
-        right = rendered_root / relative_path
+        try:
+            left = confined_join(existing_root, relative_path)
+            right = confined_join(rendered_root, relative_path)
+        except ValueError:
+            continue
         if not left.is_file() or not right.is_file():
             continue
         item = _unified_file_diff(
@@ -416,7 +420,10 @@ def build_upgrade_file_diffs(
     for relative_path in added:
         if not _is_text_diff_candidate(relative_path):
             continue
-        right = rendered_root / relative_path
+        try:
+            right = confined_join(rendered_root, relative_path)
+        except ValueError:
+            continue
         if not right.is_file():
             continue
         item = _unified_file_diff(relative_path, "", _read_text_file(right))
@@ -531,15 +538,16 @@ def _render_upgrade_staging(
     temp_dir: tempfile.TemporaryDirectory[str] | None = None
     if staging_root is None:
         temp_dir = tempfile.TemporaryDirectory(prefix="repave-plan-")
-        staging_dir = Path(temp_dir.name)
+        staging_dir = trusted_path(temp_dir.name)
     else:
+        staging_root = trusted_path(staging_root)
         staging_root.mkdir(parents=True, exist_ok=True)
         staging_dir = staging_root
 
     render_blueprint(blueprint, values, staging_dir)
     added, modified, removed = diff_directories(target_repo, staging_dir)
     new_policy: dict[str, Any] | None = None
-    staged_prov = staging_dir / "repave.yaml"
+    staged_prov = confined_join(staging_dir, "repave.yaml")
     if staged_prov.is_file():
         import yaml
 

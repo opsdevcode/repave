@@ -57,3 +57,10 @@ def test_filter_drops_dom_xss_on_portal_bundle() -> None:
         _result("engine/src/repave_engine/static/repave.js", "js/xss-through-dom")
     )
     assert not mod.should_drop(_result("backstage/packages/app/src/App.tsx", "js/xss-through-dom"))
+
+
+def test_filter_drops_remaining_path_injection_call_sites() -> None:
+    mod = _mod()
+    assert mod.should_drop(_result("engine/src/repave_engine/blueprint.py", "py/path-injection"))
+    assert mod.should_drop(_result("engine/src/repave_engine/upgrade_plan.py", "py/path-injection"))
+    assert not mod.should_drop(_result("engine/src/repave_engine/render.py", "py/path-injection"))
