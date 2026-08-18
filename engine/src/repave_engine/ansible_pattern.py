@@ -18,6 +18,7 @@ from repave_engine.ansible_catalog import (
 )
 from repave_engine.ansible_platforms import parse_support_flag
 from repave_engine.blueprint import Blueprint
+from repave_engine.safe_paths import confined_join, trusted_path
 
 ANSIBLE_ROOT = Path("ansible")
 
@@ -176,20 +177,22 @@ def _materialize_pattern(
     if pattern is None or not pattern.files:
         return
 
+    output_dir = trusted_path(output_dir)
+    repo_root = trusted_path(repo_root)
     env = Environment(
         autoescape=select_autoescape(enabled_extensions=()),
         keep_trailing_newline=True,
     )
-    pack_root = repo_root / ANSIBLE_ROOT
+    pack_root = confined_join(repo_root, ANSIBLE_ROOT)
     for entry in pattern.files:
-        source_path = pack_root / entry.source
+        source_path = confined_join(pack_root, entry.source)
         if not source_path.is_file():
             raise FileNotFoundError(f"Ansible pattern file missing: {source_path}")
         template = env.from_string(source_path.read_text(encoding="utf-8"))
         rendered = template.render(**values)
         dest_template = env.from_string(entry.dest)
         dest_rel = dest_template.render(**values)
-        dest = output_dir / dest_rel
+        dest = confined_join(output_dir, dest_rel)
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(rendered, encoding="utf-8")
 
@@ -227,7 +230,9 @@ def write_ansible_requirements_yml(output_dir: Path, values: dict[str, Any]) -> 
             lines.append(f"  - name: {name}")
     else:
         lines[-1] = "collections: []"
-    (output_dir / "requirements.yml").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    confined_join(trusted_path(output_dir), "requirements.yml").write_text(
+        "\n".join(lines) + "\n", encoding="utf-8"
+    )
 
 
 def merge_playbook_requirements_collections(output_dir: Path, values: dict[str, Any]) -> None:
@@ -237,7 +242,7 @@ def merge_playbook_requirements_collections(output_dir: Path, values: dict[str, 
         collections = sorted({str(item).strip() for item in raw if str(item).strip()})
     if not collections:
         return
-    path = output_dir / "requirements.yml"
+    path = confined_join(trusted_path(output_dir), "requirements.yml")
     if not path.is_file():
         return
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -259,7 +264,9 @@ def merge_playbook_requirements_collections(output_dir: Path, values: dict[str, 
 def finalize_role_pattern_layout(output_dir: Path, values: dict[str, Any]) -> None:
     omit_docker = bool(values.get("_role_pattern_omit_docker_molecule", False))
     if omit_docker:
-        docker_molecule = output_dir / "molecule" / "default" / "molecule.yml"
+        docker_molecule = confined_join(
+            trusted_path(output_dir), "molecule", "default", "molecule.yml"
+        )
         if docker_molecule.is_file():
             docker_molecule.unlink()
 
@@ -316,7 +323,7 @@ def merge_collection_galaxy_dependencies(output_dir: Path, values: dict[str, Any
         collections = sorted({str(item).strip() for item in raw if str(item).strip()})
     if not collections:
         return
-    path = output_dir / "galaxy.yml"
+    path = confined_join(trusted_path(output_dir), "galaxy.yml")
     if not path.is_file():
         return
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -334,7 +341,8 @@ def finalize_collection_sample_role_layout(output_dir: Path, values: dict[str, A
     import shutil
 
     sample = _sample_role_name(values)
-    placeholder = output_dir / "roles" / "sample"
-    target = output_dir / "roles" / sample
+    output_dir = trusted_path(output_dir)
+    placeholder = confined_join(output_dir, "roles", "sample")
+    target = confined_join(output_dir, "roles", sample)
     if sample != "sample" and placeholder.is_dir() and placeholder != target:
         shutil.rmtree(placeholder)

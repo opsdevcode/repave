@@ -12,6 +12,7 @@ from repave_engine.policy_catalog import (
     resolve_profile_rule_ids,
     rules_for_artifact,
 )
+from repave_engine.safe_paths import confined_join, trusted_path
 from repave_engine.settings import GateOverrides
 
 POLICY_SELECTION_FILENAME = ".repave/policy-selection.json"
@@ -188,14 +189,14 @@ def _validate_platform_skips(
 
 
 def write_policy_selection_file(output_dir: Path, selection: PolicySelection) -> Path:
-    path = output_dir / POLICY_SELECTION_FILENAME
+    path = confined_join(trusted_path(output_dir), POLICY_SELECTION_FILENAME)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(selection.to_json_dict(), indent=2) + "\n", encoding="utf-8")
     return path
 
 
 def load_policy_selection_file(output_dir: Path) -> PolicySelection | None:
-    path = output_dir / POLICY_SELECTION_FILENAME
+    path = confined_join(trusted_path(output_dir), POLICY_SELECTION_FILENAME)
     if not path.is_file():
         return None
     data = json.loads(path.read_text(encoding="utf-8"))

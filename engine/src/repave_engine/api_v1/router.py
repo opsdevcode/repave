@@ -68,6 +68,7 @@ from repave_engine.run_events import TERMINAL_EVENT_KINDS
 from repave_engine.run_queue import RunQueue, RunQueueFullError, RunQueueShuttingDownError
 from repave_engine.run_store import RunStatus
 from repave_engine.run_submit import parse_run_target, submit_async_run
+from repave_engine.safe_paths import trusted_path
 from repave_engine.settings import OutputConfig, load_fleet_config, load_portal_config
 from repave_engine.verify import VerifyError, verify_target
 
@@ -472,7 +473,7 @@ def build_api_v1_router(
         local_path = str(payload.get("path", "")).strip()
         try:
             if local_path:
-                pins.update(pins_from_repave_file(Path(local_path).expanduser().resolve()))
+                pins.update(pins_from_repave_file(trusted_path(local_path)))
             if not pins["blueprint_name"]:
                 raise FleetError("blueprint_name is required when path is not supplied")
             entry = register_repo(

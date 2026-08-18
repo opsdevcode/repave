@@ -18,6 +18,7 @@ from repave_engine.policy_selection import (
     PolicySelection,
     write_policy_selection_file,
 )
+from repave_engine.safe_paths import confined_join, trusted_path
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,7 @@ def collect_rendered_files(
     max_files: int = 100,
     max_bytes: int = 32_768,
 ) -> tuple[RenderedFile, ...]:
+    output_dir = trusted_path(output_dir)
     if not output_dir.exists():
         return ()
 
@@ -115,7 +117,8 @@ def render_blueprint(
     if blueprint.template_engine != "copier":
         raise ValueError(f"Unsupported template engine: {blueprint.template_engine}")
 
-    template_dir = blueprint.template_dir
+    output_dir = trusted_path(output_dir)
+    template_dir = trusted_path(blueprint.template_dir)
     if not template_dir.exists():
         raise FileNotFoundError(f"Template directory not found: {template_dir}")
 
@@ -516,7 +519,7 @@ def _write_scoped_resource_files(
             file_stem=item.file_stem,
             cloud_provider=cloud_provider,
         )
-        (output_dir / f"{item.file_stem}.tf").write_text(content, encoding="utf-8")
+        confined_join(output_dir, f"{item.file_stem}.tf").write_text(content, encoding="utf-8")
 
 
 def _copy_checkov_policies(output_dir: Path, blueprint: Blueprint) -> None:
@@ -524,11 +527,11 @@ def _copy_checkov_policies(output_dir: Path, blueprint: Blueprint) -> None:
         return
 
     repo_root = _find_repo_root(blueprint.path)
-    source_dir = repo_root / blueprint.checkov_policies.policies_source
+    source_dir = confined_join(repo_root, blueprint.checkov_policies.policies_source)
     if not source_dir.is_dir():
         raise FileNotFoundError(f"Checkov policy pack not found: {source_dir}")
 
-    destination = output_dir / blueprint.checkov_gate.external_checks_dir
+    destination = confined_join(output_dir, blueprint.checkov_gate.external_checks_dir)
     if destination.exists():
         shutil.rmtree(destination)
     shutil.copytree(source_dir, destination)
@@ -541,7 +544,7 @@ def _apply_checkov_skip_config(
 ) -> None:
     if not skip_checks or blueprint.checkov_policies is None:
         return
-    config_path = output_dir / blueprint.checkov_gate.config_file
+    config_path = confined_join(output_dir, blueprint.checkov_gate.config_file)
     data: dict[str, Any] = {}
     if config_path.is_file():
         loaded = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -558,10 +561,10 @@ def _apply_checkov_skip_config(
 def _copy_named_files(source_dir: Path, destination: Path, filenames: tuple[str, ...]) -> None:
     destination.mkdir(parents=True, exist_ok=True)
     for name in filenames:
-        src = source_dir / name
+        src = confined_join(source_dir, name)
         if not src.is_file():
             raise FileNotFoundError(f"Policy file missing in pack: {src}")
-        shutil.copy2(src, destination / name)
+        shutil.copy2(src, confined_join(destination, name))
 
 
 def _copy_opa_policies(
@@ -573,11 +576,11 @@ def _copy_opa_policies(
         return
 
     repo_root = _find_repo_root(blueprint.path)
-    source_dir = repo_root / blueprint.opa_policies.policies_source
+    source_dir = confined_join(repo_root, blueprint.opa_policies.policies_source)
     if not source_dir.is_dir():
         raise FileNotFoundError(f"OPA policy pack not found: {source_dir}")
 
-    destination = output_dir / blueprint.opa_gate.policies_dir
+    destination = confined_join(output_dir, blueprint.opa_gate.policies_dir)
     if destination.exists():
         shutil.rmtree(destination)
     if selection is None:
@@ -613,13 +616,13 @@ def _copy_opa_plan_fixtures(
         return
 
     repo_root = _find_repo_root(blueprint.path)
-    source = repo_root / "policy" / "opa" / "fixtures" / "plan-create-only.json"
+    source = confined_join(repo_root, "policy", "opa", "fixtures", "plan-create-only.json")
     if not source.is_file():
         raise FileNotFoundError(f"OPA plan fixture missing: {source}")
 
-    fixtures_dir = output_dir / blueprint.opa_gate.fixtures_dir
+    fixtures_dir = confined_join(output_dir, blueprint.opa_gate.fixtures_dir)
     fixtures_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, fixtures_dir / "plan-create-only.json")
+    shutil.copy2(source, confined_join(fixtures_dir, "plan-create-only.json"))
 
 
 def _apply_opa_plan_demo_fixture(
@@ -632,14 +635,14 @@ def _apply_opa_plan_demo_fixture(
     if str(payload.get("plan_demo", "pass")).strip() != "destructive_delete":
         return
     repo_root = _find_repo_root(blueprint.path)
-    source = repo_root / "examples" / "policy" / "plan-destructive-delete.json"
+    source = confined_join(repo_root, "examples", "policy", "plan-destructive-delete.json")
     if not source.is_file():
         raise FileNotFoundError(f"Demo fixture missing: {source}")
-    fixtures_dir = output_dir / blueprint.opa_gate.fixtures_dir
+    fixtures_dir = confined_join(output_dir, blueprint.opa_gate.fixtures_dir)
     fixtures_dir.mkdir(parents=True, exist_ok=True)
     for path in fixtures_dir.glob("*.json"):
         path.unlink()
-    shutil.copy2(source, fixtures_dir / "plan-destructive-delete.json")
+    shutil.copy2(source, confined_join(fixtures_dir, "plan-destructive-delete.json"))
 
 
 def _copy_azure_policy_definitions(
@@ -651,11 +654,11 @@ def _copy_azure_policy_definitions(
         return
 
     repo_root = _find_repo_root(blueprint.path)
-    source_dir = repo_root / blueprint.azure_policy_pack.definitions_source
+    source_dir = confined_join(repo_root, blueprint.azure_policy_pack.definitions_source)
     if not source_dir.is_dir():
         raise FileNotFoundError(f"Azure policy definitions not found: {source_dir}")
 
-    destination = output_dir / blueprint.azure_policy_gate.definitions_dir
+    destination = confined_join(output_dir, blueprint.azure_policy_gate.definitions_dir)
     if destination.exists():
         shutil.rmtree(destination)
     if selection is not None and selection.azure_definition_files:
@@ -669,11 +672,11 @@ def _copy_ansible_lint_pack(output_dir: Path, blueprint: Blueprint) -> None:
         return
 
     repo_root = _find_repo_root(blueprint.path)
-    source_dir = repo_root / blueprint.ansible_lint_pack.pack_source
+    source_dir = confined_join(repo_root, blueprint.ansible_lint_pack.pack_source)
     if not source_dir.is_dir():
         raise FileNotFoundError(f"Ansible lint pack not found: {source_dir}")
 
     for item in source_dir.iterdir():
         if not item.is_file():
             continue
-        shutil.copy2(item, output_dir / item.name)
+        shutil.copy2(item, confined_join(output_dir, item.name))

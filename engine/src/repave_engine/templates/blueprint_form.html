@@ -2048,17 +2048,17 @@
     card.className = "scope-card motion-panel";
     card.dataset.service = service;
     card.innerHTML = `
-      <h3>${service}</h3>
+      <h3></h3>
       <div class="scope-card__tools">
-        <input type="search" class="input input--sm scope-resource-filter" placeholder="Filter resources..." aria-label="Filter resources for ${service}" />
+        <input type="search" class="input input--sm scope-resource-filter" placeholder="Filter resources..." />
       </div>
-      <div class="segmented scope-mode" role="radiogroup" aria-label="Scope mode for ${service}">
+      <div class="segmented scope-mode" role="radiogroup">
         <label class="segmented__option">
-          <input type="radio" name="${modeName}" class="include-basic" value="basic" checked />
+          <input type="radio" class="include-basic" value="basic" checked />
           Basic + optional
         </label>
         <label class="segmented__option">
-          <input type="radio" name="${modeName}" class="custom-only" value="custom" />
+          <input type="radio" class="custom-only" value="custom" />
           Custom only
         </label>
       </div>
@@ -2068,6 +2068,16 @@
       <div class="resource-section-title custom-title" hidden>Select resources</div>
       <div class="resource-grid custom-grid" hidden></div>
     `;
+    const heading = card.querySelector("h3");
+    heading.textContent = service;
+    const filterInput = card.querySelector(".scope-resource-filter");
+    filterInput.setAttribute("aria-label", `Filter resources for ${service}`);
+    const modeGroup = card.querySelector(".scope-mode");
+    modeGroup.setAttribute("aria-label", `Scope mode for ${service}`);
+    const includeBasic = card.querySelector(".include-basic");
+    const customOnly = card.querySelector(".custom-only");
+    includeBasic.setAttribute("name", modeName);
+    customOnly.setAttribute("name", modeName);
     scopePanel.appendChild(card);
 
     const includeBasicRadio = card.querySelector(".include-basic");
@@ -2096,8 +2106,12 @@
         const label = document.createElement("label");
         label.className = "resource-option";
         label.dataset.resource = resource;
-        const checked = state.resources.has(resource) ? "checked" : "";
-        label.innerHTML = `<input type="checkbox" value="${resource}" ${checked} /> ${resource}`;
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.value = resource;
+        checkbox.checked = state.resources.has(resource);
+        label.appendChild(checkbox);
+        label.appendChild(document.createTextNode(" " + resource));
         grid.appendChild(label);
       }
       applyResourceFilter();
@@ -2263,7 +2277,12 @@
       const label = document.createElement("label");
       label.className = "service-option";
       label.dataset.service = service;
-      label.innerHTML = `<input type="checkbox" name="provider_service_option" value="${service}" /> ${service}`;
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.name = "provider_service_option";
+      checkbox.value = service;
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(" " + service));
       servicesContainer.appendChild(label);
     }
     applyServiceFilter();

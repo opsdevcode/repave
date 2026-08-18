@@ -23,6 +23,7 @@ from repave_engine.provenance_inputs import (
     blueprint_name_from_provenance,
     load_provenance_document,
 )
+from repave_engine.safe_paths import trusted_path
 from repave_engine.settings import load_gate_overrides
 from repave_engine.standards_diff import PinChange, diff_observed_vs_catalog_pins
 
@@ -295,7 +296,7 @@ def _materialize_target(
         except CloneError as exc:
             raise VerifyCloneError(str(exc)) from exc
     else:
-        path = Path(text).expanduser().resolve()
+        path = trusted_path(text)
         yield path, False, str(path)
 
 

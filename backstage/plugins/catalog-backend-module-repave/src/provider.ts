@@ -8,13 +8,36 @@ import type { LoggerService, SchedulerService } from '@backstage/backend-plugin-
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
+const ENTITY_NAME_MAX = 256;
+
+function isSlugChar(ch: string): boolean {
+  return (
+    (ch >= 'a' && ch <= 'z') ||
+    (ch >= '0' && ch <= '9') ||
+    ch === '.' ||
+    ch === '_' ||
+    ch === '-'
+  );
+}
+
 export function entityNameFromId(entityId: string): string {
-  const slug = entityId
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return slug || 'unnamed';
+  // Linear scan — avoid quantified regex replace (js/polynomial-redos).
+  const trimmed = entityId.trim().slice(0, ENTITY_NAME_MAX).toLowerCase();
+  const chars: string[] = [];
+  for (const ch of trimmed) {
+    if (isSlugChar(ch)) {
+      chars.push(ch);
+    } else if (chars.at(-1) !== '-') {
+      chars.push('-');
+    }
+  }
+  while (chars[0] === '-') {
+    chars.shift();
+  }
+  while (chars.at(-1) === '-') {
+    chars.pop();
+  }
+  return chars.join('') || 'unnamed';
 }
 
 export function catalogItemToEntity(item: Record<string, unknown>): Entity {

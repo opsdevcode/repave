@@ -13,7 +13,6 @@ Three redaction sources, applied together:
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass, field
 from typing import Any, Final
 
@@ -42,8 +41,6 @@ SENSITIVE_NAME_PATTERNS: Final[tuple[str, ...]] = (
     "auth",
     "signature",
 )
-
-_INDEX_SUFFIX = re.compile(r"\[[^\]]*\]$")
 
 
 @dataclass(frozen=True)
@@ -110,7 +107,11 @@ def instance_address(base: str, index_key: Any) -> str:
 
 def strip_index(address: str) -> str:
     """`aws_instance.web[0]` -> `aws_instance.web`."""
-    return _INDEX_SUFFIX.sub("", address)
+    if address.endswith("]"):
+        start = address.rfind("[")
+        if start != -1:
+            return address[:start]
+    return address
 
 
 def is_sensitive_name(name: str) -> bool:

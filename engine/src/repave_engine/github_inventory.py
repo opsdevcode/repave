@@ -10,8 +10,8 @@ from urllib.parse import quote
 from repave_engine.github import GitHubError, _github_json
 from repave_engine.github_rate_limit import wait_before_github_request
 from repave_engine.import_detect import _SKIP_DIRS, MAX_SCANNED_FILES
+from repave_engine.url_hosts import parse_github_owner_repo
 
-_GITHUB_REMOTE = re.compile(r"github\.com[/:](?P<owner>[^/]+)/(?P<name>[^/.]+(?:\.git)?)")
 _PUSHED_SINCE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -21,17 +21,10 @@ class GitHubInventoryError(RuntimeError):
 
 def parse_github_repository(raw: str) -> tuple[str, str]:
     """Return ``(owner, repo)`` for a GitHub HTTPS or SSH remote URL."""
-    text = raw.strip().rstrip("/")
-    if text.endswith(".git"):
-        text = text[: -len(".git")]
-    match = _GITHUB_REMOTE.search(text)
-    if not match:
+    parsed = parse_github_owner_repo(raw)
+    if parsed is None:
         raise GitHubInventoryError(f"not a GitHub repository URL: {raw!r}")
-    owner = match.group("owner")
-    name = match.group("name")
-    if name.endswith(".git"):
-        name = name[:-4]
-    return owner, name
+    return parsed
 
 
 def _github_get(path: str, token: str) -> Any:

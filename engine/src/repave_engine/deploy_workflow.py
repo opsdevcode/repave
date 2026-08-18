@@ -9,6 +9,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from repave_engine.blueprint import Blueprint
 from repave_engine.ci_action_pins import action_pins
+from repave_engine.safe_paths import confined_join, trusted_path
 
 _TEMPLATES = Path(__file__).resolve().parent / "templates" / "ci"
 
@@ -105,10 +106,11 @@ def write_deploy_workflow(
     if not deploy_pipeline_enabled(payload):
         return None
     validate_deploy_inputs(blueprint, payload)
-    target = output_dir / deploy_workflow_relpath()
+    output_dir = trusted_path(output_dir)
+    target = confined_join(output_dir, deploy_workflow_relpath())
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(render_deploy_workflow(blueprint, payload), encoding="utf-8")
-    doc_path = output_dir / "docs" / "DEPLOY-OIDC.md"
+    doc_path = confined_join(output_dir, "docs", "DEPLOY-OIDC.md")
     doc_path.parent.mkdir(parents=True, exist_ok=True)
     doc_path.write_text(render_deploy_oidc_doc(blueprint, payload), encoding="utf-8")
     return target

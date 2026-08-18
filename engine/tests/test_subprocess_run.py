@@ -23,6 +23,19 @@ def test_run_command_reports_timeout(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert "timed out" in (result.stderr or "").lower()
 
 
+def test_validate_argv_rejects_unapproved_executable() -> None:
+    from repave_engine.subprocess_run import validate_argv
+
+    with pytest.raises(ValueError, match="unapproved command"):
+        validate_argv(["bash", "-c", "id"])
+
+
+def test_validate_argv_allows_interpreter() -> None:
+    from repave_engine.subprocess_run import validate_argv
+
+    assert validate_argv([sys.executable, "-c", "print(1)"])[0] == sys.executable
+
+
 def test_run_subprocess_git_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REPAVE_GIT_TIMEOUT_SECONDS", "1")
     with pytest.raises(subprocess.TimeoutExpired):

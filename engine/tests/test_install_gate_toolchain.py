@@ -105,7 +105,7 @@ def test_installer_download_urls_use_pins_file(tmp_path: Path) -> None:
     assert ci_toolchain.BUF_VERSION in curl_blob
     assert "bufbuild/buf" in curl_blob
     assert "rhysd/actionlint" in curl_blob
-    assert "dl.k8s.io" in curl_blob
+    assert "https://dl.k8s.io/" in curl_blob
     uv_blob = "\n".join(_lines(calls, "uv"))
     assert ci_toolchain.CHECKOV_PIP_SPEC in uv_blob
 

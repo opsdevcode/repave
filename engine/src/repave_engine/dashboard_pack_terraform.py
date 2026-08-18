@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from repave_engine.safe_paths import confined_join, trusted_path
+
 
 def _terraform_resource_name(stem: str) -> str:
     cleaned = re.sub(r"[^a-zA-Z0-9_]", "_", stem)
@@ -14,9 +16,10 @@ def _terraform_resource_name(stem: str) -> str:
 
 
 def write_dashboard_pack_terraform(output_dir: Path, *, backend: str) -> None:
+    output_dir = trusted_path(output_dir)
     normalized = backend.strip().lower()
     if normalized == "grafana":
-        json_dir = output_dir / "grafana" / "dashboards"
+        json_dir = confined_join(output_dir, "grafana", "dashboards")
         if not json_dir.is_dir():
             return
         lines = [
@@ -36,11 +39,13 @@ def write_dashboard_pack_terraform(output_dir: Path, *, backend: str) -> None:
             )
         if len(lines) <= 2:
             return
-        (output_dir / "dashboard_packs.tf").write_text("\n".join(lines), encoding="utf-8")
+        confined_join(output_dir, "dashboard_packs.tf").write_text(
+            "\n".join(lines), encoding="utf-8"
+        )
         return
 
     if normalized == "datadog":
-        json_dir = output_dir / "datadog" / "dashboards"
+        json_dir = confined_join(output_dir, "datadog", "dashboards")
         if not json_dir.is_dir():
             return
         lines = [
@@ -60,4 +65,6 @@ def write_dashboard_pack_terraform(output_dir: Path, *, backend: str) -> None:
             )
         if len(lines) <= 2:
             return
-        (output_dir / "dashboard_packs.tf").write_text("\n".join(lines), encoding="utf-8")
+        confined_join(output_dir, "dashboard_packs.tf").write_text(
+            "\n".join(lines), encoding="utf-8"
+        )

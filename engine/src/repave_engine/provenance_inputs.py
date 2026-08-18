@@ -5,8 +5,11 @@ from typing import Any, cast
 
 import yaml
 
+from repave_engine.safe_paths import trusted_path
+
 
 def load_provenance_document(path: Path) -> dict[str, Any]:
+    path = trusted_path(path)
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError(f"{path}: expected mapping at document root")

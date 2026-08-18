@@ -1,6 +1,20 @@
 (function () {
   var STORAGE_KEY = "repave:lastRun";
 
+  function safeInternalPath(url) {
+    if (typeof url !== "string") {
+      return "";
+    }
+    var trimmed = url.trim();
+    if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.indexOf("\\") !== -1) {
+      return "";
+    }
+    if (trimmed.indexOf(":") !== -1) {
+      return "";
+    }
+    return trimmed;
+  }
+
   function readLastRun() {
     try {
       var raw = sessionStorage.getItem(STORAGE_KEY);
@@ -2391,7 +2405,7 @@
       return;
     }
     var runId = root.getAttribute("data-run-id");
-    var resultUrl = root.getAttribute("data-result-url") || "";
+    var resultUrl = safeInternalPath(root.getAttribute("data-result-url") || "");
     var logEl = document.getElementById("run-console-log");
     var completeActions = root.querySelector("[data-run-complete-actions]");
     var initialStatus = root.getAttribute("data-run-status") || "";
