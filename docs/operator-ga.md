@@ -25,7 +25,7 @@ today and what remains intentionally out of scope.
 
 ## GA checklist (maintainers)
 
-Last verified on **`main`**: 2026-07-30 (engine **v3.51.3**).
+Last verified on **`main`**: 2026-07-30 (engine **v3.51.4**).
 
 - [x] `make operator-test` and `make operator-e2e` pass on `main`
 - [x] Sample manifests under `operator/config/e2e/` match blueprint pins on `main`
