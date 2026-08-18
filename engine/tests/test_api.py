@@ -248,6 +248,19 @@ def test_index_catalog_search(repo_root, output_config) -> None:
 
 
 def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) -> None:
+    from repave_engine.blueprint import blueprint_dir, load_blueprint
+    from repave_engine.standards_diff import standards_diff_for_pin
+
+    blueprint = load_blueprint(
+        blueprint_dir(repo_root, "terraform-module-generic"),
+        repo_root=repo_root,
+    )
+    standards = standards_diff_for_pin(
+        repo_root,
+        standard_source=blueprint.standard_source,
+        pinned_version=blueprint.standard_version,
+    )
+
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/blueprints/terraform-module-generic")
 
@@ -256,6 +269,11 @@ def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) ->
     assert "Standard pin drift" in response.text
     assert "form-actions__preflight" in response.text
     assert "form-actions__preflight-details" in response.text
+    if standards.available and standards.has_changes:
+        assert "standards-diff-panel" in response.text
+        assert "diff-split" in response.text
+    else:
+        assert "standards-diff-panel" not in response.text
 
 
 def test_terraform_form_guided_advanced_mode(repo_root, output_config) -> None:

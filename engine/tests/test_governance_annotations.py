@@ -44,6 +44,7 @@ def test_build_governance_previews_when_pin_matches_head(repo_root) -> None:
         available=True,
         pinned_version="1.1.0",
         standard_source="standards/terraform-standards",
+        baseline_commit="abc123",
         baseline_ref="abc123",
         reason="",
         files=(),

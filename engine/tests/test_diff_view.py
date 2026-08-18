@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from repave_engine.diff_view import (
+    build_split_rows,
     diff_view_models_from_files,
     parse_unified_patch,
     render_diff_file_html,
+    render_split_diff_html,
 )
 from repave_engine.standards_diff import StandardsDiffFile
 
@@ -43,3 +45,19 @@ def test_render_diff_file_html_escapes_body() -> None:
     html = render_diff_file_html(diff)
     assert "<script>" not in html
     assert "&lt;script&gt;" in html
+
+
+def test_build_split_rows_pairs_changes() -> None:
+    rows = build_split_rows("alpha\nbeta", "alpha\ngamma")
+    kinds = [row.kind for row in rows]
+    assert "context" in kinds
+    assert "remove" in kinds or "change" in kinds
+    assert "add" in kinds or "change" in kinds
+
+
+def test_render_split_diff_html_escapes_cells() -> None:
+    rows = build_split_rows("safe", "<unsafe>")
+    html = render_split_diff_html(rows, left_label="pin", right_label="head")
+    assert "diff-split" in html
+    assert "<unsafe>" not in html
+    assert "&lt;unsafe&gt;" in html

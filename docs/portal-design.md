@@ -23,7 +23,7 @@ and the shell shows a “Last run in this browser” snippet on home and form ro
 Fleet-wide history is available via the JSONL audit sink, portal `/activity`, and hosted
 `/runs` when durability SQL is configured (roadmap v1.30 — shipped).
 
-**Deferred (Phase 5+):** standards diff UI, light theme, conversational entry — see
+**Deferred (Phase 5+):** policy pack diff UI, light theme, conversational entry — see
 [Phase 5](#phase-5--polish-and-extensions). White-label logo URL + accent override
 shipped (see [brand guidelines](brand/README.md)).
 
@@ -42,7 +42,7 @@ static assets, CSS tokens, and a base layout template.
 | v1.30 Operability and audit | **Shipped** — audit sink, `/activity`, hosted `/runs`; browser last-run remains a local convenience |
 | Cost visibility (shipped) | Library shelf cost line, entity Cloud spend scorecard, result-page estimates — see [`docs/finops.md`](finops.md) |
 | FinOps enablement (v1.90–v1.94) | **Shipped** — tags, estimate policy, showback/`/platform/finops`, FOCUS, chargeback ([archive](roadmap-archive.md#finops-enablement-v2x), [`finops.md`](finops.md)) |
-| Parking lot: standards diff in portal | **Partial:** Update repo preview shows pin table (observed vs catalog); blueprint form shows git standard drift when available (Phase 5 for full side-by-side) |
+| Parking lot: standards diff in portal | **Shipped:** blueprint form side-by-side pinned vs HEAD plus unified diff accordion; upgrade preview still shows pin table |
 | v3.0 conversational generation | Second entry point in the same app shell (Phase 5) |
 
 Delivery slices (all landed on `main`):
@@ -348,7 +348,7 @@ holds Search (⌘K), session, and environment badges.
 | **Generation progress** | If generation becomes async, use shell + step list or spinner |
 | **Hosted Backstage IDP** | **Catalog only** — owner Eric Skaggs ([ADR 011](adr/011-hosted-backstage-idp.md)); HTML is the workbench ([`ui-surfaces.md`](ui-surfaces.md)) |
 | **White-label** | **Shipped** — `portal.logo_url` / `portal.accent_color` (see [brand](brand/README.md)) |
-| **Standards diff** | Side-by-side or accordion diff before generate (parking lot); uses Phase 1–2 panels |
+| **Standards diff** | **Shipped** — side-by-side pinned vs HEAD on blueprint form; unified diff in accordion; governance annotations alongside |
 | **History / last run** | **Browser session** snippet shipped (`repave.js` + sessionStorage); fleet-wide history needs audit sink (v1.30) |
 | **Conversational UI (v2)** | Chat entry in same shell; results reuse Phase 4 dashboard |
 

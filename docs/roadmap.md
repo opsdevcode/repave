@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.48.0  
 
-**In progress:** catalog closeout (auto slug, GitHub discovery, guest identity)
+**In progress:** HTML workbench polish (standards diff side-by-side, catalog handoff)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -22,6 +22,10 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Catalog closeout**
+(auto slug/k8s id, GitHub org discovery, guest identity, TechDocs addons, lineage
+View source, expanded HTML catalog preview, Scaffolder catalog fields, ClusterRole
+opt-in, `catalog_domain`, conformance manifest guard);
 **Catalog depth**
 (GitHub slug/source-location, consumesApis/subcomponentOf/tags/links,
 Helm + app-service Scaffolder, Domain `demo`, in-cluster Kubernetes Role);
@@ -207,8 +211,8 @@ Open work only. Shipped theme writeups are in [`roadmap-archive.md`](roadmap-arc
 
 ### Hosted Backstage IDP
 
-**Status:** Catalog closeout in progress (auto slug/k8s id, GitHub discovery, guest
-identity, TechDocs addons, lineage handoff, ClusterRole opt-in; owner: Eric Skaggs;
+**Status:** Catalog IDP closeout shipped; Backstage is maintenance + upstream bumps
+(owner: Eric Skaggs;
 [ADR 011](adr/011-hosted-backstage-idp.md),
 [`docs/ui-surfaces.md`](ui-surfaces.md)).
 Kind/smoke overlays keep the flag off. HTML is the hosted and local workbench
@@ -614,9 +618,8 @@ until someone owns it. Stategraph / graph-scoped execution is under
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
 - **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
   an alternative to in-app OIDC
-- **Standards diff in portal** — side-by-side standard/policy changes between
-  blueprint versions before generate (see [`portal-design.md`](portal-design.md)
-  Phase 5)
+- **Policy pack diff in portal** — side-by-side diff for Checkov/OPA/Azure policy packs
+  between pins (standards side-by-side shipped on blueprint form)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
 - **Auth0 FGA / fine-grained authorization** — relationship checks on catalog,
   generate, and environment actions (Auth0 FGA or OpenFGA), wrapping today's
