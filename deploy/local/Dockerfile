@@ -44,7 +44,10 @@ COPY deploy/local/gate-toolchain-pins.env /app/deploy/local/gate-toolchain-pins.
 # Action SHA pins for workflows written into generated repositories (ci_action_pins).
 COPY .github/action-pins.json /app/.github/action-pins.json
 COPY deploy/local/install-gate-toolchain.sh /app/deploy/local/install-gate-toolchain.sh
-RUN apt-get update \
+# Pick up debian-security (util-linux CVE-2026-53615) without a new slim digest.
+RUN export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends ca-certificates curl unzip git \
     && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates \
