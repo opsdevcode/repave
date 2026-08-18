@@ -83,7 +83,7 @@ from repave_engine.catalog_deployment import (
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.developer_lab import is_developer_lab_enabled
-from repave_engine.diff_view import diff_view_models_from_files
+from repave_engine.diff_view import catalog_pin_diff_panels, diff_view_models_from_files
 from repave_engine.durability_store import load_durability_runtime
 from repave_engine.entity_catalog import (
     CatalogEntity,
@@ -260,6 +260,7 @@ from repave_engine.settings import (
     validate_hosted_service_config,
 )
 from repave_engine.sql_session_middleware import SqlSessionMiddleware
+from repave_engine.standards_diff import catalog_pin_diffs_for_blueprint
 from repave_engine.tracing import configure_tracing
 from repave_engine.upgrade_plan import UpgradePlanResult, plan_upgrade
 from repave_engine.verify import VerifyError, verify_target
@@ -2056,6 +2057,18 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         resolved = str(target_repo.resolve())
         cli_apply = f"repave update --no-dry-run --git-branch {branch} --path {resolved}"
         cli_open_pr = f"{cli_apply} --open-pr"
+        pin_diff_panels: list[dict[str, object]] = []
+        pin_drift = False
+        try:
+            catalog_blueprint = load_blueprint(
+                blueprint_dir(repo_root, plan.blueprint_name),
+                repo_root=repo_root,
+            )
+            pin_diffs = catalog_pin_diffs_for_blueprint(repo_root, catalog_blueprint)
+            pin_diff_panels = catalog_pin_diff_panels(repo_root, pin_diffs)
+            pin_drift = any(item.has_changes for item in pin_diffs)
+        except (FileNotFoundError, OSError, ValueError):
+            pin_diff_panels = []
         return templates.TemplateResponse(
             request,
             "update_result.html",
@@ -2067,6 +2080,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                 cli_apply_command=cli_apply,
                 cli_open_pr_command=cli_open_pr,
                 upgrade_diff_views=diff_view_models_from_files(plan.file_diffs),
+                pin_diff_panels=pin_diff_panels,
+                pin_drift=pin_drift,
             ),
         )
 

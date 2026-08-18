@@ -35,24 +35,7 @@
   </div>
 </header>
 
-{% if standards_diff.available and standards_diff.has_changes %}
-<section class="standards-diff-panel card" aria-labelledby="standards-diff-heading">
-  <div class="standards-diff-panel__header">
-    <h2 class="standards-diff-panel__title" id="standards-diff-heading">Standard changes since pin</h2>
-    <p class="hint standards-diff-panel__lead">
-      Compare the blueprint’s pinned standard (<code>{{ standards_diff.pinned_version }}</code>,
-      ref <code>{{ standards_diff.baseline_ref }}</code>) with platform repo HEAD before you generate.
-    </p>
-  </div>
-  {% include "partials/split_diff_viewer.html" %}
-  {% if standards_diff_views %}
-  <details class="standards-diff-panel__unified">
-    <summary>Unified diff</summary>
-    {% include "partials/diff_viewer.html" %}
-  </details>
-  {% endif %}
-</section>
-{% endif %}
+{% include "partials/pin_diff_panels.html" %}
 
 <div class="form-layout{% if provider_catalog or blueprint.artifact_type == 'terraform-environment-stack' or blueprint.artifact_type == 'ansible-playbook-project' or bp_family in ('observability', 'terraform', 'ansible', 'policy', 'helm', 'gitops', 'app', 'platform') %} form-layout--split{% endif %}">
   {% set governance_collapsible = bp_family in ('terraform', 'ansible', 'observability', 'policy', 'helm', 'gitops', 'app', 'platform') %}
@@ -66,10 +49,11 @@
           {%- if blueprint.checkov_policies %} · Checkov{%- endif -%}
           {%- if blueprint.opa_policies %} · OPA{%- endif -%}
           {%- if blueprint.azure_policy_pack %} · Azure Policy{%- endif -%}
+          {%- if blueprint.ansible_lint_pack %} · ansible-lint{%- endif -%}
           · {{ blueprint.gates|length }} gates
         </span>
         {% set governance_meter_penalty = 0 %}
-        {% if standards_diff.available and standards_diff.has_changes %}
+        {% if pin_drift %}
         {% set governance_meter_penalty = governance_meter_penalty + 20 %}
         {% endif %}
         {% if not governance_preflight.tools_ready %}
@@ -85,7 +69,7 @@
       </summary>
       <div class="governance-card__expand">
         {% set governance_meter_penalty = 0 %}
-        {% if standards_diff.available and standards_diff.has_changes %}
+        {% if pin_drift %}
         {% set governance_meter_penalty = governance_meter_penalty + 20 %}
         {% endif %}
         {% if not governance_preflight.tools_ready %}
@@ -102,7 +86,7 @@
           </div>
           <p class="hint governance-meter__hint">
             {{ blueprint.gates|length }} gates on apply · {{ governance_preflight.policy_profile }}
-            {%- if standards_diff.available and standards_diff.has_changes %} · standard pin drift detected{% endif -%}
+            {%- if pin_drift %} · pin drift detected{% endif -%}
             {%- if not governance_preflight.tools_ready %} · gate toolchain missing on worker{% endif -%}
           </p>
         </div>
@@ -124,7 +108,7 @@
           · <code>repave.yaml</code>
         </dd>
       </div>
-      {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack %}
+      {% if blueprint.checkov_policies or blueprint.opa_policies or blueprint.azure_policy_pack or blueprint.ansible_lint_pack %}
       <div class="governance-card__section">
         <dt class="governance-card__section-title">Policy</dt>
         <dd class="governance-card__section-body">
@@ -149,15 +133,13 @@
             <span class="badge">@ {{ blueprint.azure_policy_pack.policy_version }}</span>
           </div>
           {% endif %}
-        </dd>
-      </div>
-      {% endif %}
-      {% if blueprint.ansible_lint_pack %}
-      <div>
-        <dt>ansible-lint pack</dt>
-        <dd>
-          <code>{{ blueprint.ansible_lint_pack.pack_source }}</code>
-          <span class="badge">@ {{ blueprint.ansible_lint_pack.pack_version }}</span>
+          {% if blueprint.ansible_lint_pack %}
+          <div class="governance-card__pin">
+            <span class="governance-card__pin-label">ansible-lint</span>
+            <code>{{ blueprint.ansible_lint_pack.pack_source }}</code>
+            <span class="badge">@ {{ blueprint.ansible_lint_pack.pack_version }}</span>
+          </div>
+          {% endif %}
         </dd>
       </div>
       {% endif %}
@@ -181,42 +163,45 @@
         </dd>
       </div>
       <div class="governance-card__section governance-card__section--drift">
-        <dt class="governance-card__section-title">Standard pin drift</dt>
+        <dt class="governance-card__section-title">Pin drift</dt>
         <dd class="governance-card__section-body">
-          {% if standards_diff.available %}
-            {% if standards_diff.has_changes %}
-            <p class="governance-drift-summary">
-              <span class="badge">{{ standards_diff.files|length }} changed</span>
-              since pin <code>{{ standards_diff.pinned_version }}</code>
-            </p>
-            <details class="governance-drift-details">
-              <summary>File list</summary>
-              <ul class="governance-drift-files">
-                {% for file in standards_diff.files %}
-                <li><code class="governance-drift-files__path">{{ file.path }}</code></li>
-                {% endfor %}
-              </ul>
-            </details>
-            {% if standards_diff_split_views %}
-            {% include "partials/split_diff_viewer.html" %}
-            {% endif %}
-            {% if standards_diff_views %}
-            <details class="governance-drift-unified">
-              <summary>Unified diff</summary>
-              {% include "partials/diff_viewer.html" %}
-            </details>
-            {% endif %}
-            {% include "partials/governance_annotations.html" %}
-            <p class="hint governance-drift-hint">
-              Full pin comparison on <a href="/update">Upgrade existing repo</a>.
-            </p>
+          {% for panel in pin_diff_panels %}
+            {% if panel.result.available %}
+              {% if panel.result.has_changes %}
+              <p class="governance-drift-summary">
+                <span class="badge">{{ panel.result.files|length }} changed</span>
+                {{ panel.label }} since pin <code>{{ panel.result.pinned_version }}</code>
+              </p>
+              <details class="governance-drift-details">
+                <summary>{{ panel.label }} file list</summary>
+                <ul class="governance-drift-files">
+                  {% for file in panel.result.files %}
+                  <li><code class="governance-drift-files__path">{{ file.path }}</code></li>
+                  {% endfor %}
+                </ul>
+              </details>
+              {% with split_views = panel.split_views %}
+                {% include "partials/split_diff_viewer.html" %}
+              {% endwith %}
+              {% if panel.views %}
+              <details class="governance-drift-unified">
+                <summary>{{ panel.label }} unified diff</summary>
+                {% with unified_views = panel.views %}
+                  {% include "partials/diff_viewer.html" %}
+                {% endwith %}
+              </details>
+              {% endif %}
+              {% else %}
+              <p class="muted governance-drift-ok">{{ panel.label }} matches platform repo HEAD.</p>
+              {% endif %}
             {% else %}
-            <p class="muted governance-drift-ok">Pinned standard matches platform repo HEAD.</p>
-            {% include "partials/governance_annotations.html" %}
+              <p class="muted">{{ panel.label }}: {{ panel.result.reason }}</p>
             {% endif %}
-          {% else %}
-            <p class="muted">{{ standards_diff.reason }}</p>
-          {% endif %}
+          {% endfor %}
+          {% include "partials/governance_annotations.html" %}
+          <p class="hint governance-drift-hint">
+            Full pin comparison on <a href="/update">Upgrade existing repo</a>.
+          </p>
         </dd>
       </div>
     </dl>

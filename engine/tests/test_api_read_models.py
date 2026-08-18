@@ -53,6 +53,10 @@ def test_build_governance_annotations_read_model(repo_root: Path) -> None:
     assert body["standard"] == "standards/terraform-standards"
     assert body["pinned_version"]
     assert isinstance(body["previews"], list)
+    kinds = {row["kind"] for row in body["pin_diffs"]}
+    assert "standard" in kinds
+    assert "checkov" in kinds
+    assert "opa" in kinds
 
 
 def test_api_v2_estate_matches_v1(repo_root, output_config, registry: Path) -> None:

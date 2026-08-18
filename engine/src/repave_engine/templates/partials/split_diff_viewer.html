@@ -1,6 +1,7 @@
-{% if standards_diff_split_views %}
-<div class="diff-split-stack" aria-label="Side-by-side standard changes">
-  {% for view in standards_diff_split_views %}
+{% set _split_views = split_views if split_views is defined else standards_diff_split_views %}
+{% if _split_views %}
+<div class="diff-split-stack" aria-label="Side-by-side pin changes">
+  {% for view in _split_views %}
   <details class="diff-split-file" {% if loop.first %}open{% endif %}>
     <summary><code>{{ view.path }}</code></summary>
     <div class="diff-split-file__body">
