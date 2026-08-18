@@ -45,6 +45,8 @@ On the result page confirm:
 - Policy rules with catalog **titles** (not only raw IDs).
 - **Gate dashboard** (pass / fail / skip).
 - **Generated files** tree — open `repave.yaml`, README, `.tf` files.
+- Hosted overlay: **View in catalog** on the result hero when `portal.backstage_url` is set
+  and `catalog-info.yaml` was emitted.
 
 **Say:** “Same inputs → same artifact; lineage is the receipt for auditors.”
 

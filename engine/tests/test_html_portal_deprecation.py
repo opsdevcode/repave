@@ -108,6 +108,27 @@ def test_html_nav_includes_catalog_handoff_when_backstage_url_set(
     assert "Ownership and lineage" in library.text
 
 
+def test_generate_result_shows_catalog_handoff_when_backstage_url_set(
+    repo_root, output_config, sample_inputs, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REPAVE_BACKSTAGE_URL", "/idp")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/generate",
+        data={
+            "blueprint_name": "terraform-module-generic",
+            "dry_run": "true",
+            **sample_inputs,
+            "module_name": "demo",
+            "include_backstage_catalog": "true",
+            "owner": "group:platform",
+        },
+    )
+    assert response.status_code == 200
+    assert "View in catalog" in response.text
+    assert 'href="/idp/catalog/default/component/demo"' in response.text
+
+
 def test_html_nav_hides_catalog_without_backstage_url(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     home = client.get("/")

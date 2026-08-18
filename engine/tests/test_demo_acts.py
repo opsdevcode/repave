@@ -102,3 +102,4 @@ def test_act6_backstage_catalog_in_terraform_preview(
     )
     assert response.status_code == 200
     assert "catalog-info.yaml" in response.text
+    assert "View in catalog" not in response.text

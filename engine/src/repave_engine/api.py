@@ -1593,6 +1593,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             gate_toolchain_callout=gate_toolchain_callout,
             generate_from_blueprint_fn=generate_from_blueprint,
             generate_from_bundle_fn=generate_from_bundle,
+            backstage_url=portal_config.backstage_url,
         )
         if isinstance(outcome, PortalGenerateRedirect):
             return RedirectResponse(outcome.url, status_code=outcome.status_code)
@@ -1981,7 +1982,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     result.gates,
                     dry_run=result.dry_run,
                 ),
-                result_portal=build_result_portal_context(result, repo_root),
+                result_portal=build_result_portal_context(
+                    result,
+                    repo_root,
+                    backstage_url=portal_config.backstage_url,
+                ),
                 run_id=run_id,
             ),
         )
