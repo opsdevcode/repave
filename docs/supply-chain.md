@@ -32,7 +32,7 @@ Each `uses:` line carries the tag as a trailing comment so a reader of the gener
 tell what version a SHA corresponds to:
 
 ```yaml
-- uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
+- uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7
 ```
 
 Bumping a pin in `action-pins.json` updates this repository's CI and all future generated

@@ -1,5 +1,5 @@
 {
-  ".github/workflows/repave-gates.yml": "50c85c9766ebada39d656360988deceb597d91b7570bfb8e0f09fbc6aab9fdc3",
+  ".github/workflows/repave-gates.yml": "ed7c311d3ea56a719ea5de7421a0d40d38423bcd723a8a780d310b8cc597dee4",
   "README.md": "ddcf5b6f777d9b38a9a0b9b1fc83b23a8bf01e0f70d3f14a5b7b5f36903814cb",
   "policy/definitions/sample_audit_environment_tag.json": "29e6841695d9d40526fb58ae2034efbe53569b663d529065a80bb898522f8406",
   "policy/definitions/sample_audit_storage.json": "08d3acdb78c9511ed0e5e51df7b8297f2b7993602a4a12f6127f0b7dd3f7caaf",
