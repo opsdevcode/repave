@@ -17,7 +17,7 @@
   "wagoid/commitlint-github-action@v6": "b948419dd99f3fd78a6548d48f94e3df7f6bf3ed",
   "hashicorp/setup-terraform@v3": "b9cd54a3c349d3f38e8881555d616ced269862dd",
   "terraform-linters/setup-tflint@v4": "90f302c255ef959cbfb4bd10581afecdb7ece3e6",
-  "aquasecurity/trivy-action@0.28.0": "915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2",
+  "aquasecurity/trivy-action@0.36.0": "ed142fd0673e97e23eac54620cfb913e5ce36c25",
   "github/codeql-action/init@v3": "f3712979fa5f215279b101dd0a2e3bdfb4353324",
   "github/codeql-action/analyze@v3": "f3712979fa5f215279b101dd0a2e3bdfb4353324"
 }
