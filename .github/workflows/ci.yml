@@ -17,7 +17,7 @@ jobs:
       blueprints: ${{ steps.paths.outputs.blueprints }}
       engine_portal: ${{ steps.paths.outputs.engine_portal }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - uses: ./.github/actions/ci-paths
         id: paths
 
@@ -29,7 +29,7 @@ jobs:
       run:
         working-directory: engine
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Docs-only change (skip tests)
         if: needs.paths.outputs.ci_needed != 'true'
@@ -73,7 +73,7 @@ jobs:
       run:
         working-directory: engine
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
         with:
@@ -98,7 +98,7 @@ jobs:
       run:
         working-directory: engine
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
         with:
@@ -151,7 +151,7 @@ jobs:
       run:
         working-directory: cli
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Docs-only change (skip tests)
         if: needs.paths.outputs.ci_needed != 'true'

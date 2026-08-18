@@ -15,7 +15,7 @@ jobs:
     name: chart-validate
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -47,7 +47,7 @@ jobs:
     name: chart-smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -98,7 +98,7 @@ jobs:
     name: chart-smoke-decomposed
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -149,7 +149,7 @@ jobs:
     name: chart-smoke-multi-replica
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -200,7 +200,7 @@ jobs:
     name: chart-smoke-environment-vending
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -251,7 +251,7 @@ jobs:
     name: chart-smoke-fleet-snapshot
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
@@ -302,7 +302,7 @@ jobs:
     name: chart-smoke-backstage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - uses: ./.github/actions/chart-ci-paths
         id: paths
