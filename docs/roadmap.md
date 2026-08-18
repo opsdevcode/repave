@@ -7,8 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.51.1  
 
-**In progress:** operator Kubernetes stack (controller-runtime 0.24 / k8s 0.36);
-HTML workbench polish (policy pack side-by-side diff)
+**In progress:** HTML workbench polish (policy pack side-by-side diff)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -23,6 +22,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Operator Kubernetes stack**
+(controller-runtime 0.24.1 / k8s.io 0.36.3 / envtest 1.36);
 **Generate catalog handoff**
 (result page **View in catalog** when `portal.backstage_url` is set);
 **CI security scanning**
