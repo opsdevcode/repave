@@ -146,6 +146,12 @@ spec:
       advanced: true
       default: ""
       description: GitHub org/repo for project-slug and source-location.
+    - name: catalog_domain
+      type: string
+      required: false
+      advanced: true
+      default: ""
+      description: repave.dev/catalog-domain annotation (System.domain hint).
   template:
     engine: copier
     path: template

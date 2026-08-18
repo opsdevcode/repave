@@ -37,6 +37,8 @@ spec:
               value: ""
             - name: GITHUB_TOKEN
               value: ""
+            - name: GITHUB_ORG
+              value: {{ .Values.repave.output.githubOrg | quote }}
             - name: REPAVE_PORTAL_LOGO_URL
               value: {{ .Values.repave.portal.logoUrl | quote }}
             - name: REPAVE_PORTAL_ACCENT_COLOR

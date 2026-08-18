@@ -69,3 +69,36 @@ def test_build_result_portal_context_includes_cost_estimate(tmp_path: Path) -> N
     ctx = build_result_portal_context(result, tmp_path)
     assert ctx["cost_estimate"] is not None
     assert ctx["cost_estimate"].monthly_cost == "42.00"
+
+
+def test_backstage_preview_extracts_slug_tags_and_relations() -> None:
+    from repave_engine.portal_result import _backstage_preview
+
+    content = """
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: checkout
+  tags: [payments, api]
+  links:
+    - url: https://runbooks.example/checkout
+      title: Runbook
+  annotations:
+    github.com/project-slug: acme/app-checkout
+    backstage.io/kubernetes-id: checkout
+    repave.dev/catalog-domain: commerce
+spec:
+  owner: group:payments
+  consumesApis: [api:default/payments]
+  subcomponentOf: component:default/commerce
+"""
+    preview = _backstage_preview(content, "catalog-info.yaml")
+    assert preview is not None
+    assert preview.github_slug == "acme/app-checkout"
+    assert preview.github_source_url == "https://github.com/acme/app-checkout"
+    assert preview.kubernetes_id == "checkout"
+    assert preview.catalog_domain == "commerce"
+    assert preview.tags == ("payments", "api")
+    assert preview.links == (("Runbook", "https://runbooks.example/checkout"),)
+    assert preview.consumes_apis == ("api:default/payments",)
+    assert preview.subcomponent_of == "component:default/commerce"

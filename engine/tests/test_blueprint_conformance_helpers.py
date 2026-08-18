@@ -3,11 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 from repave_engine.blueprint_conformance import (
+    _CONFORMANCE_GITHUB_ORG,
+    _snapshot_output_config,
     _text_has_unresolved_template,
     build_file_manifest,
     find_unresolved_placeholders,
     load_conformance_specs,
 )
+from repave_engine.settings import OutputConfig
 
 
 def test_helm_template_syntax_allowed(tmp_path) -> None:
@@ -62,3 +65,12 @@ def test_load_legacy_single_spec_conformance(repo_root: Path) -> None:
     assert len(specs) == 1
     assert specs[0].variant_id == ""
     assert specs[0].inputs["module_name"] == "conformance-example"
+
+
+def test_snapshot_output_config_pins_conformance_org(tmp_path: Path) -> None:
+    modules_root = tmp_path / "modules"
+    modules_root.mkdir()
+    output_config = OutputConfig(github_org="example-org", modules_root=modules_root)
+    pinned = _snapshot_output_config(output_config)
+    assert pinned.github_org == _CONFORMANCE_GITHUB_ORG
+    assert pinned.modules_root == modules_root

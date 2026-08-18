@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from repave_engine.blueprint_conformance import _file_manifest_digest
 
 
@@ -107,3 +109,19 @@ def test_manifest_digest_still_sees_non_version_catalog_changes() -> None:
     assert _file_manifest_digest("catalog-info.yaml", before) != _file_manifest_digest(
         "catalog-info.yaml", after
     )
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_snapshot_conformance_manifests_match_repo_blueprints(tmp_path: Path) -> None:
+    """CI corpus-manifest-check uses the same render-only path as this guard."""
+    from repave_engine.blueprint_conformance import find_snapshot_manifest_drifts
+
+    drifts = find_snapshot_manifest_drifts(
+        _REPO_ROOT,
+        modules_root=tmp_path / "mods",
+        staging_root=tmp_path / "staging",
+        render_only=True,
+    )
+    assert drifts == ()

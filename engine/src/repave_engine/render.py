@@ -110,6 +110,7 @@ def render_blueprint(
     output_dir: Path,
     *,
     overwrite: bool = True,
+    github_org: str | None = None,
 ) -> RenderResult:
     if blueprint.template_engine != "copier":
         raise ValueError(f"Unsupported template engine: {blueprint.template_engine}")
@@ -152,7 +153,7 @@ def render_blueprint(
         defaults=True,
         unsafe=True,
     )
-    write_backstage_catalog_if_enabled(output_dir, blueprint, payload)
+    write_backstage_catalog_if_enabled(output_dir, blueprint, payload, github_org=github_org)
     if blueprint.name == "dashboards-as-code-generic":
         backend = str(payload.get("backend", "grafana"))
         output_mode = str(payload.get("output_mode", "native"))

@@ -77,9 +77,13 @@ under `backstage/plugins/plugin-repave`.
   Docker-in-Docker).
 - Catalog **graph**, **search**, **API docs**, **import**, **org**, and
   **Kubernetes** stay on Backstage. Generated `catalog-info.yaml` can set
-  relations, tags, links, GitHub `project-slug`, and `backstage.io/kubernetes-*`.
-  Hosted image uses an in-cluster locator plus a namespace Role. Do not clone
-  those pages into Jinja.
+  relations, tags, links, GitHub `project-slug`, `repave.dev/catalog-domain`,
+  and `backstage.io/kubernetes-*`. Publish org can auto-derive slug; app-service
+  and Helm auto-fill kubernetes-id. Production chart can register GitHub org
+  discovery and opt into cluster-wide Kubernetes RBAC. Do not clone those pages
+  into Jinja.
+- HTML generate result shows expanded catalog preview (tags, links, relations,
+  slug, kubernetes, domain). Lineage card links **View source** for GitHub repos.
 
 ## Hosted vs laptop
 

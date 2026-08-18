@@ -63,8 +63,9 @@ make gate-doctor
 
 Every golden path under `blueprints/*/blueprint.yaml` must ship a sibling
 `conformance.yaml` with fixture `inputs` and `required_files`. CI runs
-`tests/test_blueprint_conformance.py` (render, gates, template hygiene). Optional `snapshot: true` enables `conformance.manifest.json`; refresh with
-`make blueprint-conformance-update` when blueprint output changes (not on every engine release — manifest hashes ignore pinned `repave-engine==`, provenance engine version lines, and `repave.dev/{engine,blueprint,standard}-version` in `catalog-info.yaml`). Bump `metadata.version` per [`docs/blueprint-versioning.md`](docs/blueprint-versioning.md) when template output changes.
+`tests/test_blueprint_conformance.py` (render, gates, template hygiene). Optional `snapshot: true` enables `conformance.manifest.json`; verify with
+`make blueprint-conformance-check` and refresh with `make blueprint-conformance-update`
+when blueprint output changes (not on every engine release — manifest hashes ignore pinned `repave-engine==`, provenance engine version lines, and `repave.dev/{engine,blueprint,standard}-version` in `catalog-info.yaml`). Run the check before every PR that touches `blueprints/**` or catalog emit (`backstage_catalog.py`, `render.py`). Bump `metadata.version` per [`docs/blueprint-versioning.md`](docs/blueprint-versioning.md) when template output changes.
 
 Or from `engine/`:
 
@@ -85,6 +86,7 @@ From repo root, quality and security checks:
 make quality    # ruff lint + format check + mypy
 make security   # bandit + pip-audit
 make test
+make blueprint-conformance-check   # when blueprints/ or catalog emit changed
 ```
 
 ### Python quality and security tooling

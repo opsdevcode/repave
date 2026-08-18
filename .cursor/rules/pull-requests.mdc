@@ -29,6 +29,8 @@ When opening PRs for this repository (including via `gh pr create`):
 
 - Summarize user-visible behavior and link operator/portal/docs impacts when relevant.
 - Test plan checklist; note if operator JSON contracts (`plan-upgrade`, `apply-upgrade`) are unchanged.
+- Blueprint or catalog emit changes: confirm `make blueprint-conformance-check` passed
+  (or list updated `conformance.manifest*.json` files).
 
 ## Roadmap header
 

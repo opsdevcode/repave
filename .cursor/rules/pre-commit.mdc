@@ -16,6 +16,19 @@ When the diff touches **runtime code** (`engine/`, `operator/`, `scripts/**/*.py
 make format && make quality && make test
 ```
 
+When the diff can change **blueprint render output** (`blueprints/**`,
+`engine/**/backstage_catalog.py`, `engine/**/render.py`, catalog emit paths), also:
+
+```bash
+make blueprint-conformance-check
+```
+
+If the check reports drift, refresh committed manifests in the same PR:
+
+```bash
+make blueprint-conformance-update && make blueprint-conformance-check
+```
+
 **Docs-only commits** (for example `docs/**`, `README.md`, roadmap housecleaning) skip
 the loop above unless the same commit also changes runtime paths.
 
@@ -40,6 +53,7 @@ While editing Python, **`make test-fast`** skips `@pytest.mark.slow` and coverag
 | `engine/pyproject.toml` deps | `make lock` and commit `engine/uv.lock` |
 | Any **`*.js` / `*.mjs` / `*.cjs`** | **`make js-lint`**; follow `javascript-standards.mdc` / `javascript-security.mdc` |
 | **`deploy/k8s/chart/**`** (templates, values, validate script) | **`make chart-validate`** |
+| **`blueprints/**`** or catalog emit (`backstage_catalog.py`, `render.py`, `pipeline.py` catalog paths) | **`make blueprint-conformance-check`**; on drift **`make blueprint-conformance-update`** and commit `conformance.manifest*.json` |
 | **Roadmap + docs housecleaning** (see below) | Checklist only — **not** `chart-validate` unless chart paths are in the diff |
 
 ## Roadmap and docs housecleaning

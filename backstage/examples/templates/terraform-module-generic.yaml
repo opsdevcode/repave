@@ -34,6 +34,20 @@ spec:
           title: Plan only
           type: boolean
           default: true
+    - title: Catalog (optional)
+      properties:
+        catalogTags:
+          title: Tags
+          type: string
+          description: Comma-separated metadata.tags
+        catalogGithubSlug:
+          title: GitHub slug
+          type: string
+          description: org/repo override (auto from publish org when omitted)
+        catalogDomain:
+          title: Domain
+          type: string
+          description: repave.dev/catalog-domain annotation
   steps:
     - id: generate
       name: repave generate
@@ -48,6 +62,9 @@ spec:
           provider_services: s3
           owner: ${{ parameters.owner }}
           include_backstage_catalog: "true"
+          catalog_tags: ${{ parameters.catalogTags }}
+          catalog_github_slug: ${{ parameters.catalogGithubSlug }}
+          catalog_domain: ${{ parameters.catalogDomain }}
   output:
     text:
       - title: Summary

@@ -1,4 +1,5 @@
 import {
+  githubSourceUrl,
   hasRepaveLineage,
   portalGenerateHref,
   portalHomeHref,
@@ -35,5 +36,19 @@ describe('portal handoff hrefs', () => {
     );
     expect(portalGenerateHref('/', '')).toBe('/');
     expect(portalUpgradeHref('/')).toBe('/update');
+  });
+});
+
+describe('githubSourceUrl', () => {
+  it('builds a repo URL from project-slug or source-location', () => {
+    expect(
+      githubSourceUrl({ 'github.com/project-slug': 'acme/checkout' }),
+    ).toBe('https://github.com/acme/checkout');
+    expect(
+      githubSourceUrl({
+        'backstage.io/source-location': 'url:https://github.com/acme/other',
+      }),
+    ).toBe('https://github.com/acme/other');
+    expect(githubSourceUrl({})).toBeUndefined();
   });
 });

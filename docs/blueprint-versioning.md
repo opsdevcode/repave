@@ -74,8 +74,8 @@ update with no bundle manifest change).
 2. Update `metadata.version` in `blueprint.yaml` (or `bundle.yaml`).
 3. Update `conformance.yaml` fixture inputs if inputs changed.
 4. Run generation locally; fix gates.
-5. If the blueprint uses conformance snapshots (`snapshot: true`), refresh:
-   `make blueprint-conformance-update`
+5. If the blueprint uses conformance snapshots (`snapshot: true`), verify and refresh:
+   `make blueprint-conformance-check` then `make blueprint-conformance-update` on drift.
 6. Note the bump in the PR description; fleet/operator consumers use the new pin
    via `repave update` or desired pins on `GoldenPathRepo`.
 

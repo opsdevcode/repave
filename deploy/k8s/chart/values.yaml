@@ -274,6 +274,8 @@ repave:
     # start keeps an empty cluster list. Set false to skip RBAC.
     kubernetes:
       enabled: true
+      # ClusterRole read across namespaces (opt-in; default is release namespace Role).
+      allNamespaces: false
     # Kind / first boot can take a minute; keep liveness from killing the pod.
     probes:
       liveness:

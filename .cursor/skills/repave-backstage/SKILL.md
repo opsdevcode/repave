@@ -24,12 +24,16 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
   Do not fork a second entity store.
 - Lineage card: `repave.dev/*` pins plus Generate / upgrade links to the HTML
   portal (`repave.portalBaseUrl`).
-- Catalog IDP plugins: TechDocs, catalog-graph, search, api-docs, catalog-import,
-  org, kubernetes (alpha). Engine emit can set relations, tags, links,
-  `github.com/project-slug`, and `backstage.io/kubernetes-*`. Example org is
-  `examples/org.yaml` (`guests` + `platform`); example domain is `demo`.
-  Local Kubernetes config is an empty cluster list. Hosted image uses
-  in-cluster + chart namespace Role (`repave.backstage.kubernetes.enabled`).
+- Catalog IDP plugins: TechDocs (with report-issue addon), catalog-graph, search,
+  api-docs, catalog-import, org, kubernetes (alpha), GitHub catalog discovery
+  (production when `GITHUB_ORG` is set). Engine emit can set relations, tags,
+  links, `github.com/project-slug`, `repave.dev/catalog-domain`, and
+  `backstage.io/kubernetes-*`, with auto slug/k8s-id from publish org and names.
+  `examples/org.yaml` (`guests` + `platform`); example domain is `demo`. Guest
+  auth maps to `user:default/guest`. Local Kubernetes config is an empty cluster
+  list. Hosted image uses in-cluster + chart namespace Role
+  (`repave.backstage.kubernetes.enabled`); optional ClusterRole via
+  `repave.backstage.kubernetes.allNamespaces`.
   Scaffolder templates: terraform, helm, app-service.
 - TechDocs: frontend `@backstage/plugin-techdocs/alpha` on the entity Docs tab.
   Example `tf-aws-demo` uses `backstage.io/techdocs-ref: dir:.`. Engine emit
@@ -42,6 +46,9 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
   (`POST /api/v2/generate`). Workbench generate/upgrade/import/verify/vend/runs
   stay on HTML.
 - Do **not** add workbench pages under `backstage/plugins/plugin-repave`.
+- Catalog emit changes (`backstage_catalog.py`, `render.py`, `blueprints/**` catalog inputs):
+  run **`make blueprint-conformance-check`** before PR; on drift **`make blueprint-conformance-update`**
+  and commit `blueprints/*/conformance.manifest*.json` (CI `corpus-manifest-check` + Python quality).
 - Local-first: `make serve` / `repave generate` must not require yarn.
 - Chart: `repave.backstage.enabled` default **on** (owner: Eric Skaggs).
   Kind/smoke overlays set it off. Overlay `values-backstage.yaml` keeps
@@ -71,6 +78,12 @@ Surfaces: [`docs/ui-surfaces.md`](../../../docs/ui-surfaces.md).
 ```bash
 make backstage-lint
 cd backstage && yarn test --watch=false
+```
+
+When the PR also changes catalog emit or blueprint catalog inputs:
+
+```bash
+make blueprint-conformance-check
 ```
 
 Pin versions to the create-app lock (`backstage/backstage.json`). Run

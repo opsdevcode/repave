@@ -81,6 +81,12 @@ true
 {{- end }}
 {{- end }}
 
+{{- define "repave.backstageKubernetesClusterWide" -}}
+{{- if and (include "repave.backstageKubernetesEnabled" .) .Values.repave.backstage.kubernetes.allNamespaces -}}
+true
+{{- end -}}
+{{- end }}
+
 {{- define "repave.image" -}}
 {{- if .Values.image.digest }}
 {{- printf "%s@%s" .Values.image.repository .Values.image.digest }}

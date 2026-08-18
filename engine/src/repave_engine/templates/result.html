@@ -256,7 +256,67 @@
         <dd><code>{{ result_portal.backstage.owner }}</code></dd>
       </div>
       {% endif %}
+      {% if result_portal.backstage.github_slug %}
+      <div>
+        <dt>GitHub</dt>
+        <dd>
+          {% if result_portal.backstage.github_source_url %}
+          <a href="{{ result_portal.backstage.github_source_url }}" target="_blank" rel="noopener noreferrer">
+            <code>{{ result_portal.backstage.github_slug }}</code>
+          </a>
+          {% else %}
+          <code>{{ result_portal.backstage.github_slug }}</code>
+          {% endif %}
+        </dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.kubernetes_id %}
+      <div>
+        <dt>Kubernetes id</dt>
+        <dd><code>{{ result_portal.backstage.kubernetes_id }}</code></dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.kubernetes_namespace %}
+      <div>
+        <dt>Kubernetes namespace</dt>
+        <dd><code>{{ result_portal.backstage.kubernetes_namespace }}</code></dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.catalog_domain %}
+      <div>
+        <dt>Domain</dt>
+        <dd><code>{{ result_portal.backstage.catalog_domain }}</code></dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.tags %}
+      <div>
+        <dt>Tags</dt>
+        <dd>{% for tag in result_portal.backstage.tags %}<code>{{ tag }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.consumes_apis %}
+      <div>
+        <dt>Consumes APIs</dt>
+        <dd>{% for api in result_portal.backstage.consumes_apis %}<code>{{ api }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+      </div>
+      {% endif %}
+      {% if result_portal.backstage.subcomponent_of %}
+      <div>
+        <dt>Subcomponent of</dt>
+        <dd><code>{{ result_portal.backstage.subcomponent_of }}</code></dd>
+      </div>
+      {% endif %}
     </dl>
+    {% if result_portal.backstage.links %}
+    <ul class="result-lineage__rules">
+      {% for title, url in result_portal.backstage.links %}
+      <li>
+        {% if title %}<strong>{{ title }}</strong> — {% endif %}
+        <a href="{{ url }}" target="_blank" rel="noopener noreferrer">{{ url }}</a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
     {% if result_portal.backstage.repave_annotations %}
     <ul class="result-lineage__rules">
       {% for key, val in result_portal.backstage.repave_annotations %}

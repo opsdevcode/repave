@@ -70,6 +70,8 @@ backend.add(import('@backstage/plugin-signals-backend'));
 // mcp actions plugin
 backend.add(import('@backstage/plugin-mcp-actions-backend'));
 
+backend.add(import('@backstage/plugin-catalog-backend-module-github'));
+
 backend.add(import('@internal/plugin-scaffolder-backend-module-repave'));
 backend.add(import('@internal/plugin-catalog-backend-module-repave'));
 
