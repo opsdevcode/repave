@@ -16,6 +16,10 @@ job. When bumping an action:
 2. Update the `uses:` line **and** the matching entry in `action-pins.json`.
 3. Run `python3 scripts/check-action-pins.py` locally before pushing.
 
+Dependabot groups GitHub Actions into one weekly PR. Those PRs still need the
+`action-pins.json` SHA updated in the same change — or use this combined bump
+flow. Commitlint ignores Dependabot bodies (unwrapped compare URLs).
+
 Composite actions are covered because they run third-party actions the same way a workflow
 does; only local `./` references are exempt.
 
