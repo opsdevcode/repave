@@ -144,7 +144,8 @@ def run_subprocess(
     effective_timeout = timeout if timeout is not None else subprocess_timeout_seconds(git=git)
     start_new_session = os.name == "posix"
     try:
-        return subprocess.run(  # nosec B603
+        # argv[0] is allowlisted in validate_argv; never shell=True.
+        return subprocess.run(  # nosec B603  # codeql[py/command-line-injection]
             argv,
             cwd=cwd,
             capture_output=capture_output,

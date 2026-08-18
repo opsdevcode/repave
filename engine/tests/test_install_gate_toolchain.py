@@ -116,7 +116,7 @@ def test_installer_download_urls_use_pins_file(tmp_path: Path) -> None:
     assert ci_toolchain.BUF_VERSION in curl_blob
     assert "bufbuild/buf" in curl_blob
     assert "rhysd/actionlint" in curl_blob
-    assert "dl.k8s.io" in _curl_hostnames(calls)
+    assert any(host == "dl.k8s.io" for host in _curl_hostnames(calls))
     uv_blob = "\n".join(_lines(calls, "uv"))
     assert ci_toolchain.CHECKOV_PIP_SPEC in uv_blob
 
@@ -145,8 +145,7 @@ def test_kubectl_install_can_be_skipped(tmp_path: Path) -> None:
     proc, calls = _run_installer(tmp_path, INSTALL_KUBECTL="0")
 
     assert proc.returncode == 0, proc.stderr
-    curl_blob = "\n".join(_lines(calls, "curl"))
-    assert "dl.k8s.io" not in curl_blob
+    assert not any(host == "dl.k8s.io" for host in _curl_hostnames(calls))
     assert len(_lines(calls, "curl")) == 7  # without kubectl; actionlint and buf still install
 
 

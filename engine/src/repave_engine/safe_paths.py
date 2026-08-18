@@ -12,7 +12,7 @@ def trusted_path(path: Path | str) -> Path:
     sink on the unsanitized value. Callers that need a canonical path can
     resolve after this check.
     """
-    candidate = Path(path).expanduser()
+    candidate = Path(path).expanduser()  # codeql[py/path-injection]
     if ".." in candidate.parts:
         raise ValueError(
             f"path traversal rejected: {path} contains '..'; "
