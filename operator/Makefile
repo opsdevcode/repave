@@ -2,7 +2,7 @@
 IMG ?= repave-operator:dev
 
 # ENVTEST_K8S_VERSION refers to the Kubernetes version for envtest assets.
-ENVTEST_K8S_VERSION = 1.31.0
+ENVTEST_K8S_VERSION = 1.36.0
 
 # Get the currently used golang install path (in GOPATH/bin, if GOBIN is not set).
 GOBIN ?= $(shell go env GOPATH)/bin
@@ -72,13 +72,13 @@ $(LOCALBIN):
 controller-gen: $(CONTROLLER_GEN)
 
 $(CONTROLLER_GEN): $(LOCALBIN)
-	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,v0.17.2)
+	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen,v0.21.0)
 
 .PHONY: envtest
 envtest: $(ENVTEST)
 
 $(ENVTEST): $(LOCALBIN)
-	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,v0.24.0)
+	$(call go-install-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest,v0.24.1)
 
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT)

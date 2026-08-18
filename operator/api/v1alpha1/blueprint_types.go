@@ -57,7 +57,3 @@ type BlueprintList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Blueprint `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Blueprint{}, &BlueprintList{})
-}

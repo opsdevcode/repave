@@ -81,9 +81,5 @@ type BlueprintList struct {
 	Items           []Blueprint `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&Blueprint{}, &BlueprintList{})
-}
-
 // Hub marks Blueprint as the conversion hub (storage version).
 func (*Blueprint) Hub() {}

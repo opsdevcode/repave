@@ -6,7 +6,5 @@ import (
 
 // SetupWebhookWithManager registers the conversion webhook for Blueprint.
 func (r *Blueprint) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
-		Complete()
+	return ctrl.NewWebhookManagedBy(mgr, r).Complete()
 }

@@ -7,7 +7,8 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.51.0  
 
-**In progress:** HTML workbench polish (policy pack side-by-side diff)
+**In progress:** operator Kubernetes stack (controller-runtime 0.24 / k8s 0.36);
+HTML workbench polish (policy pack side-by-side diff)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
