@@ -55,7 +55,6 @@ jobs:
           upload: never
 
       - name: Drop sanitizer-helper CodeQL sinks
-        if: matrix.language == 'python'
         run: python3 .github/codeql/filter_sarif.py sarif-results
 
       - uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd

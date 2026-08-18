@@ -15,6 +15,7 @@ from pathlib import Path
 _DROP: tuple[tuple[str, str], ...] = (
     ("safe_paths.py", "py/path-injection"),
     ("subprocess_run.py", "py/command-line-injection"),
+    ("repave.js", "js/xss-through-dom"),
 )
 
 

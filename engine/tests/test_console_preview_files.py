@@ -142,6 +142,6 @@ def test_run_console_js_browse_waits_until_succeeded() -> None:
     assert "Still saving preview — opening Browse when ready…" in js
     assert "Never unhide Browse while status is still running" in js
     assert "/result → console 303 loop" in js
-    assert "function runResultPath" in js
-    assert 'return "/runs/" + match[0] + "/result";' in js
-    assert "var dest = safeInternalPath(resultUrl)" in js
+    assert "resultCta.click()" in js
+    assert "window.location.assign(resultUrl)" not in js
+    assert "window.location.assign(dest)" not in js

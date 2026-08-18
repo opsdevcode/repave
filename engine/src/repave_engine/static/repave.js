@@ -1,9 +1,6 @@
 (function () {
   var STORAGE_KEY = "repave:lastRun";
 
-  var RUN_ID_RE =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
   function safeInternalPath(url) {
     if (typeof url !== "string") {
       return "";
@@ -17,14 +14,6 @@
     } catch (_err) {
       return "";
     }
-  }
-
-  function runResultPath(runId) {
-    var match = typeof runId === "string" ? RUN_ID_RE.exec(runId) : null;
-    if (!match) {
-      return "";
-    }
-    return "/runs/" + match[0] + "/result";
   }
 
   function readLastRun() {
@@ -2423,7 +2412,6 @@
       return;
     }
     var runId = root.getAttribute("data-run-id");
-    var resultUrl = runResultPath(runId);
     var logEl = document.getElementById("run-console-log");
     var completeActions = root.querySelector("[data-run-complete-actions]");
     var initialStatus = root.getAttribute("data-run-status") || "";
@@ -3084,7 +3072,7 @@
           completeActions.hidden = false;
         }
         showRunConsoleFeedback(data.gates_outcome || "");
-        if (resultUrl && data.status === "succeeded") {
+        if (resultCta && data.status === "succeeded") {
           if (data.publish_succeeded === false) {
             if (progressLabel) {
               progressLabel.textContent = "Gates passed — publish failed (see error below)";
@@ -3131,14 +3119,14 @@
     }
 
     function scheduleResultRedirect(delayMs) {
-      var dest = safeInternalPath(resultUrl);
-      if (redirectScheduled || !dest) {
+      if (redirectScheduled || !resultCta) {
         return;
       }
       redirectScheduled = true;
       previewSettled = true;
       window.setTimeout(function () {
-        window.location.assign(dest);
+        // Server-rendered <a href> — do not assign DOM text to location.
+        resultCta.click();
       }, typeof delayMs === "number" ? delayMs : 800);
     }
 

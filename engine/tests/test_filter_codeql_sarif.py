@@ -49,3 +49,13 @@ def test_filter_drops_command_injection_on_subprocess_helper() -> None:
     assert not mod.should_drop(
         _result("engine/src/repave_engine/gate_runners.py", "py/command-line-injection")
     )
+
+
+def test_filter_drops_dom_xss_on_portal_bundle() -> None:
+    mod = _mod()
+    assert mod.should_drop(
+        _result("engine/src/repave_engine/static/repave.js", "js/xss-through-dom")
+    )
+    assert not mod.should_drop(
+        _result("backstage/packages/app/src/App.tsx", "js/xss-through-dom")
+    )
