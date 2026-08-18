@@ -20,10 +20,11 @@
   }
 
   function runResultPath(runId) {
-    if (typeof runId !== "string" || !RUN_ID_RE.test(runId)) {
+    var match = typeof runId === "string" ? RUN_ID_RE.exec(runId) : null;
+    if (!match) {
       return "";
     }
-    return "/runs/" + runId + "/result";
+    return "/runs/" + match[0] + "/result";
   }
 
   function readLastRun() {
