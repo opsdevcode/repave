@@ -16,7 +16,7 @@ from repave_engine.portal_context import (
     portal_fleet_context,
     portal_recent_activity,
 )
-from repave_engine.standards_diff import standards_diff_for_pin
+from repave_engine.standards_diff import catalog_pin_diffs_for_blueprint, standards_diff_for_pin
 
 
 class FleetRegistryUnavailableError(ValueError):
@@ -72,9 +72,23 @@ def build_governance_annotations_read_model(
         else ()
     )
     previews = build_governance_previews(repo_root, standards, policy_rules)
+    pin_diffs = catalog_pin_diffs_for_blueprint(repo_root, blueprint)
     return {
         "blueprint": blueprint_name,
         "standard": standards.standard_source,
         "pinned_version": standards.pinned_version,
         "previews": [item.to_public_dict() for item in previews],
+        "pin_diffs": [
+            {
+                "kind": item.kind,
+                "label": item.label,
+                "available": item.result.available,
+                "has_changes": item.has_changes,
+                "pinned_version": item.result.pinned_version,
+                "source": item.result.standard_source,
+                "changed_files": len(item.result.files),
+                "reason": item.result.reason,
+            }
+            for item in pin_diffs
+        ],
     }

@@ -266,14 +266,17 @@ def test_blueprint_form_draft_and_standards_diff_v2(repo_root, output_config) ->
 
     assert response.status_code == 200
     assert "data-repave-form-draft" in response.text
-    assert "Standard pin drift" in response.text
+    assert "Pin drift" in response.text
     assert "form-actions__preflight" in response.text
     assert "form-actions__preflight-details" in response.text
     if standards.available and standards.has_changes:
         assert "standards-diff-panel" in response.text
         assert "diff-split" in response.text
+        assert "Domain standard changes since pin" in response.text
     else:
-        assert "standards-diff-panel" not in response.text
+        assert "Domain standard changes since pin" not in response.text
+    assert "Pin drift" in response.text
+    assert "Checkov pack" in response.text
 
 
 def test_terraform_form_guided_advanced_mode(repo_root, output_config) -> None:
@@ -875,7 +878,7 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "data-repave-busy-form" in response.text
     assert "data-portal-submit-error" in response.text
     assert "form-actions--sticky" in response.text
-    assert "Standard pin drift" in response.text
+    assert "Pin drift" in response.text
     assert "data-form-stepper" not in response.text
     assert "form-stepper" not in response.text
     assert "governance-meter" in response.text
@@ -1240,7 +1243,7 @@ def test_observability_form_single_page(repo_root, output_config) -> None:
     assert "Alert routing" in response.text
     assert "Legacy umbrella path" in response.text
     assert 'id="enable_policy_toggle"' in response.text
-    assert "governance-drift-details" in response.text or "Standard pin drift" in response.text
+    assert "governance-drift-details" in response.text or "Pin drift" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:

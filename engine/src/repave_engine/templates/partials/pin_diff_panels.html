@@ -1,0 +1,27 @@
+{% for panel in pin_diff_panels %}
+  {% if panel.result.available and panel.result.has_changes %}
+  <section class="standards-diff-panel card" aria-labelledby="pin-diff-heading-{{ panel.kind }}">
+    <div class="standards-diff-panel__header">
+      <h2 class="standards-diff-panel__title" id="pin-diff-heading-{{ panel.kind }}">
+        {{ panel.label }} changes since pin
+      </h2>
+      <p class="hint standards-diff-panel__lead">
+        Compare the blueprint’s pinned {{ panel.label|lower }}
+        (<code>{{ panel.result.pinned_version }}</code>,
+        ref <code>{{ panel.result.baseline_ref }}</code>) with platform repo HEAD.
+      </p>
+    </div>
+    {% with split_views = panel.split_views %}
+      {% include "partials/split_diff_viewer.html" %}
+    {% endwith %}
+    {% if panel.views %}
+    <details class="standards-diff-panel__unified">
+      <summary>Unified diff</summary>
+      {% with unified_views = panel.views %}
+        {% include "partials/diff_viewer.html" %}
+      {% endwith %}
+    </details>
+    {% endif %}
+  </section>
+  {% endif %}
+{% endfor %}

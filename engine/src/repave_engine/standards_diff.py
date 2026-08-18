@@ -1,4 +1,4 @@
-"""Diff monorepo standards between a blueprint pin and current HEAD."""
+"""Diff monorepo catalog pins (standards and policy packs) vs current HEAD."""
 
 from __future__ import annotations
 
@@ -46,10 +46,19 @@ def _git(repo_root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def _resolve_baseline_ref(repo_root: Path, rel_path: str, pinned_version: str) -> str | None:
+def _resolve_baseline_ref(
+    repo_root: Path,
+    rel_path: str,
+    pinned_version: str,
+    *,
+    extra_refs: tuple[str, ...] = (),
+) -> str | None:
     candidates = (
+        *extra_refs,
         f"standards-v{pinned_version}",
         f"standards/{pinned_version}",
+        f"policy-v{pinned_version}",
+        f"policy/{pinned_version}",
         pinned_version,
     )
     for ref in candidates:
@@ -94,14 +103,17 @@ def _split_unified_diff(text: str) -> tuple[StandardsDiffFile, ...]:
     return tuple(files)
 
 
-def standards_diff_for_pin(
+def catalog_path_diff_for_pin(
     repo_root: Path,
     *,
-    standard_source: str,
+    rel_path: str,
     pinned_version: str,
+    path_kind: str = "standard",
+    extra_refs: tuple[str, ...] = (),
 ) -> StandardsDiffResult:
-    rel = standard_source.strip().strip("/")
+    rel = rel_path.strip().strip("/")
     pinned = pinned_version.strip()
+    kind = path_kind.strip() or "path"
     if not rel or not pinned:
         return StandardsDiffResult(
             available=False,
@@ -109,7 +121,7 @@ def standards_diff_for_pin(
             standard_source=rel,
             baseline_commit="",
             baseline_ref="",
-            reason="Standard source or version is not configured on this blueprint.",
+            reason=f"{kind.capitalize()} source or version is not configured on this blueprint.",
             files=(),
         )
     target = repo_root / rel
@@ -120,7 +132,7 @@ def standards_diff_for_pin(
             standard_source=rel,
             baseline_commit="",
             baseline_ref="",
-            reason=f"Standard path `{rel}` was not found in the catalog root.",
+            reason=f"{kind.capitalize()} path `{rel}` was not found in the catalog root.",
             files=(),
         )
     if not (repo_root / ".git").exists():
@@ -130,11 +142,11 @@ def standards_diff_for_pin(
             standard_source=rel,
             baseline_commit="",
             baseline_ref="",
-            reason="Standards diff requires a git checkout of the repave catalog.",
+            reason=f"{kind.capitalize()} diff requires a git checkout of the repave catalog.",
             files=(),
         )
 
-    baseline = _resolve_baseline_ref(repo_root, rel, pinned)
+    baseline = _resolve_baseline_ref(repo_root, rel, pinned, extra_refs=extra_refs)
     if baseline is None:
         return StandardsDiffResult(
             available=False,
@@ -143,8 +155,8 @@ def standards_diff_for_pin(
             baseline_commit="",
             baseline_ref="",
             reason=(
-                f"No git ref found for standard version {pinned}. "
-                "Tag the standards release or ensure Version lines exist in the standard files."
+                f"No git ref found for {kind} version {pinned}. "
+                "Tag the catalog release or ensure Version lines exist in the pinned files."
             ),
             files=(),
         )
@@ -157,7 +169,7 @@ def standards_diff_for_pin(
             standard_source=rel,
             baseline_commit="",
             baseline_ref="",
-            reason="Git diff failed for the standard path.",
+            reason=f"Git diff failed for the {kind} path.",
             files=(),
         )
     files = _split_unified_diff(diff.stdout)
@@ -170,6 +182,106 @@ def standards_diff_for_pin(
         reason="",
         files=files,
     )
+
+
+def standards_diff_for_pin(
+    repo_root: Path,
+    *,
+    standard_source: str,
+    pinned_version: str,
+) -> StandardsDiffResult:
+    return catalog_path_diff_for_pin(
+        repo_root,
+        rel_path=standard_source,
+        pinned_version=pinned_version,
+        path_kind="standard",
+    )
+
+
+@dataclass(frozen=True)
+class CatalogPinDiff:
+    kind: str
+    label: str
+    result: StandardsDiffResult
+
+    @property
+    def has_changes(self) -> bool:
+        return self.result.available and self.result.has_changes
+
+
+def catalog_pin_diffs_for_blueprint(
+    repo_root: Path,
+    blueprint: Blueprint,
+) -> tuple[CatalogPinDiff, ...]:
+    """Standard plus Checkov/OPA/Azure/ansible-lint pack diffs vs HEAD."""
+    diffs: list[CatalogPinDiff] = [
+        CatalogPinDiff(
+            kind="standard",
+            label="Domain standard",
+            result=standards_diff_for_pin(
+                repo_root,
+                standard_source=blueprint.standard_source,
+                pinned_version=blueprint.standard_version,
+            ),
+        )
+    ]
+    if blueprint.checkov_policies is not None:
+        diffs.append(
+            CatalogPinDiff(
+                kind="checkov",
+                label="Checkov pack",
+                result=catalog_path_diff_for_pin(
+                    repo_root,
+                    rel_path=blueprint.checkov_policies.policies_source,
+                    pinned_version=blueprint.checkov_policies.policy_version,
+                    path_kind="Checkov pack",
+                    extra_refs=(f"checkov-v{blueprint.checkov_policies.policy_version}",),
+                ),
+            )
+        )
+    if blueprint.opa_policies is not None:
+        diffs.append(
+            CatalogPinDiff(
+                kind="opa",
+                label="OPA pack",
+                result=catalog_path_diff_for_pin(
+                    repo_root,
+                    rel_path=blueprint.opa_policies.policies_source,
+                    pinned_version=blueprint.opa_policies.policy_version,
+                    path_kind="OPA pack",
+                    extra_refs=(f"opa-v{blueprint.opa_policies.policy_version}",),
+                ),
+            )
+        )
+    if blueprint.azure_policy_pack is not None:
+        diffs.append(
+            CatalogPinDiff(
+                kind="azure",
+                label="Azure Policy pack",
+                result=catalog_path_diff_for_pin(
+                    repo_root,
+                    rel_path=blueprint.azure_policy_pack.definitions_source,
+                    pinned_version=blueprint.azure_policy_pack.policy_version,
+                    path_kind="Azure Policy pack",
+                    extra_refs=(f"azure-policy-v{blueprint.azure_policy_pack.policy_version}",),
+                ),
+            )
+        )
+    if blueprint.ansible_lint_pack is not None:
+        diffs.append(
+            CatalogPinDiff(
+                kind="ansible-lint",
+                label="ansible-lint pack",
+                result=catalog_path_diff_for_pin(
+                    repo_root,
+                    rel_path=blueprint.ansible_lint_pack.pack_source,
+                    pinned_version=blueprint.ansible_lint_pack.pack_version,
+                    path_kind="ansible-lint pack",
+                    extra_refs=(f"ansible-lint-v{blueprint.ansible_lint_pack.pack_version}",),
+                ),
+            )
+        )
+    return tuple(diffs)
 
 
 def read_standard_file_pair(
@@ -275,6 +387,14 @@ def diff_observed_vs_catalog_pins(
             _spec_str(spec, "azurePolicy", "policy_version")
             or _spec_str(spec, "azure_policy", "policy_version"),
             blueprint.azure_policy_pack.policy_version,
+        )
+
+    if blueprint.ansible_lint_pack is not None:
+        add(
+            "ansible-lint pack version",
+            _spec_str(spec, "ansibleLint", "pack_version")
+            or _spec_str(spec, "ansible_lint", "pack_version"),
+            blueprint.ansible_lint_pack.pack_version,
         )
 
     return tuple(changes)

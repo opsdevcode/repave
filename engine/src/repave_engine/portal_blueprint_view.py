@@ -13,7 +13,11 @@ from repave_engine.ansible_pattern import (
 )
 from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
-from repave_engine.diff_view import diff_view_models, split_diff_view_models
+from repave_engine.diff_view import (
+    catalog_pin_diff_panels,
+    diff_view_models,
+    split_diff_view_models,
+)
 from repave_engine.governance_annotations import build_governance_previews
 from repave_engine.governance_preflight import build_blueprint_preflight
 from repave_engine.mandatory_policy import evaluate_policy_skip
@@ -39,7 +43,7 @@ from repave_engine.portal_context import portal_recent_activity
 from repave_engine.provider_catalog import load_provider_catalog
 from repave_engine.service_inventory import load_merged_observability_catalog
 from repave_engine.settings import OutputConfig
-from repave_engine.standards_diff import standards_diff_for_pin
+from repave_engine.standards_diff import catalog_pin_diffs_for_blueprint, standards_diff_for_pin
 
 
 def build_blueprint_form_extras(
@@ -122,6 +126,9 @@ def build_blueprint_form_extras(
         standard_source=blueprint.standard_source,
         pinned_version=blueprint.standard_version,
     )
+    pin_diffs = catalog_pin_diffs_for_blueprint(repo_root, blueprint)
+    pin_diff_panels = catalog_pin_diff_panels(repo_root, pin_diffs)
+    pin_drift = any(item.has_changes for item in pin_diffs)
     try:
         policy_catalog_obj = load_policy_catalog(repo_root)
     except FileNotFoundError:
@@ -153,6 +160,8 @@ def build_blueprint_form_extras(
         "standards_diff": standards,
         "standards_diff_views": diff_view_models(standards),
         "standards_diff_split_views": split_diff_view_models(repo_root, standards),
+        "pin_diff_panels": pin_diff_panels,
+        "pin_drift": pin_drift,
         "governance_previews": governance_previews,
         "governance_preflight": build_blueprint_preflight(
             blueprint,

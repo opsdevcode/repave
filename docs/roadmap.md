@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.51.5  
 
-**In progress:** HTML workbench polish (policy pack side-by-side diff)
+**In progress:** HTML workbench polish (optional light theme)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -22,6 +22,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Policy pack side-by-side**
+(Checkov/OPA/Azure/ansible-lint pin diffs on generate and upgrade, matching standards);
 **Operator Kubernetes stack**
 (controller-runtime 0.24.1 / k8s.io 0.36.3 / envtest 1.36);
 **Generate catalog handoff**
@@ -627,8 +629,6 @@ until someone owns it. Stategraph / graph-scoped execution is under
 - **SAML 2.0 IdP support** — enterprise IdPs that prefer SAML over OIDC
 - **Auth proxy deployment** — oauth2-proxy / IdP sidecar in front of API/portal as
   an alternative to in-app OIDC
-- **Policy pack diff in portal** — side-by-side diff for Checkov/OPA/Azure policy packs
-  between pins (standards side-by-side shipped on blueprint form)
 - **Multi-tenant repave** — org-scoped config, standards, output roots, RBAC
 - **Auth0 FGA / fine-grained authorization** — relationship checks on catalog,
   generate, and environment actions (Auth0 FGA or OpenFGA), wrapping today's

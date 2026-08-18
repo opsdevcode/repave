@@ -1,6 +1,7 @@
-{% if standards_diff_views %}
+{% set _unified_views = unified_views if unified_views is defined else standards_diff_views %}
+{% if _unified_views %}
 <div class="diff-viewer-stack">
-  {% for view in standards_diff_views %}
+  {% for view in _unified_views %}
   <details class="diff-viewer" open>
     <summary><code>{{ view.path }}</code></summary>
     <div class="diff-viewer__body">

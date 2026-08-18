@@ -8,6 +8,7 @@ from html import escape
 from pathlib import Path
 
 from repave_engine.standards_diff import (
+    CatalogPinDiff,
     StandardsDiffFile,
     StandardsDiffResult,
     read_standard_file_pair,
@@ -194,3 +195,19 @@ def split_diff_view_models(
             }
         )
     return models
+
+
+def catalog_pin_diff_panels(
+    repo_root: Path,
+    diffs: tuple[CatalogPinDiff, ...],
+) -> list[dict[str, object]]:
+    return [
+        {
+            "kind": item.kind,
+            "label": item.label,
+            "result": item.result,
+            "views": diff_view_models(item.result),
+            "split_views": split_diff_view_models(repo_root, item.result),
+        }
+        for item in diffs
+    ]
