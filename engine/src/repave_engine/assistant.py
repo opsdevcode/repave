@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from repave_engine.assistant_corpus import (
@@ -79,9 +79,9 @@ ASSISTANT_SERVICE_REGISTRY: tuple[AssistantTool, ...] = (
         description="Policy pack narrative and catalog pack sources",
     ),
     AssistantTool(
-        tool_id="corpus.blueprints",
+        tool_id="catalog.draft",
         kind="read",
-        description="Blueprint README files in the catalog",
+        description="Optional model JSON of catalog inputs; never generate or score gates",
     ),
 )
 
@@ -125,6 +125,9 @@ class AssistantResolution:
     tools: tuple[str, ...]
     message: str
     citations: tuple[AssistantCitation, ...] = ()
+    draft_model: str = ""
+    prompt_hash: str = ""
+    draft_status: str = ""
 
     def to_public_dict(self) -> dict[str, object]:
         return {
@@ -133,6 +136,9 @@ class AssistantResolution:
             "tools": list(self.tools),
             "message": self.message,
             "citations": [item.to_public_dict() for item in self.citations],
+            "draft_model": self.draft_model,
+            "prompt_hash": self.prompt_hash,
+            "draft_status": self.draft_status,
         }
 
 
@@ -147,15 +153,97 @@ def resolve_catalog_intent(
     intent: str,
     role: str | None = None,
     auth_enabled: bool = False,
+    draft_model: object | None = None,
 ) -> AssistantResolution:
     """Match intent to catalog golden paths plus allowed corpus citations."""
     corpus: tuple[CorpusDocument, ...] = ()
     if corpus_allowed(role=role, auth_enabled=auth_enabled):
         corpus = load_assistant_corpus(repo_root)
-    return resolve_intent(
-        intent,
-        blueprints=list_catalog_blueprints(repo_root),
-        corpus=corpus,
+    blueprints = list_catalog_blueprints(repo_root)
+    resolution = resolve_intent(intent, blueprints=blueprints, corpus=corpus)
+    return _maybe_apply_draft(
+        repo_root,
+        resolution,
+        blueprints=blueprints,
+        draft_model=draft_model,
+        acting_role=role,
+    )
+
+
+def _maybe_apply_draft(
+    repo_root: Path,
+    resolution: AssistantResolution,
+    *,
+    blueprints: Sequence[Blueprint],
+    draft_model: object | None,
+    acting_role: str | None,
+) -> AssistantResolution:
+    config = load_v3_foundation_config(repo_root)
+    if not config.assistant_draft_enabled:
+        return resolution
+    from repave_engine.assistant_draft import (
+        AssistantDraftModel,
+        apply_model_draft,
+        load_draft_model_from_env,
+    )
+
+    model: AssistantDraftModel | None
+    if draft_model is not None:
+        model = draft_model  # type: ignore[assignment]
+    else:
+        model = load_draft_model_from_env(model=config.assistant_draft_model)
+    if model is None:
+        return replace(
+            resolution,
+            draft_status="skipped-missing-REPAVE_ASSISTANT_API_KEY",
+        )
+    model_id = config.assistant_draft_model or "gpt-4o-mini"
+    updated = apply_model_draft(
+        resolution,
+        blueprints=blueprints,
+        model=model,
+        model_id=model_id,
+    )
+    _record_draft_audit(repo_root, updated, acting_role=acting_role)
+    return updated
+
+
+def _record_draft_audit(
+    repo_root: Path,
+    resolution: AssistantResolution,
+    *,
+    acting_role: str | None,
+) -> None:
+    from repave_engine.audit import AuditRecord, append_audit_record
+    from repave_engine.auth_context import current_acting_user
+    from repave_engine.settings import load_audit_config
+
+    try:
+        audit_cfg = load_audit_config(repo_root)
+    except ValueError:
+        return
+    if audit_cfg is None or not audit_cfg.enabled:
+        return
+    match = resolution.matches[0] if resolution.matches else None
+    append_audit_record(
+        audit_cfg.file,
+        AuditRecord(
+            event="assistant_draft",
+            blueprint_name=match.blueprint if match is not None else "",
+            blueprint_version="",
+            module_name="",
+            dry_run=True,
+            gates_outcome="not-run",
+            repository_url=None,
+            acting_user=current_acting_user(),
+            extra={
+                "prompt_hash": resolution.prompt_hash,
+                "draft_model": resolution.draft_model,
+                "draft_status": resolution.draft_status,
+                "role": acting_role or "",
+            },
+        ),
+        repo_root=repo_root,
     )
 
 

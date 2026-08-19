@@ -47,7 +47,7 @@ Modules under `engine/src/repave_engine/`:
 | `auto_merge.py` | Pure `decide_auto_merge()`; `--open-pr` squash-merges when Allowed |
 | `mandatory_policy.py` | Pure `decide_policy_skip()` plus generate/OPA enforcement |
 | `assistant.py` | Intent → catalog golden-path matches with citations; no generate |
-| `assistant_corpus.py` | Read-only standards/policy/blueprint docs; role-filtered |
+| `assistant_draft.py` | Optional model JSON of catalog inputs; hashed prompt; no generate |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
 `engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,
