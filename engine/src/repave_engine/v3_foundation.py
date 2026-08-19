@@ -22,6 +22,7 @@ class V3FoundationConfig:
     auto_merge_kill_switch: bool = False
     mandatory_policy_enabled: bool = False
     regulated_families: frozenset[str] = frozenset()
+    assistant_enabled: bool = False
 
 
 @dataclass(frozen=True)
@@ -90,6 +91,7 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
     developer_lab_enabled = _parse_developer_lab_enabled(block)
     auto_merge_enabled, auto_merge_kill_switch = _parse_auto_merge(block)
     mandatory_policy_enabled, regulated_families = _parse_mandatory_policy(block)
+    assistant_enabled = _parse_assistant_enabled(block)
     if not enabled_raw:
         if developer_lab_enabled:
             raise ValueError(
@@ -105,6 +107,11 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
             raise ValueError(
                 "v3.mandatory_policy.enabled is true but v3.enabled is false. "
                 "Set v3.enabled: true, or set v3.mandatory_policy.enabled: false."
+            )
+        if assistant_enabled:
+            raise ValueError(
+                "v3.assistant.enabled is true but v3.enabled is false. "
+                "Set v3.enabled: true, or set v3.assistant.enabled: false."
             )
         return disabled
 
@@ -130,6 +137,7 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         auto_merge_kill_switch=auto_merge_kill_switch,
         mandatory_policy_enabled=mandatory_policy_enabled,
         regulated_families=regulated_families,
+        assistant_enabled=assistant_enabled,
     )
 
 
@@ -185,6 +193,21 @@ def _parse_mandatory_policy(block: dict[str, object]) -> tuple[bool, frozenset[s
         allowed = ", ".join(sorted(KNOWN_ARTIFACT_FAMILIES))
         raise ValueError(f"unknown regulated family {sorted(unknown)[0]!r}; allowed: {allowed}")
     return enabled_raw, families
+
+
+def _parse_assistant_enabled(block: dict[str, object]) -> bool:
+    """Opt in with v3.assistant.enabled: true. Off when the key is absent."""
+    raw = block.get("assistant")
+    if raw is None:
+        return False
+    if isinstance(raw, bool):
+        return raw
+    if not isinstance(raw, dict):
+        raise ValueError("v3.assistant must be a boolean or mapping")
+    enabled_raw = raw.get("enabled", False)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("v3.assistant.enabled must be a boolean")
+    return enabled_raw
 
 
 def _parse_developer_lab_enabled(block: dict[str, object]) -> bool:

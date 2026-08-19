@@ -308,7 +308,8 @@ helm upgrade --install repave ./deploy/k8s/chart \
   --set repave.output.githubOrg=your-org
 ```
 
-`developerLab.enabled`, `autoMerge.enabled`, and `mandatoryPolicy.enabled` require
+`developerLab.enabled`, `autoMerge.enabled`, `mandatoryPolicy.enabled`, and
+`assistant.enabled` require
 `v3.enabled`. Lab does not invent a GitOps repo or turn on environment vending.
 The chart defaults `serviceCatalog.enabled` and `bundleExamples` on so hosted
 Backstage sandbox/maturity pages have fixtures (the engine image does not ship

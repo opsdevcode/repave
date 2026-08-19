@@ -7,6 +7,9 @@
 {{- if and .Values.repave.v3.mandatoryPolicy.enabled (not .Values.repave.v3.enabled) }}
 {{- fail "repave.v3.mandatoryPolicy.enabled requires repave.v3.enabled (ADR 008)" }}
 {{- end }}
+{{- if and .Values.repave.v3.assistant.enabled (not .Values.repave.v3.enabled) }}
+{{- fail "repave.v3.assistant.enabled requires repave.v3.enabled (ADR 008)" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -180,6 +183,8 @@ data:
         enabled: {{ .Values.repave.v3.mandatoryPolicy.enabled }}
         regulated_families:
 {{ toYaml .Values.repave.v3.mandatoryPolicy.regulatedFamilies | indent 10 }}
+      assistant:
+        enabled: {{ .Values.repave.v3.assistant.enabled }}
     {{- end }}
     {{- if .Values.repave.serviceCatalog.enabled }}
     service_catalog:

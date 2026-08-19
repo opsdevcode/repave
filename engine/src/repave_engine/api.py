@@ -43,6 +43,7 @@ from repave_engine.api_deprecation import (
 from repave_engine.api_ops import build_ops_router
 from repave_engine.api_v1 import build_api_v1_router
 from repave_engine.api_v2 import build_api_v2_router
+from repave_engine.assistant import is_assistant_enabled, resolve_catalog_intent
 from repave_engine.audit_history import (
     AuditHistoryEntry,
     AuditQueryFilters,
@@ -295,6 +296,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     except ValueError as exc:
         raise RuntimeError(str(exc)) from exc
     developer_lab_enabled = is_developer_lab_enabled(repo_root)
+    assistant_enabled = is_assistant_enabled(repo_root)
     sandbox_nav_label = "Developer lab" if developer_lab_enabled else "Sandbox"
     sandbox_href = "/lab" if developer_lab_enabled else "/sandbox"
     sandbox_request_label = "Request developer lab" if developer_lab_enabled else "Request sandbox"
@@ -428,6 +430,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             "platform_nav_links": platform_nav_links() if admin_visible else (),
             "service_catalog_enabled": service_catalog_config is not None,
             "developer_lab_enabled": developer_lab_enabled,
+            "assistant_enabled": assistant_enabled,
             "sandbox_nav_label": sandbox_nav_label,
             "sandbox_href": sandbox_href,
             "sandbox_request_label": sandbox_request_label,
@@ -517,6 +520,19 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
                     "href": "/verify",
                     "subtitle": "Run verify against a repo",
                 },
+            )
+        )
+        if assistant_enabled:
+            items.append(
+                {
+                    "kind": "nav",
+                    "label": "Assistant",
+                    "href": "/assistant",
+                    "subtitle": "Describe intent, confirm a golden path",
+                }
+            )
+        items.extend(
+            (
                 {
                     "kind": "nav",
                     "label": "Repo status",
@@ -1070,6 +1086,41 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if not developer_lab_enabled:
             raise HTTPException(status_code=404, detail="Developer lab is not enabled")
         return _render_sandbox_page(request)
+
+    def _require_assistant() -> None:
+        if not assistant_enabled:
+            raise HTTPException(
+                status_code=404,
+                detail="Assistant is not enabled (set v3.enabled and v3.assistant.enabled)",
+            )
+
+    @app.get("/assistant", response_class=HTMLResponse)
+    async def assistant_page(request: Request) -> HTMLResponse:
+        _require_assistant()
+        return templates.TemplateResponse(
+            request,
+            "assistant.html",
+            page_context(request, nav_active="assistant", resolution=None, intent=""),
+        )
+
+    @app.post("/assistant", response_class=HTMLResponse)
+    async def assistant_resolve_page(request: Request) -> HTMLResponse:
+        _require_assistant()
+        if auth_config and auth_config.service_enabled:
+            require_role(session_user(request), ROLE_GENERATOR, ROLE_ADMIN)
+        form = await request.form()
+        intent = str(form.get("intent", "")).strip()
+        resolution = resolve_catalog_intent(repo_root, intent=intent)
+        return templates.TemplateResponse(
+            request,
+            "assistant.html",
+            page_context(
+                request,
+                nav_active="assistant",
+                resolution=resolution,
+                intent=intent,
+            ),
+        )
 
     def _render_sandbox_page(request: Request) -> HTMLResponse:
         if service_catalog_config is None:
