@@ -26,6 +26,20 @@ def test_resolve_tool_finds_bin_under_standard_dir(tmp_path, monkeypatch) -> Non
     assert tool_available("terraform") is True
 
 
+def test_resolve_tool_ignores_dangling_symlink(tmp_path, monkeypatch) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    dangling = bin_dir / "checkov"
+    dangling.symlink_to(tmp_path / "missing-checkov")
+    monkeypatch.setenv("PATH", str(bin_dir))
+    monkeypatch.setattr("repave_engine.gate_toolchain._STANDARD_BIN_DIRS", ())
+    import repave_engine.gate_toolchain as gt
+
+    gt._PATH_PRIMED = False
+    assert resolve_tool("checkov") is None
+    assert tool_available("checkov") is False
+
+
 def test_ensure_gate_path_prepends_standard_dirs(monkeypatch) -> None:
     import repave_engine.gate_toolchain as gt
 

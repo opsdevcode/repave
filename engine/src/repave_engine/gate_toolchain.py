@@ -44,14 +44,24 @@ def ensure_gate_path() -> None:
     _PATH_PRIMED = True
 
 
+def _usable_executable(path: str | Path) -> bool:
+    """True when path is a real file (dangling cache symlinks are not)."""
+    candidate = Path(path)
+    try:
+        return candidate.is_file() and os.access(candidate, os.X_OK)
+    except OSError:
+        return False
+
+
 def resolve_tool(name: str) -> str | None:
     ensure_gate_path()
     found = shutil.which(name)
-    if found:
+    # shutil.which treats a dangling symlink as present; exec then FileNotFoundError.
+    if found and _usable_executable(found):
         return found
     for directory in _STANDARD_BIN_DIRS:
         candidate = Path(directory) / name
-        if candidate.is_file() and os.access(candidate, os.X_OK):
+        if _usable_executable(candidate):
             return str(candidate)
     return None
 

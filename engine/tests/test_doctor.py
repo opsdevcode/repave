@@ -65,3 +65,22 @@ def test_check_tools_uses_gate_toolchain() -> None:
         rows = check_tools(("terraform",))
     assert rows[0].present is True
     assert rows[0].version_match is True
+
+
+def test_detect_helm_version_uses_version_short() -> None:
+    from types import SimpleNamespace
+
+    from repave_engine.doctor import _detect_version
+
+    captured: list[list[str]] = []
+
+    def fake_run(argv: list[str], **_kwargs: object) -> SimpleNamespace:
+        captured.append(argv)
+        return SimpleNamespace(returncode=0, stdout="v3.14.4+g123", stderr="")
+
+    with (
+        patch("repave_engine.doctor.resolve_tool", return_value="/usr/bin/helm"),
+        patch("repave_engine.doctor.run_subprocess", side_effect=fake_run),
+    ):
+        assert _detect_version("helm") == "3.14.4"
+    assert captured == [["/usr/bin/helm", "version", "--short"]]
