@@ -5,6 +5,7 @@
 {% block main_modifiers %} shell__main--golden-path{% endblock %}
 
 {% block content %}
+{% set form_prefill = form_prefill|default({}) %}
 {% set publish_step = 2 if form_stepper in ('terraform', 'observability') else 1 %}
 <header class="form-hero">
   <div>
@@ -798,7 +799,7 @@
         {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
         <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
           {% for option in field.enum %}
-          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          <option value="{{ option }}" {% if form_prefill.get(field.name, field.default) == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
         </select>
       </div>
@@ -1136,7 +1137,7 @@
         {% elif field.enum %}
         <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
           {% for option in field.enum %}
-          <option value="{{ option }}" {% if field.default == option %}selected{% endif %}>{{ option }}</option>
+          <option value="{{ option }}" {% if form_prefill.get(field.name, field.default) == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
         </select>
         {% else %}
@@ -1146,7 +1147,7 @@
           name="{{ field.name }}"
           type="text"
           {% if field.required %}required{% endif %}
-          {% if field.default is not none %}value="{{ field.default }}"{% endif %}
+          {% if form_prefill.get(field.name, field.default) is not none %}value="{{ form_prefill.get(field.name, field.default) }}"{% endif %}
         />
         {% endif %}
       </div>

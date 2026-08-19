@@ -1412,6 +1412,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             blueprint_name=blueprint_name,
             modules_root=resolved_output.modules_root,
             output_config=resolved_output,
+            query_params={key: str(value) for key, value in request.query_params.items()},
         )
         return templates.TemplateResponse(
             request,
