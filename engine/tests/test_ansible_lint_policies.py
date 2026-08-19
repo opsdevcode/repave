@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
 
+from repave_engine.gate_toolchain import resolve_tool
+
 
 def _ansible_lint_available() -> bool:
-    return shutil.which("ansible-lint") is not None
+    return resolve_tool("ansible-lint") is not None
 
 
 pytestmark = pytest.mark.skipif(
@@ -23,8 +24,10 @@ def fixtures_root(repo_root: Path) -> Path:
 
 
 def run_ansible_lint(role_dir: Path) -> subprocess.CompletedProcess[str]:
+    binary = resolve_tool("ansible-lint")
+    assert binary is not None
     return subprocess.run(
-        ["ansible-lint"],
+        [binary],
         cwd=role_dir,
         capture_output=True,
         text=True,

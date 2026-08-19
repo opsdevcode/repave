@@ -43,6 +43,21 @@ def test_doctor_exit_code_strict_missing() -> None:
     assert doctor_exit_code(results, strict=False) == 0
 
 
+def test_doctor_exit_code_strict_unrunnable_pin() -> None:
+    results = (
+        ToolCheckResult(
+            tool="checkov",
+            present=True,
+            detected_version=None,
+            pinned_version="3.0.0",
+            version_match=None,
+            install_hint="hint",
+        ),
+    )
+    assert doctor_exit_code(results, strict=True) == 1
+    assert doctor_exit_code(results, strict=False) == 0
+
+
 def test_doctor_exit_code_strict_mismatch() -> None:
     results = (
         ToolCheckResult(

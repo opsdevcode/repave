@@ -170,6 +170,9 @@ def doctor_exit_code(results: tuple[ToolCheckResult, ...], *, strict: bool) -> i
             return 1
         if row.pinned_version and row.version_match is False:
             return 1
+        # Cache restore can leave a PATH hit that cannot --version (dangling symlink).
+        if row.pinned_version and row.detected_version is None:
+            return 1
     return 0
 
 
@@ -184,6 +187,8 @@ def format_doctor_report(results: tuple[ToolCheckResult, ...]) -> str:
             status = "MISMATCH"
         elif row.version_match is True:
             status = "OK"
+        elif row.pinned_version and row.detected_version is None:
+            status = "MISSING"
         else:
             status = "OK" if row.present else "MISSING"
         pin = f" (pin {row.pinned_version})" if row.pinned_version else ""
@@ -191,6 +196,11 @@ def format_doctor_report(results: tuple[ToolCheckResult, ...]) -> str:
         lines.append(f"[{gate_status(status)}] {row.tool}{pin}{detected}")
         if not row.present:
             lines.append(f"  → {row.install_hint}")
+        elif row.pinned_version and row.detected_version is None:
+            lines.append(
+                "  → CLI did not report a version; reinstall via "
+                "deploy/local/install-gate-toolchain.sh"
+            )
         elif row.version_match is False and row.pinned_version:
             lines.append(
                 f"  → expected {row.pinned_version}; reinstall via "
