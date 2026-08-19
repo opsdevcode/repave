@@ -13,7 +13,12 @@ from typing import Protocol
 
 import httpx
 
-from repave_engine.assistant import AssistantCitation, AssistantMatch, AssistantResolution
+from repave_engine.assistant import (
+    AssistantCitation,
+    AssistantMatch,
+    AssistantResolution,
+    blueprint_form_href,
+)
 from repave_engine.blueprint import Blueprint, artifact_family
 
 logger = logging.getLogger(__name__)
@@ -279,7 +284,7 @@ def _merge_draft_match(
         description=blueprint.description,
         family=artifact_family(blueprint.artifact_type),
         score=existing.score if existing is not None else 50.0,
-        form_href=f"/blueprints/{blueprint.name}",
+        form_href=blueprint_form_href(blueprint.name, inputs=merged_inputs),
         citations=existing.citations
         if existing is not None
         else (

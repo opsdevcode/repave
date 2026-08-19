@@ -81,6 +81,8 @@ def test_resolve_intent_ranks_terraform_module(tmp_path: Path) -> None:
     assert result.matches[0].citations[0].source == "catalog:terraform-module-generic"
     assert result.matches[0].suggested_inputs["cloud_provider"] == "aws"
     assert result.matches[0].suggested_inputs["module_name"] == "vpc-core"
+    assert "cloud_provider=aws" in result.matches[0].form_href
+    assert "module_name=vpc-core" in result.matches[0].form_href
     assert "corpus.standards" in result.tools
 
 
@@ -152,6 +154,7 @@ def test_assistant_html_and_api_when_on(
     assert posted.status_code == 200
     assert "terraform-module-generic" in posted.text
     assert "catalog:terraform-module-generic" in posted.text
+    assert "cloud_provider=aws" in posted.text
     assert "standards/" in posted.text or "policy/" in posted.text
     api = client.post(
         "/api/v2/assistant/resolve",
@@ -162,6 +165,8 @@ def test_assistant_html_and_api_when_on(
     assert body["matches"][0]["blueprint"] == "terraform-module-generic"
     assert body["matches"][0]["suggested_inputs"]["cloud_provider"] == "azure"
     assert body["matches"][0]["suggested_inputs"]["module_name"] == "networking-vnet"
+    assert "cloud_provider=azure" in body["matches"][0]["form_href"]
+    assert "module_name=networking-vnet" in body["matches"][0]["form_href"]
     assert body["citations"]
     assert body["citations"][0]["source"]
     assert not str(body["citations"][0]["source"]).startswith("docs/")
