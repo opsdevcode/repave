@@ -40,6 +40,20 @@ def test_resolve_tool_ignores_dangling_symlink(tmp_path, monkeypatch) -> None:
     assert tool_available("checkov") is False
 
 
+def test_resolve_tool_ignores_missing_shebang_interpreter(tmp_path, monkeypatch) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    stub = bin_dir / "ansible-lint"
+    stub.write_text("#!/no/such/python\n", encoding="utf-8")
+    stub.chmod(0o755)
+    monkeypatch.setenv("PATH", str(bin_dir))
+    monkeypatch.setattr("repave_engine.gate_toolchain._STANDARD_BIN_DIRS", ())
+    import repave_engine.gate_toolchain as gt
+
+    gt._PATH_PRIMED = False
+    assert resolve_tool("ansible-lint") is None
+
+
 def test_ensure_gate_path_prepends_standard_dirs(monkeypatch) -> None:
     import repave_engine.gate_toolchain as gt
 

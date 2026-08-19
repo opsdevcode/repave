@@ -45,10 +45,18 @@ def ensure_gate_path() -> None:
 
 
 def _usable_executable(path: str | Path) -> bool:
-    """True when path is a real file (dangling cache symlinks are not)."""
+    """True when path is a real file whose shebang interpreter still exists."""
     candidate = Path(path)
     try:
-        return candidate.is_file() and os.access(candidate, os.X_OK)
+        if not candidate.is_file() or not os.access(candidate, os.X_OK):
+            return False
+        with candidate.open("rb") as handle:
+            first = handle.readline(256)
+        if first.startswith(b"#!"):
+            interp = first[2:].split()[0].decode("utf-8", errors="replace")
+            if interp.startswith("/") and not Path(interp).exists():
+                return False
+        return True
     except OSError:
         return False
 
@@ -71,12 +79,12 @@ def tool_available(name: str) -> bool:
 
 
 def checkov_argv() -> list[str] | None:
-    """Argv prefix to invoke checkov (script on PATH or python -m fallback)."""
+    """Argv prefix to invoke checkov (current interpreter preferred over cached scripts)."""
+    if _checkov_importable():
+        return [sys.executable, "-m", "checkov"]
     path = resolve_tool("checkov")
     if path:
         return [path]
-    if _checkov_importable():
-        return [sys.executable, "-m", "checkov"]
     return None
 
 
