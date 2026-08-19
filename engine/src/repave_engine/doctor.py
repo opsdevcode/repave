@@ -93,6 +93,12 @@ def _detect_version(tool: str) -> str | None:
         if not binary:
             return None
         argv = [binary, "-version"]
+    elif tool == "helm":
+        binary = resolve_tool("helm")
+        if not binary:
+            return None
+        # helm has no --version; `helm version --short` prints v3.x.y.
+        argv = [binary, "version", "--short"]
     else:
         binary = resolve_tool(tool)
         if not binary:

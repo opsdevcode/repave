@@ -4,7 +4,9 @@ REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
 GITHUB_ORG ?= opsdevcode
 REPAVE_ENV = REPAVE_GITHUB_ORG=$(GITHUB_ORG) REPAVE_MODULES_ROOT=$(MODULES_ROOT)
-ENGINE_PYTEST = PATH="$(REPO_ROOT)/.gate-tools/bin:$$PATH" uv run pytest
+ENGINE_PYTEST = PATH="$(REPO_ROOT)/.gate-tools/bin:$(REPO_ROOT)/.gate-tools/py-deps/bin:$$PATH" \
+	PYTHONPATH="$(REPO_ROOT)/.gate-tools/py-deps" \
+	uv run pytest
 PORTAL_TEST_FILES = \
 	tests/test_api.py \
 	tests/test_api_read_models.py \
