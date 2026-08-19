@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.52.0  
 
-**In progress:** HTML workbench polish (optional light theme)
+**In progress:** conversational assistant (intent → golden-path form)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -505,8 +505,9 @@ families; waivers use `gate_id: mandatory-policy`
 
 ### Conversational and governed AI generation
 
-**Status:** **Not started — v3.0.0** (moved from v2.1+; ships with the next major, not as a
-v2.x minor).
+**Status:** **Partial** — catalog intent resolve is default-off
+(`v3.assistant.enabled`). Preferred flow is **intent → validated blueprint
+inputs → existing generate form**; LLM draft and publish are not started.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an

@@ -233,6 +233,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on; Backstage `/teams`) |
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments (Backstage `/services`) |
 | `GET` | `/api/v2/catalog/blueprints` | viewer+ | Family-grouped blueprint catalog plus input schemas (Backstage `/generate`) |
+| `POST` | `/api/v2/assistant/resolve` | generator+ | Intent → golden-path matches with citations (`v3.assistant.enabled`; no generate) |
 | `GET` | `/api/v2/bundles` | viewer+ | Golden-path bundle list (Backstage `/bundles`) |
 | `GET` | `/api/v2/bundles/{name}` | viewer+ | Bundle members + topology (Backstage `/bundles`) |
 | `GET` | `/api/v2/library` | viewer+ | Grouped artifact library (`?family=`, `?owner=`; Backstage `/library`) |
@@ -302,4 +303,6 @@ log a deprecation warning at load time. Migration steps:
 
 ## Follow-ups
 
-- Conversational governed AI generation (**v3.0.0** — see [roadmap](roadmap.md#conversational-and-governed-ai-generation))
+- Conversational governed AI generation (**v3.0.0** — catalog intent resolve shipped
+  behind `v3.assistant.enabled`; LLM draft remains open — see
+  [roadmap](roadmap.md#conversational-and-governed-ai-generation))

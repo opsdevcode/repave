@@ -271,6 +271,8 @@ gates:
 #       - helm
 #       - ansible
 #       - observability
+#   assistant:
+#     enabled: false  # /assistant and POST /api/v2/assistant/resolve
 #   waivers_file: data/waivers.jsonl
 #   waiver_warn_days: 7
 # With v3.developer_lab.enabled: true, service_catalog defaults to examples/platform-dev

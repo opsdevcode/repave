@@ -102,10 +102,13 @@
             <a href="/platform/fleet" {% if nav_active == "platform" %}aria-current="page"{% endif %}>Platform</a>
             {% endif %}
             <details
-              class="shell__nav-more{% if nav_active in ('import', 'estate', 'activity', 'runs') %} shell__nav-more--active{% endif %}"
+              class="shell__nav-more{% if nav_active in ('import', 'estate', 'activity', 'runs', 'assistant') %} shell__nav-more--active{% endif %}"
             >
               <summary class="shell__nav-more__summary">More</summary>
               <nav class="shell__nav shell__nav--secondary" aria-label="More">
+                {% if assistant_enabled %}
+                <a href="/assistant" {% if nav_active == "assistant" %}aria-current="page"{% endif %}>Assistant</a>
+                {% endif %}
                 <a href="/import" {% if nav_active == "import" %}aria-current="page"{% endif %}>Import</a>
                 <a href="/estate" {% if nav_active == "estate" %}aria-current="page"{% endif %}>Repo status</a>
                 <a href="/activity" {% if nav_active == "activity" %}aria-current="page"{% endif %}>Activity</a>

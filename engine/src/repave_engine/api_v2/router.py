@@ -18,6 +18,7 @@ from repave_engine.api_read_models import (
     build_estate_read_model,
     build_governance_annotations_read_model,
 )
+from repave_engine.assistant import is_assistant_enabled, resolve_catalog_intent
 from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.auth import (
     ROLE_ADMIN,
@@ -162,6 +163,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/catalog/entities",
     "GET /api/v2/catalog/entities/{entity_id}",
     "GET /api/v2/catalog/blueprints",
+    "POST /api/v2/assistant/resolve",
     "GET /api/v2/bundles",
     "GET /api/v2/bundles/{name}",
     "GET /api/v2/library",
@@ -1063,6 +1065,19 @@ def build_api_v2_router(
                 "groups": [item.to_public_dict() for item in groups],
             }
         )
+
+    @router.post("/assistant/resolve")
+    async def api_v2_assistant_resolve(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        if not is_assistant_enabled(repo_root):
+            raise HTTPException(
+                status_code=404,
+                detail="Assistant is not enabled (set v3.enabled and v3.assistant.enabled)",
+            )
+        payload = await _parse_json_object(request)
+        intent = str(payload.get("intent", "")).strip()
+        resolution = resolve_catalog_intent(repo_root, intent=intent)
+        return JSONResponse(resolution.to_public_dict())
 
     @router.get("/bundles")
     async def api_v2_bundles(request: Request) -> JSONResponse:

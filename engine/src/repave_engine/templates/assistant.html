@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Assistant — repave{% endblock %}
+
+{% block main_modifiers %} shell__main--golden-path{% endblock %}
+
+{% block content %}
+<header class="form-hero form-hero--compact">
+  <div>
+    <h1 class="page-title">Describe the golden path</h1>
+    <p class="page-lead">
+      Repave matches your description to a catalog golden path. You confirm the
+      form, then Plan runs the same gates as always — nothing is generated from
+      this page.
+    </p>
+  </div>
+</header>
+
+<form method="post" action="/assistant" class="stack-gap">
+  <div class="field">
+    <label class="field__label" for="assistant-intent">What do you want to build?</label>
+    <textarea
+      id="assistant-intent"
+      name="intent"
+      rows="4"
+      required
+      maxlength="2000"
+      placeholder="Example: Terraform module named vpc-core for AWS"
+    >{{ intent }}</textarea>
+  </div>
+  <div class="form-actions">
+    <button type="submit" class="btn btn--primary">Match golden paths</button>
+  </div>
+</form>
+
+{% if resolution %}
+  {% if resolution.message %}
+  <p class="alert alert--info" role="status">{{ resolution.message }}</p>
+  {% endif %}
+  {% if resolution.matches %}
+  <section class="stack-gap" aria-labelledby="assistant-matches-heading">
+    <h2 id="assistant-matches-heading" class="fleet-shelf__title">Suggested golden paths</h2>
+    <ul class="library-drawers">
+      {% for match in resolution.matches %}
+      <li class="library-drawer">
+        <p>
+          <strong>{{ match.blueprint }}</strong>
+          <span class="badge">{{ match.family }}</span>
+        </p>
+        {% if match.description %}
+        <p class="muted">{{ match.description }}</p>
+        {% endif %}
+        {% for citation in match.citations %}
+        <p class="muted">Source: {{ citation.source }}</p>
+        {% endfor %}
+        {% if match.suggested_inputs %}
+        <p>Confirm on the form:
+          {% for key, value in match.suggested_inputs.items() %}
+          <span class="badge">{{ key }}={{ value }}</span>
+          {% endfor %}
+        </p>
+        {% endif %}
+        <p>
+          <a class="btn btn--primary btn--sm" href="{{ match.form_href }}">Open form</a>
+        </p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+{% endif %}
+{% endblock %}
