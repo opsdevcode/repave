@@ -79,19 +79,20 @@ def tool_available(name: str) -> bool:
 
 
 def checkov_argv() -> list[str] | None:
-    """Argv prefix to invoke checkov (current interpreter preferred over cached scripts)."""
-    if _checkov_importable():
-        return [sys.executable, "-m", "checkov"]
+    """Argv prefix to invoke checkov (script on PATH or python -m fallback)."""
     path = resolve_tool("checkov")
     if path:
         return [path]
+    if _checkov_importable():
+        return [sys.executable, "-m", "checkov"]
     return None
 
 
 def _checkov_importable() -> bool:
     import importlib.util
 
-    return importlib.util.find_spec("checkov") is not None
+    # Generated repos ship policy/checkov/; that package has no __main__.
+    return importlib.util.find_spec("checkov.__main__") is not None
 
 
 def subprocess_cwd(preferred: Path) -> Path:
