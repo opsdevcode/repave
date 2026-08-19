@@ -45,10 +45,18 @@ def ensure_gate_path() -> None:
 
 
 def _usable_executable(path: str | Path) -> bool:
-    """True when path is a real file (dangling cache symlinks are not)."""
+    """True when path is a real file whose shebang interpreter still exists."""
     candidate = Path(path)
     try:
-        return candidate.is_file() and os.access(candidate, os.X_OK)
+        if not candidate.is_file() or not os.access(candidate, os.X_OK):
+            return False
+        with candidate.open("rb") as handle:
+            first = handle.readline(256)
+        if first.startswith(b"#!"):
+            interp = first[2:].split()[0].decode("utf-8", errors="replace")
+            if interp.startswith("/") and not Path(interp).exists():
+                return False
+        return True
     except OSError:
         return False
 
@@ -83,7 +91,13 @@ def checkov_argv() -> list[str] | None:
 def _checkov_importable() -> bool:
     import importlib.util
 
-    return importlib.util.find_spec("checkov") is not None
+    try:
+        if importlib.util.find_spec("checkov") is None:
+            return False
+        # Generated repos ship policy/checkov/; that package has no CLI entry.
+        return importlib.util.find_spec("checkov.__main__") is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def subprocess_cwd(preferred: Path) -> Path:

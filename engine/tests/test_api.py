@@ -121,6 +121,7 @@ def test_static_repave_js_served(repo_root, output_config) -> None:
     assert "refreshHomeResumeChip" in response.text
     assert "initGateDashboard" in response.text
     assert "initFormDraft" in response.text
+    assert "initChoiceTiles" in response.text
 
 
 def test_static_repave_home_mjs_served(repo_root, output_config) -> None:
@@ -165,6 +166,8 @@ def test_static_repave_catalog_and_library_mjs_served(repo_root, output_config) 
     assert "ATMOSPHERE_RANGE" in motion.text
     assert "motion-ripple" in motion.text
     assert "NEIGHBOR_PUSH" in motion.text
+    assert "fleet-tile--choice" in motion.text
+    assert "button[type=submit]" in motion.text
     assert "glare" not in motion.text
 
 

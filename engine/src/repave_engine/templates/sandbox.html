@@ -28,7 +28,7 @@
 {% endif %}
 
 {% if deployment_sets %}
-<form method="post" action="/sandbox/request" class="stack-gap">
+<form method="post" action="/sandbox/request" class="stack-gap" data-repave-native-submit>
   <section class="fleet-shelf" aria-labelledby="sandbox-request-heading">
     <h2 id="sandbox-request-heading" class="fleet-shelf__title">Deployment set</h2>
     <ul class="library-drawers fleet-grid" aria-label="Deployment sets">
@@ -37,8 +37,6 @@
       <li>
         <label
           class="library-drawer fleet-tile fleet-tile--choice library-drawer--{{ profile.family if profile else 'other' }}"
-          data-library-drawer
-          data-motion-face
         >
           <input
             class="visually-hidden"
@@ -102,9 +100,17 @@
           class="btn btn--primary"
           type="submit"
           {% if not environment_vend_available %}disabled{% endif %}
+          {% if not environment_vend_available %}
+          title="Environment vending and async runs must be enabled to submit."
+          {% endif %}
         >
           {{ sandbox_request_label }}
         </button>
+        {% if not environment_vend_available %}
+        <p class="hint">
+          Submitting is off until environment vending and async runs are configured.
+        </p>
+        {% endif %}
       </div>
     </div>
   </section>
@@ -123,11 +129,7 @@
   <ul class="library-drawers fleet-grid" aria-label="Workload profiles">
     {% for profile in workload_profiles %}
     <li>
-      <article
-        class="library-drawer fleet-tile library-drawer--{{ profile.family }}"
-        data-library-drawer
-        data-motion-face
-      >
+      <article class="library-drawer fleet-tile fleet-tile--static library-drawer--{{ profile.family }}">
         <header class="library-drawer__label">
           <h3 class="library-drawer__title" data-motion-depth="0.45">{{ profile.label }}</h3>
           {% if profile.description %}

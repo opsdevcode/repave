@@ -280,6 +280,9 @@ def test_portal_service_catalog_pages(
     assert sandbox.status_code == 200
     assert "Request a sandbox" in sandbox.text
     assert "api-sandbox-7d" in sandbox.text
+    assert "fleet-tile--choice" in sandbox.text
+    assert "data-repave-native-submit" in sandbox.text
+    assert "data-motion-face" not in sandbox.text
 
     maturity = client.get("/platform/maturity")
     assert maturity.status_code == 200

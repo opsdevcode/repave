@@ -3935,6 +3935,20 @@
     formatErrorDetail: formatPortalErrorDetail,
   };
 
+  function initChoiceTiles() {
+    document.querySelectorAll(".fleet-tile--choice").forEach(function (tile) {
+      tile.addEventListener("click", function () {
+        var input = tile.querySelector('input[type="radio"]');
+        if (!input || input.disabled) {
+          return;
+        }
+        input.checked = true;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     renderLastRun();
     refreshHomeResumeChip();
@@ -3965,5 +3979,6 @@
     initCommandPalette();
     initPortalViewToggle();
     initEstateMap();
+    initChoiceTiles();
   });
 })();
