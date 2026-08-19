@@ -6063,8 +6063,20 @@
     cursor: default;
   }
 
-  .fleet-tile--choice {
+  .library-drawer.fleet-tile--choice,
+  .library-drawer.fleet-tile--choice:hover,
+  .library-drawer.fleet-tile--choice:focus-visible,
+  .library-drawer.fleet-tile--choice.motion-face:hover {
     cursor: pointer;
+    transform: none;
+  }
+
+  .library-drawer.fleet-tile--static,
+  .library-drawer.fleet-tile--static:hover,
+  .library-drawer.fleet-tile--static:focus-visible {
+    cursor: default;
+    transform: none;
+    box-shadow: none;
   }
 
   .fleet-tile--choice:has(:checked) {

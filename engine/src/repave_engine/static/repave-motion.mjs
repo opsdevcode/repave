@@ -18,7 +18,15 @@ const MAGNETIC_SELECTOR = [
   ".shell__nav--primary > a",
   ".home-quick a",
 ].join(", ");
-const SKIP_FACE = ".library-shelf__item, .command-palette, [disabled], [aria-disabled='true']";
+const SKIP_FACE = [
+  ".library-shelf__item",
+  ".command-palette",
+  "[disabled]",
+  "[aria-disabled='true']",
+  ".fleet-tile--choice",
+  ".form-actions .btn",
+  "button[type=submit]",
+].join(", ");
 const SPRING = 0.16;
 const SETTLE = 0.05;
 const FACE_TILT = 11;
