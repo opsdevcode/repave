@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 
 from repave_engine.ansible_catalog import catalog_for_api as ansible_catalog_for_api
@@ -11,6 +12,7 @@ from repave_engine.ansible_pattern import (
     blueprint_supports_playbook_patterns,
     blueprint_supports_role_patterns,
 )
+from repave_engine.assistant_draft import validate_draft_inputs
 from repave_engine.blueprint import blueprint_dir, load_blueprint
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.diff_view import (
@@ -52,6 +54,7 @@ def build_blueprint_form_extras(
     blueprint_name: str,
     modules_root: Path,
     output_config: OutputConfig,
+    query_params: Mapping[str, str] | None = None,
 ) -> dict[str, object]:
     blueprint = load_blueprint(blueprint_dir(repo_root, blueprint_name), repo_root=repo_root)
     policy_catalog: dict[str, object] | None = None
@@ -150,6 +153,12 @@ def build_blueprint_form_extras(
         standards,
         policy_rules,
     )
+    raw_query = {
+        str(key): str(value)
+        for key, value in (query_params or {}).items()
+        if isinstance(value, str)
+    }
+    form_prefill = validate_draft_inputs(blueprint, raw_query)
     return {
         "blueprint": blueprint,
         "provider_catalog": provider_catalog,
@@ -163,6 +172,7 @@ def build_blueprint_form_extras(
         "pin_diff_panels": pin_diff_panels,
         "pin_drift": pin_drift,
         "governance_previews": governance_previews,
+        "form_prefill": form_prefill,
         "governance_preflight": build_blueprint_preflight(
             blueprint,
             output_config=output_config,

@@ -898,6 +898,40 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "repave.yaml" in response.text
 
 
+def test_blueprint_form_prefills_allowlisted_query_params(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get(
+        "/blueprints/terraform-module-generic",
+        params={
+            "cloud_provider": "gcp",
+            "module_name": "vpc-core",
+            "dry_run": "false",
+            "secret": "nope",
+            "unknown_field": "x",
+        },
+    )
+    html = response.text
+    assert 'value="gcp" selected' in html or 'value="gcp" selected="selected"' in html
+    assert 'id="module_name"' in response.text
+    assert 'value="vpc-core"' in response.text
+    assert 'name="secret"' not in response.text
+    assert 'name="unknown_field"' not in response.text
+    assert 'name="dry_run" value="false"' in response.text
+    # Plan/Apply radios still present; query dry_run does not select Apply
+    assert 'name="dry_run" value="true"' in response.text
+
+
+def test_blueprint_form_ignores_invalid_enum_prefill(repo_root, output_config) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.get(
+        "/blueprints/terraform-module-generic",
+        params={"cloud_provider": "nope"},
+    )
+    html = response.text
+    assert 'value="nope"' not in html
+    assert 'value="aws" selected' in html or 'value="aws" selected="selected"' in html
+
+
 def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config) -> None:
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
     response = client.get("/static/repave.js")

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
+from urllib.parse import urlencode
 
 from repave_engine.assistant_corpus import (
     CorpusDocument,
@@ -145,6 +146,18 @@ class AssistantResolution:
 def is_assistant_enabled(repo_root: Path) -> bool:
     """True when v3.assistant.enabled is explicitly on."""
     return load_v3_foundation_config(repo_root).assistant_enabled
+
+
+def blueprint_form_href(name: str, *, inputs: Mapping[str, str] | None = None) -> str:
+    """Link to the golden-path form with allowlisted suggested inputs as query params."""
+    params = [
+        (key, value)
+        for key, value in (inputs or {}).items()
+        if key.isidentifier() and value and len(value) <= 200
+    ]
+    if not params:
+        return f"/blueprints/{name}"
+    return f"/blueprints/{name}?{urlencode(params)}"
 
 
 def resolve_catalog_intent(
@@ -295,13 +308,14 @@ def resolve_intent(
         if score < _MIN_SCORE:
             continue
         excerpt = blueprint.description.strip() or blueprint.name
+        suggested = _suggested_inputs(cleaned, blueprint=blueprint)
         scored.append(
             AssistantMatch(
                 blueprint=blueprint.name,
                 description=blueprint.description,
                 family=artifact_family(blueprint.artifact_type),
                 score=score,
-                form_href=f"/blueprints/{blueprint.name}",
+                form_href=blueprint_form_href(blueprint.name, inputs=suggested),
                 citations=(
                     AssistantCitation(
                         source=f"catalog:{blueprint.name}",
@@ -313,7 +327,7 @@ def resolve_intent(
                         citations=citations,
                     ),
                 ),
-                suggested_inputs=_suggested_inputs(cleaned, blueprint=blueprint),
+                suggested_inputs=suggested,
             )
         )
     scored.sort(key=lambda item: (-item.score, item.blueprint))
