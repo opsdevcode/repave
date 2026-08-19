@@ -219,7 +219,7 @@ repave:
   # /lab alias and lab copy; it does not invent GitOps or mount catalog YAML.
   # autoMerge: plan verdict; apply-upgrade --open-pr squash-merges Allowed PRs.
   # mandatoryPolicy refuses enable_policy: false on regulated families (waiver to skip).
-  # assistant: intent → golden-path form (no LLM generate).
+  # assistant: intent → golden-path form; optional input-only model draft (no generate).
   v3:
     enabled: false
     developerLab:
@@ -238,6 +238,9 @@ repave:
         - observability
     assistant:
       enabled: false
+      draft:
+        enabled: false  # model may propose catalog inputs only; set REPAVE_ASSISTANT_API_KEY
+        model: ""
 
   # Service catalog overlay (ADR 006). Default on with bundled fixtures so
   # hosted Backstage /sandbox, /maturity, and My services do not 404.

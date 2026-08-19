@@ -310,7 +310,8 @@ helm upgrade --install repave ./deploy/k8s/chart \
 
 `developerLab.enabled`, `autoMerge.enabled`, `mandatoryPolicy.enabled`, and
 `assistant.enabled` require
-`v3.enabled`. Lab does not invent a GitOps repo or turn on environment vending.
+`v3.enabled`. `assistant.draft.enabled` also requires `assistant.enabled` and
+`REPAVE_ASSISTANT_API_KEY` for the optional input-only model call.
 The chart defaults `serviceCatalog.enabled` and `bundleExamples` on so hosted
 Backstage sandbox/maturity pages have fixtures (the engine image does not ship
 `examples/`). Set `repave.serviceCatalog.enabled=false` to opt out. In a git

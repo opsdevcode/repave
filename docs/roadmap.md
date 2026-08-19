@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.53.0  
 
-**In progress:** conversational assistant (catalog match + corpus citations)
+**In progress:** conversational assistant (gated input draft)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -505,10 +505,10 @@ families; waivers use `gate_id: mandatory-policy`
 
 ### Conversational and governed AI generation
 
-**Status:** **Partial** — catalog intent resolve and in-repo corpus citations
-are default-off (`v3.assistant.enabled`). Preferred flow is **intent →
-validated blueprint inputs → existing generate form**; LLM draft and publish
-are not started.
+**Status:** **Partial** — catalog intent resolve, corpus citations, and an
+optional **input-only** model draft (`v3.assistant.draft.enabled`) are
+default-off. The model may propose catalog field values; generate still uses
+the existing form and gates. LLM artifact drafting is not started.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an

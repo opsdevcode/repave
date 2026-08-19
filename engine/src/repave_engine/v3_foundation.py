@@ -23,6 +23,8 @@ class V3FoundationConfig:
     mandatory_policy_enabled: bool = False
     regulated_families: frozenset[str] = frozenset()
     assistant_enabled: bool = False
+    assistant_draft_enabled: bool = False
+    assistant_draft_model: str = ""
 
 
 @dataclass(frozen=True)
@@ -91,7 +93,7 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
     developer_lab_enabled = _parse_developer_lab_enabled(block)
     auto_merge_enabled, auto_merge_kill_switch = _parse_auto_merge(block)
     mandatory_policy_enabled, regulated_families = _parse_mandatory_policy(block)
-    assistant_enabled = _parse_assistant_enabled(block)
+    assistant_enabled, assistant_draft_enabled, assistant_draft_model = _parse_assistant(block)
     if not enabled_raw:
         if developer_lab_enabled:
             raise ValueError(
@@ -112,6 +114,11 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
             raise ValueError(
                 "v3.assistant.enabled is true but v3.enabled is false. "
                 "Set v3.enabled: true, or set v3.assistant.enabled: false."
+            )
+        if assistant_draft_enabled:
+            raise ValueError(
+                "v3.assistant.draft.enabled is true but v3.enabled is false. "
+                "Set v3.enabled: true, or set v3.assistant.draft.enabled: false."
             )
         return disabled
 
@@ -138,6 +145,8 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         mandatory_policy_enabled=mandatory_policy_enabled,
         regulated_families=regulated_families,
         assistant_enabled=assistant_enabled,
+        assistant_draft_enabled=assistant_draft_enabled,
+        assistant_draft_model=assistant_draft_model,
     )
 
 
@@ -195,19 +204,46 @@ def _parse_mandatory_policy(block: dict[str, object]) -> tuple[bool, frozenset[s
     return enabled_raw, families
 
 
-def _parse_assistant_enabled(block: dict[str, object]) -> bool:
-    """Opt in with v3.assistant.enabled: true. Off when the key is absent."""
+def _parse_assistant(block: dict[str, object]) -> tuple[bool, bool, str]:
+    """Opt in with v3.assistant.enabled. Draft is a second opt-in under assistant.draft."""
     raw = block.get("assistant")
     if raw is None:
-        return False
+        return False, False, ""
     if isinstance(raw, bool):
-        return raw
+        return raw, False, ""
     if not isinstance(raw, dict):
         raise ValueError("v3.assistant must be a boolean or mapping")
     enabled_raw = raw.get("enabled", False)
     if not isinstance(enabled_raw, bool):
         raise ValueError("v3.assistant.enabled must be a boolean")
-    return enabled_raw
+    draft_enabled, draft_model = _parse_assistant_draft(raw)
+    if draft_enabled and not enabled_raw:
+        raise ValueError(
+            "v3.assistant.draft.enabled is true but v3.assistant.enabled is false. "
+            "Set v3.assistant.enabled: true, or set v3.assistant.draft.enabled: false."
+        )
+    return enabled_raw, draft_enabled, draft_model
+
+
+def _parse_assistant_draft(block: dict[str, object]) -> tuple[bool, str]:
+    raw = block.get("draft")
+    if raw is None:
+        return False, ""
+    if isinstance(raw, bool):
+        return raw, ""
+    if not isinstance(raw, dict):
+        raise ValueError("v3.assistant.draft must be a boolean or mapping")
+    enabled_raw = raw.get("enabled", False)
+    if not isinstance(enabled_raw, bool):
+        raise ValueError("v3.assistant.draft.enabled must be a boolean")
+    model_raw = raw.get("model", "")
+    if model_raw is None:
+        model = ""
+    elif not isinstance(model_raw, str):
+        raise ValueError("v3.assistant.draft.model must be a string")
+    else:
+        model = model_raw.strip()
+    return enabled_raw, model
 
 
 def _parse_developer_lab_enabled(block: dict[str, object]) -> bool:
