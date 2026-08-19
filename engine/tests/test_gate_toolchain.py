@@ -76,3 +76,15 @@ def test_portal_runtime_info_reads_gate_toolchain_env(monkeypatch) -> None:
 
     monkeypatch.setenv("REPAVE_IMAGE_GATE_TOOLCHAIN", "1")
     assert portal_runtime_info()["gate_toolchain_image"] is True
+
+
+def test_checkov_argv_does_not_raise_when_checkov_missing(monkeypatch) -> None:
+    from repave_engine.gate_toolchain import checkov_argv
+
+    monkeypatch.setattr("repave_engine.gate_toolchain.resolve_tool", lambda _name: None)
+
+    def missing(_name: str, *args: object, **kwargs: object) -> None:
+        raise ModuleNotFoundError("No module named 'checkov'")
+
+    monkeypatch.setattr("importlib.util.find_spec", missing)
+    assert checkov_argv() is None

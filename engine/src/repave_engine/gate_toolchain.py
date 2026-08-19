@@ -91,8 +91,13 @@ def checkov_argv() -> list[str] | None:
 def _checkov_importable() -> bool:
     import importlib.util
 
-    # Generated repos ship policy/checkov/; that package has no __main__.
-    return importlib.util.find_spec("checkov.__main__") is not None
+    try:
+        if importlib.util.find_spec("checkov") is None:
+            return False
+        # Generated repos ship policy/checkov/; that package has no CLI entry.
+        return importlib.util.find_spec("checkov.__main__") is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def subprocess_cwd(preferred: Path) -> Path:
