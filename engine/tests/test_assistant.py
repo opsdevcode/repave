@@ -9,7 +9,8 @@ from fastapi.testclient import TestClient
 
 from helpers import make_blueprint
 from repave_engine.api import create_app
-from repave_engine.assistant import is_assistant_enabled, resolve_intent
+from repave_engine.assistant import is_assistant_enabled, resolve_catalog_intent, resolve_intent
+from repave_engine.assistant_corpus import corpus_allowed, load_assistant_corpus, search_corpus
 from repave_engine.blueprint import InputField
 from repave_engine.v3_foundation import load_v3_foundation_config
 
@@ -80,7 +81,7 @@ def test_resolve_intent_ranks_terraform_module(tmp_path: Path) -> None:
     assert result.matches[0].citations[0].source == "catalog:terraform-module-generic"
     assert result.matches[0].suggested_inputs["cloud_provider"] == "aws"
     assert result.matches[0].suggested_inputs["module_name"] == "vpc-core"
-    assert result.tools == ("catalog.blueprints",)
+    assert "corpus.standards" in result.tools
 
 
 def test_resolve_intent_no_match(tmp_path: Path) -> None:
@@ -96,6 +97,48 @@ def test_assistant_page_404_when_off(repo_root: Path, output_config) -> None:
     assert response.status_code == 404
 
 
+def test_corpus_denied_when_auth_role_cannot_view() -> None:
+    assert corpus_allowed(role=None, auth_enabled=True) is False
+    assert corpus_allowed(role="unknown", auth_enabled=True) is False
+    assert corpus_allowed(role="viewer", auth_enabled=True) is True
+    assert corpus_allowed(role=None, auth_enabled=False) is True
+
+
+def test_load_corpus_stays_in_allowed_roots(repo_root: Path) -> None:
+    documents = load_assistant_corpus(repo_root)
+    sources = {item.source for item in documents}
+    assert any(item.startswith("standards/") for item in sources)
+    assert any(item.startswith("policy/") for item in sources)
+    assert not any(item.startswith("docs/") for item in sources)
+    assert not any(item.startswith("engine/") for item in sources)
+    hits = search_corpus(documents, tokens=frozenset({"terraform", "module", "layout"}))
+    assert hits
+    assert hits[0].source.startswith("standards/")
+
+
+def test_resolve_catalog_intent_cites_standards(repo_root: Path) -> None:
+    result = resolve_catalog_intent(
+        repo_root,
+        intent="terraform module layout standard",
+        auth_enabled=False,
+    )
+    sources = {item.source for item in result.citations}
+    assert any(source.startswith("standards/") for source in sources)
+    assert result.matches
+    assert result.matches[0].citations[0].source.startswith("catalog:")
+
+
+def test_resolve_catalog_intent_skips_corpus_when_role_denied(repo_root: Path) -> None:
+    result = resolve_catalog_intent(
+        repo_root,
+        intent="terraform module layout standard",
+        role=None,
+        auth_enabled=True,
+    )
+    assert result.citations == ()
+    assert result.matches
+
+
 def test_assistant_html_and_api_when_on(
     repo_root: Path, output_config, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -109,6 +152,7 @@ def test_assistant_html_and_api_when_on(
     assert posted.status_code == 200
     assert "terraform-module-generic" in posted.text
     assert "catalog:terraform-module-generic" in posted.text
+    assert "standards/" in posted.text or "policy/" in posted.text
     api = client.post(
         "/api/v2/assistant/resolve",
         json={"intent": "terraform module named networking-vnet for azure"},
@@ -118,6 +162,9 @@ def test_assistant_html_and_api_when_on(
     assert body["matches"][0]["blueprint"] == "terraform-module-generic"
     assert body["matches"][0]["suggested_inputs"]["cloud_provider"] == "azure"
     assert body["matches"][0]["suggested_inputs"]["module_name"] == "networking-vnet"
+    assert body["citations"]
+    assert body["citations"][0]["source"]
+    assert not str(body["citations"][0]["source"]).startswith("docs/")
 
 
 def test_api_v2_assistant_404_when_off(repo_root: Path, output_config) -> None:

@@ -1076,7 +1076,13 @@ def build_api_v2_router(
             )
         payload = await _parse_json_object(request)
         intent = str(payload.get("intent", "")).strip()
-        resolution = resolve_catalog_intent(repo_root, intent=intent)
+        user = session_user(request)
+        resolution = resolve_catalog_intent(
+            repo_root,
+            intent=intent,
+            role=user.role if user else None,
+            auth_enabled=bool(auth_config and auth_config.service_enabled),
+        )
         return JSONResponse(resolution.to_public_dict())
 
     @router.get("/bundles")
