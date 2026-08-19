@@ -1110,7 +1110,13 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             require_role(session_user(request), ROLE_GENERATOR, ROLE_ADMIN)
         form = await request.form()
         intent = str(form.get("intent", "")).strip()
-        resolution = resolve_catalog_intent(repo_root, intent=intent)
+        user = session_user(request)
+        resolution = resolve_catalog_intent(
+            repo_root,
+            intent=intent,
+            role=user.role if user else None,
+            auth_enabled=bool(auth_config and auth_config.service_enabled),
+        )
         return templates.TemplateResponse(
             request,
             "assistant.html",

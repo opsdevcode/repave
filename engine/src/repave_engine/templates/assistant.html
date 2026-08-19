@@ -9,9 +9,10 @@
   <div>
     <h1 class="page-title">Describe the golden path</h1>
     <p class="page-lead">
-      Repave matches your description to a catalog golden path. You confirm the
-      form, then Plan runs the same gates as always — nothing is generated from
-      this page.
+    Repave matches your description to a catalog golden path and cites
+    in-repo standards and policy the portal already shows. You confirm the
+    form, then Plan runs the same gates as always — nothing is generated from
+    this page.
     </p>
   </div>
 </header>
@@ -36,6 +37,22 @@
 {% if resolution %}
   {% if resolution.message %}
   <p class="alert alert--info" role="status">{{ resolution.message }}</p>
+  {% endif %}
+  {% if resolution.citations %}
+  <section class="stack-gap" aria-labelledby="assistant-citations-heading">
+    <h2 id="assistant-citations-heading" class="fleet-shelf__title">Cited standards and policy</h2>
+    <ul class="library-drawers">
+      {% for citation in resolution.citations %}
+      <li class="library-drawer">
+        <p><strong>{{ citation.title }}</strong></p>
+        <p class="muted">Source: {{ citation.source }}</p>
+        {% if citation.excerpt %}
+        <p class="muted">{{ citation.excerpt }}</p>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
   {% endif %}
   {% if resolution.matches %}
   <section class="stack-gap" aria-labelledby="assistant-matches-heading">

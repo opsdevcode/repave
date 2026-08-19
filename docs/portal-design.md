@@ -45,7 +45,7 @@ static assets, CSS tokens, and a base layout template.
 | FinOps enablement (v1.90–v1.94) | **Shipped** — tags, estimate policy, showback/`/platform/finops`, FOCUS, chargeback ([archive](roadmap-archive.md#finops-enablement-v2x), [`finops.md`](finops.md)) |
 | Parking lot: standards and policy pack diffs | **Shipped:** blueprint form and upgrade preview side-by-side pinned vs HEAD plus unified diff accordion |
 | Catalog handoff on generate result | **Shipped:** result hero **View in catalog** when `portal.backstage_url` is set and `catalog-info.yaml` was emitted |
-| v3.0 conversational generation | `/assistant` catalog match (default-off); LLM draft still Phase 5 |
+| v3.0 conversational generation | `/assistant` catalog match + corpus citations (default-off); LLM draft still Phase 5 |
 
 Delivery slices (all landed on `main`):
 
