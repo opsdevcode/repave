@@ -1,6 +1,7 @@
 package repave
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -70,12 +71,18 @@ func NewApplyUpgrader(cfg Config) ApplyUpgrader {
 
 // UpgradeTarget returns the path or repo URL to pass to plan/apply.
 // HTTP mode uses spec.repoURL so the API can clone server-side.
-func UpgradeTarget(repoURL, localPath, workspacePath string, cfg Config) string {
-	if cfg.HTTPMode() && strings.TrimSpace(repoURL) != "" {
-		return strings.TrimSpace(repoURL)
+func UpgradeTarget(repoURL, localPath, workspacePath string, cfg Config) (string, error) {
+	if cfg.HTTPMode() {
+		if remote := strings.TrimSpace(repoURL); remote != "" {
+			return remote, nil
+		}
+		return "", fmt.Errorf(
+			"HTTP upgrade mode requires spec.repoURL; " +
+				"spec.localPath is not visible to the API pod",
+		)
 	}
 	if strings.TrimSpace(localPath) != "" {
-		return strings.TrimSpace(localPath)
+		return strings.TrimSpace(localPath), nil
 	}
-	return strings.TrimSpace(workspacePath)
+	return strings.TrimSpace(workspacePath), nil
 }

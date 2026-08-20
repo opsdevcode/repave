@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	repavev1beta1 "github.com/opsdevcode/repave/operator/api/v1beta1"
@@ -22,6 +23,7 @@ func (r *GoldenPathRepoReconciler) enqueueGoldenPathReposForBlueprint(
 
 	var list repavev1beta1.GoldenPathRepoList
 	if err := r.List(ctx, &list, client.InNamespace(bp.Namespace)); err != nil {
+		log.FromContext(ctx).Error(err, "list GoldenPathRepos for blueprint watch")
 		return nil
 	}
 

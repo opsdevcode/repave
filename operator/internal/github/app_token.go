@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -18,9 +19,12 @@ import (
 )
 
 const (
-	tokenRefreshBuffer = 5 * time.Minute
-	appJWTLifetime     = 9 * time.Minute
+	tokenRefreshBuffer  = 5 * time.Minute
+	appJWTLifetime      = 9 * time.Minute
+	appTokenHTTPTimeout = 30 * time.Second
 )
+
+var appTokenHTTPClient = &http.Client{Timeout: appTokenHTTPTimeout}
 
 // AppConfig holds GitHub App credentials from the environment.
 type AppConfig struct {
@@ -147,7 +151,9 @@ func fetchInstallationToken(cfg *AppConfig) (string, time.Time, error) {
 		"https://api.github.com/app/installations/%s/access_tokens",
 		cfg.InstallationID,
 	)
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), appTokenHTTPTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return "", time.Time{}, err
 	}
@@ -155,12 +161,15 @@ func fetchInstallationToken(cfg *AppConfig) (string, time.Time, error) {
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := appTokenHTTPClient.Do(req)
 	if err != nil {
 		return "", time.Time{}, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("read GitHub installation token response: %w", err)
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", time.Time{}, fmt.Errorf("GitHub API %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
 	}

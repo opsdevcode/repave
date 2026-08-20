@@ -20,7 +20,9 @@ func (c *HTTPClient) doGitHub(
 ) (*http.Response, []byte, error) {
 	installationID := CurrentInstallationID()
 	minRemaining := MinRemainingFromEnv()
-	DefaultRateLimitTracker().WaitIfNeeded(installationID, minRemaining)
+	if err := DefaultRateLimitTracker().WaitIfNeeded(ctx, installationID, minRemaining); err != nil {
+		return nil, nil, err
+	}
 
 	var lastErr error
 	for attempt := 0; attempt <= githubMaxRetries; attempt++ {

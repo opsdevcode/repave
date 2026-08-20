@@ -32,6 +32,26 @@ func TestReadRegistryFoldsEvents(t *testing.T) {
 	}
 }
 
+func TestReadRegistrySkipsMalformedLines(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "registry.jsonl")
+	content := "" +
+		`{"event":"register","repo_url":"https://github.com/acme/ok","blueprint_name":"bp","blueprint_version":"1.0.0"}` + "\n" +
+		`not-json` + "\n" +
+		`{"event":"register","repo_url":"https://github.com/acme/two","blueprint_name":"bp","blueprint_version":"2.0.0"}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	entries, err := ReadRegistry(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+}
+
 func TestReadRegistryMissingFile(t *testing.T) {
 	entries, err := ReadRegistry(filepath.Join(t.TempDir(), "missing.jsonl"))
 	if err != nil {
