@@ -119,6 +119,10 @@ spec:
               value: "1"
             - name: REPAVE_SESSION_HTTPS_ONLY
               value: {{ ternary "1" "0" .Values.repave.auth.sessionHttpsOnly | quote }}
+            {{- if .Values.repave.license.existingSecret }}
+            - name: REPAVE_LICENSE_FILE
+              value: /var/run/secrets/repave/license.json
+            {{- end }}
             {{- end }}
             {{- if .Values.repave.audit.enabled }}
             - name: REPAVE_AUDIT_FILE
@@ -214,10 +218,20 @@ spec:
             {{- end }}
             {{- include "repave.environmentDataVolumeMount" . | nindent 12 }}
             {{- include "repave.serviceCatalogVolumeMounts" . | nindent 12 }}
+            {{- if and .Values.repave.auth.serviceMode .Values.repave.license.existingSecret }}
+            - name: license
+              mountPath: /var/run/secrets/repave
+              readOnly: true
+            {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ include "repave.fullname" . }}
+        {{- if and .Values.repave.auth.serviceMode .Values.repave.license.existingSecret }}
+        - name: license
+          secret:
+            secretName: {{ .Values.repave.license.existingSecret | quote }}
+        {{- end }}
         - name: modules
           {{- if .Values.persistence.modules.existingClaim }}
           persistentVolumeClaim:

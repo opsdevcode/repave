@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from license_helpers import install_repave_license
 from repave_engine.api import _dry_run_from_form, _plan_preview_from_form, create_app
 from repave_engine.audit import AuditRecord, append_audit_record
 from repave_engine.gate_registry import GateResult
@@ -992,6 +993,7 @@ def test_portal_generate_viewer_returns_json_insufficient_role(
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
 
     client = TestClient(
         create_app(repo_root=tmp_path, output_config=output_config),
@@ -1042,6 +1044,7 @@ def test_portal_generate_viewer_returns_html_insufficient_role(
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
 
     client = TestClient(
         create_app(repo_root=tmp_path, output_config=output_config),

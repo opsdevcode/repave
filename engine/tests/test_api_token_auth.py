@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from license_helpers import install_repave_license
 from repave_engine.api import create_app
 
 
@@ -16,6 +17,7 @@ def service_mode_with_api_token(monkeypatch: pytest.MonkeyPatch, tmp_path) -> No
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
 
 
 def test_api_token_allows_v2_fleet_read(

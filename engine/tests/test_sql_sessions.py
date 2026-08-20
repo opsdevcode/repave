@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 from itsdangerous import URLSafeSerializer
 
+from license_helpers import install_repave_license
 from repave_engine.api import create_app
 from repave_engine.session_store import load_session_store
 from repave_engine.settings import OutputConfig
@@ -75,6 +76,7 @@ def test_sql_sessions_shared_across_app_instances(
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
 
     store = load_session_store(tmp_path)
     assert store is not None
@@ -146,6 +148,7 @@ def test_service_mode_uses_sql_sessions(
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
 
     client = TestClient(
         create_app(repo_root=tmp_path, output_config=output_config),

@@ -343,5 +343,6 @@ Automated semver and GitHub Releases: [docs/releases.md](docs/releases.md)
 This repository is **proprietary**, including concepts, ADRs, docs, and code.
 The GitHub repository is **private**. Collaborators with access may view the
 tree; you may not use, copy, modify, or distribute it except under a separate
-written license. See [LICENSE](LICENSE) and
-[`docs/licensing.md`](docs/licensing.md).
+written license. See [LICENSE](LICENSE),
+[`docs/licensing.md`](docs/licensing.md), and
+[`docs/customers/`](docs/customers/) (install, sales, IP assignment).

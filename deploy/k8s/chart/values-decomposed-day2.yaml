@@ -42,6 +42,8 @@ repave:
       roles:
         admin: []
         generator: []
+  license:
+    existingSecret: repave-license
 
 # Portal/API: no gate CLIs, no embedded corpus.
 image:

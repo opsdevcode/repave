@@ -14,6 +14,8 @@ repave:
     enabled: true
   auth:
     serviceMode: true
+  license:
+    existingSecret: repave-license
 
 # API pods: portal-only image (no gate CLIs). Workers use the gate-toolchain image.
 image:

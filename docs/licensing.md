@@ -3,6 +3,12 @@
 The entire repository is **proprietary**. There is no open-source exception
 for concepts, ADRs, docs, or code. See [LICENSE](../LICENSE).
 
+Paid self-hosted use is a separate grant:
+[docs/customers/COMMERCIAL-LICENSE.md](customers/COMMERCIAL-LICENSE.md).
+Install: [docs/customers/install.md](customers/install.md). Sales:
+[docs/customers/sales.md](customers/sales.md). Employer IP ask:
+[docs/customers/ip-assignment.md](customers/ip-assignment.md).
+
 This GitHub repository is **private**. GitHub Actions uses the private-repo
 minutes plan. Historical GitHub Releases and copies created while the tree was
 Apache-2.0 remain under that license for anyone who already received them.

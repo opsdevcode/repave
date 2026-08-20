@@ -21,7 +21,7 @@ ROLE_ADMIN = "admin"
 SERVICE_BEARER_SUBJECT = "repave:service-bearer"
 SERVICE_BEARER_EMAIL = "repave-service@internal.local"
 
-_PUBLIC_EXACT = frozenset({"/", "/signup"})
+_PUBLIC_EXACT = frozenset({"/", "/signup", "/pricing"})
 _PUBLIC_PREFIXES = ("/static", "/health", "/readyz", "/metrics", "/auth/")
 
 

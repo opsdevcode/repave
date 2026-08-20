@@ -34,3 +34,5 @@ repave:
           - repave-admins
         generator:
           - repave-generators
+  license:
+    existingSecret: repave-license
