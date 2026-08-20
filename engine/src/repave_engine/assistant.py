@@ -85,6 +85,11 @@ ASSISTANT_SERVICE_REGISTRY: tuple[AssistantTool, ...] = (
         kind="read",
         description="Optional model JSON of catalog inputs; never generate or score gates",
     ),
+    AssistantTool(
+        tool_id="corpus.synthesize",
+        kind="read",
+        description="Optional model paraphrase of citation excerpts; never generate",
+    ),
 )
 
 
@@ -130,6 +135,8 @@ class AssistantResolution:
     draft_model: str = ""
     prompt_hash: str = ""
     draft_status: str = ""
+    answer: str = ""
+    synthesis_status: str = ""
 
     def to_public_dict(self) -> dict[str, object]:
         return {
@@ -141,6 +148,8 @@ class AssistantResolution:
             "draft_model": self.draft_model,
             "prompt_hash": self.prompt_hash,
             "draft_status": self.draft_status,
+            "answer": self.answer,
+            "synthesis_status": self.synthesis_status,
         }
 
 
@@ -208,6 +217,7 @@ def _maybe_apply_draft(
         apply_model_draft,
         load_draft_model_from_env,
     )
+    from repave_engine.assistant_synthesis import apply_cited_synthesis
 
     model: AssistantDraftModel | None
     if draft_model is not None:
@@ -226,6 +236,7 @@ def _maybe_apply_draft(
         model=model,
         model_id=model_id,
     )
+    updated = apply_cited_synthesis(updated, model=model, model_id=model_id)
     _record_draft_audit(repo_root, updated, acting_role=acting_role)
     return updated
 
@@ -262,6 +273,7 @@ def _record_draft_audit(
                 "prompt_hash": resolution.prompt_hash,
                 "draft_model": resolution.draft_model,
                 "draft_status": resolution.draft_status,
+                "synthesis_status": resolution.synthesis_status,
                 "role": acting_role or "",
             },
         ),

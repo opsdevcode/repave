@@ -171,6 +171,8 @@ def test_assistant_html_and_api_when_on(
     assert body["citations"]
     assert body["citations"][0]["source"]
     assert not str(body["citations"][0]["source"]).startswith("docs/")
+    assert body["answer"] == ""
+    assert body["synthesis_status"] == ""
 
 
 def test_api_v2_assistant_404_when_off(repo_root: Path, output_config) -> None:

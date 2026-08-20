@@ -38,6 +38,12 @@
   {% if resolution.draft_status %}
   <p class="muted">Draft: {{ resolution.draft_status }}{% if resolution.draft_model %} ({{ resolution.draft_model }}){% endif %}</p>
   {% endif %}
+  {% if resolution.answer %}
+  <section class="stack-gap" aria-labelledby="assistant-answer-heading">
+    <h2 id="assistant-answer-heading" class="fleet-shelf__title">Cited answer</h2>
+    <p>{{ resolution.answer }}</p>
+  </section>
+  {% endif %}
   {% if resolution.citations %}
   <section class="stack-gap" aria-labelledby="assistant-citations-heading">
     <h2 id="assistant-citations-heading" class="fleet-shelf__title">Cited standards and policy</h2>

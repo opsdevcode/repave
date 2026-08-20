@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.57.0  
 
-**In progress:** conversational assistant (optional extractive FTS retrieval)
+**In progress:** conversational assistant (cited excerpt synthesis)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -506,8 +506,9 @@ families; waivers use `gate_id: mandatory-policy`
 ### Conversational and governed AI generation
 
 **Status:** **Partial** — catalog intent resolve, corpus citations, optional
-input-only model draft, Open-form query prefills, and optional extractive FTS
-(`v3.assistant.retrieval: fts`, default `memory`) are default-off. Guided
+input-only model draft, Open-form query prefills, optional extractive FTS
+(`v3.assistant.retrieval: fts`, default `memory`), and optional cited
+excerpt synthesis (same draft opt-in; no generate) are default-off. Guided
 identity JS keeps allowlisted query prefills. FTS is adapted from
 [opsdevcode/relay](https://github.com/opsdevcode/relay) (chunk + FTS, no LLM);
 Relay is not a runtime dependency. Generate still uses the existing form and

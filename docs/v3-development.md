@@ -49,6 +49,7 @@ Modules under `engine/src/repave_engine/`:
 | `assistant.py` | Intent → catalog golden-path matches with citations; no generate |
 | `assistant_fts.py` | Optional extractive FTS retrieval (`v3.assistant.retrieval: fts`); default memory |
 | `assistant_draft.py` | Optional model JSON of catalog inputs; hashed prompt; no generate |
+| `assistant_synthesis.py` | Optional cited excerpt paraphrase (same draft opt-in); no generate |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
 `engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,

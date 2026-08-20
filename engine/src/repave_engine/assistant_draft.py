@@ -41,8 +41,17 @@ _BLOCKED_FIELDS = frozenset(
 _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL)
 
 
+_DRAFT_SYSTEM = (
+    "Reply with JSON only: "
+    '{"blueprint":"<catalog name>",'
+    '"inputs":{"field":"value"}}. '
+    "Use only listed field names. "
+    "Never emit files, secrets, or gate results."
+)
+
+
 class AssistantDraftModel(Protocol):
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str = "") -> str:
         """Return model text. Callers must treat it as untrusted."""
 
 
@@ -50,7 +59,7 @@ class AssistantDraftModel(Protocol):
 class StaticAssistantDraftModel:
     payload: str
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str = "") -> str:
         return self.payload
 
 
@@ -60,10 +69,28 @@ class RecordingAssistantDraftModel:
     def __init__(self, payload: str) -> None:
         self.payload = payload
         self.prompts: list[str] = []
+        self.systems: list[str] = []
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str = "") -> str:
         self.prompts.append(prompt)
+        self.systems.append(system)
         return self.payload
+
+
+class SequencedAssistantDraftModel:
+    """In-package fake that returns successive payloads (draft then synthesis)."""
+
+    def __init__(self, payloads: tuple[str, ...]) -> None:
+        self._payloads = list(payloads)
+        self.prompts: list[str] = []
+        self.systems: list[str] = []
+
+    def complete(self, prompt: str, *, system: str = "") -> str:
+        self.prompts.append(prompt)
+        self.systems.append(system)
+        if not self._payloads:
+            raise ValueError("assistant draft model has no remaining payloads")
+        return self._payloads.pop(0)
 
 
 @dataclass(frozen=True)
@@ -75,8 +102,9 @@ class HttpAssistantDraftModel:
     base_url: str = "https://api.openai.com/v1"
     timeout_seconds: float = 20.0
 
-    def complete(self, prompt: str) -> str:
+    def complete(self, prompt: str, *, system: str = "") -> str:
         url = self.base_url.rstrip("/") + "/chat/completions"
+        system_text = system.strip() or _DRAFT_SYSTEM
         try:
             response = httpx.post(
                 url,
@@ -85,16 +113,7 @@ class HttpAssistantDraftModel:
                     "model": self.model,
                     "temperature": 0,
                     "messages": [
-                        {
-                            "role": "system",
-                            "content": (
-                                "Reply with JSON only: "
-                                '{"blueprint":"<catalog name>",'
-                                '"inputs":{"field":"value"}}. '
-                                "Use only listed field names. "
-                                "Never emit files, secrets, or gate results."
-                            ),
-                        },
+                        {"role": "system", "content": system_text},
                         {"role": "user", "content": prompt},
                     ],
                 },
