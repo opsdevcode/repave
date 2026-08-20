@@ -8,9 +8,9 @@ and [`docs/operator-standards.md`](docs/operator-standards.md).
 The most valuable contributions now are feedback on contracts, golden paths, and
 operator design.
 
-Viewing the public repository and filing issues is welcome. Pull requests assign
-all rights in the contribution to the copyright holder. Submitting a PR is not
-an inbound open-source grant. See [LICENSE](LICENSE) and
+Viewing requires repository access. Filing issues is welcome for collaborators.
+Pull requests assign all rights in the contribution to the copyright holder.
+Submitting a PR is not an inbound open-source grant. See [LICENSE](LICENSE) and
 [`docs/licensing.md`](docs/licensing.md).
 
 ## Ground rules
