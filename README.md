@@ -336,10 +336,8 @@ Automated semver and GitHub Releases: [docs/releases.md](docs/releases.md)
 
 ## License
 
-This repository is **proprietary source-available**, including concepts, ADRs,
-docs, and code. You may view the public tree; you may not use, copy, modify, or
-distribute it except under a separate written license. See [LICENSE](LICENSE)
-and [`docs/licensing.md`](docs/licensing.md).
-
-This repository stays **public** so GitHub Actions stays on the public-repo
-plan.
+This repository is **proprietary**, including concepts, ADRs, docs, and code.
+The GitHub repository is **private**. Collaborators with access may view the
+tree; you may not use, copy, modify, or distribute it except under a separate
+written license. See [LICENSE](LICENSE) and
+[`docs/licensing.md`](docs/licensing.md).
