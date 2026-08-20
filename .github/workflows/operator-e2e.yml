@@ -13,6 +13,10 @@ concurrency:
   group: operator-e2e-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   kind-e2e:
     name: operator-e2e
