@@ -898,6 +898,9 @@ def test_blueprint_form_renders_inputs(repo_root, output_config) -> None:
     assert "governance-card__gates-details" in response.text
     assert "receipt in" not in response.text.lower()
     assert "form-actions__buttons--stack" in response.text
+    apply_pos = response.text.find('class="btn btn--secondary" type="submit"')
+    hidden_pos = response.text.find("data-dry-run-submit")
+    assert 0 <= apply_pos < hidden_pos
     assert "repave.yaml" in response.text
 
 

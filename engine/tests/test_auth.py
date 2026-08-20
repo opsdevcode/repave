@@ -17,6 +17,7 @@ from repave_engine.auth import (
     is_public_path,
     logout_return_to,
     role_for_groups,
+    safe_post_login_path,
 )
 from repave_engine.settings import load_portal_config
 
@@ -285,6 +286,24 @@ def test_public_paths_include_marketing_pages() -> None:
     assert is_public_path("/static/repave.css")
     assert not is_public_path("/library")
     assert not is_public_path("/home")
+
+
+def test_safe_post_login_path_rejects_open_redirects() -> None:
+    assert safe_post_login_path("/library") == "/library"
+    assert safe_post_login_path("//evil.example/phish") == "/"
+    assert safe_post_login_path("https://evil.example/") == "/"
+    assert safe_post_login_path("\\evil") == "/"
+    assert safe_post_login_path(None) == "/"
+
+
+def test_build_login_redirect_sanitizes_protocol_relative_next() -> None:
+    request = SimpleNamespace(session={}, query_params={"next": "//evil.example/phish"})
+    build_login_redirect(
+        request,  # type: ignore[arg-type]
+        _auth_config(),
+        {"authorization_endpoint": "https://idp.example.com/authorize"},
+    )
+    assert request.session["oidc_next"] == "/"
 
 
 def test_build_login_redirect_includes_signup_hint() -> None:

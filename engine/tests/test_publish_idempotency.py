@@ -62,6 +62,7 @@ def test_publish_message_succeeded_detects_failures() -> None:
     assert publish_message_succeeded("Pushed initial commit.") is True
     assert publish_message_succeeded("GitHub publish failed.\nError") is False
     assert publish_message_succeeded("GitHub repository provisioning failed.\nError") is False
+    assert publish_message_succeeded("Gates failed; module repository not updated.") is False
 
 
 def test_generate_skips_github_publish_when_receipt_exists(

@@ -1197,6 +1197,14 @@
         {% endif %}
         {% include "partials/delivery_mode_toggle.html" %}
         <div class="form-actions__buttons form-actions__buttons--stack">
+          <button type="button" class="btn btn--primary" data-dry-run-run>
+            Plan preview
+          </button>
+          {% if form_stepper %}
+          <button class="btn btn--secondary" type="submit" data-stepper-submit>Apply</button>
+          {% else %}
+          <button class="btn btn--secondary" type="submit">Apply</button>
+          {% endif %}
           <button
             type="submit"
             class="dry-run-submit"
@@ -1206,14 +1214,6 @@
           >
             Plan preview
           </button>
-          <button type="button" class="btn btn--primary" data-dry-run-run>
-            Plan preview
-          </button>
-          {% if form_stepper %}
-          <button class="btn btn--secondary" type="submit" data-stepper-submit>Apply</button>
-          {% else %}
-          <button class="btn btn--secondary" type="submit">Apply</button>
-          {% endif %}
         </div>
       </div>
     </div>

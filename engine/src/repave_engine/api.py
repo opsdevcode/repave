@@ -57,6 +57,7 @@ from repave_engine.auth import (
     AuthConfig,
     authenticated_user,
     is_public_path,
+    is_state_api_path,
     require_role,
     session_user,
 )
@@ -65,11 +66,11 @@ from repave_engine.backstage_urls import backstage_catalog_entity_href
 from repave_engine.blueprint import (
     artifact_family,
     blueprint_dir,
-    bundles_dir,
     group_blueprints_by_artifact,
     list_catalog_blueprints,
     load_blueprint,
     policy_kind_label,
+    resolve_bundle_dir,
 )
 from repave_engine.bundle import list_bundles, load_bundle
 from repave_engine.bundle_portal import (
@@ -605,7 +606,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         if auth_config is None or not auth_config.service_enabled:
             return await call_next(request)
         path = request.url.path
-        if is_public_path(path):
+        if is_public_path(path) or is_state_api_path(path):
             return await call_next(request)
         user = authenticated_user(request, auth_config)
         if user is None:
@@ -1426,8 +1427,11 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
 
     @app.get("/bundles/{bundle_name}", response_class=HTMLResponse)
     async def bundle_form(request: Request, bundle_name: str) -> HTMLResponse:
-        bundle_dir = bundles_dir(repo_root) / bundle_name
-        bundle = load_bundle(bundle_dir, repo_root=repo_root)
+        try:
+            loaded = resolve_bundle_dir(repo_root, bundle_name)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        bundle = load_bundle(loaded, repo_root=repo_root)
         preview_inputs: dict[str, str] = {
             "service_name": "example-service",
             "description": "Example service for repository preview",
@@ -1771,7 +1775,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         if is_bundle_run(record):
             bundle_name = str(record.payload.get("bundle", "")).strip()
-            bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+            bundle = load_bundle(resolve_bundle_dir(repo_root, bundle_name), repo_root=repo_root)
             gate_names: list[str] = []
             seen_gates: set[str] = set()
             for member in bundle.members:
@@ -1955,7 +1959,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             )
         if is_bundle_run(record):
             bundle_name = str(record.payload.get("bundle", "")).strip()
-            bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+            bundle = load_bundle(resolve_bundle_dir(repo_root, bundle_name), repo_root=repo_root)
             bundle_result = bundle_result_from_stored_run(
                 record=record,
                 repo_root=repo_root,
