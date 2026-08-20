@@ -11,6 +11,7 @@ import pytest
 from helpers import make_blueprint
 from repave_engine.assistant import resolve_catalog_intent, resolve_intent
 from repave_engine.assistant_draft import (
+    SequencedAssistantDraftModel,
     StaticAssistantDraftModel,
     apply_model_draft,
     parse_draft_payload,
@@ -131,8 +132,11 @@ def test_resolve_catalog_intent_applies_injected_draft(
         "repave_engine.assistant.load_v3_foundation_config",
         lambda _root: patched,
     )
-    model = StaticAssistantDraftModel(
-        '{"blueprint":"terraform-module-generic","inputs":{"cloud_provider":"gcp"}}'
+    model = SequencedAssistantDraftModel(
+        (
+            '{"blueprint":"terraform-module-generic","inputs":{"cloud_provider":"gcp"}}',
+            '{"answer":"Use the terraform module layout cited in standards."}',
+        )
     )
     result = resolve_catalog_intent(
         repo_root,
@@ -144,3 +148,10 @@ def test_resolve_catalog_intent_applies_injected_draft(
     assert result.matches[0].blueprint == "terraform-module-generic"
     assert result.matches[0].suggested_inputs["cloud_provider"] == "gcp"
     assert len(result.prompt_hash) == 64
+    assert result.synthesis_status in {"applied", "skipped-no-citations"}
+    if result.citations:
+        assert result.synthesis_status == "applied"
+        assert "standards" in result.answer or "terraform" in result.answer.lower()
+        assert "corpus.synthesize" in result.tools
+        assert "Catalog:" not in model.prompts[1]
+        assert any(":" in line for line in model.prompts[1].splitlines())
