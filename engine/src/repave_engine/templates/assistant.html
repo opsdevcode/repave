@@ -44,6 +44,32 @@
     <p>{{ resolution.answer }}</p>
   </section>
   {% endif %}
+  {% if resolution.artifact_status %}
+  <p class="muted">Artifacts: {{ resolution.artifact_status }} (dry-run gates; not published)</p>
+  {% endif %}
+  {% if resolution.artifact_gates %}
+  <ul class="library-drawers">
+    {% for gate in resolution.artifact_gates %}
+    <li class="library-drawer">
+      <p>{{ gate.name }}: {% if gate.passed or gate.skipped %}ok{% else %}blocked{% endif %}</p>
+      <p class="muted">{{ gate.message }}</p>
+    </li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if resolution.artifact_files %}
+  <section class="stack-gap" aria-labelledby="assistant-artifacts-heading">
+    <h2 id="assistant-artifacts-heading" class="fleet-shelf__title">Gated candidate files</h2>
+    <ul class="library-drawers">
+      {% for item in resolution.artifact_files %}
+      <li class="library-drawer">
+        <p><strong>{{ item.path }}</strong></p>
+        <pre class="muted">{{ item.content }}</pre>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
   {% if resolution.citations %}
   <section class="stack-gap" aria-labelledby="assistant-citations-heading">
     <h2 id="assistant-citations-heading" class="fleet-shelf__title">Cited standards and policy</h2>

@@ -312,6 +312,8 @@ helm upgrade --install repave ./deploy/k8s/chart \
 `assistant.enabled` require
 `v3.enabled`. `assistant.draft.enabled` also requires `assistant.enabled` and
 `REPAVE_ASSISTANT_API_KEY` for the optional input-only model call.
+`assistant.artifacts.enabled` also requires `assistant.draft.enabled` and runs
+matched-blueprint gates on candidate files without publishing.
 `assistant.retrieval` is `memory` (default token scoring) or `fts` (extractive
 chunks; uses Postgres FTS when durability is PostgreSQL).
 The chart defaults `serviceCatalog.enabled` and `bundleExamples` on so hosted

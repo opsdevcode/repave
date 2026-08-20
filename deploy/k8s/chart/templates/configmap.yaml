@@ -13,6 +13,9 @@
 {{- if and .Values.repave.v3.assistant.draft.enabled (not .Values.repave.v3.assistant.enabled) }}
 {{- fail "repave.v3.assistant.draft.enabled requires repave.v3.assistant.enabled" }}
 {{- end }}
+{{- if and .Values.repave.v3.assistant.artifacts.enabled (not .Values.repave.v3.assistant.draft.enabled) }}
+{{- fail "repave.v3.assistant.artifacts.enabled requires repave.v3.assistant.draft.enabled" }}
+{{- end }}
 {{- $assistantRetrieval := default "memory" .Values.repave.v3.assistant.retrieval }}
 {{- if and $assistantRetrieval (not (or (eq $assistantRetrieval "memory") (eq $assistantRetrieval "fts"))) }}
 {{- fail "repave.v3.assistant.retrieval must be memory or fts" }}
@@ -196,6 +199,8 @@ data:
         draft:
           enabled: {{ .Values.repave.v3.assistant.draft.enabled }}
           model: {{ .Values.repave.v3.assistant.draft.model | quote }}
+        artifacts:
+          enabled: {{ .Values.repave.v3.assistant.artifacts.enabled }}
     {{- end }}
     {{- if .Values.repave.serviceCatalog.enabled }}
     service_catalog:
