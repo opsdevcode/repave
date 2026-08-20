@@ -13,10 +13,11 @@ from repave_engine.assistant_corpus import (
     corpus_allowed,
     excerpt_for,
     load_assistant_corpus,
-    search_corpus,
     tokenize_intent,
 )
+from repave_engine.assistant_fts import open_fts_store, retrieve_corpus
 from repave_engine.blueprint import Blueprint, artifact_family, list_catalog_blueprints
+from repave_engine.sql_store import SqlConnection
 from repave_engine.v3_foundation import load_v3_foundation_config
 
 _MAX_INTENT_CHARS = 2000
@@ -173,7 +174,15 @@ def resolve_catalog_intent(
     if corpus_allowed(role=role, auth_enabled=auth_enabled):
         corpus = load_assistant_corpus(repo_root)
     blueprints = list_catalog_blueprints(repo_root)
-    resolution = resolve_intent(intent, blueprints=blueprints, corpus=corpus)
+    retrieval = load_v3_foundation_config(repo_root).assistant_retrieval
+    with open_fts_store(repo_root, retrieval=retrieval) as store:
+        resolution = resolve_intent(
+            intent,
+            blueprints=blueprints,
+            corpus=corpus,
+            retrieval=retrieval,
+            store=store,
+        )
     return _maybe_apply_draft(
         repo_root,
         resolution,
@@ -265,6 +274,8 @@ def resolve_intent(
     *,
     blueprints: Sequence[Blueprint],
     corpus: Sequence[CorpusDocument] = (),
+    retrieval: str = "memory",
+    store: SqlConnection | None = None,
 ) -> AssistantResolution:
     """Score catalog blueprints and corpus docs against a short intent string."""
     tools = (
@@ -293,7 +304,12 @@ def resolve_intent(
         )
 
     tokens = tokenize_intent(cleaned)
-    corpus_hits = search_corpus(corpus, tokens=tokens)
+    corpus_hits = retrieve_corpus(
+        corpus,
+        tokens=tokens,
+        mode=retrieval,
+        store=store,
+    )
     citations = tuple(
         AssistantCitation(
             source=document.source,

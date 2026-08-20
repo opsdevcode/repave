@@ -43,6 +43,7 @@ def test_assistant_opt_in(tmp_path: Path) -> None:
         extra="v3:\n  enabled: true\n  assistant:\n    enabled: true\n",
     )
     assert is_assistant_enabled(tmp_path) is True
+    assert load_v3_foundation_config(tmp_path).assistant_retrieval == "memory"
 
 
 def test_resolve_intent_empty() -> None:

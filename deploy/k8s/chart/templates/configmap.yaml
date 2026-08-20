@@ -13,6 +13,10 @@
 {{- if and .Values.repave.v3.assistant.draft.enabled (not .Values.repave.v3.assistant.enabled) }}
 {{- fail "repave.v3.assistant.draft.enabled requires repave.v3.assistant.enabled" }}
 {{- end }}
+{{- $assistantRetrieval := default "memory" .Values.repave.v3.assistant.retrieval }}
+{{- if and $assistantRetrieval (not (or (eq $assistantRetrieval "memory") (eq $assistantRetrieval "fts"))) }}
+{{- fail "repave.v3.assistant.retrieval must be memory or fts" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -188,6 +192,7 @@ data:
 {{ toYaml .Values.repave.v3.mandatoryPolicy.regulatedFamilies | indent 10 }}
       assistant:
         enabled: {{ .Values.repave.v3.assistant.enabled }}
+        retrieval: {{ $assistantRetrieval | quote }}
         draft:
           enabled: {{ .Values.repave.v3.assistant.draft.enabled }}
           model: {{ .Values.repave.v3.assistant.draft.model | quote }}
