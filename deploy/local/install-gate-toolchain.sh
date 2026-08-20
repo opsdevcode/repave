@@ -119,6 +119,36 @@ case "$arch" in
     ;;
 esac
 
+# CI is Linux; local `make test` uses the same script on macOS (darwin zip/tgz names).
+GATE_KERNEL="${GATE_KERNEL:-$(uname -s)}"
+case "$GATE_KERNEL" in
+  Linux|linux)
+    tf_os=linux
+    tflint_os=linux
+    helm_os=linux
+    kubectl_os=linux
+    infracost_os=linux
+    conftest_os=Linux
+    buf_os=Linux
+    ;;
+  Darwin|darwin)
+    tf_os=darwin
+    tflint_os=darwin
+    helm_os=darwin
+    kubectl_os=darwin
+    infracost_os=darwin
+    conftest_os=Darwin
+    buf_os=Darwin
+    if [[ "$arch" == "arm64" || "$arch" == "aarch64" ]]; then
+      buf_arch="arm64"
+    fi
+    ;;
+  *)
+    echo "unsupported kernel: ${GATE_KERNEL} (set GATE_KERNEL=Linux or Darwin)" >&2
+    exit 1
+    ;;
+esac
+
 install_bin() {
   local src="$1"
   local name
@@ -145,24 +175,24 @@ extract_tgz() {
 if [[ "$INSTALL_TERRAFORM" == "1" ]]; then
   tmp="$(mktemp -d)"
   curl_download \
-    "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${tf_arch}.zip" \
+    "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_${tf_os}_${tf_arch}.zip" \
     -o "$tmp/terraform.zip"
   unzip -q "$tmp/terraform.zip" -d "$tmp"
   install_bin "$tmp/terraform"
   curl_download \
-    "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_linux_${tflint_arch}.zip" \
+    "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT_VERSION}/tflint_${tflint_os}_${tflint_arch}.zip" \
     -o "$tmp/tflint.zip"
   unzip -q "$tmp/tflint.zip" -d "$tmp"
   install_bin "$tmp/tflint"
   extract_tgz \
-    "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_${conf_arch}.tar.gz" \
+    "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_${conftest_os}_${conf_arch}.tar.gz" \
     "$tmp" conftest
   install_bin "$tmp/conftest"
   rm -rf "$tmp"
   pip_install "$CHECKOV_PIP_SPEC"
   tmp_ic="$(mktemp -d)"
   curl_download \
-    "https://github.com/infracost/cli/releases/download/v${INFRACOST_VERSION}/infracost-linux-${tf_arch}.tar.gz" \
+    "https://github.com/infracost/cli/releases/download/v${INFRACOST_VERSION}/infracost-${infracost_os}-${tf_arch}.tar.gz" \
     -o "$tmp_ic/infracost.tgz"
   tar xzf "$tmp_ic/infracost.tgz" -C "$tmp_ic" infracost
   install_bin "$tmp_ic/infracost"
@@ -194,16 +224,16 @@ fi
 if [[ "$INSTALL_HELM" == "1" ]]; then
   tmp_helm="$(mktemp -d)"
   extract_tgz \
-    "https://get.helm.sh/helm-v${HELM_VERSION}-linux-${helm_arch}.tar.gz" \
+    "https://get.helm.sh/helm-v${HELM_VERSION}-${helm_os}-${helm_arch}.tar.gz" \
     "$tmp_helm"
-  install_bin "$tmp_helm/linux-${helm_arch}/helm"
+  install_bin "$tmp_helm/${helm_os}-${helm_arch}/helm"
   rm -rf "$tmp_helm"
 fi
 
 if [[ "$INSTALL_KUBECTL" == "1" ]]; then
   tmp_kubectl="$(mktemp -d)"
   curl_download \
-    "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/linux/${kubectl_arch}/kubectl" \
+    "https://dl.k8s.io/release/v${KUBECTL_VERSION}/bin/${kubectl_os}/${kubectl_arch}/kubectl" \
     -o "$tmp_kubectl/kubectl"
   install_bin "$tmp_kubectl/kubectl"
   rm -rf "$tmp_kubectl"
@@ -231,7 +261,7 @@ fi
 if [[ "$INSTALL_BUF" == "1" ]]; then
   tmp_buf="$(mktemp -d)"
   extract_tgz \
-    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-Linux-${buf_arch}.tar.gz" \
+    "https://github.com/bufbuild/buf/releases/download/v${BUF_VERSION}/buf-${buf_os}-${buf_arch}.tar.gz" \
     "$tmp_buf" buf/bin/buf
   install_bin "$tmp_buf/buf/bin/buf"
   rm -rf "$tmp_buf"

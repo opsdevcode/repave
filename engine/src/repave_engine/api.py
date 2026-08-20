@@ -687,7 +687,7 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             f"({tools}). You do not need to install them locally: "
             "run deploy/local Docker Compose and open http://localhost:8088 "
             "(works on Windows with Docker Desktop). Optional native dev: "
-            "deploy/local/install-gate-toolchain.sh inside Linux or WSL only. "
+            "make gate-tools (or deploy/local/install-gate-toolchain.sh) on macOS or Linux. "
             f"Engine v{__version__}."
         )
 

@@ -31,7 +31,8 @@ make install          # uv sync --extra dev in engine/
 cd engine && uv run pytest   # equivalent to make test (from root, prefer make test)
 ```
 
-Requires [uv](https://docs.astral.sh/uv/). Gate-toolchain tests need `.gate-tools/bin` on PATH (root `Makefile` sets this for `make test`).
+Requires [uv](https://docs.astral.sh/uv/). Gate-toolchain tests need `.gate-tools/bin` and `.gate-tools/py-deps/bin` on PATH
+(root `Makefile` sets this for `make test`; install with `make gate-tools`).
 
 ## Quality workflow
 

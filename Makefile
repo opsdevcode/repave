@@ -1,4 +1,4 @@
-.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-check blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot chart-smoke-backstage validate-github-repo-fleet postgres-dr-drill kind-co-install gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
+.PHONY: install lock test test-fast test-core test-portal test-slow test-v3 test-parallel integration-test lint format typecheck security quality js-lint backstage-lint backstage-test changelog serve platform-dev-setup compose-up compose-down list generate operator-test operator-lint operator-run operator-e2e blueprint-conformance-check blueprint-conformance-update sync-doc-versions sync-chart-versions sync-versions-lock chart-validate chart-smoke chart-smoke-decomposed chart-smoke-multi-replica chart-smoke-environment-vending chart-smoke-fleet-snapshot chart-smoke-backstage validate-github-repo-fleet postgres-dr-drill kind-co-install gate-tools gate-doctor cli-install cli-test cli-test-fast cli-lint cli-format cli-typecheck cli-security cli-quality
 
 REPO_ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 MODULES_ROOT ?= $(HOME)/repave-modules
@@ -70,6 +70,12 @@ integration-test:
 	cd engine && uv run pytest ../integration/tests -q
 
 # After deploy/local/install-gate-toolchain.sh (same pins CI and Compose assert).
+# Host install into .gate-tools (macOS/Linux). Prefer Compose for the portal demo.
+gate-tools:
+	DEST="$(REPO_ROOT)/.gate-tools/bin" GATE_PIP_TARGET="$(REPO_ROOT)/.gate-tools/py-deps" \
+	  REPO_ROOT="$(REPO_ROOT)" USE_UV_PIP=1 \
+	  bash "$(REPO_ROOT)/deploy/local/install-gate-toolchain.sh"
+
 gate-doctor:
 	cd engine && PATH="$(REPO_ROOT)/.gate-tools/bin:$(REPO_ROOT)/.gate-tools/py-deps/bin:$$PATH" \
 	  PYTHONPATH="$(REPO_ROOT)/.gate-tools/py-deps" \

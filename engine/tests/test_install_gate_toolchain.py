@@ -53,6 +53,7 @@ def _run_installer(
         "REPO_ROOT": str(REPO_ROOT),
         "USE_UV_PIP": "1",
         "DEST": str(dest),
+        "GATE_KERNEL": "Linux",
         **env_overrides,
     }
     proc = subprocess.run(
@@ -115,6 +116,12 @@ def test_installer_download_urls_use_pins_file(tmp_path: Path) -> None:
     assert ci_toolchain.ACTIONLINT_VERSION in curl_blob
     assert ci_toolchain.BUF_VERSION in curl_blob
     assert "bufbuild/buf" in curl_blob
+    assert "terraform_" in curl_blob and "_linux_" in curl_blob
+    assert "tflint_linux_" in curl_blob
+    assert "conftest_" in curl_blob and "_Linux_" in curl_blob
+    assert "infracost-linux-" in curl_blob
+    assert "helm-v" in curl_blob and "-linux-" in curl_blob
+    assert "buf-Linux-" in curl_blob
     assert "rhysd/actionlint" in curl_blob
     assert any(host == "dl.k8s.io" for host in _curl_hostnames(calls))
     uv_blob = "\n".join(_lines(calls, "uv"))
@@ -227,7 +234,36 @@ def test_curl_download_gives_up_after_attempts(tmp_path: Path) -> None:
     assert "download failed after 3 attempts" in proc.stderr
 
 
-def test_script_is_syntactically_valid() -> None:
+def test_darwin_kernel_uses_darwin_release_assets(tmp_path: Path) -> None:
+    proc, calls = _run_installer(tmp_path, GATE_KERNEL="Darwin")
+
+    assert proc.returncode == 0, proc.stderr
+    curl_blob = "\n".join(_lines(calls, "curl"))
+    assert "terraform_" in curl_blob and "_darwin_" in curl_blob
+    assert "tflint_darwin_" in curl_blob
+    assert "_Darwin_" in curl_blob
+    assert "infracost-darwin-" in curl_blob
+    assert "-darwin-" in curl_blob
+    assert "buf-Darwin-" in curl_blob
+    assert "/bin/darwin/" in curl_blob
+    assert "_linux_" not in curl_blob
+    assert "buf-Linux-" not in curl_blob
+
+
+def test_unknown_kernel_fails_closed(tmp_path: Path) -> None:
+    proc, _calls = _run_installer(tmp_path, GATE_KERNEL="FreeBSD")
+
+    assert proc.returncode == 1
+    assert "unsupported kernel" in proc.stderr
+
+
+def test_macos_wrapper_is_syntactically_valid() -> None:
+    wrapper = REPO_ROOT / "scripts" / "install-gate-tools-macos.sh"
+    proc = subprocess.run(["bash", "-n", str(wrapper)], capture_output=True, text=True, check=False)
+    assert proc.returncode == 0, proc.stderr
+    text = wrapper.read_text(encoding="utf-8")
+    assert "install-gate-toolchain.sh" in text
+    assert "GATE_PIP_TARGET" in text
     proc = subprocess.run(["bash", "-n", str(SCRIPT)], capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stderr
 
