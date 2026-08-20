@@ -16,6 +16,7 @@ from repave_engine.assistant_corpus import (
     tokenize_intent,
 )
 from repave_engine.assistant_fts import open_fts_store, retrieve_corpus
+from repave_engine.assistant_reads import AssistantReadHit, collect_assistant_reads
 from repave_engine.blueprint import Blueprint, artifact_family, list_catalog_blueprints
 from repave_engine.sql_store import SqlConnection
 from repave_engine.v3_foundation import load_v3_foundation_config
@@ -95,6 +96,21 @@ ASSISTANT_SERVICE_REGISTRY: tuple[AssistantTool, ...] = (
         kind="read",
         description="Optional candidate files gated by the matched blueprint; never publish",
     ),
+    AssistantTool(
+        tool_id="fleet.reads",
+        kind="read",
+        description="Registered fleet repos the portal already lists",
+    ),
+    AssistantTool(
+        tool_id="fleet.drift",
+        kind="read",
+        description="Pin drift estimates vs catalog (same as /platform/standards)",
+    ),
+    AssistantTool(
+        tool_id="audit.history",
+        kind="read",
+        description="Recent generation gate outcomes from the audit sink",
+    ),
 )
 
 
@@ -145,6 +161,7 @@ class AssistantResolution:
     artifact_status: str = ""
     artifact_gates: tuple[dict[str, object], ...] = ()
     artifact_files: tuple[object, ...] = ()
+    reads: tuple[AssistantReadHit, ...] = ()
 
     def to_public_dict(self) -> dict[str, object]:
         files = []
@@ -165,6 +182,7 @@ class AssistantResolution:
             "artifact_status": self.artifact_status,
             "artifact_gates": [dict(item) for item in self.artifact_gates],
             "artifact_files": files,
+            "reads": [item.to_public_dict() for item in self.reads],
         }
 
 
@@ -207,6 +225,18 @@ def resolve_catalog_intent(
             retrieval=retrieval,
             store=store,
         )
+    reads, read_tools = collect_assistant_reads(
+        repo_root,
+        intent=intent,
+        blueprints=blueprints,
+        role=role,
+        auth_enabled=auth_enabled,
+    )
+    resolution = replace(
+        resolution,
+        reads=reads,
+        tools=tuple(dict.fromkeys((*resolution.tools, *read_tools))),
+    )
     return _maybe_apply_draft(
         repo_root,
         resolution,

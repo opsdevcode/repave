@@ -233,7 +233,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/catalog/entities` | viewer+ | Service catalog entities (`?team=`, `?owner=`; maturity when `service_catalog` on; Backstage `/teams`) |
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments (Backstage `/services`) |
 | `GET` | `/api/v2/catalog/blueprints` | viewer+ | Family-grouped blueprint catalog plus input schemas (Backstage `/generate`) |
-| `POST` | `/api/v2/assistant/resolve` | generator+ | Intent → matches plus citations; optional draft/synthesis; optional gated candidate files (`v3.assistant.artifacts.enabled`; no publish) |
+| `POST` | `/api/v2/assistant/resolve` | generator+ | Intent → matches, citations, optional draft/synthesis/gated files; read-only fleet/drift/audit when the role can already see those APIs |
 | `GET` | `/api/v2/bundles` | viewer+ | Golden-path bundle list (Backstage `/bundles`) |
 | `GET` | `/api/v2/bundles/{name}` | viewer+ | Bundle members + topology (Backstage `/bundles`) |
 | `GET` | `/api/v2/library` | viewer+ | Grouped artifact library (`?family=`, `?owner=`; Backstage `/library`) |

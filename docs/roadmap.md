@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.58.0  
 
-**In progress:** conversational assistant (gated candidate artifact files)
+**In progress:** conversational assistant (read-only fleet/drift/audit tools)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -510,7 +510,9 @@ input-only model draft, Open-form query prefills, optional extractive FTS
 (`v3.assistant.retrieval: fts`, default `memory`), cited excerpt synthesis, and
 optional gated candidate files (`v3.assistant.artifacts.enabled`, default-off)
 are shipped as default-off. Artifact drafts run the matched blueprint gates and
-are never published. Guided identity JS keeps allowlisted query prefills. FTS
+are never published. Resolve can cite fleet, pin drift, and gate history the
+caller could already see (`fleet.reads` / `fleet.drift` / `audit.history`).
+Guided identity JS keeps allowlisted query prefills. FTS
 is adapted from [opsdevcode/relay](https://github.com/opsdevcode/relay).
 Generate still uses the existing form and gates for the happy path. Autonomous
 merge of assistant output is not started.
