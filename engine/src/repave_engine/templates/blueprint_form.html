@@ -1453,6 +1453,18 @@
     const response = await fetch(
       `/blueprints/${playbookBlueprintName}/role-inventory/${encodeURIComponent(repoName)}/versions`,
     );
+    if (!response.ok) {
+      versionSelect.innerHTML = "";
+      const failed = document.createElement("option");
+      failed.value = "";
+      failed.textContent = "Could not load versions";
+      failed.disabled = true;
+      failed.selected = true;
+      versionSelect.appendChild(failed);
+      versionSelect.disabled = true;
+      showRolesValidation("Could not load role versions. Refresh the page or try again.");
+      return;
+    }
     const data = await response.json();
     versionSelect.innerHTML = "";
     const ph = document.createElement("option");
@@ -1506,9 +1518,17 @@
   });
 
   async function initRoleInventory() {
-    const response = await fetch(`/blueprints/${playbookBlueprintName}/role-inventory`);
-    const data = await response.json();
-    inventoryRoles = data.roles || [];
+    try {
+      const response = await fetch(`/blueprints/${playbookBlueprintName}/role-inventory`);
+      if (!response.ok) {
+        throw new Error("role inventory HTTP " + response.status);
+      }
+      const data = await response.json();
+      inventoryRoles = data.roles || [];
+    } catch (_err) {
+      inventoryRoles = [];
+      showRolesValidation("Could not load role inventory. Refresh the page or try again.");
+    }
     addRoleRow();
   }
 
@@ -1705,6 +1725,18 @@
     const response = await fetch(
       `/blueprints/${stackBlueprintName}/module-inventory/${encodeURIComponent(repoName)}/versions`,
     );
+    if (!response.ok) {
+      versionSelect.innerHTML = "";
+      const failed = document.createElement("option");
+      failed.value = "";
+      failed.textContent = "Could not load versions";
+      failed.disabled = true;
+      failed.selected = true;
+      versionSelect.appendChild(failed);
+      versionSelect.disabled = true;
+      showStackValidation("Could not load module versions. Refresh the page or try again.");
+      return;
+    }
     const data = await response.json();
     versionSelect.innerHTML = "";
     const ph = document.createElement("option");
@@ -1756,6 +1788,11 @@
     const provider = providerSelect ? providerSelect.value : "";
     const url = `/blueprints/${stackBlueprintName}/module-inventory?cloud_provider=${encodeURIComponent(provider)}`;
     const response = await fetch(url);
+    if (!response.ok) {
+      inventoryModules = [];
+      showStackValidation("Could not load module inventory. Refresh the page or try again.");
+      return;
+    }
     const data = await response.json();
     inventoryModules = data.modules || [];
     for (const row of modulesPanel.querySelectorAll(".pinned-module-row")) {
@@ -2024,6 +2061,9 @@
     const response = await fetch(
       `/blueprints/${blueprintName}/provider-services/${provider}/${service}`
     );
+    if (!response.ok) {
+      throw new Error("provider scope HTTP " + response.status);
+    }
     const data = await response.json();
     resourceCache.set(cacheKey, data);
     return data;
@@ -2091,7 +2131,15 @@
     includeBasicRadio.checked = state.includeBasic;
     customOnlyRadio.checked = !state.includeBasic;
 
-    const definition = await loadServiceResources(providerSelect.value, service);
+    let definition;
+    try {
+      definition = await loadServiceResources(providerSelect.value, service);
+    } catch (_err) {
+      if (status) {
+        status.textContent = "Could not load resources for this service.";
+      }
+      return;
+    }
     const basicSet = new Set(definition.basic || []);
     state.basic = basicSet;
     const additionalResources = (definition.resources || []).filter(
