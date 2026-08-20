@@ -2,7 +2,7 @@
 Copyright 2026 Eric Skaggs.
 
 Proprietary. See the repository LICENSE file. No rights granted except as
-stated there. Concepts and ADRs: LICENSE-CONCEPTS (Apache-2.0).
+stated there.
 */
 
 package main

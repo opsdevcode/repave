@@ -10,7 +10,7 @@ operator design.
 
 Viewing the public repository and filing issues is welcome. Pull requests assign
 all rights in the contribution to the copyright holder. Submitting a PR is not
-an Apache (or other OSI) inbound grant. See [LICENSE](LICENSE) and
+an inbound open-source grant. See [LICENSE](LICENSE) and
 [`docs/licensing.md`](docs/licensing.md).
 
 ## Ground rules

@@ -2,14 +2,12 @@ Copyright (c) 2026 Eric Skaggs.
 
 SPDX-License-Identifier: LicenseRef-Proprietary
 
-This repository is source-available. You may view the source as published
-in the public GitHub repository. This license does not grant you any right
-to use, copy, modify, merge, publish, distribute, sublicense, or sell the
-software or other contents of this repository, except under a separate
-written license from the copyright holder.
+This repository is proprietary and source-available. You may view the source
+as published in the public GitHub repository. This license does not grant
+you any right to use, copy, modify, merge, publish, distribute, sublicense,
+or sell the software, documentation, concepts, architecture decision records,
+or any other contents of this repository, except under a separate written
+license from the copyright holder.
 
-Exception: docs/concepts.md and the docs/adr/ tree are licensed under the
-Apache License 2.0. See LICENSE-CONCEPTS.
-
-THE SOFTWARE AND DOCUMENTATION (OTHER THAN THE EXCEPTION ABOVE) ARE
-PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND.
