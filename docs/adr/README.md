@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: LicenseRef-Proprietary -->
+
 # Architecture decision records
 
 Lightweight ADRs for repave platform choices. Number files sequentially; link from

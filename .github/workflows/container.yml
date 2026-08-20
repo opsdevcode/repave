@@ -115,7 +115,7 @@ jobs:
             type=semver,pattern={{version}}
           labels: |
             org.opencontainers.image.source=https://github.com/opsdevcode/repave
-            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.licenses=LicenseRef-Proprietary
             org.opencontainers.image.description=${{ matrix.description }}
 
       - name: Build and push image (retry on GHCR flake)
