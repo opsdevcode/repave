@@ -90,6 +90,11 @@ ASSISTANT_SERVICE_REGISTRY: tuple[AssistantTool, ...] = (
         kind="read",
         description="Optional model paraphrase of citation excerpts; never generate",
     ),
+    AssistantTool(
+        tool_id="catalog.artifacts",
+        kind="read",
+        description="Optional candidate files gated by the matched blueprint; never publish",
+    ),
 )
 
 
@@ -137,8 +142,15 @@ class AssistantResolution:
     draft_status: str = ""
     answer: str = ""
     synthesis_status: str = ""
+    artifact_status: str = ""
+    artifact_gates: tuple[dict[str, object], ...] = ()
+    artifact_files: tuple[object, ...] = ()
 
     def to_public_dict(self) -> dict[str, object]:
+        files = []
+        for item in self.artifact_files:
+            to_public = getattr(item, "to_public_dict", None)
+            files.append(to_public() if callable(to_public) else item)
         return {
             "intent": self.intent,
             "matches": [item.to_public_dict() for item in self.matches],
@@ -150,6 +162,9 @@ class AssistantResolution:
             "draft_status": self.draft_status,
             "answer": self.answer,
             "synthesis_status": self.synthesis_status,
+            "artifact_status": self.artifact_status,
+            "artifact_gates": [dict(item) for item in self.artifact_gates],
+            "artifact_files": files,
         }
 
 
@@ -212,6 +227,7 @@ def _maybe_apply_draft(
     config = load_v3_foundation_config(repo_root)
     if not config.assistant_draft_enabled:
         return resolution
+    from repave_engine.assistant_artifacts import apply_artifact_draft
     from repave_engine.assistant_draft import (
         AssistantDraftModel,
         apply_model_draft,
@@ -237,6 +253,14 @@ def _maybe_apply_draft(
         model_id=model_id,
     )
     updated = apply_cited_synthesis(updated, model=model, model_id=model_id)
+    if config.assistant_artifacts_enabled:
+        updated = apply_artifact_draft(
+            updated,
+            blueprints=blueprints,
+            model=model,
+            model_id=model_id,
+            repo_root=repo_root,
+        )
     _record_draft_audit(repo_root, updated, acting_role=acting_role)
     return updated
 
@@ -266,7 +290,13 @@ def _record_draft_audit(
             blueprint_version="",
             module_name="",
             dry_run=True,
-            gates_outcome="not-run",
+            gates_outcome=(
+                "passed"
+                if resolution.artifact_status == "gated"
+                else "failed"
+                if resolution.artifact_status == "blocked"
+                else "not-run"
+            ),
             repository_url=None,
             acting_user=current_acting_user(),
             extra={
@@ -274,6 +304,7 @@ def _record_draft_audit(
                 "draft_model": resolution.draft_model,
                 "draft_status": resolution.draft_status,
                 "synthesis_status": resolution.synthesis_status,
+                "artifact_status": resolution.artifact_status,
                 "role": acting_role or "",
             },
         ),

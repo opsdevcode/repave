@@ -277,6 +277,8 @@ gates:
 #     draft:
 #       enabled: false  # optional model JSON of catalog inputs; needs REPAVE_ASSISTANT_API_KEY
 #       model: gpt-4o-mini
+#     artifacts:
+#       enabled: false  # candidate files + blueprint gates; never publish or merge
 #   waivers_file: data/waivers.jsonl
 #   waiver_warn_days: 7
 # With v3.developer_lab.enabled: true, service_catalog defaults to examples/platform-dev

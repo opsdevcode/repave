@@ -242,6 +242,8 @@ repave:
       draft:
         enabled: false  # model may propose catalog inputs only; set REPAVE_ASSISTANT_API_KEY
         model: ""
+      artifacts:
+        enabled: false  # candidate files through blueprint gates; never publish
 
   # Service catalog overlay (ADR 006). Default on with bundled fixtures so
   # hosted Backstage /sandbox, /maturity, and My services do not 404.
