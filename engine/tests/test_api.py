@@ -1287,6 +1287,7 @@ def test_observability_form_single_page(repo_root, output_config) -> None:
     assert "Legacy umbrella path" in response.text
     assert 'id="enable_policy_toggle"' in response.text
     assert "governance-drift-details" in response.text or "Pin drift" in response.text
+    assert "Could not load service inventory" in response.text
 
 
 def test_policy_catalog_endpoint(repo_root, output_config) -> None:

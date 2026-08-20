@@ -3221,7 +3221,12 @@
       const hint = document.getElementById("service-inventory-hint");
       try {
         const resp = await fetch(`/blueprints/${blueprintName}/observability-catalog`);
-        if (!resp.ok) return;
+        if (!resp.ok) {
+          if (hint) {
+            hint.textContent = "Could not load service inventory. Refresh the page or try again.";
+          }
+          return;
+        }
         const payload = await resp.json();
         if (payload.services?.length) {
           catalog.services = payload.services;
@@ -3236,7 +3241,9 @@
             : "";
         }
       } catch (_err) {
-        if (hint) hint.textContent = "";
+        if (hint) {
+          hint.textContent = "Could not load service inventory. Refresh the page or try again.";
+        }
       }
     }
 
