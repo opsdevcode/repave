@@ -141,6 +141,9 @@ locally after bumping `engine` `__version__`.
   `**Status:** Shipped` under [Planned](#planned).
 - Keep speculative ideas in [Parking lot](#parking-lot) until there is a concrete
   next step.
+- Defects from rapid feature shipping follow
+  [`docs/bug-fix-cadence.md`](bug-fix-cadence.md) (surface sweep after each
+  `feat:`, estate pass weekly or every three feature merges).
 - Use [Path to v2.0.0](#path-to-v200) for the big-picture sequence; historical detail is in
   the [archive](roadmap-archive.md).
 - [Beyond v2.0.0](#beyond-v200--autonomous-estate-and-lifecycle-control-plane) holds the

@@ -1,0 +1,35 @@
+---
+description: Feature vs fix cadence for opsdevcode/repave — sweep after feats, estate pass weekly
+alwaysApply: true
+---
+
+# Bug-fix cadence (repave)
+
+Features keep landing; defects in auth, HTTP, and UI still need a clock.
+Source of truth: [`docs/bug-fix-cadence.md`](docs/bug-fix-cadence.md).
+
+## After a `feat:` PR merges (or when the user says “next”)
+
+Default next work is a **surface sweep** of the files that PR touched, not the
+next roadmap feature. Open P1/P2 as `fix/*` PRs. Do not start the next feat
+while a P1 from that sweep is open unless the user defers it.
+
+## Estate pass
+
+After **three** merged feature PRs or **weekly** (whichever first): repo-wide
+pass using the checklist in `docs/bug-fix-cadence.md`. Slice findings into
+`fix(engine)`, `fix(operator)`, `fix(portal)` — not one kitchen-sink PR.
+
+## “What’s next” after opening a PR
+
+- If the PR was **`feat:`** — next implementation is the surface sweep (goal,
+  scope = those paths, done when P1/P2 are filed or fixed).
+- If the PR was **`fix:`** from a sweep — next is remaining P2 from the same
+  note, then the estate pass if the three-feat/weekly trigger fired.
+- Do not recommend the next roadmap feat until the sweep is done or explicitly
+  skipped.
+
+## Do not
+
+- Mix the next feature into a fix branch.
+- Treat empty catalogs / hung “Running…” / ignored `ctx` as follow-up docs.
