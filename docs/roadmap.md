@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.60.3  
 
-**In progress:** conversational assistant (read-only fleet/drift/audit tools)
+**In progress:** conversational assistant (intent → confirmed generate; autonomous merge not started)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -22,6 +22,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Assistant read-only fleet/drift/audit**
+(resolve cites what the caller could already see; ranking and hint filters);
 **Policy pack side-by-side**
 (Checkov/OPA/Azure/ansible-lint pin diffs on generate and upgrade, matching standards);
 **Operator Kubernetes stack**
