@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.55.2  
 
-**In progress:** conversational assistant (guided form keeps query prefills)
+**In progress:** conversational assistant (optional extractive FTS retrieval)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -506,10 +506,12 @@ families; waivers use `gate_id: mandatory-policy`
 ### Conversational and governed AI generation
 
 **Status:** **Partial** — catalog intent resolve, corpus citations, optional
-input-only model draft, and Open-form query prefills are default-off. Guided
-identity JS keeps allowlisted query prefills. Generate still uses the existing
-form and gates. LLM artifact drafting is not started. Postgres FTS retrieval
-is next.
+input-only model draft, Open-form query prefills, and optional extractive FTS
+(`v3.assistant.retrieval: fts`, default `memory`) are default-off. Guided
+identity JS keeps allowlisted query prefills. FTS is adapted from
+[opsdevcode/relay](https://github.com/opsdevcode/relay) (chunk + FTS, no LLM);
+Relay is not a runtime dependency. Generate still uses the existing form and
+gates. LLM artifact drafting is not started.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an
@@ -528,7 +530,8 @@ ungoverned AI that bypasses repave's guarantees.
   artifact drafting is the narrow fallback, not the default
 - Retrieval over the in-repo standards, policy packs, and blueprint docs with **citations
   required** on every answer, filtered by the caller's role so chat cannot surface what the
-  portal would deny
+  portal would deny; `memory` token scoring by default, `fts` for extractive chunks
+  (in-process SQLite FTS5, or Postgres when durability is PostgreSQL)
 - A **service registry** describing what the assistant may read and call — knowledge corpora
   paths and read-only tools (fleet state, drift, gate history, cost summary) — so capabilities
   are configuration rather than hardcoded integrations

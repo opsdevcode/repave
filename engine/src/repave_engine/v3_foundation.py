@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from repave_engine.assistant_fts import parse_assistant_retrieval
 from repave_engine.waivers import Clock, WaiverRecord, load_waivers
 
 _CONFIG_NAMES = ("repave.config.yaml", "repave.config.yml")
@@ -25,6 +26,7 @@ class V3FoundationConfig:
     assistant_enabled: bool = False
     assistant_draft_enabled: bool = False
     assistant_draft_model: str = ""
+    assistant_retrieval: str = "memory"
 
 
 @dataclass(frozen=True)
@@ -93,7 +95,12 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
     developer_lab_enabled = _parse_developer_lab_enabled(block)
     auto_merge_enabled, auto_merge_kill_switch = _parse_auto_merge(block)
     mandatory_policy_enabled, regulated_families = _parse_mandatory_policy(block)
-    assistant_enabled, assistant_draft_enabled, assistant_draft_model = _parse_assistant(block)
+    (
+        assistant_enabled,
+        assistant_draft_enabled,
+        assistant_draft_model,
+        assistant_retrieval,
+    ) = _parse_assistant(block)
     if not enabled_raw:
         if developer_lab_enabled:
             raise ValueError(
@@ -147,6 +154,7 @@ def load_v3_foundation_config(repo_root: Path) -> V3FoundationConfig:
         assistant_enabled=assistant_enabled,
         assistant_draft_enabled=assistant_draft_enabled,
         assistant_draft_model=assistant_draft_model,
+        assistant_retrieval=assistant_retrieval,
     )
 
 
@@ -204,13 +212,13 @@ def _parse_mandatory_policy(block: dict[str, object]) -> tuple[bool, frozenset[s
     return enabled_raw, families
 
 
-def _parse_assistant(block: dict[str, object]) -> tuple[bool, bool, str]:
+def _parse_assistant(block: dict[str, object]) -> tuple[bool, bool, str, str]:
     """Opt in with v3.assistant.enabled. Draft is a second opt-in under assistant.draft."""
     raw = block.get("assistant")
     if raw is None:
-        return False, False, ""
+        return False, False, "", "memory"
     if isinstance(raw, bool):
-        return raw, False, ""
+        return raw, False, "", "memory"
     if not isinstance(raw, dict):
         raise ValueError("v3.assistant must be a boolean or mapping")
     enabled_raw = raw.get("enabled", False)
@@ -222,7 +230,8 @@ def _parse_assistant(block: dict[str, object]) -> tuple[bool, bool, str]:
             "v3.assistant.draft.enabled is true but v3.assistant.enabled is false. "
             "Set v3.assistant.enabled: true, or set v3.assistant.draft.enabled: false."
         )
-    return enabled_raw, draft_enabled, draft_model
+    retrieval = parse_assistant_retrieval(raw.get("retrieval", "memory"))
+    return enabled_raw, draft_enabled, draft_model, retrieval
 
 
 def _parse_assistant_draft(block: dict[str, object]) -> tuple[bool, str]:

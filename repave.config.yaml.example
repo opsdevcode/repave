@@ -273,6 +273,7 @@ gates:
 #       - observability
 #   assistant:
 #     enabled: false  # /assistant and POST /api/v2/assistant/resolve
+#     retrieval: memory  # or fts (extractive FTS; Postgres when durability is postgres)
 #     draft:
 #       enabled: false  # optional model JSON of catalog inputs; needs REPAVE_ASSISTANT_API_KEY
 #       model: gpt-4o-mini

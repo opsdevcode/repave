@@ -47,6 +47,7 @@ Modules under `engine/src/repave_engine/`:
 | `auto_merge.py` | Pure `decide_auto_merge()`; `--open-pr` squash-merges when Allowed |
 | `mandatory_policy.py` | Pure `decide_policy_skip()` plus generate/OPA enforcement |
 | `assistant.py` | Intent → catalog golden-path matches with citations; no generate |
+| `assistant_fts.py` | Optional extractive FTS retrieval (`v3.assistant.retrieval: fts`); default memory |
 | `assistant_draft.py` | Optional model JSON of catalog inputs; hashed prompt; no generate |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
@@ -93,6 +94,7 @@ helm upgrade --install repave ./deploy/k8s/chart \
   --set repave.v3.developerLab.enabled=true \
   --set repave.v3.mandatoryPolicy.enabled=true \
   --set repave.v3.assistant.enabled=true \
+  --set repave.v3.assistant.retrieval=memory \
   --set repave.output.githubOrg=your-org
 ```
 

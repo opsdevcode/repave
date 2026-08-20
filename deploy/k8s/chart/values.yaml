@@ -238,6 +238,7 @@ repave:
         - observability
     assistant:
       enabled: false
+      retrieval: memory  # memory token score, or fts (extractive; Postgres when durability is postgres)
       draft:
         enabled: false  # model may propose catalog inputs only; set REPAVE_ASSISTANT_API_KEY
         model: ""
