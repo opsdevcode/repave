@@ -3460,6 +3460,19 @@
     function pollStatus() {
       fetch("/api/v1/runs/" + encodeURIComponent(runId), { credentials: "same-origin" })
         .then(function (res) {
+          if (res.status === 401 || res.status === 403 || res.status === 404) {
+            stopStatusPolling();
+            if (progressLabel) {
+              progressLabel.textContent =
+                res.status === 404
+                  ? "Run not found — refresh or return to Runs"
+                  : "Could not load run status — refresh and sign in again";
+            }
+            return null;
+          }
+          if (!res.ok) {
+            return null;
+          }
           return res.json();
         })
         .then(function (body) {

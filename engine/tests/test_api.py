@@ -287,6 +287,7 @@ def test_terraform_form_guided_advanced_mode(repo_root, output_config) -> None:
     response = client.get("/blueprints/terraform-module-generic")
 
     assert response.status_code == 200
+    assert "Could not load resources for this service." in response.text
     assert 'data-form-mode="guided"' in response.text
     assert 'id="form-mode-toggle"' in response.text
     assert 'name="form_mode"' in response.text
@@ -1413,6 +1414,7 @@ def test_env_stack_form_renders_module_inventory_picker(repo_root, output_config
     assert 'id="pinned-modules-rows"' in response.text
     assert 'id="add-pinned-module"' in response.text
     assert "module-inventory" in response.text
+    assert "Could not load module inventory" in response.text
     assert 'name="pinned_modules"' in response.text
     assert "form-layout--split" in response.text
 
@@ -1425,6 +1427,8 @@ def test_ansible_playbook_form_renders_role_inventory_picker(repo_root, output_c
     assert 'id="pinned-roles-rows"' in response.text
     assert 'id="add-pinned-role"' in response.text
     assert "role-inventory" in response.text
+    assert "if (!response.ok)" in response.text
+    assert "Could not load role inventory" in response.text
     assert 'name="pinned_roles"' in response.text
     assert "form-layout--split" in response.text
 

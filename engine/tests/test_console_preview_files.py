@@ -132,6 +132,8 @@ def test_run_console_js_polls_dry_run_preview_after_run_complete() -> None:
     assert "if (runComplete && !isDryRun)" in js
     assert "Plan complete — loading file preview…" in js
     assert "Plan preview ready — browse files below" in js
+    assert "Could not load run status — refresh and sign in again" in js
+    assert "Run not found — refresh or return to Runs" in js
 
 
 def test_run_console_js_browse_waits_until_succeeded() -> None:
