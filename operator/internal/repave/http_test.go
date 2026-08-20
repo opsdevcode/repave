@@ -85,8 +85,29 @@ func TestHTTPApplyUpgraderSetsPushFlag(t *testing.T) {
 
 func TestUpgradeTargetPrefersRepoURLInHTTPMode(t *testing.T) {
 	cfg := Config{APIURL: "http://api"}
-	got := UpgradeTarget("https://github.com/acme/mod.git", "/local", "/workspace", cfg)
+	got, err := UpgradeTarget("https://github.com/acme/mod.git", "/local", "/workspace", cfg)
+	if err != nil {
+		t.Fatalf("UpgradeTarget: %v", err)
+	}
 	if got != "https://github.com/acme/mod.git" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestUpgradeTargetHTTPModeRequiresRepoURL(t *testing.T) {
+	cfg := Config{APIURL: "http://api"}
+	_, err := UpgradeTarget("", "/local", "/workspace", cfg)
+	if err == nil {
+		t.Fatal("expected error when HTTP mode has no repoURL")
+	}
+}
+
+func TestUpgradeTargetCLIModeUsesLocalPath(t *testing.T) {
+	got, err := UpgradeTarget("", "/local", "/workspace", Config{})
+	if err != nil {
+		t.Fatalf("UpgradeTarget: %v", err)
+	}
+	if got != "/local" {
 		t.Fatalf("got %q", got)
 	}
 }

@@ -94,7 +94,10 @@ type ApplyInput struct {
 // ApplyUpgradeChanges runs apply-upgrade against the remediation work tree.
 func ApplyUpgradeChanges(ctx context.Context, in ApplyInput) (repave.ApplyResult, error) {
 	pushRemote := in.RepaveCfg.HTTPMode() && in.Spec.RepoURL != "" && !in.Spec.Remediation.DryRun
-	applyTarget := repave.UpgradeTarget(in.Spec.RepoURL, in.Spec.LocalPath, in.WorkDir, in.RepaveCfg)
+	applyTarget, err := repave.UpgradeTarget(in.Spec.RepoURL, in.Spec.LocalPath, in.WorkDir, in.RepaveCfg)
+	if err != nil {
+		return repave.ApplyResult{}, err
+	}
 	return in.Applier.ApplyUpgrade(
 		ctx,
 		in.RepaveCfg,

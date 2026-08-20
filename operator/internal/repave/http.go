@@ -9,12 +9,18 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 const (
-	v2PlanPath  = "/api/v2/upgrades/plan"
-	v2ApplyPath = "/api/v2/upgrades/apply"
+	v2PlanPath         = "/api/v2/upgrades/plan"
+	v2ApplyPath        = "/api/v2/upgrades/apply"
+	upgradeHTTPTimeout = 30 * time.Second
 )
+
+func defaultUpgradeHTTPClient() *http.Client {
+	return &http.Client{Timeout: upgradeHTTPTimeout}
+}
 
 // HTTPPlanUpgrader calls POST /api/v2/upgrades/plan.
 type HTTPPlanUpgrader struct {
@@ -26,7 +32,7 @@ func (h HTTPPlanUpgrader) client() *http.Client {
 	if h.HTTPClient != nil {
 		return h.HTTPClient
 	}
-	return http.DefaultClient
+	return defaultUpgradeHTTPClient()
 }
 
 func (h HTTPPlanUpgrader) PlanUpgrade(
@@ -53,7 +59,7 @@ func (h HTTPApplyUpgrader) client() *http.Client {
 	if h.HTTPClient != nil {
 		return h.HTTPClient
 	}
-	return http.DefaultClient
+	return defaultUpgradeHTTPClient()
 }
 
 func (h HTTPApplyUpgrader) ApplyUpgrade(

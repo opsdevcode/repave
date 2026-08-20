@@ -1,6 +1,7 @@
 package github_test
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"testing"
@@ -57,6 +58,23 @@ func TestRateLimitGateAllowsWhenUnknown(t *testing.T) {
 	blocked, message := github.RateLimitGate()
 	if blocked || message != "" {
 		t.Fatalf("expected open gate, got blocked=%v message=%q", blocked, message)
+	}
+}
+
+func TestWaitIfNeededRespectsContextCancel(t *testing.T) {
+	github.ResetRateLimitTracker()
+	tracker := github.DefaultRateLimitTracker()
+	resetAt := time.Now().Add(time.Minute).Unix()
+	headers := http.Header{}
+	headers.Set("X-RateLimit-Remaining", "0")
+	headers.Set("X-RateLimit-Reset", formatUnix(resetAt))
+	tracker.UpdateFromHeaders(headers, "default")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := tracker.WaitIfNeeded(ctx, "default", 50)
+	if err == nil {
+		t.Fatal("expected context error")
 	}
 }
 

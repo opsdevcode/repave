@@ -1,6 +1,7 @@
 package github
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"strconv"
@@ -115,9 +116,22 @@ func (t *RateLimitTracker) ShouldBackoff(installationID string, minRemaining int
 }
 
 // WaitIfNeeded sleeps until quota recovers when remaining is below the threshold.
-func (t *RateLimitTracker) WaitIfNeeded(installationID string, minRemaining int) {
-	if blocked, delay := t.ShouldBackoff(installationID, minRemaining); blocked && delay > 0 {
-		time.Sleep(delay)
+func (t *RateLimitTracker) WaitIfNeeded(
+	ctx context.Context,
+	installationID string,
+	minRemaining int,
+) error {
+	blocked, delay := t.ShouldBackoff(installationID, minRemaining)
+	if !blocked || delay <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 

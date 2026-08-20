@@ -3,6 +3,7 @@ package fleetsync
 import (
 	"bufio"
 	"encoding/json"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -43,6 +44,7 @@ func ReadRegistry(path string) ([]Entry, error) {
 		}
 		var payload map[string]any
 		if err := json.Unmarshal([]byte(line), &payload); err != nil {
+			log.Printf("fleet registry: skip malformed JSONL in %s: %v", path, err)
 			continue
 		}
 		repoURL := strings.TrimSpace(stringField(payload, "repo_url"))

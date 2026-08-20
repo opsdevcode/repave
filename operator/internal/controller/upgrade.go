@@ -41,7 +41,19 @@ func applyUpgradePlanStatus(
 		upgrader = repave.NewPlanUpgrader(repaveCfg)
 	}
 
-	target := repave.UpgradeTarget(repo.Spec.RepoURL, repo.Spec.LocalPath, workspace.Path, repaveCfg)
+	target, err := repave.UpgradeTarget(repo.Spec.RepoURL, repo.Spec.LocalPath, workspace.Path, repaveCfg)
+	if err != nil {
+		msg := err.Error()
+		return patchGoldenPathRepoStatus(ctx, c, repo, func(latest *repavev1beta1.GoldenPathRepo) {
+			latest.Status.UpgradePlan = nil
+			status.SetGoldenPathRepoCondition(&latest.Status.Conditions, metav1.Condition{
+				Type:    status.ConditionUpgradePlanned,
+				Status:  metav1.ConditionFalse,
+				Reason:  status.ReasonUpgradePlanFailed,
+				Message: msg,
+			})
+		})
+	}
 	result, err := upgrader.PlanUpgrade(
 		ctx,
 		repaveCfg,

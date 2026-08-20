@@ -2,6 +2,7 @@ package notify
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log"
@@ -12,7 +13,7 @@ import (
 )
 
 const (
-	EventDriftDetected          = "drift_detected"
+	EventDriftDetected           = "drift_detected"
 	EventRemediationPROpened     = "remediation_pr_opened"
 	EventRemediationPRPlanned    = "remediation_pr_planned"
 	EventCampaignSummary         = "campaign_summary"
@@ -164,7 +165,9 @@ func PostJSON(urls []string, document any, text string) {
 }
 
 func deliverOnce(url string, body io.Reader) bool {
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
 	if err != nil {
 		log.Printf("operator notify: build request: %v", err)
 		return false
