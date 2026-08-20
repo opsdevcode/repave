@@ -62,6 +62,44 @@ def test_api_token_allows_environment_reclaim_dry_run(
     assert body["count"] == 0
 
 
+def test_api_token_allows_v1_generate_auth(
+    service_mode_with_api_token,
+    repo_root,
+    output_config,
+) -> None:
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    response = client.post(
+        "/api/v1/generate",
+        headers={"Authorization": "Bearer service-token"},
+        json={"blueprint": "terraform-module-generic", "dry_run": True, "inputs": {}},
+    )
+    assert response.status_code != 401
+    assert response.status_code in (200, 400)
+
+
+def test_combined_app_state_backend_accepts_basic_auth(
+    service_mode_with_api_token,
+    repo_root,
+    output_config,
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import base64
+
+    monkeypatch.setenv("REPAVE_STATE_STORE_URL", f"sqlite:///{tmp_path}/state.db")
+    client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
+    encoded = base64.b64encode(b"terraform:service-token").decode()
+    response = client.get(
+        "/api/state/v1/backend/acme/prod",
+        headers={"Authorization": f"Basic {encoded}"},
+    )
+    assert response.status_code != 401
+    if response.status_code == 404:
+        assert response.json()["detail"] == "state not found"
+    else:
+        assert response.status_code == 200
+
+
 def test_invalid_api_token_returns_401(
     service_mode_with_api_token,
     repo_root,

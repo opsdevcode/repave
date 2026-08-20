@@ -9,7 +9,7 @@ from typing import Protocol
 
 from fastapi import HTTPException
 
-from repave_engine.blueprint import blueprint_dir, bundles_dir, load_blueprint
+from repave_engine.blueprint import blueprint_dir, load_blueprint, resolve_bundle_dir
 from repave_engine.bundle import load_bundle
 from repave_engine.bundle_portal import build_bundle_result_portal_context, bundle_member_previews
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
@@ -244,7 +244,7 @@ def run_portal_generate(
     queue_user = acting_user or "portal"
 
     if bundle_name:
-        bundle_dir = bundles_dir(repo_root) / bundle_name
+        bundle_dir = resolve_bundle_dir(repo_root, bundle_name)
         bundle = load_bundle(bundle_dir, repo_root=repo_root)
         bundle_values = _bundle_values_from_form(form, bundle)
         if worker_execution_mode:

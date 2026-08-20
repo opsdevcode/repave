@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 import repave_engine.cli as _cli
-from repave_engine.blueprint import blueprint_dir, bundles_dir, list_catalog_blueprints
+from repave_engine.blueprint import blueprint_dir, list_catalog_blueprints, resolve_bundle_dir
 from repave_engine.cli._common import _load_output_config_from_args, _parse_inputs
 from repave_engine.cli._style import brand, gate_status, heading
 from repave_engine.github_auth import resolve_github_access_token
@@ -32,7 +32,7 @@ def cmd_generate(args: argparse.Namespace) -> int:
     if bundle_name:
         bundle_path = Path(bundle_name)
         if not bundle_path.is_absolute():
-            bundle_path = (bundles_dir(repo_root) / bundle_name).resolve()
+            bundle_path = resolve_bundle_dir(repo_root, bundle_name)
         bundle_result = _cli.generate_bundle_from_path(
             bundle_path,
             values,

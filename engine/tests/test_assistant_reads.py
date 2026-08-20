@@ -108,7 +108,7 @@ def test_audit_history_hits_when_intent_asks(tmp_path: Path) -> None:
     blueprint = make_blueprint(tmp_path, name="terraform-module-generic")
     hits, tools = collect_assistant_reads(
         tmp_path,
-        intent="gate history failed outcomes",
+        intent="gates audit failed outcomes",
         blueprints=(blueprint,),
         role="viewer",
         auth_enabled=True,
@@ -127,3 +127,96 @@ def test_resolve_catalog_intent_skips_reads_when_role_denied(repo_root: Path) ->
     )
     assert result.reads == ()
     assert "fleet.reads" not in result.tools
+
+
+def test_terraform_intent_does_not_advertise_unread_tools(tmp_path: Path) -> None:
+    _write_config(tmp_path)
+    blueprint = make_blueprint(tmp_path, name="terraform-module-generic")
+    hits, tools = collect_assistant_reads(
+        tmp_path,
+        intent="terraform module for aws",
+        blueprints=(blueprint,),
+        role="viewer",
+        auth_enabled=True,
+    )
+    assert hits == ()
+    assert tools == ()
+
+
+def test_fleet_hits_prefer_matching_repo(tmp_path: Path) -> None:
+    fleet = _write_config(tmp_path)
+    register_repo(
+        fleet,
+        FleetEntry(
+            repo_url="https://github.com/acme/aaa-other.git",
+            blueprint_name="terraform-module-generic",
+            blueprint_version="0.9.0",
+        ),
+        repo_root=tmp_path,
+    )
+    register_repo(
+        fleet,
+        FleetEntry(
+            repo_url="https://github.com/acme/vpc-core.git",
+            blueprint_name="terraform-module-generic",
+            blueprint_version="0.9.0",
+        ),
+        repo_root=tmp_path,
+    )
+    blueprint = make_blueprint(tmp_path, name="terraform-module-generic")
+    hits, _tools = collect_assistant_reads(
+        tmp_path,
+        intent="fleet vpc",
+        blueprints=(blueprint,),
+        role="viewer",
+        auth_enabled=True,
+    )
+    fleet_hits = [item for item in hits if item.tool_id == "fleet.reads"]
+    assert fleet_hits
+    assert "vpc-core" in fleet_hits[0].source
+
+
+def test_audit_hits_skip_non_catalog_newest_rows(tmp_path: Path) -> None:
+    _write_config(tmp_path)
+    audit = tmp_path / "audit" / "generation.jsonl"
+    lines = []
+    for index in range(5):
+        lines.append(
+            json.dumps(
+                {
+                    "event": "generation",
+                    "blueprint_name": f"retired-pack-{index}",
+                    "blueprint_version": "0.0.1",
+                    "module_name": "old",
+                    "dry_run": True,
+                    "gates_outcome": "passed",
+                    "timestamp": f"2026-08-20T00:00:0{index}Z",
+                    "acting_user": "tester",
+                }
+            )
+        )
+    lines.append(
+        json.dumps(
+            {
+                "event": "generation",
+                "blueprint_name": "terraform-module-generic",
+                "blueprint_version": "0.0.1",
+                "module_name": "vpc-core",
+                "dry_run": True,
+                "gates_outcome": "failed",
+                "timestamp": "2026-08-20T01:00:00Z",
+                "acting_user": "tester",
+            }
+        )
+    )
+    audit.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    blueprint = make_blueprint(tmp_path, name="terraform-module-generic")
+    hits, _tools = collect_assistant_reads(
+        tmp_path,
+        intent="gates audit",
+        blueprints=(blueprint,),
+        role="viewer",
+        auth_enabled=True,
+    )
+    assert any(item.title == "terraform-module-generic" for item in hits)
+    assert any("failed" in item.excerpt for item in hits)

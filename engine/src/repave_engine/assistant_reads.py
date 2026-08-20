@@ -13,12 +13,14 @@ from pathlib import Path
 from repave_engine.assistant_corpus import tokenize_intent
 from repave_engine.auth import ROLE_ADMIN, ROLE_GENERATOR, ROLE_VIEWER
 from repave_engine.blueprint import Blueprint
+from repave_engine.fleet import FleetEntry
 
 _VIEW_ROLES = frozenset({ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN})
 _MAX_HITS = 5
-_FLEET_HINTS = frozenset({"fleet", "registry", "repo", "repos", "repository"})
-_DRIFT_HINTS = frozenset({"drift", "behind", "pin", "pins", "upgrade"})
-_AUDIT_HINTS = frozenset({"audit", "gate", "gates", "history", "failed", "outcome"})
+_AUDIT_SCAN = _MAX_HITS * 20
+_FLEET_HINTS = frozenset({"fleet", "registry"})
+_DRIFT_HINTS = frozenset({"drift", "behind", "pins"})
+_AUDIT_HINTS = frozenset({"audit", "gates"})
 
 TOOL_FLEET = "fleet.reads"
 TOOL_DRIFT = "fleet.drift"
@@ -56,31 +58,50 @@ def collect_assistant_reads(
     role: str | None,
     auth_enabled: bool,
 ) -> tuple[tuple[AssistantReadHit, ...], tuple[str, ...]]:
-    """Return hits plus tool ids. Denied callers get empty tuples."""
+    """Return hits plus tool ids that actually ran. Denied callers get empty tuples."""
     if not reads_allowed(role=role, auth_enabled=auth_enabled):
         return (), ()
     tokens = tokenize_intent(intent)
     hits: list[AssistantReadHit] = []
-    tools: list[str] = [TOOL_FLEET, TOOL_DRIFT, TOOL_AUDIT]
-    if tokens & _FLEET_HINTS:
-        hits.extend(_fleet_hits(repo_root))
-    if tokens & _DRIFT_HINTS:
-        hits.extend(_drift_hits(repo_root, blueprints=blueprints))
+    tools: list[str] = []
+    want_fleet = bool(tokens & _FLEET_HINTS)
+    want_drift = bool(tokens & _DRIFT_HINTS)
+    entries: tuple[FleetEntry, ...] | None = None
+    if want_fleet or want_drift:
+        entries = _load_fleet_entries(repo_root)
+    if want_fleet:
+        tools.append(TOOL_FLEET)
+        hits.extend(_fleet_hits(entries or (), tokens=tokens))
+    if want_drift:
+        tools.append(TOOL_DRIFT)
+        hits.extend(_drift_hits(entries or (), blueprints=blueprints))
     if tokens & _AUDIT_HINTS:
+        tools.append(TOOL_AUDIT)
         hits.extend(_audit_hits(repo_root, blueprints=blueprints))
     return tuple(hits[: _MAX_HITS * 3]), tuple(tools)
 
 
-def _fleet_hits(repo_root: Path) -> tuple[AssistantReadHit, ...]:
+def _load_fleet_entries(repo_root: Path) -> tuple[FleetEntry, ...]:
     from repave_engine.fleet import read_fleet
     from repave_engine.settings import load_fleet_config
 
-    config = load_fleet_config(repo_root)
+    try:
+        config = load_fleet_config(repo_root)
+    except ValueError:
+        return ()
     if config is None or not config.enabled:
         return ()
-    entries = read_fleet(config.file, repo_root=repo_root)
+    return read_fleet(config.file, repo_root=repo_root)
+
+
+def _fleet_hits(
+    entries: Sequence[FleetEntry],
+    *,
+    tokens: frozenset[str],
+) -> tuple[AssistantReadHit, ...]:
+    ranked = sorted(entries, key=lambda entry: (-_fleet_score(entry, tokens), entry.repo_url))
     hits: list[AssistantReadHit] = []
-    for entry in entries[:_MAX_HITS]:
+    for entry in ranked[:_MAX_HITS]:
         hits.append(
             AssistantReadHit(
                 tool_id=TOOL_FLEET,
@@ -94,20 +115,19 @@ def _fleet_hits(repo_root: Path) -> tuple[AssistantReadHit, ...]:
     return tuple(hits)
 
 
+def _fleet_score(entry: FleetEntry, tokens: frozenset[str]) -> int:
+    hay = f"{entry.repo_url} {entry.blueprint_name} {entry.owner} {entry.blueprint_version}".lower()
+    return sum(1 for token in tokens if token in hay)
+
+
 def _drift_hits(
-    repo_root: Path,
+    entries: Sequence[FleetEntry],
     *,
     blueprints: Sequence[Blueprint],
 ) -> tuple[AssistantReadHit, ...]:
-    from repave_engine.fleet import read_fleet
     from repave_engine.fleet_drift import estimate_fleet_drift
-    from repave_engine.settings import load_fleet_config
 
-    config = load_fleet_config(repo_root)
-    if config is None or not config.enabled:
-        return ()
-    entries = read_fleet(config.file, repo_root=repo_root)
-    summaries = estimate_fleet_drift(entries, list(blueprints))
+    summaries = estimate_fleet_drift(tuple(entries), list(blueprints))
     hits: list[AssistantReadHit] = []
     for summary in summaries:
         if summary.behind_count == 0:
@@ -146,7 +166,7 @@ def _audit_hits(
     names = {item.name for item in blueprints}
     result = query_audit_entries(
         audit.file,
-        AuditQueryFilters(limit=_MAX_HITS),
+        AuditQueryFilters(limit=_AUDIT_SCAN),
         repo_root=repo_root,
     )
     hits: list[AssistantReadHit] = []

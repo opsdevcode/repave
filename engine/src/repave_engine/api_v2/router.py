@@ -31,9 +31,9 @@ from repave_engine.auth import (
 )
 from repave_engine.auth_context import current_acting_user
 from repave_engine.blueprint import (
-    bundles_dir,
     group_blueprints_by_artifact,
     list_catalog_blueprints,
+    resolve_bundle_dir,
 )
 from repave_engine.bundle import list_bundles, load_bundle
 from repave_engine.bundle_topology import build_bundle_topology, topology_public
@@ -1076,7 +1076,7 @@ def build_api_v2_router(
             )
         payload = await _parse_json_object(request)
         intent = str(payload.get("intent", "")).strip()
-        user = session_user(request)
+        user = authenticated_user(request, auth_config)
         resolution = resolve_catalog_intent(
             repo_root,
             intent=intent,
@@ -1099,12 +1099,11 @@ def build_api_v2_router(
     @router.get("/bundles/{name}")
     async def api_v2_bundle(request: Request, name: str) -> JSONResponse:
         _require_roles(request, auth_config, ROLE_VIEWER, ROLE_GENERATOR, ROLE_ADMIN)
-        bundle_file = bundles_dir(repo_root) / name / "bundle.yaml"
-        if not bundle_file.is_file():
-            raise HTTPException(status_code=404, detail=f"bundle not found: {name}")
         try:
-            bundle = load_bundle(bundle_file.parent, repo_root=repo_root)
-        except (FileNotFoundError, ValueError) as exc:
+            bundle = load_bundle(resolve_bundle_dir(repo_root, name), repo_root=repo_root)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail=f"bundle not found: {name}") from exc
+        except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         nodes, edges = build_bundle_topology(bundle, ())
         body = bundle.to_public_dict()

@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from repave_engine.blueprint import load_blueprint
+import pytest
+
+from repave_engine.blueprint import load_blueprint, resolve_bundle_dir
 from repave_engine.gate_registry import GateResult
 from repave_engine.generate_api import serialize_generation_result
 from repave_engine.pipeline import GenerationResult
@@ -60,3 +62,8 @@ def test_serialize_generation_result_persists_rendered_file_snapshot(repo_root: 
     assert persisted["rendered_files"] == [
         {"path": "main.tf", "content": "# stub\n", "truncated": False},
     ]
+
+
+def test_resolve_bundle_dir_rejects_parent_escape(repo_root: Path) -> None:
+    with pytest.raises(ValueError, match="path escapes root"):
+        resolve_bundle_dir(repo_root, "../terraform-module-generic")

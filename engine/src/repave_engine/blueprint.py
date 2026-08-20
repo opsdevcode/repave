@@ -786,6 +786,11 @@ def bundles_dir(repo_root: Path) -> Path:
     return blueprints_dir(repo_root) / "bundles"
 
 
+def resolve_bundle_dir(repo_root: Path, name: str) -> Path:
+    """Catalog bundle directory. Rejects names that escape ``blueprints/bundles/``."""
+    return confined_join(bundles_dir(repo_root), name)
+
+
 def list_blueprints(blueprints_dir: Path) -> list[Blueprint]:
     results: list[Blueprint] = []
     if not blueprints_dir.exists():

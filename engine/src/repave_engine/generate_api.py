@@ -9,9 +9,9 @@ from repave_engine.artifact_store import resolve_artifact_store
 from repave_engine.blueprint import (
     Blueprint,
     blueprint_dir,
-    bundles_dir,
     load_blueprint,
     primary_publish_name,
+    resolve_bundle_dir,
     validate_inputs,
 )
 from repave_engine.bundle import Bundle, load_bundle
@@ -129,7 +129,7 @@ def run_bundle_api(
     on_event: RunEventCallback | None = None,
     staging_root: Path | None = None,
 ) -> dict[str, Any]:
-    bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+    bundle = load_bundle(resolve_bundle_dir(repo_root, bundle_name), repo_root=repo_root)
     values = {str(key): str(value) for key, value in inputs.items()}
     if on_event is not None:
         on_event("bundle_started", {"bundle": bundle.name, "member_count": len(bundle.members)})
@@ -399,7 +399,7 @@ def bundle_result_from_stored_run(
     bundle_name = str(stored.get("bundle") or record.payload.get("bundle") or "").strip()
     if not bundle_name:
         return None
-    bundle = load_bundle(bundles_dir(repo_root) / bundle_name, repo_root=repo_root)
+    bundle = load_bundle(resolve_bundle_dir(repo_root, bundle_name), repo_root=repo_root)
     members_raw = stored.get("members")
     if not isinstance(members_raw, list):
         return None

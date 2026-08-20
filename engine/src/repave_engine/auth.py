@@ -56,6 +56,22 @@ def is_public_path(path: str) -> bool:
     return any(path.startswith(prefix) for prefix in _PUBLIC_PREFIXES)
 
 
+def is_state_api_path(path: str) -> bool:
+    """Terraform HTTP backend uses Basic auth that portal middleware does not parse."""
+    return path.startswith("/api/state/")
+
+
+def safe_post_login_path(raw: str | None) -> str:
+    """Same-origin path only. Reject protocol-relative and off-site ``next`` URLs."""
+    path = (raw or "/").strip() or "/"
+    if not path.startswith("/") or path.startswith("//") or "\\" in path:
+        return "/"
+    parsed = urlparse(path)
+    if parsed.scheme or parsed.netloc:
+        return "/"
+    return path
+
+
 def session_user(request: Request) -> AuthUser | None:
     payload = request.session.get("repave_user")
     if not isinstance(payload, dict):
@@ -233,7 +249,7 @@ def build_login_redirect(
 ) -> RedirectResponse:
     state = secrets.token_urlsafe(24)
     request.session["oidc_state"] = state
-    next_path = request.query_params.get("next", "/")
+    next_path = safe_post_login_path(request.query_params.get("next", "/"))
     request.session["oidc_next"] = next_path
     params = {
         "client_id": config.oidc_client_id,
@@ -262,7 +278,7 @@ async def complete_oidc_callback(
     expected = request.session.pop("oidc_state", None)
     if not expected or state != expected:
         raise HTTPException(status_code=400, detail="Invalid OIDC state")
-    next_path = str(request.session.pop("oidc_next", "/") or "/")
+    next_path = safe_post_login_path(str(request.session.pop("oidc_next", "/") or "/"))
     discovery = await fetch_oidc_discovery(config.oidc_issuer)
     token_endpoint = str(discovery.get("token_endpoint", ""))
     userinfo_endpoint = str(discovery.get("userinfo_endpoint", ""))
@@ -310,8 +326,6 @@ async def complete_oidc_callback(
     groups = groups_from_claims(claims, config.groups_claim)
     role = session_role_from_oidc_groups(groups, config)
     request.session["repave_user"] = {"sub": subject, "email": email, "role": role}
-    if not next_path.startswith("/"):
-        next_path = "/"
     return RedirectResponse(next_path, status_code=302)
 
 

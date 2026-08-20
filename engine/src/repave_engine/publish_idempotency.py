@@ -56,6 +56,8 @@ def compute_publish_content_hash(staging_dir: Path, *, artifact_type: str) -> st
 
 def publish_message_succeeded(pr_message: str) -> bool:
     lowered = pr_message.lower()
+    if "gates failed" in lowered:
+        return False
     if "github publish failed" in lowered:
         return False
     return "github repository provisioning failed" not in lowered

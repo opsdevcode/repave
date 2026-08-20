@@ -27,7 +27,6 @@ from repave_engine.auth import (
     AuthConfig,
     authenticated_user,
     require_role,
-    session_user,
 )
 from repave_engine.auth_context import current_acting_user
 from repave_engine.catalog_cost import enrich_catalog_entities_with_cost, enrich_entity_cost
@@ -109,7 +108,7 @@ def build_api_v1_router(
 
     @router.post("/generate")
     async def api_generate(request: Request) -> JSONResponse:
-        user = session_user(request)
+        user = authenticated_user(request, auth_config)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         payload = await request.json()
@@ -181,7 +180,7 @@ def build_api_v1_router(
 
     @router.post("/runs")
     async def api_runs_submit(request: Request) -> JSONResponse:
-        user = session_user(request)
+        user = authenticated_user(request, auth_config)
         if auth_config and auth_config.service_enabled:
             require_role(user, ROLE_GENERATOR, ROLE_ADMIN)
         queue = _run_queue(request)
@@ -194,7 +193,13 @@ def build_api_v1_router(
         if not isinstance(payload, dict):
             raise HTTPException(status_code=400, detail="Expected JSON object")
         kind = str(payload.get("kind", "")).strip()
-        if kind not in ("live_plan", "environment_vend", "component_vend"):
+        if kind not in (
+            "live_plan",
+            "environment_vend",
+            "environment_reclaim",
+            "fleet_drift_confirm",
+            "org_scan",
+        ):
             try:
                 parse_run_target(payload)
             except ValueError as exc:

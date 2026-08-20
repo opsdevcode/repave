@@ -631,32 +631,39 @@
     var mode = run.dryRun ? "Plan" : "Applied";
     var when = formatRelativeTime(run.timestamp);
     var blueprintUrl = "/blueprints/" + encodeURIComponent(run.blueprint);
-    mount.innerHTML =
-      '<div class="last-run-snippet__inner">' +
-      '<span class="muted">Last run in this browser</span> ' +
-      '<a href="' +
-      blueprintUrl +
-      '"><code>' +
-      run.blueprint +
-      "</code></a> " +
-      '<span class="badge ' +
-      badgeClass +
-      '">' +
-      outcome.toUpperCase() +
-      "</span> " +
-      '<span class="muted">' +
-      mode +
-      (when ? " · " + when : "") +
-      "</span> " +
-      '<button type="button" class="btn btn--ghost btn--sm last-run-snippet__dismiss" aria-label="Dismiss last run">' +
-      "Dismiss" +
-      "</button>" +
-      "</div>";
+    var inner = document.createElement("div");
+    inner.className = "last-run-snippet__inner";
+    var label = document.createElement("span");
+    label.className = "muted";
+    label.textContent = "Last run in this browser";
+    var link = document.createElement("a");
+    link.href = blueprintUrl;
+    var code = document.createElement("code");
+    code.textContent = run.blueprint;
+    link.appendChild(code);
+    var badge = document.createElement("span");
+    badge.className = "badge " + badgeClass;
+    badge.textContent = outcome.toUpperCase();
+    var meta = document.createElement("span");
+    meta.className = "muted";
+    meta.textContent = mode + (when ? " · " + when : "");
+    var dismissBtn = document.createElement("button");
+    dismissBtn.type = "button";
+    dismissBtn.className = "btn btn--ghost btn--sm last-run-snippet__dismiss";
+    dismissBtn.setAttribute("aria-label", "Dismiss last run");
+    dismissBtn.textContent = "Dismiss";
+    inner.appendChild(label);
+    inner.appendChild(document.createTextNode(" "));
+    inner.appendChild(link);
+    inner.appendChild(document.createTextNode(" "));
+    inner.appendChild(badge);
+    inner.appendChild(document.createTextNode(" "));
+    inner.appendChild(meta);
+    inner.appendChild(document.createTextNode(" "));
+    inner.appendChild(dismissBtn);
+    mount.replaceChildren(inner);
     mount.hidden = false;
-    var dismiss = mount.querySelector(".last-run-snippet__dismiss");
-    if (dismiss) {
-      dismiss.addEventListener("click", dismissLastRun);
-    }
+    dismissBtn.addEventListener("click", dismissLastRun);
   }
 
   function initFormStepper() {
@@ -1175,6 +1182,18 @@
       });
     });
 
+    function appendCell(row, text, asCode) {
+      var td = document.createElement("td");
+      if (asCode) {
+        var code = document.createElement("code");
+        code.textContent = text;
+        td.appendChild(code);
+      } else {
+        td.textContent = text;
+      }
+      row.appendChild(td);
+    }
+
     function renderRows(repos) {
       tbody.textContent = "";
       repos.forEach(function (repo) {
@@ -1185,24 +1204,23 @@
         var percent = candidate && candidate.percent ? String(candidate.percent) : "0";
         var evidence = candidate && Array.isArray(candidate.evidence) ? candidate.evidence.slice(0, 2) : [];
         var evidenceText = evidence.length ? evidence.join(", ") : "—";
-        row.innerHTML =
-          "<td><input type=\"checkbox\" data-import-org-scan-row checked value=\"" +
-          String(repo.url).replace(/"/g, "&quot;") +
-          "\" /></td>" +
-          "<td><code>" +
-          String(repo.name) +
-          "</code></td>" +
-          "<td>" +
-          family +
-          "</td>" +
-          "<td>" +
-          artifact +
-          " (" +
-          percent +
-          "%)</td>" +
-          "<td class=\"muted\">" +
-          evidenceText +
-          "</td>";
+        var checkTd = document.createElement("td");
+        var checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.setAttribute("data-import-org-scan-row", "");
+        checkbox.checked = true;
+        checkbox.value = String(repo.url || "");
+        checkTd.appendChild(checkbox);
+        row.appendChild(checkTd);
+        appendCell(row, String(repo.name || ""), true);
+        appendCell(row, family, false);
+        var artifactTd = document.createElement("td");
+        artifactTd.textContent = artifact + " (" + percent + "%)";
+        row.appendChild(artifactTd);
+        var evidenceTd = document.createElement("td");
+        evidenceTd.className = "muted";
+        evidenceTd.textContent = evidenceText;
+        row.appendChild(evidenceTd);
         tbody.appendChild(row);
       });
     }
