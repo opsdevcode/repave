@@ -146,13 +146,16 @@ Dry-run preview **fails** (does not skip) when a blueprint gate’s CLI is missi
 process serving the portal**. In Compose, all tools below are in the image; on the host,
 use Compose instead of installing tools locally.
 
-**Native `make serve` on macOS** often has Terraform/tflint but not **checkov**, **conftest**, or **helm** — use Compose on Windows/macOS/Linux rather than:
+**Native `make serve` on macOS** still prefers Compose for the portal demo
+(http://localhost:8088). For **host `make test`**, install the pinned CLIs:
 
 ```bash
-bash scripts/install-gate-tools-macos.sh   # optional; prefer Docker Compose
+make gate-tools    # or: bash scripts/install-gate-tools-macos.sh
+make gate-doctor
 ```
 
-`make test` prepends `.gate-tools/bin` to `PATH` when present. Helm chart conformance tests need **helm** on the host (or run tests inside compose).
+`make test` prepends `.gate-tools/bin` and `.gate-tools/py-deps/bin` to `PATH`.
+Helm chart conformance tests need **helm** on the host (or run tests inside compose).
 
 Not shipped in the local image (gates may still **skip** when N/A): **promtool**, **amtool**, **hadolint**, **go**, **molecule**, **ruff** / **pytest** (app-service / observability extras).
 Generated modules are written to the `repave-modules`

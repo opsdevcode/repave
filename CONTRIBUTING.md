@@ -53,11 +53,16 @@ composite or tags (and downstream EKS deploys) stall. `scripts/check_release_tes
 enforces that. The Compose image runs the same CLI check at **`docker build`** when
 `INSTALL_GATE_TOOLCHAIN=1`.
 
-Locally, after [`deploy/local/install-gate-toolchain.sh`](deploy/local/install-gate-toolchain.sh):
+Locally, install the same pins CI uses into `.gate-tools/` (gitignored), then:
 
 ```bash
+make gate-tools
 make gate-doctor
 ```
+
+`make test` prepends `.gate-tools/bin` and `.gate-tools/py-deps/bin` to `PATH`.
+Compose remains the supported portal demo; `make gate-tools` is for native
+pytest on the host (macOS or Linux).
 
 ### Blueprint conformance
 
