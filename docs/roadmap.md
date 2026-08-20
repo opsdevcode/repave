@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.55.2  
 
-**In progress:** conversational assistant (form prefill from suggested inputs)
+**In progress:** conversational assistant (guided form keeps query prefills)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -505,10 +505,11 @@ families; waivers use `gate_id: mandatory-policy`
 
 ### Conversational and governed AI generation
 
-**Status:** **Partial** — catalog intent resolve, corpus citations, and an
-optional **input-only** model draft (`v3.assistant.draft.enabled`) are
-default-off. The model may propose catalog field values; generate still uses
-the existing form and gates. LLM artifact drafting is not started.
+**Status:** **Partial** — catalog intent resolve, corpus citations, optional
+input-only model draft, and Open-form query prefills are default-off. Guided
+identity JS keeps allowlisted query prefills. Generate still uses the existing
+form and gates. LLM artifact drafting is not started. Postgres FTS retrieval
+is next.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an
