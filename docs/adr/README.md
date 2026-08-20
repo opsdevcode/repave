@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+
 # Architecture decision records
 
 Lightweight ADRs for repave platform choices. Number files sequentially; link from

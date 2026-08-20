@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name = "repave-cli"
 version = "2.24.0"
 description = "repave state and execution client (repave-tf)"
-license = { text = "Apache-2.0" }
+license = { text = "LicenseRef-Proprietary" }
 requires-python = ">=3.12"
 authors = [{ name = "Eric Skaggs" }]
 dependencies = [

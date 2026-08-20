@@ -336,4 +336,12 @@ Automated semver and GitHub Releases: [docs/releases.md](docs/releases.md)
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE).
+The implementation in this repository is **proprietary source-available**. You
+may view the public tree; you may not use, copy, modify, or distribute the
+product except under a separate written license. See [LICENSE](LICENSE).
+
+[`docs/concepts.md`](docs/concepts.md) and [`docs/adr/`](docs/adr/) are
+**Apache License 2.0** — [LICENSE-CONCEPTS](LICENSE-CONCEPTS).
+
+This repository stays **public** so GitHub Actions stays on the public-repo
+plan. Details: [`docs/licensing.md`](docs/licensing.md).
