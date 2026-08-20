@@ -797,7 +797,13 @@
       <div class="field-block">
         <label for="{{ field.name }}">{{ field.name | replace('_', ' ') }}{% if field.required %} *{% endif %}</label>
         {% if field.description %}<div class="hint">{{ field.description }}</div>{% endif %}
-        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+        <select
+          class="select"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          {% if field.required %}required{% endif %}
+          {% if field.name in form_prefill %}data-assistant-prefill{% endif %}
+        >
           {% for option in field.enum %}
           <option value="{{ option }}" {% if form_prefill.get(field.name, field.default) == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
@@ -1135,7 +1141,13 @@
           Select one or more Galaxy platforms. On macOS hold Cmd; on Windows/Linux hold Ctrl to pick multiple.
         </p>
         {% elif field.enum %}
-        <select class="select" id="{{ field.name }}" name="{{ field.name }}" {% if field.required %}required{% endif %}>
+        <select
+          class="select"
+          id="{{ field.name }}"
+          name="{{ field.name }}"
+          {% if field.required %}required{% endif %}
+          {% if field.name in form_prefill %}data-assistant-prefill{% endif %}
+        >
           {% for option in field.enum %}
           <option value="{{ option }}" {% if form_prefill.get(field.name, field.default) == option %}selected{% endif %}>{{ option }}</option>
           {% endfor %}
@@ -1147,6 +1159,7 @@
           name="{{ field.name }}"
           type="text"
           {% if field.required %}required{% endif %}
+          {% if field.name in form_prefill %}data-assistant-prefill{% endif %}
           {% if form_prefill.get(field.name, field.default) is not none %}value="{{ form_prefill.get(field.name, field.default) }}"{% endif %}
         />
         {% endif %}

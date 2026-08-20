@@ -1578,11 +1578,14 @@
         var slug = block.getAttribute("data-guided-slug") !== "false";
         var separator = block.getAttribute("data-guided-separator") || "-";
         var rendered = renderGuidedFrom(template, values, slug, separator);
+        var keepPrefill = input.hasAttribute("data-assistant-prefill");
         if (guided) {
-          dirty[input.name] = false;
+          if (!keepPrefill) {
+            dirty[input.name] = false;
+          }
           input.readOnly = true;
           input.required = false;
-          if (rendered) {
+          if (rendered && !keepPrefill) {
             input.value = rendered;
             values[input.name] = rendered;
           }
@@ -1664,6 +1667,10 @@
     }
 
     function applyDraft(data) {
+      var queryPrefill = form.querySelector("[data-assistant-prefill]");
+      if (queryPrefill) {
+        return;
+      }
       Object.keys(data).forEach(function (name) {
         var fields = form.querySelectorAll('[name="' + name + '"]');
         fields.forEach(function (field) {

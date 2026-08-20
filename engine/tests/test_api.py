@@ -917,6 +917,7 @@ def test_blueprint_form_prefills_allowlisted_query_params(repo_root, output_conf
     assert 'value="gcp" selected' in html or 'value="gcp" selected="selected"' in html
     assert 'id="module_name"' in response.text
     assert 'value="vpc-core"' in response.text
+    assert "data-assistant-prefill" in html
     assert 'name="secret"' not in response.text
     assert 'name="unknown_field"' not in response.text
     assert 'name="dry_run" value="false"' in response.text
@@ -953,6 +954,7 @@ def test_portal_static_js_intercepts_post_submit_errors(repo_root, output_config
     assert "publish_progress" in body
     assert "refreshHomeResumeChip" in body
     assert "initPortalViewToggle" in body
+    assert "data-assistant-prefill" in body
     assert "Lineage summary copied" in body
     assert "Lineage receipt" not in body
     assert 'dryRun ? "Plan" : "Applied"' in body
