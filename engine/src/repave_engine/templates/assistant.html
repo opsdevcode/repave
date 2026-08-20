@@ -70,6 +70,20 @@
     </ul>
   </section>
   {% endif %}
+  {% if resolution.reads %}
+  <section class="stack-gap" aria-labelledby="assistant-reads-heading">
+    <h2 id="assistant-reads-heading" class="fleet-shelf__title">Fleet and audit</h2>
+    <ul class="library-drawers">
+      {% for item in resolution.reads %}
+      <li class="library-drawer">
+        <p><strong>{{ item.title }}</strong> <span class="badge">{{ item.tool_id }}</span></p>
+        <p class="muted">Source: {{ item.source }}</p>
+        <p class="muted">{{ item.excerpt }}</p>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
   {% if resolution.citations %}
   <section class="stack-gap" aria-labelledby="assistant-citations-heading">
     <h2 id="assistant-citations-heading" class="fleet-shelf__title">Cited standards and policy</h2>

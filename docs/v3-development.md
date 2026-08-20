@@ -51,6 +51,7 @@ Modules under `engine/src/repave_engine/`:
 | `assistant_draft.py` | Optional model JSON of catalog inputs; hashed prompt; no generate |
 | `assistant_synthesis.py` | Optional cited excerpt paraphrase (same draft opt-in); no generate |
 | `assistant_artifacts.py` | Optional candidate files + matched blueprint gates; never publish |
+| `assistant_reads.py` | Read-only fleet, pin drift, and audit history (same roles as the portal) |
 
 Enable with `v3.enabled: true` in config (see `repave.config.yaml.example`). Tests:
 `engine/tests/test_v3_foundation.py`, `engine/tests/test_auto_merge.py`,
