@@ -246,6 +246,7 @@ def test_darwin_kernel_uses_darwin_release_assets(tmp_path: Path) -> None:
     assert "-darwin-" in curl_blob
     assert "buf-Darwin-" in curl_blob
     assert "/bin/darwin/" in curl_blob
+    assert "actionlint_" in curl_blob and "_darwin_" in curl_blob
     assert "_linux_" not in curl_blob
     assert "buf-Linux-" not in curl_blob
 

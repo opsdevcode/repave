@@ -240,22 +240,12 @@ if [[ "$INSTALL_KUBECTL" == "1" ]]; then
 fi
 
 if [[ "$INSTALL_ACTIONLINT" == "1" ]]; then
-  case "$OSTYPE" in
-    linux-*) al_os=linux ;;
-    darwin*) al_os=darwin ;;
-    *)
-      echo "actionlint install skipped: unsupported OS ${OSTYPE}" >&2
-      al_os=""
-      ;;
-  esac
-  if [[ -n "$al_os" ]]; then
-    tmp_al="$(mktemp -d)"
-    extract_tgz \
-      "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${al_os}_${kubectl_arch}.tar.gz" \
-      "$tmp_al" actionlint
-    install_bin "$tmp_al/actionlint"
-    rm -rf "$tmp_al"
-  fi
+  tmp_al="$(mktemp -d)"
+  extract_tgz \
+    "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_${helm_os}_${kubectl_arch}.tar.gz" \
+    "$tmp_al" actionlint
+  install_bin "$tmp_al/actionlint"
+  rm -rf "$tmp_al"
 fi
 
 if [[ "$INSTALL_BUF" == "1" ]]; then
