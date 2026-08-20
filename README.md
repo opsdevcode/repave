@@ -16,7 +16,11 @@
 
 **The intelligent platform layer.**
 
-Governed golden paths for everyone who builds platform automation.
+This repository is **proprietary** and **private**. You need org access to
+clone it. There is no open-source grant — [LICENSE](LICENSE),
+[`docs/licensing.md`](docs/licensing.md).
+
+Governed golden paths for platform automation.
 
 Brand kit: [docs/brand/README.md](docs/brand/README.md)
 
@@ -326,7 +330,7 @@ schemas/     Frozen JSON contracts
 
 ---
 
-## Contributing & releases
+## Development & releases
 
 [CONTRIBUTING.md](CONTRIBUTING.md) — conventional commits, `make quality`, `make test`.
 
