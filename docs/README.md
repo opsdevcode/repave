@@ -66,6 +66,7 @@ start with [Concepts](concepts.md) for the product model.
 | --- | --- |
 | [Releases](releases.md) | semantic-release, roadmap ↔ semver alignment, Release workflow |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Commits, quality gate, local dev |
+| [Bug-fix cadence](bug-fix-cadence.md) | Surface sweep after feats; weekly/three-feat estate pass |
 
 ## Portal and CLI screenshots
 

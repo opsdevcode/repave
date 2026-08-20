@@ -119,6 +119,14 @@ wait for CI, merge #321, merge #322, pull `main`).
 
 **Next implementation** (primary follow-up task):
 
+If this PR is a **`feat:`**, the default next task is the **surface sweep** in
+[`docs/bug-fix-cadence.md`](docs/bug-fix-cadence.md) (touched paths only), not
+the next roadmap feature. If this PR is a **`fix:`** from that sweep, next is
+remaining P2 from the same note, then the estate pass when three feats or a
+week have elapsed.
+
+Otherwise:
+
 - **Goal** — one sentence from the roadmap problem/approach
 - **Scope** — key paths, packages, or workflows to touch
 - **Done when** — acceptance criteria from roadmap or ADR

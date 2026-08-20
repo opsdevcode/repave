@@ -404,6 +404,10 @@ gh secret set REPAVE_RELEASE_TOKEN --org opsdevcode --visibility private
 - Wait for required checks, then merge the pull request on GitHub.
 - Include tests for engine logic changes.
 - Explain intent and any trade-offs in the PR description.
+- After a **feature** lands, run the **surface sweep** in
+  [`docs/bug-fix-cadence.md`](docs/bug-fix-cadence.md) before starting the next
+  feat. P1/P2 go in `fix/*` PRs. After three feature merges or weekly, run the
+  **estate pass** (same doc).
 
 ## Reporting issues
 

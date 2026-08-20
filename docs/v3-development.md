@@ -10,7 +10,7 @@ is superseded. Multi-repo split: [ADR 007](adr/007-v3-multi-repo-decomposition.m
 | Change | Branch | Result |
 | --- | --- | --- |
 | New product work | `feat/*` → `main` | v3.x via Release |
-| Fix | `fix/*` → `main` | v3.x patch |
+| Fix | `fix/*` → `main` | v3.x patch; after each feat, sweep that surface before the next feat ([bug-fix cadence](bug-fix-cadence.md)) |
 | Breaking removal | `feat!:` → `main` when the deprecation window closes | Major bump |
 
 Identity policy ([ADR 009](adr/009-v3-product-identity.md)): display name
@@ -132,6 +132,7 @@ CI: parallel `engine-unit`, `engine-portal`, `engine-slow` jobs.
 
 ## Related
 
+- [Bug-fix cadence](bug-fix-cadence.md)
 - [ADR 007](adr/007-v3-multi-repo-decomposition.md)
 - [ADR 008](adr/008-v3-branching-release-and-testing.md)
 - [`versions.lock`](../versions.lock)
