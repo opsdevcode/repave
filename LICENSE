@@ -2,8 +2,8 @@ Copyright (c) 2026 Eric Skaggs.
 
 SPDX-License-Identifier: LicenseRef-Proprietary
 
-This repository is proprietary. Collaborators with access may view the source
-in this private GitHub repository.
+This repository is proprietary. The GitHub tree is public so CI can use the
+public Actions plan. Viewing the source is not a license to use it.
 
 Paid self-hosted use of the repave control plane requires a commercial grant
 and a license file. See docs/customers/COMMERCIAL-LICENSE.md and

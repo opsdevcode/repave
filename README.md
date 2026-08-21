@@ -16,8 +16,8 @@
 
 **The intelligent platform layer.**
 
-This repository is **proprietary** and **private**. You need org access to
-clone it. There is no open-source grant — [LICENSE](LICENSE),
+This repository is **proprietary**. The GitHub tree is **public** (Actions
+minutes). There is no open-source grant — [LICENSE](LICENSE),
 [`docs/licensing.md`](docs/licensing.md).
 
 Governed golden paths for platform automation.
@@ -341,8 +341,7 @@ Automated semver and GitHub Releases: [docs/releases.md](docs/releases.md)
 ## License
 
 This repository is **proprietary**, including concepts, ADRs, docs, and code.
-The GitHub repository is **private**. Collaborators with access may view the
-tree; you may not use, copy, modify, or distribute it except under a separate
-written license. See [LICENSE](LICENSE),
+The GitHub tree is **public**; you may not use, copy, modify, or distribute it
+except under a separate written license. See [LICENSE](LICENSE),
 [`docs/licensing.md`](docs/licensing.md), and
 [`docs/customers/`](docs/customers/) (install, sales, IP assignment).
