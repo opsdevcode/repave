@@ -98,6 +98,10 @@ def test_public_paths_stay_open(service_mode, repo_root, output_config) -> None:
     pricing = client.get("/pricing")
     assert pricing.status_code == 200
     assert "Request a license" in pricing.text
+    assert 'href="/commercial-license"' in pricing.text
+    terms = client.get("/commercial-license")
+    assert terms.status_code == 200
+    assert "non-exclusive" in terms.text
 
 
 def test_session_available_without_service_mode(repo_root, output_config) -> None:

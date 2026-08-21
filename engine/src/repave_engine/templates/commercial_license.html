@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}repave — commercial license{% endblock %}
+
+{% block main_modifiers %} shell__main--marketing{% endblock %}
+
+{% block content %}
+<article class="marketing">
+  <header class="home-hero marketing__hero">
+    <div class="home-hero__layout">
+      <div class="home-hero__primary">
+        <p class="home-hero__support">Paid grant</p>
+        <h1 class="home-console__title">Commercial license</h1>
+        <p class="home-hero__tagline">
+          Starting instrument for self-hosted use. Counsel should review it
+          before a customer contract.
+        </p>
+        <nav class="home-hero__actions" aria-label="License">
+          <a class="btn btn--primary" href="/pricing">Request a license</a>
+          <a class="btn btn--ghost" href="/">Back</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+  <section class="marketing__section">
+    <p class="marketing__copy">Copyright (c) 2026 Eric Skaggs.</p>
+    <h2 class="marketing__heading">Grant</h2>
+    <p class="marketing__copy">
+      Subject to payment of the applicable fees and a valid license file, the
+      copyright holder grants the licensed organization a non-exclusive,
+      non-transferable, non-sublicensable license to install and run the
+      <strong>repave control plane</strong> (engine, portal, corpus image, and
+      optional operator) on clusters the organization controls, for the term in
+      the license file (<code>pilot</code> or <code>annual</code>).
+    </p>
+    <h2 class="marketing__heading">Restrictions</h2>
+    <p class="marketing__copy">
+      You may not copy, modify, distribute, sublicense, or sell the software
+      except as this grant allows. You may not provide the software as a
+      competing hosted service. You may not remove proprietary notices.
+    </p>
+    <p class="marketing__copy">
+      Source in the private GitHub repository is for the copyright holder’s
+      collaborators. A paid license is not a source-code license unless a
+      separate written agreement says so.
+    </p>
+    <h2 class="marketing__heading">License file</h2>
+    <p class="marketing__copy">
+      Hosted installs (<code>auth.service_mode</code>) must present a JSON
+      license at <code>REPAVE_LICENSE_FILE</code>. Local Compose without service
+      mode is for the copyright holder’s own development and is not a customer
+      grant.
+    </p>
+    <h2 class="marketing__heading">No warranty</h2>
+    <p class="marketing__copy">
+      THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND.
+    </p>
+    <h2 class="marketing__heading">Termination</h2>
+    <p class="marketing__copy">
+      The grant ends when the license file expires or if you materially breach
+      these terms. On termination, stop using the software and delete copies you
+      are not required to keep by law.
+    </p>
+  </section>
+</article>
+{% endblock %}

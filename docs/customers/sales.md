@@ -1,7 +1,8 @@
 # Sales (self-hosted first)
 
 Invoice until Stripe is wired. Do not sell until [ip-assignment.md](ip-assignment.md)
-is signed.
+is signed. While that paper is outstanding, run [vendor-ops.md](vendor-ops.md)
+(mailbox, dry-run license issue, GHCR inventory).
 
 **Contact:** licensing@opsdevcode.com (change this when the mailbox exists).
 
