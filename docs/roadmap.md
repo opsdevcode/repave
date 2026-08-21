@@ -5,7 +5,7 @@ one-line summary per release; this file holds open work, the path overview, and
 major-boundary themes. Full shipped writeups live in
 [`docs/roadmap-archive.md`](roadmap-archive.md).
 
-**Current release:** v3.60.6  
+**Current release:** v3.61.0  
 
 **In progress:** conversational assistant (intent → confirmed generate; autonomous merge not started)
 
@@ -172,7 +172,7 @@ remediation — not just one-shot module creation. That milestone shipped; the l
 below is the sequence that got there and what comes next.
 
 ```text
-v3.60.6 today      platform GA line on main (contract freeze + DR shipped)
+v3.61.0 today      platform GA line on main (contract freeze + DR shipped)
   │
   ├─ (history)     golden paths, operator, portal, SSO, day-2, OPA, observability
   ├─ (history)     estate control, k8s deploy, durability, service split, supply chain
