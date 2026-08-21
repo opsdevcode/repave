@@ -203,6 +203,19 @@ def blueprint_form_href(name: str, *, inputs: Mapping[str, str] | None = None) -
     return f"/blueprints/{name}?{urlencode(params)}"
 
 
+def match_confirmed_blueprint(
+    resolution: AssistantResolution, *, blueprint: str
+) -> AssistantMatch | None:
+    """Return the match the caller confirmed, or None if it was not suggested."""
+    name = blueprint.strip()
+    if not name:
+        return None
+    for match in resolution.matches:
+        if match.blueprint == name:
+            return match
+    return None
+
+
 def resolve_catalog_intent(
     repo_root: Path,
     *,

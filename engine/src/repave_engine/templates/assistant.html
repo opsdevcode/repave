@@ -10,9 +10,9 @@
     <h1 class="page-title">Describe the golden path</h1>
     <p class="page-lead">
     Repave matches your description to a catalog golden path and cites
-    in-repo standards and policy the portal already shows. You confirm the
-    form, then Plan runs the same gates as always — nothing is generated from
-    this page.
+    in-repo standards and policy the portal already shows. Confirm a match
+    to run <strong>Plan</strong> through the same <code>/generate</code>
+    gates as the golden-path form. Apply still happens on that form.
     </p>
   </div>
 </header>
@@ -117,14 +117,28 @@
         <p class="muted">Source: {{ citation.source }}</p>
         {% endfor %}
         {% if match.suggested_inputs %}
-        <p>Confirm on the form:
+        <p>Confirmed inputs:
           {% for key, value in match.suggested_inputs.items() %}
           <span class="badge">{{ key }}={{ value }}</span>
           {% endfor %}
         </p>
+        <form
+          method="post"
+          action="/generate"
+          class="stack-gap"
+          data-repave-busy-form
+          data-busy-label="Planning…"
+        >
+          <input type="hidden" name="blueprint_name" value="{{ match.blueprint }}" />
+          <input type="hidden" name="dry_run" value="true" />
+          {% for key, value in match.suggested_inputs.items() %}
+          <input type="hidden" name="{{ key }}" value="{{ value }}" />
+          {% endfor %}
+          <button type="submit" class="btn btn--primary btn--sm">Plan with these inputs</button>
+        </form>
         {% endif %}
         <p>
-          <a class="btn btn--primary btn--sm" href="{{ match.form_href }}">Open form</a>
+          <a class="btn btn--ghost btn--sm" href="{{ match.form_href }}">Open form to edit</a>
         </p>
       </li>
       {% endfor %}

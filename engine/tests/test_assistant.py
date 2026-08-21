@@ -9,7 +9,12 @@ from fastapi.testclient import TestClient
 
 from helpers import make_blueprint
 from repave_engine.api import create_app
-from repave_engine.assistant import is_assistant_enabled, resolve_catalog_intent, resolve_intent
+from repave_engine.assistant import (
+    is_assistant_enabled,
+    match_confirmed_blueprint,
+    resolve_catalog_intent,
+    resolve_intent,
+)
 from repave_engine.assistant_corpus import corpus_allowed, load_assistant_corpus, search_corpus
 from repave_engine.blueprint import InputField
 from repave_engine.v3_foundation import load_v3_foundation_config
@@ -83,6 +88,10 @@ def test_resolve_intent_ranks_terraform_module(tmp_path: Path) -> None:
     assert result.matches[0].suggested_inputs["cloud_provider"] == "aws"
     assert result.matches[0].suggested_inputs["module_name"] == "vpc-core"
     assert "cloud_provider=aws" in result.matches[0].form_href
+    assert (
+        match_confirmed_blueprint(result, blueprint="terraform-module-generic") is result.matches[0]
+    )
+    assert match_confirmed_blueprint(result, blueprint="missing") is None
     assert "module_name=vpc-core" in result.matches[0].form_href
     assert "corpus.standards" in result.tools
 
@@ -156,6 +165,26 @@ def test_assistant_html_and_api_when_on(
     assert "terraform-module-generic" in posted.text
     assert "catalog:terraform-module-generic" in posted.text
     assert "cloud_provider=aws" in posted.text
+    assert "Plan with these inputs" in posted.text
+    assert 'action="/generate"' in posted.text
+    assert 'name="dry_run"' in posted.text
+    confirm = client.post(
+        "/api/v2/assistant/confirm",
+        json={
+            "intent": "terraform module named networking-vnet for azure",
+            "blueprint": "terraform-module-generic",
+        },
+    )
+    assert confirm.status_code == 200
+    confirmed = confirm.json()
+    assert confirmed["confirmed"] is True
+    assert confirmed["inputs"]["cloud_provider"] == "azure"
+    assert confirmed["plan"]["path"] == "/generate"
+    reject = client.post(
+        "/api/v2/assistant/confirm",
+        json={"intent": "terraform module for aws", "blueprint": "not-a-match"},
+    )
+    assert reject.status_code == 400
     assert "standards/" in posted.text or "policy/" in posted.text
     api = client.post(
         "/api/v2/assistant/resolve",
@@ -183,3 +212,8 @@ def test_api_v2_assistant_404_when_off(repo_root: Path, output_config) -> None:
     response = client.post("/api/v2/assistant/resolve", json={"intent": "terraform module"})
     assert response.status_code == 404
     assert "v3.assistant.enabled" in response.json()["detail"]
+    confirm = client.post(
+        "/api/v2/assistant/confirm",
+        json={"intent": "terraform module", "blueprint": "terraform-module-generic"},
+    )
+    assert confirm.status_code == 404
