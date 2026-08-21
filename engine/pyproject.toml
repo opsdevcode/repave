@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "repave-engine"
-version = "3.61.1"
+version = "3.62.0"
 description = "Governed, repeatable platform engineering generation engine"
 license = { text = "LicenseRef-Proprietary" }
 requires-python = ">=3.12"
