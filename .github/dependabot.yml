@@ -68,6 +68,23 @@ updates:
       - dependency-name: "@testing-library/react"
       - dependency-name: "@testing-library/dom"
       - dependency-name: "prettier"
+      # Transitives pinned by Backstage; Dependabot cannot reach the patched major
+      # (security_update_not_possible red runs). Revisit on create-app bump.
+      - dependency-name: "@octokit/request"
+      - dependency-name: "@octokit/request-error"
+      - dependency-name: "@octokit/plugin-paginate-rest"
+      - dependency-name: "uuid"
+      - dependency-name: "file-type"
+      - dependency-name: "prismjs"
+
+  - package-ecosystem: npm
+    directory: /backstage/packages/app
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "react-router"
+      - dependency-name: "react-router-dom"
 
   - package-ecosystem: github-actions
     directory: /
