@@ -24,6 +24,8 @@ repave:
       roles:
         admin: []
         generator: []
+  license:
+    existingSecret: repave-license
 
 image:
   gateToolchain: false

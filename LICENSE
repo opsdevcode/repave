@@ -3,11 +3,15 @@ Copyright (c) 2026 Eric Skaggs.
 SPDX-License-Identifier: LicenseRef-Proprietary
 
 This repository is proprietary. Collaborators with access may view the source
-in this private GitHub repository. This license does not grant you any right
-to use, copy, modify, merge, publish, distribute, sublicense, or sell the
-software, documentation, concepts, architecture decision records, or any
-other contents of this repository, except under a separate written license
-from the copyright holder.
+in this private GitHub repository.
+
+Paid self-hosted use of the repave control plane requires a commercial grant
+and a license file. See docs/customers/COMMERCIAL-LICENSE.md and
+docs/customers/install.md.
+
+This file does not grant you any right to use, copy, modify, merge, publish,
+distribute, sublicense, or sell the software except under that paid grant or
+another written license from the copyright holder.
 
 THE SOFTWARE AND DOCUMENTATION ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
 ANY KIND.

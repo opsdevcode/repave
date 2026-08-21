@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from license_helpers import install_repave_license
 from repave_engine.api import create_app
 from repave_engine.blueprint import blueprints_dir, list_blueprints
 from repave_engine.fleet import FleetEntry, register_repo
@@ -134,6 +135,7 @@ def test_platform_fleet_page_requires_admin_when_service_mode(
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
     client = TestClient(
         create_app(repo_root=repo_root, output_config=output_config),
         raise_server_exceptions=False,

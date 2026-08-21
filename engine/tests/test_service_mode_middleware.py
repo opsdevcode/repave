@@ -11,6 +11,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from license_helpers import install_repave_license
 from repave_engine.api import create_app
 
 
@@ -23,6 +24,7 @@ def service_mode(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, tmp_path)
 
 
 def test_api_paths_return_401_not_500(service_mode, repo_root, output_config) -> None:
@@ -93,6 +95,9 @@ def test_public_paths_stay_open(service_mode, repo_root, output_config) -> None:
     )
 
     assert client.get("/health").status_code == 200
+    pricing = client.get("/pricing")
+    assert pricing.status_code == 200
+    assert "Request a license" in pricing.text
 
 
 def test_session_available_without_service_mode(repo_root, output_config) -> None:

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from license_helpers import install_repave_license
 from repave_engine.api import create_app
 from repave_engine.cli import build_parser, cmd_fleet, cmd_register, cmd_unregister
 
@@ -175,6 +176,7 @@ def test_api_fleet_requires_auth_in_service_mode(
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_ID", "client")
     monkeypatch.setenv("REPAVE_OIDC_CLIENT_SECRET", "secret")
     monkeypatch.setenv("REPAVE_OIDC_REDIRECT_URI", "https://repave.example.com/auth/callback")
+    install_repave_license(monkeypatch, registry_env.parent)
 
     client = TestClient(create_app(repo_root=repo_root, output_config=output_config))
 

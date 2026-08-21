@@ -280,7 +280,7 @@ def test_build_idp_logout_url_auth0_v2_fallback() -> None:
 
 def test_public_paths_include_marketing_pages() -> None:
     assert is_public_path("/")
-    assert is_public_path("/signup")
+    assert is_public_path("/pricing")
     assert is_public_path("/auth/login")
     assert is_public_path("/auth/signup")
     assert is_public_path("/static/repave.css")

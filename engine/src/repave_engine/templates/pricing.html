@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}repave — request a license{% endblock %}
+
+{% block main_modifiers %} shell__main--marketing{% endblock %}
+
+{% block content %}
+<article class="marketing">
+  <header class="home-hero marketing__hero">
+    <div class="home-hero__layout">
+      <div class="home-hero__primary">
+        <p class="home-hero__support">Self-hosted control plane</p>
+        <h1 class="home-console__title">Request a license</h1>
+        <p class="home-hero__tagline">
+          Annual org license or a 90-day pilot. You get private GHCR pulls and a
+          JSON license file — not a public git clone.
+        </p>
+        <nav class="home-hero__actions" aria-label="Pricing">
+          <a class="btn btn--primary" href="mailto:licensing@opsdevcode.com?subject=repave%20license">
+            Email licensing@opsdevcode.com
+          </a>
+          <a class="btn btn--ghost" href="/">Back</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+  <section class="marketing__section">
+    <h2 class="marketing__heading">SKUs</h2>
+    <ul class="marketing__grid">
+      <li class="marketing__card">
+        <h3>Pilot</h3>
+        <p>90 days, one cluster, control plane only. Starting $8,000.</p>
+      </li>
+      <li class="marketing__card">
+        <h3>Annual</h3>
+        <p>Twelve months, org-wide clusters. Starting $40,000 / year.</p>
+      </li>
+    </ul>
+    <p class="marketing__copy">
+      Operator and Backstage are add-ons. Stripe payment links come after the
+      first invoices. Terms:
+      <a href="https://github.com/opsdevcode/repave/blob/main/docs/customers/COMMERCIAL-LICENSE.md">commercial license</a>
+      (private repo; collaborators only).
+    </p>
+  </section>
+</article>
+{% endblock %}

@@ -82,6 +82,7 @@ from repave_engine.catalog_cost import enrich_entity_cost
 from repave_engine.catalog_deployment import (
     deployment_scorecard_for_entity,
 )
+from repave_engine.commercial_license import load_commercial_license
 from repave_engine.cost_actuals import cost_reader_configured
 from repave_engine.dashboard_pack import blueprint_supports_dashboard_packs
 from repave_engine.developer_lab import is_developer_lab_enabled
@@ -308,6 +309,12 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
         raise RuntimeError(str(exc)) from exc
     try:
         validate_hosted_service_config(repo_root, auth_config=auth_config)
+    except ValueError as exc:
+        raise RuntimeError(str(exc)) from exc
+    try:
+        load_commercial_license(
+            service_enabled=auth_config is not None and auth_config.service_enabled
+        )
     except ValueError as exc:
         raise RuntimeError(str(exc)) from exc
 
@@ -729,6 +736,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             request,
             "signup.html",
             page_context(request, nav_active="signup", landing_page=True),
+        )
+
+    @app.get("/pricing", response_class=HTMLResponse)
+    async def pricing_page(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "pricing.html",
+            page_context(request, nav_active="pricing", landing_page=True),
         )
 
     @app.get("/activity", response_class=HTMLResponse)

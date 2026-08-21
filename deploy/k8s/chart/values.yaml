@@ -192,6 +192,9 @@ repave:
       roles:
         admin: []
         generator: []
+  # Paid grant JSON (key license.json). Required when serviceMode is true.
+  license:
+    existingSecret: ""
 
   # Authoritative Terraform state store (ADR 004 Phases 1–3). Off by default.
   # Shared deploy: values-state-store.yaml + docs/operations/state-store-enablement.md
