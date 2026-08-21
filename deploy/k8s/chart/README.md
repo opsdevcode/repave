@@ -169,6 +169,7 @@ See also [`docs/operations/README.md`](../../../docs/operations/README.md) for S
 | `repave.gates.infracost.*` | Org floor for Infracost gate (`required`, `maxMonthlyUsd`) |
 | `secrets` / `infracost-api-key` | Injected as `INFRACOST_API_KEY` on portal/worker |
 | `repave.auth.serviceMode` | OIDC login; requires `secrets.sessionSecret` and OIDC issuer/client |
+| `repave.license.existingSecret` | Secret with key `license.json`; required when `serviceMode` is true |
 | `repave.auth.sessionHttpsOnly` | Session cookie `Secure` flag (`REPAVE_SESSION_HTTPS_ONLY`); default `true` |
 | `repave.auth.oidc.scopes` | OIDC scopes rendered into ConfigMap (default `openid`/`profile`/`email`) |
 | `repave.auth.oidc.logoutReturnTo` | Post-logout URL (Auth0 Allowed Logout URLs) |
@@ -195,6 +196,19 @@ helm upgrade --install repave ./deploy/k8s/chart \
 ```
 
 Do not commit real tokens in `values.yaml`. Use `secrets.create: true` only on kind.
+
+Paid service mode also needs a license Secret (key `license.json`):
+
+```bash
+kubectl create secret generic repave-license -n repave \
+  --from-file=license.json=./license.json
+
+helm upgrade --install repave ./deploy/k8s/chart \
+  --set secrets.existingSecret=repave-secrets \
+  --set repave.auth.serviceMode=true \
+  --set repave.license.existingSecret=repave-license \
+  ...
+```
 
 ### Infracost gate (FinOps estimates)
 

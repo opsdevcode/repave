@@ -83,8 +83,13 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     ignore:
+      - dependency-name: "react"
+      - dependency-name: "react-dom"
       - dependency-name: "react-router"
       - dependency-name: "react-router-dom"
+      - dependency-name: "@testing-library/react"
+      - dependency-name: "@testing-library/dom"
+      - dependency-name: "@testing-library/jest-dom"
 
   - package-ecosystem: github-actions
     directory: /

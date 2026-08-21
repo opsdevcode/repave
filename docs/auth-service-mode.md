@@ -31,7 +31,8 @@ auth:
 
 Environment overrides: `REPAVE_SERVICE_MODE`, `REPAVE_SESSION_SECRET`,
 `REPAVE_SESSION_HTTPS_ONLY`, `REPAVE_OIDC_ISSUER`, `REPAVE_OIDC_CLIENT_ID`,
-`REPAVE_OIDC_CLIENT_SECRET`, `REPAVE_OIDC_REDIRECT_URI`.
+`REPAVE_OIDC_CLIENT_SECRET`, `REPAVE_OIDC_REDIRECT_URI`, `REPAVE_LICENSE_FILE`
+(JSON grant; required when service mode is on — see [customers/install.md](customers/install.md)).
 
 ## Roles
 

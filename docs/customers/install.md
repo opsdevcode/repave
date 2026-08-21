@@ -34,7 +34,8 @@ helm upgrade --install repave oci://ghcr.io/opsdevcode/charts/repave \
   --version <chart-version> \
   --set repave.auth.serviceMode=true \
   --set repave.license.existingSecret=repave-license \
-  --set-file ... # your OIDC and database values — see deploy/k8s/chart/README.md
+  --set secrets.existingSecret=repave-secrets
+# plus OIDC and database values — see deploy/k8s/chart/README.md
 ```
 
 The portal Deployment mounts the secret at `/var/run/secrets/repave/license.json`

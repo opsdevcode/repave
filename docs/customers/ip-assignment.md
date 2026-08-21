@@ -27,6 +27,8 @@ so I can sell self-hosted licenses under opsdevcode / Eric Skaggs.
 - Grant GHCR pull tokens to third parties as a product
 - Represent that the employer has no claim
 
+Until they reply, keep moving on [vendor-ops.md](vendor-ops.md) only.
+
 ## Suggested reply (copy/paste)
 
 > We pass on using repave as a company product. We assign to Eric Skaggs all

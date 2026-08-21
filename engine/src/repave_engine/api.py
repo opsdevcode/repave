@@ -746,6 +746,14 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
             page_context(request, nav_active="pricing", landing_page=True),
         )
 
+    @app.get("/commercial-license", response_class=HTMLResponse)
+    async def commercial_license_page(request: Request) -> HTMLResponse:
+        return templates.TemplateResponse(
+            request,
+            "commercial_license.html",
+            page_context(request, nav_active="pricing", landing_page=True),
+        )
+
     @app.get("/activity", response_class=HTMLResponse)
     async def activity_page(request: Request) -> HTMLResponse:
         activity_limit = 50
