@@ -49,6 +49,7 @@ def test_api_v2_metadata(repo_root, output_config) -> None:
     assert "POST /api/v2/components/reclaim" in payload["endpoints"]
     assert "GET /api/v2/catalog/blueprints" in payload["endpoints"]
     assert "POST /api/v2/assistant/resolve" in payload["endpoints"]
+    assert "POST /api/v2/assistant/confirm" in payload["endpoints"]
     assert "GET /api/v2/bundles" in payload["endpoints"]
     assert "GET /api/v2/bundles/{name}" in payload["endpoints"]
     assert "GET /api/v2/library" in payload["endpoints"]

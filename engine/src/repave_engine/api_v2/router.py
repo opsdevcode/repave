@@ -18,7 +18,11 @@ from repave_engine.api_read_models import (
     build_estate_read_model,
     build_governance_annotations_read_model,
 )
-from repave_engine.assistant import is_assistant_enabled, resolve_catalog_intent
+from repave_engine.assistant import (
+    is_assistant_enabled,
+    match_confirmed_blueprint,
+    resolve_catalog_intent,
+)
 from repave_engine.audit_history import audit_filters_from_mapping, query_audit_entries
 from repave_engine.auth import (
     ROLE_ADMIN,
@@ -164,6 +168,7 @@ V2_ENDPOINTS: tuple[str, ...] = (
     "GET /api/v2/catalog/entities/{entity_id}",
     "GET /api/v2/catalog/blueprints",
     "POST /api/v2/assistant/resolve",
+    "POST /api/v2/assistant/confirm",
     "GET /api/v2/bundles",
     "GET /api/v2/bundles/{name}",
     "GET /api/v2/library",
@@ -1084,6 +1089,42 @@ def build_api_v2_router(
             auth_enabled=bool(auth_config and auth_config.service_enabled),
         )
         return JSONResponse(resolution.to_public_dict())
+
+    @router.post("/assistant/confirm")
+    async def api_v2_assistant_confirm(request: Request) -> JSONResponse:
+        _require_roles(request, auth_config, ROLE_GENERATOR, ROLE_ADMIN)
+        if not is_assistant_enabled(repo_root):
+            raise HTTPException(
+                status_code=404,
+                detail="Assistant is not enabled (set v3.enabled and v3.assistant.enabled)",
+            )
+        payload = await _parse_json_object(request)
+        intent = str(payload.get("intent", "")).strip()
+        blueprint = str(payload.get("blueprint", "")).strip()
+        user = authenticated_user(request, auth_config)
+        resolution = resolve_catalog_intent(
+            repo_root,
+            intent=intent,
+            role=user.role if user else None,
+            auth_enabled=bool(auth_config and auth_config.service_enabled),
+        )
+        match = match_confirmed_blueprint(resolution, blueprint=blueprint)
+        if match is None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "blueprint is not in the resolved matches; "
+                    "POST /api/v2/assistant/resolve first and confirm a suggested name"
+                ),
+            )
+        return JSONResponse(
+            {
+                "confirmed": True,
+                "blueprint": match.blueprint,
+                "inputs": dict(match.suggested_inputs),
+                "plan": {"method": "POST", "path": "/generate", "dry_run": True},
+            }
+        )
 
     @router.get("/bundles")
     async def api_v2_bundles(request: Request) -> JSONResponse:

@@ -7,7 +7,7 @@ major-boundary themes. Full shipped writeups live in
 
 **Current release:** v3.61.1  
 
-**In progress:** conversational assistant (intent → confirmed generate; autonomous merge not started)
+**In progress:** conversational assistant (confirm → Plan on `/generate`; autonomous merge not started)
 
 HTML is the hosted workbench; Backstage is the catalog IDP
 ([`docs/ui-surfaces.md`](ui-surfaces.md), [ADR 011](adr/011-hosted-backstage-idp.md)).
@@ -22,6 +22,8 @@ superseded, [ADR 007](adr/007-v3-multi-repo-decomposition.md),
 execution under [beyond v3.0.0](#beyond-v300--stategraph-and-graph-scoped-execution).
 
 **Shipped on `main` (recent):**
+**Assistant confirm Plan**
+(suggested inputs POST `/generate` dry-run from `/assistant` and `/api/v2/assistant/confirm`);
 **Assistant read-only fleet/drift/audit**
 (resolve cites what the caller could already see; ranking and hint filters);
 **Policy pack side-by-side**
@@ -517,10 +519,9 @@ optional gated candidate files (`v3.assistant.artifacts.enabled`, default-off)
 are shipped as default-off. Artifact drafts run the matched blueprint gates and
 are never published. Resolve can cite fleet, pin drift, and gate history the
 caller could already see (`fleet.reads` / `fleet.drift` / `audit.history`).
-Guided identity JS keeps allowlisted query prefills. FTS
-is adapted from [opsdevcode/relay](https://github.com/opsdevcode/relay).
-Generate still uses the existing form and gates for the happy path. Autonomous
-merge of assistant output is not started.
+**Confirm → Plan** posts the suggested inputs to `/generate` with `dry_run=true`
+(HTML on `/assistant`, `POST /api/v2/assistant/confirm` for the contract).
+Apply and autonomous merge of assistant output are not started.
 
 **Problem:** Users want to describe intent in natural language ("generate a script,
 module, or dashboard to do X") and receive a compliant artifact — without an

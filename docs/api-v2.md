@@ -234,6 +234,7 @@ authenticate with `Authorization: Bearer <token>` when `REPAVE_API_TOKEN` or
 | `GET` | `/api/v2/catalog/entities/{entity_id}` | viewer+ | Entity detail + cost/deployment/maturity/initiatives enrichments (Backstage `/services`) |
 | `GET` | `/api/v2/catalog/blueprints` | viewer+ | Family-grouped blueprint catalog plus input schemas (Backstage `/generate`) |
 | `POST` | `/api/v2/assistant/resolve` | generator+ | Intent → matches, citations, optional draft/synthesis/gated files; read-only fleet/drift/audit when the role can already see those APIs |
+| `POST` | `/api/v2/assistant/confirm` | generator+ | Re-resolve intent and accept a suggested blueprint; returns inputs plus `POST /generate` Plan (`dry_run: true`). Does not Apply |
 | `GET` | `/api/v2/bundles` | viewer+ | Golden-path bundle list (Backstage `/bundles`) |
 | `GET` | `/api/v2/bundles/{name}` | viewer+ | Bundle members + topology (Backstage `/bundles`) |
 | `GET` | `/api/v2/library` | viewer+ | Grouped artifact library (`?family=`, `?owner=`; Backstage `/library`) |
