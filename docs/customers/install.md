@@ -1,7 +1,7 @@
 # Customer install (self-hosted)
 
 Paid **repave control plane** on your cluster. You get image pull access and a
-JSON license file, not a source checkout.
+JSON license file. The public GitHub tree is not a production grant.
 
 Sales and SKUs: [sales.md](sales.md). Terms: [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md).
 

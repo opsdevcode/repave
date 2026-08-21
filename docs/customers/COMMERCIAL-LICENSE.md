@@ -21,9 +21,9 @@ You may not copy, modify, distribute, sublicense, or sell the software except
 as this grant allows. You may not provide the software as a competing hosted
 service. You may not remove proprietary notices.
 
-Source in the private GitHub repository is for the copyright holder's
-collaborators. A paid license is **not** a source-code license unless a
-separate written agreement says so.
+The public GitHub tree is not a license to run or redistribute the software.
+A paid license is **not** a source-code license unless a separate written
+agreement says so.
 
 ## License file
 

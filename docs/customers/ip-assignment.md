@@ -16,7 +16,7 @@ so I can sell self-hosted licenses under opsdevcode / Eric Skaggs.
 
 ## What already happened on GitHub
 
-- Both repositories are **private**.
+- Both repositories are **public** (proprietary license; GHCR remains private).
 - Default-branch license is **proprietary** (not Apache-2.0 going forward).
 - Historical public Apache-2.0 / BSD tags that already shipped stay under those
   licenses for people who received them. New work is not OSI-licensed.
