@@ -1121,7 +1121,7 @@ def build_api_v2_router(
             {
                 "confirmed": True,
                 "blueprint": match.blueprint,
-                "inputs": dict(match.suggested_inputs),
+                "inputs": match.plan_inputs(),
                 "plan": {"method": "POST", "path": "/generate", "dry_run": True},
             }
         )

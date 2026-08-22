@@ -10,10 +10,12 @@ from fastapi.testclient import TestClient
 from helpers import make_blueprint
 from repave_engine.api import create_app
 from repave_engine.assistant import (
+    AssistantMatch,
     is_assistant_enabled,
     match_confirmed_blueprint,
     resolve_catalog_intent,
     resolve_intent,
+    suggested_plan_inputs,
 )
 from repave_engine.assistant_corpus import corpus_allowed, load_assistant_corpus, search_corpus
 from repave_engine.blueprint import InputField
@@ -96,6 +98,31 @@ def test_resolve_intent_ranks_terraform_module(tmp_path: Path) -> None:
     assert "corpus.standards" in result.tools
 
 
+def test_suggested_plan_inputs_drops_reserved_and_invalid_keys() -> None:
+    filtered = suggested_plan_inputs(
+        {
+            "cloud_provider": "aws",
+            "dry_run": "false",
+            "blueprint_name": "evil",
+            "not-an-ident": "x",
+            "module_name": "vpc-core",
+            "empty": "  ",
+        }
+    )
+    assert filtered == {"cloud_provider": "aws", "module_name": "vpc-core"}
+    match = AssistantMatch(
+        blueprint="terraform-module-generic",
+        description="",
+        family="terraform",
+        score=10.0,
+        form_href="/blueprints/terraform-module-generic",
+        citations=(),
+        suggested_inputs={"dry_run": "false", "cloud_provider": "aws"},
+    )
+    assert match.plan_inputs() == {"cloud_provider": "aws"}
+    assert "dry_run" not in match.to_public_dict()["suggested_inputs"]
+
+
 def test_resolve_intent_no_match(tmp_path: Path) -> None:
     blueprint = make_blueprint(tmp_path, name="helm-chart-generic", artifact_type="helm-chart")
     result = resolve_intent("completely unrelated xyzzy", blueprints=(blueprint,))
@@ -167,7 +194,11 @@ def test_assistant_html_and_api_when_on(
     assert "cloud_provider=aws" in posted.text
     assert "Plan with these inputs" in posted.text
     assert 'action="/generate"' in posted.text
-    assert 'name="dry_run"' in posted.text
+    assert 'name="dry_run" value="true"' in posted.text
+    assert "data-portal-submit-error" in posted.text
+    dry_pos = posted.text.rfind('name="dry_run" value="true"')
+    bp_pos = posted.text.find('name="blueprint_name"')
+    assert bp_pos != -1 and dry_pos != -1 and bp_pos < dry_pos
     confirm = client.post(
         "/api/v2/assistant/confirm",
         json={

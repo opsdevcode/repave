@@ -1121,6 +1121,8 @@ def create_app(*, repo_root: Path, output_config: OutputConfig | None = None) ->
     @app.get("/assistant", response_class=HTMLResponse)
     async def assistant_page(request: Request) -> HTMLResponse:
         _require_assistant()
+        if auth_config and auth_config.service_enabled:
+            require_role(session_user(request), ROLE_GENERATOR, ROLE_ADMIN)
         return templates.TemplateResponse(
             request,
             "assistant.html",

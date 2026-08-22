@@ -51,7 +51,7 @@
   <ul class="library-drawers">
     {% for gate in resolution.artifact_gates %}
     <li class="library-drawer">
-      <p>{{ gate.name }}: {% if gate.passed or gate.skipped %}ok{% else %}blocked{% endif %}</p>
+      <p>{{ gate.name }}: {% if gate.skipped %}skipped{% elif gate.passed %}ok{% else %}blocked{% endif %}</p>
       <p class="muted">{{ gate.message }}</p>
     </li>
     {% endfor %}
@@ -116,9 +116,10 @@
         {% for citation in match.citations %}
         <p class="muted">Source: {{ citation.source }}</p>
         {% endfor %}
-        {% if match.suggested_inputs %}
+        {% set plan_inputs = match.plan_inputs() %}
+        {% if plan_inputs %}
         <p>Confirmed inputs:
-          {% for key, value in match.suggested_inputs.items() %}
+          {% for key, value in plan_inputs.items() %}
           <span class="badge">{{ key }}={{ value }}</span>
           {% endfor %}
         </p>
@@ -129,11 +130,12 @@
           data-repave-busy-form
           data-busy-label="Planning…"
         >
+          <p class="form-validation" data-portal-submit-error role="alert" hidden></p>
           <input type="hidden" name="blueprint_name" value="{{ match.blueprint }}" />
-          <input type="hidden" name="dry_run" value="true" />
-          {% for key, value in match.suggested_inputs.items() %}
+          {% for key, value in plan_inputs.items() %}
           <input type="hidden" name="{{ key }}" value="{{ value }}" />
           {% endfor %}
+          <input type="hidden" name="dry_run" value="true" />
           <button type="submit" class="btn btn--primary btn--sm">Plan with these inputs</button>
         </form>
         {% endif %}
