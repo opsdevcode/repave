@@ -49,6 +49,17 @@ _NAMED_RE = re.compile(
     r"\b(?:named|called|name)\s+([a-z][a-z0-9_-]{1,62})\b",
     re.IGNORECASE,
 )
+_MAX_SUGGESTED_VALUE_CHARS = 200
+_PLAN_RESERVED_FIELDS = frozenset(
+    {
+        "apply",
+        "blueprint_name",
+        "bundle_name",
+        "dry_run",
+        "plan_preview",
+        "stream",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -134,6 +145,9 @@ class AssistantMatch:
     citations: tuple[AssistantCitation, ...]
     suggested_inputs: dict[str, str]
 
+    def plan_inputs(self) -> dict[str, str]:
+        return suggested_plan_inputs(self.suggested_inputs)
+
     def to_public_dict(self) -> dict[str, object]:
         return {
             "blueprint": self.blueprint,
@@ -142,7 +156,7 @@ class AssistantMatch:
             "score": round(self.score, 2),
             "form_href": self.form_href,
             "citations": [item.to_public_dict() for item in self.citations],
-            "suggested_inputs": dict(self.suggested_inputs),
+            "suggested_inputs": self.plan_inputs(),
         }
 
 
@@ -191,13 +205,22 @@ def is_assistant_enabled(repo_root: Path) -> bool:
     return load_v3_foundation_config(repo_root).assistant_enabled
 
 
+def suggested_plan_inputs(inputs: Mapping[str, str]) -> dict[str, str]:
+    """Allowlisted suggested fields for Plan POST and form hrefs."""
+    allowed: dict[str, str] = {}
+    for key, value in inputs.items():
+        if key in _PLAN_RESERVED_FIELDS or not key.isidentifier():
+            continue
+        text = str(value).strip()
+        if not text or len(text) > _MAX_SUGGESTED_VALUE_CHARS:
+            continue
+        allowed[key] = text
+    return allowed
+
+
 def blueprint_form_href(name: str, *, inputs: Mapping[str, str] | None = None) -> str:
     """Link to the golden-path form with allowlisted suggested inputs as query params."""
-    params = [
-        (key, value)
-        for key, value in (inputs or {}).items()
-        if key.isidentifier() and value and len(value) <= 200
-    ]
+    params = list(suggested_plan_inputs(inputs or {}).items())
     if not params:
         return f"/blueprints/{name}"
     return f"/blueprints/{name}?{urlencode(params)}"
