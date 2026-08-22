@@ -207,7 +207,8 @@ def test_run_console_contract(
     assert "run-console__stepper" in body
     assert "data-run-stepper-fill" in body
     assert "run-console__publish-chip" in body
-    assert "Starting apply" in body
+    assert "Starting plan" in body
+    assert "Starting apply" not in body
     assert 'data-dry-run="true"' in body
     assert "run-console__outcome" in body
     assert "no GitHub repository is created" in body

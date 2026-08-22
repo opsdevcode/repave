@@ -2459,6 +2459,7 @@
       !isOrgScan &&
       !isEnvironmentReclaim;
     var isDryRun = root.getAttribute("data-dry-run") === "true";
+    var startProgressLabel = isDryRun ? "Starting plan…" : "Starting apply…";
     var outcomeStatus = root.querySelector("[data-run-outcome-status]");
     var publishErrorEl = root.querySelector("[data-run-publish-error]");
     var stepperFill = root.querySelector("[data-run-stepper-fill]");
@@ -2793,7 +2794,7 @@
             progressLabel.textContent =
               pipeDone + " of " + stageCount + " stages complete";
           } else {
-            progressLabel.textContent = "Starting apply…";
+            progressLabel.textContent = startProgressLabel;
           }
         }
       } else if (totalGates > 0) {
@@ -2821,7 +2822,7 @@
                 ? "Waiting for org scan…"
                 : isEnvironmentReclaim
                 ? "Waiting for environment reclaim…"
-                : "Starting apply…";
+                : startProgressLabel;
       }
       pct = Math.max(0, Math.min(100, pct));
       if (progressBar) {
