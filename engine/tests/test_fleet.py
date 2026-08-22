@@ -92,14 +92,18 @@ def test_log_is_append_only(tmp_path: Path) -> None:
     assert [event["event"] for event in events] == ["register", "unregister"]
 
 
-def test_read_fleet_skips_corrupt_lines(tmp_path: Path) -> None:
+def test_read_fleet_skips_corrupt_lines(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     registry = tmp_path / "registry.jsonl"
     register_repo(registry, _entry())
     with registry.open("a", encoding="utf-8") as handle:
         handle.write("not json\n")
+        handle.write(json.dumps(["register"]) + "\n")
         handle.write(json.dumps({"event": "register"}) + "\n")  # no repo_url
 
-    assert len(read_fleet(registry)) == 1
+    with caplog.at_level("WARNING", logger="repave_engine.fleet"):
+        assert len(read_fleet(registry)) == 1
+    assert "malformed JSON" in caplog.text
+    assert "non-object JSON" in caplog.text
 
 
 def test_read_fleet_missing_file_is_empty(tmp_path: Path) -> None:
