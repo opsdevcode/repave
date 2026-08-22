@@ -228,9 +228,11 @@ def read_fleet(path: Path, *, repo_root: Path | None = None) -> tuple[FleetEntry
             continue
         try:
             payload = json.loads(text)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
+            logger.warning("Fleet registry skip malformed JSON (%s): %s", path, exc)
             continue
         if not isinstance(payload, dict):
+            logger.warning("Fleet registry skip non-object JSON line (%s)", path)
             continue
         event = str(payload.get("event", "")).strip()
         repo_url = str(payload.get("repo_url", "")).strip()
