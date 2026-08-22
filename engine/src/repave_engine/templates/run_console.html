@@ -95,7 +95,7 @@
         <div class="run-console__progress-bar" data-run-progress-bar style="width: 0%"></div>
       </div>
       <p class="run-console__progress-label hint" data-run-progress-label aria-live="polite">
-        {% if live_plan %}Waiting for live plan…{% elif environment_vend %}Waiting for environment vend…{% elif fleet_drift_confirm %}Waiting for drift confirm…{% elif org_scan %}Waiting for org scan…{% elif environment_reclaim %}Waiting for environment reclaim…{% else %}Starting apply…{% endif %}
+        {% if live_plan %}Waiting for live plan…{% elif environment_vend %}Waiting for environment vend…{% elif fleet_drift_confirm %}Waiting for drift confirm…{% elif org_scan %}Waiting for org scan…{% elif environment_reclaim %}Waiting for environment reclaim…{% elif run_record.dry_run %}Starting plan…{% else %}Starting apply…{% endif %}
       </p>
     </div>
 

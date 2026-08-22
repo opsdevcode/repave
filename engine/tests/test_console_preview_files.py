@@ -130,6 +130,7 @@ def test_run_console_js_polls_dry_run_preview_after_run_complete() -> None:
     assert "revealDryRunBrowseFallback" in js
     # Guard must be dry-run aware; a bare `if (runComplete) return` re-broke plan preview.
     assert "if (runComplete && !isDryRun)" in js
+    assert "Starting plan…" in js
     assert "Plan complete — loading file preview…" in js
     assert "Plan preview ready — browse files below" in js
     assert "Could not load run status — refresh and sign in again" in js
