@@ -131,6 +131,7 @@ func applyRemediationPRStatus(
 			return err
 		}
 		notify.SendGoldenPathRepoEvent(
+			ctx,
 			notify.EventRemediationPRPlanned,
 			repo.ObjectMeta,
 			repo.Spec,
@@ -198,6 +199,7 @@ func applyRemediationPRStatus(
 		eventMsg = fmt.Sprintf("Remediation PR merged: %s", published.Title)
 	}
 	notify.SendGoldenPathRepoEvent(
+		ctx,
 		notify.EventRemediationPROpened,
 		repo.ObjectMeta,
 		repo.Spec,

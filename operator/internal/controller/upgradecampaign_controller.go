@@ -109,6 +109,7 @@ func (r *UpgradeCampaignReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		summary.OpenPRCount,
 	)
 	r.notifyCampaignChanges(
+		ctx,
 		&uc,
 		summary,
 		previousPhase,
@@ -175,6 +176,7 @@ func (r *UpgradeCampaignReconciler) summarize(
 }
 
 func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
+	ctx context.Context,
 	uc *repavev1beta1.UpgradeCampaign,
 	summary campaign.FleetSummary,
 	previousPhase string,
@@ -187,6 +189,7 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhasePaused &&
 		previousPhase != repavev1beta1.UpgradeCampaignPhasePaused:
 		notify.SendCampaignEvent(
+			ctx,
 			notify.EventCampaignPaused,
 			uc,
 			summary,
@@ -195,6 +198,7 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhaseStopped &&
 		previousPhase != repavev1beta1.UpgradeCampaignPhaseStopped:
 		notify.SendCampaignEvent(
+			ctx,
 			notify.EventCampaignStopped,
 			uc,
 			summary,
@@ -203,6 +207,7 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 	case uc.Status.Phase == repavev1beta1.UpgradeCampaignPhaseActive &&
 		previousPhase == repavev1beta1.UpgradeCampaignPhasePaused:
 		notify.SendCampaignEvent(
+			ctx,
 			notify.EventCampaignResumed,
 			uc,
 			summary,
@@ -212,6 +217,7 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 
 	if rateLimitBlocked && !previousRateLimitBlocked {
 		notify.SendCampaignEvent(
+			ctx,
 			notify.EventCampaignRateLimited,
 			uc,
 			summary,
@@ -225,6 +231,7 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 	}
 	if summary.OpenPRCount >= maxConcurrent && previousOpenPRs < maxConcurrent {
 		notify.SendCampaignEvent(
+			ctx,
 			notify.EventCampaignCapacityReached,
 			uc,
 			summary,
@@ -234,6 +241,7 @@ func (r *UpgradeCampaignReconciler) notifyCampaignChanges(
 
 	if summary.OutOfDateCount != previousOutOfDate || summary.OpenPRCount != previousOpenPRs {
 		notify.SendCampaignEvent(
+			ctx,
 			notify.EventCampaignSummary,
 			uc,
 			summary,

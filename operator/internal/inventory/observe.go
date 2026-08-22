@@ -35,7 +35,7 @@ type GitFetcher struct {
 func (f GitFetcher) Fetch(ctx context.Context, repoURL, dir string) error {
 	token := f.Token
 	if token == "" {
-		resolved, err := github.ResolveAccessToken("")
+		resolved, err := github.ResolveAccessToken(ctx, "")
 		if err != nil {
 			return err
 		}

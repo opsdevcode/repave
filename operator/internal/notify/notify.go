@@ -108,7 +108,7 @@ type Payload struct {
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 // Send delivers a notification best-effort; errors are logged only.
-func Send(cfg Config, event string, payload Payload) {
+func Send(ctx context.Context, cfg Config, event string, payload Payload) {
 	if !cfg.Enabled {
 		return
 	}
@@ -118,7 +118,7 @@ func Send(cfg Config, event string, payload Payload) {
 	payload.Event = event
 	text := formatSlackText(payload)
 	for _, url := range cfg.URLs {
-		post(cfg, url, payload, text)
+		post(ctx, url, payload, text)
 	}
 }
 
@@ -138,36 +138,53 @@ func formatSlackText(p Payload) string {
 	return strings.Join(lines, "\n")
 }
 
-func post(_ Config, url string, payload Payload, text string) {
+func post(ctx context.Context, url string, payload Payload, text string) {
 	for attempt := 0; attempt < 3; attempt++ {
-		if deliverOnce(url, encodeBody(url, payload, text)) {
+		if ctx.Err() != nil {
 			return
 		}
-		if attempt < 2 {
-			time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
+		if deliverOnce(ctx, url, encodeBody(url, payload, text)) {
+			return
+		}
+		if attempt < 2 && !waitRetry(ctx, time.Duration(attempt+1)*500*time.Millisecond) {
+			return
 		}
 	}
 	log.Printf("operator notify: delivery failed for event %s", payload.Event)
 }
 
 // PostJSON delivers a JSON document to configured webhook targets (best-effort).
-func PostJSON(urls []string, document any, text string) {
+func PostJSON(ctx context.Context, urls []string, document any, text string) {
 	for _, url := range urls {
 		for attempt := 0; attempt < 3; attempt++ {
-			if deliverOnce(url, encodeDocumentBody(url, document, text)) {
+			if ctx.Err() != nil {
+				return
+			}
+			if deliverOnce(ctx, url, encodeDocumentBody(url, document, text)) {
 				break
 			}
-			if attempt < 2 {
-				time.Sleep(time.Duration(attempt+1) * 500 * time.Millisecond)
+			if attempt < 2 && !waitRetry(ctx, time.Duration(attempt+1)*500*time.Millisecond) {
+				return
 			}
 		}
 	}
 }
 
-func deliverOnce(url string, body io.Reader) bool {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func waitRetry(ctx context.Context, d time.Duration) bool {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func deliverOnce(ctx context.Context, url string, body io.Reader) bool {
+	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, url, body)
 	if err != nil {
 		log.Printf("operator notify: build request: %v", err)
 		return false

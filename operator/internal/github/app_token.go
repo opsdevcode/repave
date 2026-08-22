@@ -77,7 +77,7 @@ type installationTokenCache struct {
 var defaultInstallationTokenCache installationTokenCache
 
 // ResolveAccessToken returns an explicit token, PAT, or a cached installation token.
-func ResolveAccessToken(explicit string) (string, error) {
+func ResolveAccessToken(ctx context.Context, explicit string) (string, error) {
 	if strings.TrimSpace(explicit) != "" {
 		return strings.TrimSpace(explicit), nil
 	}
@@ -91,22 +91,26 @@ func ResolveAccessToken(explicit string) (string, error) {
 	if cfg == nil {
 		return "", nil
 	}
-	return defaultInstallationTokenCache.get(cfg)
+	return defaultInstallationTokenCache.get(ctx, cfg)
 }
 
-func (c *installationTokenCache) get(cfg *AppConfig) (string, error) {
+func (c *installationTokenCache) get(ctx context.Context, cfg *AppConfig) (string, error) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 	now := time.Now()
 	if c.token != "" && now.Before(c.expiresAt.Add(-tokenRefreshBuffer)) {
-		return c.token, nil
+		token := c.token
+		c.mu.Unlock()
+		return token, nil
 	}
-	token, expiresAt, err := fetchInstallationToken(cfg)
+	c.mu.Unlock()
+	token, expiresAt, err := fetchInstallationToken(ctx, cfg)
 	if err != nil {
 		return "", err
 	}
+	c.mu.Lock()
 	c.token = token
 	c.expiresAt = expiresAt
+	c.mu.Unlock()
 	return token, nil
 }
 
@@ -142,7 +146,7 @@ type accessTokenResponse struct {
 	ExpiresAt string `json:"expires_at"`
 }
 
-func fetchInstallationToken(cfg *AppConfig) (string, time.Time, error) {
+func fetchInstallationToken(ctx context.Context, cfg *AppConfig) (string, time.Time, error) {
 	appJWT, err := mintAppJWT(cfg)
 	if err != nil {
 		return "", time.Time{}, err
@@ -151,9 +155,9 @@ func fetchInstallationToken(cfg *AppConfig) (string, time.Time, error) {
 		"https://api.github.com/app/installations/%s/access_tokens",
 		cfg.InstallationID,
 	)
-	ctx, cancel := context.WithTimeout(context.Background(), appTokenHTTPTimeout)
+	reqCtx, cancel := context.WithTimeout(ctx, appTokenHTTPTimeout)
 	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, url, nil)
 	if err != nil {
 		return "", time.Time{}, err
 	}

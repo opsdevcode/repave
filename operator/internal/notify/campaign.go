@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 
 // SendCampaignEvent delivers a webhook notification for an UpgradeCampaign event.
 func SendCampaignEvent(
+	ctx context.Context,
 	event string,
 	uc *repavev1beta1.UpgradeCampaign,
 	summary campaign.FleetSummary,
@@ -41,7 +43,7 @@ func SendCampaignEvent(
 		Message:                       message,
 	}
 	text := formatCampaignText(payload)
-	PostJSON(cfg.URLs, payload, text)
+	PostJSON(ctx, cfg.URLs, payload, text)
 }
 
 // CampaignPayload is the webhook body for upgrade campaign events.
