@@ -138,7 +138,7 @@ func PublishPullRequest(ctx context.Context, in PublishInput) (PublishedPR, erro
 		return PublishedPR{}, ErrRepoURLRequired
 	}
 
-	resolvedToken, err := github.ResolveAccessToken(in.GitHubToken)
+	resolvedToken, err := github.ResolveAccessToken(ctx, in.GitHubToken)
 	if err != nil {
 		return PublishedPR{}, err
 	}

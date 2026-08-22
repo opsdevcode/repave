@@ -1,6 +1,7 @@
 package github_test
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -31,7 +32,7 @@ func TestResolveAccessToken_prefersPAT(t *testing.T) {
 	t.Setenv("GITHUB_APP_INSTALLATION_ID", "2")
 	t.Setenv("GITHUB_APP_PRIVATE_KEY", testPrivateKeyPEM(t))
 
-	token, err := github.ResolveAccessToken("")
+	token, err := github.ResolveAccessToken(context.Background(), "")
 	if err != nil {
 		t.Fatalf("ResolveAccessToken: %v", err)
 	}
@@ -65,7 +66,7 @@ func TestResolveAccessToken_mintsInstallationToken(t *testing.T) {
 	t.Setenv("GITHUB_APP_INSTALLATION_ID", "99")
 	t.Setenv("GITHUB_APP_PRIVATE_KEY", testPrivateKeyPEM(t))
 
-	token, err := github.ResolveAccessToken("")
+	token, err := github.ResolveAccessToken(context.Background(), "")
 	if err != nil {
 		t.Fatalf("ResolveAccessToken: %v", err)
 	}

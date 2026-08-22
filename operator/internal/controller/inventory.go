@@ -108,6 +108,7 @@ func applyInventoryStatus(
 	}
 	if result.NotifyDrift {
 		notify.SendGoldenPathRepoEvent(
+			ctx,
 			notify.EventDriftDetected,
 			repo.ObjectMeta,
 			repo.Spec,

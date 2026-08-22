@@ -1,6 +1,7 @@
 package notify
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -32,6 +33,7 @@ func TestSendCampaignEventPostsSummary(t *testing.T) {
 		},
 	}
 	SendCampaignEvent(
+		context.Background(),
 		EventCampaignSummary,
 		uc,
 		campaign.FleetSummary{OutOfDateCount: 2, OpenPRCount: 1, OldestDriftAgeSeconds: 600},

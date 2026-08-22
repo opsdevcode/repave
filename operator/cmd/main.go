@@ -8,6 +8,7 @@ stated there.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -79,7 +80,7 @@ func main() {
 	}
 
 	// Fail fast on invalid App config; do not cache installation tokens (they expire).
-	if _, err := github.ResolveAccessToken(""); err != nil {
+	if _, err := github.ResolveAccessToken(context.Background(), ""); err != nil {
 		setupLog.Error(err, "unable to resolve GitHub access token")
 		os.Exit(1)
 	}
